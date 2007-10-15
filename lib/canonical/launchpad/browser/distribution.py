@@ -25,7 +25,6 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
-    'DistributionLaunchpadUsageEditView',
     'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
     'DistributionSetNavigation',
@@ -44,7 +43,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
-    IPublishedPackageSet, MirrorContent, NotFoundError)
+    ILaunchpadCelebrities, IPublishedPackageSet, MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -192,11 +191,11 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'launchpad_usage', 'upload_admin', 'ppas']
+             'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
+        text = 'Change distribution details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -293,11 +292,6 @@ class DistributionOverviewMenu(ApplicationMenu):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def launchpad_usage(self):
-        text = 'Define Launchpad usage'
-        return Link('+launchpad', text, icon='edit')
 
 
 class DistributionBugsMenu(ApplicationMenu):
@@ -488,34 +482,6 @@ class DistributionBrandingView(BrandingChangeView):
     field_names = ['icon', 'logo', 'mugshot']
 
 
-class DistributionEditView(LaunchpadEditFormView):
-
-    schema = IDistribution
-    label = "Change distribution details"
-    field_names = ['displayname', 'title', 'summary', 'description']
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
-
-
-class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
-    """View class for defining Launchpad usage."""
-
-    schema = IDistribution
-    field_names = ["official_answers", "official_malone", "official_rosetta"]
-    label = "Describe Launchpad usage"
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-
 class DistributionSetView:
 
     def __init__(self, context, request):
@@ -531,7 +497,8 @@ class DistributionAddView(LaunchpadFormView):
     schema = IDistribution
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
-                   "domainname", "members"]
+                   "domainname", "members",
+                   "official_malone", "official_rosetta", "official_answers"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -547,6 +514,28 @@ class DistributionAddView(LaunchpadFormView):
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
+
+
+class DistributionEditView(LaunchpadEditFormView):
+
+    schema = IDistribution
+    label = "Change distribution details"
+    field_names = ['displayname', 'title', 'summary', 'description',
+                   'official_malone', 'official_rosetta', 'official_answers']
+
+    def isAdmin(self):
+        return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        if not self.isAdmin():
+            self.form_fields = self.form_fields.omit(
+                'official_malone', 'official_rosetta', 'official_answers')
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class DistributionBugContactEditView(SQLObjectEditView):
