@@ -8,30 +8,21 @@
       <th>Bug contact:</th>
       <td tal:condition="not:context/bugcontact">None</td>
       <td tal:condition="context/bugcontact">
-        <a
-          tal:attributes="href context/bugcontact/fmt:url"
-          tal:content="context/bugcontact/browsername"
-        />
+        <a tal:replace="structure context/bugcontact/fmt:link" />
       </td>
     </tr>
     <tr>
       <th>Security contact:</th>
       <td tal:condition="not:context/security_contact">None</td>
       <td tal:condition="context/security_contact">
-        <a
-          tal:attributes="href context/security_contact/fmt:url"
-          tal:content="context/security_contact/browsername"
-        />
+        <a tal:replace="structure context/security_contact/fmt:link" />
       </td>
     </tr>
     <tr>
       <th>Driver:</th>
       <td tal:condition="not:context/driver">None</td>
       <td tal:condition="context/driver">
-        <a
-          tal:attributes="href context/driver/fmt:url"
-          tal:content="context/driver/displayname"
-        />
+        <a tal:replace="structure context/driver/fmt:link" />
       </td>
     </tr>
     <tr>

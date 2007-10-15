@@ -301,7 +301,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subjected to approval by one of
+        All subscriptions for this team are subject to approval by one of
         the team's administrators.
         """)
 
