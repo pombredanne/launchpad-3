@@ -128,9 +128,22 @@ An upload to the RELEASE pocket will add items to the import queue:
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
 
-  # There are exactly the 10 entries imported by pmount.
-  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
-  10
+As we can see from the translation import queue content.
+
+  >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
+  ...     print '%s/%s: %s' % (
+  ...         entry.distroseries.name, entry.sourcepackagename.name,
+  ...         entry.path)
+  dapper/pmount: po/es_ES.po
+  dapper/pmount: po/ca.po
+  dapper/pmount: po/de.po
+  dapper/pmount: po/cs.po
+  dapper/pmount: po/es.po
+  dapper/pmount: po/fr.po
+  dapper/pmount: po/hr.po
+  dapper/pmount: po/nb.po
+  dapper/pmount: po/pmount.pot
+  dapper/pmount: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -165,9 +178,22 @@ But an upload to the UPDATE pocket will add items to the import queue:
   >>> queue_item.pocket = PackagePublishingPocket.UPDATES
   >>> queue_item.customfiles[0].publish()
 
-  # And we get 10 new entries imported.
-  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
-  10
+As we can see from the translation import queue content.
+
+  >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
+  ...     print '%s/%s: %s' % (
+  ...         entry.distroseries.name, entry.sourcepackagename.name,
+  ...         entry.path)
+  dapper/pmount: po/es_ES.po
+  dapper/pmount: po/ca.po
+  dapper/pmount: po/de.po
+  dapper/pmount: po/cs.po
+  dapper/pmount: po/es.po
+  dapper/pmount: po/fr.po
+  dapper/pmount: po/hr.po
+  dapper/pmount: po/nb.po
+  dapper/pmount: po/pmount.pot
+  dapper/pmount: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -185,9 +211,22 @@ Uploads to restricted component are accepted too.
   ...     component=restricted_component)
   >>> queue_item.customfiles[0].publish()
 
-  # And we get 10 new entries imported.
-  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
-  10
+As we can see from the translation import queue content.
+
+  >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
+  ...     print '%s/%s: %s' % (
+  ...         entry.distroseries.name, entry.sourcepackagename.name,
+  ...         entry.path)
+  dapper/pmount: po/es_ES.po
+  dapper/pmount: po/ca.po
+  dapper/pmount: po/de.po
+  dapper/pmount: po/cs.po
+  dapper/pmount: po/es.po
+  dapper/pmount: po/fr.po
+  dapper/pmount: po/hr.po
+  dapper/pmount: po/nb.po
+  dapper/pmount: po/pmount.pot
+  dapper/pmount: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # component.
