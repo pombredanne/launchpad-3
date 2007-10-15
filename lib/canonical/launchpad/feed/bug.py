@@ -55,7 +55,7 @@ class BugFeedContentView(LaunchpadView):
         return bug_task_view.getBugCommentsForDisplay()
 
     def render(self):
-        return ViewPageTemplateFile('templates/bug.pt')
+        return ViewPageTemplateFile('templates/bug.pt')(self)
 
 
 class BugsFeedBase(FeedBase):
