@@ -10,11 +10,9 @@ import socket
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, ILaunchpadCelebrities, IBugTrackerSet)
+    ILaunchpadCelebrities, IBugTrackerSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
