@@ -10,6 +10,7 @@ import itest_helper
 
 
 def dump_membership(expected_members):
+    """Check that the mailing list has the expected set of members."""
     def poll_function():
         stdout = itest_helper.run_mailman(
             './list_members', '-f', '-p', 'team-one')
@@ -22,7 +23,7 @@ def dump_membership(expected_members):
 
 def main():
     """End-to-end testing of mailing list modification."""
-    # This test can't currently be done completely through the web.
+    # This test can't currently be set up through the web.
     proxy = xmlrpclib.ServerProxy(itest_helper.XMLRPC_URL)
     proxy.testStep('04-setup-users-A')
     # Now wait a little while for Mailman to modify the mailing list.

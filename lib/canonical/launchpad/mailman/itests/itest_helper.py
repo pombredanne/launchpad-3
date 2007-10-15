@@ -33,9 +33,9 @@ def auth(user, password):
 
 def poll(function):
     """Standard loop for checking something for a while."""
-    # Now wait a little while for Mailman to do some operation.  Using the
-    # default Mailman polling frequency, the list should get created in under
-    # 20 seconds.
+    # Keep calling the poll function until it returns True or we've waited
+    # longer than 20 seconds.  Using the default Mailman polling frequency,
+    # that should be long enough for Mailman to react.
     until = datetime.datetime.now() + datetime.timedelta(seconds=20)
     while datetime.datetime.now() < until:
         if function():
@@ -59,12 +59,13 @@ def create_transaction_manager():
     # Import this here because our paths are not set up correctly in the
     # global module scope.
     from canonical.lp import initZopeless
-    # Set up the connection to the database.  We use the 'testadmin' uses
+    # Set up the connection to the database.  We use the 'testadmin' user
     # because it has rights to do nasty things like delete Person entries.
     transactionmgr = initZopeless(dbuser='testadmin')
 
 
 def make_browser():
+    """Create and return an authorized browser."""
     # Import this here because our paths are not set up correctly in the
     # global module scope.  This is like the setupBrowser for page tests, but
     # with the base64 hack needed for authentication from the outside.

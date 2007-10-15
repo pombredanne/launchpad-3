@@ -3,12 +3,14 @@
 """Start and stop the Mailman processes."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'start_mailman',
+    'stop_mailman',
+    ]
 
 
 import os
 import sys
-import atexit
 import subprocess
 
 from canonical.config import config
@@ -25,6 +27,7 @@ def stop_mailman():
 
 
 def start_mailman():
+    """Start the Mailman master qrunner."""
     # Add the directory containing the Mailman package to our sys.path.
     # We also need the Mailman bin directory so we can run some of
     # Mailman's command line scripts.

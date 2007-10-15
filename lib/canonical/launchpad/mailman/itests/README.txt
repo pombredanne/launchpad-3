@@ -17,6 +17,6 @@ failures.
 
 You might also want a +mail-configure.zcml in your override-includes.
 
-You should set the 'smtp' variable in the <mailman> section to
-'localhost:9025'.  Note that you may need to set the LPCONFIG environment
-variable to get the correct configuration file.
+You must also set the 'smtp' variable in the <mailman> section of your
+launchpad.conf file to 'localhost:9025'.  Note that you may want to set the
+LPCONFIG environment variable to get the correct configuration file.

@@ -11,6 +11,7 @@ import itest_helper
 
 
 def check_lists_active():
+    """Poll function looking for expected active mailing lists."""
     stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
     team_names = sorted(stdout.splitlines())
     # This test creates team-three; team-one exists due to a previous test.
@@ -18,6 +19,7 @@ def check_lists_active():
 
 
 def check_lists_deactive():
+    """Poll function looking for expected mailing lists after deactivation."""
     stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
     team_names = sorted(stdout.splitlines())
     return team_names == ['team-one']
@@ -46,7 +48,7 @@ def main():
     stdout = itest_helper.run_mailman(
         './withlist', '-q', '-r', 'mmhelper.backup', 'team-three')
     backup_path = stdout.splitlines()[0]
-    # Now deactivate the mailing list.
+    # Now deactivate the mailing list and check that the backup file exists.
     proxy.testStep('02-deactivate-lists')
     itest_helper.poll(check_lists_deactive)
     try:

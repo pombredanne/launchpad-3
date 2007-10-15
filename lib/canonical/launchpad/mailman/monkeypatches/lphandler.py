@@ -19,6 +19,7 @@ _NOT_A_MEMBER = object()
 
 
 def process(mlist, msg, msgdata):
+    """Discard the message if it doesn't come from a Launchpad member."""
     if msgdata.get('approved'):
         return
     # Ask Launchpad whether the sender is a Launchpad member.  If not, discard

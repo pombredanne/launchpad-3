@@ -10,6 +10,7 @@ import itest_helper
 
 
 def compare_message(greeting):
+    """Check that the mailing list has the expected welcome message."""
     def poll_function():
         stdout = itest_helper.run_mailman(
             './withlist', '-q', '-r', 'mmhelper.welcome', 'team-one')
@@ -19,7 +20,7 @@ def compare_message(greeting):
 
 def main():
     """End-to-end testing of mailing list modification."""
-    # This test can't currently be done through the web.
+    # These actions can't currently be done through the web.
     proxy = xmlrpclib.ServerProxy(itest_helper.XMLRPC_URL)
     proxy.testStep('03-modify-lists-A')
     # Now wait a little while for Mailman to modify the mailing list.

@@ -10,6 +10,7 @@ import itest_helper
 
 
 def check_lists():
+    """Poll function looking for expected active mailing lists."""
     stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
     team_names = sorted(stdout.splitlines())
     return team_names == ['team-one']

@@ -3,7 +3,6 @@
 
 """Run all the Launchpad-Mailman integration tests, in order."""
 
-
 import os
 import sys
 import shutil
@@ -21,7 +20,7 @@ itest_helper.create_transaction_manager()
 
 
 def real_main():
-    # Search for all sub-tests and run them in order.
+    """Search for all sub-tests and run them in order."""
     tests = []
     for filename in os.listdir(itest_helper.HERE):
         if os.path.splitext(filename)[1] <> '.py':
@@ -59,6 +58,7 @@ def real_main():
 
 
 def main():
+    """A main function with cleanup protection."""
     # Several of the tests require a bin/withlist helper to print useful
     # information about mailing lists.  Mailman requires the withlist script
     # to be in its bin directory or on sys.path.  Hacking the latter in the

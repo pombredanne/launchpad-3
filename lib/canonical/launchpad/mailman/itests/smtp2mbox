@@ -23,6 +23,7 @@ from canonical.config import config
 
 
 class Channel(smtpd.SMTPChannel):
+    """Add an SMTP EXIT function for quitting the process."""
     def smtp_EXIT(self, arg):
         raise asyncore.ExitNow
 
@@ -33,16 +34,19 @@ class Server(smtpd.SMTPServer):
         self._mbox = open(sys.argv[1], 'w')
 
     def handle_accept(self):
+        """Open our extended channel."""
         conn, addr = self.accept()
         Channel(self, conn, addr)
 
     def process_message(self, peer, mailfrom, rcpttos, data):
+        """Shove the message into the mbox file."""
         msg = message_from_string(data)
         print >> self._mbox, msg
         print >> self._mbox
         self._mbox.flush()
 
     def close(self):
+        """Close the mbox file."""
         self._mbox.close()
 
 
