@@ -29,8 +29,13 @@ administrator of the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
-    Team owner: Celso Providelo
-    Membership: 3 (Moderated Team)
+    Team owner:
+    Celso Providelo
+    Membership:
+    3
+    Moderated Team:
+    All subscriptions for this team are subject to approval by one of
+    the team's administrators.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
@@ -67,8 +72,11 @@ But cprov can.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
-    Team owner: Ubuntu Team
-    Membership: ... (Moderated Team)
+    Team owner:
+    Ubuntu Team
+    ...
+    Moderated Team:
+    ...
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))

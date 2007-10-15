@@ -55,8 +55,6 @@
     class="description"
     tal:content="structure context/teamdescription/fmt:text-to-html"
   />
-  <div id="subscription_policy" tal:condition="context/isTeam"
-       tal:content="view/subscription_policy_description" />
   <ul class="buttons" tal:define="mentorships context/team_mentorships"
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">
