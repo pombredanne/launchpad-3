@@ -1271,9 +1271,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
     @property
+    def invited_member_count(self):
+        """See `IPerson`."""
+        return self.invited_members.count()
+
+    @property
     def deactivatedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+
+    @property
+    def deactivated_member_count(self):
+        """See `IPerson`."""
+        return self.deactivatedmembers.count()
 
     @property
     def expiredmembers(self):
@@ -1281,9 +1291,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
+    def expired_member_count(self):
+        """See `IPerson`."""
+        return self.expiredmembers.count()
+
+    @property
     def proposedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
+
+    @property
+    def proposed_member_count(self):
+        """See `IPerson`."""
+        return self.proposedmembers.count()
 
     @property
     def adminmembers(self):
@@ -1312,6 +1332,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.expiredmembers.union(
             self.deactivatedmembers,
             orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def inactive_member_count(self):
+        """See `IPerson`."""
+        return self.inactivemembers.count()
 
     @property
     def pendingmembers(self):
