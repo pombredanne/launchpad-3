@@ -256,9 +256,8 @@ class SprintAddView(LaunchpadFormView):
 
     schema = ISprint
     label = "Register a meeting"
-    field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address',
-                   ]
+    field_names = ['name', 'bugtrackertype', 'title', 'summary'
+                   'base_url', 'contact details']
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)

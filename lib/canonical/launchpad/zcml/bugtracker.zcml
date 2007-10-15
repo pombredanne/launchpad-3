@@ -113,17 +113,12 @@
             />
     </browser:pages>
 
-    <browser:addform
-        name="+newbugtracker"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
-        for="canonical.launchpad.interfaces.IBugTrackerSet"
-        schema="canonical.launchpad.interfaces.IBugTracker"
-        fields="name bugtrackertype title summary baseurl contactdetails"
-        keyword_arguments="name bugtrackertype title summary baseurl
-                           contactdetails"
-        template="../templates/bugtrackers-add.pt"
-        />
+    <browser:page
+	name="+newbugtracker"
+	for="canonical.launchpad.interfaces.IBugTrackerSet"
+	class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
+	permission="launchpad.AnyPerson"
+	template="../templates/bugtrackers-add.pt" />
 
     <!-- RemoteBug -->
     <content class="canonical.launchpad.browser.bugtracker.RemoteBug">

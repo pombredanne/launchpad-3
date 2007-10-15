@@ -26,10 +26,10 @@ and SourceForge because there is only one instance (SourceForge.net).
 
   >>> for control in user_browser.getControl('Bug Tracker Type').controls:
   ...     print control.optionValue
-  BUGZILLA
-  ROUNDUP
-  TRAC
-  MANTIS
+  Bugzilla
+  Roundup
+  Trac
+  Mantis
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.
@@ -47,9 +47,10 @@ aren't allowed.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
-  Invalid name 'testttrac!'. Names must start with a letter or number
-  and be lowercase. The characters +, - and . are also allowed after the
+  There is 1 error.
+  Invalid name 'testttrac!'. Names must start with a letter or
+  number and be lowercase. The characters +,
+  - and . are also allowed after the
   first character.
 
 If a bug tracker is already registered with the same URL, the user is
@@ -63,7 +64,7 @@ informed about it.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
+  There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
 After successfully registering the bug tracker, the user is redirect to
@@ -89,7 +90,7 @@ bugtracker without them is acceptable.
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
   >>> user_browser.getControl('Name').value = 'test-bugzilla'
   >>> user_browser.getControl('Title').value = 'Test Bugzilla'
-  >>> user_browser.getControl('Bug Tracker Type').value = ['BUGZILLA']
+  >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
   >>> user_browser.getControl('Base URL').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
