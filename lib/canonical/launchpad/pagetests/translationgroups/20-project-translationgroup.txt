@@ -1,4 +1,3 @@
-
 Lastly, we should be able to set the translation group on a project. We'll
 use the Gnome project as an example. First make sure we can see the Gnome
 project page and that it has no translation group assigned.
@@ -6,17 +5,19 @@ project page and that it has no translation group assigned.
     >>> admin_browser.open('http://launchpad.dev/gnome')
     >>> print admin_browser.title
     The GNOME Project in Launchpad
+    >>> admin_browser.getLink('Translations').click()
+    >>> print admin_browser.title
+    Translatable projects for The GNOME Project
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
-    Project group status: Active
-    ...
+    ...     find_tag_by_id(admin_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
     Translation group: Not assigned
-    Translations: Open
+    Permissions: Open
 
 And now make sure we can see the form to change the translation group and
 permissions on a project.
 
-    >>> admin_browser.getLink('Translations').click()
     >>> admin_browser.getLink('Change translators').click()
     >>> print admin_browser.title
     Set translation group for The GNOME Project
@@ -43,15 +44,15 @@ permissions.
 And make sure these changes are now reflected in the Gnome project page in
 the relevant portlet.
 
-    >>> admin_browser.getLink('Overview').click()
+    >>> admin_browser.getLink('Translations').click()
     >>> print admin_browser.title
-    The GNOME Project in Launchpad
+    Translatable projects for The GNOME Project
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
-    Project group status: Active
-    ...
+    ...     find_tag_by_id(admin_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
     Translation group: The PolyGlot Translation Group
-    Translations: Closed
-
+    Permissions: Closed
     >>> admin_browser.getLink('The PolyGlot Translation Group').click()
-    >>> print admin_browser.title
+    >>> admin_browser.title
+    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'

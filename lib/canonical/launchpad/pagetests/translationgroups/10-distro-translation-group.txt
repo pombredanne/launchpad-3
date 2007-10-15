@@ -1,80 +1,73 @@
-
 Now, let's go have a look at where we can use these translation groups. We
-want to check out the distro side first. Let's take a look at the Ubuntu
-page, it should have no TranslationGroup and open permissions.
+want to check out the distro side first.
 
-  >>> print http(r"""
-  ... GET /ubuntu/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Translations:...
-  ...Open...
-  ...Translation group:...
-  ...None...
-  ...
+Ubuntu is using Launchpad for translations
 
-So, let's set it to use the PolyGlot translation group, and close the
-permissions. We use the +changetranslators page. First make sure we can see
-that page.
+    >>> admin_browser.open('http://launchpad.dev/ubuntu')
+    >>> print admin_browser.title
+    Ubuntu Linux in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
+    Bug contact:
+    ...
+    Uses Launchpad for:
+    Answers
+    Bug tracking
+    Translations
+    ...
 
-  >>> print http(r"""
-  ... GET /ubuntu/+changetranslators HTTP/1.1
-  ... Host: translations.launchpad.dev
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Select a new translation group...
+Ubuntu doesn't have TranslationGroup and uses open permissions. We can see
+that from the translations page.
 
-Now let's POST to that form. we should see the same page back, with a portal
-message indicating that the form was updated.
+    >>> admin_browser.getLink('Translations').click()
+    >>> print admin_browser.title
+    Translating Ubuntu
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
+    Translation group: Not assigned
+    Permissions: Open
 
-  >>> print http(r"""
-  ... POST /ubuntu/+changetranslators HTTP/1.1
-  ... Host: translations.launchpad.dev
-  ... Content-Length: 740
-  ... Content-Type: multipart/form-data; boundary=---------------------------1421369065201436391526227802
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------1421369065201436391526227802
-  ... Content-Disposition: form-data; name="field.translationgroup"
-  ... 
-  ... polyglot
-  ... -----------------------------1421369065201436391526227802
-  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1421369065201436391526227802
-  ... Content-Disposition: form-data; name="field.translationpermission"
-  ... 
-  ... Closed
-  ... -----------------------------1421369065201436391526227802
-  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1421369065201436391526227802
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------1421369065201436391526227802--
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Select a new translation group...
-  ...<p class="informational message">Updated on ...</p>
-  ...Ubuntu Linux...
-  ...
 
-Just to be certain let's view the Ubuntu distro page again and check the
-portlet for translation group and permissions.
+And now make sure we can see the form to change the translation group and
+permissions on a project.
 
-  >>> print http(r"""
-  ... GET /ubuntu HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Closed...
-  ...The PolyGlot Translation Group...
+    >>> admin_browser.getLink('Change translators').click()
+    >>> print admin_browser.title
+    Appoint Ubuntu Linux's translation group
+
+Let's post to the form, setting the translation group to polyglot and closed
+permissions.
+
+    >>> admin_browser.getControl(
+    ...     'Translation Permission System').displayValue = ['Closed']
+    >>> print admin_browser.getControl('Translation group').displayOptions
+    ['(no value)', 'Single-language Translators',
+     'The PolyGlot Translation Group', 'Just a testing team']
+    >>> admin_browser.getControl(
+    ...     'Translation group').displayValue = [
+    ...         'The PolyGlot Translation Group']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Appoint Ubuntu Linux's translation group
+    >>> for tag in find_tags_by_class(
+    ...     admin_browser.contents, 'informational message'):
+    ...     print tag.renderContents()
+    Updated on ...
+
+And make sure these changes are now reflected in the Ubuntu translations page.
+
+    >>> admin_browser.getLink('Translations').click()
+    >>> print admin_browser.title
+    Translating Ubuntu
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
+    Translation group: The PolyGlot Translation Group
+    Permissions: Closed
+
+    >>> admin_browser.getLink('The PolyGlot Translation Group').click()
+    >>> admin_browser.title
+    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'
