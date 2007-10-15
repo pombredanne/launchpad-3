@@ -48,8 +48,6 @@ class FeedBase(LaunchpadFormView):
     - itemToAtomFeedEntry
     """
 
-    # XXX bac - need caching headers, including expiration, etc.
-
     max_age = 60 * MINUTES
     # XXX - bac 2-Oct-2007 - this should be in a config file
     quantity = 25
