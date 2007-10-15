@@ -48,6 +48,7 @@ def main(argv):
     finally:
         conf.set_user_option('create_signatures', signing_policy)
         ztm.abort()
+    print "Created %d branches based on sample data." % len(list(branches))
 
 
 if __name__ == '__main__':
