@@ -157,7 +157,7 @@ some results.
 == General bug search ==
 
     >>> import cgi
-    >>> url = ("http://feeds.launchpad.dev/bugs/search-bugs.atom?"
+    >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
     >>> browser.open(url)
