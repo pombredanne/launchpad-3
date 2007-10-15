@@ -22,17 +22,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail
 
 
-def get_template(obj):
-    """Determine translation template that obj relates to.
-
-    :param obj: a translation file or translation template object.  If obj is
-        a template, then obj itself is returned.
-    """
-    if IPOTemplate.providedBy(obj):
-        return obj
-    return obj.potemplate
-
-
 class ExportResult:
     """The results of a translation export request.
 
@@ -47,6 +36,7 @@ class ExportResult:
         self.name = name
         self.url = None
         self.failure = None
+        self.object_names = []
 
     def _getFailureEmailBody(self, person):
         """Send an email notification about the export failing."""
@@ -100,17 +90,37 @@ class ExportResult:
             # There are no errors, so nothing else to do here.
             return
 
-        # The export process had errors that we should notify to admins.
-        admins_email_body = textwrap.dedent('''
-            Hello admins,
+        # The export process had errors that we should notify admins about.
+        if self.object_names:
+            names = '\n'.join(self.object_names)
+            template_sentence = "\n" + textwrap.dedent(
+                "The failed request involved these objects:\n%s" % names)
+        else:
+            template_sentence = ""
 
-            Rosetta encountered problems exporting some files requested by
-            %s. This means we have a bug in
-            Launchpad that needs to be fixed to be able to proceed with
-            this export. You can see the list of failed files with the
-            error we got:
+        try:
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
 
-            %s''') % (person.browsername, self.failure)
+                Rosetta encountered problems exporting some files requested by
+                %s. This means we have a bug in
+                Launchpad that needs to be fixed to be able to proceed with
+                this export. You can see the list of failed files with the
+                error we got:
+
+                %s%s''') % (
+                    person.browsername, self.failure, template_sentence)
+        except UnicodeDecodeError:
+            # Unfortunately this happens sometimes: invalidly-encoded data
+            # makes it into the exception description, possibly from error
+            # messages printed by msgfmt.  Before we can fix that, we need to
+            # know what exports suffer from this problem.
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
+
+                A UnicodeDecodeError occurred while trying to notify you of a
+                failure during a translation export requested by %s.
+                %s''') % (person.browsername, template_sentence)
 
         simple_sendmail(
             from_addr=config.rosetta.rosettaadmin.email,
@@ -144,7 +154,13 @@ def process_request(person, objects, format, logger):
     translation_file_list = []
     last_template_name = None
     for obj in objects:
-        template_name = get_template(obj).displayname
+        if IPOTemplate.providedBy(obj):
+            template_name = obj.displayname
+            object_name = template_name
+        else:
+            template_name = obj.potemplate.displayname
+            object_name = obj.title
+        result.object_names.append(object_name)
         if template_name != last_template_name:
             logger.debug(
                 'Exporting objects for %s, related to template %s'

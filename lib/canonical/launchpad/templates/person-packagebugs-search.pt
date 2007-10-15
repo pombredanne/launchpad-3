@@ -39,9 +39,6 @@
       condition="not: view/shouldShowAdvancedForm">
       <div tal:content="structure context/@@+portlet-otherpackages" />
     </tal:do_not_show_portlets_advanced_form>
-    <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </tal:show_portlets_advanced>
   </metal:leftportlets>
 
   <div metal:fill-slot="main">

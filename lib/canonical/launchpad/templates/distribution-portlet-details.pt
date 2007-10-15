@@ -8,40 +8,28 @@
       <th>Bug contact:</th>
       <td tal:condition="not:context/bugcontact">None</td>
       <td tal:condition="context/bugcontact">
-        <a
-          tal:attributes="href context/bugcontact/fmt:url"
-          tal:content="context/bugcontact/browsername"
-        />
+        <a tal:replace="structure context/bugcontact/fmt:link" />
       </td>
     </tr>
     <tr>
       <th>Security contact:</th>
       <td tal:condition="not:context/security_contact">None</td>
       <td tal:condition="context/security_contact">
-        <a
-          tal:attributes="href context/security_contact/fmt:url"
-          tal:content="context/security_contact/browsername"
-        />
+        <a tal:replace="structure context/security_contact/fmt:link" />
       </td>
     </tr>
     <tr>
       <th>Driver:</th>
       <td tal:condition="not:context/driver">None</td>
       <td tal:condition="context/driver">
-        <a
-          tal:attributes="href context/driver/fmt:url"
-          tal:content="context/driver/displayname"
-        />
+        <a tal:replace="structure context/driver/fmt:link" />
       </td>
     </tr>
     <tr>
       <th>Members:</th>
       <td tal:condition="not:context/members">None</td>
       <td tal:condition="context/members">
-        <a
-          tal:attributes="href string:${context/fmt:url}/+members"
-          tal:content="context/members/browsername"
-        />
+        <a tal:replace="structure context/members/fmt:link" />
       </td>
     </tr>
     <tr>
@@ -80,9 +68,7 @@
     <tr tal:repeat="dcu context/uploaders">
       <th><tal:component replace="dcu/component/name" /></th>
       <td>
-        <a tal:attributes="href dcu/uploader/fmt:url"
-           tal:content="dcu/uploader/browsername"
-           />
+        <a tal:replace="structure dcu/uploader/fmt:link" />
       </td>
     </tr>
   </tbody>

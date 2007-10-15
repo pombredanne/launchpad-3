@@ -27,9 +27,14 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
-    Team owner: Mark Shuttleworth
-    Membership: ... (Moderated Team)
-    Wiki: UbuntuTeam
+    Team owner:
+    Mark Shuttleworth
+    Membership:
+    ...
+    Wiki:
+    https://wiki.ubuntu.com/UbuntuTeam
+    Moderated Team:
+    ...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
