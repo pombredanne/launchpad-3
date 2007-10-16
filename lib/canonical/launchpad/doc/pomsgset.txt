@@ -269,57 +269,226 @@ given timestamp.
   >>> pomsgset.isNewerThan(datetime(2006, 11, 30, 7, 0, 0, tzinfo=UTC))
   False
 
+
+== getCurrentSubmissions ==
+
+This method returns all submissions that are currently used in other
+translation files for the same message IPOMsgSet is translating.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPOTemplateSet, IProductSet,
+    ...     TranslationConstants)
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+Suggestions between modules depend also on whether the other translation
+template is available to all users or should be ignored because
+either the product or distribution where it's attached is not using
+translations anymore or the translation template is not current anymore.
+
+We will use this helper function to print all suggestions found:
+
+    >>> def print_suggestions(suggestions):
+    ...     """Print IPOFile title, translation and where is it used."""
+    ...     for suggestion in suggestions:
+    ...         usage = []
+    ...         if suggestion.active:
+    ...             usage.append('Launchpad')
+    ...         if suggestion.published:
+    ...             usage.append('Upstream')
+    ...         if not usage:
+    ...             usage.append('None')
+    ...         print '%s: %s (%s)' % (
+    ...             suggestion.pomsgset.pofile.title,
+    ...             suggestion.potranslation.translation,
+    ...             ' & '.join(usage))
+
+In one side, we have a translation template for the evolution product.
+
+    >>> evolution_product = getUtility(IProductSet)['evolution']
+    >>> evo_product_template = evolution_product.getSeries(
+    ...     'trunk').getPOTemplate('evolution-2.2')
+    >>> print evo_product_template.title
+    Template "evolution-2.2" in Evolution trunk
+
+In the other, we have a translation template for the evolution package in
+Ubuntu Hoary distribution.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+    >>> evo_hoary_package = ubuntu_hoary.getSourcePackage('evolution')
+    >>> evo_distro_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=evo_hoary_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
+    >>> print evo_distro_template.title
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+
+Both, product and distribution use Launchpad Translations.
+
+    >>> evolution_product.official_rosetta
+    True
+    >>> ubuntu.official_rosetta
+    True
+
+And both translation templates are current
+
+    >>> evo_product_template.iscurrent
+    True
+    >>> evo_distro_template.iscurrent
+    True
+
+We have the same message in both templates but with different translations in
+Spanish:
+
+    >>> evo_product_message = evo_product_template.getPOTMsgSetByMsgIDText(
+    ...     ' cards').getPOMsgSet('es')
+    >>> evo_product_message.active_texts
+    [u' tarjetas']
+    >>> evo_distro_message = evo_distro_template.getPOTMsgSetByMsgIDText(
+    ...     ' cards').getPOMsgSet('es')
+    >>> evo_distro_message.active_texts
+    [u' caratas']
+
+    >>> suggestions = evo_product_message.getCurrentSubmissions(
+    ...     TranslationConstants.SINGULAR_FORM)
+    >>> print_suggestions(suggestions)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  caratas (Launchpad)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
+
+    >>> suggestions = evo_distro_message.getCurrentSubmissions(
+    ...     TranslationConstants.SINGULAR_FORM)
+    >>> print_suggestions(suggestions)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
+    Spanish (es) translation of evolution-2.2 in Evolution trunk:  tarjetas (Launchpad & Upstream)
+
+We need to be logged in as an admin to do some special attribute changes:
+
+    >>> login('carlos@canonical.com')
+
+When a translation template is set as not current, those translations are not
+available as suggestions anymore:
+
+    >>> evo_distro_template.iscurrent = False
+    >>> flush_database_updates()
+    >>> suggestions = evo_product_message.getCurrentSubmissions(
+    ...     TranslationConstants.SINGULAR_FORM)
+    >>> len(suggestions)
+    0
+
+The same happens if the distribution is not officially using translations.
+
+    >>> ubuntu.official_rosetta = False
+
+    # We set the template as current again so we are sure that we don't show
+    # suggestions just due to the change to the official_rosetta flag.
+    >>> evo_distro_template.iscurrent = True
+    >>> flush_database_updates()
+    >>> suggestions = evo_product_message.getCurrentSubmissions(
+    ...     TranslationConstants.SINGULAR_FORM)
+    >>> len(suggestions)
+    0
+
+And products not using translations officially have the same behaviour.
+
+    >>> evolution_product.official_rosetta = False
+    >>> flush_database_updates()
+    >>> suggestions = evo_distro_message.getCurrentSubmissions(
+    ...     TranslationConstants.SINGULAR_FORM)
+    >>> len(suggestions)
+    0
+
+Let's restore the flags for next section.
+
+    >>> ubuntu.official_rosetta = True
+    >>> evolution_product.official_rosetta = True
+    >>> flush_database_updates()
+
+
 == getWikiSubmissions ==
 
 This method returns a set of submissions that have translations for the
 same msgid as the given IPOMsgSet across the whole system.
 
-  # Get a message that has an active translation.
-  >>> pomsgset_translated = POMsgSet.get(752)
-  >>> print pomsgset_translated.pofile.title
-  Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-  >>> print pomsgset_translated.potmsgset.msgid
-  test man page
-  >>> pomsgset_translated.active_texts
-  [u'just a translation']
+    # This will be needed to call a private method to invalidate an internal
+    # cache.
+    >>> from zope.security.proxy import removeSecurityProxy
+
+We are going to work with the 'man' template in evolution package for
+Ubuntu Hoary distribution.
+
+    >>> evo_man_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=evo_hoary_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
+
+Let's take a message that is translated.
+
+    >>> pomsgset_translated = evo_man_template.getPOTMsgSetByMsgIDText(
+    ...     'test man page').getPOMsgSet('es')
+    >>> print pomsgset_translated.pofile.title
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+    >>> pomsgset_translated.active_texts
+    [u'just a translation']
 
 It doesn't return other submissions done in the given IPOMsgSet as the 'wiki'
 space is for any submission done outside that IPOMsgSet.
 
-  # There is no other message with the same msgid in our system that has a non
-  # active submission.
-  >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
-  >>> len(wiki_submissions)
-  0
+    # There is no other message with the same msgid in our system that has a non
+    # active submission.
+    >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
+    >>> len(wiki_submissions)
+    0
 
-  # Now, we get a dummy message that has the same msgid as the previous one.
-  # It's dummy, which means it doesn't exist in our database, so is impossible
-  # to have a submission already for it.
-  >>> potmsgset = POTMsgSet.get(167)
-  >>> pomsgset_untranslated = potmsgset.getDummyPOMsgSet('es')
-  >>> print pomsgset_untranslated.pofile.title
-  Spanish (es) translation of man in Ubuntu Hoary package "pmount"
-  >>> print potmsgset.msgid
-  test man page
+    # Now, we get a dummy message that has the same msgid as the previous one.
+    # It's dummy, which means it doesn't exist in our database, so is impossible
+    # to have a submission already for it.
+    >>> pmount_hoary_package = ubuntu_hoary.getSourcePackage('pmount')
+    >>> pmount_man_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=pmount_hoary_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
+    >>> pomsgset_untranslated = pmount_man_template.getPOTMsgSetByMsgIDText(
+    ...     'test man page').getDummyPOMsgSet('es')
+    >>> print pomsgset_untranslated.pofile.title
+    Spanish (es) translation of man in Ubuntu Hoary package "pmount"
 
-  # As expected, is not translated.
-  >>> pomsgset_untranslated.active_texts
-  [None]
-  >>> pomsgset_untranslated.published_texts
-  [None]
+    # As expected, is not translated.
+    >>> pomsgset_untranslated.active_texts
+    [None]
+    >>> pomsgset_untranslated.published_texts
+    [None]
 
 This other IPOMsgSet though, will get all submissions done in
 pomsgset_translated (except ones with the same translation that is already
 active) as it's another context.
 
-  # And we get as a suggestions submissions for previous message.
-  >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
-  >>> len(wiki_submissions)
-  2
-  >>> for submission in wiki_submissions:
-  ...     assert submission.pomsgset == pomsgset_translated, (
-  ...         "This wiki suggestion doesn't come from the expected IPOMsgSet")
-  ...     print submission.potranslation.translation
-  blah, blah, blah
-  lalalala
+    # And we get as a suggestions submissions for previous message.
+    >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+    >>> print_suggestions(wiki_submissions)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution": blah, blah, blah (None)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution": lalalala (None)
 
+However, if the hoary template version is not current, we get no suggestions.
+
+    >>> pomsgset_translated.pofile.potemplate.iscurrent = False
+    >>> flush_database_updates()
+
+    # We need to invalidate the cache that handle suggestions using a private
+    # method, otherwise our changes will not affect cached values.
+    >>> removeSecurityProxy(pomsgset_untranslated)._invalidateSubmissionsCaches()
+    >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+    >>> len(wiki_submissions)
+    0
+
+Nor we get any suggestions if the Ubuntu distribution is not using
+Launchpad for translations.
+
+    # We set the template as current again so we are sure that we don't show
+    # suggestions just due to the change to the official_rosetta flag.
+    >>> pomsgset_translated.pofile.potemplate.iscurrent = True
+    >>> ubuntu.official_rosetta = False
+    >>> flush_database_updates()
+
+    # We need to invalidate the cache that handle suggestions using a private
+    # method, otherwise our changes will not affect cached values.
+    >>> removeSecurityProxy(pomsgset_untranslated)._invalidateSubmissionsCaches()
+    >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+    >>> len(wiki_submissions)
+    0

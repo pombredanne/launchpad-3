@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, cursor, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
@@ -96,16 +96,54 @@ class POTMsgSet(SQLBase):
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
-        return POSubmission.select('''
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %s AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %s AND
-            POSubmission.pluralform = %s AND
-            (POSubmission.active OR POSubmission.published)
-            ''' % sqlvalues(language, self.primemsgid_, pluralform),
-            clauseTables=['POTMsgSet', 'POMsgSet', 'POFile'],
+        cur = cursor()
+        query = """
+            SELECT DISTINCT POSubmission.id
+            FROM
+                POSubmission
+                JOIN POMsgSet ON
+                    POSubmission.pomsgset = POMsgSet.id
+                JOIN POFile ON
+                    POMsgSet.pofile = POFile.id AND
+                    POFile.language = %s
+                JOIN POTMsgSet ON
+                    POMsgSet.potmsgset = POTMsgSet.id AND
+                    POTMsgSet.primemsgid = %s
+                JOIN POTemplate ON
+                    POTMsgSet.potemplate = POTemplate.id AND
+                    POTemplate.iscurrent IS TRUE
+                LEFT JOIN ProductSeries ON
+                    POTemplate.productseries = ProductSeries.id
+                LEFT JOIN Product ON
+                    ProductSeries.product = Product.id
+                LEFT JOIN DistroRelease ON
+                    POTemplate.distrorelease = DistroRelease.id
+                LEFT JOIN Distribution ON
+                    DistroRelease.distribution = Distribution.id
+            WHERE
+                POSubmission.pluralform = %s AND
+                (POSubmission.active IS TRUE OR
+                 POSubmission.published IS TRUE) AND
+                (Product.official_rosetta IS TRUE OR
+                 Distribution.official_rosetta IS TRUE)""" % sqlvalues(
+                language, self.primemsgid_, pluralform)
+
+        cur.execute(query)
+        posubmission_ids = [id for [id] in cur.fetchall()]
+
+        if len(posubmission_ids) > 0:
+            query = '''
+                POSubmission.pomsgset = POMsgSet.id AND
+                POMsgSet.pofile = POFile.id AND
+                POSubmission.id IN %s
+                ''' % sqlvalues(posubmission_ids)
+        else:
+            # There are no entries at all.
+            query = 'FALSE'
+
+        return POSubmission.select(
+            query,
+            clauseTables=['POMsgSet', 'POFile'],
             orderBy='-datecreated',
             prejoinClauseTables=['POMsgSet', 'POFile'],
             prejoins=['potranslation', 'person'])
