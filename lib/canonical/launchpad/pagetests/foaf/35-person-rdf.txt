@@ -1,9 +1,8 @@
 We export FOAF RDF metadata from the /~Person.name/+index document.
 
-  >>> print http(r"""
-  ... GET /~name16 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> anon_browser.open("http://launchpad.dev/~name16")
+  >>> print anon_browser.contents
+  <BLANKLINE>
   ...
           <link rel="meta" type="application/rdf+xml"
                 title="FOAF" href="+rdf" />
@@ -13,12 +12,8 @@ We export FOAF RDF metadata from the /~Person.name/+index document.
 And this is what the FOAF document for a person actually looks like.  It
 includes GPG information, if the user has any.
 
-  >>> print http(r"""
-  ... GET /~name16/+rdf HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/rdf+xml
+  >>> anon_browser.open("http://launchpad.dev/~name16/+rdf")
+  >>> print anon_browser.contents
   <BLANKLINE>
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -26,7 +21,7 @@ includes GPG information, if the user has any.
            xmlns:wot="http://xmlns.com/wot/0.1/">
       <foaf:Person>
           <foaf:name>Foo Bar</foaf:name>
-  ...
+          <foaf:nick>name16</foaf:nick>
           <foaf:mbox_sha1sum>D248D2313390766929B6CEC214BD9B640F5EA7E7</foaf:mbox_sha1sum>
           <wot:hasKey>
               <wot:PubKey>
@@ -42,12 +37,8 @@ includes GPG information, if the user has any.
 Teams also have an RDF export, which includes information for each member of the
 team.
 
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+rdf HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/rdf+xml
+  >>> anon_browser.open("http://launchpad.dev/~ubuntu-team/+rdf")
+  >>> print anon_browser.contents
   <BLANKLINE>
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -60,6 +51,7 @@ team.
           <foaf:member>
               <foaf:Person>
                   <foaf:name>Foo Bar</foaf:name>
+                  <foaf:nick>name16</foaf:nick>
                   <foaf:mbox_sha1sum>D248D2313390766929B6CEC214BD9B640F5EA7E7</foaf:mbox_sha1sum>
                   <wot:hasKey>
                       <wot:PubKey>
