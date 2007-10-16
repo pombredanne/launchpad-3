@@ -94,6 +94,9 @@ By default, our connection is reset at the end of every transaction.  That
 means that any session state, such as temporary tables, is lost when we
 commit.
 
+Say we create a temporary table called "anothertesttable," which did not exist
+before.
+
 >>> from canonical.database.sqlbase import cursor
 >>> test_table = "anothertesttable"
 >>> cursor().execute("SELECT count(*) FROM %s" % test_table)
@@ -110,6 +113,10 @@ ProgrammingError: ERROR: relation "..." does not exist
 >>> print cur.fetchone()
 (0L,)
 
+If we commit, the temporary table will be destroyed as our connection is
+reset.  By default a temporary table will survive a commit, but not the end
+of a connection.
+
 >>> ztm.commit()
 >>> ztm.begin()
 >>> cur = cursor()
@@ -119,7 +126,8 @@ Traceback (most recent call last):
 ProgrammingError: ERROR: relation "..." does not exist
 ...
 
-The same hapens when a transaction is aborted.
+The exact same thing happens when a transaction is aborted: temporary tables
+are destroyed.
 
 >>> ztm.abort()
 >>> ztm.begin()
@@ -146,7 +154,9 @@ True
 
 When we disable the automatic resetting of connections, the connection remains
 active across transactions.  We don't normally do this because resetting the
-transaction doesn't cost much and guards us against leaks and such.
+transaction doesn't cost much and guards us against leaks and such.  It may be
+necessary, however, in cases where temporary tables must live across
+transactions such as while copying large amounts of data.
 
 >>> ztm.reset_after_transaction = False
 >>> ztm.abort()
@@ -171,6 +181,7 @@ transaction doesn't cost much and guards us against leaks and such.
 Cleanup -- make sure this doctest leaves things in the same state it found
 them.
 
+>>> ztm.reset_after_transaction = False
 >>> ztm.uninstall()
 >>> from canonical.testing import DatabaseLayer
 >>> DatabaseLayer.force_dirty_database()

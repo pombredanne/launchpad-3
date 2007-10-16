@@ -265,6 +265,11 @@ class ZopelessTransactionManager(object):
 
     _installed = None
     alreadyInited = False
+
+    # Reset database connection at end of every transaction?  We do this by
+    # default to protect us against leaks and accidentally carrying over
+    # state between logically unconnected requests, but sometimes we do need
+    # to carry over state such as temporary tables.
     reset_after_transaction = True
 
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,

@@ -184,84 +184,15 @@ def copy_active_translations_to_new_series(child, transaction, copier, logger):
     copier.pour(transaction)
 
 
-def copy_active_translations_as_update(child, transaction, logger):
-    """Update child distroseries with translations from parent."""
-    # This function makes exhaustive use of temporary tables.  Testing with
-    # regular persistent tables revealed frequent lockups as the algorithm
-    # waited for autovacuum to go over the holding tables.  Using temporary
-    # tables means that we cannot let our connection be reset at the end of
-    # every transaction.
-    original_reset_setting = transaction.reset_after_transaction
-    transaction.reset_after_transaction = False
-    full_name = "%s_%s" % (child.distribution.name, child.name)
-    tables = ['POFile', 'POMsgSet', 'POSubmission']
-    copier = MultiTableCopy(
-        full_name, tables, restartable=False, logger=logger)
+def prepare_pofile_merge(copier, transaction, query_parameters):
+    """`POFile` chapter of `copy_active_translations_as_update`.
 
-    copier.dropHoldingTables()
-    drop_tables(cursor(), [
-        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_inert_pomsgsets',
-        'temp_changed_pofiles'])
+    Extract copies of `POFile`s from parent distroseries into holding table,
+    and prepare them for pouring.
 
-    # Map parent POTemplates to corresponding POTemplates in child.  This will
-    # come in handy later.
-    cur = cursor()
-    cur.execute("""
-        CREATE TEMP TABLE temp_equiv_template AS
-        SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
-        FROM POTemplate pt1, POTemplate pt2
-        WHERE
-            pt1.potemplatename = pt2.potemplatename AND
-            pt1.sourcepackagename = pt2.sourcepackagename AND
-            pt1.distrorelease = %s AND
-            pt2.distrorelease = %s
-        """ % sqlvalues(child.parentseries, child))
-    cur.execute(
-        "CREATE UNIQUE INDEX temp_equiv_template_pkey "
-        "ON temp_equiv_template(id)")
-    cur.execute(
-        "CREATE UNIQUE INDEX temp_equiv_template_new_id "
-        "ON temp_equiv_template(new_id)")
-    cur.execute("ANALYZE temp_equiv_template")
-
-    # Map parent POTMsgSets to corresponding POTMsgSets in child.
-    cur.execute("""
-        CREATE TEMP TABLE temp_equiv_potmsgset AS
-        SELECT DISTINCT ptms1.id AS id, ptms2.id AS new_id
-        FROM POTMsgSet ptms1, POTMsgSet ptms2, temp_equiv_template
-        WHERE
-            ptms1.potemplate = temp_equiv_template.id AND
-            ptms2.potemplate = temp_equiv_template.new_id AND
-            (ptms1.alternative_msgid = ptms2.alternative_msgid OR
-             (ptms1.alternative_msgid IS NULL AND
-              ptms2.alternative_msgid IS NULL AND
-              ptms1.primemsgid = ptms2.primemsgid AND
-              (ptms1.context = ptms2.context OR
-               (ptms1.context IS NULL AND ptms2.context IS NULL))))
-        """)
-    cur.execute(
-        "CREATE UNIQUE INDEX temp_equiv_potmsgset_pkey "
-        "ON temp_equiv_potmsgset(id)")
-    cur.execute(
-        "CREATE UNIQUE INDEX temp_equiv_potmsgset_new_id "
-        "ON temp_equiv_potmsgset(new_id)")
-    cur.execute("ANALYZE temp_equiv_potmsgset")
-    transaction.commit()
-    transaction.begin()
-
-    holding_tables = {
-        'pofile': copier.getHoldingTableName('POFile'),
-        'pomsgset': copier.getHoldingTableName('POMsgSet'),
-        'posubmission': copier.getHoldingTableName('POSubmission'),
-        }
-
-    query_parameters = {
-        'pofile_holding_table': holding_tables['pofile'],
-        'pomsgset_holding_table': holding_tables['pomsgset'],
-        'posubmission_holding_table': holding_tables['posubmission'],
-        }
-
-    # ### POFile ###
+    This function is not reusable; it only makes sense as a part of
+    `copy_active_translations_as_update`.
+    """
 
     def prepare_pofile_batch(
         holding_table, source_table, batch_size, start_id, end_id):
@@ -349,10 +280,18 @@ def copy_active_translations_as_update(child, transaction, logger):
                 COALESCE(pf.variant, ''::text) AND
             holding.new_id IS NULL
         """ % query_parameters)
-    transaction.commit()
-    transaction.begin()
 
-    # ### POMsgSet ###
+
+def prepare_pomsgset_merge(
+    copier, transaction, query_parameters, holding_tables, logger):
+    """`POFile` chapter of `copy_active_translations_as_update`.
+
+    Extract copies of `POMsgSet`s from parent distroseries, and prepare them
+    for pouring.
+
+    This function is not reusable; it only makes sense as a part of
+    `copy_active_translations_as_update`.
+    """
 
     class PreparePOMsgSetPouring:
         """Prevent pouring of `POMsgSet`s whose `POFile`s weren't poured.
@@ -517,10 +456,17 @@ def copy_active_translations_as_update(child, transaction, logger):
         "CREATE UNIQUE INDEX inert_pomsgset_newid_idx "
         "ON temp_inert_pomsgsets(new_id)")
     cur.execute("ANALYZE temp_inert_pomsgsets")
-    transaction.commit()
-    transaction.begin()
 
-    # ### POSubmission ###
+
+def prepare_posubmission_merge(copier, transaction, holding_tables, logger):
+    """`POSubmission` chapter of `copy_active_translations_as_update`.
+
+    Extract `POSubmission`s to be copied into holding table, and go through
+    preparations for pouring them back.
+
+    This function is not reusable; it only makes sense as a part of
+    `copy_active_translations_as_update`.
+    """
 
     class PreparePOSubmissionPouring:
         """Prevent pouring of `POSubmission`s without `POMsgSet`s."""
@@ -670,58 +616,17 @@ def copy_active_translations_as_update(child, transaction, logger):
         "ON %s (potranslation, pomsgset, pluralform)"
         % holding_tables['posubmission'])
 
-    # Remember which POFiles we will affect, so we can update their stats
-    # later.
-    logger.info("Recording affected POFiles")
-    cur.execute(
-        "CREATE TEMP TABLE temp_changed_pofiles "
-        "AS SELECT new_id AS id FROM %s" % holding_tables['pofile'])
-    cur.execute(
-        "CREATE UNIQUE INDEX temp_changed_pofiles_pkey "
-        "ON temp_changed_pofiles(id)")
-    cur.execute("ANALYZE temp_changed_pofiles")
 
-    # Now get rid of those inert rows whose new_ids we messed with, or
-    # horrible things will happen during pouring.
-    logger.info("Filtering out inert POFiles")
-    cur.execute("""
-        DELETE FROM %(pofile_holding_table)s AS holding
-        USING POFile
-        WHERE holding.id = POFile.id""" % query_parameters)
-    logger.info("Filtering out inert POMsgSets")
-    cur.execute("""
-        DELETE FROM %(pomsgset_holding_table)s AS holding
-        USING POMsgSet
-        WHERE holding.new_id = POMsgSet.id""" % query_parameters)
-    transaction.commit()
-    transaction.begin()
-    cur = cursor()
+def update_statistics_and_flags_post_merge(
+    transaction, holding_tables, logger):
+    """Final chapter of `copy_active_translations_as_update`.
 
-    # We're about to pour.  If the database doesn't have current statistics,
-    # it may botch the optimization.  So we try to make it refresh its
-    # information.
-    # This isn't something we're supposed to do in regular situations, and it
-    # will block (possibly even deadlock) if a vacuum runs at the same time.
-    # To minimize the pain, we try to analyze but move on if we can't acquire
-    # the necessary locks.
-    for holding_table in holding_tables.values():
-        logger.info("Updating statistics on %s." % holding_table)
-        try:
-            cur.execute("LOCK TABLE %s IN SHARE UPDATE EXCLUSIVE MODE NOWAIT"
-                % holding_table)
-        except ProgrammingError, message:
-            logger.info(message)
-            transaction.abort()
-        else:
-            cur.execute("ANALYZE %s" % holding_table)
-            transaction.commit()
-        transaction.begin()
-        cur = cursor()
+    Patch up statistics and flags that don't need to be absolutely current all
+    the time after pouring translations over from parent distroseries.
 
-    # Pour copied rows back to source tables.  Contrary to appearances, this
-    # is where the heavy lifting is done.
-    copier.pour(transaction)
-
+    This function is not reusable; it only makes sense as a part of
+    `copy_active_translations_as_update`.
+    """
     # Where corresponding POMsgSets already exist but are not complete, and
     # so may have been completed, update review-related status.
     class UpdateReviewInfo:
@@ -890,6 +795,152 @@ def copy_active_translations_as_update(child, transaction, logger):
     # Update the statistics cache for every POFile we touched.
     logging.info("Updating statistics on POFiles")
     LoopTuner(UpdatePOFileStats(transaction), 1).run()
+
+
+def copy_active_translations_as_update(child, transaction, logger):
+    """Update child distroseries with translations from parent."""
+    # This function makes extensive use of temporary tables.  Testing with
+    # regular persistent tables revealed frequent lockups as the algorithm
+    # waited for autovacuum to go over the holding tables.  Using temporary
+    # tables means that we cannot let our connection be reset at the end of
+    # every transaction.
+    original_reset_setting = transaction.reset_after_transaction
+    transaction.reset_after_transaction = False
+    full_name = "%s_%s" % (child.distribution.name, child.name)
+    tables = ['POFile', 'POMsgSet', 'POSubmission']
+    copier = MultiTableCopy(
+        full_name, tables, restartable=False, logger=logger)
+
+    copier.dropHoldingTables()
+    drop_tables(cursor(), [
+        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_inert_pomsgsets',
+        'temp_changed_pofiles'])
+
+    # Map parent POTemplates to corresponding POTemplates in child.  This will
+    # come in handy later.
+    cur = cursor()
+    cur.execute("""
+        CREATE TEMP TABLE temp_equiv_template AS
+        SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
+        FROM POTemplate pt1, POTemplate pt2
+        WHERE
+            pt1.potemplatename = pt2.potemplatename AND
+            pt1.sourcepackagename = pt2.sourcepackagename AND
+            pt1.distrorelease = %s AND
+            pt2.distrorelease = %s
+        """ % sqlvalues(child.parentseries, child))
+    cur.execute(
+        "CREATE UNIQUE INDEX temp_equiv_template_pkey "
+        "ON temp_equiv_template(id)")
+    cur.execute(
+        "CREATE UNIQUE INDEX temp_equiv_template_new_id "
+        "ON temp_equiv_template(new_id)")
+    cur.execute("ANALYZE temp_equiv_template")
+
+    # Map parent POTMsgSets to corresponding POTMsgSets in child.
+    cur.execute("""
+        CREATE TEMP TABLE temp_equiv_potmsgset AS
+        SELECT DISTINCT ptms1.id AS id, ptms2.id AS new_id
+        FROM POTMsgSet ptms1, POTMsgSet ptms2, temp_equiv_template
+        WHERE
+            ptms1.potemplate = temp_equiv_template.id AND
+            ptms2.potemplate = temp_equiv_template.new_id AND
+            (ptms1.alternative_msgid = ptms2.alternative_msgid OR
+             (ptms1.alternative_msgid IS NULL AND
+              ptms2.alternative_msgid IS NULL AND
+              ptms1.primemsgid = ptms2.primemsgid AND
+              (ptms1.context = ptms2.context OR
+               (ptms1.context IS NULL AND ptms2.context IS NULL))))
+        """)
+    cur.execute(
+        "CREATE UNIQUE INDEX temp_equiv_potmsgset_pkey "
+        "ON temp_equiv_potmsgset(id)")
+    cur.execute(
+        "CREATE UNIQUE INDEX temp_equiv_potmsgset_new_id "
+        "ON temp_equiv_potmsgset(new_id)")
+    cur.execute("ANALYZE temp_equiv_potmsgset")
+    transaction.commit()
+    transaction.begin()
+
+    holding_tables = {
+        'pofile': copier.getHoldingTableName('POFile'),
+        'pomsgset': copier.getHoldingTableName('POMsgSet'),
+        'posubmission': copier.getHoldingTableName('POSubmission'),
+        }
+
+    query_parameters = {
+        'pofile_holding_table': holding_tables['pofile'],
+        'pomsgset_holding_table': holding_tables['pomsgset'],
+        'posubmission_holding_table': holding_tables['posubmission'],
+        }
+
+    prepare_pofile_merge(copier, transaction, query_parameters)
+    transaction.commit()
+    transaction.begin()
+
+    prepare_pomsgset_merge(
+        copier, transaction, query_parameters, holding_tables, logger)
+    transaction.commit()
+    transaction.begin()
+
+    prepare_posubmission_merge(copier, transaction, holding_tables, logger)
+    transaction.commit()
+    transaction.begin()
+
+    # Remember which POFiles we will affect, so we can update their stats
+    # later.
+    logger.info("Recording affected POFiles")
+    cur.execute(
+        "CREATE TEMP TABLE temp_changed_pofiles "
+        "AS SELECT new_id AS id FROM %s" % holding_tables['pofile'])
+    cur.execute(
+        "CREATE UNIQUE INDEX temp_changed_pofiles_pkey "
+        "ON temp_changed_pofiles(id)")
+    cur.execute("ANALYZE temp_changed_pofiles")
+
+    # Now get rid of those inert rows whose new_ids we messed with, or
+    # horrible things will happen during pouring.
+    logger.info("Filtering out inert POFiles")
+    cur.execute("""
+        DELETE FROM %(pofile_holding_table)s AS holding
+        USING POFile
+        WHERE holding.id = POFile.id""" % query_parameters)
+    logger.info("Filtering out inert POMsgSets")
+    cur.execute("""
+        DELETE FROM %(pomsgset_holding_table)s AS holding
+        USING POMsgSet
+        WHERE holding.new_id = POMsgSet.id""" % query_parameters)
+    transaction.commit()
+    transaction.begin()
+    cur = cursor()
+
+    # We're about to pour.  If the database doesn't have current statistics,
+    # it may botch the optimization.  So we try to make it refresh its
+    # information.
+    # This isn't something we're supposed to do in regular situations, and it
+    # will block (possibly even deadlock) if a vacuum runs at the same time.
+    # To minimize the pain, we try to analyze but move on if we can't acquire
+    # the necessary locks.
+    for holding_table in holding_tables.values():
+        logger.info("Updating statistics on %s." % holding_table)
+        try:
+            cur.execute("LOCK TABLE %s IN SHARE UPDATE EXCLUSIVE MODE NOWAIT"
+                % holding_table)
+        except ProgrammingError, message:
+            logger.info(message)
+            transaction.abort()
+        else:
+            cur.execute("ANALYZE %s" % holding_table)
+            transaction.commit()
+        transaction.begin()
+        cur = cursor()
+
+    # Pour copied rows back to source tables.  Contrary to appearances, this
+    # is where the heavy lifting is done.
+    copier.pour(transaction)
+
+    update_statistics_and_flags_post_merge(
+        transaction, holding_tables, logger)
 
     # Clean up after ourselves, in case we get called again this session.
     drop_tables(cursor(), [

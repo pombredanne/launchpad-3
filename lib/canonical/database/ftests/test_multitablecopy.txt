@@ -580,7 +580,7 @@ be useful to make last-moment changes to your holding table based on things
 that may have happened while pouring previous tables.
 
 A pre-pouring callback receives as arguments the name of the holding table
-being poured from, and the name of the source table that data is being poured
+being poured from and the name of the source table that data is being poured
 back into.
 
     >>> def textual_prepour(holding_table, source_table):
@@ -627,11 +627,10 @@ The callbacks are called only while pouring, once per batch.
     >>> copier.pour(ztm)
     Pouring textual
     Pouring text from "temp_textual_holding_test" to textual
-    Pouring text from "temp_textual_holding_test" to textual
     ...
     Pouring numeric
     Pouring numbers from "temp_numeric_holding_test" to numeric
-    Pouring numbers from "temp_numeric_holding_test" to numeric
+    ...
 
 
 == Cleanup ==

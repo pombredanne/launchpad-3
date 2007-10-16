@@ -91,11 +91,15 @@ class PouringLoop:
         self.transaction_manager.commit()
         self.transaction_manager.begin()
         self.cur = cursor()
-        # Disable slow sequential scans.  These may happen a lot otherwise
-        # because the database server is reluctant to use indexes on tables
-        # that undergo large changes.  We do this for every commit since
-        # initZopeless resets our database connection with every new
-        # transaction.
+        # Disable slow sequential scans.  The database server is reluctant to
+        # use indexes on tables that undergo large changes, such as the
+        # deletion of large numbers of rows in this case.  Usually it's
+        # right but in this case it seems to slow things down dramatically and
+        # unnecessarily.  We disable sequential scans for every commit since
+        # initZopeless by default resets our database connection with every
+        # new transaction.
+        # MultiTableCopy disables sequential scans for the first batch; this
+        # just renews our setting after the connection is reset.
         postgresql.allow_sequential_scans(self.cur, False)
 
     def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
@@ -583,6 +587,10 @@ class MultiTableCopy:
                 % (holding_table, time.time()-tablestarttime))
 
             cur = self._commit(transaction_manager)
+
+        # In future, let the database perform sequential scans again if it
+        # decides that's best.
+        postgresql.allow_sequential_scans(cur, True)
 
     def _pourTable(
         self, holding_table, table, has_new_id, transaction_manager):
