@@ -94,8 +94,8 @@ class CodeImportEventSet:
     def beginModify(self, code_import):
         """See `ICodeImportEventSet`."""
         assert code_import is not None
-        iter_items = self._iterItemsForSnapshot(code_import)
-        return CodeImportEventToken(iter_items)
+        items = list(self._iterItemsForSnapshot(code_import))
+        return CodeImportEventToken(items)
 
     def newModify(self, code_import, person, token):
         """See `ICodeImportEventSet`."""
@@ -207,5 +207,5 @@ class CodeImportEventToken:
 
     implements(ICodeImportEventToken)
 
-    def __init__(self, iterable):
-        self.items = list(iterable)
+    def __init__(self, items):
+        self.items = items

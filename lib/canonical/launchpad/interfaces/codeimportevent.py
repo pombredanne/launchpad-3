@@ -253,7 +253,10 @@ class ICodeImportEventSet(Interface):
     def beginModify(code_import):
         """Create the token to give to `newModify`.
 
-        Should only be called by CodeImport methods.
+        Should only be called by `CodeImport` methods.
+
+        The token records the state of the code import before modification, it
+        lets newModify find what changes were done.
 
         :param code_import: `CodeImport` that will be modified.
         :return: `CodeImportEventToken` to pass to `newModify`.
@@ -262,7 +265,7 @@ class ICodeImportEventSet(Interface):
     def newModify(code_import, person, token):
         """Record a modification to a `CodeImport` object.
 
-        Should only be called by CodeImport methods.
+        Should only be called by `CodeImport` methods.
 
         If no change is found between the code import and the data saved in
         the token, the modification is considered non-significant and no

@@ -253,9 +253,11 @@ however.
 
 == Modifying CodeImports ==
 
-The ICodeImport interface does not allow setting any attribute.
-Modifications to security-proxied CodeImport objects must be done using
-setter methods that can create CodeImportEvent objects when appropriate.
+Modifications to CodeImport objects must be done using setter methods
+that create CodeImportEvent objects when appropriate. This is enforced
+by preventing the setting of any attribute through the ICodeImport
+interface.
+
 
 Even though David can access CodeImportObjects, he cannot set attributes
 on those objects.

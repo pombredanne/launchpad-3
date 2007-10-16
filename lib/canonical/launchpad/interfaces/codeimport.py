@@ -112,7 +112,7 @@ class ICodeImport(Interface):
 
         Create a MODIFY `CodeImportEvent` if needed.
 
-        :param data: dict whose keys are attribute names and values are
+        :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
