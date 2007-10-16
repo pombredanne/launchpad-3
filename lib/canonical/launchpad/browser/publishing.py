@@ -18,7 +18,7 @@ class BasePublishingRecordView(LaunchpadView):
     """Base Publishing view class."""
 
     def wasDeleted(self):
-        """Whether or not a publishing record  deletion was requested.
+        """Whether or not a publishing record deletion was requested.
 
         A publishing record deletion represents the explicit request from a
         archive-administrator (self.remove_by) to purge the published contents
