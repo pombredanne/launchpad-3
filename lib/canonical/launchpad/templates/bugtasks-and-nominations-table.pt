@@ -35,6 +35,7 @@
 </table>
 
 <div style="text-align: right; margin-bottom: 1em;"
+     tal:condition="view/displayAlsoAffectsLinks"
      tal:define="current_bugtask view/currentBugTask">
 
   Also affects:
