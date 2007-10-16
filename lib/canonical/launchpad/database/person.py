@@ -51,8 +51,10 @@ from canonical.launchpad.interfaces import (
     ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
     JoinNotAllowed, LoginTokenType, PersonCreationRationale,
     QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
