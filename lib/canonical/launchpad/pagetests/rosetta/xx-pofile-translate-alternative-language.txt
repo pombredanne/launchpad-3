@@ -38,8 +38,8 @@ since that is the one language we always translate from, never to.
 
 The same goes for a user who has no preferred languages set.
 
-    >>> user_browser.addHeader(
-    ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> user_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> user_browser.open(translate_page)
     >>> get_alternative_languages_widget(user_browser).displayOptions[:4]
     ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']

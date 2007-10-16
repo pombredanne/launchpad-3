@@ -1,0 +1,1714 @@
+= Launchpad Bugs e-mail interface =
+
+Launchpad's bugtracker has an e-mail interface, with which you may report new
+bugs, add comments, and change the details of existing bug reports. Commands
+can be interleaved within a comment, so to distinguish them from the comment,
+they must be indented with at least one space or tab character.
+
+== Submit a new bug ==
+
+To report a bug, you send an OpenPGP-signed e-mail message to
+new@bugs.launchpad-domain. You must have registered your key in
+Launchpad as well. The subject of the email will be used as the summary
+of the bug, and the body will be used as the description. In the body of
+the email you have tell on what you file a bug, either a product or a
+distribution. You do so by issuing an 'affects' command. The simplest
+case is either:
+
+    affects $product_name
+
+to file a bug on a product, or:
+
+    affects $distribution_name
+
+to file a bug on a distribution. And if you want to file a bug on a
+specific source package in a distribution:
+
+    affects $distribution_name/$sourcepackage_name
+
+You can also file bugs on specific distribution series:
+
+    affects $distribution_name/$series_name
+    affects $distribution_name/$series_name/$sourcepackage_name
+
+But if you want you can use any of the available commands as well.
+
+Let's take an example where we file a bug on Firefox:
+
+    >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: new@bugs.launchpad.ubuntu.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: A bug in Firefox
+    ...
+    ... There is a bug in Firefox.
+    ...
+    ...  affects firefox"""
+
+Now, in order to really submit the bug, this email would have to be PGP
+signed, so that the system can verify the sender. But to avoid having
+to sign each email, we'll create a class which fakes a signed email:
+
+    >>> import email
+    >>> import email.Utils
+    >>> class MockSignedMessage(email.Message.Message):
+    ...     @property
+    ...     def signedMessage(self):
+    ...         return self
+    ...     signature = object()
+
+And since we'll pass the email directly to the correct handler,
+we'll have to authenticate the user manually:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+
+Now if we pass the message to the Malone handler, we can see that the
+bug got submitted correctly:
+
+    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> handler = MaloneHandler()
+    >>> def process_email(raw_mail):
+    ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
+    ...     if not msg.has_key('Message-Id'):
+    ...         msg['Message-Id'] = email.Utils.make_msgid()
+    ...     handler.process(msg, msg['To'])
+
+    >>> process_email(submit_mail)
+
+    >>> import transaction
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.mail import stub
+    >>> bugset = getUtility(IBugSet)
+    >>> from canonical.launchpad.database import BugNotification
+    >>> def get_latest_added_bug():
+    ...     latest_notification = BugNotification.selectFirst(orderBy='-id')
+    ...     return latest_notification.bug
+    >>> bug = get_latest_added_bug()
+
+    >>> print bug.title
+    A bug in Firefox
+    >>> print bug.description
+    There is a bug in Firefox.
+    <BLANKLINE>
+     affects firefox
+
+Also, an upstream bug task was added to it:
+
+    >>> len(bug.bugtasks)
+    1
+    >>> upstream_task = bug.bugtasks[0]
+    >>> print upstream_task.product.name
+    firefox
+
+And the entire body of the email was added as a comment:
+
+    >>> bug.messages.count()
+    1
+    >>> comment = bug.messages[0]
+    >>> print comment.title
+    A bug in Firefox
+    >>> print comment.text_contents
+    There is a bug in Firefox.
+    <BLANKLINE>
+     affects firefox
+
+The owner of the bug was set to the submitter:
+
+    >>> print bug.owner.displayname
+    Foo Bar
+
+A notification was added:
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.message.owner.displayname
+    Foo Bar
+
+    >>> bug_notification.message == bug.initial_message
+    True
+
+We define a helper to pretty-print the notification recipients:
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
+    >>> def getSubscribers(bug):
+    ...     recipients = bug.getBugNotificationRecipients()
+    ...     return recipients.getEmails()
+
+Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
+subscribed "implicitly", because he's the product owner.
+
+    >>> added_bug = bug_notification.bug
+    >>> getSubscribers(added_bug)
+    ['foo.bar@canonical.com', 'test@canonical.com']
+
+If we would file a bug on Ubuntu instead, we would submit a mail like
+this:
+
+    >>> login('test@canonical.com')
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: A bug in Ubuntu's Mozilla package
+    ...
+    ... There's a bug in Ubuntu.
+    ...  affects ubuntu/mozilla-firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> print bug.title
+    A bug in Ubuntu's Mozilla package
+
+    >>> distrotask = bug.bugtasks[0]
+    >>> print distrotask.distribution.name
+    ubuntu
+    >>> print distrotask.sourcepackagename.name
+    mozilla-firefox
+
+A notification was added:
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.message.owner.displayname
+    Sample Person
+
+    >>> bug_notification.message == bug.initial_message
+    True
+
+Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
+subscribed "implicitly" since he's a bug contact for the mozilla
+package:
+
+    >>> getSubscribers(added_bug)
+    ['foo.bar@canonical.com', 'test@canonical.com']
+
+It's possible to file a bug on more than product/package at once:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Affects many packages
+    ...
+    ... A widespread bug.
+    ...  affects debian/evolution
+    ...  affects debian/mozilla-firefox
+    ...  affects evolution
+    ...  affects firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> print bug.title
+    Affects many packages
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetname
+    evolution
+    firefox
+    evolution (Debian)
+    mozilla-firefox (Debian)
+
+
+If the subject is folded (i.e spans more than one line), it will be
+unfolded before the bug subject is assigned.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:43 BST 2005
+    ... Subject: A folded
+    ...  email subject
+    ...
+    ...  affects firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> bug.title
+    u'A folded email subject'
+
+
+== Add a comment ==
+
+After a bug has been submitted a notification is sent out. The reply-to
+address is set to the bug address, $bugid@malone-domain. We can send
+emails to this address in order to add new comments to the bug. Note
+that we can interleave commands in the comment as well. If the comment
+includes commands, the email has to be OpenPGP-signed.
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test1>
+    ... Subject: New comment to bug 1
+    ...
+    ... Adding a comment via the email system. Let's change the summary
+    ... as well:
+    ...     summary "Better summary"
+    ...
+    ... /Sample Person
+    ... """
+
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> bug_one = bugset.get(1)
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
+    >>> added_message in bug_one.messages
+    True
+    >>> print bug_one.title
+    Better summary
+
+If the message doesn't have a Reference or In-Reply-To header, the
+parent will be set to the bug's initial message.
+
+    >>> added_message.parent == bug_one.initial_message
+    True
+
+
+== Edit bugs ==
+
+Sometimes you may want to simply edit a bug, without adding a comment.
+For that you can send mails to edit@malone-domain.
+
+    >>> bug_four = bugset.get(4)
+    >>> bug_five = bugset.get(5)
+    >>> bug_four_comments = bug_four.messages.count()
+    >>> bug_five_comments = bug_five.messages.count()
+    >>> edit_mail = """From: test@canonical.com
+    ... To: edit@malone-domain
+    ... Date: Fri Jun 17 10:10:23 BST 2005
+    ... Subject: Not important
+    ...
+    ...     bug 4
+    ...     summary "Changed summary"
+    ...
+    ... It won't break if we write some stuff here.
+    ...
+    ...     bug 5
+    ...     summary "Nicer summary"
+    ... """
+
+    >>> process_email(edit_mail)
+    >>> transaction.commit()
+
+No comments were added to the bugs:
+
+    >>> bug_four.messages.count() == bug_four_comments
+    True
+    >>> bug_five.messages.count() == bug_five_comments
+    True
+
+And the summaries were changed:
+
+    >>> print bug_four.title
+    Changed summary
+    >>> print bug_five.title
+    Nicer summary
+
+== GPG signing and adding comments ==
+
+In order to include commands in the comment, the email has to be GPG
+signed. The key used to sign the email has to be associated with the
+authenticated person in Launchpad. It happens quite often, though, that
+people who haven't registered their key in Launchpad sign their emails
+even though the only want to add a comment. These comments should of
+course not be rejected just because their key wasn't registered in
+Launchpad.
+
+To make a difference between if an email was signed with a key
+registered in Launchpad or not, we can look at which interfaces the
+currently authenticated principal provides. If the email used for
+authentication was unsigned or signed with a key, which isn't
+associated with the authenticated Person in Launchpad, the principal
+will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
+principal with that.
+
+    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from zope.interface import directlyProvides, directlyProvidedBy
+    >>> from zope.security.management import queryInteraction
+    >>> participations = queryInteraction().participations
+    >>> len(participations)
+    1
+    >>> current_principal = participations[0].principal
+    >>> directlyProvides(
+    ...     current_principal, directlyProvidedBy(current_principal),
+    ...     IWeaklyAuthenticatedPrincipal)
+
+
+Now we send a comment containing commands.
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Dec 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test2>
+    ... Subject: Change the summary
+    ...
+    ... Adding a comment via the email system. Let's change the summary
+    ... as well:
+    ...     summary "New summary"
+    ...
+    ... /Sample Person
+    ... """
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+The Malone handler saw that this email was signed, but since
+IWeaklyAuthenticatedPrincipal was provided by the current principal, no
+changes was made to the bug, and the comment wasn't added.
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
+    Traceback (most recent call last):
+    ...
+    NotFoundError:...
+
+    >>> bug_one = bugset.get(1)
+    >>> print bug_one.title
+    Better summary
+
+And an error message was sent to the Sample Person, telling him what's
+wrong.
+
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     sent_msg = email.message_from_string(raw_message)
+    ...     error_mail, original_mail = sent_msg.get_payload()
+    ...     print "Subject: %s" % sent_msg['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The message you sent included commands to modify the bug report, but
+    your OpenPGP key isn't imported into Launchpad. Please go to
+    http://launchpad.dev/~name12/+editpgpkeys to import your key.
+    ...
+
+The same will happen if we send the same email without signing it:
+
+    >>> class MockUnsignedMessage(email.Message.Message):
+    ...     signedMessage = None
+    ...     signature = None
+    >>> msg = email.message_from_string(
+    ...     comment_mail, _class=MockUnsignedMessage)
+    >>> handler.process(msg, msg['To'])
+    True
+    >>> transaction.commit()
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
+    Traceback (most recent call last):
+    ...
+    NotFoundError:...
+
+    >>> bug_one = bugset.get(1)
+    >>> print bug_one.title
+    Better summary
+
+A different error message is sent, though:
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The message you sent included commands to modify the bug report, but you
+    didn't sign the message with your OpenPGP key.
+    ...
+
+
+If we don't include any commands in the comment, it will be added
+to the bug:
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Dec 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test3>
+    ... Subject: Change the summary
+    ...
+    ... Adding a comment via the email system.
+    ...
+    ... /Sample Person
+    ... """
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test3>')[0]
+    >>> bug_one = bugset.get(1)
+    >>> added_message in bug_one.messages
+    True
+
+Unmark the principal:
+
+    >>> provided_interfaces = directlyProvidedBy(current_principal)
+    >>> directlyProvides(
+    ...     current_principal,
+    ...     provided_interfaces - IWeaklyAuthenticatedPrincipal)
+
+
+== Commands == 
+
+Now let's take a closer look at all the commands that are available for
+us to play with. First we define a function to easily submit commands
+to edit bug 4:
+
+    >>> def submit_commands(bug, *commands):
+    ...     edit_mail = ("From: test@canonical.com\n"
+    ...                  "To: edit@malone-domain\n"
+    ...                  "Date: Fri Jun 17 10:10:23 BST 2005\n"
+    ...                  "Subject: Not important\n"
+    ...                  "\n"
+    ...                  " bug %d\n" % bug.id)
+    ...     edit_mail += ' ' + '\n '.join(commands)
+    ...     process_email(edit_mail)
+    ...     transaction.commit()
+
+
+=== bug $bugid ===
+
+Switches what bug you want to edit. Example:
+
+    bug 42
+
+If we specify a bug number that doesn't exist, an error message is
+returned:
+
+    >>> submit_commands(bug_four, 'bug 42')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        bug 42
+    ...
+    There is no such bug in Launchpad: 42
+    ...
+
+And if we specify neither 'new' or an integer:
+
+    >>> submit_commands(bug_four, 'bug foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        bug foo
+    ...
+    The 'bug' command expects either 'new' or a bug id.
+    <BLANKLINE>
+    For example, to create a new bug:
+    <BLANKLINE>
+        bug new
+    <BLANKLINE>
+    To edit or comment on an existing bug:
+    <BLANKLINE>
+        bug 1
+    ...
+
+
+=== summary "$summary" ===
+
+Changes the summary of the bug. The title has to be enclosed in
+quotes. Example:
+
+    >>> submit_commands(bug_four, 'summary "New summary"')
+    >>> print bug_four.title
+    New summary
+
+Whitespace will be preserved in the title:
+
+    >>> submit_commands(bug_four, 'summary "New             summary"')
+    >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
+    New             summary
+
+If we omit the quotes, there will be an error:
+
+    >>> submit_commands(bug_four, 'summary New summary')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        summary New summary
+    ...
+    Please enclose the new summary within quotes. For example:
+    <BLANKLINE>
+        summary "This is a new summary"
+    ...
+
+
+=== private yes|no ===
+
+Changes the visibility of the bug. Example:
+
+(We'll subscribe Sample Person to this bug before marking it private, otherwise
+permission to complete the operation will be denied.)
+
+    >>> subscription = bug_four.subscribe(bug_four.owner)
+
+    >>> submit_commands(bug_four, 'private yes')
+    >>> bug_four.private
+    True
+
+    >>> submit_commands(bug_four, 'private no')
+    >>> bug_four.private
+    False
+
+Specifying something else than 'yes' or 'no' produces an error:
+
+    >>> submit_commands(bug_four, 'private whatever')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        private whatever
+    ...
+    The 'private' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        private yes
+    ...
+
+
+=== security yes|no ===
+
+Changes the security flag of the bug. Example:
+
+    >>> bug_four.private
+    False
+    >>> bug_four.security_related
+    False
+
+    >>> submit_commands(bug_four, 'security yes')
+    >>> bug_four.security_related
+    True
+
+Switching on the security flag will also make the bug private, since
+most often security bugs should be private as well.
+
+    >>> bug_four.private
+    True
+
+Switching off the security flag won't make the bug public, though.
+
+    >>> submit_commands(bug_four, 'security no')
+    >>> bug_four.security_related
+    False
+
+    >>> bug_four.private
+    True
+    >>> bug_four.private = False
+
+Specifying something else than 'yes' or 'no' produces an error:
+
+    >>> submit_commands(bug_four, 'security whatever')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        security whatever
+    ...
+    The 'security' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        security yes
+    ...
+
+=== subscribe [$name|$email] ===
+
+Subscribes yourself or someone else to the bug. All arguments are
+optional. If you don't specify a name, the sender of the email will
+be subscribed. Examples:
+
+    >>> subscriptions = [subscription.person.name
+    ...                  for subscription in bug_four.subscriptions]
+    >>> subscriptions.sort()
+    >>> subscriptions
+    [u'name12']
+
+
+    >>> submit_commands(bug_four, 'subscribe')
+    >>> 'Sample Person' in [subscription.person.displayname
+    ...                     for subscription in bug_four.subscriptions]
+    True
+    >>> submit_commands(bug_four, 'subscribe foo.bar@canonical.com')
+    >>> 'Foo Bar' in [subscription.person.displayname
+    ...               for subscription in bug_four.subscriptions]
+    True
+    >>> submit_commands(bug_four, 'subscribe sabdfl')
+    >>> 'Mark Shuttleworth' in [subscription.person.displayname
+    ...                         for subscription in bug_four.subscriptions]
+    True
+
+If we specify a non-existant user, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'subscribe non_existant@canonical.com')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        subscribe non_existant@canonical.com
+    ...
+    There's no such person with the specified name or email:
+    non_existant@canonical.com
+    ...
+
+=== unsubscribe [$name|$email] ===
+
+Unsubscribes yourself or someone else from the bug.  If you don't
+specify a name or email, the sender of the email will be
+unsubscribed. Examples:
+
+    >>> submit_commands(bug_four, 'unsubscribe sabdfl')
+    >>> 'Mark Shuttleworth' in [subscription.person.displayname
+    ...                         for subscription in bug_four.subscriptions]
+    False
+    >>> submit_commands(bug_four, 'unsubscribe foo.bar@canonical.com')
+    >>> 'Foo Bar' in [subscription.person.displayname
+    ...               for subscription in bug_four.subscriptions]
+    False
+    >>> submit_commands(bug_four, 'unsubscribe')
+    >>> 'Sample Person' in [subscription.person.displayname
+    ...                     for subscription in bug_four.subscriptions]
+    False
+
+Unsubscribing from a bug also unsubscribes you from its duplicates. To
+demonstrate, let's first make no_privs an indirect subscriber from bug
+#5, by subscribing him directly to a dupe of bug #5, bug #6.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+    >>> login("no-priv@canonical.com")
+
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
+    >>> bug_five = bugset.get(5)
+    >>> bug_six = bugset.get(6)
+    >>> bug_six.duplicateof == bug_five
+    True
+
+    >>> sorted([subscriber.displayname
+    ...  for subscriber in bug_five.getIndirectSubscribers()])
+    [u'Foo Bar', u'Sample Person']
+
+    >>> bug_six.subscribe(no_priv)
+    <BugSubscription...>
+
+    >>> sorted([subscriber.displayname
+    ...  for subscriber in bug_five.getIndirectSubscribers()])
+    [u'Foo Bar', u'No Privileges Person', u'Sample Person']
+
+Now, if we unsubscribe no-priv from bug #5, he will actually get
+unsubscribed from bug #6, thus no longer being indirectly subscribed to
+bug #5.
+
+    >>> bug_six.isSubscribed(no_priv)
+    True
+
+    >>> submit_commands(bug_five, "unsubscribe")
+
+    >>> bug_six.isSubscribed(no_priv)
+    False
+
+    >>> sorted([subscriber.displayname
+    ...  for subscriber in bug_five.getIndirectSubscribers()])
+    [u'Foo Bar', u'Sample Person']
+
+(Log back in as test@canonical.com for the tests that follow.)
+
+    >>> login("test@canonical.com")
+
+If we specify a non-existant user, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'unsubscribe non_existant')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        unsubscribe non_existant
+    ...
+    There's no such person with the specified name or email: non_existant
+    ...
+
+Let's subscribe Sample Person to the bug again, so that it has at least
+one subscriber:
+
+    >>> submit_commands(bug_four, 'subscribe test@canonical.com')
+
+
+=== tag $tag ===
+
+The 'tag' command assigns a tag to a bug. Using this command we will add the
+tags foo and bar to the bug. Adding a single tag multiple times should
+only result in the tag showing up once on the bug.
+
+    >>> submit_commands(bug_four, 'tag foo bar foo bar')
+    >>> for tag in bug_four.tags:
+    ...     print tag
+    bar
+    foo
+    layout-test
+
+We can also use the tag command to remove tags.
+
+    >>> submit_commands(bug_four, 'tag -foo')
+    >>> for tag in bug_four.tags:
+    ...     print tag
+    bar
+    layout-test
+
+Trying to remove a tag that is not assigned will result in an error message
+being sent.
+
+    >>> submit_commands(bug_four, 'tag -foobar')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag -foobar
+    ...
+    The tag you tried to remove is not assigned to this bug: foobar
+    ...
+
+If we specify an invalid tag to be added, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'tag bad_tag')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag bad_tag
+    ...
+    A tag you specified is invalid: bad_tag
+    <BLANKLINE>
+    Tags can only contain alphanumeric characters.
+    ...
+
+We will receive the same message if we specify an invalid tag to be removed:
+
+    >>> submit_commands(bug_four, 'tag -bad_tag')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag -bad_tag
+    ...
+    A tag you specified is invalid: bad_tag
+    <BLANKLINE>
+    Tags can only contain alphanumeric characters.
+    ...
+
+
+=== duplicate $bug_id ===
+
+The 'duplicate' command marks a bug as a duplicate of another bug.
+
+    >>> bug_four.duplicateof is None
+    True
+    >>> submit_commands(bug_four, 'duplicate 1')
+    >>> bug_four.duplicateof.id
+    1
+
+It's possible to unmark a bug as a duplicate by specifying 'no' as the
+bug id.
+
+    >>> submit_commands(bug_four, 'duplicate no')
+    >>> bug_four.duplicateof is None
+    True
+
+The bug id can also be the bug's name.
+
+    >>> submit_commands(bug_four, 'duplicate blackhole')
+    >>> bug_four.duplicateof.name
+    u'blackhole'
+
+An error message is sent if a nonexistent bug id is given.
+
+    >>> submit_commands(bug_four, 'duplicate nonexistent')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate nonexistent
+    ...
+    There is no such bug in Launchpad: nonexistent
+    ...
+
+
+If the specified bug already is a duplicate, an error message is sent,
+telling you that you what bug it's a duplicate of.
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two.duplicateof is None
+    True
+    >>> submit_commands(bug_two, 'duplicate 4')
+    >>> bug_two.duplicateof is None
+    True
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 4
+    ...
+    Bug 4 is already a duplicate of bug 2. You can only duplicate to
+    bugs that are not duplicates themselves.
+    ...
+
+If the specified bug has other bugs marked as a duplicate of it, an
+error message is sent telling you this.
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.duplicateof.id
+    2
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(bug_four)
+    >>> submit_commands(bug_four.duplicateof, 'duplicate 1')
+    >>> bug_four.duplicateof.id
+    2
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 1
+    ...
+    There are other bugs already marked as duplicates of Bug 2.
+    These bugs should be changed to be duplicates of another bug
+    if you are certain you would like to perform this change.
+    ...
+
+
+=== cve $cve ===
+
+The 'cve' command associates a bug with a CVE reference.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> def new_firefox_bug():
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     return firefox.createBug(CreateBugParams(
+    ...         getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'cve CVE-1999-8979')
+    >>> for cve in bug.cves:
+    ...     print cve.displayname
+    CVE-1999-8979
+
+If the CVE sequence can't be found, an error message is sent to the
+user.
+
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'cve no-such-cve')
+    >>> bug.cves.count()
+    0
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        cve no-such-cve
+    ...
+    Launchpad can't find the CVE "no-such-cve".
+    ...
+
+=== affects, assignee, status, importance ===
+
+affects $path [assignee $name|$email|nobody]
+              [status $status]
+              [importance $importance]
+
+XXX: This section should be split into four different sections, one for
+     each command. It used to be possible to write
+     'affects /foo status confirmed', but it's not anymore.  'affects',
+     'status', 'importance' and 'assignee' are different commands, and
+     they need to be on separate lines. There's no such thing as a sub
+     command anymore.  -- Bjorn Tillenius, 2006-04-06
+
+Change the state of a bug in a specific context. $path can be of
+the following form:
+
+    $productname
+    $productname/$series
+    $distroname
+    $distroname/$sourcepackagename
+    $distroname/$series
+    $distroname/$series/$sourcepackagename
+
+If there is no task with the specified $path target, a new task is
+created:
+
+    >>> stub.test_emails = []
+    >>> len(bug_four.bugtasks)
+    1
+    >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
+    False
+    >>> submit_commands(bug_four, 'affects debian')
+    >>> len(bug_four.bugtasks)
+    2
+    >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
+    True
+
+A notification was added:
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.message.text_contents
+    ** Also affects: debian
+    ...
+
+Submitting the same thing again doesn't do anything, since the task
+already exists:
+
+    >>> submit_commands(bug_four, 'affects debian')
+    >>> len(bug_four.bugtasks)
+    2
+
+We can change the assignee, status, and importance using the sub
+commands. It's possible to have these sub commands on separate lines:
+
+    >>> submit_commands(
+    ...     bug_four, 'affects debian',
+    ...     'importance critical','status confirmed',
+    ...     'assignee test@canonical.com')
+
+    >>> len(bug_four.bugtasks)
+    2
+    >>> debian_task = bug_four.bugtasks[-1]
+    >>> print debian_task.importance.name
+    CRITICAL
+    >>> print debian_task.status.name
+    CONFIRMED
+    >>> print debian_task.assignee.displayname
+    Sample Person
+
+Like the web UI, we can assign a bug to nobody.
+
+    >>> submit_commands(
+    ...     bug_four, 'affects debian',
+    ...     'assignee nobody')
+    >>> debian_task.assignee is None
+    True
+
+To set which source package the bug affects, we use:
+
+    >>> submit_commands(bug_four, 'affects debian/mozilla-firefox')
+    >>> len(bug_four.bugtasks)
+    2
+    >>> debian_task = bug_four.bugtasks[-1]
+    >>> print debian_task.sourcepackagename.name
+    mozilla-firefox
+
+If we specify another source package in the same distribution, a new
+task will be created:
+
+    >>> submit_commands(bug_four, 'affects debian/evolution')
+    >>> len(bug_four.bugtasks)
+    3
+    >>> evolution_task = bug_four.bugtasks[-2]
+    >>> print evolution_task.sourcepackagename.name
+    evolution
+
+It's also possible to add tasks for specific distribution serieses as
+well.
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary')
+
+This caused one bugtask to be added to the bug. The added bug task is a
+generic Ubuntu task, though.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Ubuntu
+
+Because Sample Person isn't a driver of Ubuntu, he's not allowed to
+target a bug directly, instead a nomination was created.
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetdisplayname
+    Ubuntu Hoary
+
+The same happens if we try to target another series.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetdisplayname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+Targeting an existing nomination won't create another nomination.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetdisplayname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+If Sample Person would be the Ubuntu driver, he'll be able to target
+bugs directly to serieses.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> login('test@canonical.com')
+
+Now a new bugtask for the series will be create directly.
+
+    >>> submit_commands(bug, 'affects ubuntu/grumpy')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Ubuntu
+    Ubuntu Grumpy
+
+He can also approve existing nominations.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Ubuntu
+    Ubuntu Warty
+    Ubuntu Grumpy
+
+It works the same when specifying a source package while targeting a
+specific distroseries.
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
+
+Now we can see that two tasks were created; both the general Ubuntu
+task, and the series specific task.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Ubuntu Hoary)
+
+As with the example with no source package above; if the user isn't a
+driver of the series, only a nomination will be created.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = None
+    >>> login('test@canonical.com')
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    mozilla-firefox (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetdisplayname
+    Ubuntu Hoary
+
+Nominating product series work the same way as for distro serieses.
+Sample person is a driver for the Firefox trunk series, so the
+nomination is automatically approved.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for driver in firefox.getSeries('trunk').drivers:
+    ...     print driver.displayname
+    Sample Person
+
+    >>> login('test@canonical.com')
+    >>> submit_commands(bug, 'affects /firefox/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
+    mozilla-firefox (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetdisplayname
+    Mozilla Firefox trunk
+    Ubuntu Hoary
+
+If the user doesn't have permission to approve the nomination, no series
+bug task will be created, only a nomination. A general product bugtask
+will be created if one doesn't exist.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'affects /evolution/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetdisplayname
+    Evolution trunk
+
+    >>> login('test@canonical.com')
+
+Let's take on the upstream task on bug four as well. This time we'll
+sneak in a 'subscribe' command between the 'affects' and the other
+commands, to show that the commands acting on the bug task don't have to
+be grouped together:
+
+    >>> submit_commands(
+    ...     bug_four,
+    ...     'affects firefox',
+    ...     'importance critical',
+    ...     'subscribe no-priv',
+    ...     'status confirmed', 'assignee test@canonical.com')
+
+    >>> len(bug_four.bugtasks)
+    3
+    >>> upstream_task = bug_four.bugtasks[0]
+    >>> print upstream_task.importance.name
+    CRITICAL
+    >>> print upstream_task.status.name
+    CONFIRMED
+    >>> print upstream_task.assignee.displayname
+    Sample Person
+
+
+=== Restricted bug statuses ===
+
+    >>> email_user = getUtility(ILaunchBag).user
+
+Bug contacts can set some restricted statuses:
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.pillar.bugcontact = email_user
+    >>> login(email_user.preferredemail.email)
+
+    >>> submit_commands(bug_four, 'status wontfix')
+    >>> print upstream_task.status.title
+    Won't Fix
+
+Everyone else gets an explanatory error message:
+
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.pillar.bugcontact = None
+    >>> login('no-priv@canonical.com')
+
+    >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status wontfix
+    ...
+    The status cannot be changed to wontfix because you are not the
+    registrant or a bug contact for Mozilla Firefox.
+    ...
+
+Let's take a look at all the other error messages that the sub
+commands can produce.
+
+    >>> login(email_user.preferredemail.email)
+
+Invalid status:
+
+    >>> submit_commands(bug_four, 'status foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status foo
+    ...
+    The 'status' command expects any of the following arguments:
+    new, incomplete, invalid, wontfix, confirmed, triaged, inprogress, fixcommitted, fixreleased
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        status new
+    ...
+
+Invalid importance:
+
+    >>> submit_commands(bug_four, 'importance foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        importance foo
+    ...
+    The 'importance' command expects any of the following arguments:
+    critical, high, medium, low, wishlist, undecided
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        importance critical
+    ...
+
+XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
+to a realistic value is difficult (see convertArguments in
+launchpad/mail/commands.py).
+
+Trying to use the obsolete "severity" or "priority" commands:
+
+    >>> stub.test_emails = []
+    >>> submit_commands(bug_four, 'affects firefox', 'severity major')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        severity major
+    ...
+    To make life a little simpler, Malone no longer has "priority" and "severity"
+    fields. There is now an "importance" field...
+    ...
+
+    >>> submit_commands(bug_four, 'affects firefox', 'priority low')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        priority low
+    ...
+    To make life a little simpler, Malone no longer has "priority" and "severity"
+    fields. There is now an "importance" field...
+    ...
+
+Invalid assignee:
+
+    >>> submit_commands(bug_four, 'assignee foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        assignee foo
+    ...
+    There's no such person with the specified name or email: foo
+    ...
+
+
+    >>> stub.test_emails = []
+
+== Default 'affects' target ==
+
+Most of the time it's not necessary to give the 'affects' command. If
+you omit it, the email interface  tries to guess which bug task you
+wanted to edit.
+
+If there's only one task, that task will be edited. So if we simply send
+a 'status' command to bug seven, the single upstream task will be
+edited:
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_eigth = getUtility(IBugSet).get(8)
+    >>> len(bug_eigth.bugtasks)
+    1
+    >>> submit_commands(bug_eigth, 'status confirmed')
+    >>> mozilla_task = bug_eigth.bugtasks[0]
+    >>> print mozilla_task.status.name
+    CONFIRMED
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    8
+    >>> print bug_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Debian)
+        Status: Fix Released => Confirmed
+
+If the bug has more than one bug task, we try to guess which bug task
+the user wanted to edit. We apply the following heuristics for choosing
+which bug task to edit:
+
+=== The user is a bug contact of the upstream product ===
+
+    >>> login('test@canonical.com')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> submit_commands(
+    ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    1
+    >>> print bug_notification.message.text_contents
+    ** Changed in: firefox
+    ...
+        Status: New => Confirmed
+
+=== The user is a package bug contact ===
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ISourcePackageNameSet)
+    >>> from canonical.launchpad.database.packagebugcontact import (
+    ...     PackageBugContact)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
+    >>> mozilla_pkg_bug_contact = PackageBugContact(
+    ...     distribution=ubuntu, sourcepackagename=mozilla_name,
+    ...     bugcontact=helge)
+
+
+    >>> login('kreutzm@itp.uni-hannover.de')
+    >>> submit_commands(
+    ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
+    mozilla-firefox (Debian): Confirmed, assigned to no one
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    1
+    >>> print bug_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Ubuntu)
+        Assignee: (unassigned) => No Privileges Person
+    ...
+
+=== The user is a bug contact of a distribution ===
+
+XXX: TBD after InitialBugContacts is implemented.
+     -- Bjorn Tillenius, 2005-11-30
+
+=== The user is a distribution member ===
+
+    >>> login('foo.bar@canonical.com')
+    >>> submit_commands(
+    ...     bug_one, 'status new', 'assignee test@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
+    mozilla-firefox (Debian): Confirmed, assigned to no one
+
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    1
+    >>> print bug_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Ubuntu)
+        Assignee: No Privileges Person (no-priv) => Sample Person (name12)
+    ...
+
+
+=== No matching bug task ===
+
+If none of the bug tasks can be chosen, an error message is sent to the
+user, telling him that he has to use the 'affects' command.
+
+    >>> login('stuart.bishop@canonical.com')
+    >>> submit_commands(
+    ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
+    mozilla-firefox (Debian): Confirmed, assigned to no one
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: stuart.bishop@canonical.com
+    <BLANKLINE>
+    ...
+    You tried to edit bug 1 via email, but it couldn't be determined in
+    which context you wanted the changes to occur. The bug is reported in 3
+    different contexts, and you have to specify which one by using the
+    affects command.
+    ...
+
+
+== More About Error Handling ==
+
+If an error is encountered, an email is sent to the sender informing
+him about the error. Let's start with trying to submit a bug without
+signing the mail:
+
+    >>> login('test@canonical.com')
+
+    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> msg = signed_message_from_string(submit_mail)
+    >>> msg['Message-Id'] = email.Utils.make_msgid()
+    >>> handler.process(msg, msg['To'])
+    True
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    To report bugs by e-mail, you need to sign the message with an OpenPGP key
+    that is registered in Launchpad.
+    ...
+
+A submit without specifying on what we want to file the bug on:
+
+    >>> submit_mail_no_bugtask = """From: test@canonical.com
+    ... To: new@malone
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: A bug without a product or distribution
+    ...
+    ... There's a nasty bug in Evolution."""
+    >>> process_email(submit_mail_no_bugtask)
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    You didn't specify the project, distribution, or package that the bug is
+    ...
+
+
+Submit a bug on a distribution that doesn't exist:
+
+    >>> submit_mail_distro_not_found = """From: test@canonical.com
+    ... To: new@malone
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: A bug with a non existing distribution
+    ...
+    ... There's a nasty bug in Foo.
+    ...  affects foo"""
+    >>> process_email(submit_mail_distro_not_found)
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        affects foo
+    ...
+    There is no project named 'foo' registered in Launchpad.
+    ...
+
+
+An empty unsigned mail to new@malone:
+
+    >>> submit_empty = """From: test@canonical.com
+    ... To: new@malone
+    ... Date: Fri Jun 17 10:20:27 BST 2005
+    ... Subject: An empty mail
+    ...
+    ... """
+    >>> process_email(submit_empty)
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    You didn't specify the project, distribution, or package that the bug is
+    ...
+
+Let's take a closer look at send_process_error_notification(), which is
+used to send the error messages. It needs the message that caused the
+error, so let's create one.
+
+    >>> msg = email.message_from_string("""From: foo.bar@canonical.com
+    ... To: bugs@launchpad.net
+    ... Message-Id: <original@msg>
+    ... Subject: Original Message Subject
+    ... Date: Mon, 20 Mar 2006 10:26:28 -0000
+    ... Content-Type: text/plain
+    ...
+    ... Original message body.
+    ... """)
+
+Now we can send an error mail, passing the created message to
+send_process_error_notification().
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     send_process_error_notification)
+    >>> send_process_error_notification(
+    ...     'test@canonical.com', 'Some subject', 'Some error message.',
+    ...     msg, failing_command='foo bar')
+
+The To and Subject headers got set to the values we provided:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['To']
+    'test@canonical.com'
+    >>> sent_msg['Subject']
+    'Some subject'
+
+The sent message contains two parts:
+
+    >>> sent_msg.is_multipart()
+    True
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+
+The first part is the error message, explaining what went wrong.
+
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        foo bar
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    Some error message.
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/UsingMaloneEmail
+
+The second part is the message that the user sent, which caused the
+error to happen.
+
+    >>> original_msg.get_content_type()
+    'message/rfc822'
+    >>> len(original_msg.get_payload())
+    1
+
+    >>> msg = original_msg.get_payload()[0]
+    >>> msg['Subject']
+    'Original Message Subject'
+    >>> msg['Message-Id']
+    '<original@msg>'
+    >>> print msg.get_payload(decode=True)
+    Original message body.
+
+
+== Error handling ==
+
+When creating a new task and assigning it to a team, it is possible
+that the team will not have a contact address. This is not generally
+a problem, but when formatting the notification email resulting from
+that action we used to have a bug (See bug #126943).
+
+First, we create a new firefox bug.
+
+    >>> login('test@canonical.com')
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2006
+    ... Subject: Another bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> ff_bug = get_latest_added_bug()
+
+Ordinary persons always have a preferred email address, but teams can
+exist without a contact address.
+
+    >>> name19 = getUtility(IPersonSet).getByName('name19')
+    >>> print name19.preferredemail
+    None
+
+We send another email, creating a new task (for the package in ubuntu)
+and assigning the bug to `name19`.
+
+    >>> submit_commands(ff_bug,
+    ...     'affects ubuntu/mozilla-firefox', 'assignee name19')
+
+The email was handled correctly - A new bugtask was added and assigned
+to the specified team.
+
+    >>> print ff_bug.bugtasks[-1].assignee.name
+    name19
+
+We don't use the preffered email address to refer to the assignee in
+any email notifications. Instead, we always use the unique
+displayname - a combination of the user's display name and their unique
+Launchpad username.
+
+    >>> print name19.unique_displayname
+    Warty Gnome Team (name19)
+    >>> from canonical.launchpad.mailnotification import (
+    ...     get_bug_edit_notification_texts)
+    >>> from canonical.launchpad.components.bug import BugDelta
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+    >>> bug_delta = BugDelta(
+    ...     bug=ff_bug,
+    ...     bugurl=canonical_url(ff_bug),
+    ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
+    ...     added_bugtasks=ff_bug.bugtasks[-1])
+    >>> print get_bug_edit_notification_texts(bug_delta)[0]
+    **...
+    ...Assignee: Warty Gnome Team (name19)...
+
+
+XXX: Add tests for non-ascii mails.
+     -- Bjorn Tillenius, 2005-05-20
+

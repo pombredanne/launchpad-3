@@ -21,7 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet,
+    BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import clear_current_connection_cache
@@ -355,6 +355,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             product = None
         else:
             product = getUtility(IProductSet).getByName(productName)
+            if product is None:
+                return ''
 
         person_set = getUtility(IPersonSet)
         owner = person_set.getByName(personName)
@@ -364,7 +366,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branch = branch_set.new(
                 BranchType.HOSTED, branchName, requester, owner,
                 product, None, None, author=requester)
-        except BranchCreationForbidden:
+        except BranchCreationException:
             return ''
         else:
             return branch.id
