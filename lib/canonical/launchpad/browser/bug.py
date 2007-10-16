@@ -479,11 +479,7 @@ class BugSecrecyEditView(BugEditViewBase):
 
 
 class BugRelatedObjectEditView(LaunchpadEditFormView):
-    """View class for edit views of bug-related object.
-
-    Examples would include the edit cve page, edit subscription page,
-    etc.
-    """
+    """Page for editing links related to bugs."""
     schema = IBugExternalRef
     field_names = ["title", "url"]
 

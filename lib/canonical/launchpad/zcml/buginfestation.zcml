@@ -28,21 +28,6 @@
     template="../templates/launchpad-addform.pt"
     />
 
-  <!-- XXX: Disabled as it uses SQLObjectEditView which is
-       deprecated. This view has not been converted to inherit from
-       LaunchpadEditFormView because it's not currently in use on LP.
-       - Gavin Panella 2007-10-12 -->
-  <!--browser:editform
-    name="+edit"
-    for="canonical.launchpad.interfaces.IBugProductInfestation"
-    class="canonical.launchpad.browser.editview.SQLObjectEditView"
-    schema="canonical.launchpad.interfaces.IBugProductInfestation"
-    fields="productrelease infestationstatus"
-    label="Edit infested product release"
-    permission="launchpad.AnyPerson"
-    template="../templates/default-editform.pt"
-    /-->
-
   <!-- BugProductInfestationSet -->
   <content class="canonical.launchpad.database.BugProductInfestationSet">
     <allow
