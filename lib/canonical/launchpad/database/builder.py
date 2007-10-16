@@ -271,6 +271,7 @@ class Builder(SQLBase):
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
 
+        # PPA only uses the RELEASE pocket.
         if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
             ubuntu_source_lines = [
                 'deb http://archive.ubuntu.com/ubuntu %s %s'

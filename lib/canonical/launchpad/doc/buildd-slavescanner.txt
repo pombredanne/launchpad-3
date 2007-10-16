@@ -972,7 +972,9 @@ Override the builder's slave with one that will claim to be 'OK'
   >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
 This build is building in the release pocket for the main component in
-the primary archive:
+the primary archive.  It will pass an 'archives' property to the slave
+that contains sources.list entries for each pocket required in the
+primary archive.
 
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   ensurepresent called
@@ -984,9 +986,9 @@ Cleanup in preparation for the next test:
 
   >>> bqItem3.destroySelf()
 
-When a build is for an archive other than the PRIMARY archive, the
-builder will pass an 'archives' property that instructs the slave
-to set up the sources.list appropriately.
+Partner archive builds will set up the 'archives' property such that it
+references all the required pockets/components in the primary archive, in
+addition to a reference to the release pocket in the partner archive itself.
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> partner_archive = ubuntu.getArchiveByComponent('partner')
@@ -1040,6 +1042,82 @@ builds for post-release pockets:
   Traceback (most recent call last):
   ...
   AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu hoary SECURITY (8) can not be built for pocket SECURITY: invalid pocket due to the series status of hoary.
+
+== Pocket dependencies ==
+
+When passing the archives property to a slave, the required pockets
+are dependent on the pocket that we are building in, such that:
+
+++-----------++------------------------------------------++
+||  Target   ||            Required Pockets              ||
+++-----------++------------------------------------------++
+|| release   || release                                  ||
+|| updates   || release + updates + security             ||
+|| proposed  || release + updates + security + proposed  ||
+|| security  || release + security                       ||
+|| backports || release + updates + security + backports ||
+++-----------++------------------------------------------++
+
+Change the distroseries status for testing. FROZEN allows all pockets:
+
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> hoary_i386.distroseries.status = DistroSeriesStatus.FROZEN
+
+Now we can start a build in other pockets, and see what archives are
+passed to the slave.
+
+A build in the updates pocket:
+
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).pocket = (
+  ...     dbschema.PackagePublishingPocket.UPDATES)
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
+
+A build in the proposed pocket:
+
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).pocket = (
+  ...     dbschema.PackagePublishingPocket.PROPOSED)
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main', u'deb http://ftpmaster.internal/ubuntu hoary-proposed main']
+
+A build in the security pocket:
+
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).pocket = (
+  ...     dbschema.PackagePublishingPocket.SECURITY)
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main']
+
+A build in the backports pocket:
+
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).pocket = (
+  ...     dbschema.PackagePublishingPocket.BACKPORTS)
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main']
+
 
 == Builder Status Handler ==
 
