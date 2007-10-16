@@ -45,12 +45,8 @@ def get_unique_bug_tasks(items):
 class BugFeedContentView(LaunchpadView):
     """View for a bug feed contents."""
 
-    short_template = ViewPageTemplateFile('templates/bug.pt')
-    long_template = ViewPageTemplateFile('templates/bug-verbose.pt')
-
-    def __init__(self, context, request, feed, verbose=False):
+    def __init__(self, context, request, feed):
         super(BugFeedContentView, self).__init__(context, request)
-        self.verbose = verbose
         self.format = None
         self.feed = feed
 
@@ -59,22 +55,17 @@ class BugFeedContentView(LaunchpadView):
         return bug_task_view.getBugCommentsForDisplay()
 
     def render(self):
-        if self.verbose:
-            return self.long_template()
-        else:
-            return self.short_template()
+        return ViewPageTemplateFile('templates/bug.pt')(self)
 
 
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
     max_age = 30 * MINUTES
-    verbose = False
     rootsite = "bugs"
 
     def initialize(self):
         super(BugsFeedBase, self).initialize()
-        self.getParameters()
         self.__show_column = None
 
     @property
@@ -103,12 +94,6 @@ class BugsFeedBase(FeedBase):
                     value = True
                 self.__show_column[column] = value
         return self.__show_column
-
-    def getParameters(self):
-        verbose = self.request.get('verbose')
-        if verbose is not None:
-            if verbose.lower() in ['1', 't', 'true', 'yes']:
-                self.verbose = True
 
     def getURL(self):
         """Get the identifying URL for the feed."""
@@ -140,8 +125,7 @@ class BugsFeedBase(FeedBase):
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
-        content_view = BugFeedContentView(bug, self.request, 
-            self, self.verbose)
+        content_view = BugFeedContentView(bug, self.request, self)
         entry = FeedEntry(title = title,
                           id_ = url,
                           link_alternate = url,
@@ -224,12 +208,12 @@ class SearchBugsFeed(BugsFeedBase):
     """Bug feeds for a generic search.
 
     Searches are of the form produced by an advanced bug search, e.g.
-    http://bugs.launchpad.dev/bugs/search-bugs.atom?field.searchtext=&
+    http://bugs.launchpad.dev/bugs/+bugs.atom?field.searchtext=&
         search=Search+Bug+Reports&field.scope=all&field.scope.target=
     """
 
     usedfor = IBugTaskSet
-    feedname = "search-bugs"
+    feedname = "+bugs"
 
     def initialize(self):
         super(SearchBugsFeed, self).initialize()

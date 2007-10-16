@@ -29,10 +29,10 @@ in a different order, we want to redirect the user to the url with
 the normalized query string, so that there is only one cached copy that
 has to be refreshed.
 
-    >>> browser.open('http://feeds.launchpad.dev/bugs/search-bugs.atom?'
+    >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...     'field.scope=all&search=Search+Bug+Reports&aaa=foo')
     >>> browser.url
-    '...search-bugs.atom?aaa=foo&field.scope=all&search=Search+Bug+Reports'
+    '...+bugs.atom?aaa=foo&field.scope=all&search=Search+Bug+Reports'
 
 == Feeds only available on feeds.launchpad.net ==
 
@@ -72,7 +72,7 @@ These atom feeds should only exist on feeds.launchpad.dev:
     >>> verify_feed_host('/~admins/latest-bugs.atom')
     >>> verify_feed_host('/~simple-team/latest-bugs.atom')
     >>> verify_feed_host('/bugs/1/bug.atom')
-    >>> verify_feed_host('/bugs/search-bugs.atom?'
+    >>> verify_feed_host('/bugs/+bugs.atom?'
     ...        'field.searchtext=&search=Search+Bug+Reports&'
     ...        'field.scope=all&field.scope.target=')
 
@@ -83,6 +83,6 @@ These html feeds should only exist on feeds.launchpad.dev:
     >>> verify_feed_host('/~name16/latest-bugs.html')
     >>> verify_feed_host('/~simple-team/latest-bugs.html')
     >>> verify_feed_host('/bugs/1/bug.html')
-    >>> verify_feed_host('/bugs/search-bugs.html?'
+    >>> verify_feed_host('/bugs/+bugs.html?'
     ...        'field.searchtext=&search=Search+Bug+Reports&'
     ...        'field.scope=all&field.scope.target=')

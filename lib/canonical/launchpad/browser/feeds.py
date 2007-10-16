@@ -73,13 +73,12 @@ class FeedsNavigation(Navigation):
         # http://feeds.launchpad.net/bugs/search-bugs.atom?...
         if name == 'bugs':
             stack = self.request.getTraversalStack()
-            try:
-                bug_id = int(stack.pop())
-            except ValueError:
+            bug_id = stack.pop()
+            if bug_id.startswith('+'):
                 return getUtility(IBugTaskSet)
             else:
                 self.request.stepstogo.consume()
-                return getUtility(IBugSet).get(bug_id)
+                return getUtility(IBugSet).getByNameOrID(bug_id)
 
         if name.startswith('~'):
             # redirect to the canonical name before doing the lookup

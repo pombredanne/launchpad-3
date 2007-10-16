@@ -105,7 +105,7 @@ Define a helper function for parsing the entries:
 == General bug search ==
 
     >>> import cgi
-    >>> url = ("http://feeds.launchpad.dev/bugs/search-bugs.html?"
+    >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.html?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
     >>> browser.open(url)
