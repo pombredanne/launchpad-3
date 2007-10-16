@@ -1691,7 +1691,7 @@ The first part is the error message, explaining what went wrong.
     <BLANKLINE>
     --
     For more information about using Malone by e-mail, see
-    https://help.launchpad.net/UsingMaloneEmail
+    https://help.launchpad.net/BugTrackerEmailInterface
 
 The second part is the message that the user sent, which caused the
 error to happen.

@@ -105,7 +105,7 @@
       created by software such as GnuPG.
       These are used to sign <a href="/codeofconduct">codes of conduct</a>,
       modify bugs through <a
-      href="https://help.launchpad.net/UsingMaloneEmail">the email interface</a>,
+      href="https://help.launchpad.net/BugTrackerEmailInterface">the email interface</a>,
       and to build and upload packages using <abbr>Soyuz</abbr>.
     </p>
 
