@@ -310,7 +310,7 @@ class Bugzilla(ExternalBugTracker):
         if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
             # FAILS_QA, ON_DEV: bugzilla.redhat.com
             # STARTED: OOO Issuezilla
-           malone_status = BugTaskStatus.INPROGRESS
+            malone_status = BugTaskStatus.INPROGRESS
         elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
                                'WAITING', 'SUSPENDED']:
             # NEEDINFO_REPORTER: bugzilla.redhat.com
@@ -690,7 +690,6 @@ class Mantis(ExternalBugTracker):
     def csv_data(self):
         """Attempt to retrieve a CSV export from the remote server.
 
-        If the export succeeds
         If the export fails (i.e. the response is 0-length), None will
         be returned.
         """
