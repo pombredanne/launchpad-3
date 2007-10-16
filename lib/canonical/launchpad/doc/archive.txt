@@ -62,22 +62,34 @@ This lookup also supports optional filters:
   >>> inactive_status = [PackagePublishingStatus.SUPERSEDED,
   ...                    PackagePublishingStatus.DELETED]
 
+Let's inspect source publications in Cprov PPA:
 
-Let's inspect source publications:
+  >>> all_sources = cd_lookup = cprov_archive.getPublishedSources()
+  >>> for pub in all_sources:
+  ...     title = pub.sourcepackagerelease.title
+  ...     pub_ds = pub.distroseries.name
+  ...     print "%s -> %s" % (title, pub_ds)
+  pmount - 0.1-1 -> warty
+  iceweasel - 1.0 -> warty
+  cdrkit - 1.0 -> breezy-autotest
 
-  >>> cd_lookup = cprov_archive.getPublishedSources(name='cd')
-  >>> cd_lookup.count()
+Using 'name' filter:
+
+  >>> cprov_archive.getPublishedSources(name='cd').count()
   1
-  >>> cd_lookup[0].sourcepackagerelease.name
-  u'cdrkit'
 
-  >>> ice_lookup = cprov_archive.getPublishedSources(name='ice')
-  >>> ice_lookup.count()
+  >>> cprov_archive.getPublishedSources(name='ice').count()
   1
-  >>> ice_lookup[0].sourcepackagerelease.name
-  u'iceweasel'
-  >>> ice_lookup[0].sourcepackagerelease.version
-  u'1.0'
+
+Combining 'name' filter and 'exact_match' flag:
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='iceweasel', exact_match=True).count()
+  1
+  >>> cprov_archive.getPublishedSources(name='ice', exact_match=True).count()
+  0
+
+Using 'version' filter:
 
   >>> ice_version_lookup = cprov_archive.getPublishedSources(
   ...      version='1.0')
@@ -90,28 +102,55 @@ Let's inspect source publications:
   >>> ice_version_lookup.count()
   1
 
-  >>> ice_version_lookup = cprov_archive.getPublishedSources(
-  ...      name='ice', version='666')
-  >>> ice_version_lookup.count()
+  >>> cprov_archive.getPublishedSources(
+  ...      name='ice', version='666').count()
   0
 
-  >>> status_lookup = cprov_archive.getPublishedSources(
-  ...      status=PackagePublishingStatus.PUBLISHED)
-  >>> status_lookup.count()
+Using 'status' filter:
+
+  >>> cprov_archive.getPublishedSources(
+  ...      status=PackagePublishingStatus.PUBLISHED).count()
   3
 
-  >>> status_lookup = cprov_archive.getPublishedSources(
-  ...      status=active_status)
-  >>> status_lookup.count()
+  >>> cprov_archive.getPublishedSources(
+  ...      status=active_status).count()
   3
 
-  >>> status_lookup = cprov_archive.getPublishedSources(
-  ...      status=inactive_status)
-  >>> status_lookup.count()
+  >>> cprov_archive.getPublishedSources(
+  ...      status=inactive_status).count()
   0
 
-  >>> cprov_archive.getPublishedSources(name='foo').count()
+Using 'distroseries' filter:
+
+  >>> warty = cprov_archive.distribution['warty']
+  >>> hoary = cprov_archive.distribution['hoary']
+  >>> breezy_autotest = cprov_archive.distribution['breezy-autotest']
+
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=warty).count()
+  2
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=hoary).count()
   0
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=breezy_autotest).count()
+  1
+
+Combining 'name' and 'distroseries' filters:
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='ice', distroseries=warty).count()
+  1
+  >>> cprov_archive.getPublishedSources(
+  ...      name='ice', distroseries=breezy_autotest).count()
+  0
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='cd', distroseries=warty).count()
+  0
+  >>> cprov_archive.getPublishedSources(
+  ...      name='cd', distroseries=breezy_autotest).count()
+  1
 
 
 === Binary publication lookups ===
@@ -162,26 +201,37 @@ published for all available architectures, i386 & hppa:
   >>> cprov_archive.getAllPublishedBinaries(name='foo').count()
   0
 
+Combining 'name' filter and 'exact_match' flag:
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='pmou', exact_match=True).count()
+  0
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', exact_match=True).count()
+  2
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      name='pmou', exact_match=True).count()
+  0
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      name='pmount', exact_match=True).count()
+  1
+
 It's possible to associate 'name' and 'version' filters:
 
-  >>> moz_version_lookup = cprov_archive.getUniquePublishedBinaries(
-  ...      name='moz', version='1.0')
-  >>> moz_version_lookup.count()
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      name='moz', version='1.0').count()
   2
 
-  >>> moz_version_lookup = cprov_archive.getAllPublishedBinaries(
-  ...      name='moz', version='1.0')
-  >>> moz_version_lookup.count()
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='moz', version='1.0').count()
   2
 
-  >>> moz_version_lookup = cprov_archive.getUniquePublishedBinaries(
-  ...      name='moz', version='666')
-  >>> moz_version_lookup.count()
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      name='moz', version='666').count()
   0
 
-  >>> moz_version_lookup = cprov_archive.getAllPublishedBinaries(
-  ...      name='moz', version='666')
-  >>> moz_version_lookup.count()
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='moz', version='666').count()
   0
 
 Both methods do not support passing the 'version' filter if the 'name'
@@ -201,35 +251,55 @@ filter is not passed too.
 
 Both methods support 'status' filter:
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
-  ...      status=PackagePublishingStatus.PUBLISHED)
-  >>> status_lookup.count()
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      status=PackagePublishingStatus.PUBLISHED).count()
   3
 
-  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-  ...      status=PackagePublishingStatus.PUBLISHED)
-  >>> status_lookup.count()
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      status=PackagePublishingStatus.PUBLISHED).count()
   4
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
-  ...      status=active_status)
-  >>> status_lookup.count()
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      status=active_status).count()
   3
 
-  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-  ...      status=active_status)
-  >>> status_lookup.count()
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      status=active_status).count()
   4
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
-  ...      status=inactive_status)
-  >>> status_lookup.count()
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      status=inactive_status).count()
   0
 
-  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-  ...      status=inactive_status)
-  >>> status_lookup.count()
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      status=inactive_status).count()
   0
+
+Using 'distroarchseries' filter:
+
+  >>> warty_i386 = warty['i386']
+  >>> warty_hppa = warty['hppa']
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=warty_i386).count()
+  2
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=warty_hppa).count()
+  2
+
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      distroarchseries=warty_i386).count()
+  2
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      distroarchseries=warty_hppa).count()
+  1
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=[warty_i386, warty_hppa]).count()
+  4
+  >>> cprov_archive.getUniquePublishedBinaries(
+  ...      distroarchseries=[warty_i386, warty_hppa]).count()
+  3
 
 Associating 'name' and 'status' filters:
 
@@ -274,6 +344,22 @@ Associating 'name', 'version' and 'status' filters:
   ...      name='pmount', version='666', status=active_status)
   >>> status_lookup.count()
   0
+
+Associating 'name', 'version', 'status' and 'distroarchseries' filters
+and 'exact_match' flag:
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', version='0.1-1', distroarchseries=warty_i386,
+  ...      status=active_status, exact_match=True)
+  >>> status_lookup.count()
+  1
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', version='0.1-1',
+  ...      distroarchseries=[warty_i386, warty_hppa],
+  ...      status=active_status, exact_match=True)
+  >>> status_lookup.count()
+  2
 
 
 == Package Counters ==
