@@ -71,15 +71,27 @@ class IArchive(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
-    def getPublishedSources():
+    def getPublishedSources(name=None, version=None, status=None):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getPublishedBinaries():
+    def getUniquePublishedBinaries(name=None, version=None, status=None):
+        """Unique `IBinaryPackagePublishingHistory` target to this archive.
+
+        In spite of getAllPublishedBinaries method, this method only return
+        distinct binary publications inside this Archive, i.e, it excludes
+        architecture-independent publication for other architetures than the
+        nominatedarchindep.
+
+        :return: SelectResults containing `IBinaryPackagePublishingHistory`.
+        """
+
+    def getAllPublishedBinaries(name=None, version=None, status=None):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
+        See getUniquePublishedBinaries for further information.
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
         """
 
