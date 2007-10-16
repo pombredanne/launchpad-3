@@ -160,7 +160,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         mozilla_src_pub = mozilla_sp.currentrelease.current_published
         mozilla_bin_pub_ids = [
             bin.current_publishing_record.id
-            for bin in mozilla_sp.currentrelease.published_binaries] 
+            for bin in mozilla_sp.currentrelease.published_binaries]
 
         return (mozilla_src_pub.id, mozilla_bin_pub_ids)
 
@@ -169,14 +169,14 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual('PUBLISHED', pub.status.name)
         self.assertEqual(None, pub.removed_by)
         self.assertEqual(None, pub.removal_comment)
-            
+
 
     def assertDeleted(self, pub):
         """ """
         self.assertEqual('DELETED', pub.status.name)
         self.assertEqual(self.user_name, pub.removed_by.name)
         self.assertEqual(self.removal_comment, pub.removal_comment)
-        
+
     def testRemoveSourceAndBinaries(self):
         """Check how PackageRemoval behaves on a successful removals.
 

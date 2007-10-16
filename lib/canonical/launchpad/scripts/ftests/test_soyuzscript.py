@@ -63,7 +63,7 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         soyuz = self.getNakedSoyuz(*args, **kwargs)
         soyuz.setupLocation()
         return soyuz
-    
+
     def testSetupLocation(self):
         """Check if `SoyuzScript` handles `PackageLocation` properly.
 
@@ -113,7 +113,7 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         """Check findBinaries helper method.
 
         Probe binary package lookup and additional predicate checks (
-        component and pocket)        
+        component and pocket)
         """
         soyuz = self.getSoyuz()
 

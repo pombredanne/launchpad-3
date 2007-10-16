@@ -97,6 +97,27 @@ class IArchivePublisher(Interface):
         the field name and value is the value string.
         """
 
+    def supersede():
+        """Supersede this publication.
+
+        Return the modified `ISourcePackagePublishingHistory` object.
+        """
+
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        param removed_by: `IPerson` responsible for the removal.
+        param removal_comment: optional text describing the removal reason.
+
+        Return the modified `ISourcePackagePublishingHistory` object.
+        """
+
+    def copyTo(distroseries, pocket):
+        """Copy this publication to another location.
+
+        Return the publishing record in the targeted location.
+        """
+
 
 class IArchiveFilePublisher(Interface):
     """Ability to publish and archive file"""
@@ -285,6 +306,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         architecturetag.
         """
 
+    def changeOverride(new_component=None, new_section=None):
+        """Change the component and/or section of this publication
+
+        It is changed only if the argument is not None.
+        """
 
 #
 # Binary package publishing
@@ -420,5 +446,13 @@ class ISecureBinaryPackagePublishingHistory(Interface):
 class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
 
-    distroarchseriesbinarypackagerelease = Attribute("The object that "
-        "represents this binarypacakgerelease in this distroarchseries.")
+    distroarchseriesbinarypackagerelease = Attribute(
+        "The object that represents this binarypacakgerelease "
+        "in this distroarchseries.")
+
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority of this publication.
+
+        It is changed only if the argument is not None.
+        """

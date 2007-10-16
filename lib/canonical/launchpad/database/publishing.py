@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
     PoolFileOverwriteError)
+from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -283,10 +284,10 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
 
 
 class ArchivePublisherBase:
-    """Base class for ArchivePublishing task."""
+    """Base class for `IArchivePublisher`."""
 
     def publish(self, diskpool, log):
-        """See IArchivePublisher"""
+        """See `IArchivePublisher`."""
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
@@ -296,9 +297,25 @@ class ArchivePublisherBase:
             self.secure_record.setPublished()
 
     def getIndexStanza(self):
-        """See IArchivePublisher"""
+        """See `IArchivePublisher`."""
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
+
+    def supersede(self):
+        """See `IArchivePublisher`."""
+        current = self.secure_record
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW
+        return current
+
+    def requestDeletion(self, removed_by, removal_comment=None):
+        """See `IArchivePublisher`."""
+        current = self.secure_record
+        current.status = PackagePublishingStatus.DELETED
+        current.datesuperseded = UTC_NOW
+        current.removed_by = removed_by
+        current.removal_comment = removal_comment
+        return current
 
 
 class IndexStanzaFields:
@@ -364,7 +381,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def publishedBinaries(self):
-        """See ISourcePackagePublishingHistory."""
+        """See `ISourcePackagePublishingHistory`."""
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
@@ -394,39 +411,39 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def secure_record(self):
-        """See IArchivePublisherBase."""
+        """See `IArchivePublisher`."""
         return SecureSourcePackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
-        """See IArchivePublisherBase."""
+        """See `IArchivePublisher`."""
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self)
 
     @property
     def meta_sourcepackage(self):
-        """see ISourcePackagePublishingHistory."""
+        """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackage(
             self.sourcepackagerelease.sourcepackagename
             )
 
     @property
     def meta_sourcepackagerelease(self):
-        """see ISourcePackagePublishingHistory."""
+        """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.distribution.getSourcePackageRelease(
             self.sourcepackagerelease
             )
 
     @property
     def meta_distroseriessourcepackagerelease(self):
-        """see ISourcePackagePublishingHistory."""
+        """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackageRelease(
             self.sourcepackagerelease
             )
 
     @property
     def meta_supersededby(self):
-        """see ISourcePackagePublishingHistory."""
+        """see `ISourcePackagePublishingHistory`."""
         if not self.supersededby:
             return None
         return self.distroseries.distribution.getSourcePackageRelease(
@@ -435,14 +452,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisherBase."""
+        """See `IArchiveFilePublisher`."""
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
                                 self.distroseries.name)
 
     def buildIndexStanzaFields(self):
-        """See IArchivePublisher"""
+        """See `IArchivePublisher`."""
         # special fields preparation
         spr = self.sourcepackagerelease
         pool_path = makePoolPath(spr.name, self.component.name)
@@ -466,6 +483,65 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Files', files_subsection)
 
         return fields
+
+    def changeOverride(self, new_component=None, new_section=None):
+        """See `ISourcePackagePublishingHistory`."""
+        # Check we have been asked to do something
+        if (new_component is None and
+            new_section is None):
+            raise AssertionError("changeOverride must be passed either a"
+                                 " new component or new section")
+
+        # Retrieve current publishing info
+        current = self.secure_record
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+
+        if (new_component == current.component and
+            new_section == current.section):
+            return
+
+        # See if the archive has changed by virtue of the component
+        # changing:
+        distribution = self.distroseries.distribution
+        new_archive = distribution.getArchiveByComponent(
+            new_component.name)
+        if new_archive != None and new_archive != current.archive:
+            raise ArchiveOverriderError(
+                "Overriding component to '%s' failed because it would "
+                "require a new archive." % new_component.name)
+
+        SecureSourcePackagePublishingHistory(
+            distroseries=current.distroseries,
+            sourcepackagerelease=current.sourcepackagerelease,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+            pocket=current.pocket,
+            component=new_component,
+            section=new_section,
+            archive=current.archive
+        )
+
+    def copyTo(self, distroseries, pocket):
+        """See `ISourcePackagePublishingHistory`."""
+        current = self.secure_record
+        copy = SecureSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            pocket=pocket,
+            archive=current.archive,
+            sourcepackagerelease=current.sourcepackagerelease,
+            component=current.component,
+            section=current.section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+        )
+        return copy
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -499,7 +575,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def distroarchseriesbinarypackagerelease(self):
-        """See IBinaryPackagePublishingHistory."""
+        """See `IBinaryPackagePublishingHistory`."""
         # import here to avoid circular import
         from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
             import DistroArchSeriesBinaryPackageRelease
@@ -510,18 +586,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def secure_record(self):
-        """See IArchivePublisherBase."""
+        """See `IArchivePublisher`."""
         return SecureBinaryPackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
-        """See IArchivePublisherBase."""
+        """See `IArchivePublisher`."""
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisherBase."""
+        """See `IArchivePublisher`."""
         release = self.binarypackagerelease
         name = release.binarypackagename.name
         distroseries = self.distroarchseries.distroseries
@@ -530,7 +606,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    self.distroarchseries.architecturetag)
 
     def buildIndexStanzaFields(self):
-        """See IArchivePublisher"""
+        """See `IArchivePublisher`."""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
 
@@ -582,3 +658,73 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # When we have the information this will be the place to fill them.
 
         return fields
+
+    def changeOverride(self, new_component=None, new_section=None,
+                       new_priority=None):
+        """See `IBinaryPackagePublishingHistory`."""
+
+        # Check we have been asked to do something
+        if (new_component is None and new_section is None
+            and new_priority is None):
+            raise AssertionError("changeOverride must be passed a new"
+                                 "component, section and/or priority.")
+
+        # Retrieve current publishing info
+        current = self.secure_record
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+        if new_priority is None:
+            new_priority = current.priority
+
+        if (new_component == current.component and
+            new_section == current.section and
+            new_priority == current.priority):
+            return
+
+        # See if the archive has changed by virtue of the component changing:
+        distribution = self.distroarchseries.distroseries.distribution
+        new_archive = distribution.getArchiveByComponent(
+            new_component.name)
+        if new_archive != None and new_archive != self.archive:
+            raise ArchiveOverriderError(
+                "Overriding component to '%s' failed because it would "
+                "require a new archive." % new_component.name)
+
+        # Append the modified package publishing entry
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=self.binarypackagerelease,
+            distroarchseries=self.distroarchseries,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+            pocket=current.pocket,
+            component=new_component,
+            section=new_section,
+            priority=new_priority,
+            archive=current.archive
+            )
+
+    def copyTo(self, distroseries, pocket):
+        """See `BinaryPackagePublishingHistory`."""
+        # Both lookups may raise NotFoundError; it should be handled in
+        # the caller.
+        current = self.secure_record
+        target_das = distroseries[current.distroarchseries.architecturetag]
+
+        copy = SecureBinaryPackagePublishingHistory(
+            archive=current.archive,
+            binarypackagerelease=self.binarypackagerelease,
+            distroarchseries=target_das,
+            component=current.component,
+            section=current.section,
+            priority=current.priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=pocket,
+            embargo=False
+        )
+        return copy

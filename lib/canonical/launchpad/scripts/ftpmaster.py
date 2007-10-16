@@ -154,8 +154,8 @@ class ArchiveOverrider:
                            % (package_name, self.distroseries.name))
             return
 
-        sp.currentrelease.changeOverride(new_component=self.component,
-                                         new_section=self.section)
+        sp.currentrelease.current_published.changeOverride(
+            new_component=self.component, new_section=self.section)
         self.log.info("'%s/%s/%s' source overridden"
                       % (package_name, sp.currentrelease.component.name,
                          sp.currentrelease.section.name))
@@ -220,7 +220,7 @@ class ArchiveOverrider:
                              distroarchseries.architecturetag))
             return
         dasbpr = dasbp[current.binarypackagerelease.version]
-        dasbpr.changeOverride(
+        dasbpr.current_publishing_record.changeOverride(
             new_component=self.component,
             new_priority=self.priority,
             new_section=self.section)
@@ -603,9 +603,10 @@ class ArchiveCruftChecker:
 
             for distroarchseries in self.distroseries.architectures:
                 binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-                darbp = distroarchseries.getBinaryPackage(binarypackagename)
+                dasbp = distroarchseries.getBinaryPackage(binarypackagename)
+                dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = darbp.supersede()
+                    sbpph = dasbpr.current_publishing_record.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
@@ -1334,7 +1335,7 @@ class PackageCopier(LaunchpadScript):
         """
         self.logger.info("Performing source copy.")
 
-        source_copy = from_source.copyTo(
+        source_copy = from_source.current_published.copyTo(
             distroseries=to_location.distroseries,
             pocket=to_location.pocket)
 
@@ -1357,7 +1358,7 @@ class PackageCopier(LaunchpadScript):
         # is not published it source location. Both situations are
         # safe, so that's why we swallow this error.
         try:
-            binary_copy = binary.copyTo(
+            binary_copy = binary.current_publishing_record.copyTo(
                 distroseries=to_location.distroseries,
                 pocket=to_location.pocket)
         except NotFoundError:
@@ -1600,25 +1601,29 @@ class PackageRemover(SoyuzScript):
 
         removables = []
         if self.options.binaryonly:
-            removables = self.findBinaries(packagename)
+            binaries = self.findBinaries(packagename)
+            for binary in binaries:
+                removables.append(binary.current_publishing_record)
         elif self.options.sourceonly:
-            removables.append(self.findSource(packagename))
+            source = self.findSource(packagename)
+            removables.append(source.current_published)
         else:
             source = self.findSource(packagename)
             binaries = source.published_binaries
-            removables.append(source)
-            removables.extend(binaries)
+            removables.append(source.current_published)
+            removables.extend([binary.current_publishing_record
+                               for binary in binaries])
 
         self.logger.info("Removing candidates:")
         for removable in removables:
-            self.logger.info('\t%s' % removable.title)
+            self.logger.info('\t%s' % removable.displayname)
 
         self.logger.info("Removed-by: %s" % removed_by.displayname)
         self.logger.info("Comment: %s" % self.options.removal_comment)
 
         removals = []
         for removable in removables:
-            removed = removable.delete(
+            removed = removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
             removals.append(removed)

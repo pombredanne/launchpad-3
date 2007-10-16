@@ -10,17 +10,15 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
-from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 from canonical.lp import decorates
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackageUploadStatus)
@@ -57,16 +55,6 @@ class DistroSeriesSourcePackageRelease:
             self.distroseries.name)
 
     @property
-    def current_publishing_record(self):
-        """An internal property used by methods of this class to know where
-        this release is or was published.
-        """
-        pub_hist = self.publishing_history
-        if pub_hist.count() == 0:
-            return None
-        return pub_hist[0]
-
-    @property
     def version(self):
         """See IDistroSeriesSourcePackageRelease."""
         return self.sourcepackagerelease.version
@@ -94,19 +82,6 @@ class DistroSeriesSourcePackageRelease:
         if currpub is None:
             return None
         return currpub.component
-
-    @property
-    def publishing_history(self):
-        """See IDistroSeriesSourcePackage."""
-        return SourcePackagePublishingHistory.select("""
-            distrorelease = %s AND
-            archive IN %s AND
-            sourcepackagerelease = %s
-            """ % sqlvalues(
-                    self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
-                    self.sourcepackagerelease),
-            orderBy='-datecreated')
 
     @property
     def builds(self):
@@ -182,105 +157,6 @@ class DistroSeriesSourcePackageRelease:
         return queue_record.changesfile
 
     @property
-    def current_published(self):
-        """See IDistroArchSeriesSourcePackage."""
-        # Retrieve current publishing info
-        current = SourcePackagePublishingHistory.selectFirst("""
-        distrorelease = %s AND
-        archive IN %s AND
-        sourcepackagerelease = %s AND
-        status = %s
-        """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
-                        self.sourcepackagerelease,
-                        PackagePublishingStatus.PUBLISHED),
-            orderBy='-datecreated')
-
-        return current
-
-    def changeOverride(self, new_component=None, new_section=None):
-        """See IDistroSeriesSourcePackageRelease."""
-
-        # Check we have been asked to do something
-        if (new_component is None and
-            new_section is None):
-            raise AssertionError("changeOverride must be passed either a"
-                                 " new component or new section")
-
-        # Retrieve current publishing info
-        current = self.current_published
-
-        # Check there is a change to make
-        if new_component is None:
-            new_component = current.component
-        if new_section is None:
-            new_section = current.section
-
-        if (new_component == current.component and
-            new_section == current.section):
-            return
-
-        # See if the archive has changed by virtue of the component
-        # changing:
-        new_archive = self.distribution.getArchiveByComponent(
-            new_component.name)
-        if new_archive != None and new_archive != current.archive:
-            raise ArchiveOverriderError(
-                "Overriding component to '%s' failed because it would "
-                "require a new archive." % new_component.name)
-
-        SecureSourcePackagePublishingHistory(
-            distroseries=current.distroseries,
-            sourcepackagerelease=current.sourcepackagerelease,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False,
-            pocket=current.pocket,
-            component=new_component,
-            section=new_section,
-            archive=current.archive
-        )
-
-    def supersede(self):
-        """See IDistroSeriesSourcePackageRelease."""
-        # Retrieve current publishing info
-        current = self.current_published
-        current = SecureSourcePackagePublishingHistory.get(current.id)
-        current.status = PackagePublishingStatus.SUPERSEDED
-        current.datesuperseded = UTC_NOW
-
-        return current
-
-    def delete(self, removed_by, removal_comment=None):
-        """See IDistroSeriesSourcePackageRelease."""
-        # Retrieve current publishing info
-        current = self.current_published
-        current = SecureSourcePackagePublishingHistory.get(current.id)
-        current.status = PackagePublishingStatus.DELETED
-        current.datesuperseded = UTC_NOW
-        current.removed_by = removed_by
-        current.removal_comment = removal_comment
-
-        return current
-
-    def copyTo(self, distroseries, pocket):
-        """See IDistroSeriesSourcePackageRelease."""
-        current = self.current_published
-
-        copy = SecureSourcePackagePublishingHistory(
-            distroseries=distroseries,
-            pocket=pocket,
-            archive=current.archive,
-            sourcepackagerelease=current.sourcepackagerelease,
-            component=current.component,
-            section=current.section,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False,
-        )
-        return copy
-
-    @property
     def published_binaries(self):
         """See IDistroSeriesSourcePackageRelease."""
         target_binaries = []
@@ -305,3 +181,46 @@ class DistroSeriesSourcePackageRelease:
 
         return target_binaries
 
+#
+# Publishing lookup methods.
+#
+
+    @property
+    def publishing_history(self):
+        """See IDistroSeriesSourcePackage."""
+        return SourcePackagePublishingHistory.select("""
+            distrorelease = %s AND
+            archive IN %s AND
+            sourcepackagerelease = %s
+            """ % sqlvalues(
+                    self.distroseries,
+                    self.distroseries.distribution.all_distro_archive_ids,
+                    self.sourcepackagerelease),
+            orderBy='-datecreated')
+
+    @property
+    def current_publishing_record(self):
+        """An internal property used by methods of this class to know where
+        this release is or was published.
+        """
+        pub_hist = self.publishing_history
+        if pub_hist.count() == 0:
+            return None
+        return pub_hist[0]
+
+    @property
+    def current_published(self):
+        """See IDistroArchSeriesSourcePackage."""
+        # Retrieve current publishing info
+        current = SourcePackagePublishingHistory.selectFirst("""
+        distrorelease = %s AND
+        archive IN %s AND
+        sourcepackagerelease = %s AND
+        status = %s
+        """ % sqlvalues(self.distroseries,
+                        self.distroseries.distribution.all_distro_archive_ids,
+                        self.sourcepackagerelease,
+                        PackagePublishingStatus.PUBLISHED),
+            orderBy='-datecreated')
+
+        return current
