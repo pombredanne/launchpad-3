@@ -167,7 +167,7 @@ class CodeImportEventSet:
 
         :param code_import: CodeImport object that was presumably modified.
 
-        :param token: Object returned by a call to makeModificationToken
+        :param token: Token returned by a call to _makeModificationToken
             before the code import was modified.
         :return: Set of items that can be passed to _recordItems, or None.
         """

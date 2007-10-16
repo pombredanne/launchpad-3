@@ -8,10 +8,17 @@
   <!-- CodeImport -->
 
   <content class="canonical.launchpad.database.CodeImport">
+    <implements interface="canonical.launchpad.interfaces.ICodeImport" />
     <require
       permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImport"
-      />
+      attributes="id date_created branch registrant owner assignee
+                  product series review_status
+                  rcs_type cvs_root cvs_module svn_branch_url
+                  date_last_successful
+                  update_interval effective_update_interval" />
+    <require
+      permission="launchpad.Edit"
+      attributes="updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when
