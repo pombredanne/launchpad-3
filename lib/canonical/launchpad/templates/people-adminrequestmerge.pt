@@ -22,9 +22,9 @@
       </p>
       <div class="informational message">
         The following email addresses are owned by 
-        <span tal:replace="view/dupe_person/displayname" />
+        <tal:dupe_displayname replace="view/dupe_person/displayname" />
         and are going to be transferred to 
-        <span tal:replace="view/target_person/displayname" />:
+        <tal:target_displayname replace="view/target_person/displayname" />:
         <ul>
           <li tal:repeat="email view/dupe_person_emails">
             <strong tal:content="email/email"/>

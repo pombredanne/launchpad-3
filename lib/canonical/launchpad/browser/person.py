@@ -2837,6 +2837,10 @@ class AdminPeopleMergeView(AdminMergeBaseView):
 
 
 class AdminTeamMergeView(AdminMergeBaseView):
+    """A view for merging two Teams.
+
+    The duplicate team cannot be associated with a mailing list.
+    """
 
     label = "Merge Launchpad teams"
     schema = IAdminTeamMergeSchema
