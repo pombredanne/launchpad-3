@@ -163,22 +163,32 @@ class BranchTestCase(TestCaseWithTransport):
             self.getUniqueString('summary'),
             self.getUniqueString('description'))
 
-    def makeBranch(self, branch_type=None):
-        """Create and return a new, arbitrary Branch of the given type."""
+    def makeBranch(self, branch_type=None, owner=None, name=None, product=None,
+                   url=None, **kwargs):
+        """Create and return a new, arbitrary Branch of the given type.
+
+        Any parameters for IBranchSet.new can be specified to override the
+        default ones.
+        """
         if branch_type is None:
             branch_type = BranchType.HOSTED
-        owner = self.makePerson()
-        branch_name = self.getUniqueString('branch')
-        product = self.makeProduct()
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('branch')
+        if product is None:
+            product = self.makeProduct()
+
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
+        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
+              and url is None):
             url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return self.branch_set.new(
-            branch_type, branch_name, owner, owner, product, url)
+            branch_type, branch_name, owner, owner, product, url, **kwargs)
 
     def relaxSecurityPolicy(self):
         """Switch to using 'PermissiveSecurityPolicy'."""
