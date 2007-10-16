@@ -87,7 +87,8 @@ class IBugWatch(IHasBug):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
-    lasterror = Choice(title=_('Last Error'), vocabulary=BugWatchErrorType)
+    last_error_type = Choice(title=_('Last Error Type'),
+        vocabulary=BugWatchErrorType)
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '
@@ -117,7 +118,7 @@ class IBugWatch(IHasBug):
         """Delete this bug watch."""
 
     def getLastErrorMessage():
-        """Return a string describing the contents of the lasterror field."""
+        """Return a string describing the contents of last_error_type."""
 
 
 class IBugWatchSet(Interface):

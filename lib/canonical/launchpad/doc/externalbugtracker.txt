@@ -50,7 +50,7 @@ another.
     >>> from socket import timeout
 
 TestBrokenExternalBugTracker allows us to force errors to occur, so we
-can use it to check that bug watches' lasterrors are being set
+can use it to check that bug watches' last_error_types are being set
 correctly.
 
 We start with those errors that may be raised by
@@ -64,7 +64,7 @@ because we're only interested in the bug watch's last error field.
     ...         external_bugtracker.updateBugWatches([example_bugwatch])
     ...     except error:
     ...         pass
-    ...     example_bugwatch.lasterror.title
+    ...     example_bugwatch.last_error_type.title
     'Connection Error'
     'Unparsable Bug'
     'Unparsable Bug Tracker Version'
@@ -84,7 +84,7 @@ we're not interested in it.
     ...             external_bugtracker.updateBugWatches([example_bugwatch])
     ...         except:
     ...             pass
-    ...         example_bugwatch.lasterror.title
+    ...         example_bugwatch.last_error_type.title
     ... finally:
     ...     log._log.setLevel(loglevel)
     'Bug Not Found'

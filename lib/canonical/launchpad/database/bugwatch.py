@@ -47,7 +47,7 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    lasterror = EnumCol(schema=BugWatchErrorType, default=None)
+    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -111,7 +111,7 @@ class BugWatch(SQLBase):
     def getLastErrorMessage(self):
         """See `IBugWatch`."""
 
-        if not self.lasterror:
+        if not self.last_error_type:
             return None
 
         error_message_mapping = {
@@ -134,8 +134,8 @@ class BugWatch(SQLBase):
                 "doesn't support importing bugs from %(bugtrackertype)s"
                 " bug trackers."}
 
-        if self.lasterror in error_message_mapping:
-            message = error_message_mapping[self.lasterror]
+        if self.last_error_type in error_message_mapping:
+            message = error_message_mapping[self.last_error_type]
         else:
             message = ("Launchpad couldn't import bug #%(bug)s from "
                 "%(bugtracker)s.")

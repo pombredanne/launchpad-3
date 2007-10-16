@@ -234,10 +234,10 @@ bug tracker, an error is logged.
     UnparseableBugData:
     Failed to parse XML description for https://bugzilla.mozilla.org...
 
-The error is also recorded in each bug watch's lasterror field so that
+The error is also recorded in each bug watch's last_error_type field so that
 it can be displayed to the user.
 
-    >>> bug_watch1.lasterror.title
+    >>> bug_watch1.last_error_type.title
     'Unparsable Bug'
-    >>> bug_watch2.lasterror.title
+    >>> bug_watch2.last_error_type.title
     'Unparsable Bug'

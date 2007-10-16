@@ -237,7 +237,7 @@ class ExternalBugTracker:
             errortype = get_bugwatcherrortype_for_error(error)
             if errortype:
                 for bugwatch in bug_watches:
-                    bugwatch.lasterror = errortype
+                    bugwatch.last_error_type = errortype
             raise
 
         # Again, fixed order here to help with testing.
@@ -262,7 +262,7 @@ class ExternalBugTracker:
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
-                    bug_watch.lasterror = error
+                    bug_watch.last_error_type = error
                     bug_watch.updateStatus(new_remote_status,
                         new_malone_status)
 
@@ -278,7 +278,7 @@ class ExternalBugTracker:
                 errortype = get_bugwatcherrortype_for_error(error)
                 if errortype:
                     for bugwatch in bug_watches:
-                        bugwatch.lasterror = errortype
+                        bugwatch.last_error_type = errortype
 
                 log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),

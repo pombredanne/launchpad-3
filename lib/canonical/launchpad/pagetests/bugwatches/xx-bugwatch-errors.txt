@@ -39,7 +39,7 @@ messages are displayed.
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
     >>> watch = bug12.getBugWatch(tracker, 900)
-    >>> watch.lasterror = BugWatchErrorType.BUG_NOT_FOUND
+    >>> watch.last_error_type = BugWatchErrorType.BUG_NOT_FOUND
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()
 
@@ -80,7 +80,7 @@ message will go away.
 
     >>> login('test@canonical.com')
     >>> watch.remotestatus = None
-    >>> watch.lasterror = None
+    >>> watch.last_error_type = None
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
