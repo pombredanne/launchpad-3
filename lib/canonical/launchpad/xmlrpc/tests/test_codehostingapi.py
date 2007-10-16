@@ -32,6 +32,9 @@ class TestExpandURL(BranchTestCase):
         self.trunk = self.makeBranch(BranchType.HOSTED)
         self.project = self.trunk.product
         self.owner = self.trunk.owner
+        # Make sure that self.project's development focus has an actual branch
+        # associated with it. We removeSecurityProxy so that we can assign
+        # directly to user_branch.
         series = removeSecurityProxy(self.project).development_focus
         series.user_branch = self.trunk
 
@@ -55,11 +58,14 @@ class TestExpandURL(BranchTestCase):
         self.assertEqual(expected_fault.faultString, fault.faultString)
 
     def test_resultDict(self):
-        """resolve_lp_path returns a dict that contains a single key, 'urls',
-        which is a list of URLs ordered by server preference.
+        """A given lp url path maps to a single branch available from a number
+        of URLs (mostly varying by scheme). resolve_lp_path returns a dict
+        containing a list of these URLs, with the faster and more featureful
+        URLs earlier in the list. We use a dict so we can easily add more
+        information in the future.
         """
         results = self.api.resolve_lp_path(self.project.name)
-        urls=[
+        urls = [
             'bzr+ssh://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
             'sftp://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
             'http://bazaar.launchpad.dev/%s' % self.trunk.unique_name]
@@ -85,13 +91,14 @@ class TestExpandURL(BranchTestCase):
         self.assertResolves(
             '%s/%s' % (self.project.name,
                        self.project.development_focus.name),
-            self.trunk.unique_name)
+            self.project.development_focus.user_branch.unique_name)
 
     def test_seriesHasNoBranch(self):
         """Return a NoBranchForSeries fault if the series has no branch
         associated with it.
         """
         project = self.makeProduct()
+        self.assertEqual(None, project.development_focus.user_branch)
         self.assertFault(
             project.name, faults.NoBranchForSeries(project.development_focus))
         self.assertFault(
@@ -113,8 +120,9 @@ class TestExpandURL(BranchTestCase):
         self.assertResolves(self.trunk.unique_name, self.trunk.unique_name)
 
     def test_noSuchBranch(self):
-        """We resolve paths to branches even if there is no branch of that
-        name.
+        """Resolve paths to branches even if there is no branch of that name.
+
+        We do this so that users can push new branches to lp: URLs.
         """
         nonexistent_branch = '~%s/%s/doesntexist' % (
             self.owner.name, self.project.name)
@@ -141,6 +149,9 @@ class TestExpandURL(BranchTestCase):
     def test_tooManySegments(self):
         """If we have more segments than are necessary to refer to a branch,
         then attach these segments to the resolved url.
+
+        We do this so that users can do operations like 'bzr cat
+        lp:path/to/branch/README.txt'.
         """
         longer_path = os.path.join(self.trunk.unique_name, 'qux')
         self.assertResolves(longer_path, longer_path)
@@ -178,7 +189,11 @@ class TestExpandURL(BranchTestCase):
             self.trunk.unique_name + '//', self.trunk.unique_name)
 
     def test_privateBranch(self):
-        """If a branch is not visible then it looks like it doesn't exist."""
+        """We resolve invisible branches just like visible branches.
+
+        This is OK, because by resolving the lp url path, we don't give any
+        information away about the branch.
+        """
         naked_trunk = removeSecurityProxy(self.trunk)
         naked_trunk.private = True
         self.assertResolves(

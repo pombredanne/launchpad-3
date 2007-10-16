@@ -128,8 +128,11 @@ class IPublicCodehostingAPI(Interface):
     """The public codehosting API."""
 
     def resolve_lp_path(path):
-        """Expand the given lp: into a hostname and path, along with allowed
-        protocols for that resource.
+        """Expand the path segment of an lp: URL into a list of branch URLs.
+
+        :return: A dict containing a single 'urls' key that maps to a list of
+            URLs. Clients should use the first URL in the list that they can
+            support.
         """
 
 
@@ -149,9 +152,16 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
     supported_schemes = 'bzr+ssh', 'sftp', 'http'
 
     def _getBazaarHost(self):
+        """Return the hostname for the codehosting server."""
         return URI(config.codehosting.supermirror_root).host
 
     def _getSeriesBranch(self, series):
+        """Return the branch for the given series.
+
+        :return: `faults.NoBranchForSeries` if there is no such branch, or if
+            the branch is invisible to the user. Return the Branch object
+            otherwise.
+        """
         branch = series.series_branch
         if (branch is None
             or not check_permission('launchpad.View', branch)):
@@ -159,6 +169,12 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return branch
 
     def _getBranchForProject(self, project_name):
+        """Return the branch for the development focus of the given project.
+
+        :param project_name: The name of a Launchpad project.
+        :return: `faults.NoSuchProduct` if there's no project by that name.
+            Return the Branch object otherwise.
+        """
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
             return faults.NoSuchProduct(project_name)
@@ -166,6 +182,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return self._getSeriesBranch(series)
 
     def _getBranchForSeries(self, project_name, series_name):
+        """Return the branch for the given series on the given project.
+
+        :param project_name: The name of a Launchpad project.
+        :param series_name: The name of a series on that project.
+        :return: The branch for that series. Otherwise, return an appropriate
+            fault if the project or the series do not exist.
+        """
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
             return faults.NoSuchProduct(project_name)
@@ -175,6 +198,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return self._getSeriesBranch(series)
 
     def _getBranch(self, unique_name):
+        """Return the branch specified by the given unique name.
+
+        :param unique_name: A string of the form "~user/project/branch".
+        :return: The corresponding Branch object if the branch exists, a
+            _NonexistentBranch stub object if the branch does not exist. If
+            unique_name is invalid, return a `faults.InvalidBranchIdentifier`.
+        """
         if unique_name[0] != '~':
             return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
@@ -184,6 +214,12 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return self._getNonexistentBranch(unique_name)
 
     def _getNonexistentBranch(self, unique_name):
+        """Return an appropriate response for a non-existent branch.
+
+        :param unique_name: A string of the form "~user/project/branch".
+        :return: A _NonexistentBranch object if the user and project exist, an
+            appropriate fault if either does not.
+        """
         owner_name, project_name, branch_name = unique_name[1:].split('/')
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
@@ -194,6 +230,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return _NonexistentBranch(unique_name)
 
     def _getResultDict(self, branch, suffix=None):
+        """Return a result dict with a list of URLs for the given branch.
+
+        :param branch: A Branch object or a _NonexistentBranch object.
+        :param suffix: The section of the path that follows the branch
+            specification.
+        :return: {'urls': [list_of_branch_urls]}.
+        """
         if branch.branch_type == BranchType.REMOTE:
             return dict(urls=[branch.url])
         else:
