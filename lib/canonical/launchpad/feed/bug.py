@@ -148,8 +148,6 @@ class BugFeed(BugsFeedBase):
 
     def initialize(self):
         super(BugFeed, self).initialize()
-        self.delegate_view = BugView(self.context, self.request)
-        self.delegate_view.initialize()
 
     def getTitle(self):
         """Title for the feed."""
