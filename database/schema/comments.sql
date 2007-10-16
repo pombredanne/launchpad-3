@@ -1659,6 +1659,7 @@ COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL 
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
 -- StructuralSubscription
+/*
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
 COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
 COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
@@ -1692,3 +1693,5 @@ COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which th
 COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
 COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
 COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
+*/
+
