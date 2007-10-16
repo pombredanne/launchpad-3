@@ -2305,6 +2305,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('mailinglistsubscription', 'person'))
 
+        # Update only the BranchSubscription that will not conflict
+        cur.execute('''
+            UPDATE BranchSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND branch NOT IN
+                (
+                SELECT branch
+                FROM BranchSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM BranchSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('branchsubscription', 'person'))
+
         # Update only the BountySubscriptions that will not conflict
         # XXX: StuartBishop 2005-03-31:
         # Add sampledata and test to confirm this case
