@@ -13,7 +13,9 @@
             Guilherme Salgado
           </a>
         </td>
-        <td><span tal:replace="contributor/karmavalue" /> points</td>
+        <td align="right">
+          <span tal:replace="contributor/karmavalue" /> points
+        </td>
       </tr>
     </table>
   </div>

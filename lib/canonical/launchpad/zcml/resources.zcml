@@ -49,6 +49,7 @@
     <resource name="branch" file="../images/branch.png" />
     <resource name="branch-large" file="../images/branch-large.gif" />
     <resource name="bug" file="../images/bug.png" />
+    <resource name="bug-large" file="../images/bug-large.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
     <resource name="bug-medium" file="../images/bug-medium.png" />
