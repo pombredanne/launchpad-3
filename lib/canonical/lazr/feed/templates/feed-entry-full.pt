@@ -28,15 +28,6 @@
     <link rel="duplicate"
         tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/duplicateof/id}"
         tal:condition="context/bug/duplicateof" />
-<tal:comment condition="nothing">
-    XXX: 2007-10-15 bug=153407 Need to update the interface to provide this info (ask BjornT)
-    <lp:date_made_private tal:content="context/bug/date_made_private/isoformat" tal:condition="nothing">dateconstruct</lp:date_made_private>
-    <lp:who_made_private tal:define="person context/bug/who_made_private" tal:condition="nothing">
-        <name tal:content="person/displayname"></name>
-        <uri tal:content="person/fmt:url"></uri>
-        <email tal:content="person/preferredemail/email"></email>
-    </lp:who_made_private>
-</tal:comment>
     <link rel="tasks" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}/tasks" />
     <link rel="attachments" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}/attachments" />
     <link rel="nominations" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}/nominations" />
