@@ -23,19 +23,19 @@ from canonical.lazr import DBEnumeratedType, DBItem
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
-    BUGNOTFOUND = DBItem(1, """
+    BUG_NOT_FOUND = DBItem(1, """
         Bug Not Found
 
         Launchpad could not find the specified bug on the remote server.
         """)
 
-    CONNECTIONERROR = DBItem(2, """
+    CONNECTION_ERROR = DBItem(2, """
         Connection Error
 
         Launchpad was unable to connect to the remote server.
         """)
 
-    INVALIDBUGID = DBItem(3, """
+    INVALID_BUG_ID = DBItem(3, """
         Invalid Bug ID
 
         The specified bug ID is not valid.
@@ -48,21 +48,21 @@ class BugWatchErrorType(DBEnumeratedType):
         remote server and was unable to retrieve the bug's status.
         """)
 
-    UNPARSABLEBUG = DBItem(5, """
+    UNPARSABLE_BUG = DBItem(5, """
         Unparsable Bug
 
         Launchpad could not extract a status from the data it received
         from the remote server.
         """)
 
-    UNPARSABLEBUGTRACKER = DBItem(6, """
+    UNPARSABLE_BUG_TRACKER = DBItem(6, """
         Unparsable Bug Tracker Version
 
         Launchpad could not determine the version of the bug tracker 
         software running on the remote server.
         """)
 
-    UNSUPPORTEDBUGTRACKER = DBItem(7, """
+    UNSUPPORTED_BUG_TRACKER = DBItem(7, """
         Unsupported Bugtracker Version
 
         The remote server is using a version of its bug tracker software
@@ -87,9 +87,7 @@ class IBugWatch(IHasBug):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
-    lasterror = Choice(
-        title=_('Last Error'),
-        vocabulary="BugWatchErrorType")
+    lasterror = Choice(title=_('Last Error'), vocabulary=BugWatchErrorType)
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '

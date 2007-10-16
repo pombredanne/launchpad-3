@@ -115,23 +115,24 @@ class BugWatch(SQLBase):
             return None
 
         error_message_mapping = {
-            BugWatchErrorType.BUGNOTFOUND: "%(bugtracker)s bug #%(bug)s"
-                " appears not to exist. Check that the bug number is "
+            BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+                "%(bug)s appears not to exist. Check that the bug "
+                "number is correct.",
+            BugWatchErrorType.CONNECTION_ERROR:"Launchpad couldn't "
+                "connect to %(bugtracker)s.",
+            BugWatchErrorType.INVALID_BUG_ID:"Bug ID %(bug)s isn't "
+                "valid on %(bugtracker)s. Check that the bug ID is "
                 "correct.",
-            BugWatchErrorType.CONNECTIONERROR:"Launchpad couldn't connect"
-                " to %(bugtracker)s.",
-            BugWatchErrorType.INVALIDBUGID:"Bug ID %(bug)s isn't valid "
-                "on %(bugtracker)s. Check that the bug ID is correct.",
             BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
                 "%(bugtracker)s timed out.",
-            BugWatchErrorType.UNPARSABLEBUG: "Launchpad couldn't extract"
-                " a status from %(bug)s on %(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLEBUGTRACKER: "Launchpad couldn't "
-                "determine the version of %(bugtrackertype)s running on "
-                "%(bugtracker)s.",
-            BugWatchErrorType.UNSUPPORTEDBUGTRACKER: "Launchpad doesn't "
-                "support importing bugs from %(bugtrackertype)s bug "
-                "trackers."}
+            BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
+                "extract a status from %(bug)s on %(bugtracker)s.",
+            BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
+                "couldn't determine the version of %(bugtrackertype)s "
+                "running on %(bugtracker)s.",
+            BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+                "doesn't support importing bugs from %(bugtrackertype)s"
+                " bug trackers."}
 
         if self.lasterror in error_message_mapping:
             message = error_message_mapping[self.lasterror]

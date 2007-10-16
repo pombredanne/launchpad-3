@@ -39,7 +39,7 @@ messages are displayed.
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
     >>> watch = bug12.getBugWatch(tracker, 900)
-    >>> watch.lasterror = BugWatchErrorType.BUGNOTFOUND
+    >>> watch.lasterror = BugWatchErrorType.BUG_NOT_FOUND
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()
 

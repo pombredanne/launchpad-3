@@ -106,10 +106,10 @@ def get_external_bugtracker(bugtracker, version=None):
             bugtracker.name)
 
 _exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTIONERROR),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLEBUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLEBUGTRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTEDBUGTRACKER),
+   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
    (socket.timeout, BugWatchErrorType.TIMEOUT)]
 
 def get_bugwatcherrortype_for_error(error):
@@ -248,12 +248,12 @@ class ExternalBugTracker:
                     new_remote_status = self.getRemoteStatus(bug_id)
                     error = None
                 except InvalidBugId:
-                    error = BugWatchErrorType.INVALIDBUGID
+                    error = BugWatchErrorType.INVALID_BUG_ID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
-                    error = BugWatchErrorType.BUGNOTFOUND
+                    error = BugWatchErrorType.BUG_NOT_FOUND
                     log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
