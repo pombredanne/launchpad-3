@@ -348,7 +348,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
             'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
-        # now we have a good branch with a file called afile and id myid we
+        # Now we have a good branch with a file called afile and id myid we
         # need to figure out the actual path for the weave.. or deliberately
         # corrupt it. like this.
 
