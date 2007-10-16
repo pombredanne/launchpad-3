@@ -96,8 +96,8 @@ class TestJobScheduler(unittest.TestCase):
 class TestPullerMasterProtocol(TrialTestCase):
     """Tests for the process protocol used by the job manager."""
 
-    class PullerListener:
-        """Fake listener object that records calls."""
+    class StubPullerListener:
+        """Stub listener object that records calls."""
 
         def __init__(self):
             self.calls = []
@@ -112,8 +112,8 @@ class TestPullerMasterProtocol(TrialTestCase):
             self.calls.append(('mirrorFailed', message, oops))
 
 
-    class FakeTransport:
-        """Fake transport implements the bare minimum.
+    class StubTransport:
+        """Stub transport that implements the minimum for a ProcessProtocol.
 
         We're manually feeding data to the protocol, so we don't need a real
         transport.
@@ -131,11 +131,11 @@ class TestPullerMasterProtocol(TrialTestCase):
 
     def setUp(self):
         self.arbitrary_branch_id = 1
-        self.listener = TestPullerMasterProtocol.PullerListener()
+        self.listener = self.StubPullerListener()
         self.termination_deferred = defer.Deferred()
         self.protocol = scheduler.PullerMasterProtocol(
             self.termination_deferred, self.listener)
-        self.protocol.transport = TestPullerMasterProtocol.FakeTransport()
+        self.protocol.transport = self.StubTransport()
 
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
