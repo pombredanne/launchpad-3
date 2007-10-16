@@ -203,7 +203,7 @@ class TranslationImporter:
         If the person is unknown in Launchpad, the account will be created but
         it will not have a password and thus, will be disabled.
         """
-        #assert self.pofile is not None, 'self.pofile cannot be None'
+        assert self.pofile is not None, 'self.pofile cannot be None'
 
         if email is None:
             return None
@@ -213,12 +213,12 @@ class TranslationImporter:
 
         if person is None:
             # We create a new user without a password.
-            #comment = 'when importing the %s translation of %s' % (
-            #    self.pofile.language.displayname, self.potemplate.displayname)
+            comment = 'when importing the %s translation of %s' % (
+                self.pofile.language.displayname, self.potemplate.displayname)
             comment = ''
 
             person, dummy = personset.createPersonAndEmail(
-                str(email), PersonCreationRationale.POFILEIMPORT,
+                email, PersonCreationRationale.POFILEIMPORT,
                 displayname=name, comment=comment)
 
         return person
