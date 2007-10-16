@@ -35,7 +35,7 @@ class BugNominationStatusError(Exception):
 
 
 class BugNominationStatus(DBEnumeratedType):
-    """Bug Nomination Status
+    """Bug Nomination Status.
 
     The status of the decision to fix a bug in a specific release.
     """

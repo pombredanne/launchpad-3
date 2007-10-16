@@ -51,7 +51,7 @@ from canonical.lazr import (
 
 
 class BugTaskImportance(DBEnumeratedType):
-    """Bug Task Importance
+    """Bug Task Importance.
 
     Importance is used by developers and their managers to indicate how
     important fixing a bug is. Importance is typically a combination of the
@@ -68,7 +68,7 @@ class BugTaskImportance(DBEnumeratedType):
         Critical
 
         This bug is essential to fix as soon as possible. It affects
-        system stability, data integrity and / or remote access
+        system stability, data integrity and/or remote access
         security.
         """)
 
@@ -90,17 +90,17 @@ class BugTaskImportance(DBEnumeratedType):
         Low
 
         This bug does not warrant an upload just to fix it, but
-        should if possible be fixed when next the maintainer does an
-        upload. For example, it might be a typo in a document.
+        it should be fixed, if possible, next time the maintainer
+        does an upload. For example, it might be a typo in a document.
         """)
 
     WISHLIST = DBItem(10, """
         Wishlist
 
-        This is not a bug, but is a request for an enhancement or
+        This is not a bug, but a request for an enhancement or
         new feature that does not yet exist in the package. It does
-        not affect system stability, it might be a usability or
-        documentation fix.
+        not affect system stability. For example: it might be a
+        usability or documentation fix.
         """)
 
     UNDECIDED = DBItem(5, """

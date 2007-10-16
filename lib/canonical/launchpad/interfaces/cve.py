@@ -20,7 +20,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class CveStatus(DBEnumeratedType):
-    """The Status of this item in the CVE Database
+    """The Status of this item in the CVE Database.
 
     When a potential problem is reported to the CVE authorities they assign
     a CAN number to it. At a later stage, that may be converted into a CVE
@@ -31,7 +31,7 @@ class CveStatus(DBEnumeratedType):
     CANDIDATE = DBItem(1, """
         Candidate
 
-        The vulnerability is a candidate, it has not yet been confirmed and
+        The vulnerability is a candidate which hasn't yet been confirmed and
         given "Entry" status.
         """)
 

@@ -47,8 +47,6 @@ from canonical.launchpad.interfaces import (
     BugTaskStatusSearch,
     BugTaskImportance,
     BugTaskSearchParams,
-    BugTaskStatus,
-    BugTaskStatusSearch,
     ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,

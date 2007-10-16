@@ -20,8 +20,8 @@ from canonical.database.enumcol import EnumCol
 from sqlobject import ForeignKey, IntCol
 
 from canonical.launchpad.interfaces import (
-    BugInfestationStatus, IBugProductInfestationSet, IBugPackageInfestationSet,
-    IBugProductInfestation, IBugPackageInfestation, NotFoundError)
+    BugInfestationStatus, IBugPackageInfestation, IBugPackageInfestationSet, 
+    IBugProductInfestation, IBugProductInfestationSet, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
 

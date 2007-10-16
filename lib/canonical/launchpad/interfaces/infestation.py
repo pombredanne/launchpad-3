@@ -21,26 +21,26 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class BugInfestationStatus(DBEnumeratedType):
-    """Bug Infestation Status
+    """Bug Infestation Status.
 
     Malone is the bug tracking application that is part of Launchpad. It
     tracks the status of bugs in different distributions as well as
     upstream. This schema documents the kinds of infestation of a bug
-    in a coderelease.
+    in a code release.
     """
 
     AFFECTED = DBItem(60, """
         Affected
 
-        It is believed that this bug affects that coderelease. The
-        verifiedby field will indicate whether that has been verified
+        This bug is believed to affect that code release. The
+        `verifiedby` field will indicate whether that has been verified
         by a package maintainer.
         """)
 
     DORMANT = DBItem(50, """
         Dormant
 
-        The bug exists in the code of this coderelease, but it is dormant
+        The bug exists in the code of this code release, but it is dormant
         because that codepath is unused in this release.
         """)
 
@@ -71,7 +71,7 @@ class BugInfestationStatus(DBEnumeratedType):
     UNKNOWN = DBItem(10, """
         Unknown
 
-        We don't know if this bug infests that coderelease.
+        We don't know if this bug infests that code release.
         """)
 
 

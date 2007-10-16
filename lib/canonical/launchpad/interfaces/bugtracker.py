@@ -55,7 +55,7 @@ class BugTrackerBaseURL(UniqueField):
 
 
 class BugTrackerType(DBEnumeratedType):
-    """The Types of BugTracker Supported by Launchpad
+    """The Types of BugTracker Supported by Launchpad.
 
     This enum is used to differentiate between the different types of Bug
     Tracker that are supported by Malone in the Launchpad.

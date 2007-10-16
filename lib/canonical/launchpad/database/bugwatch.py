@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
-    BugTrackerType, BugTaskImportance, IBugWatch, IBugWatchSet, IBugTrackerSet,
+    BugTaskImportance, BugTrackerType, IBugTrackerSet, IBugWatch, IBugWatchSet,
     ILaunchpadCelebrities, NoBugTrackerFound, NotFoundError,
     UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase

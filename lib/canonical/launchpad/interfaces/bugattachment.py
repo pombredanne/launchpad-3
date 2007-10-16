@@ -34,14 +34,15 @@ class BugAttachmentType(DBEnumeratedType):
     PATCH = DBItem(1, """
         Patch
 
-        This is a patch that potentially fixes the bug.
+        A patch that potentially fixes the bug.
         """)
 
     UNSPECIFIED = DBItem(2, """
         Unspecified
 
-        This is everything else. It can be a screenshot, a log file, a core
-        dump, etc. Basically anything that adds more information to the bug.
+        Any attachment other than a patch. For example: a screenshot,
+        a log file, a core dump, or anything else that adds more information
+        to the bug.
         """)
 
 

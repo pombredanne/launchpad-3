@@ -18,33 +18,33 @@ __metaclass__ = type
 #
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
-__all__ = (
-'ArchivePurpose',
-'BinaryPackageFileType',
-'BinaryPackageFormat',
-'BranchReviewStatus',
-'BuildStatus',
-'CodereleaseRelationships',
-'CodeImportReviewStatus',
-'DistroSeriesStatus',
-'ImportTestStatus',
-'ImportStatus',
-'MirrorContent',
-'MirrorPulseType',
-'MirrorSpeed',
-'MirrorStatus',
-'PackagePublishingPriority',
-'PackagePublishingStatus',
-'PackagePublishingPocket',
-'ShippingRequestStatus',
-'ShippingService',
-'SourcePackageFileType',
-'SourcePackageFormat',
-'SourcePackageRelationships',
-'SourcePackageUrgency',
-'PackageUploadStatus',
-'PackageUploadCustomFormat',
-)
+__all__ = [
+    'ArchivePurpose',
+    'BinaryPackageFileType',
+    'BinaryPackageFormat',
+    'BranchReviewStatus',
+    'BuildStatus',
+    'CodereleaseRelationships',
+    'CodeImportReviewStatus',
+    'DistroSeriesStatus',
+    'ImportTestStatus',
+    'ImportStatus',
+    'MirrorContent',
+    'MirrorPulseType',
+    'MirrorSpeed',
+    'MirrorStatus',
+    'PackagePublishingPriority',
+    'PackagePublishingStatus',
+    'PackagePublishingPocket',
+    'ShippingRequestStatus',
+    'ShippingService',
+    'SourcePackageFileType',
+    'SourcePackageFormat',
+    'SourcePackageRelationships',
+    'SourcePackageUrgency',
+    'PackageUploadStatus',
+    'PackageUploadCustomFormat',
+    ]
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
@@ -150,61 +150,6 @@ class ImportTestStatus(DBSchema):
         Succeeded
 
         The sourcesource was successfully imported by the autotester.
-        """)
-
-
-class ProjectStatus(DBSchema):
-    """A Project Status
-
-    This is an enum of the values that Project.status can assume.
-    Essentially it indicates whether or not this project has been reviewed,
-    and if it has whether or not it passed review and should be considered
-    active.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This project is new and has not been reviewed.
-        """)
-
-    ACTIVE = Item(2, """
-        Active
-
-        This Project has been reviewed and is considered active in the
-        launchpad.""")
-
-    DISABLED = Item(3, """
-        Disabled
-
-        This project has been reviewed, and has been disabled. Typically
-        this is because the contents appear to be bogus. Such a project
-        should not show up in searches etc.""")
-
-
-class ProjectRelationship(DBSchema):
-    """Project Relationship
-
-    Launchpad tracks different open source projects, and the relationships
-    between them. This schema is used to describe the relationship between
-    two open source projects.
-    """
-
-    AGGREGATES = Item(1, """
-        Subject Project Aggregates Object Project
-
-        Some open source projects are in fact an aggregation of several
-        other projects. For example, the Gnome Project aggregates
-        Gnumeric, Abiword, EOG, and many other open source projects.
-        """)
-
-    SIMILAR = Item(2, """
-        Subject Project is Similar to Object Project
-
-        Often two different groups will start open source projects
-        that are similar to one another. This relationship is used
-        to describe projects that are similar to other projects in
-        the system.
         """)
 
 
@@ -973,20 +918,4 @@ class BuildStatus(DBSchema):
         In those cases all the build historic information will be stored (
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
-        """)
-
-
-class UpstreamReleaseVersionStyle(DBSchema):
-    """Upstream Release Version Style
-
-    Sourcerer will actively look for new upstream releases, and it needs
-    to know roughly what version numbering format upstream uses. The
-    release version number schemes understood by Sourcerer are documented
-    in this schema. XXX andrew please fill in!
-    """
-
-    GNU = Item(1, """
-        GNU-style Version Numbers
-
-        XXX Andrew need description here
         """)

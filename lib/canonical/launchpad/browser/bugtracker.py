@@ -23,8 +23,7 @@ from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BugTrackerType, IProject, IBugTracker, IBugTrackerSet, IRemoteBug,
-    ILaunchBag)
+    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, LaunchpadFormView, Link, Navigation,
     GetitemNavigation, redirection, LaunchpadView)

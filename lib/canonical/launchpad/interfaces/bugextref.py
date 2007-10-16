@@ -21,7 +21,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class BugExternalReferenceType(DBEnumeratedType):
-    """Bug External Reference Type
+    """Bug External Reference Type.
 
     Malone allows external information references to be attached to
     a bug. This schema lists the known types of external references.
