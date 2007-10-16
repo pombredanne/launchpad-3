@@ -773,8 +773,10 @@ class Bug(SQLBase):
         return bugtask
 
     def setPrivate(self, private, who):
-        """See `IBug`. We also record who made the change and when the change
-        took place.
+        """See `IBug`.
+
+        We also record who made the change and when the change took
+        place.
         """
         if self.private != private:
             if private:
@@ -784,8 +786,6 @@ class Bug(SQLBase):
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
                     self.subscribe(person)
-            else:
-                pass
 
             self.private = private
 

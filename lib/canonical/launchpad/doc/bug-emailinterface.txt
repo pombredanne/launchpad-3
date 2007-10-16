@@ -555,7 +555,7 @@ permission to complete the operation will be denied.)
     >>> bug_four.private
     True
 
-(Flush caches to ensure that the timestamp is set.)
+We flush the database caches to ensure that the timestamp is set:
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
