@@ -125,8 +125,12 @@ class FeedBase(LaunchpadFormView):
     def render(self):
         expires = rfc1123_date(time.time() + self.max_age)
         # self.getUpdated() can't run until after initialize() runs
-        last_modified = rfc1123_date(
-                            time.mktime(self.getUpdated().timetuple()))
+        date_updated = self.getUpdated()
+        if date_updated is not None:
+            last_modified = rfc1123_date(
+                                time.mktime(self.getUpdated().timetuple()))
+        else:
+            last_modified = rfc1123_date(time.time())
         response = self.request.response
         response.setHeader('Expires', expires)
         response.setHeader('Cache-Control', 'max-age=%d' % self.max_age)
