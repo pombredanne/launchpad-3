@@ -8,6 +8,7 @@ __all__ = [
     'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
+    'BranchBadges',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -33,7 +34,8 @@ from canonical.config import config
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
@@ -45,6 +47,8 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
@@ -63,6 +67,43 @@ class BranchSOP(StructuralObjectPresentation):
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername
+
+
+class BranchBadges(HasBadgeBase):
+    badges = "private", "bug", "blueprint", "warning"
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    def isPrivateBadgeVisible(self):
+        """Show a private badge if the branch is private."""
+        return self.branch.private
+
+    def isBugBadgeVisible(self):
+        """Show a bug badge if the branch is linked to bugs."""
+        # Only show the badge if at least one bug is visible by the user.
+        for bug in self.branch.related_bugs:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', bug):
+                return True
+        return False
+
+    def isBlueprintBadgeVisible(self):
+        """Show a blueprint badge if the branch is linked to blueprints."""
+        # When specs get privacy, this will need to be adjusted.
+        return self.branch.spec_links.count() > 0
+
+    def isWarningBadgeVisible(self):
+        """Show a warning badge if there are mirror failures."""
+        return self.branch.mirror_failures > 0
+
+    def getBadge(self, badge_name):
+        """See `IHasBadges`."""
+        if badge_name == "warning":
+            return Badge('/@@/warning', '/@@/warning-large', '',
+                         'Branch has errors')
+        else:
+            return HasBadgeBase.getBadge(self, badge_name)
 
 
 class BranchNavigation(Navigation):
@@ -524,11 +565,24 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.context.owner,
                                       data['product'],
                                       data['name'])
+
+        # If the branch is a MIRRORED branch, then the url
+        # must be supplied, and if HOSTED the url must *not*
+        # be supplied.
+        url = data.get('url')
         if self.context.branch_type == BranchType.MIRRORED:
-            if data.get('url') is None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs are required for Mirrored branches.')
+            if url is None:
+                # If the url is not set due to url validation errors,
+                # there will be an error set for it.
+                error = self.getWidgetError('url')
+                if not error:
+                    self.setFieldError(
+                        'url',
+                        'Branch URLs are required for Mirrored branches.')
+        else:
+            # We don't care about whether the URL is set for REMOTE branches,
+            # and the URL field is not shown for IMPORT or HOSTED branches.
+            pass
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):

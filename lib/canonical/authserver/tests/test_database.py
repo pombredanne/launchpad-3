@@ -619,7 +619,8 @@ class UserDetailsStorageV2Test(DatabaseTest):
         teams = sorted(userDict['teams'], key=lambda teamDict: teamDict['id'])
 
         # Mark should be in his own team, Ubuntu Team, Launchpad Administrators
-        # and testing Spanish team.
+        # and testing Spanish team, and other teams of which Launchpad
+        # Administrators is a member or owner.
         self.assertEqual(
             [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
              {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
@@ -631,6 +632,8 @@ class UserDetailsStorageV2Test(DatabaseTest):
               'id': 59, 'name': u'ubuntu-mirror-admins'},
              {'displayname': u'Registry Administrators', 'id': 60,
               'name': u'registry'},
+             {'displayname': u'Mailing List Experts',
+              'name': u'mailing-list-experts', 'id': 243607},
             ], teams)
 
         # The dict returned by authUser should be identical.
