@@ -182,15 +182,14 @@ class TestPullerMasterProtocol(TrialTestCase):
             return failure
 
         self.termination_deferred.addErrback(check_failure)
-        deferred = self.assertFailure(
-            self.termination_deferred, error.ProcessTerminated)
 
         self.protocol.errReceived('error ')
         self.protocol.errReceived('message')
         self.protocol.processEnded(
             failure.Failure(error.ProcessTerminated(exitCode=1)))
 
-        return deferred
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
 
     def test_stderrFailsProcess(self):
         """If the process prints to stderr, then the Deferred fires an
@@ -313,8 +312,9 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return TrialTestCase.run(self, result)
 
     def _dumpError(self, failure):
-        # XXX - it would be nice if we didn't have to do this manually, if
-        # instead the test gave us the full error automatically.
+        # XXX: JonathanLange 2007-10-17: It would be nice if we didn't have to
+        # do this manually, and instead the test automatically gave us the
+        # full error.
         error = getattr(failure, 'error', 'No stderr stored.')
         print error
         return failure
