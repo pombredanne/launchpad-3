@@ -2,15 +2,15 @@
 <!DOCTYPE feed [
 <!ENTITY nbsp "&#160;">
 ]>
-
-<!-- XXX: Edwin: This is not working for some reason.
+<tal:comment condition="nothing">
+XXX: Edwin 2007-10-15 bug=153406 Doctype not working for some reason.
 <!DOCTYPE feed [
 <!ENTITY % HTMLlat1 PUBLIC
     "-//W3C//ENTITIES Latin 1 for XHTML//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
 %HTMLlat1;
 ]>
--->
+</tal:comment>
 
 <feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:tal="http://xml.zope.org/namespaces/tal"

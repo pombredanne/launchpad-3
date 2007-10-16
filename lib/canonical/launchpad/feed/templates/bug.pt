@@ -27,7 +27,9 @@
             <th>Assigned to</th>
         </tr>
 
-        <!-- Bugtask -->
+        <tal:comment condition="nothing">
+        Bugtask
+        </tal:comment>
         <tr tal:repeat="bugtask context/bugtasks">
             <td tal:condition="bugtask/product">
                 <img alt="" 
@@ -50,7 +52,9 @@
             </td>
         </tr>
 
-        <!-- Nomination for series in above bugtask -->
+        <tal:comment condition="nothing">
+        Nomination for series in above bugtask
+        </tal:comment>
         <tr tal:repeat="nomination context/getNominations">
             <td colspan="4" style="padding-left: 3em">Nominated for
                 <span tal:replace="nomination/target/title">Trunk</span> by
