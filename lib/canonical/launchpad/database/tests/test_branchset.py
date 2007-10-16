@@ -187,6 +187,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         """
         branch = self.makeBranch()
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
         self.assertEqual(None, branch.mirror_request_time)
@@ -277,6 +278,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch.mirrorComplete('rev1')
         self.assertInFuture(
             branch.mirror_request_time, MIRROR_TIME_INCREMENT)
+        self.assertEqual(0, branch.mirror_failures)
 
 
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
