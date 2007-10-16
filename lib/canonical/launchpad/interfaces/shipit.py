@@ -660,7 +660,7 @@ class IStandardShipItRequest(Interface):
         title=_('Description'), readonly=True, required=False,
         description=_(
             "If user_description is not empty it's used. Otherwise we "
-            "generate a description based on the flavour and quantities"))
+            "generate a description based on the flavour and quantities."))
 
     def destroySelf():
         """Delete this object from the database."""
