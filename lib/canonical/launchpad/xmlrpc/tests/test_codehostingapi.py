@@ -24,19 +24,52 @@ class TestExpandURL(BranchTestCase):
     """Test the way that URLs are expanded."""
 
     def setUp(self):
+        """Set up the fixture for these unit tests.
+
+        - 'project' is an arbitrary Launchpad project.
+        - 'trunk' is a branch on 'project', associated with the development
+          focus.
+        """
         BranchTestCase.setUp(self)
         login(ANONYMOUS)
         self.addCleanup(logout)
         self.api = PublicCodehostingAPI(None, None)
-        # BranchType is only signficiant insofar as it is non-IMPORTED.
-        self.trunk = self.makeBranch(BranchType.HOSTED)
-        self.project = self.trunk.product
-        self.owner = self.trunk.owner
-        # Make sure that self.project's development focus has an actual branch
-        # associated with it. We removeSecurityProxy so that we can assign
-        # directly to user_branch.
-        series = removeSecurityProxy(self.project).development_focus
-        series.user_branch = self.trunk
+        # BranchType is only signficiant insofar as it is not a REMOTE branch.
+        self.product = self.makeProduct()
+        self.trunk = self.makeBranch(BranchType.HOSTED, product=self.product)
+
+        # Associate 'trunk' with the product's development focus. Use
+        # removeSecurityProxy so that we can assign directly to user_branch.
+        trunk_series = removeSecurityProxy(self.product).development_focus
+        trunk_series.user_branch = self.trunk
+
+    def makePrivateBranch(self, **kwargs):
+        """Create an arbitrary private branch using `makeBranch`.
+
+        See `BranchTestCase`.
+        """
+        branch = self.makeBranch(**kwargs)
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.private = True
+        return naked_branch
+
+    def makeProductSeries(self, product=None, owner=None, name=None,
+                          summary=None, branch=None):
+        """Make a new, arbitrary product series.
+
+        Arbitrary values will be provided for product, owner, name and summary
+        if they are not provided. If branch is not provided, then the series
+        will have no associated branch.
+        """
+        if product is None:
+            product = self.makeProduct()
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
+        return product.newSeries(owner, name, summary, branch=branch)
 
     def assertResolves(self, lp_url_path, unique_name):
         """Assert that the given lp URL path expands to the unique name of
@@ -64,59 +97,75 @@ class TestExpandURL(BranchTestCase):
         URLs earlier in the list. We use a dict so we can easily add more
         information in the future.
         """
-        results = self.api.resolve_lp_path(self.project.name)
+        results = self.api.resolve_lp_path(self.product.name)
         urls = [
             'bzr+ssh://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
             'sftp://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
             'http://bazaar.launchpad.dev/%s' % self.trunk.unique_name]
         self.assertEqual(dict(urls=urls), results)
 
-    def test_projectOnly(self):
-        """lp:project expands to the branch associated with development focus
-        of the project.
+    def test_productOnly(self):
+        """lp:product expands to the branch associated with development focus
+        of the product.
         """
-        self.assertResolves(self.project.name, self.trunk.unique_name)
+        self.assertResolves(self.product.name, self.trunk.unique_name)
 
-    def test_projectDoesntExist(self):
+    def test_productDoesntExist(self):
         """Return a NoSuchProduct fault if the product doesn't exist."""
         self.assertFault(
             'doesntexist', faults.NoSuchProduct('doesntexist'))
         self.assertFault(
             'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
-    def test_projectAndSeries(self):
-        """lp:project/series expands to the branch associated with the product
-        series 'series' on 'project'.
+    def test_productAndSeries(self):
+        """lp:product/series expands to the branch associated with the product
+        series 'series' on 'product'.
         """
+        series = self.makeProductSeries(
+            self.product, branch=self.makeBranch())
         self.assertResolves(
-            '%s/%s' % (self.project.name,
-                       self.project.development_focus.name),
-            self.project.development_focus.user_branch.unique_name)
+            '%s/%s' % (self.product.name, series.name),
+            series.user_branch.unique_name)
+
+        # We can also use product/series notation to reach trunk.
+        self.assertResolves(
+            '%s/%s' % (self.product.name,
+                       self.product.development_focus.name),
+            self.product.development_focus.user_branch.unique_name)
+
+    def test_developmentFocusHasNoBranch(self):
+        """Return a NoBranchForSeries fault if the development focus has no
+        branch associated with it.
+        """
+        product = self.makeProduct()
+        self.assertEqual(None, product.development_focus.user_branch)
+        self.assertFault(
+            product.name, faults.NoBranchForSeries(product.development_focus))
 
     def test_seriesHasNoBranch(self):
         """Return a NoBranchForSeries fault if the series has no branch
         associated with it.
         """
-        project = self.makeProduct()
-        self.assertEqual(None, project.development_focus.user_branch)
+        series = self.makeProductSeries(branch=None)
         self.assertFault(
-            project.name, faults.NoBranchForSeries(project.development_focus))
-        self.assertFault(
-            '%s/%s' % (project.name, project.development_focus.name),
-            faults.NoBranchForSeries(project.development_focus))
+            '%s/%s' % (series.product.name, series.name),
+            faults.NoBranchForSeries(series))
 
     def test_noSuchSeries(self):
         """Return a NoSuchSeries fault there is no series of the given name
-        associated with the project.
+        associated with the product.
         """
         self.assertFault(
-            '%s/%s' % (self.project.name, "doesntexist"),
-            faults.NoSuchSeries("doesntexist", self.project))
+            '%s/%s' % (self.product.name, "doesntexist"),
+            faults.NoSuchSeries("doesntexist", self.product))
 
     def test_branch(self):
         """The unique name of a branch resolves to the unique name of the
         branch.
         """
+        arbitrary_branch = self.makeBranch()
+        self.assertResolves(
+            arbitrary_branch.unique_name, arbitrary_branch.unique_name)
         self.assertResolves(self.trunk.unique_name, self.trunk.unique_name)
 
     def test_noSuchBranch(self):
@@ -124,18 +173,20 @@ class TestExpandURL(BranchTestCase):
 
         We do this so that users can push new branches to lp: URLs.
         """
+        owner = self.makePerson()
         nonexistent_branch = '~%s/%s/doesntexist' % (
-            self.owner.name, self.project.name)
+            owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
-    def test_resolveBranchWithNoSuchProject(self):
+    def test_resolveBranchWithNoSuchProduct(self):
         """If we try to resolve a branch that refers to a non-existent
-        project, then we return a NoSuchProduct fault.
+        product, then we return a NoSuchProduct fault.
         """
-        nonexistent_project_branch = "~%s/doesntexist/%s" % (
-            self.owner.name, self.getUniqueString())
+        owner = self.makePerson()
+        nonexistent_product_branch = "~%s/doesntexist/%s" % (
+            owner.name, self.getUniqueString())
         self.assertFault(
-            nonexistent_project_branch, faults.NoSuchProduct('doesntexist'))
+            nonexistent_product_branch, faults.NoSuchProduct('doesntexist'))
 
     def test_resolveBranchWithNoSuchOwner(self):
         """If we try to resolve a branch that refers to a non-existent owner,
@@ -153,7 +204,8 @@ class TestExpandURL(BranchTestCase):
         We do this so that users can do operations like 'bzr cat
         lp:path/to/branch/README.txt'.
         """
-        longer_path = os.path.join(self.trunk.unique_name, 'qux')
+        arbitrary_branch = self.makeBranch()
+        longer_path = os.path.join(arbitrary_branch.unique_name, 'qux')
         self.assertResolves(longer_path, longer_path)
 
     def test_emptyPath(self):
@@ -181,26 +233,52 @@ class TestExpandURL(BranchTestCase):
 
     def test_trailingSlashes(self):
         """Trailing slashes are trimmed."""
-        self.assertResolves(self.project.name + '/', self.trunk.unique_name)
-        self.assertResolves(self.project.name + '//', self.trunk.unique_name)
+
+        # Trailing slashes on lp:product//
+        self.assertResolves(self.product.name + '/', self.trunk.unique_name)
+        self.assertResolves(self.product.name + '//', self.trunk.unique_name)
+
+        # Trailing slashes on lp:~owner/product/branch//
+        arbitrary_branch = self.makeBranch()
         self.assertResolves(
-            self.trunk.unique_name + '/', self.trunk.unique_name)
+            arbitrary_branch.unique_name + '/', arbitrary_branch.unique_name)
         self.assertResolves(
-            self.trunk.unique_name + '//', self.trunk.unique_name)
+            arbitrary_branch.unique_name + '//', arbitrary_branch.unique_name)
 
     def test_privateBranch(self):
-        """We resolve invisible branches just like visible branches.
+        """Invisible branches are resolved as if they didn't exist, so that we
+        reveal the least possile amount of information about them.
 
-        This is OK, because by resolving the lp url path, we don't give any
-        information away about the branch.
+        For fully specified branch names, this means resolving the lp url.
+        """
+        arbitrary_branch = self.makePrivateBranch()
+        self.assertResolves(
+            arbitrary_branch.unique_name, arbitrary_branch.unique_name)
+
+    def test_privateBranchOnSeries(self):
+        """We resolve invisible branches as if they don't exist.
+
+        For references to product series, this means returning a
+        NoBranchForSeries fault.
+        """
+        series = self.makeProductSeries(branch=self.makePrivateBranch())
+        self.assertFault(
+            '%s/%s' % (series.product.name, series.name),
+            faults.NoBranchForSeries(series))
+
+    def test_privateBranchAsDevelopmentFocus(self):
+        """We resolve invisible branches as if they don't exist.
+
+        References to a product resolve to the branch associated with the
+        development focus. If that branch is private, other views will
+        indicate that there is no branch on the development focus. We do the
+        same.
         """
         naked_trunk = removeSecurityProxy(self.trunk)
         naked_trunk.private = True
-        self.assertResolves(
-            naked_trunk.unique_name, naked_trunk.unique_name)
         self.assertFault(
-            self.project.name,
-            faults.NoBranchForSeries(self.project.development_focus))
+            self.product.name,
+            faults.NoBranchForSeries(self.product.development_focus))
 
     def test_remoteBranch(self):
         """For remote branches, return results that link to the actual remote

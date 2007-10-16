@@ -134,12 +134,16 @@ class BranchTestCase(TestCaseWithTransport):
     def getUniqueString(self, prefix=None):
         """Return a string to this run of the test case.
 
+        The string returned will always be a valid name that can be used in
+        Launchpad URLs.
+
         :param prefix: Used as a prefix for the unique string. If unspecified,
             defaults to the name of the test.
         """
         if prefix is None:
             prefix = self.id().split('.')[-1]
-        return "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
+        return string.replace('_', '-').lower()
 
     def getUniqueURL(self):
         """Return a URL unique to this run of the test case."""
@@ -188,7 +192,7 @@ class BranchTestCase(TestCaseWithTransport):
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return self.branch_set.new(
-            branch_type, branch_name, owner, owner, product, url, **kwargs)
+            branch_type, name, owner, owner, product, url, **kwargs)
 
     def relaxSecurityPolicy(self):
         """Switch to using 'PermissiveSecurityPolicy'."""
