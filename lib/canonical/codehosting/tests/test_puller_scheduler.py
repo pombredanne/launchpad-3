@@ -320,6 +320,11 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return failure
 
     def test_mirror(self):
+        """Actually mirror a branch using a worker sub-process.
+
+        This test actually launches a worker process and makes sure that it
+        runs successfully and that we report the successful run.
+        """
         revision_id = self.bzr_tree.branch.last_revision()
         puller_master = scheduler.PullerMaster(
             self.db_branch.id, local_path_to_url('src-branch'),
