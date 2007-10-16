@@ -27,6 +27,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
 
+
 def validate_new_submission_key(submission_key):
     """Check, if submission_key already exists in HWDBSubmission."""
     if not valid_name(submission_key):
@@ -39,6 +40,11 @@ def validate_new_submission_key(submission_key):
     return True
 
 def validate_email_address(emailaddress):
+    """Validate an email address.
+
+    Returns True for valid addresses, else raises LaunchpadValidationError.
+    The latter allows convenient error handling by LaunchpadFormView.
+    """
     if not valid_email(emailaddress):
         raise LaunchpadValidationError(
             'Invalid email address')

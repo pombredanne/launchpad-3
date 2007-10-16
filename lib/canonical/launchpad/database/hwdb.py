@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     IHWSystemFingerprint, IHWSystemFingerprintSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet)
 
+
 class HWSubmission(SQLBase):
     """See `IHWSubmission`."""
 
@@ -165,17 +166,20 @@ class HWSubmissionSet:
     def submissionIdExists(self, submission_key):
         """See `IHWSubmissionSet`."""
         rows = HWSubmission.selectBy(submission_key=submission_key)
+        return bool(rows)
         return rows.count() > 0
 
     def setOwnership(self, email):
         """See `IHWSubmissionSet`."""
         assert email.status in (EmailAddressStatus.VALIDATED,
-                                EmailAddressStatus.PREFERRED)
+                                EmailAddressStatus.PREFERRED), (
+            'Invalid email status for setting ownership of an HWDB '
+            'submission: %s' % email.status.title)
         person = email.person
         submissions =  HWSubmission.selectBy(
             raw_emailaddress=email.email, owner=None)
-        for s in submissions:
-            s.owner = person
+        for submission in submissions:
+            submission.owner = person
 
 
 class HWSystemFingerprint(SQLBase):

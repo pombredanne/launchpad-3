@@ -287,7 +287,7 @@ to the method, or if the passed parameter is neither the owner nor an admin.
      (u'unique-id-3', u'Dell Inspiron 1234'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
 
-When an anonymous submitter registers later a Launchpad account, the field 
+When an anonymous submitter later registers a Launchpad account, the field 
 `owner` is updated.
 
     >>> from canonical.launchpad.interfaces import (
@@ -322,7 +322,7 @@ will have the the `owner` field set to None.
     None
 
 When he adds this email address to his list of addresses in Launchpad,
-the field owner` is updated.
+the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
     ...     u'beeblebrox@beeblebrox.net', user)
