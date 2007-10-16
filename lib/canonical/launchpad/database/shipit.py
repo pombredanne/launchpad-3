@@ -1263,24 +1263,31 @@ class StandardShipItRequest(SQLBase):
     quantityamd64 = IntCol(notNull=True)
     isdefault = BoolCol(notNull=True, default=False)
     flavour = EnumCol(enum=ShipItFlavour, notNull=True)
-
-    @property
-    def description_without_flavour(self):
-        """See IStandardShipItRequest"""
-        if self.totalCDs > 1:
-            description = "%d CDs" % self.totalCDs
-        else:
-            description = "%d CD" % self.totalCDs
-        return "%s (%s)" % (description, self._detailed_description())
+    user_description = StringCol(dbName='description')
 
     @property
     def description(self):
-        """See IStandardShipItRequest"""
+        """See `IStandardShipItRequest`"""
+        if self.user_description:
+            return self.user_description
+
+        quantities = []
+        text = '%d %s Edition'
+        if self.quantityx86:
+            quantities.append(
+                text % (self.quantityx86, ShipItArchitecture.X86.title))
+        if self.quantityamd64:
+            quantities.append(
+                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
+        if self.quantityppc:
+            quantities.append(
+                text % (self.quantityppc, ShipItArchitecture.PPC.title))
+        quantities_description = ", ".join(quantities)
         if self.totalCDs > 1:
             description = "%d %s CDs" % (self.totalCDs, self.flavour.title)
         else:
             description = "%d %s CD" % (self.totalCDs, self.flavour.title)
-        return "%s (%s)" % (description, self._detailed_description())
+        return u"%s (%s)" % (description, quantities_description)
 
     @property
     def quantities(self):
@@ -1288,20 +1295,6 @@ class StandardShipItRequest(SQLBase):
         return {ShipItArchitecture.X86: self.quantityx86,
                 ShipItArchitecture.AMD64: self.quantityamd64,
                 ShipItArchitecture.PPC: self.quantityppc}
-
-    def _detailed_description(self):
-        detailed = []
-        text = '%d %s Edition'
-        if self.quantityx86:
-            detailed.append(
-                text % (self.quantityx86, ShipItArchitecture.X86.title))
-        if self.quantityamd64:
-            detailed.append(
-                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
-        if self.quantityppc:
-            detailed.append(
-                text % (self.quantityppc, ShipItArchitecture.PPC.title))
-        return ", ".join(detailed)
 
     @property
     def totalCDs(self):
@@ -1314,11 +1307,12 @@ class StandardShipItRequestSet:
 
     implements(IStandardShipItRequestSet)
 
-    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault):
+    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description=''):
         """See IStandardShipItRequestSet"""
         return StandardShipItRequest(flavour=flavour, quantityx86=quantityx86,
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
-                isdefault=isdefault)
+                isdefault=isdefault, user_description=user_description)
 
     def getByFlavour(self, flavour, user=None):
         """See IStandardShipItRequestSet"""

@@ -18,12 +18,14 @@ class TestLpQueryDistroScript(unittest.TestCase):
     """Test the lp-query-distro.py script."""
     layer = LaunchpadLayer
 
-    def runLpQueryDistro(self, extra_args=[]):
+    def runLpQueryDistro(self, extra_args=None):
         """Run lp-query.distro.py, returning the result and output.
 
         Returns a tuple of the process's return code, stdout output and
         stderr output.
         """
+        if extra_args is None:
+            extra_args = []
         script = os.path.join(
             config.root, "scripts", "ftpmaster-tools", "lp-query-distro.py")
         args = [sys.executable, script]
