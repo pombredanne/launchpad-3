@@ -54,22 +54,31 @@ class BranchStatusClient:
 
 
 class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
+    """The protocol for receiving events from the puller worker."""
 
     def __init__(self, deferred, listener):
+        """Construct an instance of the protocol, for listening to a worker.
+
+        :param deferred: A Deferred that will be fired when the worker has
+            finished (either successfully or unsuccesfully).
+        :param listener: A PullerMaster object that is notified when the
+            protocol receives events from the worker.
+        """
         self._termination_deferred = deferred
         self.listener = listener
-        self._internal_deferred = None
         self._commands = {
             'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 2}
         self._resetState()
         self._stderr = StringIO()
+        self._internal_deferred = None
 
     def _fireTerminationDeferred(self, reason):
         if self._termination_deferred is None:
-            # We don't want to fire the Deferred twice.
+            # We have already fired the deferred and do not want to do so
+            # again.
             return
-        self._termination_deferred, deferred = (
-            None, self._termination_deferred)
+        deferred = self._termination_deferred
+        self._termination_deferred = None
         if self._internal_deferred is not None:
             self._internal_deferred.addCallback(
                 self._reallyFireTerminationDeferred, deferred, reason)
@@ -91,17 +100,18 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
     def dataReceived(self, data):
         NetstringReceiver.dataReceived(self, data)
-        # There are no hooks in NetstringReceiver to catch a
-        # NetstringParseError. The best we can do is check the value of
-        # brokenPeer.
+        # XXX: JonathanLange 2007-10-16
+        # bug=http://twistedmatrix.com/trac/ticket/2851: There are no hooks in
+        # NetstringReceiver to catch a NetstringParseError. The best we can do
+        # is check the value of brokenPeer.
         if self.brokenPeer:
             self.unexpectedError(failure.Failure(NetstringParseError(data)))
 
     def stringReceived(self, line):
-        if line in self._commands:
-            self._current_command = line
-        elif self._current_command is not None:
+        if self._current_command is not None:
             self._current_args.append(line)
+        elif line in self._commands:
+            self._current_command = line
         else:
             self.unexpectedError(failure.Failure(BadMessage(line)))
             return
