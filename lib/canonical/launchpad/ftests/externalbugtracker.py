@@ -127,10 +127,10 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
         self.get_remote_status_error = None
 
     def initializeRemoteBugDB(self, bug_ids):
-        """See `ExternalBugTracker`.
+        """Raise the error specified in initialize_remote_bugdb_error.
 
-        The error specified in initialize_remote_bugdb_error will be
-        raised.  If no such error exists, None will be returned.
+        If initialize_remote_bugdb_error is None, None will be returned.
+        See `ExternalBugTracker`.
         """
         if self.initialize_remote_bugdb_error:
             # We have to special case BugTrackerConnectError as it takes
@@ -142,19 +142,19 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
                 raise self.initialize_remote_bugdb_error("Testing")
 
     def getRemoteStatus(self, bug_id):
-        """See `ExternalBugTracker`.
+        """Raise the error specified in get_remote_status_error.
 
-        The error specified in get_remote_status_error will be raised.
-        If no such error exists, None will be returned.
+        If get_remote_status_error is None, None will be returned.
+        See `ExternalBugTracker`.
         """
         if self.get_remote_status_error:
             raise self.get_remote_status_error("Testing")
 
     def convertRemoteStatus(self, status):
-        """See `ExternalBugTracker`. 
+        """Return UNKNOWN_REMOTE_STATUS.
 
-        Always returns UNKNOWN_REMOTE_STATUS; This method exists to
-        avoid tests from failing with AttributeErrors.
+        This method exists to avoid tests from failing with
+        AttributeErrors.
         """
         return UNKNOWN_REMOTE_STATUS
 
