@@ -452,7 +452,7 @@ class SprintMeetingExportView(LaunchpadView):
 
             # skip sprints with no priority or less than low:
             if (spec.priority is None or
-                spec.priority < SpecificationPriority.LOW):
+                spec.priority < SpecificationPriority.UNDEFINED):
                 continue
 
             if (spec.definition_status not in

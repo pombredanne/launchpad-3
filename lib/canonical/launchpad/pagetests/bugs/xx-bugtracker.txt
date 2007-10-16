@@ -149,11 +149,9 @@ tracker uses.
 
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
-  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-  ...     print extract_text(message)
-  An error occurred.
-  There is a problem with the information you entered.
-  Please fix it and try again.
+  >>> for message in get_feedback_messages(user_browser):
+  ...     print message
+  There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
 After successfully editing the bug tracker information, the user is
