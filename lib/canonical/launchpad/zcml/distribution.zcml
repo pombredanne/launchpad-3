@@ -14,10 +14,13 @@
       set_attributes="displayname title summary description
                       translationgroup translationpermission
                       driver members owner bugcontact
-                      official_malone official_rosetta official_answers
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
                       mugshot"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="official_malone official_rosetta official_answers"
       />
     <require
       permission="launchpad.TranslationsAdmin"
@@ -340,15 +343,6 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
-    />
-
   <browser:editform
     name="+uploadadmin"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -381,13 +375,11 @@
     template="../templates/distribution-change-mirror-admin.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
     facet="bugs"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/distribution-bugcontact.pt"
     />

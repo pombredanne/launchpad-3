@@ -371,15 +371,6 @@
     template="../templates/archive-activate.pt"
     />
 
-  <browser:page
-    name="+ppa-tos"
-    facet="overview"
-    for="canonical.launchpad.interfaces.IPerson"
-    permission="zope.Public"
-    template="../templates/archive-ppa-tos.pt"
-    />
-
-
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
   sure only the user (and not launchpad admins) will be able to edit her own
@@ -522,9 +513,9 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
-    class="canonical.launchpad.browser.TeamEmailView"
-    name="+editemail"
-    template="../templates/team-editemail.pt"
+    class="canonical.launchpad.browser.TeamContactAddressView"
+    name="+contactaddress"
+    template="../templates/team-contactaddress.pt"
     />
 
   <browser:page

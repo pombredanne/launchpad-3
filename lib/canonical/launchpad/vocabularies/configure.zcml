@@ -21,11 +21,6 @@
     />
 
   <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
-    />
-
-  <vocabulary
     name="BugNominatableSerieses"
     factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />
@@ -308,6 +303,11 @@
   <vocabulary
     name="UserTeamsParticipation"
     factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
+    name="ActiveMailingList"
+    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
     />
 
   <vocabulary

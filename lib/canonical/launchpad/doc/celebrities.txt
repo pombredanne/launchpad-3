@@ -2,26 +2,41 @@
 
 https://launchpad.canonical.com/LaunchpadCelebrities
 
-There are a number of special objects, some of which exist in the database,
-which we want to give easy access to in the code.
+There are a number of special objects, some of which exist in the
+database, which we want to give easy access to in the code. To this end,
+there is an ILaunchpadCelebrities utility available that gives access
+to these well-known objects through attributes.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
-The admins team will be renamed to the 'super' team in due course.  Meanwhile,
-we need to have the admins team in ILaunchpadCelebrities.
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ILaunchpadCelebrities, celebs)
+    True
+
+
+== admin ==
+
+The 'admins' team contain the user who have super-power over all of
+Launchpad. This team is accessible through the admin attribute.
 
     >>> personset = getUtility(IPersonSet)
     >>> admins = personset.getByName('admins')
     >>> celebs.admin == admins
     True
 
+
+== vcs-imports ==
+
 The vcs-imports celebrity owns the branches created by importd.
 
     >>> vcs_imports = personset.getByName('vcs-imports')
     >>> celebs.vcs_imports == vcs_imports
     True
+
+
+== registry ==
 
 The registry celebrity has permissions to perform registry gardening
 operations.
@@ -30,18 +45,27 @@ operations.
     >>> celebs.registry == registry
     True
 
+
+== buildd_admin ==
+
 The buildd_admin celebrity has permission to perform routine task
-in the buildfarm
+in the buildfarm.
 
     >>> buildd_admin = personset.getByName('launchpad-buildd-admins')
     >>> celebs.buildd_admin == buildd_admin
     True
+
+
+== bug_watch_updater ==
 
 The bug_watch_updater celebrity updates the bug watches.
 
     >>> bug_watch_updater = personset.getByName('bug-watch-updater')
     >>> celebs.bug_watch_updater == bug_watch_updater
     True
+
+
+== sourceforge_tracker ==
 
 For all the products using SourceForge, we have a single registered
 tracker
@@ -51,6 +75,9 @@ tracker
     >>> celebs.sourceforge_tracker == sf_tracker
     True
 
+
+== janitor ==
+
 We have the Launchpad Janitor which takes care of expiring old
 questions, team memberships when they reach their expiry date,
 and old incomplete bugtasks.
@@ -59,6 +86,9 @@ and old incomplete bugtasks.
     >>> celebs.janitor == janitor
     True
 
+
+== launchpad ==
+
 The Launchpad product itself.
 
     >>> from canonical.launchpad.interfaces import IProductSet
@@ -66,6 +96,17 @@ The Launchpad product itself.
     >>> celebs.launchpad == launchpad
     True
 
-# XXX: David Allouche 2005-04-01
-# Add interface verification test.
-# Ask debonzi to add these in general.
+
+== mailing_list_experts ==
+
+There is a 'Mailing List Experts' team that has administrative power
+over mailing lists.
+
+    >>> mailing_list_experts = personset.getByName('mailing-list-experts')
+    >>> celebs.mailing_list_experts == mailing_list_experts
+    True
+
+The Launchpad Administrators team is a member of that team.
+
+    >>> celebs.admin.inTeam(mailing_list_experts)
+    True

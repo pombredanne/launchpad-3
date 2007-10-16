@@ -19,11 +19,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingPocket)
+    ArchivePurpose, BuildStatus, PackagePublishingPocket,
+    PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
@@ -66,6 +69,31 @@ class Build(SQLBase):
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead.
         return BuildQueue.selectOneBy(build=self)
+
+    @property
+    def current_component(self):
+        """See `IBuild`."""
+        pub = self._currentPublication()
+        if pub is not None:
+            return pub.component
+        return self.sourcepackagerelease.component
+
+    def _currentPublication(self):
+        """See `IBuild`."""
+        allowed_status = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        query = """
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.status IN %s
+        """ % sqlvalues(
+            self.distroseries, self.sourcepackagerelease,
+            self.archive, allowed_status)
+
+        return SourcePackagePublishingHistory.selectFirst(
+            query, orderBy='-datecreated')
 
     @property
     def changesfile(self):
@@ -136,10 +164,13 @@ class Build(SQLBase):
     @property
     def can_be_retried(self):
         """See `IBuild`."""
-        # check if the build would be properly collected if it was
-        # reset. Do not reset denied builds.
-        if (self.is_trusted and not
-            self.distroseries.canUploadToPocket(self.pocket)):
+        # First check that the slave scanner would pick up the build record
+        # if we reset it.  Untrusted and Partner builds are always ok.
+        if (self.is_trusted and
+            self.archive.purpose != ArchivePurpose.PARTNER and
+            not self.distroseries.canUploadToPocket(self.pocket)):
+            # The slave scanner would not pick this up, so it cannot be
+            # re-tried.
             return False
 
         failed_buildstates = [
@@ -149,6 +180,8 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOUPLOAD,
             ]
 
+        # If the build is currently in any of the failed states,
+        # it may be retried.
         return self.buildstate in failed_buildstates
 
     @property
