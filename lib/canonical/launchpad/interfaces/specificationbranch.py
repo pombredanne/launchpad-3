@@ -4,15 +4,17 @@
 
 __metaclass__ = type
 
-__all__ = ["ISpecificationBranch"]
+__all__ = [
+    "ISpecificationBranch",
+    "ISpecificationBranchSet",
+    ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary
-from canonical.launchpad.interfaces import (
-    IHasDateCreated, non_duplicate_branch)
+from canonical.launchpad.interfaces import IHasDateCreated
 
 
 class ISpecificationBranch(IHasDateCreated):
@@ -26,3 +28,14 @@ class ISpecificationBranch(IHasDateCreated):
 
     def destroySelf():
         """Destroy this specification branch link"""
+
+
+class ISpecificationBranchSet(Interface):
+    """Methods that work on the set of all specification branch links."""
+
+    def getSpecificationBranchesForBranches(branches, user):
+        """Return a sequence of ISpecificationBranch instances associated with
+        the given branches.
+
+        Only return instances that are visible to the user.
+        """
