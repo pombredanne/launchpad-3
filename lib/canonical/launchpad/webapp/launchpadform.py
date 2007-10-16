@@ -25,12 +25,11 @@ from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
 from canonical.launchpad.webapp.interfaces import (
-    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import (
-    SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -327,8 +326,6 @@ class LaunchpadEditFormView(LaunchpadFormView):
             context = self.context
         context_before_modification = Snapshot(
             context, providing=providedBy(context))
-
-        notify(SQLObjectToBeModifiedEvent(context, data))
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)

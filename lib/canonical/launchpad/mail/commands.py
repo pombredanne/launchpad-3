@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
         BugTaskStatus)
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
+    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
@@ -178,8 +178,6 @@ class EditEmailCommand(EmailCommand):
         else:
             context_snapshot = Snapshot(context, providing=providedBy(context))
 
-        if not ISQLObjectCreatedEvent.providedBy(current_event):
-            notify(SQLObjectToBeModifiedEvent(context, args))
         edited = False
         for attr_name, attr_value in args.items():
             if getattr(context, attr_name) != attr_value:

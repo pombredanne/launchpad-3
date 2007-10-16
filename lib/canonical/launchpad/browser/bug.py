@@ -42,8 +42,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
@@ -487,7 +486,6 @@ class BugSecrecyEditView(BugEditViewBase):
         bug = self.context.bug
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
-        notify(SQLObjectToBeModifiedEvent(bug, dict(private=private)))
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
         if private_changed:

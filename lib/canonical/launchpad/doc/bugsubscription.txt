@@ -263,17 +263,13 @@ subscribers.
 
     >>> from zope.event import notify
 
-    >>> from canonical.launchpad.event import (
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
     Mark Shuttleworth
-
-    >>> notify(
-    ...     SQLObjectToBeModifiedEvent(linux_source_bug, {"private": True}))
 
     >>> bug_before_modification = Snapshot(linux_source_bug, providing=IBug)
     >>> linux_source_bug.setPrivate(True, getUtility(ILaunchBag).user)

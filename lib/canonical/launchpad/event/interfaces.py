@@ -27,13 +27,6 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
     user = Attribute("The user who modified the object.")
 
 
-class ISQLObjectToBeModifiedEvent(IObjectEvent):
-    """An SQLObject is about to be modified."""
-
-    new_values = Attribute("A dict of fieldname -> newvalue pairs.")
-    user = Attribute("The user who will modify the object.")
-
-
 class IJoinTeamEvent(Interface):
     """A person/team joined (or tried to join) a team."""
 
