@@ -33,6 +33,10 @@ administrator of the team.
     Celso Providelo
     Membership:
     3
+    active members
+    1 proposed members
+    1 invited members
+    2 inactive members
     Moderated Team:
     All subscriptions for this team are subject to approval by one of
     the team's administrators.

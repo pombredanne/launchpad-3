@@ -221,12 +221,33 @@
               >sabdfl</a>
             </td>
           </tr>
-          <tr tal:condition="context/teamowner">
-            <th>Membership:</th>
-            <td>
-              <span tal:replace="context/all_member_count">12</span>
-            </td>
-          </tr>
+          <tal:is_team condition="context/teamowner">
+            <tr>
+              <th>Membership:</th>
+              <td>
+                <span tal:replace="context/all_member_count">12</span>
+                active members
+              </td>
+            </tr>
+            <tr tal:define="count context/proposed_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> proposed members
+              </td>
+            </tr>
+            <tr tal:define="count context/invited_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> invited members
+              </td>
+            </tr>
+            <tr tal:define="count context/inactive_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> inactive members
+              </td>
+            </tr>
+          </tal:is_team>
           <tr tal:condition="context/icon">
             <th>Icon:</th>
             <td><tal:icon replace="structure context/image:icon" /></td>
