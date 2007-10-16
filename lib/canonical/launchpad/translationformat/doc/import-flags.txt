@@ -1,10 +1,13 @@
-= Legacy KDE PO file format =
+= Importing translation files =
 
-KDE versions before 4.0 used regular PO files with translatable
-strings and their translations specially formatted to accommodate
-features that were introduced in GNU gettext PO files later.
+We are using gettext PO files to document how are our translation
+files being imported into our database, showing how are translations
+overridden or not, depending on the type of the import.
 
-Such features include plural forms support and context support.
+We'll be going through usual steps of the PO file lifetime: importing
+a template, importing a translation from package, importing updated
+translation from a translator, importing an updated translation from
+package and again importing update from a translator.
 
 == Helper imports ==
 
@@ -123,8 +126,10 @@ carlos@canonical.com.
     ...     path='po/firefox.pot',
     ...     owner=carlos)
 
-== Non-KDE PO file detection ==
+== Importing a template ==
 
+To avoid using sample data, we import a template into Firefox here, to
+be able to import translations later on.
 
     >>> test_template = r'''
     ... msgid ""
@@ -151,17 +156,14 @@ carlos@canonical.com.
     ... msgid "sixth"
     ... msgstr ""
     ... '''
-
-
-Importing this file works, but the format is set to Gettext PO.
-
     >>> entry = import_pofile_or_potemplate(test_template, carlos,
     ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
 
-Now we get a published import.
+Usually, first imports we get are published (i.e. coming from a
+package upload in Ubuntu).
 
     # fifth and sixth are untranslated
     >>> test_translation_published = r'''
@@ -194,6 +196,11 @@ Now we get a published import.
     ...                                     pofile=firefox_serbian)
     >>> print entry.status.name
     IMPORTED
+
+When this file is imported, we can notice that all the messages are
+imported as expected: active translation is set to the same published
+one, and fuzzy flags are carried over as well.
+
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz
      1. first              a                       a                       *
@@ -203,7 +210,11 @@ Now we get a published import.
      5. fifth              None                    None                    *
      6. sixth              None                    None                    *
 
-And now we get a non-published (overriding) import.
+After initial translation import from the package, it's common for
+translators to work either directly in Launchpad or to upload PO files
+with their updates.  This is a file where "second" and "forth" message
+are updated with new translations, with fuzzy flag taken off from the
+"forth", and where "fifth" message is newly translated.
 
     >>> test_translation_update1 = r'''
     ... msgid ""
@@ -241,6 +252,12 @@ And now we get a non-published (overriding) import.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+
+Again, PO file in the database reflects the changes: translations for
+"second", "fourth" and "fifth" are updated (and now different from
+published translations), and fuzzy flag is off on "fourth" (and
+published fuzzy is still on).
+
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz
      1. first              a                       a                       *
@@ -251,7 +268,9 @@ And now we get a non-published (overriding) import.
      6. sixth              None                    None                    *
 
 
-Now we again import a published translation.
+Common next step is having a new package upload which provides us with
+updated translations upstream.  A fuzzy flag is removed from the
+"fourth" message, and both "fifth" and "sixth" are translated.
 
     >>> test_translation_published_update = r'''
     ... msgid ""
@@ -289,6 +308,13 @@ Now we again import a published translation.
     ...                                     published=True)
     >>> print entry.status.name
     IMPORTED
+
+So, we can see that the published fuzzy flag has been removed from the
+"fourth" message in the database, andd that translations for "fifth"
+and "sixth" have been updated.  However, note that active translation
+for "fifth" has not been overriden by a package upload, since we give
+preference to translations done inside Launchpad over imported ones.
+
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz
      1. first              a                       a                       *
@@ -298,8 +324,11 @@ Now we again import a published translation.
      5. fifth              e-from-LP               e                       *
      6. sixth              f                       f                       *
 
-And another non-published update.
 
+Finally, we do another translator (i.e. not from a package) update,
+where we remove the fuzzy flag from the published translation for
+"third", and revert "fourth" to published translation.  We also update
+the "fifth" translation with a new translation.
 
     >>> test_translation_update2 = r'''
     ... msgid ""
@@ -334,13 +363,18 @@ And another non-published update.
     ... msgstr "f"
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
-
     >>> entry = import_pofile_or_potemplate(test_translation_update2,
     ...                                     carlos, firefox_trunk,
     ...                                     pofile=firefox_serbian,
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+
+We can see that "third" message has fuzzy flag removed from the active
+translation (but not from the published one), "fourth" is reverted to
+the same translation as published, and "fifth" has an updated
+translation.
+
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz
      1. first              a                       a                       *
