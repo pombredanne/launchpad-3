@@ -66,8 +66,6 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         """
         self._termination_deferred = deferred
         self.listener = listener
-        self._commands = {
-            'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 2}
         self._resetState()
         self._stderr = StringIO()
         self._internal_deferred = None
@@ -96,6 +94,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
     def _resetState(self):
         self._current_command = None
+        self._expected_args = None
         self._current_args = []
 
     def dataReceived(self, data):
@@ -108,15 +107,18 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
             self.unexpectedError(failure.Failure(NetstringParseError(data)))
 
     def stringReceived(self, line):
-        if self._current_command is not None:
+        if (self._current_command is not None
+            and self._expected_args is not None):
             self._current_args.append(line)
-        elif line in self._commands:
-            self._current_command = line
+        elif self._current_command is not None:
+            self._expected_args = int(line)
         else:
-            self.unexpectedError(failure.Failure(BadMessage(line)))
-            return
+            if getattr(self, 'do_%s' % line, None) is None:
+                self.unexpectedError(failure.Failure(BadMessage(line)))
+            else:
+                self._current_command = line
 
-        if len(self._current_args) == self._commands[self._current_command]:
+        if len(self._current_args) == self._expected_args:
             method = getattr(self, 'do_%s' % self._current_command)
             try:
                 method(*self._current_args)

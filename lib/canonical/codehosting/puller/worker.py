@@ -95,17 +95,20 @@ class PullerWorkerProtocol:
     def sendNetstring(self, string):
         self.out_stream.write('%d:%s,' % (len(string), string))
 
+    def sendEvent(self, command, *args):
+        self.sendNetstring(command)
+        self.sendNetstring(str(len(args)))
+        for argument in args:
+            self.sendNetstring(str(argument))
+
     def startMirroring(self, branch_to_mirror):
-        self.sendNetstring('startMirroring')
+        self.sendEvent('startMirroring')
 
     def mirrorSucceeded(self, branch_to_mirror, last_revision):
-        self.sendNetstring('mirrorSucceeded')
-        self.sendNetstring(str(last_revision))
+        self.sendEvent('mirrorSucceeded', last_revision)
 
     def mirrorFailed(self, branch_to_mirror, message, oops_id):
-        self.sendNetstring('mirrorFailed')
-        self.sendNetstring(str(message))
-        self.sendNetstring(oops_id)
+        self.sendEvent('mirrorFailed', message, oops_id)
 
 
 def identical_formats(branch_one, branch_two):

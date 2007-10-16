@@ -140,28 +140,27 @@ class TestPullerMasterProtocol(TrialTestCase):
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
 
+    def sendToProtocol(self, *arguments):
+        for argument in arguments:
+            self.protocol.outReceived(self.convertToNetstring(str(argument)))
+
     def test_startMirroring(self):
         """Receiving a startMirroring message notifies the listener."""
-        self.protocol.outReceived(self.convertToNetstring('startMirroring'))
+        self.sendToProtocol('startMirroring', 0)
         self.assertEqual(['startMirroring'], self.listener.calls)
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
-        self.protocol.outReceived(self.convertToNetstring('startMirroring'))
+        self.sendToProtocol('startMirroring', 0)
         self.listener.calls = []
-        self.protocol.outReceived(
-            self.convertToNetstring('mirrorSucceeded'))
-        self.protocol.outReceived(self.convertToNetstring('1234'))
+        self.sendToProtocol('mirrorSucceeded', 1, 1234)
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
-        self.protocol.outReceived(self.convertToNetstring('startMirroring'))
+        self.sendToProtocol('startMirroring', 0)
         self.listener.calls = []
-        self.protocol.outReceived(
-            self.convertToNetstring('mirrorFailed'))
-        self.protocol.outReceived(self.convertToNetstring('Error Message'))
-        self.protocol.outReceived(self.convertToNetstring('OOPS'))
+        self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
 
