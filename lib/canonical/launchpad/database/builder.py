@@ -204,14 +204,12 @@ class Builder(SQLBase):
             assert build_queue_item.is_trusted, (
                 "Attempt to build untrusted item on a trusted-only builder.")
         # Ensure build has the needed chroot
-        chroot = build_queue_item.archseries.getChroot(
-            build_queue_item.build.pocket)
+        chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
-            logger.debug("Missing CHROOT for %s/%s/%s/%s",
+            logger.debug("Missing CHROOT for %s/%s/%s",
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
-                build_queue_item.build.distroarchseries.architecturetag,
-                build_queue_item.build.pocket.name)
+                build_queue_item.build.distroarchseries.architecturetag)
             raise CannotBuild
         # The main distribution has policies prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
@@ -262,57 +260,88 @@ class Builder(SQLBase):
             build_queue_item.archseries.isNominatedArchIndep)
 
         # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
-        if build_queue_item.build.archive.purpose != ArchivePurpose.PRIMARY:
-            ogre_map = {
-                'main': 'main',
-                'restricted': 'main restricted',
-                'universe': 'main restricted universe',
-                'multiverse': 'main restricted universe multiverse',
-                'partner' : 'partner',
+        ogre_map = {
+            'main': 'main',
+            'restricted': 'main restricted',
+            'universe': 'main restricted universe',
+            'multiverse': 'main restricted universe multiverse',
+            'partner' : 'partner',
+            }
+        ogre_components = ogre_map[build_queue_item.current_component.name]
+        dist_name = build_queue_item.archseries.distroseries.name
+        archive_url = build_queue_item.build.archive.archive_url
+
+        if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
+            ubuntu_source_lines = [
+                'deb http://archive.ubuntu.com/ubuntu %s %s'
+                % (dist_name, ogre_components)]
+        else:
+            ubuntu_components = ogre_components
+            # A list of pockets that we are allowed to use for
+            # dependencies.
+            primary_pocket_dependencies = {
+                PackagePublishingPocket.RELEASE :
+                    (PackagePublishingPocket.RELEASE,),
+                PackagePublishingPocket.SECURITY :
+                    (PackagePublishingPocket.RELEASE,
+                     PackagePublishingPocket.SECURITY),
+                PackagePublishingPocket.UPDATES :
+                    (PackagePublishingPocket.RELEASE,
+                     PackagePublishingPocket.SECURITY,
+                     PackagePublishingPocket.UPDATES),
+                PackagePublishingPocket.BACKPORTS :
+                    (PackagePublishingPocket.RELEASE,
+                     PackagePublishingPocket.SECURITY,
+                     PackagePublishingPocket.UPDATES,
+                     PackagePublishingPocket.BACKPORTS),
+                PackagePublishingPocket.PROPOSED :
+                    (PackagePublishingPocket.RELEASE,
+                     PackagePublishingPocket.SECURITY,
+                     PackagePublishingPocket.UPDATES,
+                     PackagePublishingPocket.PROPOSED),
                 }
-            ogre_components = ogre_map[build_queue_item.current_component.name]
-            dist_name = build_queue_item.archseries.distroseries.name
-            archive_url = build_queue_item.build.archive.archive_url
 
-            if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
-                ubuntu_source_lines = [
-                    'deb http://archive.ubuntu.com/ubuntu %s %s'
-                    % (dist_name, ogre_components)]
+            partner_pocket_dependencies = (
+                PackagePublishingPocket.RELEASE,
+                PackagePublishingPocket.SECURITY,
+                PackagePublishingPocket.UPDATES,
+                )
+
+            if (build_queue_item.build.archive.purpose ==
+                    ArchivePurpose.PARTNER):
+                # XXX julian 2007-08-07 - this is a greasy hack.
+                # See comment above about not modelling Ogre here.
+                # Partner is a very special case because the partner
+                # component is only in the partner archive, so we have
+                # to be careful with the sources.list archives.
+                ubuntu_components = 'main restricted universe multiverse'
+                ubuntu_pockets = partner_pocket_dependencies
             else:
-                ubuntu_components = ogre_components
-                # A list of pockets that we are allowed to use for
-                # dependencies.
-                ubuntu_pockets = [
-                    PackagePublishingPocket.RELEASE,
-                    PackagePublishingPocket.SECURITY,
-                    PackagePublishingPocket.UPDATES,
-                    ]
-                if (build_queue_item.build.archive.purpose ==
-                        ArchivePurpose.PARTNER):
-                    # XXX julian 2007-08-07 - this is a greasy hack.
-                    # See comment above about not modelling Ogre here.
-                    # Partner is a very special case because the partner
-                    # component is only in the partner archive, so we have
-                    # to be careful with the sources.list archives.
-                    ubuntu_components = 'main restricted universe multiverse'
+                ubuntu_pockets = primary_pocket_dependencies[
+                    build_queue_item.build.pocket]
 
-                # Here we build a list of sources.list lines for each pocket
-                # required in the primary archive.
-                ubuntu_source_lines = []
-                for pocket in ubuntu_pockets:
-                    if pocket == PackagePublishingPocket.RELEASE:
-                        dist_pocket = dist_name
-                    else:
-                        dist_pocket = dist_name + pocketsuffix[pocket]
-                    ubuntu_source_lines.append(
-                        'deb http://ftpmaster.internal/ubuntu %s %s'
-                        % (dist_pocket, ubuntu_components))
+            # Here we build a list of sources.list lines for each pocket
+            # required in the primary archive.
+            ubuntu_source_lines = []
+            for pocket in ubuntu_pockets:
+                if pocket == PackagePublishingPocket.RELEASE:
+                    dist_pocket = dist_name
+                else:
+                    dist_pocket = dist_name + pocketsuffix[pocket]
+                ubuntu_source_lines.append(
+                    'deb http://ftpmaster.internal/ubuntu %s %s'
+                    % (dist_pocket, ubuntu_components))
 
+        # ubuntu_source_lines now contains all the entries needed for the
+        # pockets and components required in the primary archive.
+        args['archives'] = ubuntu_source_lines
+        if (build_queue_item.build.archive.purpose !=
+                ArchivePurpose.PRIMARY):
+            # We need to add entries for the non-primary archive now.
             source_line = (
                 'deb %s %s %s'
                 % (archive_url, dist_name, ogre_components))
-            args['archives'] = [source_line]
-            args['archives'].extend(ubuntu_source_lines)
+            args['archives'].append(source_line)
 
         chroot_sha1 = chroot.content.sha1
         # store DB information

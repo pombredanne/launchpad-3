@@ -971,14 +971,14 @@ Override the builder's slave with one that will claim to be 'OK'
 
   >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
-This build does not require an override for the archives and will use the
-slave's default sources.list.
+This build is building in the release pocket for the main component in
+the primary archive:
 
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  No archives set.
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main']
 
 Cleanup in preparation for the next test:
 
@@ -1000,7 +1000,7 @@ to set up the sources.list appropriately.
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://launchpad.dev/ubuntu-partner hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse']
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse', u'deb http://launchpad.dev/ubuntu-partner hoary main']
 
 Clean up before continuing:
 
@@ -1024,29 +1024,18 @@ Override the builder's slave with one that will claim to be 'OK'
 
   >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
-Change the pocket for testing: XXX create a new build or change sample data.XXX
+Change the pocket for testing:
+XXX create a new build or change sample data.XXX
   >>> removeSecurityProxy(bqItem3.build).pocket = \
   ...     dbschema.PackagePublishingPocket.SECURITY
   >>> bqItem3.build.buildstate = BuildStatus.NEEDSBUILD
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
-  >>> bqItem3.build.buildstate.name
-  'NEEDSBUILD'
 
-
-Check if builddmaster stops before starting building a denied build, for
-this we will create the previous missing CHROOT for
-ubuntu/hoary/i386/SECURITY
-
-  >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
-  ...                  pocket=PackagePublishingPocket.SECURITY,
-  ...                  chroot=LibraryFileAlias.get(2))
+Builddmaster stops before starting to build a denied build.
+Since hoary is in development, we are not able to dispatch
+builds for post-release pockets:
 
   >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'
-
-Since hoary is in development, we should not be able to dispatch
-builds for post-release pockets:
-
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   Traceback (most recent call last):
   ...
