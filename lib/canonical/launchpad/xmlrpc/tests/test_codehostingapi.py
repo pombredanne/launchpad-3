@@ -233,7 +233,6 @@ class TestExpandURL(BranchTestCase):
 
     def test_trailingSlashes(self):
         """Trailing slashes are trimmed."""
-
         # Trailing slashes on lp:product//
         self.assertResolves(self.product.name + '/', self.trunk.unique_name)
         self.assertResolves(self.product.name + '//', self.trunk.unique_name)

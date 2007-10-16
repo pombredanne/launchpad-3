@@ -252,7 +252,7 @@ class NoSuchSeries(LaunchpadFault):
 
 
 class InvalidBranchIdentifier(LaunchpadFault):
-    """The branch identifier wasn't even remotely correct."""
+    """The branch identifier didn't begin with a tilde."""
 
     error_code = 190
     msg_template = (
