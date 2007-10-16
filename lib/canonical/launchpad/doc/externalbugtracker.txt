@@ -44,8 +44,6 @@ another.
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1, sample_person)
 
-    >>> login('no-priv@canonical.com')
-
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
     ...     UnparseableBugData, UnparseableBugTrackerVersion)
