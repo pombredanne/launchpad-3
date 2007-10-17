@@ -6,8 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'deferToThread',
-    'make_bazaar_branch_and_tree']
+    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
@@ -407,7 +407,7 @@ def make_bazaar_branch_and_tree(db_branch):
         % db_branch)
     branch_dir = os.path.join(
         config.codehosting.branches_root, branch_id_to_path(db_branch.id))
-    return create_branch(branch_dir)
+    return create_branch_with_one_revision(branch_dir)
 
 
 def adapt_suite(adapter, base_suite):
@@ -418,7 +418,7 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch(branch_dir):
+def create_branch_with_one_revision(branch_dir):
     """Create a dummy Bazaar branch at the given directory."""
     if not os.path.exists(branch_dir):
         os.makedirs(branch_dir)
