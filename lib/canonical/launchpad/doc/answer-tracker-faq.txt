@@ -328,7 +328,7 @@ status is not changed.
 
     >>> login('foo.bar@canonical.com')
     >>> confirm_message = other_question.confirmAnswer(
-    ...     "That answerded my question.", answer=other_question.messages[-1])
+    ...     "That answered my question.", answer=other_question.messages[-1])
     >>> print other_question.status.title
     Solved
 
