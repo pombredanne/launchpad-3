@@ -240,10 +240,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/base' source overridden")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'mozilla-firefox/main/base' source overridden")
 
     def test_processSourceChange_with_changed_archive(self):
         """Check processSourceChange method call with an archive change.
@@ -273,10 +273,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'mozilla-firefox' source isn't published in hoary")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "ERROR 'mozilla-firefox' source isn't published in hoary")
 
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.
@@ -293,11 +293,11 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processBinaryChange('pmount')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
-            "INFO: 'pmount/universe/editors/IMPORTANT' binary "
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
+            "INFO 'pmount/universe/editors/IMPORTANT' binary "
                 "overridden in hoary/i386")
 
     def test_processBinaryChange_with_changed_archive(self):
@@ -327,10 +327,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processBinaryChange('evolution')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'evolution' binary not found.")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "ERROR 'evolution' binary not found.")
 
     def test_processChildrenChange_success(self):
         """processChildrenChanges, modify the source and its binary children.
@@ -348,16 +348,16 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processChildrenChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'mozilla-firefox/main/base/IMPORTANT' "
                 "binary overridden in warty/i386\n"
-            "INFO: 'mozilla-firefox/main/base/EXTRA' "
+            "INFO 'mozilla-firefox/main/base/EXTRA' "
                 "binary overridden in warty/hppa\n"
-            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+            "INFO 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/hppa\n"
-            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+            "INFO 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
@@ -373,10 +373,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processChildrenChange('pmount')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'pmount' source isn't published in warty")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "ERROR 'pmount' source isn't published in warty")
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
@@ -386,10 +386,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processChildrenChange('pmount')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "WARN: 'pmount' has no binaries published in hoary")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "WARNING 'pmount' has no binaries published in hoary")
 
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
