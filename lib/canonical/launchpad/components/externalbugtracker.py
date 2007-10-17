@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """External bugtrackers."""
 
@@ -299,6 +299,10 @@ class Bugzilla(ExternalBugTracker):
 
     def _parseVersion(self, version):
         """Return a Bugzilla version parsed into a tuple.
+
+        A typical tuple will be in the form (major_version,
+        minor_version), so the version string '2.15' would returned as
+        (2, 15).
 
         If the passed version is None, None will be returned.
         If the version cannot be parsed `UnparseableBugTrackerVersion`
@@ -1199,7 +1203,7 @@ class Trac(ExternalBugTracker):
                 return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugTracker"""
+        """See IExternalBugtracker"""
         status_map = {
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
@@ -1407,7 +1411,7 @@ class Roundup(ExternalBugTracker):
                     "Remote bug %s does not define a status.")
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugTracker`."""
+        """See `IExternalBugtracker`."""
         # XXX: 2007-09-04 Graham Binns
         #      We really shouldn't have to do this here because we
         #      should logically never be passed UNKNOWN_REMOTE_STATUS as
@@ -1546,7 +1550,7 @@ class SourceForge(ExternalBugTracker):
 
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugTracker`."""
+        """See `IExternalBugtracker`."""
         # XXX: 2007-09-06 Graham Binns
         #      We shouldn't have to do this, but
         #      ExternalBugTracker.updateBugWatches() will pass us

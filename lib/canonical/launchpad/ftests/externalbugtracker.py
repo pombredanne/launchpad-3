@@ -112,6 +112,9 @@ class TestBugzilla(Bugzilla):
     It overrides _getPage and _postPage, so that access to a real Bugzilla
     instance isn't needed.
     """
+    # We set the batch_query_threshold to zero so that only
+    # getRemoteBugBatch() is used to retrieve bugs, since getRemoteBug()
+    # calls getRemoteBugBatch() anyway.
     batch_query_threshold = 0
     trace_calls = False
 
