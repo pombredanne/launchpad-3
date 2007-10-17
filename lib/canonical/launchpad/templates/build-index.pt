@@ -148,13 +148,10 @@
         </tbody>
       </table>
 
-      <div tal:condition="context/can_be_retried">
-        <div tal:condition="context/required:launchpad.Edit">
-          <p>Use the 'Retry build' link in the Actions menu if you wish to
-             retry your build.
-          </p>
-        </div>
-      </div>
+      <p tal:condition="view/user_can_retry_build">
+          Use the 'Retry build' link in the Actions menu if you wish to
+          retry your build.
+      </p>
 
     </div>
   </body>
