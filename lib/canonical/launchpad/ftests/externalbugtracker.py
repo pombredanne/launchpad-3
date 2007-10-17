@@ -51,7 +51,6 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     return getUtility(IBugTrackerSet).getByName(name)
 
-
 def read_test_file(name):
     """Return the contents of the test file named :name:
 

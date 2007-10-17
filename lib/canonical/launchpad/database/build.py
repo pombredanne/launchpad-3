@@ -19,11 +19,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingPocket)
+    ArchivePurpose, BuildStatus, PackagePublishingPocket,
+    PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
@@ -66,6 +69,31 @@ class Build(SQLBase):
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead.
         return BuildQueue.selectOneBy(build=self)
+
+    @property
+    def current_component(self):
+        """See `IBuild`."""
+        pub = self._currentPublication()
+        if pub is not None:
+            return pub.component
+        return self.sourcepackagerelease.component
+
+    def _currentPublication(self):
+        """See `IBuild`."""
+        allowed_status = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        query = """
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.status IN %s
+        """ % sqlvalues(
+            self.distroseries, self.sourcepackagerelease,
+            self.archive, allowed_status)
+
+        return SourcePackagePublishingHistory.selectFirst(
+            query, orderBy='-datecreated')
 
     @property
     def changesfile(self):
