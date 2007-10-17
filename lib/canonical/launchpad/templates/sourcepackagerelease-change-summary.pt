@@ -1,6 +1,6 @@
 <pre tal:attributes="id string:${context/name}_${context/version}">
-  <span tal:condition="not: request/lp:person"
-        tal:replace="structure view/change_summary/fmt:obfuscate-email"/>
-  <span tal:condition="request/lp:person"
-        tal:replace="structure view/change_summary"/>
+  <tal:span condition="not: request/lp:person"
+            replace="structure view/change_summary/fmt:obfuscate-email"/>
+  <tal:span condition="request/lp:person"
+            replace="structure view/change_summary"/>
 </pre>

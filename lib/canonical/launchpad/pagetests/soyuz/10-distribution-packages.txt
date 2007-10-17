@@ -138,9 +138,8 @@ logged in (this prevents bots from harvesting email addresses).
 If we view the same page as a logged-in user, we can see the email
 address:
 
-  >>> browser2 = user_browser
-  >>> browser2.open("http://launchpad.dev/ubuntu/+source/alsa-utils/")
-  >>> print extract_text(find_tag_by_id(browser2.contents,
+  >>> user_browser.open("http://launchpad.dev/ubuntu/+source/alsa-utils/")
+  >>> print extract_text(find_tag_by_id(user_browser.contents,
   ...     'body_alsa-utils_1.0.9a-4ubuntu1'))
   alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
   ...

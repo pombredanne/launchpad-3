@@ -223,8 +223,8 @@ And also download the files contained in this source, like '.orig',
     </ul>
   </div>
 
-If we go to the same page for alsa-utils, it has a more interesting
-changelog for us.
+If we go to the same page for alsa-utils, the changelog has text that is
+linkified.
 
   >>> browser.open(
   ...  'http://launchpad.dev/ubuntu/warty/+source/alsa-utils/1.0.9a-4ubuntu1')

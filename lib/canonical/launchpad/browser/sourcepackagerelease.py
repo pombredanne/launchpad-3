@@ -11,11 +11,8 @@ __all__ = [
 import cgi
 import re
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.tales import FormattersAPI
-from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 
 class SourcePackageReleaseView(LaunchpadView):
