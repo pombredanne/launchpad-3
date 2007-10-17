@@ -8,23 +8,21 @@
 __metaclass__ = type
 
 import _pythonpath
-import os
-import sys
 
 from zope.component import getUtility
 
 from canonical.archivepublisher.debversion import Version
 from canonical.buildmaster.master import (
-    BuilddMaster, builddmaster_lockfilename, builddmaster_advisory_lock_key)
+    BuilddMaster, BUILDMASTER_ADVISORY_LOCK_KEY, BUILDMASTER_LOCKFILENAME)
+
 from canonical.config import config
 from canonical.database.postgresql import (
     acquire_advisory_lock, release_advisory_lock)
 from canonical.database.sqlbase import cursor
-from canonical.lp import READ_COMMITTED_ISOLATION
 
 from canonical.launchpad.interfaces import IDistroArchSeriesSet
-from canonical.launchpad.scripts.base import (LaunchpadCronScript,
-    LaunchpadScriptFailure)
+from canonical.launchpad.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
 
 
 class QueueBuilder(LaunchpadCronScript):
@@ -47,7 +45,7 @@ class QueueBuilder(LaunchpadCronScript):
 
         local_cursor = cursor()
         if not acquire_advisory_lock(
-            local_cursor, builddmaster_advisory_lock_key):
+            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
             raise LaunchpadScriptFailure(
                 "Another builddmaster script is already running")
 
@@ -69,7 +67,7 @@ class QueueBuilder(LaunchpadCronScript):
 
         local_cursor = cursor()
         if not release_advisory_lock(
-            local_cursor, builddmaster_advisory_lock_key):
+            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
             self.logger.debug("Could not release advisory lock.")
 
     def rebuildQueue(self):
@@ -105,15 +103,14 @@ class QueueBuilder(LaunchpadCronScript):
     @property
     def lockfilename(self):
         """Buildd master cronscript shares the same lockfile."""
-        return builddmaster_lockfilename
+        return BUILDMASTER_LOCKFILENAME
 
 
 if __name__ == '__main__':
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
-    # Force isolation level to READ_COMMITTED_ISOLATION.
     try:
-        script.run(isolation=READ_COMMITTED_ISOLATION)
+        script.run()
     finally:
         script.unlock()
 

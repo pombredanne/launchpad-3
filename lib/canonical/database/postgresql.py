@@ -403,6 +403,7 @@ def allow_sequential_scans(cur, permission):
 
     cur.execute("SET enable_seqscan=%s" % permission_value)
 
+
 def acquire_advisory_lock(cur, key):
     """Try to acquire a advisory lock for the given 'key'.
 
@@ -415,14 +416,14 @@ def acquire_advisory_lock(cur, key):
 
     A advisory lock can be 'acquired' anytime (and multiple times) inside
     the current connection using the given key (an int):
-    
+
     >>> acquire_advisory_lock(cur, 12345)
     True
     >>> acquire_advisory_lock(cur, 12345)
     True
 
     Once acquired, it cannot be shared among other connections:
-    
+
     >>> from canonical.ftests.pgsql import PgTestSetup
     >>> new_con = PgTestSetup().connect()
     >>> new_cur = new_con.cursor()
@@ -431,29 +432,32 @@ def acquire_advisory_lock(cur, key):
     False
 
     It is immediately available to other connections once it is released:
-    
+
     >>> cur.execute("SELECT pg_advisory_unlock_all()")
     >>> acquire_advisory_lock(new_cur, 12345)
     True
 
-    Then becomes unavailable to the original connection:
-    
+    Once locked in a different connection, the original connection cannot
+    acquire it.
+
     >>> acquire_advisory_lock(cur, 12345)
     False
 
     The advisory lock is automatically released when the connection holding it
     is closed:
-    
+
     >>> new_con.close()
     >>> acquire_advisory_lock(cur, 12345)
     True
 
-    Releasing all acquired lock in the test connection:
-    
+    To cleanup after this test, release all acquired locks in the test
+    connection:
+
     >>> cur.execute("SELECT pg_advisory_unlock_all()")
     """
     cur.execute('SELECT pg_try_advisory_lock(%s)' % key)
     return (cur.fetchone()[0] != 0)
+
 
 def release_advisory_lock(cur, key):
     """Release a advisory lock for the given 'key';
@@ -461,17 +465,18 @@ def release_advisory_lock(cur, key):
     Return True if the 'release' procedure succeeded, otherwise False is
     returned.
 
-    Lock releasing failures (when False is returned) are not concerning, in the
-    sense, the lock will be released at the end of the connection anyway, but
-    such occurencies should be investigated ad-hoc.
+    It is of no concern when the lock fails to release (i.e. when False is
+    returned) because locks held by the connection are automatically released
+    when the connection is closed.  However, we still want to investigate
+    these situations in case other assertions are being violated.
 
     Obviously trying to release a non-acquired lock will result in a failure.
-    
+
     >>> release_advisory_lock(cur, 12345)
     False
 
     Once the lock is acquired it can be successfully release:
-    
+
     >>> cur.execute("SELECT pg_advisory_lock(12345)")
     >>> release_advisory_lock(cur, 12345)
     True
@@ -488,10 +493,39 @@ def release_advisory_lock(cur, key):
     >>> release_advisory_lock(cur, 12345)
     False
 
-    Lock can be successfully released in the right connection.
-    
+    The lock can be successfully released in the right connection.
+
     >>> release_advisory_lock(new_cur, 12345)
     True
+
+    Lock acquisition is paired with lock release, i.e, if a lock was acquired
+    multiple times it should be released multiple times too:
+
+    >>> cur.execute("SELECT pg_advisory_lock(12345)")
+    >>> cur.execute("SELECT pg_advisory_lock(12345)")
+    >>> release_advisory_lock(cur, 12345)
+    True
+
+    Lock still acquired in the original connection:
+
+    >>> new_cur.execute("SELECT pg_try_advisory_lock(12345)")
+    >>> new_cur.fetchall()[0][0] != 0
+    False
+
+    >>> release_advisory_lock(cur, 12345)
+    True
+
+    After the second release step the lock is available again:
+
+    >>> new_cur.execute("SELECT pg_try_advisory_lock(12345)")
+    >>> new_cur.fetchall()[0][0] != 0
+    True
+
+    To cleanup after this test, release all acquired locks in the test
+    connection:
+
+    >>> new_con.close()
+    >>> cur.execute("SELECT pg_advisory_unlock_all()")
     """
     cur.execute('SELECT pg_advisory_unlock(%s)' % key)
     return (cur.fetchone()[0] != 0)

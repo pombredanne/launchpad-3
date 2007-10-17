@@ -10,7 +10,7 @@ from unittest import TestCase, TestLoader
 
 from canonical.config import config
 from canonical.buildmaster.master import (
-    builddmaster_lockfilename, builddmaster_advisory_lock_key)
+    BuilddMaster, BUILDMASTER_ADVISORY_LOCK_KEY, BUILDMASTER_LOCKFILENAME)
 from canonical.database.sqlbase import cursor
 from canonical.database.postgresql import acquire_advisory_lock
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
@@ -47,7 +47,7 @@ class TestBuilddCronscriptBase(TestCase):
 
     def getBuilddMasterLock(self):
         """Returns a GlobalLock instance for build-master default lockfile."""
-        lockfile_path = os.path.join(LOCK_PATH, builddmaster_lockfilename)
+        lockfile_path = os.path.join(LOCK_PATH, BUILDMASTER_LOCKFILENAME)
         return GlobalLock(lockfile_path)
 
     def assertRuns(self, runner, **kw_args):
@@ -89,7 +89,7 @@ class TestBuilddCronscripts(TestBuilddCronscriptBase):
         self.assertRuns(runner=self.runBuilddSlaveScanner)
 
     def testRunSlaveScannerLocked(self):
-        """Check is buildd-slave-scanner.py respect build-master lock."""
+        """Check is buildd-slave-scanner.py respects build-master lock."""
         self.assertLocked(runner=self.runBuilddSlaveScanner)
 
     def testRunQueueBuilder(self):
@@ -101,29 +101,37 @@ class TestBuilddCronscripts(TestBuilddCronscriptBase):
         self.assertRuns(runner=self.runBuilddQueueBuilder, extra_args=['-n'])
 
     def testRunQueueBuilderLocked(self):
-        """Check if buildd-queue-builder.py respect build-master lock."""
+        """Check if buildd-queue-builder.py respects build-master lock."""
         self.assertLocked(runner=self.runBuilddQueueBuilder)
 
 
 class TestBuilddCronscriptsAdvisoryLock(
     TestBuilddCronscriptBase, LaunchpadZopelessTestCase):
 
+    def setUp(self):
+        """Setup a database cursor."""
+        self.local_cursor = cursor()
+
+    def tearDown(self):
+        """Ensure all advisory locks are released."""
+        self.local_cursor.execute("SELECT pg_advisory_unlock_all()")
+        trash = self.local_cursor.fetchall()
+
     def acquireBuilddmasterAdvisoryLock(self):
         """Acquire builddmaster postgres advisory lock."""
-        local_cursor = cursor()
         lock_acquired = acquire_advisory_lock(
-            local_cursor, builddmaster_advisory_lock_key) 
+            self.local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY)
         self.assertTrue(lock_acquired)
 
     def testAdvisoryLockForQueueBuilder(self):
-        """Check if buildd-queue-builder respects build-master advisory lock."""
+        """buildd-queue-builder respects buildmaster advisory lock."""
         self.acquireBuilddmasterAdvisoryLock()
         rc, out, err = self.runBuilddQueueBuilder()
         self.assertEqual(rc, 1)
         self.assertTrue('script is already running' in err)
 
     def testAdvisoryLockForSlaveScanner(self):
-        """Check if buildd-slave-scanner respects build-master advisory lock."""
+        """buildd-slave-scanner respects buildmaster advisory lock."""
         self.acquireBuilddmasterAdvisoryLock()
         rc, out, err = self.runBuilddSlaveScanner()
         self.assertEqual(rc, 1)

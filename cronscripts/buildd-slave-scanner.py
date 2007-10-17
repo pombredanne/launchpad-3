@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.buildmaster.master import (
-    BuilddMaster, builddmaster_lockfilename, builddmaster_advisory_lock_key)
+    BUILDMASTER_ADVISORY_LOCK_KEY, BUILDMASTER_LOCKFILENAME)
 from canonical.database.postgresql import (
     acquire_advisory_lock, release_advisory_lock)
 from canonical.database.sqlbase import cursor
@@ -23,7 +23,6 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import IBuilderSet
-from canonical.lp import READ_COMMITTED_ISOLATION
 
 
 class SlaveScanner(LaunchpadCronScript):
@@ -35,7 +34,7 @@ class SlaveScanner(LaunchpadCronScript):
 
         local_cursor = cursor()
         if not acquire_advisory_lock(
-            local_cursor, builddmaster_advisory_lock_key):
+            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
             raise LaunchpadScriptFailure(
                 "Another builddmaster script is already running")
 
@@ -43,24 +42,25 @@ class SlaveScanner(LaunchpadCronScript):
         buildMaster = builder_set.pollBuilders(self.logger, self.txn)
         # XXX: lifeless 2007-05-25:
         # Only needed until the soyuz buildmaster class is fully deleted.
-        builder_set.dispatchBuilds(self.logger, removeSecurityProxy(buildMaster))
+        builder_set.dispatchBuilds(
+            self.logger, removeSecurityProxy(buildMaster))
 
         local_cursor = cursor()
         if not release_advisory_lock(
-            local_cursor, builddmaster_advisory_lock_key):
+            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
             self.logger.debug("Could not release advisory lock.")
 
     @property
     def lockfilename(self):
         """Buildd master cronscript shares the same lockfile."""
-        return builddmaster_lockfilename
+        return BUILDMASTER_LOCKFILENAME
 
 
 if __name__ == '__main__':
     script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     try:
-        script.run(isolation=READ_COMMITTED_ISOLATION)
+        script.run()
     finally:
         script.unlock()
 

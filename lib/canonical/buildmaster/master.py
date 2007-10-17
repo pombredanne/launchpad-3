@@ -32,10 +32,10 @@ from canonical.buildmaster.buildergroup import BuilderGroup
 
 
 # Builddmaster shared lockfile
-builddmaster_lockfilename = 'build-master'
+BUILDMASTER_LOCKFILENAME = 'build-master'
 
 # Builddmaster advisory-lock key
-builddmaster_advisory_lock_key = 666
+BUILDMASTER_ADVISORY_LOCK_KEY = 666
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5
