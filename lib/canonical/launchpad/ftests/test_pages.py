@@ -113,9 +113,8 @@ def get_feedback_messages(browser):
     """Find and return the feedback messages of the page."""
     message_classes = [
         'message', 'informational message', 'error message', 'warning message']
-    soup = BeautifulSoup(
-        browser.contents,
-        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+    strainer = SoupStrainer(['div', 'p'], {'class': message_classes})
+    soup = BeautifulSoup(browser.contents, parseOnlyThese=strainer)
     return [extract_text(tag) for tag in soup]
 
 
