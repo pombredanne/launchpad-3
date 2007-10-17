@@ -981,7 +981,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "bar_1.0-1_bad_component", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: bar_1.0-1_source.changes rejectedRejected:\n"
+            "Subject: bar_1.0-1_source.changes rejected\n"
+            "Rejected:\n"
             "bar_1.0-1.dsc: Component 'badcomponent' is not valid\n"
             "bar_1.0.orig.tar.gz: Component 'badcomponent' is not valid\n"
             "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
@@ -1002,7 +1003,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "bar_1.0-1_bad_distroseries", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: bar_1.0-1_source.changes rejectedRejected:\n"
+            "Subject: bar_1.0-1_source.changes rejected\n"
+            "Rejected:\n"
             "Unable to find distroseries: flangetrousers\n"
             "\n"
             "-----BEGIN PGP SIGNED MESSAGE-----\n"
