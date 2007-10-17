@@ -301,8 +301,8 @@ class Bugzilla(ExternalBugTracker):
         """Return a Bugzilla version parsed into a tuple.
 
         A typical tuple will be in the form (major_version,
-        minor_version), so the version string '2.15' would returned as
-        (2, 15).
+        minor_version), so the version string '2.15' would be returned
+        as (2, 15).
 
         If the passed version is None, None will be returned.
         If the version cannot be parsed `UnparseableBugTrackerVersion`
