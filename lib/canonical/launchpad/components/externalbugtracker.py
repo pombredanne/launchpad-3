@@ -764,12 +764,12 @@ class Mantis(ExternalBugTracker):
         """
         self.bugs = {}
 
-        # We only query for batches of bugs if the remote Mantis
-        # instance supports CSV exports, otherwise we default to
-        # screen-scraping on a per bug basis regardless of how many bugs
-        # there are to retrieve.
         if (len(bug_ids) > self.batch_query_threshold and
             self.canUseCSVExports()):
+            # We only query for batches of bugs if the remote Mantis
+            # instance supports CSV exports, otherwise we default to
+            # screen-scraping on a per bug basis regardless of how many bugs
+            # there are to retrieve.
             self.bugs = self.getRemoteBugBatch(bug_ids)
         else:
             for bug_id in bug_ids:
