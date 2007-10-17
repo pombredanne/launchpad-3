@@ -947,54 +947,62 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
 
 class BranchListingSort(EnumeratedType):
+    """XXX."""
+
     PRODUCT = Item("""
-        Project Name
+        by project name
 
         Sort branches by name of the project the branch is for.
         """)
 
     LIFECYCLE = Item("""
-        Lifecycle Status
+        by lifecycle status
 
         Sort branches by the lifecycle status.
         """)
 
     AUTHOR = Item("""
-        Author
+        by author name
 
         Sort branches by the display name of the author.
         """)
 
-    NEWEST_FIRST = Item("""
-        Newest First
+    NAME = Item("""
+        branch name
 
-        Sort branches from newest to oldest.
+        Sort branches by the display name of the registrant.
         """)
 
-    OLDEST_FIRST = Item("""
-        Oldest First
+    REGISTRANT = Item("""
+        by registrant name
 
-        Sort branches from oldest to newest.
+        Sort branches by the display name of the registrant.
         """)
 
     MOST_RECENTLY_CHANGED_FIRST = Item("""
-        Most Recently Changed First
+        most recently changed first
 
         Sort branches from the most recently to the least recently
         changed.
         """)
 
     LEAST_RECENTLY_CHANGED_FIRST = Item("""
-        Least Recently Changed First
+        least recently changed first
 
         Sort branches from the least recently to the most recently
         changed.
         """)
 
-    REGISTRANT = Item("""
-        Registrant
+    NEWEST_FIRST = Item("""
+        newest first
 
-        Sort branches by the display name of the registrant.
+        Sort branches from newest to oldest.
+        """)
+
+    OLDEST_FIRST = Item("""
+        oldest first
+
+        Sort branches from oldest to newest.
         """)
 
 

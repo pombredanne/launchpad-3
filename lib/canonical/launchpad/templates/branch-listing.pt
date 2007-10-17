@@ -4,13 +4,11 @@
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/request/URL">
-    <tal:fields repeat="widget context/view/widgets">
-      <label tal:attributes="for widget/name"
-             tal:content="widget/label">
-        Label
-      </label>
-      <div tal:replace="structure widget"/>
-    </tal:fields>
+    <label for="field.lifecycle">
+      Branches with status:
+    </label>
+    <tal:widgets repeat="widget context/view/widgets"
+                 replace="structure widget" />
     <noscript>
       <input type="submit" value="Filter"/>
     </noscript>

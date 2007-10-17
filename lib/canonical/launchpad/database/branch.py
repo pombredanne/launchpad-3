@@ -501,11 +501,12 @@ LISTINGSORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product_name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
     BranchListingSort.AUTHOR: 'author_name',
-    BranchListingSort.NEWEST_FIRST: 'date_created',
-    BranchListingSort.OLDEST_FIRST: '-date_created',
+    BranchListingSort.NAME: 'name',
+    BranchListingSort.REGISTRANT: 'owner_name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: 'last_scanned',
     BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
-    BranchListingSort.REGISTRANT: 'owner_name'
+    BranchListingSort.NEWEST_FIRST: 'date_created',
+    BranchListingSort.OLDEST_FIRST: '-date_created',
     }
 DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']

@@ -88,7 +88,7 @@ Merged or Abandoned branches are not shown.
 There is a select control that is used to define which
 subset of the branches are shown.
 
-    >>> filter_control = browser.getControl('Show branches with status of')
+    >>> filter_control = browser.getControl(name='field.lifecycle')
     >>> filter_control
     <ListControl name='field.lifecycle' type='select'>
     >>> filter_control.displayValue
@@ -141,7 +141,7 @@ Now all types of branches should be shown.
 Selecting an individual lifecycle status from the select control
 will cause only branches with that status to be listed.
 
-    >>> browser.getControl('Show branches with status of').displayValue = ['Abandoned']
+    >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
@@ -153,7 +153,7 @@ status value, it will default to current branches.
 
     >>> browser.open(
     ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
-    >>> browser.getControl('Show branches with status of').displayValue
+    >>> browser.getControl(name='field.lifecycle').displayValue
     ['New, Experimental, Development or Mature']
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
@@ -171,7 +171,7 @@ helpful message supplied.
 
     >>> browser.open('http://code.launchpad.dev/'
     ...   '~launchpad/+branches?field.lifecycle=Mature')
-    >>> browser.getControl('Show branches with status of').displayValue
+    >>> browser.getControl(name='field.lifecycle').displayValue
     ['Mature']
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print message.renderContents()
@@ -243,36 +243,36 @@ allows sorting.
 
 On a listing that can have branches from more than one product (such
 as the listing of branches owned by a person), the default ordering is
-by product name (which is of course called "Project Name" in the UI).
+by product name (which is of course called "project name" in the UI).
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getControl('ordered by').value
-    ['Project Name']
+    >>> browser.getControl(name='field.sort_by').value
+    ['by project name']
 
 On a listing that can only have branches from one product, the default
 is to sort by lifecycle status.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> browser.getControl('ordered by').value
-    ['Lifecycle Status']
+    >>> browser.getControl(name='field.sort_by').value
+    ['by lifecycle status']
 
 If you filter by a specific lifecycle status then ordering by
 lifecycle ceases to be relevant, and the default is to sort by author.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> status_control = browser.getControl('Show branches with status of')
+    >>> status_control = browser.getControl(name='field.lifecycle')
     >>> status_control.value = ['MATURE']
     >>> browser.getControl('Filter').click()
-    >>> browser.getControl('ordered by').value
-    ['Author']
+    >>> browser.getControl(name='field.sort_by').value
+    ['by author name']
 
 The implicitly sorted listings do not have an ordering widget at all.
 
     >>> browser.open('http://code.launchpad.dev/+recently-registered-branches')
-    >>> browser.getControl('ordered by')
+    >>> browser.getControl(name='field.sort_by').value
     Traceback (most recent call last):
     ...
-    LookupError: label 'ordered by'
+    LookupError: name 'field.sort_by'
 
 Finally, sorting by a particular criterion has the desired effect.
 
@@ -287,7 +287,7 @@ Finally, sorting by a particular criterion has the desired effect.
     import                              New
     mirrored                            New
 
-    >>> browser.getControl('ordered by').value = ['Author']
+    >>> browser.getControl(name='field.sort_by').value = ['by author name']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
