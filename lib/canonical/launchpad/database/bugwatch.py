@@ -118,9 +118,9 @@ class BugWatch(SQLBase):
             BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
                 "%(bug)s appears not to exist. Check that the bug "
                 "number is correct.",
-            BugWatchErrorType.CONNECTION_ERROR:"Launchpad couldn't "
+            BugWatchErrorType.CONNECTION_ERROR: "Launchpad couldn't "
                 "connect to %(bugtracker)s.",
-            BugWatchErrorType.INVALID_BUG_ID:"Bug ID %(bug)s isn't "
+            BugWatchErrorType.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
                 "valid on %(bugtracker)s. Check that the bug ID is "
                 "correct.",
             BugWatchErrorType.TIMEOUT: "Launchpad's connection to "

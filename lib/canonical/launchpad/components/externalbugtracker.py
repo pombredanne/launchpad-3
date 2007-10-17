@@ -244,6 +244,10 @@ class ExternalBugTracker:
         for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
+                # XXX: 2007-10-17 Graham Binns
+                #      This nested set of try:excepts isn't really
+                #      necessary and can be refactored out when bug
+                #      136391 is dealt with.
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
                     error = None
