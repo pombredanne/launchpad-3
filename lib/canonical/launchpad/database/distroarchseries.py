@@ -227,7 +227,7 @@ class DistroArchSeries(SQLBase):
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'],
-            orderBy=['id'])
+            orderBy=['-id'])
 
         return shortlist(published)
 

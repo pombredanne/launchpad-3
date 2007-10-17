@@ -656,8 +656,9 @@ class NascentUpload:
 
         Override target component and section.
         """
-        self.logger.debug("%s: (source) exists in %s" % (
-            uploaded_file.package, override.pocket.name))
+        self.logger.debug("%s (source) exists in %s" % (
+            override.sourcepackagerelease.title,
+            override.pocket.name))
 
         uploaded_file.component_name = override.component.name
         uploaded_file.section_name = override.section.name
@@ -667,8 +668,9 @@ class NascentUpload:
 
         Override target component, section and priority.
         """
-        self.logger.debug("%s: (binary) exists in %s/%s" % (
-            uploaded_file.package, override.distroarchseries.architecturetag,
+        self.logger.debug("%s (binary) exists in %s/%s" % (
+            override.binarypackagerelease.title,
+            override.distroarchseries.architecturetag,
             override.pocket.name))
 
         uploaded_file.component_name = override.component.name
@@ -703,7 +705,7 @@ class NascentUpload:
                     uploaded_file.new = False
                 else:
                     if self.is_ppa:
-                        uploaded_file.component_name = 'universe'
+                        uploaded_file.component_name = 'main'
                     else:
                         self.logger.debug(
                             "%s: (source) NEW" % (uploaded_file.package))
@@ -736,7 +738,7 @@ class NascentUpload:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     if self.is_ppa:
-                        uploaded_file.component_name = 'universe'
+                        uploaded_file.component_name = 'main'
                     else:
                         self.logger.debug(
                             "%s: (binary) NEW" % (uploaded_file.package))

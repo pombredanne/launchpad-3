@@ -653,7 +653,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'])
+            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            orderBy=['-id'])
 
         return shortlist(published)
 
