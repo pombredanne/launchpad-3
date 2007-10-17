@@ -109,6 +109,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
 class LicenseWidget(CheckBoxMatrixWidget):
     template = ViewPageTemplateFile('templates/license.pt')
+    allow_pending_license = False
 
     def __init__(self, field, vocabulary, request):
         super(LicenseWidget, self).__init__(field, vocabulary, request)

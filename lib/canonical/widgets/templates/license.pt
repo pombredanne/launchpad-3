@@ -5,10 +5,45 @@
   :license_info: A textarea for the license description.
 </tal:comment>
 
+<script type="text/javascript"
+        tal:condition="view/allow_pending_license">
+  function unsetLicenses() {
+    var checkboxes = document.getElementsByName('field.licenses');
+    for (var i = 0; i < checkboxes.length; i++) {
+      checkboxes[i].checked = false;
+    }
+  }
+
+  function setLicensePendingStatus(pending) {
+    document.getElementById('license_pending').checked = pending;
+    document.getElementById('license_complete').checked = !pending;
+  }
+</script>
 <div style="color: black">
-  <input tal:replace="structure view/checkbox_matrix" />
-  Launchpad.net is free to use for software projects 
-  that comply with 
+
+  <div tal:condition="view/allow_pending_license"
+     tal:define="is_empty not:view/_getFormInput">
+    <input id="license_pending" name="license_status" type="radio"
+          tal:attributes="checked is_empty"
+          onClick="unsetLicenses()" />
+    <label for="license_pending">I haven't specified the license yet.</label>
+    <br/>
+
+    <input id="license_complete" name="license_status" type="radio"
+          tal:attributes="checked not:is_empty" />
+    <label for="license_complete">The project uses these licenses:</label>
+  </div>
+
+  <tal:if tal:condition="view/allow_pending_license">
+      <tal:then 
+        tal:define="global checkbox_padding string:padding-left: 20px" />
+  </tal:if>
+  <div tal:attributes="style checkbox_padding|nothing"
+       onclick="setLicensePendingStatus(false)">
+    <input tal:replace="structure view/checkbox_matrix" />
+  </div>
+
+  Launchpad.net is free to use for software projects that comply with 
   <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
   these licensing policies.</a>
 </div>

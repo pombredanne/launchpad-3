@@ -141,7 +141,9 @@ class ProductSetNavigation(Navigation):
 class LicenseValidateMixin:
     def validate(self, data):
         licenses = data.get('licenses', [])
-        if len(licenses) == 0:
+        if (len(licenses) == 0 and 
+            not self.widgets['licenses'].allow_pending_license):
+            # License is optional on +edit page if not already set.
             self.setFieldError('licenses', 
                 'Select all licenses for this software or select '
                 'Other/Proprietary or Other/Open Source.')
@@ -684,8 +686,15 @@ class ProductEditView(LicenseValidateMixin, LaunchpadEditFormView):
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus", "licenses", "license_info"]
     custom_widget('licenses', LicenseWidget, column_count=3,
-        orientation='vertical')
+                  orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
+
+    def setUpWidgets(self):
+        super(ProductEditView, self).setUpWidgets()
+        # Licenses are optional on +edit page if they have not already 
+        # been set.
+        if len(self.context.licenses) == 0:
+            self.widgets['licenses'].allow_pending_license = True
 
     @action("Change", name='change')
     def change_action(self, action, data):
