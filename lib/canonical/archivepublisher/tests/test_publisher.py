@@ -511,9 +511,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
-        # Retrieve the publishing record again otherwise it would remain
-        # unchanged since domination procedure purges caches and does
-        # other bad things for sqlobject.
+        # Retrieve the publishing record again since the transaction was
+        # committed.
         from canonical.launchpad.database.publishing import (
             SourcePackagePublishingHistory)
         superseded_source = SourcePackagePublishingHistory.get(
@@ -728,7 +727,7 @@ class TestPublisher(TestNativePublishingBase):
         # See above.
         gz_sources_sha256_line = release_contents[sha256_header_index + 6]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
-            
+
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.

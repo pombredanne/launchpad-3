@@ -55,12 +55,12 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
         "None if there is not one.")
 
     def copyTo(distroseries, pocket):
-        """Copy a DistroArchSeriesBinaryPackageRelease to another location.
+        """Copy a `DistroArchSeriesBinaryPackageRelease` to another location.
 
         Return the publishing record in the targeted location.
 
-        NotFoundError will be raised if the distroseries is not found or not
-        published.
+        `NotFoundError` will be raised if the `DistroSeries` is not found
+        or not published.
         """
 
     def changeOverride(new_component=None, new_section=None,
@@ -77,10 +77,10 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
         """
 
     def delete(removed_by, removal_comment=None):
-        """Delete a DistroSeriesBinaryPackageRelease.
+        """Delete a `DistroSeriesBinaryPackageRelease`.
 
         param removed_by: `IPerson` responsible for the removal.
         param removal_comment: optional text describing the removal reason.
 
-        Return the modified IBinaryPackagePublishingHistory object.
+        Return the modified `IBinaryPackagePublishingHistory` object.
         """

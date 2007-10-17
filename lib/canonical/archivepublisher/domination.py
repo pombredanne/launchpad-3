@@ -287,7 +287,7 @@ class Dominator:
                 # for us, so leave it for consideration next time.
                 if published.count() == 0:
                     continue
-                
+
             # Okay, so there's no unremoved binaries, let's go for it...
             self.debug(
                 "%s/%s (%s) source has been judged eligible for removal" %

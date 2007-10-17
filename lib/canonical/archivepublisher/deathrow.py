@@ -84,7 +84,7 @@ class DeathRow:
     def reap(self, dry_run=False):
         """Reap packages that should be removed from the distribution.
 
-        Looks through all packages that are in condemned stated and
+        Looks through all packages that are in condemned states and
         have scheduleddeletiondate is in the past, try to remove their
         files from the archive pool (which may be impossible if they are
         used by other packages which are published), and mark them as

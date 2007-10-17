@@ -316,7 +316,7 @@ class DistroArchSeriesBinaryPackageRelease:
         return current
 
     def delete(self, removed_by, removal_comment=None):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         # Retrieve current publishing info
         current = self.current_publishing_record
         current = SecureBinaryPackagePublishingHistory.get(current.id)
