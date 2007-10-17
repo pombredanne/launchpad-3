@@ -41,31 +41,34 @@ importers = {
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
 
-class CurrentPOFileInDatabase:
-    """Reduces the amount of DB work done on every PO file import."""
+class ExistingPOFileInDatabase:
+    """All existing translations and suggestions for a PO file.
+
+    Fetches all information needed to compare messages to be imported in one
+    go. Used to speed up PO file import."""
 
     def __init__(self, pofile, published=False, active=False):
         self.pofile = pofile
         self.is_published = published
         self.is_active = active
 
-        # dict indexed by (msgid, context) containing active
-        # TranslationMessages: doing this for the speed
+        # Dict indexed by (msgid, context) containing active
+        # TranslationMessages: doing this for the speed.
         self.messages = {}
-        # messages which have been seen in the file (used to expire
-        # all the rest)
-        self.seen = {}
+        # Messages which have been seen in the file: messages which exist
+        # in the database, but not in the import, will be expired.
+        self.seen = set()
 
-        # contains published but inactive translations
+        # Contains published but inactive translations.
         self.published = {}
 
-        # contains non-published and inactive translations, indexed by
+        # Contains non-published and inactive translations, indexed by
         # (msgid, context) and then by plural form; eg.
         # self.suggestions[("blah", "context")][1] is a list of suggestions
-        # for 1st plural form translations for "context"/"blah" message
+        # for 1st plural form translations for "context"/"blah" message.
         self.suggestions = {}
 
-        # Pre-fill self.messages and self.published with data
+        # Pre-fill self.messages and self.published with data.
         self._fetchDBRows()
 
 
@@ -132,17 +135,17 @@ class CurrentPOFileInDatabase:
                 message.fuzzy = False
 
     def getUnseenMessages(self):
-        """Return a list of messages present in the database but not seen
+        """Return a set of messages present in the database but not seen
         in the file being imported.
         """
-        unseen = []
+        unseen = ()
         for (msgid, context) in self.messages:
             if (msgid, context) not in self.seen:
-                unseen.append((msgid, context))
+                unseen.add((msgid, context))
         for (msgid, context) in self.published:
             if ((msgid, context) not in self.messages and
                 (msgid, context) not in self.seen):
-                unseen.append((msgid, context))
+                unseen.add((msgid, context))
         return unseen
 
     def _compareTwoMessages(self, msg1, msg2):
@@ -173,7 +176,6 @@ class CurrentPOFileInDatabase:
         iff...
         """
         (msgid, context) = (message.msgid, message.context)
-        self.seen[(msgid, context)] = True
         if (msgid, context) in self.messages:
             msg_in_db = self.messages[(msgid, context)]
             return self._compareTwoMessages(msg_in_db, message)
@@ -344,7 +346,7 @@ class TranslationImporter:
         count = 0
 
         if self.pofile is not None:
-            pofile_in_db = CurrentPOFileInDatabase(
+            pofile_in_db = ExistingPOFileInDatabase(
                 self.pofile,
                 published=translation_import_queue_entry.is_published)
         errors = []
@@ -354,6 +356,8 @@ class TranslationImporter:
                 # message.
                 continue
             if self.pofile is not None:
+                # Mark this message as seen in the import
+                pofile_in_db.seen.add((message.msgid, message.context))
                 if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
                     pofile_in_db.isAlreadyPublishedTheSame(message)):
                     count += 1
