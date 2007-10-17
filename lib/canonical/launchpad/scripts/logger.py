@@ -10,7 +10,7 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options', 'FakeLogger', 'QuietLogger']
+__all__ = ['log', 'logger', 'logger_options', 'FakeLogger']
 
 import logging
 import re
@@ -50,6 +50,8 @@ class FakeLogger:
     def warning(self, *stuff, **kw):
         self.message('WARNING', *stuff, **kw)
 
+    warn = warning
+
     def error(self, *stuff, **kw):
         self.message('ERROR', *stuff, **kw)
 
@@ -58,31 +60,6 @@ class FakeLogger:
 
     def debug(self, *stuff, **kw):
         self.message('DEBUG', *stuff, **kw)
-
-
-class QuietLogger:
-    """A logger that doesn't log anything to stdout/stderr
-
-    Useful where you need to provide a logger object but don't actually
-    want any output.
-    Used exclusively in doc tests.
-    """
-
-    def debug(self, args):
-        self.log(args)
-
-    def info(self, args):
-        self.log(args)
-
-    def warn(self, args):
-        self.log(args)
-
-    def error(self, args):
-        self.log(args)
-
-    def log(self, args):
-        #print args
-        pass
 
 
 class LibrarianFormatter(logging.Formatter):

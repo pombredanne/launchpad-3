@@ -11,16 +11,11 @@ __all__ = [
     'log',
     'db_options',
     'FakeLogger',
-    'QuietLogger',
     ]
 
 import os
 import threading
 import atexit
-import sys
-import re
-import time
-from optparse import OptionParser
 
 import zope.app.appsetup
 import zope.app.mail.delivery
@@ -35,7 +30,7 @@ from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log, FakeLogger, QuietLogger
+        logger_options, logger, log, FakeLogger
         )
 
 # XXX StuartBishop 2005-06-02:

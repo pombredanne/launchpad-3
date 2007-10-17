@@ -17,6 +17,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
     ArchiveCruftCheckerError)
@@ -41,8 +42,9 @@ def removeTestArchive():
     shutil.rmtree("/var/tmp/archive/")
 
 
-class MockLogger:
+class LocalLogger(FakeLogger):
     """Local log facility """
+
     def __init__(self):
         self.logs = []
 
@@ -52,27 +54,18 @@ class MockLogger:
         self.logs = []
         return content
 
-    def debug(self, txt):
-        self.logs.append("DEBUG: %s" % txt)
-
-    def info(self, txt):
-        self.logs.append("INFO: %s" % txt)
-
-    def error(self, txt):
-        self.logs.append("ERROR: %s" % txt)
-
-    def warn(self, txt):
-        self.logs.append("WARN: %s" % txt)
+    def message(self, prefix, *stuff, **kw):
+        self.logs.append("%s %s" % (prefix, ' '.join(stuff)))
 
 
 class TestArchiveOverrider(LaunchpadZopelessTestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment and retrieve useful instances."""
         LaunchpadZopelessTestCase.setUp(self)
-        self.log = MockLogger()
+        self.log = LocalLogger()
 
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.hoary = self.ubuntu['hoary']
@@ -401,7 +394,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment.
@@ -409,7 +402,7 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
         Retrieve useful instances and create a test archive.
         """
         LaunchpadZopelessTestCase.setUp(self)
-        self.log = MockLogger()
+        self.log = LocalLogger()
 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
