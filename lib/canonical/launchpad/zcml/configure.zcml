@@ -40,7 +40,10 @@
     <include file="builder.zcml" />
     <include file="calendar.zcml" />
     <include file="codeimport.zcml" />
+    <include file="codeimportevent.zcml" />
+    <include file="codeimportjob.zcml" />
     <include file="codeimportmachine.zcml" />
+    <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -68,11 +71,12 @@
     <include file="faqcollection.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
-    <include file="hastranslationimports.zcml" />
+    <include file="hwdb.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
+    <include file="languagepack.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />

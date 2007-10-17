@@ -22,6 +22,7 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.constants import UTC_NOW
@@ -31,7 +32,7 @@ from canonical.launchpad.interfaces import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
     IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchSeriesSet,
     IHasBuildRecords, NotFoundError,
-    ProtocolVersionMismatch)
+    ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -181,25 +182,21 @@ class Builder(SQLBase):
         # an error rather than assuming it reset ok.
         resume_process.communicate()
 
-    @property
+    @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # A cached attribute _slave is used to allow tests to replace
-        # the _slave object, which is usually an XMLRPC client, with a
+        # A cached attribute is used to allow tests to replace
+        # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        if getattr(self, '_slave', None) is None:
-            self._slave = BuilderSlave(self.url)
-        return self._slave
+        return BuilderSlave(self.url)
 
     def setSlaveForTesting(self, new_slave):
         """See IBuilder."""
-        self._slave = new_slave
+        self.slave = new_slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        from canonical.archivepublisher.publishing import suffixpocket
-
         logger.info("startBuild(%s, %s, %s, %s)", self.url,
                     build_queue_item.name, build_queue_item.version,
                     build_queue_item.build.pocket.title)
@@ -218,8 +215,16 @@ class Builder(SQLBase):
             raise CannotBuild
         # The main distribution has policies prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
-        # lifecycle. These do not apply to PPA builds (which are untrusted).
-        if build_queue_item.is_trusted:
+        # lifecycle. These do not apply to PPA builds (which are untrusted)
+        # nor any archive that allows release pocket updates.
+
+        # XXX julian 2007-09-14
+        # Currently is_trusted is being overloaded to also mean "is not a
+        # PPA".  If we ever start building on machines outside our data
+        # centre (ie not trusted) the following logic breaks.
+        # https://bugs.launchpad.net/soyuz/+bug/139594
+        if (build_queue_item.is_trusted and
+            not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
             build = build_queue_item.build
             # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
             # exception yet because the callers have not been audited
@@ -244,7 +249,7 @@ class Builder(SQLBase):
 
         # Build extra arguments
         args = {}
-        args["ogrecomponent"] = build_queue_item.component_name
+        args["ogrecomponent"] = build_queue_item.build.current_component.name
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
@@ -263,41 +268,52 @@ class Builder(SQLBase):
                 'restricted': 'main restricted',
                 'universe': 'main restricted universe',
                 'multiverse': 'main restricted universe multiverse',
-                'commercial' : 'commercial',
+                'partner' : 'partner',
                 }
-            ogre_components = ogre_map[build_queue_item.component_name]
+            ogre_components = ogre_map[
+                build_queue_item.build.current_component.name]
             dist_name = build_queue_item.archseries.distroseries.name
             archive_url = build_queue_item.build.archive.archive_url
 
             if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
-                ubuntu_source_line = (
+                ubuntu_source_lines = [
                     'deb http://archive.ubuntu.com/ubuntu %s %s'
-                    % (dist_name, ogre_components))
+                    % (dist_name, ogre_components)]
             else:
                 ubuntu_components = ogre_components
+                # A list of pockets that we are allowed to use for
+                # dependencies.
+                ubuntu_pockets = [
+                    PackagePublishingPocket.RELEASE,
+                    PackagePublishingPocket.SECURITY,
+                    PackagePublishingPocket.UPDATES,
+                    ]
                 if (build_queue_item.build.archive.purpose ==
-                        ArchivePurpose.COMMERCIAL):
+                        ArchivePurpose.PARTNER):
                     # XXX julian 2007-08-07 - this is a greasy hack.
                     # See comment above about not modelling Ogre here.
-                    # Commercial is a very special case because the commercial
-                    # component is only in the commercial archive, so we have
+                    # Partner is a very special case because the partner
+                    # component is only in the partner archive, so we have
                     # to be careful with the sources.list archives.
-                    ubuntu_components = 'main restricted'
-                ubuntu_source_line = (
-                    'deb http://ftpmaster.internal/ubuntu %s %s'
-                    % (dist_name, ubuntu_components))
-                # Add the pocket to the distro to make the full suite name.
-                # PPA always builds in RELEASE so it does not need this code.
-                pocket = build_queue_item.build.pocket
-                if pocket != PackagePublishingPocket.RELEASE:
-                    dist_name += suffixpocket[pocket]
+                    ubuntu_components = 'main restricted universe multiverse'
+
+                # Here we build a list of sources.list lines for each pocket
+                # required in the primary archive.
+                ubuntu_source_lines = []
+                for pocket in ubuntu_pockets:
+                    if pocket == PackagePublishingPocket.RELEASE:
+                        dist_pocket = dist_name
+                    else:
+                        dist_pocket = dist_name + pocketsuffix[pocket]
+                    ubuntu_source_lines.append(
+                        'deb http://ftpmaster.internal/ubuntu %s %s'
+                        % (dist_pocket, ubuntu_components))
 
             source_line = (
                 'deb %s %s %s'
                 % (archive_url, dist_name, ogre_components))
-            args['archives'] = [source_line, ubuntu_source_line]
-        else:
-            args['archives'] = []
+            args['archives'] = [source_line]
+            args['archives'].extend(ubuntu_source_lines)
 
         chroot_sha1 = chroot.content.sha1
         # store DB information
@@ -354,9 +370,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
+        return getUtility(IBuildSet).getBuildsForBuilder(
+            self.id, build_state, name)
 
     def slaveStatus(self):
         """See IBuilder."""

@@ -1,5 +1,7 @@
-<html tal:replace="python:request.response.redirect('..')">
-    <body>
-        <a href=".">Here</a>
-    </body>
+<html
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  tal:replace="python:request.response.redirect('..')">
+  <body>
+    <a href=".">Here</a>
+  </body>
 </html>

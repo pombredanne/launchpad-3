@@ -182,34 +182,14 @@ class TestMirroringForHostedBranches(BranchTestCase):
         self.assertEqual(None, branch.mirror_request_time)
 
     def test_mirrorFailureResetsMirrorRequest(self):
-        """If a branch fails to mirror then mirror again later."""
+        """If a branch fails to mirror then update failures but don't mirror
+        again until asked.
+        """
         branch = self.makeBranch()
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
-        self.assertInFuture(branch.mirror_request_time, MIRROR_TIME_INCREMENT)
-
-    def test_mirrorFailureBacksOffExponentially(self):
-        """If a branch repeatedly fails to mirror then back off exponentially.
-        """
-        branch = self.makeBranch()
-        num_failures = 3
-        for i in range(num_failures):
-            branch.requestMirror()
-            branch.mirrorFailed('No particular reason')
-        self.assertEqual(num_failures, branch.mirror_failures)
-        self.assertInFuture(
-            branch.mirror_request_time,
-            (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
-
-    def test_repeatedMirrorFailuresDisablesMirroring(self):
-        """If a branch's mirror failures exceed the maximum, disable mirroring.
-        """
-        branch = self.makeBranch()
-        for i in range(MAXIMUM_MIRROR_FAILURES):
-            branch.requestMirror()
-            branch.mirrorFailed('No particular reason')
-        self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
         self.assertEqual(None, branch.mirror_request_time)
 
     def test_pullQueueEmpty(self):
@@ -257,6 +237,37 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
 
     branch_type = BranchType.MIRRORED
 
+    def test_mirrorFailureResetsMirrorRequest(self):
+        """If a branch fails to mirror then mirror again later."""
+        branch = self.makeBranch()
+        branch.requestMirror()
+        branch.mirrorFailed('No particular reason')
+        self.assertEqual(1, branch.mirror_failures)
+        self.assertInFuture(branch.mirror_request_time, MIRROR_TIME_INCREMENT)
+
+    def test_mirrorFailureBacksOffExponentially(self):
+        """If a branch repeatedly fails to mirror then back off exponentially.
+        """
+        branch = self.makeBranch()
+        num_failures = 3
+        for i in range(num_failures):
+            branch.requestMirror()
+            branch.mirrorFailed('No particular reason')
+        self.assertEqual(num_failures, branch.mirror_failures)
+        self.assertInFuture(
+            branch.mirror_request_time,
+            (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
+
+    def test_repeatedMirrorFailuresDisablesMirroring(self):
+        """If a branch's mirror failures exceed the maximum, disable mirroring.
+        """
+        branch = self.makeBranch()
+        for i in range(MAXIMUM_MIRROR_FAILURES):
+            branch.requestMirror()
+            branch.mirrorFailed('No particular reason')
+        self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
+        self.assertEqual(None, branch.mirror_request_time)
+
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring 'mirrored' branches sets their mirror request time to six
         hours in the future.
@@ -267,8 +278,9 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch.mirrorComplete('rev1')
         self.assertInFuture(
             branch.mirror_request_time, MIRROR_TIME_INCREMENT)
+        self.assertEqual(0, branch.mirror_failures)
 
-        
+
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
 
     branch_type = BranchType.IMPORTED

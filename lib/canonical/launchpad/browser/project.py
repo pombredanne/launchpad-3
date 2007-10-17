@@ -8,6 +8,7 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectBranchesView',
     'ProjectBrandingView',
     'ProjectNavigation',
     'ProjectDynMenu',
@@ -39,8 +40,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
+    IBranchSet, ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     NotFoundError)
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -176,8 +178,8 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = [
-        'overview', 'bugs', 'specifications', 'answers', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'answers', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -185,6 +187,10 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, enabled=enabled)
+
+    def branches(self):
+        text = 'Code'
+        return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
         site = 'bugs'
@@ -339,7 +345,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    label = "Change project details"
+    label = "Change project group details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
@@ -571,3 +577,29 @@ class ProjectAddQuestionView(QuestionAddView):
         else:
             return None
 
+
+class ProjectBranchesView(BranchListingView):
+    """View for branch listing for a project."""
+
+    extra_columns = ('author', 'product')
+
+    def _branches(self):
+        return getUtility(IBranchSet).getBranchesForProject(
+            self.context, self.selected_lifecycle_status, self.user)
+
+    @property
+    def no_branch_message(self):
+        if self.selected_lifecycle_status is not None:
+            message = (
+                'There may be branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this project group.')
+        return message % self.context.displayname

@@ -7,6 +7,7 @@ __metaclass__ = type
 import gzip
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -69,31 +70,31 @@ class TestPublisher(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
-    def testPublishCommercial(self):
-        """Test that a commercial package is published to the right place."""
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+    def testPublishPartner(self):
+        """Test that a partner package is published to the right place."""
+        archive = self.ubuntutest.getArchiveByComponent('partner')
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
         disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
         publisher = Publisher(
             self.logger, config, disk_pool, archive)
         pub_source = self.getPubSource(archive=archive,
-            filecontent="I am commercial")
+            filecontent="I am partner")
 
         publisher.A_publish(False)
 
         # Did the file get published in the right place?
         self.assertEqual(config.poolroot,
-            "/var/tmp/archive/ubuntutest-commercial/pool")
+            "/var/tmp/archive/ubuntutest-partner/pool")
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
-        self.assertEqual(open(foo_path).read().strip(), "I am commercial")
+        self.assertEqual(open(foo_path).read().strip(), "I am partner")
 
         # Check that the index is in the right place.
         publisher.C_writeIndexes(False)
         self.assertEqual(config.distsroot,
-            "/var/tmp/archive/ubuntutest-commercial/dists")
+            "/var/tmp/archive/ubuntutest-partner/dists")
         index_path = os.path.join(
-            config.distsroot, 'breezy-autotest', 'commercial', 'source',
+            config.distsroot, 'breezy-autotest', 'partner', 'source',
             'Sources.gz')
         self.assertTrue(open(index_path))
 
@@ -103,19 +104,20 @@ class TestPublisher(TestNativePublishingBase):
             config.distsroot, 'breezy-autotest', 'Release')
         self.assertTrue(open(release_file))
 
-    def testCommercialReleasePocketPublishing(self):
-        """Test commercial package RELEASE pocket publishing.
+    def testPartnerReleasePocketPublishing(self):
+        """Test partner package RELEASE pocket publishing.
 
-        Publishing commercial packages to the RELEASE pocket in a stable
+        Publishing partner packages to the RELEASE pocket in a stable
         distroseries is always allowed, so check for that here.
         """
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        archive = self.ubuntutest.getArchiveByComponent('partner')
+        self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
         disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
         publisher = Publisher(self.logger, config, disk_pool, archive)
         pub_source = self.getPubSource(
-            archive=archive, filecontent="I am commercial",
+            archive=archive, filecontent="I am partner",
             status=PackagePublishingStatus.PENDING)
 
         publisher.A_publish(force_publishing=False)
@@ -125,7 +127,14 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # The file was published:
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
-        self.assertEqual(open(foo_path).read().strip(), 'I am commercial')
+        self.assertEqual(open(foo_path).read().strip(), 'I am partner')
+
+        # Nothing to test from these two calls other than that they don't blow
+        # up as there is an assertion in the code to make sure it's not
+        # publishing out of a release pocket in a stable distroseries,
+        # excepting PPA and partner which are allowed to do that.
+        publisher.C_writeIndexes(is_careful=False)
+        publisher.D_writeReleaseFiles(is_careful=False)
 
     def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
@@ -311,16 +320,16 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
             distro_publisher.allowed_suites)
 
-        # Check that the commercial archive is built in a different directory
+        # Check that the partner archive is built in a different directory
         # to the primary archive.
-        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.COMMERCIAL)
+        partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
         distro_publisher = getPublisher(
-            commercial_archive, allowed_suites, self.logger, distsroot)
-        self.assertEqual(commercial_archive, distro_publisher.archive)
-        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/dists',
+            partner_archive, allowed_suites, self.logger, distsroot)
+        self.assertEqual(partner_archive, distro_publisher.archive)
+        self.assertEqual('/var/tmp/archive/ubuntutest-partner/dists',
             distro_publisher._config.distsroot)
-        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/pool',
+        self.assertEqual('/var/tmp/archive/ubuntutest-partner/pool',
             distro_publisher._config.poolroot)
 
         # lets setup an Archive Publisher
@@ -649,37 +658,70 @@ class TestPublisher(TestNativePublishingBase):
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
-        first_md5_line = release_contents[md5_header_index + 3]
+
+        plain_sources_md5_line = release_contents[md5_header_index + 4]
         self.assertEqual(
-            first_md5_line,
+            plain_sources_md5_line,
+            (' 77b1655f4038b2f4e95c29429c3981bd              '
+             '211 main/source/Sources'))
+        release_md5_line = release_contents[md5_header_index + 5]
+        self.assertEqual(
+            release_md5_line,
             (' a5e5742a193740f17705c998206e18b6              '
              '114 main/source/Release'))
+        # We can't probe checksums of compressed files because they contain
+        # timestamps, their checksum varies with time.
+        print
+        for line in release_contents:
+            print line
+
+        gz_sources_md5_line = release_contents[md5_header_index + 6]
+        self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
-        first_sha1_line = release_contents[sha1_header_index + 3]
+
+        plain_sources_sha1_line = release_contents[sha1_header_index + 4]
         self.assertEqual(
-            first_sha1_line,
+            plain_sources_sha1_line,
+            (' db70d9d7421a78b2e009be3d8f2546678beb734c              '
+             '211 main/source/Sources'))
+        release_sha1_line = release_contents[sha1_header_index + 5]
+        self.assertEqual(
+            release_sha1_line,
             (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
              '114 main/source/Release'))
+        # See above.
+        gz_sources_sha1_line = release_contents[sha1_header_index + 6]
+        self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
-        first_sha256_line = release_contents[sha256_header_index + 3]
+
+        plain_sources_sha256_line = release_contents[sha256_header_index + 4]
         self.assertEqual(
-            first_sha256_line,
+            plain_sources_sha256_line,
+            (' 1ad45a96a6c7b35145a52fddc3c60daea9791fdde6639425289e58'
+             'cf3be3813a              211 main/source/Sources'))
+        release_sha256_line = release_contents[sha256_header_index + 5]
+        self.assertEqual(
+            release_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+        # See above.
+        gz_sources_sha256_line = release_contents[sha256_header_index + 6]
+        self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
+            
 
-    def testReleaseFileForCommercial(self):
-        """Test Release file writing for Commercial archives.
+    def testReleaseFileForPartner(self):
+        """Test Release file writing for Partner archives.
 
         Signed Release files must reference an uncompressed Sources and
         Packages file.
         """
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        archive = self.ubuntutest.getArchiveByComponent('partner')
         allowed_suites = []
         publisher = getPublisher(archive, allowed_suites, self.logger)
 
@@ -702,6 +744,37 @@ class TestPublisher(TestNativePublishingBase):
         self.assertTrue('Packages\n' in stringified_contents)
         self.assertTrue('Sources.gz\n' in stringified_contents)
         self.assertTrue('Sources\n' in stringified_contents)
+
+    def testWorldAndGroupReadablePackagesAndSources(self):
+        """Test Packages.gz and Sources.gz files are world and group readable.
+
+        Packages.gz and Sources.gz files generated by NoMoreAF must be
+        world and group readable.  We'll test this in the partner archive
+        as that uses NoMoreAF. (No More Apt-Ftparchive)
+        """
+        archive = self.ubuntutest.getArchiveByComponent('partner')
+        allowed_suites = []
+        publisher = getPublisher(archive, allowed_suites, self.logger)
+        self.getPubSource(filecontent='Hello world', archive=archive)
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+
+        # Find a Sources.gz and Packages.gz that were just published
+        # in the breezy-autotest distroseries.
+        sourcesgz_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'partner',
+            'source', 'Sources.gz')
+        packagesgz_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'partner',
+            'binary-i386', 'Packages.gz')
+
+        # What permissions are set on those files?
+        for file in (sourcesgz_file, packagesgz_file):
+            mode = stat.S_IMODE(os.stat(file).st_mode)
+            self.assertEqual(
+                (mode & (stat.S_IROTH | stat.S_IRGRP)),
+                (stat.S_IROTH | stat.S_IRGRP),
+                "%s is not world/group readable." % file)
 
 
 def test_suite():

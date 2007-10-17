@@ -17,14 +17,18 @@ You can specify the db_location explicitly:
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     DebBugs)
-    >>> external_debbugs = DebBugs(db_location=test_db_location)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
+    >>> external_debbugs = DebBugs(debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location
     True
 
 Or, if we create a DebBugs instance without specifying a db location, it
 will use the config value:
 
-    >>> external_debbugs = DebBugs()
+    >>> external_debbugs = DebBugs(debbugs)
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
@@ -71,7 +75,6 @@ Bug 563 resides in the archive. It is also fetchable:
 
 Log in and kick off the update:
 
-    >>> login('foo.bar@canonical.com')
     >>> external_debbugs.updateBugWatches(bug_watches)
     >>> for bug_watch in bug_watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -216,7 +219,7 @@ If we pass in a malformed status string, we map it to 'Unknown' and
 log an error.
 
     >>> print external_debbugs.convertRemoteStatus('open').title
-    ERROR:...:Malformed debbugs status: 'open'
+    ERROR:...:Malformed debbugs status: 'open'.
     Unknown
 
 UNKNOWN_REMOTE_STATUS maps to Unknown.

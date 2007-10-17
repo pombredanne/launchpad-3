@@ -10,20 +10,16 @@ Let's add a new suggestion as a person without privileges.
 
   >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> browser.getControl(
   ...     name='msgset_134_es_translation_0_new_checkbox').value = True
   >>> browser.getControl(
   ...     name='msgset_134_es_translation_0_new').value = 'new suggestion'
   >>> browser.getControl(name='submit_translations').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10
   >>> browser.getLink('Previous').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0'
 
 Now, we can see the added suggestion + others from the sample data.
 

@@ -1,31 +1,25 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Librarian garbage collection tests"""
 
 __metaclass__ = type
 
 import sys
 import os
-import os.path
 from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
 from unittest import TestCase, TestSuite, makeSuite
 from datetime import datetime, timedelta
 from pytz import utc
 
-from zope.component import getUtility
-
 from canonical.config import config
-from canonical.database.constants  import UTC_NOW
 from canonical.database.sqlbase import (
         connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
         )
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import DatabaseLayer, LaunchpadLayer
+from canonical.testing import LaunchpadLayer
 
 
 class MockLogger:

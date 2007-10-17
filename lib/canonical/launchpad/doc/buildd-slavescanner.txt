@@ -89,6 +89,7 @@ Initializing the sane_builder. It was not rescued, since the job
 identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
   >>> class SaneBuildingSlave:
+  ...     """A mock slave that is currently building."""
   ...     def status(self):
   ...         return ('BuilderStatus.BUILDING', '8-1')
   ...     def clean(self):
@@ -103,6 +104,7 @@ identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 A sane WAITING slave:
 
   >>> class SaneWaitingSlave:
+  ...     """A mock slave that is currently waiting."""
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
   ...     def clean(self):
@@ -117,6 +119,7 @@ A sane WAITING slave:
 A sane WAITING slave but with wrong BuildQueue/Build relation:
 
   >>> class SaneWaitingSlave:
+  ...     """A mock slave waiting with a bogus Build/BuildQueue relation."""
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
   ...     def clean(self):
@@ -135,6 +138,7 @@ Let's test slaves with job identifier pointing non-existent
 Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 
   >>> class LostBuildingSlave:
+  ...     """A mock slave building bogus Build/BuildQueue IDs."""
   ...     def status(self):
   ...         return ('BuilderStatus.BUILDING', '1000-10000')
   ...     def abort(self):
@@ -149,6 +153,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 Then a lost slave in status 'WAITING':
 
   >>> class LostWaitingSlave:
+  ...     """A mock slave waiting with bogus Build/BuildQueue IDs."""
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
   ...     def clean(self):
@@ -167,14 +172,22 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
 
   >>> import xmlrpclib
   >>> class BrokenSlave:
+  ...     """A mock slave that reports that it is broken."""
   ...     def status(self):
   ...         raise xmlrpclib.Fault(8001, "Broken slave")
 
 
-Make ensurePresent() always return True, it teoretically means the
-slave has the requested file in cache.
+Make ensurePresent() always return True, it theoretically means the
+slave has the requested file in cache.  This mock slave will also print
+whether it has been passed an 'archives' property in the args dictionary.
+The archives are passed from the buildmaster and controls what archives
+exist in the apt sources.list.  If nothing is passed, the slave's default
+list applies, otherwise the passed list is used.  This behaviour is required
+in build slaves because some jobs may only depend on certain archives and
+hence certain package dependencies.
 
   >>> class OkSlave:
+  ...     """An idle mock slave that prints information about itself."""
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE', '')
   ...     def ensurepresent(self, sha1, url):
@@ -183,7 +196,10 @@ slave has the requested file in cache.
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
   ...         info = 'OkSlave BUILDING'
   ...         print info
-  ...         print "Archives: %s" % args['archives']
+  ...         if 'archives' in args:
+  ...             print "Archives: %s" % args['archives']
+  ...         else:
+  ...             print "No archives set."
   ...         return ('BuildStatus.Building', info)
   ...     def fetchlogtail(self, size):
   ...         return 'BOGUS'
@@ -194,6 +210,7 @@ slave has the requested file in cache.
 
 
   >>> class BuildingSlave(OkSlave):
+  ...     """A mock slave that looks like it's currently building."""
   ...     def status(self):
   ...         buildlog = xmlrpclib.Binary("This is a build log")
   ...         return ('BuilderStatus.BUILDING', '1-1', buildlog)
@@ -205,11 +222,13 @@ slave has the requested file in cache.
 
 
   >>> class AbortedSlave(OkSlave):
+  ...     """A mock slave that looks like it's aborted."""
   ...     def status(self):
   ...         return ('BuilderStatus.ABORTED', '1-1')
 
 
   >>> class WaitingSlave(OkSlave):
+  ...     """A mock slave that looks like it's currently waiting."""
   ...     def __init__(self, state, dependencies=None):
   ...         self.state = state
   ...         self.dependencies = dependencies
@@ -223,6 +242,7 @@ slave has the requested file in cache.
   ...             return s
 
   >>> class AbortingSlave(OkSlave):
+  ...     """A mock slave that looks like it's in the process of aborting."""
   ...     def status(self):
   ...         return ('BuilderStatus.ABORTING', '1-1')
 
@@ -951,11 +971,14 @@ Override the builder's slave with one that will claim to be 'OK'
 
   >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
+This build does not require an override for the archives and will use the
+slave's default sources.list.
+
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: []
+  No archives set.
 
 Cleanup in preparation for the next test:
 
@@ -966,8 +989,8 @@ builder will pass an 'archives' property that instructs the slave
 to set up the sources.list appropriately.
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> commercial_archive = ubuntu.getArchiveByComponent('commercial')
-  >>> removeSecurityProxy(a_build).archive = commercial_archive
+  >>> partner_archive = ubuntu.getArchiveByComponent('partner')
+  >>> removeSecurityProxy(a_build).archive = partner_archive
   >>> local_transaction.commit()
   >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> setupBuildQueue(bqItem3, a_builder)
@@ -977,7 +1000,7 @@ to set up the sources.list appropriately.
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://launchpad.dev/ubuntu-commercial hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted']
+  Archives: [u'deb http://launchpad.dev/ubuntu-partner hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse']
 
 Clean up before continuing:
 

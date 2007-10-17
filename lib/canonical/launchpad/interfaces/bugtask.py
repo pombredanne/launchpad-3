@@ -5,28 +5,29 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUG_CONTACT_BUGTASK_STATUSES',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
-    'IBugTask',
-    'INullBugTask',
-    'IBugTaskSearch',
     'IAddBugTaskForm',
-    'IPersonBugTaskSearch',
-    'IFrontPageBugTaskSearch',
+    'IBugTask',
     'IBugTaskDelta',
-    'IUpstreamBugTask',
+    'IBugTaskSearch',
+    'IBugTaskSet',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
+    'IFrontPageBugTaskSearch',
+    'INominationsReviewTableBatchNavigator',
+    'INullBugTask',
+    'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
-    'IBugTaskSet',
-    'INominationsReviewTableBatchNavigator',
+    'IUpstreamBugTask',
+    'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES',
-    'BUG_CONTACT_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -409,11 +410,17 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
+PENDING_BUGWATCH_VOCABUARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show only bugs that need to be forwarded to an upstream bug "
+              "tracker")])
+
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
         "pending_bugwatch",
-        title="Show bugs that need to be forwarded to an upstream bug"
-        "tracker"),
+        title="Show bugs that need to be forwarded to an upstream "
+              "bug tracker"),
     SimpleTerm(
         "hide_upstream",
         title="Show bugs that are not known to affect upstream"),
@@ -430,7 +437,10 @@ class IBugTaskSearchBase(Interface):
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
-        value_type=Choice(title=_('Status'), vocabulary=BugTaskStatusSearch, default=BugTaskStatusSearch.NEW),
+        value_type=Choice(
+            title=_('Status'),
+            vocabulary=BugTaskStatusSearch,
+            default=BugTaskStatusSearch.NEW),
         default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
         required=False)
     importance = List(
@@ -502,6 +512,18 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+
+
+class IUpstreamProductBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form for upstream products.
+
+    This schema is the same as IBugTaskSearch, except that it has only
+    one choice for Status Upstream.
+    """
+    status_upstream = List(
+        title=_('Status Upstream'),
+        value_type=Choice(vocabulary=PENDING_BUGWATCH_VOCABUARY),
+        required=False)
 
 
 class IFrontPageBugTaskSearch(IBugTaskSearchBase):
@@ -604,7 +626,7 @@ class IProductSeriesBugTask(IBugTask):
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     """ISelectResults (from SQLOS) should be specifying __getslice__.
-    
+
     This interface defines the missing __getslice__ method.
     """
     def __getslice__(i, j):
@@ -777,7 +799,7 @@ class IBugTaskSet(Interface):
 
     def findExpirableBugTasks(min_days_old):
         """Return a list of bugtasks that are at least min_days_old.
-        
+
         An Expirable bug task is unassigned, in the INCOMPLETE status,
         and belongs to a Product or Distribtion that uses Malone.
         """
@@ -825,10 +847,11 @@ class IBugTaskSet(Interface):
 
 
 def valid_remote_bug_url(value):
+    """Verify that the URL is to a bug to a known bug tracker."""
     from canonical.launchpad.interfaces.bugwatch import (
         IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
-        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+        getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
         pass
     except UnrecognizedBugTrackerURL:

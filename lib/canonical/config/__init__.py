@@ -121,6 +121,9 @@ class CanonicalConfig(object):
         # ease of access.
         config.devmode = root_options.devmode
 
+        # The defined servers.
+        config.servers = root_options.servers
+
     def __getattr__(self, name):
         return getattr(self.getConfig(), name)
 

@@ -1,9 +1,9 @@
 When editing a bugtask, you may subscribe to the bug report as well, if
 you're not already subscribed.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open(
-    ...     "http://localhost:9000/firefox/+bug/5/+editstatus")
+    ...     "http://launchpad.dev/firefox/+bug/5/+editstatus")
 
     >>> browser.getControl("Status").value = ["Confirmed"]
     >>> browser.getControl("Comment on this change (optional)").value = "test"
@@ -19,9 +19,10 @@ you're not already subscribed.
 If you're already subscribed, the checkbox is not shown.
 
     >>> browser.open(
-    ...     "http://localhost:9000/firefox/+bug/5/+editstatus")
+    ...     "http://launchpad.dev/firefox/+bug/5/+editstatus")
 
     >>> browser.getControl("E-mail me about changes to this bug report")
     Traceback (most recent call last):
       ...
     LookupError: ...
+

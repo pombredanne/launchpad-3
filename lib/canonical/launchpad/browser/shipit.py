@@ -59,8 +59,18 @@ class ShipItUnauthorizedView(SystemErrorView):
 
 class ShipitFrontPageView(LaunchpadView):
 
+    series = ShipItConstants.current_distroseries
+
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
+
+    @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
+
+    @property
+    def beta_download_link(self):
+        return config.shipit.beta_download_link
 
     @property
     def download_or_buy_link(self):
@@ -89,6 +99,7 @@ def shipit_is_open(flavour):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
@@ -206,8 +217,15 @@ class ShipItRequestView(GeneralFormView):
         return shipit_is_open(self.flavour)
 
     @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
+
+    @property
     def dvds_section(self):
         """Get the HTML containing links to DVD sales for this flavour."""
+        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
+        # amazon.com. -- Guilherme Salgado, 2007-09-24
+        return u''
         if self.flavour == ShipItFlavour.UBUNTU:
             return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
                 self)
@@ -232,13 +250,6 @@ class ShipItRequestView(GeneralFormView):
         """Return a list with the quantity widgets that need to be shown."""
         return [getattr(self, field_name + '_widget')
                 for field_name in self.quantity_fields_mapping.values()]
-
-    def currentOrderIsCustom(self):
-        """Return True if the current order contains custom quantities of CDs
-        of self.flavour.
-        """
-        return self.current_order.containsCustomQuantitiesOfFlavour(
-            self.flavour)
 
     def _setUpWidgets(self, context=None):
         # First we set up the standard widgets
@@ -729,11 +740,12 @@ class StandardShipItRequestAddView(AddView):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
-        # We're not shipping PPC CDs anymore.
-        quantityppc = 0
+        quantityppc = 0 # We're not shipping PPC CDs anymore.
         isdefault = data.get('isdefault')
+        user_description = data.get('user_description')
         request = getUtility(IStandardShipItRequestSet).new(
-            flavour, quantityx86, quantityamd64, quantityppc, isdefault)
+            flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description)
         notify(ObjectCreatedEvent(request))
 
 
@@ -963,13 +975,13 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
              ShipItArchitecture.AMD64: None}
         }
 
+    series = ShipItConstants.current_distroseries
     current_order = None
     shipping_details_fields = [
         'recipientdisplayname', 'country', 'city', 'addressline1', 'phone',
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        self.series = ShipItConstants.current_distroseries
         order_id = request.form.get('order')
         if order_id is not None and order_id.isdigit():
             self.current_order = getUtility(IShippingRequestSet).get(

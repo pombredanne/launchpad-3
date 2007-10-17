@@ -12,8 +12,7 @@ from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
-    ITranslationImportQueue)
-from canonical.lp.dbschema import TranslationFileFormat
+    ITranslationImportQueue, TranslationFileFormat)
 from canonical.testing import LaunchpadZopelessLayer
 
 test_template = r'''
@@ -79,11 +78,10 @@ class GettextPOImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check whether GettextPOImporter say that handles PO file format."""
+        format = self.template_importer.getFormat(test_template)
         self.failUnless(
-            self.template_importer.format == TranslationFileFormat.PO,
-            'GettextPOImporter format expected PO but got %s' % (
-                self.template_importer.format.name))
-
+            format == TranslationFileFormat.PO,
+            'GettextPOImporter format expected PO but got %s' % format.name)
 
 def test_suite():
     suite = unittest.TestSuite()

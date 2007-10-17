@@ -8,6 +8,7 @@ __all__ = [
     'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
+    'BranchBadges',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -33,7 +34,8 @@ from canonical.config import config
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
@@ -45,6 +47,8 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
@@ -63,6 +67,43 @@ class BranchSOP(StructuralObjectPresentation):
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername
+
+
+class BranchBadges(HasBadgeBase):
+    badges = "private", "bug", "blueprint", "warning"
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    def isPrivateBadgeVisible(self):
+        """Show a private badge if the branch is private."""
+        return self.branch.private
+
+    def isBugBadgeVisible(self):
+        """Show a bug badge if the branch is linked to bugs."""
+        # Only show the badge if at least one bug is visible by the user.
+        for bug in self.branch.related_bugs:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', bug):
+                return True
+        return False
+
+    def isBlueprintBadgeVisible(self):
+        """Show a blueprint badge if the branch is linked to blueprints."""
+        # When specs get privacy, this will need to be adjusted.
+        return self.branch.spec_links.count() > 0
+
+    def isWarningBadgeVisible(self):
+        """Show a warning badge if there are mirror failures."""
+        return self.branch.mirror_failures > 0
+
+    def getBadge(self, badge_name):
+        """See `IHasBadges`."""
+        if badge_name == "warning":
+            return Badge('/@@/warning', '/@@/warning-large', '',
+                         'Branch has errors')
+        else:
+            return HasBadgeBase.getBadge(self, badge_name)
 
 
 class BranchNavigation(Navigation):
@@ -113,9 +154,9 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'delete_branch', 'browse', 'reassign', 'subscription',
-             'addsubscriber', 'associations', 'registermerge',
-             'landingcandidates', 'linkbug']
+    links = ['edit', 'delete_branch', 'browse_code', 'browse_revisions',
+             'reassign', 'subscription', 'addsubscriber', 'associations',
+             'registermerge', 'landingcandidates', 'linkbug']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -128,12 +169,22 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.canBeDeleted()
         return Link('+delete', text, enabled=enabled)
 
-    def browse(self):
+    def browse_code(self):
+        """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse code'
-        # Only enable the link if we've ever mirrored the branch.
-        # Don't enable if the branch is private.
         enabled = self.context.code_is_browseable
-        url = config.launchpad.codebrowse_root + self.context.unique_name
+        url = (config.codehosting.codebrowse_root
+               + self.context.unique_name
+               + '/files')
+        return Link(url, text, icon='info', enabled=enabled)
+
+    def browse_revisions(self):
+        """Return a link to the branch's revisions on codebrowse."""
+        text = 'Browse revisions'
+        enabled = self.context.code_is_browseable
+        url = (config.codehosting.codebrowse_root
+               + self.context.unique_name
+               + '/changes')
         return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -216,17 +267,35 @@ class BranchView(LaunchpadView):
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return config.launchpad.codebrowse_root + self.context.unique_name
+        return config.codehosting.codebrowse_root + self.context.unique_name
 
-
-    def supermirror_url(self):
-        """Public URL of the branch on the Supermirror."""
-        # Private branches are not available through anonymous http,
-        # so an appropriate bzr+ssh url should be shown.
-        if self.context.private:
-            return config.launchpad.smartserver_root + self.context.unique_name
+    def bzr_download_url(self):
+        """Return the generic URL for downloading the branch."""
+        if self.user_can_download():
+            return self.context.getBzrDownloadURL()
         else:
-            return config.launchpad.supermirror_root + self.context.unique_name
+            return None
+
+    def bzr_user_download_url(self):
+        """Return the specific URL for the user to download the branch."""
+        if self.user_can_download():
+            return self.context.getBzrDownloadURL(self.user)
+        else:
+            return None
+
+    def bzr_upload_url(self):
+        """Return the generic URL for uploading the branch."""
+        if self.user_can_upload():
+            return self.context.getBzrUploadURL()
+        else:
+            return None
+
+    def bzr_user_upload_url(self):
+        """Return the specific URL for the user to upload to the branch."""
+        if self.user_can_upload():
+            return self.context.getBzrUploadURL(self.user)
+        else:
+            return None
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""
@@ -253,12 +322,14 @@ class BranchView(LaunchpadView):
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return self.user.inTeam(self.context.owner)
+        return (self.user is not None and
+                self.user.inTeam(self.context.owner) and
+                self.context.branch_type == BranchType.HOSTED)
 
-    def upload_url(self):
-        """The URL the logged in user can use to upload to this branch."""
-        url_base = config.codehosting.upload_url_base % (self.user.name,)
-        return '%s/%s' % (url_base, self.context.unique_name)
+    def user_can_download(self):
+        """Whether the user can download this branch."""
+        return (self.context.branch_type != BranchType.REMOTE and
+                self.context.revision_count > 0)
 
     def is_hosted_branch(self):
         """Whether this is a user-provided hosted branch."""
@@ -494,11 +565,24 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.context.owner,
                                       data['product'],
                                       data['name'])
+
+        # If the branch is a MIRRORED branch, then the url
+        # must be supplied, and if HOSTED the url must *not*
+        # be supplied.
+        url = data.get('url')
         if self.context.branch_type == BranchType.MIRRORED:
-            if data.get('url') is None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs are required for Mirrored branches.')
+            if url is None:
+                # If the url is not set due to url validation errors,
+                # there will be an error set for it.
+                error = self.getWidgetError('url')
+                if not error:
+                    self.setFieldError(
+                        'url',
+                        'Branch URLs are required for Mirrored branches.')
+        else:
+            # We don't care about whether the URL is set for REMOTE branches,
+            # and the URL field is not shown for IMPORT or HOSTED branches.
+            pass
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):

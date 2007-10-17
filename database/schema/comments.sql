@@ -64,6 +64,7 @@ COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
 COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
+COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -178,6 +179,11 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
+-- BugWatch
+
+COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
+
+
 -- CodeImport
 
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
@@ -258,11 +264,6 @@ COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This 
 COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
-
--- DevelopmentManifest
-COMMENT ON TABLE DevelopmentManifest IS 'A table that keeps track of the "intermediate commits" during the development of a source package. A developer using HCT will make regular commits (stored locally, as Bazaar revisions). On occasion, the developer will "publish" the current state of the package. This results in the Bazaar branches being made available on a public server, and a DevelopmentManifest being created. Other people will then see the existence of the Development Manifest and know that the person is currently working on a variation of the package. When the developer believes that the page is actually ready to build, they can "release" the package. This results in a SourcePackageRelease being assembled, based on the existing development manifest.';
-COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release for which this source package is being developed. Note that the source package may very well be built and published in other releases as well - this information is purely a starting point indicator.';
-COMMENT ON COLUMN DevelopmentManifest.sourcepackagename IS 'Again, this is just an indicator of the place the developer is primarily targeting the work. This same package may actually be uploaded under a different name somewhere else eventually.';
 
 
 -- DistributionSourcePackageCache
@@ -685,17 +686,6 @@ COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
--- Manifest
-
-COMMENT ON TABLE Manifest IS 'A Manifest describes the branches that go into
-making up a source package or product release. This allows us to describe
-the source package or product release in a way that HCT can pull down the
-sources directly from The Bazaar and allow people to branch and edit
-immediately. Note that a Manifest does not have an owner, please ensure that
-ANYTHING that points TO a manifest, such as ProductRelease or
-SourcePackageRelease, has an owner, so that we do not end up with orphaned
-manifests.';
-
 -- Calendar
 
 COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
@@ -742,6 +732,8 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
+COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
+
 
 -- DistroRelease
 
@@ -750,13 +742,16 @@ information which lucille will use when processing uploads and
 generating archives for this distro release';
 COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
-COMMENT ON COLUMN DistroRelease.datelastlangpack IS 'The date we last generated a base language pack for this release. Language update packs for this release will only include translations added after that date.';
 COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hid
 e all available translations for this distro release to non admin users.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
+COMMENT ON COLUMN DistroRelease.language_pack_base IS 'Current full export language pack for this distribution release.';
+COMMENT ON COLUMN DistroRelease.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
+COMMENT ON COLUMN DistroRelease.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
+COMMENT ON COLUMN DistroRelease.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
 -- PackageUpload
 COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroRelease/Archive.';
@@ -816,7 +811,6 @@ COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsind
 COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
 COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
-COMMENT ON COLUMN SourcePackageRelease.manifest IS 'Reference to a manifest record.';
 COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
 COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
 COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';
@@ -1216,6 +1210,7 @@ COMMENT ON COLUMN Milestone.distrorelease IS 'The distrorelease for which this i
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';  
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
@@ -1403,6 +1398,7 @@ COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
 COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
 COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
 COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
+COMMENT ON COLUMN ShippingRequest.type IS 'The type of the request.';
 COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
 COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
 COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
@@ -1437,6 +1433,7 @@ COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs'
 COMMENT ON COLUMN StandardShipItRequest.quantityamd64 IS 'The quantity of AMD64 CDs';
 COMMENT ON COLUMN StandardShipItRequest.quantityppc IS 'The quantity of PowerPC CDs';
 COMMENT ON COLUMN StandardShipItRequest.isdefault IS 'Is this the order that is pre-selected in the options we give for the user?';
+COMMENT ON COLUMN StandardShipItRequest.description IS 'The description of this option.';
 
 -- ShockAndAwe
 COMMENT ON TABLE ShockAndAwe IS 'Information about specific Shock And Awe programs.';
@@ -1622,7 +1619,6 @@ COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
 
-
 -- OpenIdRealmConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
@@ -1635,4 +1631,67 @@ COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation ration
 
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
+
+-- LanguagePack
+COMMENT ON TABLE LanguagePack IS 'Store exported language packs for DistroReleases.';
+COMMENT ON COLUMN LanguagePack.file IS 'Librarian file where the language pack is stored.';
+COMMENT ON COLUMN LanguagePack.date_exported IS 'When was exported the language pack.';
+COMMENT ON COLUMN LanguagePack.date_last_used IS 'When did we stop using the language pack. It\'s used to decide whether we can remove it completely from the system. When it\'s being used, its value is NULL';
+COMMENT ON COLUMN LanguagePack.distroseries IS 'The distribution series from where this language pack was exported.';
+COMMENT ON COLUMN LanguagePack.type IS 'Type of language pack. There are two types available, 1: Full export, 2: Update export based on language_pack_that_updates export.';
+COMMENT ON COLUMN LanguagePack.updates IS 'The LanguagePack that this one updates.';
+
+-- HWSubmission
+COMMENT ON TABLE HWSubmission IS 'Raw HWDB submission data';
+COMMENT ON COLUMN HWSubmission.date_created IS 'Date and time of the submission (generated by the client).';
+COMMENT ON COLUMN HWSubmission.date_submitted IS 'Date and time of the submission (generated by the server).';
+COMMENT ON COLUMN HWSubmission.format IS 'The format version of the submitted data, as given by the HWDB client. See HWSubmissionFormat for valid values.';
+COMMENT ON COLUMN HWSubmission.status IS 'The status of the submission. See HWSubmissionProcessingStatus for valid values.';
+COMMENT ON COLUMN HWSubmission.private IS 'If false, the submitter allows public access to the data. If true, the data may be used only for statistical purposes.';
+COMMENT ON COLUMN HWSubmission.contactable IS 'If True, the submitter agrees to be contacted by upstream developers and package maintainers for tests etc.';
+COMMENT ON COLUMN HWSubmission.submission_key IS 'A unique submission ID.';
+COMMENT ON COLUMN HWSubmission.owner IS 'A reference to the Person table: The owner/submitter of the data.';
+COMMENT ON COLUMN HWSubmission.distroarchseries IS 'A reference to the distroarchseries of the submission. This value is null, if the submitted values for distribution, distroseries and architecture do not match an existing entry in the Distroarchseries table.';
+COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of LibraryFileAlias. The library file contains the raw submission data.';
+COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
+
+COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
+COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
+
+-- StructuralSubscription
+/*
+COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
+COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
+COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
+COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
+COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
+COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
+COMMENT ON COLUMN StructuralSubscription.distrorelease IS 'The subscription\`s target, when it is a distribution release.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagerelease IS 'The subscription\`s target, when it is a source-package release';
+COMMENT ON COLUMN StructuralSubscription.binarypackagerelease IS 'The subscription\`s target, when it is a binary-package release';
+COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
+COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
+COMMENT ON COLUMN StructuralSubscription.specification_flavour IS 'The volume and type of notification this subscription will generate for specifications related to the target. The value is an item of the enumeration `StructuralSubscriptionSpecificationFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.bug_flavour IS 'The volume and type of notification this subscription will generate for bugs related to the target. The value is an item of the enumeration `StructuralSubscriptionBugsFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.translation_flavour IS 'The volume and type of notification this subscription will generate for translations related to the target. The value is an item of the enumeration `StructuralSubscriptionTranslationFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.code_flavour IS 'The volume and type of notification this subscription will generate for branches related to the target. The value is an item of the enumeration `StructuralSubscriptionCodeFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.registry_flavour IS 'The volume and type of notification this subscription will generate for registry changes related to the target. The value is an item of the enumeration `StructuralSubscriptionRegistryFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.is_verbose IS 'A flag determining whether the notifications resulting from this subscription will contain the item\`s metadata and change history, or only the last change.';
+COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
+
+-- Notification
+COMMENT ON TABLE Notification IS 'A notification to a user, resulting from a subscription to a structure or an application item.';
+COMMENT ON COLUMN Notification.bug IS 'The bug this notification is about.';
+COMMENT ON COLUMN Notification.specification IS 'The specification this notification is about.';
+COMMENT ON COLUMN Notification.branch IS 'The branch this notification is about.';
+COMMENT ON COLUMN Notification.translationgroup IS 'The translation this notification is about.';
+COMMENT ON COLUMN Notification.question IS 'The question this notification is about.';
+COMMENT ON COLUMN Notification.message IS 'The message to be sent for this notification.';
+COMMENT ON COLUMN Notification.date_emailed IS 'The date this notification was emailed, or NULL if it hasn\'t yet been sent.';
+COMMENT ON COLUMN Notification.structuralsubscription IS 'The subscription for which this notification was generated, when it is a structural subscription.';
+COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which this notification was generated, when it is a bug subscription.';
+COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
+COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
+COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
+*/
 
