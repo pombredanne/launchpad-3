@@ -1,8 +1,9 @@
-"""Copyright Canonical Limited 2007
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+"""FTPMaster base classes.
 
-Author: Celso Providelo <celso.providelo@canonical.com>
-FTPMaster utilities.
+PackageLocation and SoyuzScript.
 """
+
 __metaclass__ = type
 
 __all__ = [
@@ -18,7 +19,6 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, NotFoundError, IComponentSet)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.lp.dbschema import PackagePublishingPocket
 
 
@@ -29,7 +29,8 @@ class PackageLocationError(Exception):
 class PackageLocation:
     """Object used to model locations when copying publications.
 
-    It groups distribution + distroseries + pocket in a way they
+
+    It groups distribution, distroseries and pocket in a way they
     can be easily manipulated and compared.
     """
     distribution = None
@@ -37,9 +38,10 @@ class PackageLocation:
     pocket = None
 
     def __init__(self, distribution_name, suite_name):
-        """Store given parameters.
+        """Initialize the PackageLocation from the given parameters.
 
-        Build LP objects and expand suite_name into distroseries + pocket.
+        Build Launchpad objects and expand suite_name into distroseries and
+        pocket.
         """
         try:
             self.distribution = getUtility(IDistributionSet)[distribution_name]
@@ -60,9 +62,9 @@ class PackageLocation:
             self.pocket = PackagePublishingPocket.RELEASE
 
     def __eq__(self, other):
-        if (self.distribution.id == other.distribution.id and
-            self.distroseries.id == other.distroseries.id and
-            self.pocket.value == other.pocket.value):
+        if (self.distribution == other.distribution and
+            self.distroseries == other.distroseries and
+            self.pocket == other.pocket):
             return True
         return False
 
@@ -79,12 +81,13 @@ class SoyuzScriptError(Exception):
 
 
 class SoyuzScript(LaunchpadScript):
-    """LaunchpadScript extended for Soyuz related use.
+    """`LaunchpadScript` extended for Soyuz related use.
 
     Possible exceptions raised are:
-    * PackageLocationError: specified package or distro does not exist
-    * PackageRemoverError: the remove operation itself has failed
-    * LaunchpadScriptError: only raised if entering via main(), ie this
+
+     * `PackageLocationError`: specified package or distro does not exist
+     * `PackageRemoverError`: the remove operation itself has failed
+     * `LaunchpadScriptError`: only raised if entering via main(), ie this
         code is running as a genuine script.  In this case, this is
         also the _only_ exception to be raised.
 
@@ -92,15 +95,23 @@ class SoyuzScript(LaunchpadScript):
     it only sees the first two exceptions.
 
     Each script can extend:
-     * self.usage: string describing the expected command-line format;
-     * self.description: string describing the tool;
-     * self.success_message: string to be presented on successful runs;
-     * addExtraSoyuzOption: a method to include extra command-line options;
-     * toolTask: a method to actually perform a specific task.
+
+     * `usage`: string describing the expected command-line format;
+     * `description`: string describing the tool;
+     * `success_message`: string to be presented on successful runs;
+     * `addExtraSoyuzOption`: a method to include extra command-line options;
+     * `mainTask`: a method to actually perform a specific task.
+
+    See self.add_my_options contexts for the default `SoyuzScript`
+    command-line options.
     """
     success_message = "Done."
 
     def add_my_options(self):
+        """Adds SoyuzScript default options.
+
+        Also adds the callsite options defined via self.addExtraSoyuzOptions.
+        """
         self.parser.add_option(
             '-n', '--dry-run', dest='dryrun', default=False,
             action='store_true', help='Do not commit changes.')
@@ -141,8 +152,8 @@ class SoyuzScript(LaunchpadScript):
         """
         pass
 
-    def _probePublishing(self, currently_published):
-        """Probe the given publishing record.
+    def _validatePublishing(self, currently_published):
+        """Validate the given publishing record.
 
         Check if it matches the desired 'pocket' and 'component'.
         """
@@ -159,7 +170,7 @@ class SoyuzScript(LaunchpadScript):
                 self.options.component]
         except NotFoundError, err:
             raise SoyuzScriptError(err)
-        
+
         if currently_published.component != desired_component:
             raise SoyuzScriptError(
                 "%s was skipped because it is not in %s component" % (
@@ -167,10 +178,7 @@ class SoyuzScript(LaunchpadScript):
                 desired_component.name.upper()))
 
     def findSource(self, name):
-        """Build a `DistroSeriesSourcePackageRelease` for the given parameters
-
-        Result is returned.
-        """
+        """Return a suitable `DistroSeriesSourcePackageRelease`."""
         assert self.location is not None, 'Undefined location.'
 
         sourcepackage = self.location.distroseries.getSourcePackage(name)
@@ -188,12 +196,12 @@ class SoyuzScript(LaunchpadScript):
                 "Could not find source '%s/%s' in %s" % (
                 name, self.options.version, self.location))
 
-        self._probePublishing(target_source.current_published)
+        self._validatePublishing(target_source.current_published)
 
         return target_source
 
     def findBinaries(self, name):
-        """Build a list of `DistroArchSeriesBinaryPackageRelease`.
+        """Build a list of suitable `DistroArchSeriesBinaryPackageRelease`.
 
         Try to find a group of binary package release matching the current
         context. 'architecture' or 'version', if passed via command-line,
@@ -223,7 +231,8 @@ class SoyuzScript(LaunchpadScript):
             if target_binary is None:
                 continue
             try:
-                self._probePublishing(target_binary.current_publishing_record)
+                self._validatePublishing(
+                    target_binary.current_publishing_record)
             except SoyuzScriptError, err:
                 self.logger.warn(err)
             else:
@@ -237,11 +246,10 @@ class SoyuzScript(LaunchpadScript):
         return target_binaries
 
     def _getUserConfirmation(self, full_question=None, valid_answers=None):
-        """Command-line helper.
+        """Use raw_input to collect user feedback.
 
-        It uses raw_input to collect user feedback.
-
-        Return True if the user typed 'yes' or False for 'no'.
+        Return True if the user typed the first value of the given
+        'valid_answers' (defaults to 'yes') or False otherwise.
         """
         if valid_answers is None:
             valid_answers = ['yes', 'no']
@@ -259,7 +267,11 @@ class SoyuzScript(LaunchpadScript):
         return answer == valid_answers[0]
 
     def waitForUserConfirmation(self):
-        """Blocks the script flow waiting for a user confirmation."""
+        """Blocks the script flow waiting for a user confirmation.
+
+        Return True immediatelly if options.confirm_all was passed or after
+        getting a valid confirmation, False otherwise.
+        """
         if not self.options.confirm_all and not self._getUserConfirmation():
             return False
         return True
@@ -277,19 +289,26 @@ class SoyuzScript(LaunchpadScript):
     def _finishProcedure(self):
         """Script finalization procedure.
 
-        Respect given 'dry-run' command-line option.
+        'dry-run' command-line option will case the transaction to be
+        immediatelly aborted.
+
+        In normal mode it will ask for user confirmation (see
+        `waitForUserConfirmation`) and will commit the transaction or abort
+        it according to the user answer.
         """
+        if self.options.dryrun:
+            self.logger.info('Dry run, so nothing to commit.')
+            self.txn.abort()
+            return
+
         confirmed = self.waitForUserConfirmation()
 
-        if not self.options.dryrun and confirmed:
+        if confirmed:
             self.txn.commit()
             self.logger.info('Transaction committed.')
             self.logger.info(self.success_message)
-        elif not confirmed:
-            self.logger.info("Ok, see you later")
-            self.txn.abort()
         else:
-            self.logger.info('Dry run, so nothing to commit.')
+            self.logger.info("Ok, see you later")
             self.txn.abort()
 
     def main(self):
@@ -298,8 +317,6 @@ class SoyuzScript(LaunchpadScript):
         Can only raise LaunchpadScriptFailure - other exceptions are
         absorbed into that.
         """
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
-
         try:
             self.setupLocation()
             self.mainTask()

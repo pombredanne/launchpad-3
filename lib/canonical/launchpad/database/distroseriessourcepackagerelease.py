@@ -199,7 +199,7 @@ class DistroSeriesSourcePackageRelease:
         return current
 
     def changeOverride(self, new_component=None, new_section=None):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
 
         # Check we have been asked to do something
         if (new_component is None and
@@ -242,7 +242,7 @@ class DistroSeriesSourcePackageRelease:
         )
 
     def supersede(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         # Retrieve current publishing info
         current = self.current_published
         current = SecureSourcePackagePublishingHistory.get(current.id)
@@ -252,7 +252,7 @@ class DistroSeriesSourcePackageRelease:
         return current
 
     def delete(self, removed_by, removal_comment=None):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         # Retrieve current publishing info
         current = self.current_published
         current = SecureSourcePackagePublishingHistory.get(current.id)
@@ -264,7 +264,7 @@ class DistroSeriesSourcePackageRelease:
         return current
 
     def copyTo(self, distroseries, pocket):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         current = self.current_published
 
         copy = SecureSourcePackagePublishingHistory(
@@ -282,7 +282,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def published_binaries(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         target_binaries = []
 
         # Get the binary packages in each distroarchseries and store them

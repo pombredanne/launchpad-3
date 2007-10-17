@@ -1,34 +1,19 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+"""Test SoyuzScript base class.
+
+Checking if the base source and binary lookup methods are working properly.
+"""
 
 import unittest
 
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.scripts import QuietLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
 
 
 class TestSoyuzScript(LaunchpadZopelessTestCase):
     """Test the SoyuzScript class."""
-
-    class QuietLogger:
-        """A logger that doesn't log anything.
-
-        Useful where you need to provide a logger object but don't actually
-        want any output.
-        """
-        def debug(self, args):
-            self.log(args)
-        def info(self, args):
-            self.log(args)
-        def warn(self, args):
-            self.log(args)
-        def error(self, args):
-            self.log(args)
-
-        def log(self, args):
-            #print args
-            pass
-
 
     def getNakedSoyuz(self, version=None, component=None, arch=None,
                       suite='warty', distribution_name='ubuntu',
@@ -55,15 +40,15 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
             test_args.extend(['-c', component])
 
         soyuz = SoyuzScript(name='soyuz-script', test_args=test_args)
-        soyuz.logger = self.QuietLogger()
+        soyuz.logger = QuietLogger()
         return soyuz
 
     def getSoyuz(self, *args, **kwargs):
-        """Return a initialized a SoyuzScript instance."""
+        """Return an initialized SoyuzScript instance."""
         soyuz = self.getNakedSoyuz(*args, **kwargs)
         soyuz.setupLocation()
         return soyuz
-    
+
     def testSetupLocation(self):
         """Check if `SoyuzScript` handles `PackageLocation` properly.
 
@@ -82,10 +67,9 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         self.assertRaises(SoyuzScriptError, soyuz.setupLocation)
 
     def testFindSource(self):
-        """Check findSource helper method.
-
-        Probe source package lookup and additional predicate checks (
-        component and pocket)
+        """The findSource method of SoyuzScript finds mozilla-firefox in the
+        default component, main, but not in other components or with a
+        non-existent version, etc.
         """
         soyuz = self.getSoyuz()
         src = soyuz.findSource('mozilla-firefox')
@@ -110,10 +94,9 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         self.assertRaises(SoyuzScriptError, soyuz.findSource, 'mozilla-firefox')
 
     def testFindBinaries(self):
-        """Check findBinaries helper method.
-
-        Probe binary package lookup and additional predicate checks (
-        component and pocket)        
+        """The findBinary method of SoyuzScript finds mozilla-firefox in the
+        default component, main, but not in other components or with a
+        non-existent version, etc.
         """
         soyuz = self.getSoyuz()
 
