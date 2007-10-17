@@ -385,16 +385,6 @@ class IProductSeriesSet(Interface):
             with non-NULL import status.
         """
 
-    def importcount(status=None):
-        """Count the series with import data of a given status.
-
-        This method will not count series for deactivated products.
-
-        :param status: If specified, count the series which have the given
-            import status; if not specified or None, count all series with
-            a defined import status.
-        """
-
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.
 
