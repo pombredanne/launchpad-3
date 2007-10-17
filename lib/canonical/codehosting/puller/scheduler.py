@@ -64,27 +64,37 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         :param listener: A PullerMaster object that is notified when the
             protocol receives events from the worker.
         """
+        # This Deferred is created when branch mirroring starts and is fired
+        # when it finishes (successfully or otherwise). Once this deferred is
+        # created, the termination deferred will not be fired unless
+        # _branch_mirror_complete_deferred is fired first.
+        self._branch_mirror_complete_deferred = None
+        # This Deferred is fired only when the child process has terminated
+        # *and* any other operations have completed.
         self._termination_deferred = deferred
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
-        self._internal_deferred = None
 
-    def _fireTerminationDeferred(self, reason):
+    def _processTerminated(self, reason):
         if self._termination_deferred is None:
             # We have already fired the deferred and do not want to do so
             # again.
             return
+        # Make sure we won't fire the Deferred twice
         deferred = self._termination_deferred
         self._termination_deferred = None
-        if self._internal_deferred is not None:
-            self._internal_deferred.addCallback(
-                self._reallyFireTerminationDeferred, deferred, reason)
-            self._internal_deferred.addErrback(deferred.errback)
+        if self._branch_mirror_complete_deferred is not None:
+            # If we've started mirroring the branch, wait for that to finish
+            # before firing the termination deferred.
+            self._branch_mirror_complete_deferred.addCallback(
+                self._fireTerminationDeferred, deferred, reason)
+            self._branch_mirror_complete_deferred.addErrback(deferred.errback)
         else:
-            self._reallyFireTerminationDeferred(None, deferred, reason)
+            # Otherwise, just fire it.
+            self._fireTerminationDeferred(None, deferred, reason)
 
-    def _reallyFireTerminationDeferred(self, ignored, deferred, reason):
+    def _fireTerminationDeferred(self, ignored, deferred, reason):
         if reason.check(error.ConnectionDone):
             deferred.callback(None)
         else:
@@ -126,16 +136,16 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
                 self._resetState()
 
     def do_startMirroring(self):
-        self._internal_deferred = defer.maybeDeferred(
+        self._branch_mirror_complete_deferred = defer.maybeDeferred(
             self.listener.startMirroring)
-        self._internal_deferred.addErrback(self.unexpectedError)
+        self._branch_mirror_complete_deferred.addErrback(self.unexpectedError)
 
     def do_mirrorSucceeded(self, latest_revision):
-        self._internal_deferred.addCallback(
+        self._branch_mirror_complete_deferred.addCallback(
             lambda ignored: self.listener.mirrorSucceeded(latest_revision))
 
     def do_mirrorFailed(self, reason, oops):
-        self._internal_deferred.addCallback(
+        self._branch_mirror_complete_deferred.addCallback(
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
     def outReceived(self, data):
@@ -159,11 +169,11 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         except error.ProcessExitedAlready:
             # The process has already died. Fine.
             pass
-        self._fireTerminationDeferred(failure)
+        self._processTerminated(failure)
 
     def processEnded(self, reason):
         ProcessProtocol.processEnded(self, reason)
-        self._fireTerminationDeferred(reason)
+        self._processTerminated(reason)
 
 
 class PullerMaster:
