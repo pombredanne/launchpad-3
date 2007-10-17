@@ -1725,7 +1725,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
-                  FROM sourcepackagerelease
+                  FROM sourcepackagerelease, archive
                  WHERE %s
               ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
                        dateuploaded DESC
@@ -1734,7 +1734,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         return SourcePackageRelease.select(
             query,
-            clauseTables=['Archive'],
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
