@@ -38,10 +38,7 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskImportance, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    SpecificationSort)
+from canonical.lp.dbschema import ArchivePurpose, BugTaskImportance
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
@@ -54,8 +51,10 @@ from canonical.launchpad.interfaces import (
     ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
     JoinNotAllowed, LoginTokenType, PersonCreationRationale,
     QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
