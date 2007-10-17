@@ -28,41 +28,67 @@ if the user is not logged in, they will be asked to log in.
     ...         for tag in tags:
     ...             print extract_text(tag)
 
-    >>> user_browser.open(
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> printBugBranchLinks(user_browser)
+    >>> printBugBranchLinks(browser)
     No bug branch links
 
-    >>> user_browser.getLink('Link to bug report').click()
-    >>> user_browser.title
+    >>> browser.getLink('Link to bug report').click()
+    >>> browser.title
     'Link branch ...Klingon support in GNOME Terminal... to a bug report'
 
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
 
-    >>> user_browser.getControl('The bug that is linked to.').value = "10"
-    >>> user_browser.getControl('Link').click()
-    >>> printBugBranchLinks(user_browser)
-    Bug #10: another test bug (Medium &ndash; New) - Fix In Progress
+    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Link').click()
+    >>> printBugBranchLinks(browser)
+    Bug #9: Thunderbird crashes (Unknown &ndash; Unknown) - Fix In Progress
 
 Attempting to link to the same bug again gives an error.
 
-    >>> user_browser.getLink('Link to bug report').click()
-    >>> user_browser.getControl('The bug that is linked to.').value = "10"
-    >>> user_browser.getControl('Link').click()
-    >>> for message in get_feedback_messages(user_browser):
+    >>> browser.getLink('Link to bug report').click()
+    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Link').click()
+    >>> for message in get_feedback_messages(browser):
     ...     print message
     There is 1 error.
-    Bug #10 is already linked to this branch
+    Bug #9 is already linked to this branch
 
 The bug-branch link is also shown on the bug page.
 
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> browser.getLink('Thunderbird crashes').click()
+
+    >>> printBugBranchLinks(browser)
+    ~name12/gnome-terminal/klingon (Experimental) - Fix In Progress
+
+If the bug is private, then the bug branch link isn't shows on the
+branch page for people that are not able to see it.  Get an admin
+to mark the bug private.
+
+    >>> admin_browser.open('http://launchpad.dev/bugs/9')
+    >>> admin_browser.getLink('Set privacy/security').click()
+    >>> admin_browser.getControl('This bug report should be private').click()
+    >>> admin_browser.getControl('Change').click()
+    >>> find_tag_by_id(admin_browser.contents, 'privatebadge')
+    <img...src="/@@/private-large".../>
+
+Sample person can see it...
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> printBugBranchLinks(browser)
+    Bug #9: Thunderbird crashes (Unknown &ndash; Unknown) - Fix In Progress
+
+... but an anonymous user cannot.
+
     >>> anon_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('another test bug').click()
-
     >>> printBugBranchLinks(anon_browser)
-    ~name12/gnome-terminal/klingon (Experimental) - Fix In Progress
+    No bug branch links
 
 
 == From the bug page ==
@@ -77,35 +103,35 @@ page restricted with the launchpad.AnyPerson permission.
     ...
     Unauthorized: (...launchpad.AnyPerson')
 
-    >>> user_browser.open(
+    >>> browser.open(
     ...     'http://launchpad.dev/bugs/11')
-    >>> printBugBranchLinks(user_browser)
+    >>> printBugBranchLinks(browser)
     No bug branch links
 
-    >>> user_browser.getLink('Add branch').click()
+    >>> browser.getLink('Add branch').click()
 
-    >>> user_browser.getControl('Branch').value = (
+    >>> browser.getControl('Branch').value = (
     ...     "~name12/gnome-terminal/scanned")
-    >>> user_browser.getControl('Continue').click()
+    >>> browser.getControl('Continue').click()
 
-    >>> printBugBranchLinks(user_browser)
+    >>> printBugBranchLinks(browser)
     ~name12/gnome-terminal/scanned (New) - Fix In Progress
 
-    >>> user_browser.getLink('~name12/gnome-terminal/scanned').click()
-    >>> printBugBranchLinks(user_browser)
+    >>> browser.getLink('~name12/gnome-terminal/scanned').click()
+    >>> printBugBranchLinks(browser)
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
         - Fix In Progress
 
 
 == Editing the bug status ==
 
-    >>> user_browser.open(
+    >>> browser.open(
     ...     'http://launchpad.dev/bugs/11')
-    >>> printBugBranchLinks(user_browser)
+    >>> printBugBranchLinks(browser)
     ~name12/gnome-terminal/scanned (New) - Fix In Progress
 
-    >>> user_browser.getLink('Fix In Progress').click()
-    >>> print user_browser.title
+    >>> browser.getLink('Fix In Progress').click()
+    >>> print browser.title
     Edit branch fix status
 
 Bug branch links have two editable fields:
@@ -115,20 +141,20 @@ Bug branch links have two editable fields:
 The whiteboard is shown on both the bug and branch page in the
 "Related branches" and "Related bugs" sections respectively.
 
-    >>> user_browser.getControl('State').value = ['FIXAVAILABLE']
-    >>> user_browser.getControl('Whiteboard').value = (
+    >>> browser.getControl('State').value = ['FIXAVAILABLE']
+    >>> browser.getControl('Whiteboard').value = (
     ...     'This is a fix for the problem and involved:\n'
     ...     ' * Fixing the doodad\n'
     ...     ' * Adjusting the lambda probe')
-    >>> user_browser.getControl('Update').click()
-    >>> printBugBranchLinks(user_browser)
+    >>> browser.getControl('Update').click()
+    >>> printBugBranchLinks(browser)
     ~name12/gnome-terminal/scanned (New) - Fix Available
       This is a fix for the problem and involved:
        * Fixing the doodad
        * Adjusting the lambda probe
 
-    >>> user_browser.getLink('~name12/gnome-terminal/scanne').click()
-    >>> printBugBranchLinks(user_browser)
+    >>> browser.getLink('~name12/gnome-terminal/scanne').click()
+    >>> printBugBranchLinks(browser)
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
         - Fix Available
       This is a fix for the problem and involved:
@@ -141,12 +167,12 @@ The whiteboard is shown on both the bug and branch page in the
 The edit view for the bug branch also now has a delete button to unlink
 the bug from the branch.
 
-    >>> user_browser.getLink('Fix Available').click()
-    >>> print user_browser.getControl('Whiteboard').value
+    >>> browser.getLink('Fix Available').click()
+    >>> print browser.getControl('Whiteboard').value
     This is a fix for the problem and involved:
      * Fixing the doodad
      * Adjusting the lambda probe
 
-    >>> user_browser.getControl('Delete').click()
-    >>> printBugBranchLinks(user_browser)
+    >>> browser.getControl('Delete').click()
+    >>> printBugBranchLinks(browser)
     No bug branch links

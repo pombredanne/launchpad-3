@@ -1,0 +1,71 @@
+We export FOAF RDF metadata from the /~Person.name/+index document.
+
+  >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+  >>> anon_browser.open("http://launchpad.dev/~name16")
+  >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> print soup.renderContents()
+  <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
+
+
+And this is what the FOAF document for a person actually looks like.  It
+includes GPG information, if the user has any.
+
+  >>> anon_browser.open("http://launchpad.dev/~name16/+rdf")
+  >>> print anon_browser.contents
+  <BLANKLINE>
+  <?xml version="1.0" encoding="utf-8"?>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:wot="http://xmlns.com/wot/0.1/">
+    <foaf:Person>
+      <foaf:name>Foo Bar</foaf:name>
+      <foaf:nick>name16</foaf:nick>
+      <foaf:mbox_sha1sum>D248D2313390766929B6CEC214BD9B640F5EA7E7</foaf:mbox_sha1sum>
+      <wot:hasKey>
+        <wot:PubKey>
+          <wot:hex_id>12345678</wot:hex_id>
+          <wot:length>1024</wot:length>
+          <wot:fingerprint>ABCDEF0123456789ABCDDCBA0000111112345678</wot:fingerprint>
+          <wot:pubkeyAddress rdf:resource="http://keyserver.ubuntu.com:11371/pks/lookup?search=0x12345678&amp;op=index"/>
+        </wot:PubKey>
+      </wot:hasKey>
+    </foaf:Person>
+  </rdf:RDF>
+
+
+Teams also have an RDF export, which includes information for each member of the
+team.
+
+  >>> anon_browser.open("http://launchpad.dev/~ubuntu-team/+rdf")
+  >>> print anon_browser.contents
+  <BLANKLINE>
+  <?xml version="1.0" encoding="utf-8"?>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:wot="http://xmlns.com/wot/0.1/">
+    <foaf:Group>
+      <foaf:name>Ubuntu Team</foaf:name>
+      <foaf:nick>ubuntu-team</foaf:nick>
+      <foaf:member>
+          <foaf:Person>
+            <foaf:name>Alexander Limi</foaf:name>
+            <foaf:nick>limi</foaf:nick>
+          </foaf:Person>
+      </foaf:member>
+  ...
+      <foaf:member>
+        <foaf:Person>
+          <foaf:name>Foo Bar</foaf:name>
+          <foaf:nick>name16</foaf:nick>
+          <foaf:mbox_sha1sum>D248D2313390766929B6CEC214BD9B640F5EA7E7</foaf:mbox_sha1sum>
+          <wot:hasKey>
+            <wot:PubKey>
+              <wot:hex_id>12345678</wot:hex_id>
+  ...
+            </wot:PubKey>
+          </wot:hasKey>
+        </foaf:Person>
+      </foaf:member>
+  ...
+

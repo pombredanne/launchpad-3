@@ -28,7 +28,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
           <h1 tal:condition="view/label"
               tal:content="view/label"
