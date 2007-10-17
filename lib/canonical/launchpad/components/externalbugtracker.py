@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
-LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
+LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
 
 #
