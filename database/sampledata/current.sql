@@ -1015,13 +1015,6 @@ ALTER TABLE bugproductinfestation DISABLE TRIGGER ALL;
 ALTER TABLE bugproductinfestation ENABLE TRIGGER ALL;
 
 
-ALTER TABLE bugrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugrelationship ENABLE TRIGGER ALL;
-
-
 ALTER TABLE bugsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (1, 11, 1, '2006-10-16 18:31:43.154816');
