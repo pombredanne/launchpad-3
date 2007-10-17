@@ -112,7 +112,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if not whiteboard:
             whiteboard = None
 
-        bug.addBranch(branch, whiteboard=whiteboard)
+        # Use the branch owner when creating the link here in order to
+        # maintain backward API compatability.  This should be right most of
+        # the time.
+        bug.addBranch(branch, registrant=branch.owner, whiteboard=whiteboard)
         return canonical_url(bug)
 
 

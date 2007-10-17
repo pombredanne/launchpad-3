@@ -325,7 +325,8 @@ An IBranch.
 An IBugBranch.
 
     >>> bug = getUtility(IBugSet).get(1)
-    >>> bug_branch = bug.addBranch(branch)
+    >>> bug_branch = bug.addBranch(
+    ...     branch, getUtility(IPersonSet).getByName('sabdfl'))
 
     >>> canonical_url(bug_branch)
     u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'

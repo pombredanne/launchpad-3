@@ -1044,6 +1044,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     @action(_('Link to Specification'), name='link')
     def link_action(self, action, data):
         self.context.linkBranch(branch=data['branch'],
+                                registrant=self.user,
                                 summary=data['summary'])
 
     @property

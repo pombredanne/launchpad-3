@@ -22,12 +22,22 @@ from canonical.launchpad.webapp import (
 from canonical.widgets.link import LinkWidget
 
 
-class BugBranchAddView:
+class BugBranchAddView(LaunchpadFormView):
     """Browser view for linking a bug to a branch."""
+    schema = IBugBranch
+    # In order to have the branch field rendered using the appropriate
+    # widget, we set the LaunchpadFormView attribute for_input to True
+    # to get the read only fields rendered as input widgets.
+    for_input=True
 
-    def process(self, branch, whiteboard):
-        self.context.bug.addBranch(branch, whiteboard)
+    field_names = ['branch', 'status', 'whiteboard']
 
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        branch = data['branch']
+        status = data['status']
+        whiteboard = data.get('whiteboard')
+        self.context.bug.addBranch(branch, self.user, status, whiteboard)
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
             branch.name)
@@ -58,6 +68,7 @@ class BugBranchEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
     @action('Delete', name='delete')
+
     def delete_action(self, action, data):
         notify(SQLObjectDeletedEvent(self.context, user=self.user))
         self.context.destroySelf()
@@ -116,7 +127,7 @@ class BranchLinkToBugView(LaunchpadFormView):
         bug = data['bug']
         bug_branch = bug.addBranch(
             branch=self.context, whiteboard=data['whiteboard'],
-            status=data['status'])
+            status=data['status'], registrant=self.user)
         self.next_url = canonical_url(self.context)
 
     def validate(self, data):

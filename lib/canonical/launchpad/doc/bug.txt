@@ -623,7 +623,7 @@ Adding a branch.
     >>> branch_one = getUtility(IBranchSet).get(1)
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> bug_branch = firefox_bug.addBranch(branch_one)
+    >>> bug_branch = firefox_bug.addBranch(branch_one, foobar)
 
     >>> firefox_bug.bug_branches.count()
     1

@@ -268,8 +268,13 @@ class IBug(IMessageTarget, ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, whiteboard=None, status=None):
+    def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
+
+        :param branch: The branch being linked to the bug
+        :param registrant: The user making the link.
+        :param whiteboard: A space where people can write about the bug fix
+        :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
         """

@@ -84,7 +84,7 @@ class TestBranchDeletion(TestCase):
             owner=self.user, title='Firefox bug', comment='blah')
         params.setBugTarget(product=self.product)
         bug = getUtility(IBugSet).createBug(params)
-        bug.addBranch(self.branch)
+        bug.addBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a bug is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
@@ -95,7 +95,7 @@ class TestBranchDeletion(TestCase):
             name='some-spec', title='Some spec', product=self.product,
             owner=self.user, summary='', specurl=None,
             definition_status=SpecificationDefinitionStatus.NEW)
-        spec.linkBranch(self.branch)
+        spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)

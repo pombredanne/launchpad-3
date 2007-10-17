@@ -17,7 +17,7 @@ and when fixes are committed.
 BugBranch links a bug and a branch.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BugBranchStatus, IBugSet, IBranchSet)
+    ...     BugBranchStatus, IBugSet, IBranchSet, IPersonSet)
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("no-priv@canonical.com")
@@ -28,7 +28,8 @@ BugBranch links a bug and a branch.
 
 Adding a branch to a bug returns an IBugBranch.
 
-    >>> bug_branch = bug.addBranch(branch)
+    >>> user = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
+    >>> bug_branch = bug.addBranch(branch, user)
 
     >>> flush_database_updates()
 
@@ -39,6 +40,8 @@ sample data.
     1
     >>> bug_branch.branch.id
     10
+    >>> print bug_branch.registrant.displayname
+    No Privileges Person
 
     >>> [bug_branch.branch.name for bug_branch in
     ...  bug.bug_branches]
@@ -52,7 +55,7 @@ By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
 Trying to add a branch that is already linked to a bug will simply
 return the existing BugBranch.
 
-    >>> bug_branch_two = bug.addBranch(branch)
+    >>> bug_branch_two = bug.addBranch(branch, user)
     >>> bug_branch_two == bug_branch
     True
 
@@ -70,7 +73,7 @@ of interest to others tracking the bugfix on this branch:
 
     >>> branch = getUtility(IBranchSet).get(1)
     >>> bug_branch_three = bug.addBranch(
-    ...     branch, "I should have this fixed today")
+    ...     branch, user, "I should have this fixed today")
     >>> bug_branch_three.whiteboard
     u'I should have this fixed today'
 
