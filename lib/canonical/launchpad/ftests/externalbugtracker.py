@@ -30,9 +30,12 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
         "This function can only be used for Zopeless tests.")
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    bugtracker_set = getUtility(IBugTrackerSet)
+    index = 1
     name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
-    while getUtility(IBugTrackerSet).getByName(name) is not None:
-        name += '-other'
+    while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
+        index += 1
+    name += '-%d' % index
     bugtracker = BugTracker(
         name=name,
         title='%s *TESTING*' % (bugtracker_type.title,),

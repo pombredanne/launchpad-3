@@ -19,7 +19,8 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
 from canonical.launchpad.interfaces import IDistributionMirror
-from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.cachedproperty import cachedproperty
 
 

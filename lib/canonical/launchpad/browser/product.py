@@ -65,9 +65,10 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -651,7 +652,7 @@ class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
-    label = "Edit details"
+    label = "Change project details"
     field_names = [
         "displayname", "title", "summary", "description", "project",
         "bugtracker", "official_rosetta", "official_answers",
