@@ -85,7 +85,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
-def copy_active_translations_to_new_series(child, transaction, copier, logger):
+def _copy_active_translations_to_new_series(child, transaction, copier, logger):
     """Furnish untranslated child `DistroSeries` with parent's translations.
 
     This method uses `MultiTableCopy` to copy data.
@@ -184,7 +184,7 @@ def copy_active_translations_to_new_series(child, transaction, copier, logger):
     copier.pour(transaction)
 
 
-def prepare_pofile_merge(copier, transaction, query_parameters):
+def _prepare_pofile_merge(copier, transaction, query_parameters):
     """`POFile` chapter of `copy_active_translations_as_update`.
 
     Extract copies of `POFile`s from parent distroseries into holding table,
@@ -282,7 +282,7 @@ def prepare_pofile_merge(copier, transaction, query_parameters):
         """ % query_parameters)
 
 
-def prepare_pomsgset_merge(
+def _prepare_pomsgset_merge(
     copier, transaction, query_parameters, holding_tables, logger):
     """`POFile` chapter of `copy_active_translations_as_update`.
 
@@ -458,7 +458,7 @@ def prepare_pomsgset_merge(
     cur.execute("ANALYZE temp_inert_pomsgsets")
 
 
-def prepare_posubmission_merge(copier, transaction, holding_tables, logger):
+def _prepare_posubmission_merge(copier, transaction, holding_tables, logger):
     """`POSubmission` chapter of `copy_active_translations_as_update`.
 
     Extract `POSubmission`s to be copied into holding table, and go through
@@ -617,7 +617,7 @@ def prepare_posubmission_merge(copier, transaction, holding_tables, logger):
         % holding_tables['posubmission'])
 
 
-def update_statistics_and_flags_post_merge(
+def _update_statistics_and_flags_post_merge(
     transaction, holding_tables, logger):
     """Final chapter of `copy_active_translations_as_update`.
 
@@ -797,7 +797,7 @@ def update_statistics_and_flags_post_merge(
     LoopTuner(UpdatePOFileStats(transaction), 1).run()
 
 
-def copy_active_translations_as_update(child, transaction, logger):
+def _copy_active_translations_as_update(child, transaction, logger):
     """Update child distroseries with translations from parent."""
     # This function makes extensive use of temporary tables.  Testing with
     # regular persistent tables revealed frequent lockups as the algorithm
@@ -874,16 +874,16 @@ def copy_active_translations_as_update(child, transaction, logger):
         'posubmission_holding_table': holding_tables['posubmission'],
         }
 
-    prepare_pofile_merge(copier, transaction, query_parameters)
+    _prepare_pofile_merge(copier, transaction, query_parameters)
     transaction.commit()
     transaction.begin()
 
-    prepare_pomsgset_merge(
+    _prepare_pomsgset_merge(
         copier, transaction, query_parameters, holding_tables, logger)
     transaction.commit()
     transaction.begin()
 
-    prepare_posubmission_merge(copier, transaction, holding_tables, logger)
+    _prepare_posubmission_merge(copier, transaction, holding_tables, logger)
     transaction.commit()
     transaction.begin()
 
@@ -939,7 +939,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # is where the heavy lifting is done.
     copier.pour(transaction)
 
-    update_statistics_and_flags_post_merge(
+    _update_statistics_and_flags_post_merge(
         transaction, holding_tables, logger)
 
     # Clean up after ourselves, in case we get called again this session.
@@ -2279,11 +2279,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         if len(self.potemplates) == 0:
             # We're a new distroseries; copy from scratch
-            copy_active_translations_to_new_series(
+            _copy_active_translations_to_new_series(
                 self, transaction, copier, logger)
         else:
             # Incremental copy of updates from parent distroseries
-            copy_active_translations_as_update(self, transaction, logger)
+            _copy_active_translations_as_update(self, transaction, logger)
 
         # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
         # POFile.last_touched_pomsgset for POFiles that had POMsgSets and/or
