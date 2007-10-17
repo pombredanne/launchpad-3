@@ -310,6 +310,13 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def getAllPPAs():
         """Return all PPAs for this distribution."""
 
+    def getPPAByOwnerName(name):
+        """Return a single PPA.
+
+        Owned by the person matching the given name and target for this
+        distribution.
+        """
+
     def searchPPAs(text=None, show_inactive=False):
         """Return all PPAs matching the given text in this distribution.
 

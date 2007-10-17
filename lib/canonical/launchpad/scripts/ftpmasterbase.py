@@ -15,11 +15,11 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError, IComponentSet)
+    IDistributionSet, IPersonSet, NotFoundError, IComponentSet)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class PackageLocationError(Exception):
@@ -35,8 +35,9 @@ class PackageLocation:
     distribution = None
     distroseries = None
     pocket = None
+    archives = None
 
-    def __init__(self, distribution_name, suite_name):
+    def __init__(self, distribution_name, suite_name, archive_owner_name=None):
         """Store given parameters.
 
         Build LP objects and expand suite_name into distroseries + pocket.
@@ -46,6 +47,16 @@ class PackageLocation:
         except NotFoundError, err:
             raise PackageLocationError(
                 "Could not find distribution %s" % err)
+
+        if archive_owner_name is not None:
+            ppa = self.distribution.getPPAByOwnerName(
+                name=archive_owner_name)
+            if ppa is None:
+                raise PackageLocationError(
+                    "Could not find a PPA for %s" % archive_owner_name)
+            self.archives = [ppa]
+        else:
+            self.archives = [a for a in self.distribution.all_distro_archives]
 
         if suite_name is not None:
             try:
@@ -60,15 +71,22 @@ class PackageLocation:
             self.pocket = PackagePublishingPocket.RELEASE
 
     def __eq__(self, other):
-        if (self.distribution.id == other.distribution.id and
-            self.distroseries.id == other.distroseries.id and
-            self.pocket.value == other.pocket.value):
+        if (self.distribution == other.distribution and
+            self.archives == other.archives and
+            self.distroseries == other.distroseries and
+            self.pocket == other.pocket):
             return True
         return False
 
     def __str__(self):
-        return '%s/%s/%s' % (self.distribution.name, self.distroseries.name,
-                             self.pocket.name)
+        first_archive = self.archives[0]
+        if first_archive.purpose != ArchivePurpose.PPA:
+            return '%s/%s/%s' % (self.distribution.name,
+                                 self.distroseries.name, self.pocket.name)
+        else:
+            return '%s-ppa/%s/%s/%s' % (
+                first_archive.owner.name, self.distribution.name,
+                self.distroseries.name, self.pocket.name)
 
 
 class SoyuzScriptError(Exception):
@@ -120,6 +138,11 @@ class SoyuzScript(LaunchpadScript):
             action='store', help='Suite name.')
 
         self.parser.add_option(
+            '-p', '--ppa', dest='archive_owner_name', default=None,
+            action='store',
+            help='Archive owner name in case of PPA operations')
+
+        self.parser.add_option(
             "-a", "--architecture", dest="architecture", default=None,
             help="Architecture tag.")
 
@@ -159,7 +182,7 @@ class SoyuzScript(LaunchpadScript):
                 self.options.component]
         except NotFoundError, err:
             raise SoyuzScriptError(err)
-        
+
         if currently_published.component != desired_component:
             raise SoyuzScriptError(
                 "%s was skipped because it is not in %s component" % (
@@ -270,7 +293,8 @@ class SoyuzScript(LaunchpadScript):
         # it upwards.
         try:
             self.location = PackageLocation(
-                self.options.distribution_name, self.options.suite)
+                self.options.distribution_name, self.options.suite,
+                self.options.archive_owner_name)
         except PackageLocationError, err:
             raise SoyuzScriptError(err)
 
