@@ -26,7 +26,7 @@ We can't merge an account that still has email addresses attached to it
     >>> personset.merge(marilize, sample)
     Traceback (most recent call last):
     ...
-    ValueError: ...
+    AssertionError: ...
 
 
 == Preparing test person for the merge ==
@@ -180,32 +180,31 @@ merged accounts from lists etc.
 == Merging teams ==
 
 Merging of teams is also possible and uses the same API used for merging
-people.  Note, though, that when merging teams, its members and polls
-will not be carried over to the remaining team.  Team memberships, on
-the other hand, are carried over just like when merging people.
+people.  Note, though, that when merging teams, its polls will not be
+carried over to the remaining team.  Team memberships, on the other hand,
+are carried over just like when merging people.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
-    >>> guadamen = personset.getByName('guadamen')
+    >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
     >>> launchpad_devs.addMember(
-    ...     guadamen, reviewer=launchpad_devs.teamowner, force_team_add=True)
+    ...     test_team, reviewer=launchpad_devs.teamowner, force_team_add=True)
     >>> today = datetime.now(pytz.timezone('UTC'))
     >>> tomorrow = today + timedelta(days=1)
-    >>> poll = IPollSubset(guadamen).new(
+    >>> poll = IPollSubset(test_team).new(
     ...     'test-poll', 'Title', 'Proposition', today, tomorrow,
     ...     PollSecrecy.OPEN, allowspoilt=True)
 
-    # Guadamen has a superteam, 4 members and a single poll.
-    >>> [team.name for team in guadamen.getSuperTeams()]
+    # test_team has a superteam, one active member and a poll.
+    >>> [team.name for team in test_team.getSuperTeams()]
     [u'launchpad']
-    >>> guadamen.teamowner.name
-    u'name16'
-    >>> [member.name for member in guadamen.allmembers]
-    [u'name16', u'launchpad-beta-owner', u'launchpad-beta-testers',
-     u'ubuntu-team']
-    >>> list(IPollSubset(guadamen).getAll())
+    >>> test_team.teamowner.name
+    u'name12'
+    >>> [member.name for member in test_team.allmembers]
+    [u'name12']
+    >>> list(IPollSubset(test_team).getAll())
     [<Poll at ...]
 
     # Landscape-developers has no super teams, two members and no polls.
@@ -219,8 +218,22 @@ the other hand, are carried over just like when merging people.
     >>> list(IPollSubset(landscape).getAll())
     []
 
-    # Do the actual merge!
-    >>> personset.merge(guadamen, landscape)
+Now we try to merge them, but since test_team has active members it can't be
+merged.
+
+    >>> personset.merge(test_team, landscape)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only teams without active members can be merged
+
+For cases like this we have a separate API which takes care of deactivating
+all active members of the team and performing the merge.
+
+    # Only admins can use that API, though, so we need to login as an admin.
+    >>> login('foo.bar@canonical.com')
+
+    >>> test_team.deactivateMembersAndMerge(
+    ...     landscape, personset.getByName('name16'))
 
     # The resulting Landscape-developers has now a super team, but has
     # no polls and its members are still the same two from before the

@@ -1186,6 +1186,25 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
+    def deactivateMembersAndMerge(self, team, user):
+        """Deactivate all members of this team and merge it into the given one.
+
+        The reason given for the deactivation (which is sent by email to
+        each member) is that this team is going to be merged into another
+        one.
+        """
+        assert self.isTeam(), "This method is only available for teams."
+        assert user.inTeam(getUtility(ILaunchpadCelebrities).admin), (
+            "Only Launchpad admins can deactivate all members of a team "
+            "and merge it.")
+        comment = ('Deactivating all members as this team is being merged '
+                   'into %s.' % team.unique_displayname)
+        for membership in self.getActiveMemberships():
+            membership.setStatus(
+                TeamMembershipStatus.DEACTIVATED, user, comment)
+        flush_database_updates()
+        PersonSet().merge(self, team)
+
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -2124,7 +2143,11 @@ class PersonSet:
         flush_database_updates()
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise ValueError('from_person still has email addresses.')
+            raise AssertionError('from_person still has email addresses.')
+
+        if from_person.isTeam() and from_person.allmembers.count() > 0:
+            raise AssertionError(
+                "Only teams without active members can be merged")
 
         # Get a database cursor.
         cur = cursor()
