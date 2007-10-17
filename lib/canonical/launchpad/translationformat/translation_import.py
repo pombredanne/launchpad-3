@@ -132,6 +132,9 @@ class CurrentPOFileInDatabase:
                 message.fuzzy = False
 
     def getUnseenMessages(self):
+        """Return a list of messages present in the database but not seen
+        in the file being imported.
+        """
         unseen = []
         for (msgid, context) in self.messages:
             if (msgid, context) not in self.seen:
@@ -143,6 +146,11 @@ class CurrentPOFileInDatabase:
         return unseen
 
     def _compareTwoMessages(self, msg1, msg2):
+        """Compare if two TranslationMessages msg1 and msg2 are the same.
+
+        Compares fuzzy flags, msgid and msgid_plural, and all translations.
+        Returns True when messages match, and False when they don't.
+        """
         if ((msg1.msgid_plural != msg2.msgid_plural) or
             (msg1.fuzzy != ('fuzzy' in msg2.flags))):
             return False

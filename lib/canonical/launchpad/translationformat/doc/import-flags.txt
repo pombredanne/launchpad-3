@@ -1,13 +1,15 @@
 = Importing translation files =
 
-We are using gettext PO files to document how are our translation
-files being imported into our database, showing how are translations
+We are using gettext PO file to document how our translation files
+are being imported into our database, showing how translations are
 overridden or not, depending on the type of the import.
 
-We'll be going through usual steps of the PO file lifetime: importing
-a template, importing a translation from package, importing updated
-translation from a translator, importing an updated translation from
-package and again importing update from a translator.
+We'll be going through usual steps of the PO file lifetime:
+ * importing a template
+ * importing a translation from package
+ * importing updated translation from a translator
+ * importing an updated translation from a package
+ * importing update from a translator again
 
 == Helper imports ==
 
@@ -29,7 +31,7 @@ We need this for the Librarian to work properly.
 
     >>> import transaction
 
-And also, the DBSchema to change the imports status
+We also need the DBEnumeratedType to change the import status.
 
     >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
@@ -56,18 +58,20 @@ with the contents of the file.
     ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
     ...	    """
     ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile is not None:
+    ...     if pofile:
     ...         entry = translation_import_queue.addOrUpdateEntry(
     ...             pofile.path, file_contents, published, person,
     ...             productseries=series, pofile=pofile)
     ...     else:
+    ...         # A POTemplate can only be published, so setting
+    ...         # the published flag makes no difference.
     ...         entry = translation_import_queue.addOrUpdateEntry(
     ...             potemplate.path, file_contents, True, person,
     ...             productseries=series, potemplate=potemplate)
     ...     transaction.commit()
     ...     entry.status = RosettaImportStatus.APPROVED
     ...     syncUpdate(entry)
-    ...     if pofile is not None:
+    ...     if pofile:
     ...         pofile.importFromQueue(FakeLogger())
     ...     else:
     ...         potemplate.importFromQueue(FakeLogger())
@@ -76,6 +80,10 @@ with the contents of the file.
 And lets define a nice printout function for PO files.
 
     >>> def print_pofile(pofile):
+    ...     # We are using length=18 for msgid, translation and
+    ...     # published translation to be able to fit them with two
+    ...     # fuzzy flags into a single line for nicer and more
+    ...     # readable diffs in the test.
     ...     def strip_to_length(string, length=18):
     ...         if string is None: return None
     ...         if len(string)>length:
@@ -93,9 +101,9 @@ And lets define a nice printout function for PO files.
     ...         if pomsgset is not None:
     ...             active_texts = pomsgset.active_texts
     ...             published_texts = pomsgset.published_texts
-    ...             if len(active_texts)>0:
+    ...             if len(active_texts) > 0:
     ...                 translation = active_texts[0]
-    ...             if len(published_texts)>0:
+    ...             if len(published_texts) > 0:
     ...                 published = published_texts[0]
     ...             if pomsgset.publishedfuzzy:
     ...                 publishedfuzzy = 'yes'
@@ -162,7 +170,7 @@ be able to import translations later on.
     >>> print entry.status.name
     IMPORTED
 
-Usually, first imports we get are published (i.e. coming from a
+Usually, the first import we get is published (i.e. coming from a
 package upload in Ubuntu).
 
     # fifth and sixth are untranslated
@@ -197,7 +205,7 @@ package upload in Ubuntu).
     >>> print entry.status.name
     IMPORTED
 
-When this file is imported, we can notice that all the messages are
+When this file is imported, we notice that all the messages are
 imported as expected: active translation is set to the same published
 one, and fuzzy flags are carried over as well.
 
@@ -212,9 +220,9 @@ one, and fuzzy flags are carried over as well.
 
 After initial translation import from the package, it's common for
 translators to work either directly in Launchpad or to upload PO files
-with their updates.  This is a file where "second" and "forth" message
-are updated with new translations, with fuzzy flag taken off from the
-"forth", and where "fifth" message is newly translated.
+with their updates.  This is a file where the "second" and "fourth"
+message are updated with new translations, the fuzzy flag is removed
+from the "fourth" message, and the "fifth" message is newly translated.
 
     >>> test_translation_update1 = r'''
     ... msgid ""
@@ -309,8 +317,8 @@ updated translations upstream.  A fuzzy flag is removed from the
     >>> print entry.status.name
     IMPORTED
 
-So, we can see that the published fuzzy flag has been removed from the
-"fourth" message in the database, andd that translations for "fifth"
+We can see that the published fuzzy flag has been removed from the
+"fourth" message in the database, and that translations for "fifth"
 and "sixth" have been updated.  However, note that active translation
 for "fifth" has not been overriden by a package upload, since we give
 preference to translations done inside Launchpad over imported ones.
@@ -327,8 +335,8 @@ preference to translations done inside Launchpad over imported ones.
 
 Finally, we do another translator (i.e. not from a package) update,
 where we remove the fuzzy flag from the published translation for
-"third", and revert "fourth" to published translation.  We also update
-the "fifth" translation with a new translation.
+"third", and revert "fourth" to the published translation.  We also
+update the "fifth" translation with a new translation.
 
     >>> test_translation_update2 = r'''
     ... msgid ""
