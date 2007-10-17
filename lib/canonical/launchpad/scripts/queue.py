@@ -26,7 +26,6 @@ from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSet, IPackageUploadSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError)
 
-from canonical.archiveuploader.tagfiles import TagFileParseError
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -59,7 +58,7 @@ HEAD = "-" * 9 + "|----|" + "-" * 22 + "|" + "-" * 22 + "|" + "-" * 15
 FOOT_MARGIN = " " * (9 + 6 + 1 + 22 + 1 + 22 + 2)
 RULE = "-" * (12 + 9 + 6 + 1 + 22 + 1 + 22 + 2)
 
-FILTERMSG="""
+FILTERMSG = """
     Omit the filter for all records.
     Filter string consists of a queue ID or a pair <name>[/<version>]:
 

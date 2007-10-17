@@ -736,7 +736,7 @@ class TestQueueToolInJail(TestQueueBase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
-    def _getsha1(self,filename):
+    def _getsha1(self, filename):
         """Return a sha1 hex digest of a file"""
         file_sha = sha()
         opened_file = open(filename,"r")
@@ -772,13 +772,13 @@ class TestQueueToolInJail(TestQueueBase):
 
         # Check that the file has not changed (we don't care if it was
         # re-written, just that it's not changed)
-        self.assertEqual(existing_sha1,new_sha1)
+        self.assertEqual(existing_sha1, new_sha1)
 
     def testFetchActionRaisesErrorIfDifferentFileAlreadyFetched(self):
         """Check that fetching a file that has already been fetched
         raises an error if they are not the same file.  (bug 67014)
         """
-        CLOBBERED="you're clobbered"
+        CLOBBERED = "you're clobbered"
 
         queue_action = self.execute_command('fetch 1')
         self.assertEqual(
@@ -797,7 +797,7 @@ class TestQueueToolInJail(TestQueueBase):
         line = f.read()
         f.close()
 
-        self.assertEqual(CLOBBERED,line)
+        self.assertEqual(CLOBBERED, line)
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem
