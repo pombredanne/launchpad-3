@@ -12,7 +12,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, DebBugs, Mantis, Roundup, SourceForge, Trac)
+    BugNotFound, Bugzilla, DebBugs, Mantis, Roundup, SourceForge, Trac)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.testing.layers import LaunchpadZopelessLayer
