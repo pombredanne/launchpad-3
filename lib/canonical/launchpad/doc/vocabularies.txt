@@ -1655,7 +1655,8 @@ context blueprint.
 
 First, we set up a product with three blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     SpecificationDefinitionStatus)
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> foobar_person = getUtility(IPersonSet).getByName('name16')
     >>> foobar_person.displayname

@@ -109,7 +109,6 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -127,7 +126,7 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
     EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
     PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation)
+    QuestionParticipation, SpecificationFilter)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
