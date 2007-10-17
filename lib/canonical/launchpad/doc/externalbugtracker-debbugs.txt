@@ -287,7 +287,6 @@ summary, and the description as the description.
     for details. 2.3.7 fixes all these issues.
     ...
 
-
 The bug reporter got created automatically:
 
     >>> getUtility(IPersonSet).getByEmail(reporter_email) is not None
@@ -359,6 +358,9 @@ gets notified about it.
 
 === Syncing status ===
 
+After the bug watch has been created for the imported bug, the status is
+synced immediately.
+
     >>> external_debbugs = TestDebBugs(
     ...     debbugs, {'1234': TestDebianBug(status='done')})
     >>> expected_status = external_debbugs.convertRemoteStatus(
@@ -423,10 +425,10 @@ tracker.
     >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
     [u'evolution: Multiple format string vulnerabilities in Evolution']
 
-In addition to simply import the bugs and link it to the debbugs bug, it
-will also create an Ubuntu task for the imported bugs. This will allow
-Ubuntu triagers to go through all the imported bugs and decide whether
-it affects Ubuntu.
+In addition to simply importing the bugs and linking it to the debbugs
+bug, it will also create an Ubuntu task for the imported bugs. This will
+allow Ubuntu triagers to go through all the imported bugs and decide
+whether they affects Ubuntu.
 
     >>> [imported_bug] = debbugs.getBugsWatching('237001')
     >>> for bugtask in imported_bug.bugtasks:
@@ -438,7 +440,7 @@ it affects Ubuntu.
 ==== Importing bugs twice ====
 
 If a Debian bug already exists in Launchpad (i.e it has a bug watch), it
-won't be imported again. A warning is logged so that the one that runs
+won't be imported again. A warning is logged so that the person runnning
 the script gets notified about it.
 
     >>> from canonical.launchpad.scripts.importdebianbugs import (
