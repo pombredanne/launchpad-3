@@ -130,7 +130,8 @@ When a bug is marked private, it drops off the mentoring lists.
 
    >>> bug2.private
    False
-   >>> bug2.private = True
+   >>> bug2.setPrivate(True, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug2)
    >>> bug2.private
    True
@@ -157,7 +158,8 @@ Let's make sure it is off all of the lists:
 #
 #   >>> spec1.private
 #   False
-#   >>> spec1.private = True
+#   >>> spec1.setPrivate(True, getUtility(ILaunchBag).user)
+#   True
 #   >>> syncUpdate(spec1)
 #   >>> spec1.private
 #   True
@@ -188,7 +190,8 @@ OK, let's mark the bug public again:
 
    >>> bug2.private
    True
-   >>> bug2.private = False
+   >>> bug2.setPrivate(False, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug2)
    >>> bug2.private
    False

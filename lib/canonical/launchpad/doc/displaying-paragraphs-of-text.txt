@@ -237,8 +237,9 @@ To check a private bug, we need to log in and set a bug to be private.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bugset = getUtility(IBugSet)
     >>> firefox_crashes = bugset.get(6)
+    >>> firefox_crashes.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> login("test@canonical.com")
-    >>> firefox_crashes.private = True
 
 A private bug has a title "private bug".
 

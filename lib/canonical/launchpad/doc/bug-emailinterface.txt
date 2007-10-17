@@ -626,7 +626,8 @@ Switching off the security flag won't make the bug public, though.
 
     >>> bug_four.private
     True
-    >>> bug_four.private = False
+    >>> bug_four.setPrivate(False, getUtility(ILaunchBag).user)
+    True
 
 Specifying something else than 'yes' or 'no' produces an error:
 

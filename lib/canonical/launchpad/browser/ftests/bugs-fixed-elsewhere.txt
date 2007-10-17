@@ -52,7 +52,8 @@ by one.
 Only bugs that the user has permission to view are included in the count.
 
     >>> another_bug = filebug(bugtarget, 'Example Bug')
-    >>> another_bug.private = True
+    >>> another_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(another_bug)
 
     >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
@@ -81,7 +82,8 @@ If the private bug is made public again, he will of course see that
 there are two bugs fixed.
 
     >>> login('foo.bar@canonical.com')
-    >>> another_bug.private = False
+    >>> another_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(another_bug)
 
     >>> login('no-priv@canonical.com')

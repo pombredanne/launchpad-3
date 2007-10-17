@@ -120,7 +120,8 @@ Only those bugs that the user has access to are shown, so if we mark the
 bug as private, No Privileges Person will only see that there is one
 open bug, even though there are two.
 
-    >>> bug.private = True
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug)
 
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')

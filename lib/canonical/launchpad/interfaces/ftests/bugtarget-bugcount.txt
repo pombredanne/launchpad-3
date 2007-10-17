@@ -89,7 +89,8 @@ count, but not No Privileges Person or the anonymous user.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> old_counts = bugtarget.getBugCounts(None)
-    >>> bug.private = True
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug)
     >>> sample_person_counts = bugtarget.getBugCounts(
     ...     getUtility(IPersonSet).getByEmail('test@canonical.com'))
@@ -108,7 +109,8 @@ count, but not No Privileges Person or the anonymous user.
     >>> print_count_difference(anon_counts, old_counts, BugTaskStatus.INCOMPLETE)
     INCOMPLETE: 1 bug(s) less
 
-    >>> bug.private = False
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug)
 
 == Duplicate Bugs ==

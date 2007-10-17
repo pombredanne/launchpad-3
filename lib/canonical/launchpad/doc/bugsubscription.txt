@@ -120,7 +120,7 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Sample Person
-    
+
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
 
@@ -139,7 +139,7 @@ Here are some examples of the three types of indirect subscribers:
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
     Sample Person
-    
+
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
@@ -154,7 +154,7 @@ Here are some examples of the three types of indirect subscribers:
     No Privileges Person
     Sample Person
     Ubuntu Team
-    
+
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
@@ -179,7 +179,7 @@ is also an indirect subscriber.)
     Robert Collins
     Sample Person
     Ubuntu Team
-    
+
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Robert Collins
@@ -195,7 +195,7 @@ be used instead.
     No Privileges Person
     Sample Person
     Ubuntu Team
-    
+
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
@@ -210,7 +210,7 @@ be used instead.
     Robert Collins
     Sample Person
     Ubuntu Team
-    
+
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Robert Collins
@@ -244,7 +244,7 @@ subscribed to the dupe target.
     No Privileges Person
     Stuart Bishop
     Ubuntu Team
-    
+
     >>> linux_source_bug_dupe.duplicateof = linux_source_bug
     >>> linux_source_bug_dupe.syncUpdate()
 
@@ -254,7 +254,7 @@ subscribed to the dupe target.
     Sample Person
     Scott James Remnant
     Ubuntu Team
-    
+
     >>> print_displayname(linux_source_bug.getSubscribersFromDuplicates())
     Scott James Remnant
 
@@ -302,7 +302,7 @@ indirect subscriptions.
 
     >>> linux_source_bug.getIndirectSubscribers()
     []
-    
+
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
 
@@ -310,7 +310,8 @@ Direct subscriptions always take precedence over indirect
 subscriptions. So, if we unmark the above bug as private,
 indirect_subscribers will include only martin-pitt.
 
-    >>> linux_source_bug.private = False
+    >>> linux_source_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> linux_source_bug.syncUpdate()
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())

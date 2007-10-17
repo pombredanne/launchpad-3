@@ -62,7 +62,8 @@ subscribed to the bug.
 
     >>> bug_one.isSubscribed(current_user)
     False
-    >>> bug_one.private = True
+    >>> bug_one.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> flush_database_updates()
 
     >>> for bug in firefox.getMostCommonBugs(current_user):
