@@ -258,7 +258,6 @@ that create CodeImportEvent objects when appropriate. This is enforced
 by preventing the setting of any attribute through the ICodeImport
 interface.
 
-
 Even though David can access CodeImportObjects, he cannot set attributes
 on those objects.
 
