@@ -15,6 +15,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bug import BugView
@@ -148,6 +149,8 @@ class BugFeed(BugsFeedBase):
 
     def initialize(self):
         super(BugFeed, self).initialize()
+        if self.context.private:
+            raise Unauthorized, "Feeds do not serve private bugs"
 
     def getTitle(self):
         """Title for the feed."""
