@@ -30,13 +30,7 @@ div.revision p {
 <div metal:fill-slot="main">
 
       <div style="float: right">
-        <img
-          tal:condition="context/private"
-          alt="(Private branch)"
-          id="privatebadge"
-          src="/@@/private-large"
-          title="This branch is private"
-        />
+        <tal:big-badges replace="structure context/badges:large"/>
       </div>
 
   <h1>

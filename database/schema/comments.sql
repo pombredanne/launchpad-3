@@ -179,6 +179,11 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
+-- BugWatch
+
+COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
+
+
 -- CodeImport
 
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
@@ -1180,6 +1185,7 @@ COMMENT ON COLUMN Milestone.distrorelease IS 'The distrorelease for which this i
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';  
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
@@ -1402,6 +1408,7 @@ COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs'
 COMMENT ON COLUMN StandardShipItRequest.quantityamd64 IS 'The quantity of AMD64 CDs';
 COMMENT ON COLUMN StandardShipItRequest.quantityppc IS 'The quantity of PowerPC CDs';
 COMMENT ON COLUMN StandardShipItRequest.isdefault IS 'Is this the order that is pre-selected in the options we give for the user?';
+COMMENT ON COLUMN StandardShipItRequest.description IS 'The description of this option.';
 
 -- ShockAndAwe
 COMMENT ON TABLE ShockAndAwe IS 'Information about specific Shock And Awe programs.';
@@ -1625,3 +1632,41 @@ COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of
 
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
+
+-- StructuralSubscription
+/*
+COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
+COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
+COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
+COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
+COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
+COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
+COMMENT ON COLUMN StructuralSubscription.distrorelease IS 'The subscription\`s target, when it is a distribution release.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagerelease IS 'The subscription\`s target, when it is a source-package release';
+COMMENT ON COLUMN StructuralSubscription.binarypackagerelease IS 'The subscription\`s target, when it is a binary-package release';
+COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
+COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
+COMMENT ON COLUMN StructuralSubscription.specification_flavour IS 'The volume and type of notification this subscription will generate for specifications related to the target. The value is an item of the enumeration `StructuralSubscriptionSpecificationFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.bug_flavour IS 'The volume and type of notification this subscription will generate for bugs related to the target. The value is an item of the enumeration `StructuralSubscriptionBugsFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.translation_flavour IS 'The volume and type of notification this subscription will generate for translations related to the target. The value is an item of the enumeration `StructuralSubscriptionTranslationFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.code_flavour IS 'The volume and type of notification this subscription will generate for branches related to the target. The value is an item of the enumeration `StructuralSubscriptionCodeFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.registry_flavour IS 'The volume and type of notification this subscription will generate for registry changes related to the target. The value is an item of the enumeration `StructuralSubscriptionRegistryFlavour`.';
+COMMENT ON COLUMN StructuralSubscription.is_verbose IS 'A flag determining whether the notifications resulting from this subscription will contain the item\`s metadata and change history, or only the last change.';
+COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
+
+-- Notification
+COMMENT ON TABLE Notification IS 'A notification to a user, resulting from a subscription to a structure or an application item.';
+COMMENT ON COLUMN Notification.bug IS 'The bug this notification is about.';
+COMMENT ON COLUMN Notification.specification IS 'The specification this notification is about.';
+COMMENT ON COLUMN Notification.branch IS 'The branch this notification is about.';
+COMMENT ON COLUMN Notification.translationgroup IS 'The translation this notification is about.';
+COMMENT ON COLUMN Notification.question IS 'The question this notification is about.';
+COMMENT ON COLUMN Notification.message IS 'The message to be sent for this notification.';
+COMMENT ON COLUMN Notification.date_emailed IS 'The date this notification was emailed, or NULL if it hasn\'t yet been sent.';
+COMMENT ON COLUMN Notification.structuralsubscription IS 'The subscription for which this notification was generated, when it is a structural subscription.';
+COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which this notification was generated, when it is a bug subscription.';
+COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
+COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
+COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
+*/
+

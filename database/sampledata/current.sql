@@ -1096,16 +1096,16 @@ ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
 
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL);
 
 
 ALTER TABLE bugwatch ENABLE TRIGGER ALL;
@@ -8544,6 +8544,7 @@ ALTER TABLE revisionproperty ENABLE TRIGGER ALL;
 ALTER TABLE scriptactivity DISABLE TRIGGER ALL;
 
 INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (1, 'launchpad-targetnamecacheupdater', 'whatever', '2007-08-08 17:02:22.963565', '2007-08-08 17:02:23.869575');
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (2, 'script-monitor-test', 'localhost', '2007-05-23 00:00:00', '2007-05-23 01:00:00');
 
 
 ALTER TABLE scriptactivity ENABLE TRIGGER ALL;
@@ -8898,7 +8899,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, NULL, NULL, 1, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, NULL, NULL, 1, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, NULL, NULL, 1, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 1, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 10, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
 
   * Initial version
@@ -8923,6 +8924,7 @@ iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
 3F4bEPeRcnUjCFI/hjR0kxg=
 =Tjln
 ', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 11, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;

@@ -19,10 +19,13 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'MAXIMUM_MIRROR_FAILURES',
+    'MIRROR_TIME_INCREMENT',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
 
+from datetime import timedelta
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -146,6 +149,13 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.MATURE)
 
 
+# The maximum number of failures before we disable mirroring.
+MAXIMUM_MIRROR_FAILURES = 5
+
+# How frequently we mirror branches.
+MIRROR_TIME_INCREMENT = timedelta(hours=6)
+
+
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
@@ -204,9 +214,7 @@ class BranchURIField(URIField):
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch cannot "
-                "be on <code>%s</code>. Did you want to "
-                '<a href="https://help.launchpad.net/CreatingAHostedBranch">'
-                "create a hosted branch</a> instead?" % launchpad_domain)
+                "be on <code>%s</code>." % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
