@@ -9,6 +9,7 @@ __all__ = ['Archive', 'ArchiveSet']
 import os
 
 from sqlobject import StringCol, ForeignKey, BoolCol, IntCol
+from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -123,17 +124,18 @@ class Archive(SQLBase):
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, exact_match=False):
         """See `IArchive`."""
-        clauses = [
-            'SourcePackagePublishingHistory.archive = %s' % sqlvalues(self)]
-        clauseTables = []
+        clauses = ["""
+            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+            """ % sqlvalues(self)]
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+        orderBy = ['SourcePackageName.name',
+                   '-SourcePackagePublishingHistory.id']
 
         if name is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.sourcepackagerelease =
-                    SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename =
-                    SourcePackageName.id
-            """)
             if exact_match:
                 clauses.append("""
                     SourcePackageName.name=%s
@@ -143,15 +145,16 @@ class Archive(SQLBase):
                     SourcePackageName.name LIKE '%%' || %s || '%%'
                 """ % quote_like(name))
 
-            clauseTables.extend(
-                ['SourcePackageRelease', 'SourcePackageName'])
-
         if version is not None:
             assert name is not None, (
                 "'version' can be only used when name is set")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
+        else:
+            order_const = "debversion_sort_key(SourcePackageRelease.version)"
+            desc_version_order = SQLConstant(order_const+" DESC")
+            orderBy.insert(1, desc_version_order)
 
         if status is not None:
             if not isinstance(status, list):
@@ -165,9 +168,10 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.distrorelease = %s
             """ % sqlvalues(distroseries))
 
-        query = ' AND '.join(clauses)
-        return SourcePackagePublishingHistory.select(
-            query, orderBy='-id', clauseTables=clauseTables)
+        sources = SourcePackagePublishingHistory.select(
+            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy)
+
+        return sources
 
     @property
     def number_of_sources(self):
@@ -203,16 +207,15 @@ class Archive(SQLBase):
         clauses = ["""
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id
         """ % sqlvalues(self)]
-        clauseTables = ['BinaryPackageRelease']
+        clauseTables = ['BinaryPackageRelease', 'BinaryPackageName']
+        orderBy = ['BinaryPackageName.name',
+                   '-BinaryPackagePublishingHistory.id']
 
         if name is not None:
-            clauses.append("""
-                BinaryPackageRelease.binarypackagename =
-                    BinaryPackageName.id
-            """)
-
             if exact_match:
                 clauses.append("""
                     BinaryPackageName.name=%s
@@ -221,7 +224,6 @@ class Archive(SQLBase):
                 clauses.append("""
                     BinaryPackageName.name LIKE '%%' || %s || '%%'
                 """ % quote_like(name))
-            clauseTables.extend(['BinaryPackageName'])
 
         if version is not None:
             assert name is not None, (
@@ -229,6 +231,10 @@ class Archive(SQLBase):
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
+        else:
+            order_const = "debversion_sort_key(BinaryPackageRelease.version)"
+            desc_version_order = SQLConstant(order_const+" DESC")
+            orderBy.insert(1, desc_version_order)
 
         if status is not None:
             if not isinstance(status, list):
@@ -247,24 +253,24 @@ class Archive(SQLBase):
                 BinaryPackagePublishingHistory.distroarchrelease IN %s
             """ % das_ids)
 
-        return clauses, clauseTables
+        return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, exact_match=False):
         """See `IArchive`."""
-        clauses, clauseTables = self._getBinaryPublishingBaseClauses(
+        clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status,
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , orderBy='-id', clauseTables=clauseTables)
+            ' AND '.join(clauses) , clauseTables=clauseTables, orderBy=orderBy)
 
         return all_binaries
 
     def getUniquePublishedBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, exact_match=False):
         """See `IArchive`."""
-        clauses, clauseTables = self._getBinaryPublishingBaseClauses(
+        clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status,
             distroarchseries=distroarchseries, exact_match=exact_match)
 
@@ -286,8 +292,7 @@ class Archive(SQLBase):
         nominated_arch_independent_query = ' AND '.join(
             clauses + nominated_arch_independent_clause)
         nominated_arch_independents = BinaryPackagePublishingHistory.select(
-            nominated_arch_independent_query, orderBy='-id',
-            clauseTables=clauseTables)
+            nominated_arch_independent_query, clauseTables=clauseTables)
 
         # Retrieve all architecture-specific binary publications except
         # 'nominatedarchindep' (already included in the previous query).
@@ -299,9 +304,12 @@ class Archive(SQLBase):
         no_nominated_arch_independent_query = ' AND '.join(
             clauses + no_nominated_arch_independent_clause)
         no_nominated_arch_independents = BinaryPackagePublishingHistory.select(
-            no_nominated_arch_independent_query, orderBy='-id',
-            clauseTables=clauseTables)
+            no_nominated_arch_independent_query, clauseTables=clauseTables)
 
+        # XXX cprov 20071016: It's not possible to use the same ordering
+        # schema returned by self._getBinaryPublishingBaseClauses.
+        # It results in:
+        # ERROR:  missing FROM-clause entry for table "binarypackagename"
         unique_binary_publications = nominated_arch_independents.union(
             no_nominated_arch_independents)
 

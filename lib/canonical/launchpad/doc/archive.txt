@@ -69,9 +69,9 @@ Let's inspect source publications in Cprov PPA:
   ...     title = pub.sourcepackagerelease.title
   ...     pub_ds = pub.distroseries.name
   ...     print "%s -> %s" % (title, pub_ds)
-  pmount - 0.1-1 -> warty
-  iceweasel - 1.0 -> warty
   cdrkit - 1.0 -> breezy-autotest
+  iceweasel - 1.0 -> warty
+  pmount - 0.1-1 -> warty
 
 Using 'name' filter:
 
@@ -175,9 +175,9 @@ published for all available architectures, i386 & hppa:
 
   >>> check_bin_pubs(all_cprov_bin_pubs)
   mozilla-firefox-1.0 (True) -> hppa
+  mozilla-firefox-1.0 (True) -> i386
   pmount-0.1-1 (False) -> hppa
   pmount-0.1-1 (False) -> i386
-  mozilla-firefox-1.0 (True) -> i386
 
 'getUniquePublishedBinaries' automatically filters multiple publications of
 'pmount' considering only the publication to the 'nominatedarchindep'
