@@ -47,10 +47,8 @@ from canonical.launchpad.interfaces import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
     IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    TranslationPermission)
-from canonical.lp.dbschema import (
-    SpecificationSort, SpecificationFilter, 
-    SpecificationDefinitionStatus, SpecificationImplementationStatus)
+    SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus, TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
