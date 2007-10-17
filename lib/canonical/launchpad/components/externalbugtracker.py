@@ -327,7 +327,7 @@ class Bugzilla(ExternalBugTracker):
         return version
 
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugtracker.
+        """See `IExternalBugtracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
@@ -1203,7 +1203,7 @@ class Trac(ExternalBugTracker):
                 return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugtracker"""
+        """See `IExternalBugtracker`"""
         status_map = {
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
