@@ -133,7 +133,7 @@ logged in (this prevents bots from harvesting email addresses).
   LP: #10
   LP: #999
   LP: #badid
-  -- Sample Person &lt;&gt; Tue, 7 Feb 2006 12:10:08 +0300
+  -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
 
 If we view the same page as a logged-in user, we can see the email
 address:
