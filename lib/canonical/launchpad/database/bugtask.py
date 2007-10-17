@@ -1557,6 +1557,8 @@ class BugTaskSet:
             BugTask.id IN (
                 SELECT BugTask.id
                 FROM BugTask
+                INNER JOIN Bug
+                    ON BugTask.bug = Bug.id
                 LEFT OUTER JOIN Distribution
                     ON distribution = Distribution.id
                     AND Distribution.official_malone IS TRUE
@@ -1580,11 +1582,19 @@ class BugTaskSet:
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
-                    AND BugTask.date_incomplete < CURRENT_TIMESTAMP
+                    AND Bug.duplicateof IS NULL
+                    AND Bug.date_last_message < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
+        valid_statues = [
+            BugTaskStatus.CONFIRMED, BugTaskStatus.INPROGRESS,
+            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
         bugtasks = []
         for bugtask in all_bugtasks:
+            # Bugtasks cannot be expired if any bugtask of the bug is valid.
+            if len([bt for bt in bugtask.bug.bugtasks
+                    if bt.status in valid_statues]) != 0:
+                continue
             if bugtask.conjoined_master is None:
                 bugtasks.append(bugtask)
         return bugtasks

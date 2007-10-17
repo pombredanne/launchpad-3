@@ -50,7 +50,7 @@ bug's project uses an external bug tracker.
     >>> now = datetime.now(UTC)
     >>> fourteen_days_ago = now - timedelta(days=14)
     >>> old_age_days_ago = now - timedelta(days=old_age_days + 1)
-    
+
     >>> from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
     >>> bugtaskset = getUtility(IBugTaskSet)
 
@@ -97,16 +97,16 @@ bug's project uses an external bug tracker.
     >>> set_so_attr(slave_bugtask, 'date_incomplete', old_age_days_ago)
     >>> print slave_bugtask.bugtargetdisplayname
     Ubuntu
-    
+
     # A bugtask for a product that is expirable.
     >>> expirable_product_bugtask = bugtaskset.get(31)
     >>> expirable_product_bugtask.transitionToStatus(
-    ...     BugTaskStatus.INCOMPLETE, sample_person)    
+    ...     BugTaskStatus.INCOMPLETE, sample_person)
     >>> set_so_attr(expirable_product_bugtask,
     ...     'date_incomplete', old_age_days_ago)
     >>> print expirable_product_bugtask.bugtargetdisplayname
     Jokosher
-    
+
     # A bugtask that is not expirable because it does not use Malone.
     >>> external_bugtask = bugtaskset.get(5)
     >>> external_bugtask.transitionToStatus(
