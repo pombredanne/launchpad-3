@@ -92,7 +92,8 @@
               <td tal:content="structure view/status_widget" />
               <td tal:content="structure view/importance_widget" />
               <td tal:condition="python:context.milestone and view.milestone_widget"
-                  tal:content="context/milestone/name">
+                  tal:content="context/milestone/name"
+		  id="milestone">
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
