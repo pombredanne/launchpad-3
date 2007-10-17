@@ -1,8 +1,6 @@
-"""Copyright Canonical Limited 2005-2004
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+"""FTPMaster utilities."""
 
-Author: Celso Providelo <celso.providelo@canonical.com>
-FTPMaster utilities.
-"""
 __metaclass__ = type
 
 __all__ = [
@@ -1562,10 +1560,10 @@ class PackageRemover(SoyuzScript):
         # Mode options.
         self.parser.add_option("-b", "--binary", dest="binaryonly",
                                default=False, action="store_true",
-                               help="remove binaries only")
+                               help="Remove binaries only.")
         self.parser.add_option("-S", "--source-only", dest="sourceonly",
                                default=False, action="store_true",
-                               help="remove source only")
+                               help="Remove source only.")
 
         # Removal information options.
         self.parser.add_option("-u", "--user", dest="user",
@@ -1575,7 +1573,7 @@ class PackageRemover(SoyuzScript):
                                help="Removal comment")
 
     def mainTask(self):
-        """Execute package removal task.
+        """Execute the package removal task.
 
         Build location and target objects.
 
@@ -1583,7 +1581,7 @@ class PackageRemover(SoyuzScript):
         """
         if len(self.args) != 1:
             raise SoyuzScriptError(
-                "At least one non-option argument must be given, "
+                "Exactly one non-option argument must be given, "
                 "the packagename.")
 
         packagename = self.args[0]

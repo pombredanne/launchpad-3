@@ -66,5 +66,5 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
         readonly=True)
 
     published_binaries = Attribute(
-        "a list of published `DistroArchSeriesBinaryPackageRelease` for "
+        "A list of published `DistroArchSeriesBinaryPackageRelease` for "
         "all relevant architectures.")

@@ -158,7 +158,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def published_binaries(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         target_binaries = []
 
         # Get the binary packages in each distroarchseries and store them
