@@ -1946,7 +1946,7 @@ ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
 ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
 
-INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1);
+INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint, raw_emailaddress) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1, 'test@canonical.com');
 
 
 ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
