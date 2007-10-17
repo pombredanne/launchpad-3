@@ -73,6 +73,7 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
+COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
@@ -1070,6 +1071,7 @@ COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message fo
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
 COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
 COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
+COMMENT ON COLUMN SpecificationBranch.registrant IS 'The person who linked the specification to the branch.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
