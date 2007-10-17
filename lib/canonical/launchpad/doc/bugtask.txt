@@ -1049,11 +1049,6 @@ will suffice.
 
 Lets also make some bugs that almost qualify for expiration.
 
-    # A bugtask that is not expirable because it is assigned.
-    >>> assigned_bugtask = bugtaskset.get(13)
-    >>> set_incomplete_and_inactive(assigned_bugtask, _61_days_ago)
-    >>> assigned_bugtask.transitionToAssignee(sample_person)
-
     # A bugtask that is not expirable because its status is CONFIRMED.
     >>> confirmed_bugtask = bugtaskset.get(30)
     >>> set_incomplete_and_inactive(confirmed_bugtask, _61_days_ago)
@@ -1069,6 +1064,15 @@ Lets also make some bugs that almost qualify for expiration.
     >>> duplicate_bugtask = bugtaskset.get(15)
     >>> set_incomplete_and_inactive(duplicate_bugtask, _61_days_ago)
 
+    # A bugtask that is not expirable because it has a milestone.
+    >>> milestone_bugtask = bugtaskset.get(25)
+    >>> set_incomplete_and_inactive(milestone_bugtask, _61_days_ago)
+    >>> milestone_bugtask.milestone = ubuntu.currentseries.newMilestone("one")
+
+    # A bugtask that is not expirable because it has no messages.
+    >>> no_messages_bugtask = bugtaskset.get(13)
+    >>> set_incomplete_and_inactive(no_messages_bugtask, _61_days_ago)
+
     >>> def summarize_bugtask(bugtasks):
     ...     print 'AFFECTS  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS  MALONE'
     ...     for bugtask in bugtasks:
@@ -1081,17 +1085,18 @@ Lets also make some bugs that almost qualify for expiration.
     ...              bugtask.id, bugtask.assignee is None, days_old,
     ...              bugtask.status.title, bugtask.target_uses_malone))
     >>> bugtasks = [ubuntu_hoary_bugtask, ubuntu_bugtask, jokosher_bugtask,
-    ...             assigned_bugtask, confirmed_bugtask, external_bugtask,
-    ...             duplicate_bugtask]
+    ...             confirmed_bugtask, external_bugtask, duplicate_bugtask,
+    ...             milestone_bugtask, no_messages_bugtask]
     >>> summarize_bugtask(bugtasks)
     AFFECTS                  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS      MALONE
     Ubuntu Hoary             28       True        351       Incomplete  True
     Ubuntu                   26       True        351       Incomplete  True
     Jokosher                 31       True         61       Incomplete  True
-    Mozilla Firefox          13       False        61       Incomplete  True
     Jokosher                 30       True         61       Confirmed   True
     mozilla-firefox (Debian) 22       True         61       Incomplete  False
     Mozilla Firefox          15       True         61       Incomplete  True
+    linux-source-2.6.15 ...  25       True         61       Incomplete  True
+    Mozilla Firefox          13       True         61       Incomplete  True
 
     # Flush the caches so that the bugtasks defined above get
     # their content from the modified DB.
@@ -1108,6 +1113,36 @@ only the master bugtask can change the status.
     >>> len(expirable_bugtasks)
     0
 
+    # There are bugs older than 350 days, yet none are expirable.
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
+    >>> len(expirable_bugtasks)
+    0
+
+    >>> for bt in ubuntu_hoary_bugtask.bug.bugtasks:
+    ...         print bt.bugtargetdisplayname, bt.id, bt.status.title
+    Tomcat 3 New
+    Ubuntu 26 Incomplete
+    Ubuntu Hoary 28 Incomplete
+    mozilla-firefox (Debian) 5 Confirmed
+    mozilla-firefox (Debian Woody) 20 New
+
+    >>> bugtaskset.get(3).transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
+    >>> bugtaskset.get(5).transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
+    >>> bugtaskset.get(20).transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
+
+    >>> for bt in ubuntu_hoary_bugtask.bug.bugtasks:
+    ...         print bt.bugtargetdisplayname, bt.id, bt.status.title
+    Tomcat 3 Invalid
+    Ubuntu 26 Incomplete
+    Ubuntu Hoary 28 Incomplete
+    mozilla-firefox (Debian) 5 Invalid
+    mozilla-firefox (Debian Woody) 20 Invalid
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
+
     >>> from operator import attrgetter
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
     >>> summarize_bugtask(sorted(expirable_bugtasks, key=attrgetter('id')))
@@ -1120,6 +1155,12 @@ only the master bugtask can change the status.
     Ubuntu Hoary             28       True        351       Incomplete  True
     Jokosher                 31       True         61       Incomplete  True
 
+    >>> jokosher_bugtask.transitionToAssignee(sample_person)
+    >>> flush_database_caches()
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
+    >>> summarize_bugtask(sorted(expirable_bugtasks, key=attrgetter('id')))
+    AFFECTS                  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS      MALONE
+    Ubuntu Hoary             28       True        351       Incomplete  True
 
 == Handling IntegrityError and ProgrammingError ==
 
