@@ -12,17 +12,29 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
 
+  <h1>Personal Package Archive Activation</h1>
+
+  <p>
+    A PPA is a place where you can build and publish your own packages.
+    These can be custom versions of Ubuntu packages, or completely new
+    packages, and can be built for any <a href="/ubuntu/">supported
+    version of Ubuntu</a>. For more information, please see the
+    <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick Start
+    Guide</a>.
+  </p>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
-       <p> Read the current version of <a 
-           href="https://help.launchpad.net/PPATermsofUse"
-           >PPA Terms of Use</a> before activating your PPA.</p>
+       <p>
+         Read the current version of
+         <a href="https://help.launchpad.net/PPATermsofUse">PPA Terms of
+         Use</a> before activating your PPA.
+       </p>
     </div>
 
     <div class="form" metal:fill-slot="widgets">
@@ -40,6 +52,7 @@
    </div>
 
   <div class="actions" metal:fill-slot="buttons">
+    <input tal:replace="structure view/actions/field.actions.cancel/render" />
     <input tal:replace="structure view/actions/field.actions.activate/render" />
   </div>
 
