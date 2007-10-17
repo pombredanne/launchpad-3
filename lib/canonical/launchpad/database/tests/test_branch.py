@@ -12,13 +12,13 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
     CreateBugParams, IBugSet, ILaunchpadCelebrities, IPersonSet,
-    InvalidBranchMergeProposal, IProductSet, ISpecificationSet)
+    InvalidBranchMergeProposal, IProductSet, ISpecificationSet,
+    RevisionControlSystems)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
-from canonical.lp.dbschema import (
-    RevisionControlSystems, SpecificationDefinitionStatus)
+from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
@@ -162,8 +162,8 @@ class TestBranchDeletion(TestCase):
                          "A branch with a landing candidate is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
-    def test_landingTargetDisablesDeletion(self):
-        """A branch with a landing target cannot be deleted."""
+    def test_dependentBranchDisablesDeletion(self):
+        """A branch that is a dependent branch cannot be deleted."""
         source_branch = BranchSet().new(
             BranchType.HOSTED, 'landing-candidate', self.user, self.user,
             self.product, None)

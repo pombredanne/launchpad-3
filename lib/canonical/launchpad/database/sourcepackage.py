@@ -18,12 +18,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
-    PackagingType, PackagePublishingPocket, BuildStatus,
-    PackagePublishingStatus)
+    PackagePublishingPocket, BuildStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -129,10 +128,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
-    This object implements the MagicSourcePackage specification. It is not a
-    true database object, but rather attempts to represent the concept of a
-    source package in a distro series, with links to the relevant database
-    objects.
+    This object is not a true database object, but rather attempts to
+    represent the concept of a source package in a distro series, with links
+    to the relevant database objects.
     """
 
     implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
@@ -213,8 +211,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
-        else:
-            return None
+        return None
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
@@ -470,7 +467,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -480,13 +477,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
-        SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distribution.all_distro_archive_ids,
-                        PackagePublishingStatus.PUBLISHED)]
+                        self.distribution.all_distro_archive_ids)]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -498,9 +493,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
-        if status is not None:
+        if build_state is not None:
             condition_clauses.append("Build.buildstate=%s"
-                                     % sqlvalues(status))
+                                     % sqlvalues(build_state))
 
         if pocket:
             condition_clauses.append(
@@ -511,11 +506,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # * SUPERSEDED by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
-        elif status == BuildStatus.SUPERSEDED or status is None:
+        elif build_state == BuildStatus.SUPERSEDED or build_state is None:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]

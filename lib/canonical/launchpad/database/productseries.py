@@ -30,10 +30,10 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError)
+    PackagingType, IProductSeries, IProductSeriesSet,
+    IProductSeriesSourceAdmin, NotFoundError, RevisionControlSystems)
 from canonical.lp.dbschema import (
-    ImportStatus, PackagingType, RevisionControlSystems, SpecificationSort,
+    ImportStatus, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
@@ -76,7 +76,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                              default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
-    rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
+    rcstype = EnumCol(dbName='rcstype', enum=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
@@ -324,9 +324,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
+                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                                  SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -424,8 +424,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         elif self.rcstype == RevisionControlSystems.SVN:
             self.syncinterval = datetime.timedelta(hours=6)
         else:
-            raise AssertionError('Unknown default sync interval for rcs type: %s'
-                                 % self.rcstype.title)
+            raise AssertionError(
+                'Unknown default sync interval for rcs type: %s'
+                % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def markTestFailed(self):
@@ -551,64 +552,47 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-    def search(self, ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        query, clauseTables = self._querystr(
-            ready, text, forimport, importstatus)
-        return ProductSeries.select(query, distinct=True,
-                   clauseTables=clauseTables)[start:length]
+    def searchImports(self, text=None, importstatus=None):
+        """See `IProductSeriesSet`."""
+        query = self.composeQueryString(text, importstatus)
+        return ProductSeries.select(
+            query, distinct=True, clauseTables=['Product', 'Project'])
 
-    def importcount(self, status=None):
-        return self.search(forimport=True, importstatus=status).count()
+    def composeQueryString(self, text=None, importstatus=None):
+        """Build SQL "where" clause for `ProductSeries` search.
 
-    def _querystr(self, ready=None, text=None,
-                  forimport=None, importstatus=None):
-        """Return a querystring and clauseTables for use in a search or a
-        get or a query. Arguments:
-          ready - boolean indicator of whether or not to limit the search
-                  to products and projects that have been reviewed and are
-                  active.
-          text - text to search for in the product and project titles and
-                 descriptions
-          forimport - whether or not to limit the search to series which
-                      have RCS data on file
-          importstatus - limit the list to series which have the given
-                         import status.
+        :param text: Text to search for in the product and project titles and
+            descriptions.
+        :param importstatus: If specified, limit the list to series which have
+            the given import status; if not specified or None, limit to series
+            with non-NULL import status.
         """
-        queries = []
-        clauseTables = set()
-        # deal with the cases which require project and product
-        if ( ready is not None ) or text:
-            if text:
-                queries.append('Product.fti @@ ftq(%s)' % quote(text))
-            if ready is not None:
-                queries.append('Product.active IS TRUE')
-                queries.append('Product.reviewed IS TRUE')
-            queries.append("ProductSeries.product = Product.id")
+        conditions = []
+        if text == u'':
+            text = None
 
-            # The subquery restricts the query to a project that matches
-            # the text supplied.
-            subqueries = []
-            subqueries.append('Product.project = Project.id')
-            if text:
-                subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
-            if ready is not None:
-                subqueries.append('Project.active IS TRUE')
-                subqueries.append('Project.reviewed IS TRUE')
-            queries.append('(Product.project IS NULL OR (%s))' %
-                           " AND ".join(subqueries))
+        # First filter on product: match text, if necessary, and only consider
+        # active projects.
+        if text is not None:
+            conditions.append('Product.fti @@ ftq(%s)' % quote(text))
+        conditions.append('Product.active IS TRUE')
+        conditions.append("ProductSeries.product = Product.id")
 
-            clauseTables.add('Project')
-            clauseTables.add('Product')
+        # Then filter on project in the same way, if any.
+        product_match = "Product.project = Project.id AND Project.active"
+        if text is not None:
+            product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
+        conditions.append("((%s) OR project IS NULL)" % product_match)
 
-        # now just add filters on import status
-        if forimport or importstatus:
-            queries.append('ProductSeries.importstatus IS NOT NULL')
-        if importstatus:
-            queries.append('ProductSeries.importstatus = %d' % importstatus)
+        # Now just add the filter on import status.
+        if importstatus is None:
+            conditions.append('ProductSeries.importstatus IS NOT NULL')
+        else:
+            conditions.append('ProductSeries.importstatus = %s'
+                              % sqlvalues(importstatus))
 
-        query = " AND ".join(queries)
-        return query, clauseTables
+        query = " AND ".join(conditions)
+        return query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
         """See IProductSeriesSet."""

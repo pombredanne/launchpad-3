@@ -883,63 +883,72 @@ class ShippingRequestSet:
 
     def generateRequestDistributionReport(self):
         """See IShippingRequestSet"""
-        # First we get the distribution of requests/shipments for the current
-        # series only.
-        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+
         cur = cursor()
         query = """
-            SELECT requests, requesters,
+            CREATE TEMPORARY TABLE ShippingRequestWithKarma AS 
+                SELECT *
+                FROM shippingrequest;
+            ALTER TABLE shippingrequestwithkarma 
+                ADD COLUMN has_10_karma integer DEFAULT 0;
+            UPDATE shippingrequestwithkarma SET has_10_karma = 1
+                WHERE recipient IN (
+                    SELECT person
+                    FROM karma
+                    GROUP BY person
+                    HAVING COUNT(id) > 10);
+            """
+        cur.execute(query)
+
+        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+        # This is a template used for the next two queries.
+        template_dict = sqlvalues(
+            current_series=ShipItConstants.current_distroseries,
+            shipit_admins=shipit_admins)
+        query_template = """
+            SELECT requests, requesters, requesters_with_10_karma,
                 cds_requested / (requests * requesters) AS avg_requested_cds
             FROM (
                 SELECT requests, COUNT(recipient) AS requesters,
-                    SUM(requested_cds_per_user) AS cds_requested
+                    SUM(has_10_karma) AS requesters_with_10_karma,
+                    SUM(cds_per_user) AS cds_requested
                 FROM (
-                    SELECT recipient,
+                    SELECT recipient, has_10_karma,
                         COUNT(DISTINCT request) AS requests,
-                        SUM(quantity) AS requested_cds_per_user
+                        SUM(%(quantity_column)s) AS cds_per_user
                     FROM RequestedCDs
-                        JOIN ShippingRequest ON
-                            ShippingRequest.id = RequestedCDs.request
+                        JOIN ShippingRequestWithKarma ON
+                            ShippingRequestWithKarma.id = RequestedCDs.request
                     WHERE distrorelease = %(current_series)s
-                        AND status != %(cancelled)s
+                        AND %(status_filter)s
                         AND recipient != %(shipit_admins)s
-                    GROUP BY recipient
+                    -- The has_10_karma will always be the same for a given
+                    -- recipient, so we can safely include it in the group by
+                    -- here.
+                    GROUP BY recipient, has_10_karma
                     ) AS REQUEST_DISTRIBUTION
                 GROUP BY requests
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
-            """ % sqlvalues(
-                    current_series=ShipItConstants.current_distroseries,
-                    shipit_admins=shipit_admins,
-                    cancelled=ShippingRequestStatus.CANCELLED)
+            """
+
+        # First we get the distribution of requests/shipments for the current
+        # series only.
+        replacements = dict(
+            quantity_column='quantity',
+            status_filter='status != %s' % sqlvalues(
+                ShippingRequestStatus.CANCELLED))
+        replacements.update(template_dict)
+        query = query_template % replacements
         cur.execute(query)
         current_series_request_distribution = cur.fetchall()
 
-        query = """
-            SELECT approved_requests, recipients,
-                cds_approved / (approved_requests * recipients)
-                    AS avg_shipment_size
-            FROM (
-                SELECT COUNT(recipient) AS recipients, approved_requests,
-                    SUM(approved_cds_per_user) AS cds_approved
-                FROM (
-                    SELECT recipient,
-                        COUNT(DISTINCT request) AS approved_requests,
-                        SUM(quantityapproved) AS approved_cds_per_user
-                    FROM RequestedCDs
-                        JOIN ShippingRequest ON
-                            ShippingRequest.id = RequestedCDs.request
-                    WHERE distrorelease = %(current_series)s
-                        AND status IN (%(approved)s, %(shipped)s)
-                        AND recipient != %(shipit_admins)s
-                    GROUP BY recipient
-                    ) AS SHIPMENT_DISTRIBUTION
-                GROUP BY approved_requests
-                ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
-            """ % sqlvalues(
-                    current_series=ShipItConstants.current_distroseries,
-                    shipit_admins=shipit_admins,
-                    approved=ShippingRequestStatus.APPROVED,
-                    shipped=ShippingRequestStatus.SHIPPED)
+        replacements = dict(
+            quantity_column='quantityapproved',
+            status_filter='status IN (%s, %s)' % sqlvalues(
+                ShippingRequestStatus.APPROVED,
+                ShippingRequestStatus.SHIPPED))
+        replacements.update(template_dict)
+        query = query_template % replacements
         cur.execute(query)
         current_series_shipment_distribution = cur.fetchall()
 
@@ -948,12 +957,12 @@ class ShippingRequestSet:
         create_tables = """
             -- People with non-cancelled requests for the current series.
             CREATE TEMPORARY TABLE current_series_requester
-                (recipient integer);
+                (recipient integer, has_10_karma integer);
             INSERT INTO current_series_requester (
-                SELECT DISTINCT recipient
-                FROM ShippingRequest
+                SELECT DISTINCT recipient, has_10_karma
+                FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
-                        ON RequestedCDs.request = ShippingRequest.id
+                        ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distrorelease = %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
@@ -963,12 +972,12 @@ class ShippingRequestSet:
             -- People with with non-cancelled requests for any series other
             -- than the current one.
             CREATE TEMPORARY TABLE previous_series_requester
-                (recipient integer);
+                (recipient integer, has_10_karma integer);
             INSERT INTO previous_series_requester (
-                SELECT DISTINCT recipient
-                FROM ShippingRequest
+                SELECT DISTINCT recipient, has_10_karma
+                FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
-                        ON RequestedCDs.request = ShippingRequest.id
+                        ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
@@ -978,20 +987,20 @@ class ShippingRequestSet:
             -- People which made requests for any series other than the
             -- current one, but none of the requests were ever shipped.
             CREATE TEMPORARY TABLE previous_series_non_recipient
-                (recipient integer);
+                (recipient integer, has_10_karma integer);
             INSERT INTO previous_series_non_recipient (
-                SELECT DISTINCT recipient
-                FROM ShippingRequest
+                SELECT DISTINCT recipient, has_10_karma
+                FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
-                        ON RequestedCDs.request = ShippingRequest.id
+                        ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status NOT IN (%(shipped)s, %(cancelled)s)
                 EXCEPT
-                SELECT DISTINCT recipient
-                FROM ShippingRequest
+                SELECT DISTINCT recipient, has_10_karma
+                FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
-                        ON RequestedCDs.request = ShippingRequest.id
+                        ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status = %(shipped)s);
@@ -1008,35 +1017,44 @@ class ShippingRequestSet:
         # requests/shipments for the people which made requests of the current
         # series.
         query = """
-            SELECT requests, requesters,
+            SELECT requests, requesters, requesters_with_karma,
                 CASE WHEN requests > 0
                         THEN cds_requested / (requests * requesters)
                      ELSE 0
                 END AS avg_requested_cds
             FROM (
                 SELECT requests, SUM(requested_cds_per_user) AS cds_requested,
-                    COUNT(recipient) AS requesters
+                    COUNT(recipient) AS requesters,
+                    SUM(has_10_karma) AS requesters_with_karma
                 FROM (
-                    -- This select will give us the people which made feisty
-                    -- requests and which also made requests for other series.
-                    SELECT recipient, SUM(quantity) AS requested_cds_per_user,
+                    -- This select will give us the people which made requests
+                    -- for the current series and which also made requests
+                    -- for other series.
+                    SELECT recipient, has_10_karma,
+                        SUM(quantity) AS requested_cds_per_user,
                         COUNT(DISTINCT request) AS requests
-                    FROM RequestedCDs, ShippingRequest
+                    FROM RequestedCDs, ShippingRequestWithKarma
                     WHERE distrorelease < %(current_series)s
                         AND status != %(cancelled)s
-                        AND ShippingRequest.id = RequestedCDs.request
+                        AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_series_requester)
                         AND recipient != %(shipit_admins)s
-                    GROUP BY recipient
+                    -- The has_10_karma will always be the same for a given
+                    -- recipient, so we can safely include it in the group by
+                    -- here.
+                    GROUP BY recipient, has_10_karma
                     UNION
-                    -- This one gives us the people which made feisty requests
-                    -- but haven't made requests for any other series.
-                    SELECT recipient, 0 AS requested_cds_per_user,
-                        0 AS requests
-                    FROM (SELECT recipient FROM current_series_requester
+                    -- This one gives us the people which made requests for
+                    -- the current series but haven't made requests for any
+                    -- other series.
+                    SELECT recipient, has_10_karma,
+                        0 AS requested_cds_per_user, 0 AS requests
+                    FROM (SELECT recipient, has_10_karma
+                          FROM current_series_requester
                           EXCEPT
-                          SELECT recipient FROM previous_series_requester
+                          SELECT recipient, has_10_karma
+                          FROM previous_series_requester
                          ) AS FIRST_TIME_REQUESTERS
                     WHERE recipient != %(shipit_admins)s
                     ) AS RECIPIENTS_AND_COUNTS
@@ -1048,52 +1066,61 @@ class ShippingRequestSet:
                     shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(query)
-        other_serieses_request_distribution = cur.fetchall()
+        other_series_request_distribution = cur.fetchall()
 
         query = """
-            SELECT requests, requesters,
+            SELECT requests, requesters, requesters_with_karma,
                 CASE WHEN requests > 0
                         THEN cds_approved / (requests * requesters)
                      ELSE 0
                 END AS avg_approved_cds
             FROM (
                 SELECT requests, SUM(approved_cds_per_user) AS cds_approved,
-                    COUNT(recipient) AS requesters
+                    COUNT(recipient) AS requesters,
+                    SUM(has_10_karma) AS requesters_with_karma
                 FROM (
-                    -- This select will give us the people which made feisty
-                    -- requests and which also had shipped requests for other
-                    -- serieses.
-                    SELECT recipient,
+                    -- This select will give us the people which made requests
+                    -- of the current series and which also had shipped
+                    -- requests for other series.
+                    SELECT recipient, has_10_karma,
                         SUM(quantityapproved) AS approved_cds_per_user,
                         COUNT(DISTINCT request) AS requests
-                    FROM RequestedCDs, ShippingRequest
+                    FROM RequestedCDs, ShippingRequestWithKarma
                     WHERE distrorelease < %(current_series)s
                         AND status = %(shipped)s
-                        AND ShippingRequest.id = RequestedCDs.request
+                        AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_series_requester)
-                    GROUP BY recipient
+                    -- The has_10_karma will always be the same for a given
+                    -- recipient, so we can safely include it in the group by
+                    -- here.
+                    GROUP BY recipient, has_10_karma
                     UNION
-                    -- This one gives us the people which made feisty requests
-                    -- but haven't had any shipped request of previous
-                    -- serieses.
-                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
-                    FROM RequestedCDs, ShippingRequest
+                    -- This one gives us the people which made requests of
+                    -- the current series but haven't had any shipped request
+                    -- of previous series.
+                    SELECT recipient, has_10_karma,
+                        0 AS approved_cds_per_user, 0 AS requests
+                    FROM RequestedCDs, ShippingRequestWithKarma
                     WHERE distrorelease < %(current_series)s
                         AND status != %(shipped)s
-                        AND ShippingRequest.id = RequestedCDs.request
+                        AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_series_requester)
                         AND recipient IN (
                             SELECT recipient
                             FROM previous_series_non_recipient)
                     UNION
-                    -- This one gives us the people which made feisty requests
-                    -- but haven't made requests for any other serieses.
-                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
-                    FROM (SELECT recipient FROM current_series_requester
+                    -- This one gives us the people which made requests of
+                    -- the current series but haven't made requests for any
+                    -- other series.
+                    SELECT recipient, has_10_karma,
+                        0 AS approved_cds_per_user, 0 AS requests
+                    FROM (SELECT recipient, has_10_karma
+                          FROM current_series_requester
                           EXCEPT
-                          SELECT recipient FROM previous_series_requester
+                          SELECT recipient, has_10_karma
+                          FROM previous_series_requester
                          ) AS FIRST_TIME_RECIPIENTS
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
@@ -1105,30 +1132,37 @@ class ShippingRequestSet:
                     approved=ShippingRequestStatus.APPROVED,
                     shipped=ShippingRequestStatus.SHIPPED)
         cur.execute(query)
-        other_serieses_shipment_distribution = cur.fetchall()
+        other_series_shipment_distribution = cur.fetchall()
 
         # Get the numbers of the rows we want to display.
         all_results = itertools.chain(
             current_series_shipment_distribution,
             current_series_request_distribution,
-            other_serieses_shipment_distribution,
-            other_serieses_request_distribution)
+            other_series_shipment_distribution,
+            other_series_request_distribution)
         row_numbers = set()
-        for requests, requesters, avg_size in all_results:
+        for requests, requesters, req_with_karma, avg_size in all_results:
             row_numbers.add(requests)
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-        header1 = ['', '', 'Current Series Only', '', '',
-                  '', '', 'Previous Series Only', '']
-        header2 = ['', 'requests', '', 'shipped', '', 'requests', '',
-                   'shipped', '']
-        header3 = ['# of requests', '# of people', '%', 'avg CDs per request',
-                   '# of people', '%', 'avg CDs per shipment', '# of people',
-                   '%', 'avg CDs per request', '# of people', '%',
-                   'avg CDs per shipment']
+        header1 = ['', '', '', 'Current Series Only', '', '', '',
+                   '', '', '', 'Previous Series Only', '', '', '']
+        header2 = ['',
+                   'requests', '', '', '', 'shipments', '', '', '',
+                   'requests', '', '', '', 'shipments', '', '', '']
+        header3 = [
+            '# of requests',
+            '# of people', '%', 'people with karma', 'avg CDs per request',
+            '# of people', '%', 'people with karma', 'avg CDs per shipment',
+            '# of people', '%', 'people with karma', 'avg CDs per request',
+            '# of people', '%', 'people with karma', 'avg CDs per shipment']
+        # Write the headers with empty lines in between to make them stand
+        # out.
         csv_writer.writerow(header1)
+        csv_writer.writerow(['']*len(header3))
         csv_writer.writerow(header2)
+        csv_writer.writerow(['']*len(header3))
         csv_writer.writerow(header3)
 
         # XXX: Guilherme Salgado 2007-04-25:
@@ -1141,10 +1175,10 @@ class ShippingRequestSet:
             current_series_shipment_distribution, row_numbers)
         cs = self._add_percentage_to_number_of_people(cs)
         or_ = self._convert_results_to_dict_and_fill_gaps(
-            other_serieses_request_distribution, row_numbers)
+            other_series_request_distribution, row_numbers)
         or_ = self._add_percentage_to_number_of_people(or_)
         os = self._convert_results_to_dict_and_fill_gaps(
-            other_serieses_shipment_distribution, row_numbers)
+            other_series_shipment_distribution, row_numbers)
         os = self._add_percentage_to_number_of_people(os)
 
         for number in sorted(row_numbers):
@@ -1162,13 +1196,14 @@ class ShippingRequestSet:
         The given dict must be of the form:
             {number_of_requests: (number_of_people, average_size)}
         """
-        total = sum(people for people, size in results_dict.values())
+        values = results_dict.values()
+        total = sum(people for people, people_with_karma, size in values)
         total = float(total) / 100
         d = {}
         for key, value in results_dict.items():
-            people, size = value
+            people, people_with_karma, size = value
             percentage = float(people) / total
-            d[key] = (people, percentage, size)
+            d[key] = (people, percentage, people_with_karma, size)
         return d
 
     def _convert_results_to_dict_and_fill_gaps(self, results, row_numbers):
@@ -1180,10 +1215,10 @@ class ShippingRequestSet:
         with a value of (0,0).
         """
         d = {}
-        for requests, requesters, avg_size in results:
-            d[requests] = (requesters, avg_size)
+        for requests, requesters, requesters_with_karma, avg_size in results:
+            d[requests] = (requesters, requesters_with_karma, avg_size)
         for number in set(row_numbers) - set(d.keys()):
-            d[number] = (0, 0)
+            d[number] = (0, 0, 0)
         return d
 
 
@@ -1228,24 +1263,31 @@ class StandardShipItRequest(SQLBase):
     quantityamd64 = IntCol(notNull=True)
     isdefault = BoolCol(notNull=True, default=False)
     flavour = EnumCol(enum=ShipItFlavour, notNull=True)
-
-    @property
-    def description_without_flavour(self):
-        """See IStandardShipItRequest"""
-        if self.totalCDs > 1:
-            description = "%d CDs" % self.totalCDs
-        else:
-            description = "%d CD" % self.totalCDs
-        return "%s (%s)" % (description, self._detailed_description())
+    user_description = StringCol(dbName='description')
 
     @property
     def description(self):
-        """See IStandardShipItRequest"""
+        """See `IStandardShipItRequest`"""
+        if self.user_description:
+            return self.user_description
+
+        quantities = []
+        text = '%d %s Edition'
+        if self.quantityx86:
+            quantities.append(
+                text % (self.quantityx86, ShipItArchitecture.X86.title))
+        if self.quantityamd64:
+            quantities.append(
+                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
+        if self.quantityppc:
+            quantities.append(
+                text % (self.quantityppc, ShipItArchitecture.PPC.title))
+        quantities_description = ", ".join(quantities)
         if self.totalCDs > 1:
             description = "%d %s CDs" % (self.totalCDs, self.flavour.title)
         else:
             description = "%d %s CD" % (self.totalCDs, self.flavour.title)
-        return "%s (%s)" % (description, self._detailed_description())
+        return u"%s (%s)" % (description, quantities_description)
 
     @property
     def quantities(self):
@@ -1253,20 +1295,6 @@ class StandardShipItRequest(SQLBase):
         return {ShipItArchitecture.X86: self.quantityx86,
                 ShipItArchitecture.AMD64: self.quantityamd64,
                 ShipItArchitecture.PPC: self.quantityppc}
-
-    def _detailed_description(self):
-        detailed = []
-        text = '%d %s Edition'
-        if self.quantityx86:
-            detailed.append(
-                text % (self.quantityx86, ShipItArchitecture.X86.title))
-        if self.quantityamd64:
-            detailed.append(
-                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
-        if self.quantityppc:
-            detailed.append(
-                text % (self.quantityppc, ShipItArchitecture.PPC.title))
-        return ", ".join(detailed)
 
     @property
     def totalCDs(self):
@@ -1279,11 +1307,12 @@ class StandardShipItRequestSet:
 
     implements(IStandardShipItRequestSet)
 
-    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault):
+    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description=''):
         """See IStandardShipItRequestSet"""
         return StandardShipItRequest(flavour=flavour, quantityx86=quantityx86,
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
-                isdefault=isdefault)
+                isdefault=isdefault, user_description=user_description)
 
     def getByFlavour(self, flavour, user=None):
         """See IStandardShipItRequestSet"""

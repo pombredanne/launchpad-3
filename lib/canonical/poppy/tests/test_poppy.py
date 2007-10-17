@@ -74,11 +74,19 @@ class TestPoppy(unittest.TestCase):
         return os.path.join(self.root_dir, upload_dir, path)
 
     def testLOGIN(self):
-        """Check login procedure."""
+        """Check login procedure and the state of the toplevel lockfile.
+
+        The toplevel lockfile should allow the process-upload runner (lp_queue,
+        member of lp_upload group) to be blocked on it, thus 'g+w' permission.
+        """
         conn = self.getFTPConnection(login=0)
         self.assertEqual(
             conn.login("annonymous", ""), "230 Login Successful.")
         conn.quit()
+        self.waitForClose()
+
+        lockfile_path = os.path.join(self.root_dir, '.lock')
+        self.assertEqual(os.stat(lockfile_path).st_mode, 0100664)
 
     def testCWD(self):
         """Check automatic creation of directories 'cwd'ed in.

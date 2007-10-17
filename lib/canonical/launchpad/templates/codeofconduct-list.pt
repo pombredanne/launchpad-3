@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -17,10 +23,8 @@
           context/current_code_of_conduct/fmt:url"
           tal:content="context/current_code_of_conduct/version" /></li>
         <li>Released on: <span
-          tal:replace="context/current_code_of_conduct/datereleased" />
+          tal:replace="context/current_code_of_conduct/datereleased" /></li>
       </ul>
-
-      <p>
 
       <div tal:condition="not: is_ubuntero">
 
@@ -57,7 +61,7 @@
             </li>
             <li><a tal:attributes="href
                 string:${context/current_code_of_conduct/fmt:url}/+download">Download</a>
-                the current Code of Conduct.
+                the current Code of Conduct.</li>
             <li><a tal:attributes="href
                 string:${context/current_code_of_conduct/fmt:url}/+sign">Sign it!</a></li>
         </ol>
@@ -76,7 +80,7 @@
          <tal:codes tal:repeat="code context"> 
             <tal:not_current condition="not: code/current">
               <li><a tal:content="code/title" 
-                     tal:attributes="href code/fmt:url" /> 
+                     tal:attributes="href code/fmt:url" /></li>
             </tal:not_current>
          </tal:codes>
       </ul>

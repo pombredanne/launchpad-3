@@ -24,6 +24,7 @@ default: inplace
 
 schema: build
 	$(MAKE) -C database/schema
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
@@ -77,6 +78,9 @@ check: build
 
 lint:
 	@bash ./utilities/lint.sh
+
+check-configs:
+	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages

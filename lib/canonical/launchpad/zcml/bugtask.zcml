@@ -32,7 +32,7 @@
                            isSubscribed" />
         <require
             permission="launchpad.View"
-            attributes="bugtargetname bugtargetdisplayname 
+            attributes="bugtargetname bugtargetdisplayname
                         product productseries sourcepackagename distribution
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
@@ -117,10 +117,9 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugTaskTableRowView"
-      name="+bugtasks-and-nominations-table-row"
       permission="launchpad.View"
+      name="+bugtasks-and-nominations-table-row"
       template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
-
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"

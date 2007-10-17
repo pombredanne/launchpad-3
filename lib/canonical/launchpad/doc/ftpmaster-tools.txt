@@ -1,4 +1,4 @@
-FTPMASTER Tools
+= FTPMASTER Tools = 
 
 Queue Tool is a script designed to handle queue content.
 This test  will check its output, since the script itself would
@@ -43,39 +43,6 @@ INFO
 							       total
 
 
-INFO by ID, return an error if it's not present in the specified queue:
-
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-s", "breezy-autotest",
-  ...                             "-Q", "rejected", "info", "1"],
-  ...                             stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stdout
-  Initialising connection to queue rejected
-  Running: "info 1"
-  Item 1 is in queue NEW
-  Aborting current transaction
-  <BLANKLINE>
-
-Same for wrong distribution/distroseries
-
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-s", "hoary",
-  ...                             "info", "1"],
-  ...                             stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "info 1"
-  Item 1 is in ubuntu/breezy-autotest-RELEASE not in ubuntu/hoary-RELEASE
-  Aborting current transaction
-  <BLANKLINE>
-
-
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
@@ -96,228 +63,7 @@ Check the custom uploads presentation:
   <BLANKLINE>
 
 
-SOURCE OVERRIDE
-
-  >>> process = subprocess.Popen([sys.executable, script, "-N",
-  ...                             "-s", "breezy-autotest",
-  ...                             "-c", "universe", "-x", "base",
-  ...                             "override", "source", "3"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "override source 3"
-  Overriding ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-     | * netapplet/0.99.6-1 Component: universe Section: base
-  DRY RUN requested, not committing.
-  <BLANKLINE>
-
-
-BINARY OVERRIDE
-
-  >>> process = subprocess.Popen([sys.executable, script, "-N",
-  ...                             "-s", "breezy-autotest",
-  ...                             "-c", "universe", "-x", "web",
-  ...                             "-p", "extra",
-  ...                             "override", "binary", "pmount"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "override binary pmount"
-  Overriding ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-  Overriding pmount_0.1-1 (main/base/IMPORTANT)
-           | N pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
-  DRY RUN requested, not committing.
-  <BLANKLINE>
-
-
-Accepting a source package generates an email.
-XXX: Ideally, we would be able to test the functionality of the queue tool
-via an API, without having to shell the script. This would enable us to get
-a mailer stub into place and check if a mail was really going to be sent, 
-instead of relying on log output. See bug 56722.
-
-  >>> from canonical.librarian.ftests.harness import (
-  ...     fillLibrarianFile, cleanupLibrarianFiles)
-  >>> fillLibrarianFile(1, content="Fake Changesfile")
-
-  >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
-  ...                             "-s", "breezy-autotest",
-  ...                             "alsa-utils", "-A", "foo@bar.com"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "accept alsa-utils"
-  Accepting ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-  Accepting alsa-utils
-  Would be sending a mail:
-     Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
-     Sender: Root <root@localhost>
-     Recipients: foo@bar.com
-     Bcc: Root <root@localhost>, alsa-utils_derivatives@packages.qa.debian.org
-     Body:
-  Accepted:
-  alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
-  ...Component: main Section: base
-  <BLANKLINE>
-  Fake Changesfile
-  <BLANKLINE>
-  ---------------------------------------------------------------------------
-                                                                1/6 total
-  DRY RUN requested, not committing.
-  <BLANKLINE>
-
-
-Accepting a binary package doesn't generate an email.
-
-  >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
-  ...                             "-s", "breezy-autotest",
-  ...                             "mozilla-firefox", "-A", "foo@bar.com"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "accept mozilla-firefox"
-  Accepting ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-  Accepting mozilla-firefox
-  ---------------------------------------------------------------------------
-                                                                1/6 total
-  DRY RUN requested, not committing.
-  <BLANKLINE>
-
-
-REJECT
-
-  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
-  ...                             "-s", "breezy-autotest", "alsa-utils"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "reject alsa-utils"
-  Rejecting ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-  Rejecting alsa-utils
-  Would be sending a mail:
-     Subject: netapplet-1.0.0.tar.gz rejected
-     Sender: Root <root@localhost>
-     Recipients: Root <root@localhost>
-     Bcc:
-     Body:
-  Rejected:
-  alsa-utils 1.0.9a-4ubuntu1 was REJECTED.
-  ...Component: main Section: base
-  <BLANKLINE>
-  Fake Changesfile
-  <BLANKLINE>
-  ===
-  <BLANKLINE>
-  If you don't understand why your files were rejected, or if the
-  override file requires editing, reply to this email.
-  <BLANKLINE>
-  -- 
-  You are receiving this email because you are the uploader, maintainer or
-  signer of the above package.
-  <BLANKLINE>
-  ---------------------------------------------------------------------------
-                                                                1/6 total
-  DRY RUN requested, not committing.
-  <BLANKLINE>
-
-
-Also works for rejecting PackageUploadBuilds (issue mentioned in
-bug #57662)
-
-  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
-  ...                             "-s", "breezy-autotest", "2"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "reject 2"
-  Rejecting ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-  Rejecting pmount
-  Would be sending a mail:
-     Subject: netapplet-1.0.0.tar.gz rejected
-     Sender: Root <root@localhost>
-     Recipients: Root <root@localhost>
-     Bcc:
-     Body:
-  Rejected:
-  i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE (19) was REJECTED
-  <BLANKLINE>
-  Fake Changesfile
-  <BLANKLINE>
-  ===
-  <BLANKLINE>
-  If you don't understand why your files were rejected, or if the
-  override file requires editing, reply to this email.
-  <BLANKLINE>
-  -- 
-  You are receiving this email because you are the uploader, maintainer or
-  signer of the above package.
-  <BLANKLINE>
-  ---------------------------------------------------------------------------
-                                                                 1/6 total
-  DRY RUN requested, not committing.
-  <BLANKLINE>
-
-
-FETCH CHANGES
-
-  >>> fillLibrarianFile(37, content="Fake DEB")
-
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-s", "breezy-autotest", "fetch", "pmount"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue new
-  Running: "fetch pmount"
-  Fetching ubuntu/breezy-autotest (NEW) 1/6
-  ---------------------------------------------------------------------------
-  Constructing netapplet-1.0.0.tar.gz
-  Constructing pmount_1.9-1_all.deb
-  ---------------------------------------------------------------------------
-                                                                1/6 total
-  <BLANKLINE>
-
-  >>> changesfile = open('netapplet-1.0.0.tar.gz')
-  >>> print "'%s'" % changesfile.read()
-  'Fake Changesfile'
-
-  >>> debfile = open('pmount_1.9-1_all.deb')
-  >>> print "'%s'" % debfile.read()
-  'Fake DEB'
-
-  >>> os.remove('netapplet-1.0.0.tar.gz')
-  >>> os.remove('pmount_1.9-1_all.deb')
-
-  >>> cleanupLibrarianFiles()
-
-Testing change-override behaviour:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+= Testing change-override behaviour =
 
 Defining path to the script:
 
@@ -367,8 +113,8 @@ only the 0.9 version is overridden:
   >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
   >>> for release in warty386.getBinaryPackage('mozilla-firefox').releases:
   ...     (release.version, release.component.name)
-  (u'1.0', u'main')
-  (u'0.9', u'universe')
+  (u'1.0', u'universe')
+  (u'0.9', u'main')
 
 
 Testing full (source and binary) override of package 'pmount', moving
@@ -388,6 +134,7 @@ to component 'main':
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'editors'
   INFO    'pmount/main/editors' source overridden
+  WARNING 'pmount' has no binaries published in hoary
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
 
