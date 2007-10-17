@@ -64,6 +64,12 @@ Checking subject and extra headers:
   >>> build_notification['X-Creator-Recipient']
   'mark@hbd.com'
 
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
+
 Let's check the notification content.  It should contain:
 
  * The source package name
@@ -83,7 +89,8 @@ This same basic content applies to all types of notification.
    * Source Package: pmount
    * Version: 0.1-1
    * Architecture: i386
-   * Archive: ubuntu main archive
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Failed to build
    * Duration: three minutes
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
@@ -143,6 +150,12 @@ Checking subject and extra headers:
   >>> build_notification['X-Creator-Recipient']
   'mark@hbd.com'
 
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
+
 Check the notification content:
 
   >>> notification_body = build_notification.get_payload()
@@ -151,7 +164,8 @@ Check the notification content:
    * Source Package: alsa-utils
    * Version: 1.0.9a-4ubuntu1
    * Architecture: i386
-   * Archive: ubuntu main archive
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Needs building
    * Duration: not available
    * Build Log: not available
@@ -211,6 +225,12 @@ Checking subject and extra headers:
   >>> build_notification['X-Creator-Recipient']
   'mark@hbd.com'
 
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
+
 Check the notification content:
 
   >>> notification_body = build_notification.get_payload()
@@ -219,7 +239,8 @@ Check the notification content:
    * Source Package: mozilla-firefox
    * Version: 0.9
    * Architecture: i386
-   * Archive: ubuntu main archive
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Currently building
    * Duration: not finished
    * Build Log: see builder page
@@ -279,6 +300,12 @@ Checking subject and extra headers:
   >>> build_notification['X-Creator-Recipient']
   'mark@hbd.com'
 
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
+
 Check the notification content:
 
   >>> notification_body = build_notification.get_payload()
@@ -287,7 +314,8 @@ Check the notification content:
    * Source Package: at
    * Version: 0.00
    * Architecture: i386
-   * Archive: ubuntu main archive
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Build for superseded Source
    * Duration: not available
    * Build Log: not available
@@ -350,6 +378,12 @@ Checking subject and extra headers:
   >>> build_notification['X-Creator-Recipient']
   'mark@hbd.com'
 
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
+
 Just to keep the config sane, as it was before:
 
   >>> config.builddmaster.notify_owner = True
@@ -385,6 +419,7 @@ Checking the first message contents:
    * Version: 0.1-1
    * Architecture: i386
    * Archive: cprov PPA
+   * Component: main
    * State: Failed to build
    * Duration: three minutes
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
@@ -408,6 +443,12 @@ Checking subject and extra headers:
 
   >>> build_notification['X-Creator-Recipient']
   'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
 
 PPA build notifications should be as much as possible similar to those
 in the main archive, the important differences are:
