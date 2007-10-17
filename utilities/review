@@ -31,7 +31,7 @@ COLON = ':'
 urlparse.uses_netloc.append('bzr+ssh')
 
 
-def address_callback(option, opt, value, parser):
+def server_callback(option, opt, value, parser):
     """Return (host, port) parsed from string."""
     if COLON in value:
         host, port = value.split(COLON, 1)
@@ -39,31 +39,71 @@ def address_callback(option, opt, value, parser):
             host = 'localhost'
         if port == '':
             port = 0
-        return host, int(port)
+        port = int(port)
     else:
-        # No port given.
-        return value, 0
+        # No port given.  0 tells smtplib to use the system default.
+        host = value
+        port = 0
+    setattr(parser.values, option.dest, (host, port))
 
 
 def parseargs():
-    parser = optparse.OptionParser(usage='%prog [options] filename')
-    parser.add_option('-a', '--address',
+    parser = optparse.OptionParser(usage="""\
+%prog [options] filename
+
+'filename' is the name of a text file containing your review.  You must
+include the full branch url on a line by itself within the first 10 lines of
+the file.  Leading whitespace on the branch url line is ignored.
+
+This script parses the branch author's recipient email address from the branch
+url, requiring that the user portion of the path on devpad correspond directly
+to a deliverable email address @canonical.com.  E.g.:
+
+    bzr+ssh://devpad.canonical.com/code/barry/launchpad/review-script
+
+For example, say you were reviewing the above branch, and you had a text file
+containing your marked up review.  Put that branch url within the first 10
+lines, and let's say the file was 'script.txt'.  You'd send this review
+with the following command line:
+
+    % utilities/review script.txt""")
+    parser.add_option('-s', '--smtp',
                       type='string', default=None,
-                      action='callback', callback=address_callback,
-                      help='hostname:port for smtp server; both optional')
+                      action='callback', callback=server_callback,
+                      help="""\
+hostname:port for the SMTP server to use.  Both the hostname and the port part
+is optional, with localhost being the default hostname, and 25 being the
+default port.  If neither is given localhost:25 is used.""")
     parser.add_option('-f', '--from',
                       type='string', default=None, dest='sender',
-                      help='From: header value (also MAIL FROM)')
+                      help="""\
+The From: header value used.  The value may be any string parseable by
+email.utils.parseaddr().  The address portion of the string will be used as
+the envelope sender (i.e. the MAIL FROM).  If not given, the user's short name
+as calculated from the /etc/password file is used, with @canonical.com
+appended, along with the user's full name as calculated from the /etc/password
+file.""")
     parser.add_option('-t', '--to',
                       type='string', default=None, dest='to_recipient',
-                      help='To: header value (also RCPT TO)')
+                      help="""\
+The To: header value used.  The value may be any string parseable by
+email.utils.parseaddr().  The address portion of the string will be used as
+an envelope recipient (i.e. the RCPT TO).  If not given, the recipient's
+address is calculated from the branch url.""")
     parser.add_option('-c', '--cc',
                       type='string', default=[], action='append',
                       dest='cc_recipients',
-                      help='CC: header (multiple allowed)')
+                      help="""\
+The Cc: header value used.  The value may be any string parseable by
+email.utils.parseaddr().  The address portion of the string will be used as
+an envelope recipient (i.e. the RCPT TO).  Note that
+launchpad-reviews@canonical.com is always CC'd.""")
     parser.add_option('-d', '--debug-mode',
                       default=0, action='count',
-                      help='Debug mode; SMTP back to yourself, or stdout')
+                      help="""\
+Debug mode.  With one -d the message is printed to stdout and no email is
+sent.  With two -d flags, an email is sent only to you (via the /etc/password
+calculated sender or the -f flag) and not to the mailing list.""")
     opts, args = parser.parse_args()
     if len(args) < 1:
         parser.error('Missing review text file name')
@@ -74,6 +114,11 @@ def parseargs():
 
 # I always put the branch name in one of the first few lines
 def get_branch_and_user(filename):
+    """Parse the branch and user names from a branch url in the file.
+
+    Return a 2-tuple of (branch, username).  If no matching branch url can be
+    found within the first 10 lines of the file, (None, None) is returned.
+    """
     with open(filename) as fp:
         for i, line in enumerate(fp):
             branch = line.strip()
@@ -81,27 +126,28 @@ def get_branch_and_user(filename):
             if not parts.scheme or not parts.netloc.startswith('devpad'):
                 if i < 10:
                     continue
-                print >> sys.stderr, 'no branch found in first 10 lines'
-                sys.exit(1)
+                break
             path = parts.path.split(SLASH)
             if path[1] <> 'code' or path[2] == 'launchpad':
                 continue
             return SLASH.join(path[2:]), path[2]
+        return None, None
 
 
 def main():
     parser, opts, args = parseargs()
     branch, user = get_branch_and_user(args[0])
+    if branch is None:
+        print >> sys.stderr, 'No branch url was found in first 10 lines'
+        return 1
 
     if opts.to_recipient is None:
         to_recipient = user + '@canonical.com'
     else:
         to_recipient = opts.to_recipient
 
-    if len(opts.cc_recipients) > 0:
-        cc_recipients = opts.cc_recipients
-    else:
-        cc_recipients = [LAUNCHPAD_REVIEWS]
+    cc_recipients = [LAUNCHPAD_REVIEWS]
+    cc_recipients.extend(opts.cc_recipients)
 
     envto = [to_recipient]
     envto.extend(cc_recipients)
@@ -132,7 +178,7 @@ def main():
         for recipient in envto:
             print 'RCPT TO:', recipient
         print msg.as_string()
-        return
+        return 0
     # In debug mode 2, we mail the message to ourselves.
     elif opts.debug_mode > 1:
         envto = [sender]
@@ -142,14 +188,15 @@ def main():
         pass
     # Send the message.
     s = smtplib.SMTP()
-    if opts.address is None:
+    if opts.smtp is None:
         s.connect()
     else:
-        host, port = opts.address
+        host, port = opts.smtp
         s.connect(host, port)
     s.sendmail(envfrom, envto, str(msg))
     s.quit()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
