@@ -120,4 +120,4 @@ archive (bug #60440):
     >>> for pub in alsa_dspr.publishing_history:
     ...     is_removed = pub.dateremoved is not None
     ...     print pub.distroseries.name, pub.status.name, is_removed
-    breezy-autotest SUPERSEDED True
+    breezy-autotest DELETED True
