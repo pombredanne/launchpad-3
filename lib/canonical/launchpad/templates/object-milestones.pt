@@ -15,8 +15,8 @@
     <tal:has-milestones condition="context/all_milestones">
     <ul>
       <li class="milestone"
-          tal:attributes="id string:milestone-${milestone/name}"
-          tal:repeat="milestone context/all_milestones">
+          tal:repeat="milestone context/all_milestones"
+          tal:attributes="id string:milestone-${milestone/name}">
         <a tal:content="milestone/name"
            tal:attributes="href milestone/fmt:url">
            milestone name

@@ -77,13 +77,13 @@ class IMilestone(Interface):
     visible = Bool(title=_("Active"), description=_("Whether or not this "
         "milestone should be shown in web forms for bug targeting."))
     description = Text(
-        title=_('Description'), required=False,
+        title=_("Description"), required=False,
         description=_(
             "A detailed description of the features and status of this "
             "milestone."))
     target = Attribute("The product or distribution of this milestone.")
     series_target = Attribute(
-        'The productseries or distroseries of this milestone.')
+        "The productseries or distroseries of this milestone.")
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = Attribute("A milestone context title for pages.")

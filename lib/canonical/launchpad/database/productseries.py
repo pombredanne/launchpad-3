@@ -530,7 +530,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(
-            name=name, dateexpected=dateexpected, description=None,
+            name=name, dateexpected=dateexpected, description=description,
             product=self.product, productseries=self)
 
 
