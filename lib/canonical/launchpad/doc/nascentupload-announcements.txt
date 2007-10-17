@@ -315,17 +315,6 @@ saying they are waiting for approval:
   DEBUG: Creating queue entry
   DEBUG: Setting it to UNAPPROVED
   ...
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: Waiting for approval: bar 1.0-3 (source)
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG:     Body:
-  DEBUG: Waiting for approval::
-  DEBUG:  OK: bar_1.0.orig.tar.gz
-  DEBUG:  OK: bar_1.0-3.diff.gz
-  DEBUG:  OK: bar_1.0-3.dsc
-  DEBUG:      -> Component: main Section: devel
-  DEBUG: This upload awaits approval by a distro manager
-  ...
 
   >>> [notification] = pop_notifications()
 
