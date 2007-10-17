@@ -17,6 +17,13 @@ from canonical.launchpad.scripts.importdebianbugs import import_debian_bugs
 
 
 class DebianBugImportScript(LaunchpadScript):
+    """Import Debian bugs into Launchpad, linking them to Ubuntu.
+
+    New bugs will be filed against the Debian source package in
+    Launchpad, with the real Debian bug linked as a bug watch.
+
+    An Ubuntu task will be created for each imported bug.
+    """
 
     usage = "%(prog)s [options] <debian-bug-1> ... <debian-bug-n>"
     description = __doc__
