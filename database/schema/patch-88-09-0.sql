@@ -14,4 +14,4 @@ ALTER TABLE Project
 
 DROP TABLE Calendar;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 9, 0);
