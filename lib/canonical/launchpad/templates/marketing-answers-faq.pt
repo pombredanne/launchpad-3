@@ -1,0 +1,60 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+<div id="faq" metal:fill-slot="contents">
+  <div id="primary">
+    <h2>Answers</h2>
+    <h3 class="byline">FAQs</h3>
+
+    <img src="/+icing/app-answers-wm.gif" alt="Answers"/>
+
+    <blockquote>
+      <p>With Launchpad's Answer Tracker your project's community can track and answer
+         user support questions. Answers are searchable, so they build into a
+         knowledge-base for your software.</p>
+    </blockquote>
+  </div>
+  <div id="secondary">
+    <h4>Build a community support team to answer users questions</h4>
+    <ul id="faqs">
+      <li><a href="#q1">What does the Answer Tracker offer that forums and
+                        mailing lists can't?</a></li>
+      <li><a href="#q2">How can I make sure user questions are seen by the
+                        right people?</a></li>
+    </ul>
+
+    <h5 id="q1">What does the Answer Tracker offer that forums and mailing
+                lists can't?</h5>
+    <p>Launchpad's Answer Tracker makes it easy to keep track of which people
+       want help, and which people have had their problem solved. All new
+       requests are met with suggested answers drawn from previous requests,
+       and you can get an instant overview of current user issues. While
+       forums and mailing lists will always be an important way for
+       communities to develop around open source projects, the Answer Tracker
+       is an excellent streamlined way to build a knowledge-base and provide a
+       support channel.
+     </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q2">How can I make sure user questions are seen by the right
+                people?</h5>
+    <p>Experienced users of your software can volunteer to become support
+       contacts for your project. Each time a new question is asked, the
+       Answer Tracker emails it to them, with a link to provide an answer or
+       request more information.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+  </div>
+</div>
+</body>
+</html>

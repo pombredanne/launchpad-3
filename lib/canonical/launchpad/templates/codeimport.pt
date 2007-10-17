@@ -1,0 +1,100 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="bazaar">
+
+  <body>
+
+    <h1 metal:fill-slot="heading" tal:content="view/title">
+      Code Import for firefox
+    </h1>
+
+    <div metal:fill-slot="main" class="visualPadding">
+
+      <table>
+        <tbody>
+	  <tr>
+            <th>Date Created:</th>
+            <td tal:content="context/date_created/fmt:datetime">
+              2007
+            </td>
+	  </tr>
+	  <tr>
+            <th>Registrant:</th>
+            <td>
+              <a href=""
+                 tal:content="context/registrant/displayname"
+                 tal:attributes="href context/registrant/fmt:url">
+                Some Person.
+              </a>
+            </td>
+	  </tr>
+          <tal:block condition="context/rcs_type/enumvalue:CVS">
+	    <tr>
+              <th>CVS Root:</th>
+              <td id="cvs-root" tal:content="context/cvs_root">
+                :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome
+              </td>
+	    </tr>
+	    <tr>
+	      <th>Module:</th>
+	      <td id="cvs-module" tal:content="context/cvs_module">evolution</td>
+            </tr>
+          </tal:block>
+          <tal:block condition="context/rcs_type/enumvalue:SVN">
+            <tr>
+              <th>Subversion URL:</th>
+              <td id="subversion-url" tal:content="context/svn_branch_url">
+                http://svn.gnome.org/evolution/trunk
+              </td>
+            </tr>
+          </tal:block>
+          <tr>
+            <th>Review Status:</th>
+            <td id="review-status" tal:content="context/review_status/title">
+              Syncing
+            </td>
+          </tr>
+          <tr tal:condition="context/product">
+            <th>Product:</th>
+            <td>
+              <a href=""
+                 tal:content="context/product/displayname"
+                 tal:attributes="href context/product/fmt:url">
+                Evolution
+              </a>
+            </td>
+          </tr>
+          <tr tal:condition="context/series">
+            <th>Series:</th>
+            <td>
+              <a href=""
+                 tal:content="context/series/displayname"
+                 tal:attributes="href context/series/fmt:url">
+                head
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <th>Bazaar branch:</th>
+            <td>
+              <a id="import-branch-link"
+                 tal:attributes="href context/branch/fmt:url"
+                 tal:content="context/branch/displayname">
+                Mozilla Thunderbird 0.9.1
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+
+  </body>
+</html>

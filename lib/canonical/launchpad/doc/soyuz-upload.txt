@@ -41,7 +41,7 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from canonical.archivepublisher.ftests import (
+  >>> from canonical.poppy.tests import (
   ...     PoppyTestSetup, SoyuzUploadError)
   >>> poppy = PoppyTestSetup(incoming_dir)
   >>> poppy.startPoppy()
@@ -59,7 +59,7 @@ the server dies or the connection succeeds.
   ...            raise SoyuzUploadError('Server can not start.')
   ...    else:
   ...        break
-  >>> ftp.login("ubuntutest", "")
+  >>> ftp.login("anonymous", "")
   '230 Login Successful.'
   >>> ftp.cwd("/")
   '250 CWD command successful.'
@@ -69,7 +69,7 @@ Good.. let's send all packages we have in the test directory to
 the poppy server. We send each package set on a different ftp
 session.
 
-  >>> from canonical.archivepublisher.tagfiles import parse_tagfile
+  >>> from canonical.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
   >>> from cStringIO import StringIO
   >>> import glob
@@ -85,16 +85,16 @@ session.
   >>> package_names = []
   >>>
 
-  XXX cprov 20060125: poppy still having a weird behaviour during the
-  file transfer, it suddenly closes the connection due inactivity.
-  That's why we keep polling the 'ftp.sock' attribute and reconnect if
-  it is gone. Bug # 29645
+  # XXX cprov 2006-01-25 Bug=29645: poppy still having a weird behaviour
+  # during the file transfer, it suddenly closes the connection due
+  # inactivity. That's why we keep polling the 'ftp.sock' attribute and
+  # reconnect if it is gone.
 
   >>> for changes_filepath in changes:
   ...
   ...     if not ftp.sock:
   ...         assert ftp.connect("localhost", 3421).startswith("220 ")
-  ...         assert ftp.login("ubuntutest", "") == '230 Login Successful.'
+  ...         assert ftp.login("anonymous", "") == '230 Login Successful.'
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
@@ -107,12 +107,14 @@ session.
   ...             [os.path.join(test_files_dir, line.split()[-1])
   ...              for line in tf["files"].splitlines() if line])
   ...
-  ...     sent_filenames.extend(os.path.basename(filepath)
-  ...                           for filepath in send_filepaths)
+  ...     sent_filenames.extend(
+  ...         os.path.basename(filepath) for filepath in send_filepaths)
+  ...
+  ...     ignore = ftp.cwd("ubuntutest")
   ...
   ...     for filepath in send_filepaths:
-  ...         reply = ftp.storbinary("STOR "+os.path.basename(filepath),
-  ...                                open(filepath))
+  ...         reply = ftp.storbinary(
+  ...              "STOR %s" % os.path.basename(filepath), open(filepath))
   ...         assert reply == '226 Transfer successful.'
   ...
   ...     uploads.append(send_filepaths)
@@ -125,15 +127,8 @@ what we were expecting to have uploaded.
   >>> package_names
   ['drdsl', 'etherwake']
 
-We don't want to block forever reading data from the process, since
-it's a daemon and should not die until we ask it to. So, we first
-set the stdout to non-blocking...
-
-  >>> poppy.setNonBlocking()
-
-Then, we create a set of the filenames we expect to see in the
-FTP server process output, and wait until all of them have been
-shown.
+We create a set of the filenames we expect to see in the FTP server
+process output, and wait until all of them have been shown.
 
 This is a little bit tricky because we won't simply try to read
 the process output in a blocking way, since any failure in the
@@ -141,7 +136,8 @@ FTP process would block automated tests. Instead, we define a
 timeout between output data. If the process doesn't provide new
 data in the given number seconds, we report a failure.
 
-  >>> poppy.verify_output(list(sent_filenames))
+  >>> poppy.verify_output(
+  ...     ['ubuntutest', 'ubuntutest', 'ubuntutest'])
 
 At that point we must have a bunch of directories in the upload
 base directory named <TIMESTAMP>-XXXXXX, each one as a result of
@@ -178,10 +174,11 @@ of these files match the uploaded ones.
   ...     return find_upload_dir(num)[1]
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = get_upload_dir(i+1)
-  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     upload_dir = get_upload_dir(i + 1)
+  ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
+  ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
-  ...         upload_filename = os.path.join(upload_dir,
+  ...         upload_filename = os.path.join(distro_upload_dir,
   ...                                        os.path.basename(filename))
   ...         assert os.path.isfile(upload_filename)
   ...         assert get_md5(filename) == get_md5(upload_filename)
@@ -211,11 +208,11 @@ GPG key, since that's the one used to sign the .changes file.
 We don't have to check the .dsc file, since we're using the 'sync'
 policy in process-upload.py.
 
-XXX: gustavo 20051210
-     It might be interesting to move these entries into the sample data
-     rather than leaving it here. On the other hand, it's nice to have
-     it here as we have a good reference of what the uploading
-     procedure depends upon.
+# XXX: gustavo 2005-12-10
+#     It might be interesting to move these entries into the sample data
+#     rather than leaving it here. On the other hand, it's nice to have
+#     it here as we have a good reference of what the uploading
+#     procedure depends upon.
 
 So, load the GPG key:
 
@@ -234,8 +231,9 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-  >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-  >>> from canonical.lp.dbschema import PersonCreationRationale
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IEmailAddressSet, PersonCreationRationale, IGPGKeySet,
+  ...     GPGKeyAlgorithm)
   >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
   >>> user = getUtility(IPersonSet).ensurePerson(
   ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
@@ -246,13 +244,11 @@ do uploads:
   >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
   >>> assert uploader_team is not None
 
-  >>> uploader_team.addMember(user)
+  >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
 
 
 Assign the loaded GPG key to the katie user.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
   >>> key_set = getUtility(IGPGKeySet)
   >>> user_key = key_set.new(ownerID=user.id, keyid=key.keyid,
   ...                        fingerprint=key.fingerprint,
@@ -294,7 +290,7 @@ just upload number 1.
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", "-J", upload_dir_1_name,
   ...                             temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -303,18 +299,19 @@ just upload number 1.
 Check the four uploads are all where we expect - number 1 in failed,
 the other three still in incoming.
 
-  >>> for i in range(0, 4):
-  ...     find_upload_dir_result(i+1)
+  >>> for i in range(4):
+  ...     find_upload_dir_result(i + 1)
   'failed'
   'incoming'
   'incoming'
   'incoming'
 
+
 Now continue with the real upload.
 
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
 
   >>> stdout, stderr = process.communicate()
@@ -352,7 +349,7 @@ Let's check if packages were uploaded correctly.
   'DPKG'
   >>> spr.urgency.name
   'LOW'
-  >>> spr.uploaddistrorelease.name
+  >>> spr.uploaddistroseries.name
   u'breezy-autotest'
 
 
@@ -382,14 +379,14 @@ Same thing for etherwake:
   'DPKG'
   >>> spr.urgency.name
   'LOW'
-  >>> spr.uploaddistrorelease.name
+  >>> spr.uploaddistroseries.name
   u'breezy-autotest'
 
 
 Check the four uploads all ended up where we expected.
 
   >>> for i in range(0, 4):
-  ...     find_upload_dir_result(i+1)
+  ...     find_upload_dir_result(i + 1)
   'failed'
   'accepted'
   'accepted'
@@ -397,27 +394,31 @@ Check the four uploads all ended up where we expected.
 
 Also check the upload folders contain all the files we uploaded.
 
+# XXX cprov 2006-12-06: hardcoded 'ubuntutest' directory is a hack see
+# above around line 313.
+
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = find_upload_dir_path(i+1)
-  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     upload_dir = find_upload_dir_path( i + 1)
+  ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
+  ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
-  ...         upload_filename = os.path.join(upload_dir,
+  ...         upload_filename = os.path.join(distro_upload_dir,
   ...                                        os.path.basename(filename))
   ...         assert os.path.isfile(upload_filename)
   ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
-Now let's see if all of the valid uploads are in the DistroReleaseQueue
-marked as NEW and RELEASE.
+Now let's see if all of the valid uploads are in the Upload queue marked
+as NEW and RELEASE.
 
-  >>> from canonical.launchpad.database import DistroReleaseQueueSource
+  >>> from canonical.launchpad.database import PackageUploadSource
   >>> for name in package_names:
   ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-  ...     drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
-  ...     assert drqs.distroreleasequeue.status.name == 'NEW'
-  ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
+  ...     us = PackageUploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     assert us.packageupload.status.name == 'NEW'
+  ...     assert us.packageupload.pocket.name == 'RELEASE'
   drdsl
   etherwake
 
@@ -431,9 +432,9 @@ as NEW
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, QueueInconsistentStateError)
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
 
-Since we landed correct security adapters for DistroReleaseQueue,
+Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
@@ -441,17 +442,17 @@ launchpad.Edit on the records:
   >>> login("foo.bar@canonical.com")
 
   >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
-  >>> release = distro['breezy-autotest']
+  >>> series = distro['breezy-autotest']
 
 Let's test IHasQueueItems.getQueueItems:
 
-  >>> new_items = release.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> new_items = series.getQueueItems(PackageUploadStatus.NEW)
   >>> new_items.count()
   2
 
 Querying by status and a name term:
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                                    name='dr')
   >>> items.count()
   1
@@ -463,12 +464,12 @@ Querying by status and a name term:
 
 Querying by status, name and version terms:
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                               name='dr', version='1.2')
   >>> items.count()
   1
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                               name='dr', version='1.5')
   >>> items.count()
   0
@@ -477,24 +478,24 @@ Using exact_match argument:
 
 As you can see exact_match arguments affects both, name & version:
 
-XXX cprov 20060125: Andrew suggest we can split the exact_match
-attribute in two, as exact_name & exact_version, which might be
-a good idea, since it produce a more controllable behaviour.
-See bug # 29642
+# XXX cprov 2006-01-25 bug=29642:
+# Andrew suggest we can split the exact_match
+# attribute in two, as exact_name & exact_version, which might be
+# a good idea, since it produce a more controllable behaviour.
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                      name='dr', version='1.2', exact_match=True)
   >>> items.count()
   0
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...          name='drdsl', version='1.2.0-0ubuntu1', exact_match=True)
   >>> items.count()
   1
 
 Using getQueueItem to inspect current NEW queue and accept them.
 
-  >>> queue_items = release.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> queue_items = series.getQueueItems(PackageUploadStatus.NEW)
   >>> L = []
   >>> for queue_item in queue_items:
   ...      try:
@@ -509,9 +510,10 @@ Using getQueueItem to inspect current NEW queue and accept them.
   drdsl Component "non-free" is not allowed in breezy-autotest
   etherwake ACCEPTED
 
-XXX cprov 20060412: We must flush these changes so that it gets out of
-the cache and  into the database. Without this process-accepted.py
-wouldn't see the changes. Reported in bug # 3989
+# XXX cprov 2006-04-12 bug=3989:
+# We must flush these changes so that it gets out of
+# the cache and  into the database. Without this process-accepted.py
+# wouldn't see the changes. Reported in
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
@@ -562,7 +564,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   ...
 
 
-XXX cprov 20060412: bug # 3989
+# XXX cprov 2006-04-12 bug=3989
 
   >>> flush_database_updates()
   >>> transaction.commit()
@@ -599,11 +601,11 @@ required entry for 'etherwake':
   <BLANKLINE>
   END
 
-XXX mpt 20061221: apt in Edgy prints a "Section: net" line between the
-Version and Maintainer lines, but apt on the PQM server does not. When
-the PQM server is upgraded, that line should be added to the expected
-test output, and the ".replace('Section: net\n', '') in this test
-should be removed.
+# XXX mpt 2006-12-21: apt in Edgy prints a "Section: net" line between the
+# Version and Maintainer lines, but apt on the PQM server does not. When
+# the PQM server is upgraded, that line should be added to the expected
+# test output, and the ".replace('Section: net\n', '') in this test
+# should be removed.
 
 Now we invoke changeOverride on just published etherwake, moving it to
 component 'universe'.
@@ -626,7 +628,7 @@ Check if we have new pending publishing record as expected
 
 Force database changes, so they can be used by the external script properly.
 
-XXX cprov 20060412: bug # 3989
+# XXX cprov 2006-04-12 bug=3989:
   >>> flush_database_updates()
   >>> transaction.commit()
 
@@ -646,10 +648,13 @@ publishing mode, publish-distro will attempt to publish files which are
 already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
 
-  >>> stderr
-  '.../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
-  .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
-  .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...'
+  >>> print stderr
+  INFO      Distribution: ubuntutest
+  ...
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
+  ...
 
 Invalidates SQLObject cache to cope with publisher.
 
@@ -686,9 +691,9 @@ The publish-distro.py script will write an appropriate Release file
 containing the suite in question and a list of checksums (MD5, SHA1
 and SHA256) for each index published.
 
-XXX cprov 20061213: trailing space on Architectures is a side-effect
-caused by the absence of published binaries in this suite. It should
-no happen in real conditions.
+# XXX cprov 2006-12-13: trailing space on Architectures is a side-effect
+# caused by the absence of published binaries in this suite. It should
+# no happen in real conditions.
 
   >>> releasefile_contents = open("/var/tmp/archive/ubuntutest/dists/"
   ...                             "breezy-autotest/Release").read()
@@ -720,7 +725,7 @@ Testing archive-cruft-check-ng behaviour:
 Defining path to the script:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "archive-cruft-check-ng.py")
+  ...                       "archive-cruft-check.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vvn",
   ...                             "-d", "ubuntutest",
   ...                             "-s", "breezy-autotest",

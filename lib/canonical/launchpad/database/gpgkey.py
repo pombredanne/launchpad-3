@@ -9,9 +9,11 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
-from canonical.lp.dbschema import EnumCol, GPGKeyAlgorithm
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IGPGKeySet, IGPGHandler, IGPGKey
+
+from canonical.launchpad.interfaces import (
+    IGPGKeySet, IGPGHandler, IGPGKey, GPGKeyAlgorithm)
 
 
 class GPGKey(SQLBase):
@@ -27,7 +29,7 @@ class GPGKey(SQLBase):
     keysize = IntCol(dbName='keysize', notNull=True)
 
     algorithm = EnumCol(dbName='algorithm', notNull=True,
-                        schema=GPGKeyAlgorithm)
+                        enum=GPGKeyAlgorithm)
 
     active = BoolCol(dbName='active', notNull=True)
 
@@ -35,7 +37,8 @@ class GPGKey(SQLBase):
 
     @property
     def keyserverURL(self):
-        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+        return getUtility(
+            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     @property
     def displayname(self):
@@ -71,11 +74,11 @@ class GPGKeySet:
         """See IGPGKeySet"""
         if active is False:
             query = """
-                active = false 
-                AND fingerprint NOT IN 
-                    (SELECT fingerprint FROM LoginToken 
-                     WHERE fingerprint IS NOT NULL 
-                           AND requester = %s 
+                active = false
+                AND fingerprint NOT IN
+                    (SELECT fingerprint FROM LoginToken
+                     WHERE fingerprint IS NOT NULL
+                           AND requester = %s
                            AND date_consumed is NULL
                     )
                 """ % sqlvalues(ownerid)

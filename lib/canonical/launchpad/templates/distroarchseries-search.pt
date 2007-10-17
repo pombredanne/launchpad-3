@@ -1,0 +1,140 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Binary package search results</h1>
+    </metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" /> 
+  <div tal:replace="structure context/distroseries/distribution/@@+portlet-details" /> <br />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/distroseries/@@+portlet-details" /> 
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <form name="search" method="GET">
+    <div>
+      <div>
+        <label for="name">Find binary packages in
+        <span tal:replace="context/title" />
+        matching:
+        </label>
+      </div>
+      <div>
+      <input type="text"
+        name="text"
+        size="35"
+        tal:attributes="value request/text|nothing"
+      />
+      <input type="submit" value="Search"/>
+      </div>
+      <div class="discreet">
+        Includes package names and descriptions.
+      </div>
+    </div>
+  </form>
+
+  <tal:searching condition="view/searchrequested">
+
+    <tal:has_matches condition="view/searchresults">
+
+      <tal:per_match repeat="darbpr view/searchresults">
+        <img src="/@@/package-binary" />
+        <a tal:content="darbpr/name"
+           tal:attributes="href darbpr/fmt:url">foobar</a>:
+        <div style="margin-left: 30px; font-size: 80%;"
+             tal:content="darbpr/summary">
+          Gee whiz special package.
+          <span tal:replace="darbpr/description"
+                tal:condition="view/detailed">
+            Gee whiz special package description goes here if there are
+            fewer than 5 matches.
+          </span>
+        </div>
+      </tal:per_match>
+
+    </tal:has_matches>
+
+    <tal:no_matches condition="not: view/matches">
+
+      No packages matching "<span tal:replace="view/text">amarok</span>"
+      are published in
+      <span tal:replace="context/displayname">hoary</span>.
+
+    </tal:no_matches>
+  </tal:searching>
+
+
+  <tal:disabled condition="nothing">
+    <!-- sabdfl 2005-10-24 this is the old searching, largely disabled in
+         favour of the new FTQ based approach, but i've left this stuff here
+         in case we want to revert -->
+    <tal:block tal:replace="nothing"
+               tal:define="bn view/binaryPackagesBatchNavigator;
+                           prev_url bn/prevBatchURL;
+                           next_url bn/nextBatchURL;"
+               tal:condition="request/text|nothing">
+
+    <table width="100%" 
+           tal:define="currentBatch bn/currentBatch"> 
+      <tr>
+        <th tal:condition="currentBatch">
+           Packages found
+        </th>
+        <th tal:condition="not: currentBatch">
+           <i>No Packages found</i>
+        </th>
+      </tr>
+      <tr tal:repeat="release currentBatch">
+        <tal:dummy tal:define="package release">
+        <td><a tal:content="package/name"
+               tal:attributes="href package/name">PACKAGENAME
+            </a>:
+          <span tal:replace="package/summary">SHORTDESC</span>
+        </td>
+        </tal:dummy>
+      </tr>    
+      <tr>
+      <td align="center">
+      <fieldset tal:condition="python:prev_url or next_url">
+      <div>
+        <table>
+          <tr>
+            <th tal:condition="prev_url">
+              <a tal:attributes="href prev_url"><b>&lt;&lt; Prev</b></a>
+            </th>
+            <th tal:repeat="page_link bn/batchPageURLs">
+              <a tal:attributes="href python:page_link.values()[0]"
+                 tal:content="python:page_link.keys()[0]"></a>
+            </th>
+            <th tal:condition="next_url" >
+              <a tal:attributes="href next_url"><b>Next &gt;&gt;</b></a>
+            </th>
+          </tr>
+        </table>
+      </div>
+      </fieldset>
+      </td>
+      </tr>
+    </table>
+    </tal:block>
+  </tal:disabled>
+
+</div>
+
+</body>
+
+</html>

@@ -1,20 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en" lang="en"
-  metal:use-macro="context/@@main_template_2col/master"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Specifications for <tal:thing replace="context/title" /></h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -30,15 +24,15 @@
   </tal:comment>
 
   <h1 tal:condition="view/view_title"
-      tal:content="view/view_title">Specs for approval</h1>
+      tal:content="view/view_title">Blueprints for approval</h1>
 
   <p tal:condition="not: view/count">
-    No specifications are registered in this category for
+    No blueprints are registered in this category for
     <span tal:replace="context/displayname">Ubuntu 5.04</span>.
   </p>
 
   <p tal:condition="view/count">
-    <b><span tal:replace="view/count">5</span> specifications to list:</b>
+    <b><span tal:replace="view/count">5</span> blueprints to list:</b>
   </p>
 
   <tal:specifications condition="view/categories">

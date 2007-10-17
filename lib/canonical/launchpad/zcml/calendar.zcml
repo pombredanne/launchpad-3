@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -67,7 +66,7 @@
       permission="launchpad.Edit"
       class="canonical.launchpad.browser.CalendarCreateView"
       attribute="__call__"
-      lp:url="/$CalendarOwner/+calendar-create" />
+      />
 
   <browser:page
       for="canonical.launchpad.interfaces.ICalendarOwner"
@@ -75,7 +74,7 @@
       permission="zope.Public"
       template="../templates/calendar-portlet-info.pt"
       class="canonical.launchpad.browser.CalendarInfoPortletView"
-      lp:url="/$CalendarOwner/+portlet-calendar" />
+      />
 
 
   <!-- ICalendar and associated view objects -->
@@ -103,7 +102,7 @@
       permission="zope.Public"
       class="canonical.launchpad.components.cal.ViewICalendar"
       attribute="__call__"
-      lp:url="$obj/calendar/+icalendar" />
+      />
 
   <browser:navigation
       module="canonical.launchpad.browser"
@@ -116,7 +115,7 @@
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.CalendarSubscribeView"
       template="../templates/calendar-subscribe.pt"
-      lp:url="$obj/calendar/+subscribe" />
+      />
 
   <browser:url
       for="canonical.launchpad.interfaces.ICalendarRange"
@@ -244,12 +243,12 @@
       for="schoolbell.interfaces.ICalendarEvent"
       permission="zope.Public"
       template="../templates/calendar-event-index.pt"
-      lp:url="$obj/calendar/events/$Event.id/+index" />
+      />
 
-  <!-- XXX: displaying the duration causes an exception due to
+  <!-- XXX: James Henstridge 2005-06-29:
+       displaying the duration causes an exception due to
        zope.app.form.DisplayView assuming that the value is a
-       string.  Should not be a problem with newer Zope
-         James Henstridge (2005-06-29) -->
+       string.  Should not be a problem with newer Zope -->
   <browser:schemadisplay
       name="+display"
       for="schoolbell.interfaces.ICalendarEvent"
@@ -258,7 +257,7 @@
       label="Calendar event"
       permission="zope.Public"
       template="../templates/calendar-event-display.pt"
-      lp:url="$calendar/events/$event.id/+display" />
+      />
 
   <browser:editform
       name="+edit"
@@ -267,7 +266,7 @@
       fields="title description location dtstart duration"
       permission="launchpad.Edit"
       template="../templates/calendar-event-editform.pt"
-      lp:url="$calendar/events/$event.id/+edit">
+      >
     <browser:widget
         field="title"
         class="canonical.launchpad.browser.TitleWidget"
@@ -301,11 +300,11 @@
     <browser:page
         name="+subscriptions"
         template="../templates/calendar-subscriptions.pt"
-        lp:url="/calendar/+subscriptions" />
+        />
     <browser:page
         name="+portlet-subscriptions"
         template="../templates/calendar-portlet-subscriptions.pt"
-        lp:url="/calendar/+portlet-subscriptions" />
+        />
   </browser:pages>
 
  </facet>

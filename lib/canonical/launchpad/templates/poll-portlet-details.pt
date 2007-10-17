@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
   <h2><span tal:replace="context/name" /></h2>
   
   <div class="portletBody portletContent">
@@ -11,10 +11,14 @@
        tal:content="context/team/browsername" /><br />
 
     <b>Opens:</b>
-    <span tal:replace="context/dateopens/fmt:date" /><br />
+    <span
+      tal:attributes="title context/dateopens/fmt:datetime"
+      tal:content="context/dateopens/fmt:approximatedate" /><br />
 
     <b>Closes:</b>
-    <span tal:replace="context/datecloses/fmt:date" /><br />
+    <span
+      tal:attributes="title context/datecloses/fmt:datetime"
+      tal:content="context/datecloses/fmt:approximatedate" /><br />
 
     <b>Type:</b>
     <span tal:replace="context/type/title" /><br />

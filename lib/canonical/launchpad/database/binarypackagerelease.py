@@ -13,16 +13,15 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 from canonical.launchpad.interfaces import (
     IBinaryPackageRelease, IBinaryPackageReleaseSet)
 
+from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.database.publishing import (
-    SecureBinaryPackagePublishingHistory)
+from canonical.lp import dbschema
+
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
-from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
 
 
 class BinaryPackageRelease(SQLBase):
@@ -50,8 +49,6 @@ class BinaryPackageRelease(SQLBase):
     provides = StringCol(dbName='provides')
     essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
-    copyright = StringCol(dbName='copyright')
-    licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -61,17 +58,17 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def title(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return '%s-%s' % (self.binarypackagename.name, self.version)
 
     @property
     def name(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagename.name
 
     @property
     def distributionsourcepackagerelease(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         # import here to avoid circular import problems
         from canonical.launchpad.database.distributionsourcepackagerelease \
             import DistributionSourcePackageRelease
@@ -81,20 +78,35 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def sourcepackagename(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.build.sourcepackagerelease.sourcepackagename.name
 
-    def lastversions(self):
-        """Return the SUPERSEDED BinaryPackageReleases in a DistroRelease.
+    @property
+    def is_new(self):
+        """See `IBinaryPackageRelease`."""
+        distroarchseries = self.build.distroarchseries
+        distroarchseries_binary_package = distroarchseries.getBinaryPackage(
+            self.name)
+        return distroarchseries_binary_package.currentrelease is None
 
-        The distrorelease information comes from the SourcepackageRelease
+    def lastversions(self):
+        """Return the SUPERSEDED BinaryPackageReleases in a DistroSeries.
+
+        The distroseries information comes from the SourcepackageRelease
         and the publishing system.
         """
+        # XXX malcc 2006-10-03: This is crack, each DistroSeries does
+        # *not* compile all of its Packages. The callsite for this method
+        # (binarypackagerelease-portlet-latestversions) needs reviewing,
+        # to determine what it actually wants to fetch. For now, I'm just
+        # modifying this to be archive-aware, which will keep the current
+        # crackful behaviour.
+
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
-        # DistroRelease (Each DistroRelease compile all its Packages). 
-        # (BinaryPackage.build.distroarchrelease = \
-        # PackagePublishing.distroarchrelease
+        # DistroSeries (Each DistroSeries compile all its Packages).
+        # (BinaryPackage.build.distroarchseries = \
+        # PackagePublishing.distroarchseries
         # where PackagePublishing.binarypackage = BinaryPackage.id)
         # When it is not true anymore, probably it should
         # be retrieved in a view class where I can use informations from
@@ -108,16 +120,19 @@ class BinaryPackageRelease(SQLBase):
             BinaryPackageName.id AND
         BinaryPackageName.id = %s AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self.binarypackagename.id,
-                        self.build.distroarchrelease.id,
-                        dbschema.PackagePublishingStatus.SUPERSEDED)
+        """ % sqlvalues(
+            self.binarypackagename,
+            self.build.distroarchseries,
+            self.build.distribution.all_distro_archive_ids,
+            dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
 
     def addFile(self, file):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         determined_filetype = None
         if file.filename.endswith(".deb"):
             determined_filetype = dbschema.BinaryPackageFileType.DEB
@@ -130,26 +145,8 @@ class BinaryPackageRelease(SQLBase):
                                  filetype=determined_filetype,
                                  libraryfile=file)
 
-    def publish(self, priority, status, pocket, embargo,
-                distroarchrelease=None):
-        """See IBinaryPackageRelease."""
-        # XXX: completely untested code
-        if not distroarchrelease:
-            distroarchrelease = self.build.distroarchrelease
-
-        return SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=self,
-            distroarchrelease=distroarchrelease,
-            component=self.build.sourcepackagerelease.component,
-            section=self.build.sourcepackagerelease.section,
-            priority=priority,
-            status=status,
-            pocket=pocket,
-            embargo=embargo,
-            )
-
     def override(self, component=None, section=None, priority=None):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         if component is not None:
             self.component = component
         if section is not None:
@@ -162,13 +159,13 @@ class BinaryPackageReleaseSet:
     """A Set of BinaryPackageReleases."""
     implements(IBinaryPackageReleaseSet)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern, archtag=None,
+    def findByNameInDistroSeries(self, distroseries, pattern, archtag=None,
                                   fti=False):
         """Returns a set of binarypackagereleases that matchs pattern inside a
-        distrorelease.
+        distroseries.
         """
         pattern = pattern.replace('%', '%%')
-        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        query, clauseTables = self._buildBaseQuery(distroseries)
         queries = [query]
 
         match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
@@ -187,10 +184,10 @@ class BinaryPackageReleaseSet:
         return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
 
-    def getByNameInDistroRelease(self, distroreleaseID, name=None,
+    def getByNameInDistroSeries(self, distroseries, name=None,
                                  version=None, archtag=None, orderBy=None):
-        """Get a BinaryPackageRelease in a DistroRelease by its name."""
-        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        """Get a BinaryPackageRelease in a DistroSeries by its name."""
+        query, clauseTables = self._buildBaseQuery(distroseries)
         queries = [query]
 
         if name:
@@ -215,17 +212,21 @@ class BinaryPackageReleaseSet:
                                            clauseTables=clauseTables,
                                            orderBy=orderBy)
 
-    def _buildBaseQuery(self, distroreleaseID):
+    def _buildBaseQuery(self, distroseries):
         query = """
         BinaryPackagePublishingHistory.binarypackagerelease =
            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchrelease =
            DistroArchRelease.id AND
-        DistroArchRelease.distrorelease = %d AND
+        BinaryPackagePublishingHistory.archive IN %s AND
+        DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % (distroreleaseID, dbschema.PackagePublishingStatus.REMOVED)
+        """ % sqlvalues([archive.id for archive in
+                            distroseries.distribution.all_distro_archives],
+                        distroseries,
+                        dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

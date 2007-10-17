@@ -3,7 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
 
@@ -61,7 +60,6 @@
         <browser:page
             name="+portlet-details"
             template="../templates/productrelease-portlet-details.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-details"
             />
         <browser:page
             name="+portlet-summary"
@@ -75,8 +73,16 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/projects/$Product.name/$ProductRelease.name/+rdf"
         attribute="__call__"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        name="+adddownloadfile"
+        class="canonical.launchpad.browser.productrelease.ProductReleaseAddDownloadFileView"
+        permission="launchpad.Edit"
+        facet="overview"
+        template="../templates/productrelease-file-add.pt"
         />
 
     <browser:editform
@@ -86,10 +92,10 @@
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       facet="overview"
       label="Edit product release details"
-      fields="summary description changelog"
+      fields="summary description changelog codename"
       permission="launchpad.Edit"
       template="../templates/productrelease-edit.pt"
-      lp:url="/products/$Product.name/$ProductRelease.version/+edit">
+      >
       <browser:widget
         field="summary"
         class="zope.app.form.browser.TextAreaWidget"
@@ -106,7 +112,7 @@
         fields="version productseries"
         permission="launchpad.Admin"
         template="../templates/productrelease-admin.pt"
-        lp:url="/products/$Product.name/$ProductRelease.name/+review">
+        >
         <browser:widget
             field="version"
             class="zope.app.form.browser.TextWidget"

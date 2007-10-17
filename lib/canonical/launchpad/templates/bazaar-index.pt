@@ -1,116 +1,210 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="bazaar"
->
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="bazaar">
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Welcome to the Bazaar</h1>
-    </metal:heading>
+    <h1 metal:fill-slot="heading">Code in branches</h1>
+    <div metal:fill-slot="main">
+      <ul class="rollover buttons">
+        <li>
+          <a href="/+tour">
+            <img
+              alt="Take a tour"
+              src="/+icing/but-lrg-takeatour.gif"
+            />
+          </a>
+        </li>
+        <li>
+          <a href="/people/+me/+addbranch">
+            <img
+               alt="Register a branch"
+               src="/+icing/but-lrg-registerabranch.gif"
+               />
+          </a>
+        </li>
+        <li>
+          <a href="https://help.launchpad.net/VcsImports">
+            <img
+              alt="Import your project"
+              src="/+icing/but-lrg-importyourproject.gif"
+            />
+          </a>
+        </li>
+      </ul>
+                        <form class="central" action="/projects/" method="get">
+                          <input
+                            id="text"
+                            type="text"
+                            name="text"
+                            size="50"
+                          />
+                          <input
+                            type="submit"
+                            value="Find a Project"
+                          />
+                        </form>
+                        <p id="application-summary">
+                          Launchpad lets you track branches of any
+                          <a href="/+project-cloud">project</a> that
+                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                          version control system &mdash; and can convert many
+                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
+                          so you can use Bazaar with those too.
+                          <a href="/+about">Learn more&#8230;</a>
+                        </p>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-importstats" />
-</metal:leftportlets>
+      <div id="project-cloud-preview">
+        <h2>Projects with active branches</h2>
+        <a tal:repeat="product view/short_product_tag_cloud"
+           tal:attributes="href product/fmt:url;
+                           class product/html_class;
+                           title product/html_title"
+           tal:content="product/name">project</a>
+        <p><a href="/+project-cloud">more&#8230;</a></p>
+      </div>
 
-<div metal:fill-slot="main">
+                        <div class="columns">
+                          <div class="three column left" id="recent-imports">
+                            <h2>Recent imports</h2>
+                            <ul class="branch">
+                              <li tal:repeat="
+                                      branch view/recently_imported_branches">
+                                <a tal:attributes="href branch/fmt:url"
+                                   tal:content="branch/displayname/fmt:shorten/40">
+                                Title Goes Here!</a>
+                                <img
+                                  src="/@@/private"
+                                  alt="(private branch)"
+                                  tal:condition="branch/private"
+                                />
+                              </li>
+                            </ul>
+                            <p><a href="/+recently-imported-branches">more&#8230;</a></p>
+                          </div>
+                          <div class="three column middle" id="recently-registered">
+                            <h2>Recently registered</h2>
+                            <ul class="branch">
+                              <li tal:repeat="branch view/recently_registered_branches">
+                                <a tal:attributes="href branch/fmt:url"
+                                   tal:content="branch/displayname/fmt:shorten/40">
+                                Title Goes Here!</a>
+                                <img
+                                  src="/@@/private"
+                                  alt="(private branch)"
+                                  tal:condition="branch/private"
+                                />
+                              </li>
+                            </ul>
+                            <p><a href="/+recently-registered-branches">more&#8230;</a></p>
+                          </div>
+                          <div class="three column right" id="recently-changed">
+                            <h2>Recently changed</h2>
+                            <ul class="branch">
+                              <li tal:repeat="branch view/recently_changed_branches">
+                                <a tal:attributes="href branch/fmt:url"
+                                   tal:content="branch/displayname/fmt:shorten/40">
+                                Title Goes Here!</a>
+                                <img
+                                  src="/@@/private"
+                                  alt="private branch"
+                                  tal:condition="branch/private"
+                                />
+                              </li>
+                            </ul>
+                            <p><a href="/+recently-changed-branches">more&#8230;</a></p>
+                          </div>
+                        </div>
+                        <div class="clear"></div>
+                        <div id="application-footer">
+                          <div>
+                            <strong tal:content="view/branch_count">123</strong>
+                            branches registered in
+                            <a href="/+project-cloud">
+                            <strong tal:content="view/product_count">1234</strong>
+                            projects
+                            </a>
+                          </div>
+                          <div>
+                            <strong tal:content="view/import_count">123</strong>
+                            imported branches
+                          </div>
+                          <div>
+                            <strong tal:content="view/branches_with_bugs_count">12</strong>
+                            branches associated with bug reports
+                          </div>
+                        </div>
 
-  <p>
-    Launchpad is integrated with the <a href="http://bazaar-vcs.org/">Bazaar</a>
-    version control system.
-    (<a href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>)
-  </p>
-
-  <h2>Branch registry</h2>
-
-  <p>
-    To register a branch so other people can find it,
-    go to the page of the product the branch belongs to,
-    and click &ldquo;Register Bazaar Branch&rdquo;.
-    Launchpad will automatically maintain a mirror of the branch.
-  </p>
-
-  <p>
-    You can register a branch on behalf someone else from that person&rsquo;s
-    page,
-    or by setting the author field when registering a branch on a product.
-    (The URL of the branch mirror is based on the nickname of
-    the registrant, not the author.)
-  </p>
-
-  <h2>VCS imports</h2>
-
-  <p>
-    If the project you are working on uses CVS or Subversion, Launchpad can
-    produce a Bazaar branch that is synchronised daily with the HEAD or trunk
-    of the project, so you can use Bazaar to manage you own changes even if the
-    project leaders do not.
-  </p>
-
-  <p>
-    To set up a VCS import, edit the source details of the trunk release series
-    of the product.
-  </p>
-
-  <h2>Hosted branches</h2>
-
-  <p>
-    Launchpad provides hosting for Bazaar branches.
-  </p>
-
-  <p>
-    First, you need to register a SSH key from your person's page. Click on
-    your name at the top of any Launchpad page when logged in to go to your
-    person's page.
-  </p>
-
-  <p>
-    To create a hosted branch, use the <code>bzr push</code> command. When
-    registering the first branch for a product, you may have to use the
-    <code>--create-prefix</code> option. The destination URL must be of the
-    form:
-  </p>
-
-  <blockquote>
-  <p>
-    sftp://<i>user</i>@bazaar.launchpad.net/~<i>registrant</i>/<i>product</i>/<i>branch</i>
-  </p>
-  </blockquote>
-
-  <ul>
-    <li><i>user</i> is your short name in Launchpad. It can be ommitted if it
-    is the same as your system login or if you specify it in your ssh
-    configuration.</li>
-
-    <li><i>registrant</i> is your short name in Launchpad. For example, the
-    nickname of Mark Shuttleworth is <code>sabdfl</code>. It can be a team name
-    for shared branches.</li>
-
-    <li><i>product</i> is the short name of the Launchpad product the branch
-    belongs to. For example, if you are contributing code to the Bzrk plugin
-    for Bazaar itself, the product name is <code>bzrk</code>.</li>
-
-    <li><i>name</i> is the short name of the branch, it needs only be
-    unique for a given <code>person</code> and a given <code>product</code>.
-    For example, if you are publishing your main development branch on
-    Launchpad, you can use <code>dev</code> as a branch name, even if that name
-    is used by other people for the same product.</li>
-  </ul>
-
-  <p>
-    To create a shared branch to which multiple people can commit and push, as
-    with CVS or Subversion, use the name of a team you belong to as the
-    <i>registrant</i>. All the members of that team will be able to edit the
-    branch details and to push to that branch.
-  </p>
-
-  <h2>Integration with other services</h2>
-
-  <p>
-    You can associate a branch to a <a href="/bugs">Malone<a> bug report, for
-    example if the branch contains a fix for the bug, instead of attaching a
-    patch the old-fashioned way.
-  </p>
-
-</div>
-</body>
+    </div><!--main-->
+    <div metal:fill-slot="help">
+      <p>
+        Launchpad is integrated with the
+        <a href="http://bazaar-vcs.org/">Bazaar</a> version control system.
+        (<a href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>)
+      </p>
+      <p>
+        To register a branch so other people can find it,
+        go to the page of the project the branch belongs to,
+        and click &ldquo;Register Bazaar Branch&rdquo;.
+        Launchpad will automatically maintain a mirror of the branch.
+      </p>
+      <p>
+        You can register a branch on behalf someone else from that
+        person&rsquo;s page,
+        or by setting the author field when registering a branch on a project.
+        (The URL of the branch mirror is based on the nickname of
+        the registrant, not the author.)
+      </p>
+      <p>
+        If the project you are working on uses CVS or Subversion, Launchpad can
+        produce a Bazaar branch that is synchronised daily with the HEAD or
+        trunk of the project, so you can use Bazaar to manage your own changes
+        even if the project leaders do not.
+        To set up a VCS import, edit the source details of the trunk release
+        series of the project.
+      </p>
+      <p>
+        Launchpad also provides hosting for Bazaar branches.
+        First, you need to register a SSH key from your person's page. Click on
+        your name at the top of any Launchpad page when logged in to go to your
+        person's page.
+        To create a hosted branch, use the <code>bzr push</code> command. The
+        destination URL must be of the form:
+      </p>
+      <blockquote>
+        <code>sftp://<var>user</var>@bazaar.<wbr></wbr>launchpad.net/<wbr></wbr>~<var>registrant</var>/<wbr></wbr><var>project</var>/<wbr></wbr><var>branch</var></code>
+      </blockquote>
+      <p>
+        where <var>user</var> is your short name in Launchpad
+        (omitted if it is the same as your system login or is specified in
+        <code>ssh</code> configuration),
+        <var>registrant</var> is your short name in Launchpad
+        (which can be a team name for a shared branch),
+        <var>project</var> is the Launchpad project the branch belongs to,
+        and <var>name</var> is the short name of the branch
+        (if you are uploading your main development branch,
+        <code>devel</code> is a good generic name).
+      </p>
+      <p>
+        For example, if your Launchpad user name were <code>john</code>, and
+        you wanted to upload a personal branch of the <code>froboize</code>
+        project, you could use the following command:
+      </p>
+      <blockquote>
+        bzr push sftp://john<wbr></wbr>@bazaar.launchpad.net/<wbr></wbr>~john/<wbr></wbr>froboize/<wbr></wbr>devel
+      </blockquote>
+      <p>
+        To create a shared branch to which multiple people can commit and push,
+        as with CVS or Subversion, use the name of a team you belong to as the
+        <i>registrant</i>. All the members of that team will be able to edit the
+        branch details and to push to that branch.
+      </p>
+    </div>
+  </body>
 </html>
+<!-- 1-0 done -->

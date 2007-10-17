@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Views to generate CVE reports (as in distro and distrorelease/+cve pages)."""
+"""Views to generate CVE reports (as in distro and distroseries/+cve pages)."""
 
 __metaclass__ = type
 

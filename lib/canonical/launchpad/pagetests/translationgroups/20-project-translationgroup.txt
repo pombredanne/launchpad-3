@@ -6,21 +6,17 @@ project page and that it has no translation group assigned.
   >>> print http(r"""
   ... GET /gnome/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  ...Translation Group:...
-  ..."/@@/languages"...
-  <BLANKLINE>
-  <BLANKLINE>
-              <i>Not assigned</i><br />
-  <BLANKLINE>
-              <b>Translation Perms:</b><br />
-              Open
-              <br />
+  ...Translation group:...
+  ...Not assigned...
+  ...Translations:...
+  ...Open...
   ...
 
 And now make sure we can see the form to change the translation group and
@@ -29,6 +25,7 @@ permissions on a project.
   >>> print http(r"""
   ... GET /gnome/+changetranslators HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -46,6 +43,7 @@ permissions.
   ... Content-Length: 740
   ... Content-Type: multipart/form-data; boundary=---------------------------5802497532009257481401449131
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... 
   ... -----------------------------5802497532009257481401449131
   ... Content-Disposition: form-data; name="field.translationgroup"
@@ -85,20 +83,15 @@ the relevant portlet.
   >>> print http(r"""
   ... GET /gnome HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  ...Translation Group:...
-  ..."/@@/languages"...
-  <BLANKLINE>
-              <a href="/translations/groups/polyglot/">The PolyGlot Translation Group</a><br />
-  <BLANKLINE>
-  <BLANKLINE>
-              <b>Translation Perms:</b><br />
-              Closed
-              <br />
+  ...Translation group:...
+  ...<a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a>...
+  ...Translations:...
+  ...Closed...
   ...
-

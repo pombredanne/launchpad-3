@@ -9,5 +9,3 @@ User: '%(user)s'
 Thanks,
 
 The Launchpad Team 
-launchpad@ubuntu.com
-

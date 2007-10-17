@@ -1,0 +1,26 @@
+From the Code homepage, register a branch.
+
+Clicking on the link as a logged-in user should take you directly to the branch
+registration page.
+
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> browser.open('http://code.launchpad.dev/')
+  >>> browser.getLink('Register a branch').click()
+  >>> print browser.title
+  Register a new branch for Sample Person
+
+
+Clicking the link as an anonymous user should take you to a login page. Once
+you've logged in, you should be redirected to the registration page.
+
+  >>> anon_browser.handleErrors = True
+  >>> anon_browser.open('http://code.launchpad.dev/')
+  >>> anon_browser.getLink('Register a branch').click()
+  >>> print anon_browser.title
+  Log in or register with Launchpad
+  >>> anon_browser.getControl('E-mail address', index=0).value = 'test@canonical.com'
+  >>> anon_browser.getControl('Password').value = 'test'
+  >>> anon_browser.getControl('Log In').click()
+  >>> print anon_browser.title
+  Register a new branch for Sample Person
+

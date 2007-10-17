@@ -1,0 +1,25 @@
+
+Each distribution has an associated person/team that is responsible for
+reviewing mirrors and making them official. This person/team can be changed by
+the distribution owner, on the +selectmirroradmins page.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
+    >>> browser.url
+    'http://localhost/ubuntu/+selectmirroradmins'
+    >>> browser.getControl('Mirror Administrator').value
+    'ubuntu-mirror-admins'
+
+    >>> browser.getControl('Mirror Administrator').value = 'mark@hbd.com'
+    >>> browser.getControl('Change').click()
+
+    >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
+    >>> browser.getControl('Mirror Administrator').value
+    'sabdfl'
+

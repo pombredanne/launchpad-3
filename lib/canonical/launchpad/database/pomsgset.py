@@ -1,89 +1,204 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['POMsgSet', 'DummyPOMsgSet']
 
 import gettextpo
 
+from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import (SQLBase, sqlvalues,
-                                        flush_database_updates)
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
-    TranslationValidationStatus)
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    flush_database_updates, quote, SQLBase, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOMsgSet, TranslationConflict
-from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
+from canonical.launchpad.interfaces import (
+    IPOMsgSet, TranslationConflict, IPOSubmissionSet,
+    RosettaTranslationOrigin, TranslationValidationStatus)
 
 
-def _get_pluralforms(pomsgset):
-    if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
-        if pomsgset.pofile.language.pluralforms is not None:
-            entries = pomsgset.pofile.language.pluralforms
+class POMsgSetMixIn:
+    """This class is not designed to be used directly.
+
+    You should inherite from it and implement full IPOMsgSet interface to use
+    the methods and properties defined here.
+    """
+
+    # Cached submissions dict, mapping pluralform to list of POSubmissions,
+    # ordered from new to old.
+    attached_submissions = None
+
+    # Cached active submissions dict, mapping pluralform to POSubmission.
+    active_submissions = None
+    # Cached published submissions dict, mapping pluralform to POSubmission.
+    published_submissions = None
+
+    @property
+    def pluralforms(self):
+        """See `IPOMsgSet`."""
+        if self.potmsgset.plural_text is not None:
+            if self.pofile.language.pluralforms is not None:
+                entries = self.pofile.language.pluralforms
+            else:
+                # Don't know anything about plural forms for this
+                # language, fallback to the most common case, 2
+                entries = 2
         else:
-            # Don't know anything about plural forms for this
-            # language, fallback to the most common case, 2
-            entries = 2
-    else:
-        # It's a singular form
-        entries = 1
-    return entries
+            # It's a singular form
+            entries = 1
+        return entries
 
-class DummyPOMsgSet:
+    def _getRelatedSubmissions(self):
+        """Fetch all POSubmissions for self's submissions caches.
+
+        This retrieves all POSubmissions that form useful suggestions for self
+        from the database, as well as any POSubmissions that are already
+        attached to self, all in new-to-old order of datecreated."""
+        dummy_pomsgset = []
+        stored_pomsgset = []
+        if self.id is None:
+            dummy_pomsgset = [self]
+        else:
+            stored_pomsgset = [self]
+
+        subs = getUtility(IPOSubmissionSet).getSubmissionsFor(
+            stored_pomsgset, dummy_pomsgset)
+
+        assert len(subs) == 1, (
+            "Received suggestions for unexpected POMsgSet.")
+        return subs[self]
+
+    def initializeSubmissionsCaches(self, related_submissions=None):
+        """See `IPOMsgSet`."""
+        if self._hasSubmissionsCaches():
+            return
+
+        self.active_submissions = {}
+        self.published_submissions = {}
+        self.suggestions = {}
+        self.attached_submissions = {}
+
+        # Retrieve all related POSubmissions, and use them to populate our
+        # submissions caches.
+        if related_submissions is None:
+            related_submissions = self._getRelatedSubmissions()
+
+        related_submissions = [
+            removeSecurityProxy(submission)
+            for submission in related_submissions]
+
+        previous = None
+        for submission in related_submissions:
+            assert previous is None or submission.datecreated <= previous, (
+                "POMsgSet's incoming submission cache data not ordered "
+                "from newest to oldest")
+            pluralform = submission.pluralform
+            # Compare foreign-key value to our primary key, rather than
+            # comparing objects, to avoid fetching submission.pomsgset from
+            # database.
+            if submission.pomsgsetID == self.id:
+                self.attached_submissions.setdefault(pluralform, [])
+                self.attached_submissions[pluralform].append(submission)
+                if submission.active:
+                    self.active_submissions[pluralform] = submission
+                if submission.published:
+                    self.published_submissions[pluralform] = submission
+            else:
+                self.suggestions.setdefault(pluralform, [])
+                self.suggestions[pluralform].append(submission)
+            previous = submission.datecreated
+
+        # Now that we know what our active posubmissions are, filter out any
+        # suggestions that refer to the same potranslations.
+        for pluralform in self.suggestions.keys():
+            active = self.getActiveSubmission(pluralform)
+            if active is not None and active.potranslation is not None:
+                active_translation = active.potranslationID
+                self.suggestions[pluralform] = [
+                    submission
+                    for submission in self.suggestions.get(pluralform)
+                    if submission.potranslationID != active.potranslationID]
+
+        assert self._hasSubmissionsCaches(), (
+            "Failed to set up POMsgSet's submission caches")
+
+    def _invalidateSubmissionsCaches(self):
+        """Drop our submissions caches."""
+        self.active_submissions = None
+        self.published_submissions = None
+        self.suggestions = None
+        self.attached_submissions = None
+        assert not self._hasSubmissionsCaches(), (
+            "Failed to initialize POMsgSet's submission caches")
+
+    def _hasSubmissionsCaches(self):
+        """Are this POMsgSet's submissions caches initialized?"""
+        return self.attached_submissions is not None
+
+    def getWikiSubmissions(self, pluralform):
+        """See `IPOMsgSet`."""
+        self.initializeSubmissionsCaches()
+        suggestions = self.suggestions.get(pluralform)
+        if suggestions is None:
+            return []
+        return suggestions
+
+    def makeHTMLId(self, suffix=None):
+        """See `IPOMsgSet`."""
+        elements = [self.pofile.language.code]
+        if suffix is not None:
+            elements.append(suffix)
+        return self.potmsgset.makeHTMLId('_'.join(elements))
+
+
+class DummyPOMsgSet(POMsgSetMixIn):
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
     """
     implements(IPOMsgSet)
 
     def __init__(self, pofile, potmsgset):
+        self.id = None
         self.pofile = pofile
         self.potmsgset = potmsgset
         self.isfuzzy = False
         self.commenttext = None
-
-    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
-    # tests fail, for more information take a look to bug #41268
-    @property
-    def pluralforms(self):
-        """See IPOMsgSet."""
-        return _get_pluralforms(self)
+        self.language = pofile.language
 
     @property
     def active_texts(self):
+        """See `IPOMsgSet`."""
+        return [None] * self.pluralforms
+
+    @property
+    def published_texts(self):
         """See IPOMsgSet."""
         return [None] * self.pluralforms
 
-    def getSelection(self, pluralform):
-        """See IPOMsgSet."""
-        return None
-
     def getActiveSubmission(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return None
 
     def getPublishedSubmission(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return None
 
-    def getSuggestedSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+    def getNewSubmissions(self, pluralform):
+        """See `IPOMsgSet`."""
         return []
 
     def getCurrentSubmissions(self, pluralform):
-        """See IPOMsgSet."""
-        return []
-
-    def getWikiSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return []
 
 
-class POMsgSet(SQLBase):
+class POMsgSet(SQLBase, POMsgSetMixIn):
     implements(IPOMsgSet)
 
     _table = 'POMsgSet'
@@ -101,104 +216,218 @@ class POMsgSet(SQLBase):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
     obsolete = BoolCol(dbName='obsolete', notNull=True)
+    reviewer = ForeignKey(
+        foreignKey='Person', dbName='reviewer', notNull=False, default=None)
+    date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
+        default=None)
+    language = ForeignKey(foreignKey='Language', dbName='language')
 
-    selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
-        orderBy='pluralform')
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
-    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
-    # tests fail, for more information take a look to bug #41268
-    @property
-    def pluralforms(self):
-        """See IPOMsgSet."""
-        return _get_pluralforms(self) 
+    def _extractTranslations(self, from_dict):
+        """Extract translations from pluralform-to-POSubmission dict.
+
+        Helper for published_texts and active_texts.  Returns a list of one
+        translation string per pluralform, or None for pluralforms that are
+        not represented in from_dict.  Any translations with unexpected
+        pluralform numbers are ignored.
+        """
+        pluralforms = self.pluralforms
+        if pluralforms is None:
+            raise RuntimeError(
+                "Don't know the number of plural forms for this PO file!")
+
+        result = [None] * pluralforms
+        for pluralform, submission in from_dict.items():
+            if pluralform < pluralforms:
+                result[pluralform] = submission.potranslation.translation
+
+        return result
 
     @property
     def published_texts(self):
-        pluralforms = self.pluralforms
-        if pluralforms is None:
-            raise RuntimeError(
-                "Don't know the number of plural forms for this PO file!")
-        results = list(POSubmission.select(
-            "POSubmission.id = POSelection.publishedsubmission AND "
-            "POSelection.pomsgset = %s" % sqlvalues(self.id),
-            clauseTables=['POSelection'],
-            orderBy='pluralform'))
-        translations = []
-        for form in range(pluralforms):
-            if results and results[0].pluralform == form:
-                translations.append(results.pop(0).potranslation.translation)
-            else:
-                translations.append(None)
-        return translations
+        """See `IPOMsgSet`."""
+        if self.published_submissions is None:
+            self._fetchActiveAndPublishedSubmissions()
+        return self._extractTranslations(self.published_submissions)
 
     @property
     def active_texts(self):
-        pluralforms = self.pluralforms
-        if pluralforms is None:
-            raise RuntimeError(
-                "Don't know the number of plural forms for this PO file!")
-        results = list(POSubmission.select(
-            """POSubmission.id = POSelection.activesubmission AND
-               POSelection.pomsgset = %d""" % self.id,
-            clauseTables=['POSelection'],
-            orderBy='pluralform'))
-        translations = []
-        for form in range(pluralforms):
-            if results and results[0].pluralform == form:
-                translations.append(results.pop(0).potranslation.translation)
-            else:
-                translations.append(None)
-        return translations
+        """See `IPOMsgSet`."""
+        if self.active_submissions is None:
+            self._fetchActiveAndPublishedSubmissions()
+        return self._extractTranslations(self.active_submissions)
 
     def isNewerThan(self, timestamp):
-        """See IPOMsgSet."""
-        for plural_index in range(self.pluralforms):
-            selection = self.getSelection(plural_index)
-            if selection is not None:
-                # XXX: CarlosPerelloMarin 20061201: This sync is needed to help
-                # tests to avoid cache problems. See bug #74025 for more info.
-                selection.sync()
-                if (selection.activesubmission is not None and
-                    selection.date_reviewed > timestamp):
-                    return True
-        return False
+        """See `IPOMsgSet`."""
+        date_updated = self.date_reviewed
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if submission is not None and (
+                not date_updated or submission.datecreated > date_updated):
+                date_updated = submission.datecreated
 
-    def getSelection(self, pluralform):
-        """See IPOMsgSet."""
-        return POSelection.selectOne(
-            "pomsgset = %s AND pluralform = %s" % sqlvalues(
-                self.id, pluralform))
+        if (date_updated is not None and date_updated > timestamp):
+            return True
+        else:
+            return False
+
+    def getLatestChangeInfo(self):
+        """Return a tuple of person, date for latest change to `IPOMsgSet`."""
+        if self.reviewer and self.date_reviewed:
+            return (self.reviewer, self.date_reviewed)
+
+        last_submission = None
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if (last_submission is None or
+                submission.datecreated > last_submission.datecreated):
+                last_submission = submission
+        if last_submission:
+            return (last_submission.person, last_submission.datecreated)
+        else:
+            return (None, None)
+
+    @property
+    def latest_change_date(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return date
+
+    @property
+    def latest_change_person(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return person
+
+    def setActiveSubmission(self, pluralform, submission):
+        """See `IPOMsgSet`."""
+
+        assert submission is None or submission.pomsgset == self, (
+            'Submission made "active" in the wrong POMsgSet')
+
+        if submission is not None and submission.active:
+            return
+
+        current_active = self.getActiveSubmission(pluralform)
+        if current_active is not None:
+            current_active.active = False
+            del self.active_submissions[pluralform]
+            # We need this syncUpdate so if the next submission.active change
+            # is done we are sure that we will store this change first in the
+            # database. This is because we can only have an IPOSubmission with
+            # the active flag set to TRUE.
+            current_active.syncUpdate()
+
+        if submission is not None:
+            submission.active = True
+
+            # Update cache.
+            self.active_submissions[pluralform] = submission
+
+    def setPublishedSubmission(self, pluralform, submission):
+        """See `IPOMsgSet`."""
+
+        assert submission is None or submission.pomsgset == self, (
+            "Submission set as published in wrong POMsgSet")
+
+        if submission is not None and submission.published:
+            return
+
+        current_published = self.getPublishedSubmission(pluralform)
+        if current_published is not None:
+            current_published.published = False
+            del(self.published_submissions[pluralform])
+            # We need this syncUpdate so if the next submission.published change
+            # is done we are sure that we will store this change first in the
+            # database. This is because we can only have an IPOSubmission with
+            # the published flag set to TRUE.
+            current_published.syncUpdate()
+
+        if submission is not None:
+            submission.published = True
+
+            # Update cache.
+            self.published_submissions[pluralform] = submission
+
+    def _fetchActiveAndPublishedSubmissions(self):
+        """Populate active/published submissions caches from database.
+
+        Creates self.active_submissions and self.published_submissions as
+        dicts, each mapping pluralform to that pluralform's active or
+        published submission, respectively.
+
+        This cache is a subset of the submissions cache; populating that will
+        also populate this one.  So another way of achieving the same thing
+        (and more) is to initialize the POMsgSet's caches, but that is a much
+        bigger job with lots of other byproducts that may not turn out to be
+        needed.
+        """
+        active = {}
+        published = {}
+
+        query = "pomsgset = %s AND (active OR published)" % quote(self)
+        for submission in POSubmission.select(query):
+            pluralform = submission.pluralform
+            if submission.active:
+                assert not pluralform in active, (
+                    "Multiple active submissions for pluralform %d"
+                    % pluralform)
+                active[pluralform] = submission
+            if submission.published:
+                assert not pluralform in published, (
+                    "Multiple published submissions for pluralform %d"
+                    % pluralform)
+                published[pluralform] = submission
+        self.active_submissions = active
+        self.published_submissions = published
 
     def getActiveSubmission(self, pluralform):
-        """See IPOMsgSet."""
-        return POSubmission.selectOne(
-            """POSelection.pomsgset = %d AND
-               POSelection.pluralform = %d AND
-               POSelection.activesubmission = POSubmission.id
-               """ % (self.id, pluralform),
-               clauseTables=['POSelection'])
+        """See `IPOMsgSet`."""
+        if self.active_submissions is None:
+            if self.id is None:
+                return None
+            self._fetchActiveAndPublishedSubmissions()
+        return self.active_submissions.get(pluralform)
 
     def getPublishedSubmission(self, pluralform):
-        """See IPOMsgSet."""
-        return POSubmission.selectOne(
-            """POSelection.pomsgset = %s AND
-               POSelection.pluralform = %s AND
-               POSelection.publishedsubmission = POSubmission.id
-               """ % sqlvalues(self.id, pluralform),
-               clauseTables=['POSelection'])
+        """See `IPOMsgSet`."""
+        if self.published_submissions is None:
+            if self.id is None:
+                return None
+            self._fetchActiveAndPublishedSubmissions()
+        return self.published_submissions.get(pluralform)
+
+    def updateReviewerInfo(self, reviewer):
+        """See `IPOMsgSet`."""
+        self.pofile.last_touched_pomsgset = self
+        self.reviewer = reviewer
+        self.date_reviewed = UTC_NOW
+        self.sync()
 
     def updateTranslationSet(self, person, new_translations, fuzzy, published,
         lock_timestamp, ignore_errors=False, force_edition_rights=False):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
 
+        assert (published or is_editor or
+                self.pofile.canAddSuggestions(person)), (
+            '%s cannot add translations nor can add suggestions' % (
+                person.displayname))
+
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
-        msgids_text = [messageid.msgid
-                       for messageid in potmsgset.getPOMsgIDs()]
+        original_texts = [potmsgset.singular_text]
+        if potmsgset.plural_text is not None:
+            original_texts.append(potmsgset.plural_text)
+
+        # If the update is on the translation credits message, yet
+        # update is not published, silently return
+        # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
+        if potmsgset.is_translation_credit and not published:
+            return
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
@@ -215,8 +444,8 @@ class POMsgSet(SQLBase):
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            helpers.validate_translation(msgids_text, fixed_new_translations,
-                                         potmsgset.flags())
+            helpers.validate_translation(
+                original_texts, fixed_new_translations, potmsgset.flags())
         except gettextpo.error:
             if fuzzy or ignore_errors:
                 # The translations are stored anyway, but we set them as
@@ -241,27 +470,36 @@ class POMsgSet(SQLBase):
             # and we try to change it.
             force_suggestion = True
 
+        # Cache existing active submissions since we use them a lot
+        active_submissions = []
+        for pluralform in range(self.pluralforms):
+            active_submissions.append(self.getActiveSubmission(pluralform))
+
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
+        has_changed = False
         new_translation_count = len(fixed_new_translations)
         if new_translation_count < self.pluralforms and not force_suggestion:
             # it's definitely not complete if it has too few translations
             complete = False
-            # And we should reset the selection for the non updated plural
-            # forms.
+            # And we should reset the active or published submissions for the
+            # non updated plural forms. We have entries to reset when:
+            #     1. The number of plural forms is changed in current
+            #     language since the user loaded the translation form or
+            #     downloaded the .po file that he imported.
+            #     2. An imported .po file comming from upstream or package
+            #     translations has less plural forms than the ones defined in
+            #     Rosetta for that language.
             for pluralform in range(self.pluralforms)[new_translation_count:]:
-                selection = self.getSelection(pluralform)
-                if selection is None:
-                    continue
-
                 if published:
-                    selection.publishedsubmission = None
-                else:
-                    # We keep track of who decided to remove this translation.
-                    selection.activesubmission = None
-                    selection.reviewer = person
-                    selection.date_reviewed = UTC_NOW
+                    self.setPublishedSubmission(pluralform, None)
+                elif active_submissions[pluralform] is not None:
+                    # Note that this submission did a change.
+                    self.setActiveSubmission(pluralform, None)
+                    while pluralform >= len(active_submissions):
+                        active_submissions.append(None)
+                    has_changed = True
 
         # now loop through the translations and submit them one by one
         for index in fixed_new_translations.keys():
@@ -275,17 +513,37 @@ class POMsgSet(SQLBase):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            self._makeSubmission(
+            if index < len(active_submissions):
+                old_active_submission = active_submissions[index]
+            else:
+                old_active_submission = None
+
+            new_submission = self._makeSubmission(
                 person=person,
                 text=newtran,
+                is_fuzzy=fuzzy,
                 pluralform=index,
                 published=published,
                 validation_status=validation_status,
                 force_edition_rights=is_editor,
-                force_suggestion=force_suggestion)
+                force_suggestion=force_suggestion,
+                active_submission=old_active_submission)
 
-            # Flush the database cache
-            flush_database_updates()
+            if (new_submission != old_active_submission and
+                new_submission and new_submission.active):
+                has_changed = True
+                while index >= len(active_submissions):
+                    active_submissions.append(None)
+                active_submissions[index] = new_submission
+
+        if has_changed and is_editor:
+            if published:
+                # When update for a submission is published, nobody has
+                # actually reviewed the new submission in Launchpad, so
+                # we don't set the reviewer and date_reviewed
+                self.pofile.last_touched_pomsgset = self
+            else:
+                self.updateReviewerInfo(person)
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
@@ -293,43 +551,77 @@ class POMsgSet(SQLBase):
             # that the changes were saved as suggestions only.
             raise TranslationConflict(
                 'The new translations were saved as suggestions to avoid '
-                'possible conflicts. Please review them.') 
+                'possible conflicts. Please review them.')
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
             if published:
                 self.publishedfuzzy = fuzzy
                 self.publishedcomplete = complete
-                # Now is time to check if the fuzzy flag should be copied to
-                # the web flag
-                matches = 0
+                if has_changed or self.isfuzzy:
+                    # If the upstream translation has changed or we don't have
+                    # a valid translation in Launchpad, then we need to update
+                    # the status flags because we can get some improved
+                    # information from upstream.
+                    matches = 0
+                    updated = 0
+                    for pluralform in range(self.pluralforms):
+                        active = active_submissions[pluralform]
+                        published = self.getPublishedSubmission(pluralform)
+                        if active:
+                            if published and active != published:
+                                updated += 1
+                            else:
+                                matches += 1
+                    if matches == self.pluralforms and self.publishedcomplete:
+                        # The active submission is exactly the same as the
+                        # published one, so the fuzzy and complete flags
+                        # should be also the same.
+                        self.isfuzzy = self.publishedfuzzy
+                        self.iscomplete = self.publishedcomplete
+                    if updated > 0:
+                        # There are some active translations different from
+                        # published ones, so the message has been updated
+                        self.isupdated = True
+                active_count = 0
                 for pluralform in range(self.pluralforms):
-                    if (self.getActiveSubmission(pluralform) ==
-                        self.getPublishedSubmission(pluralform)):
-                        matches += 1
-                if matches == self.pluralforms:
-                    # The active submission is exactly the same as the
-                    # published one, so the fuzzy and complete flags should be
-                    # also the same.
-                    self.isfuzzy = self.publishedfuzzy
-                    self.iscomplete = self.publishedcomplete
+                    if active_submissions[pluralform]:
+                        active_count += 1
+                self.iscomplete = (active_count == self.pluralforms)
             else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
+                updated = 0
+                for pluralform in range(self.pluralforms):
+                    active = active_submissions[pluralform]
+                    published = self.getPublishedSubmission(pluralform)
+                    if active and published and active != published:
+                        updated += 1
+                if updated > 0:
+                    self.isupdated = True
 
-        # update the pomsgset flags
-        self.updateFlags()
-
-    def _makeSubmission(self, person, text, pluralform, published,
+    def _makeSubmission(self, person, text, is_fuzzy, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
-            force_edition_rights=False, force_suggestion=False):
+            force_edition_rights=False, force_suggestion=False,
+            active_submission=None):
         """Record a translation submission by the given person.
 
-        If "published" then this is a submission noticed in the published po
-        file, otherwise it is a rosetta submission. It is assumed that any
-        new submission will become the active translation (branding?), and
-        if published is true then it will also become the published
-        submission.
+        :arg person: Who submitted this entry.
+        :arg text: The translation submitted or None if there is no
+            translation.
+        :arg is_fuzzy: Whether this translation has the fuzzy flag set.
+        :arg pluralform: The plural form number that this translation is for.
+        :arg published: Whether this is a submission noticed in the published
+            po file, otherwise it is a launchpad submission. It should NOT be
+            set for an arbitrary po file upload, it should ONLY be set if this
+            is genuinely the published po file.
+        :arg validation_status: A value of TranslationValidationStatus that
+            indicates the status of the translation.
+        :arg force_edition_rights: A flag that 'forces' that this submition is
+            handled as coming from an editor, no matter whether it's really
+            from an editor.
+        :arg force_suggestion: Whether this translation must not change the
+            active translation in Launchpad and just be added as a suggestion.
 
         This is THE KEY method in the whole of rosetta. It deals with the
         sighting or submission of a translation for a pomsgset and plural
@@ -344,19 +636,6 @@ class POMsgSet(SQLBase):
         nothing at all. Note that it may return a submission that was
         created previously, if it decides that there is not enough new
         information in this submission to justify recording it.
-
-        The "published" field indicates whether or not this has come from
-        the published po file. It should NOT be set for an arbitrary po
-        file upload, it should ONLY be set if this is genuinely the
-        published po file.
-
-        The "validation_status" field is a value of
-        TranslationValidationStatus that indicates the status of the
-        translation.
-
-        The "force_edition_rights" is a flag that 'forces' that this submition
-        is handled as coming from an editor, no matter if it's really an
-        editor or not
         """
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
@@ -377,39 +656,25 @@ class POMsgSet(SQLBase):
         # should be None by this stage
         assert text != u'', 'Empty string received, should be None'
 
-        # Now get hold of any existing translation selection
-        selection = self.getSelection(pluralform)
+        # We'll be needing our full submissions cache for this.
+        self.initializeSubmissionsCaches()
+
+        active_submission = self.getActiveSubmission(pluralform)
+        published_submission = self.getPublishedSubmission(pluralform)
 
         # submitting an empty (None) translation gets rid of the published
-        # or active selection for that translation. But a null published
+        # or active submissions for that translation. But a null published
         # translation does not remove the active submission.
-        if text is None and selection is not None:
-            # Remove the existing active/published selection
-            # XXX sabdfl now we have no record of WHO made the translation
-            # null, if it was not null previously. This needs to be
-            # addressed in ResettingTranslations. 27/05/05
+        if text is None:
+            # Remove the existing active/published submissions
             if published:
-                selection.publishedsubmission = None
+                self.setPublishedSubmission(pluralform, None)
             elif (is_editor and
                   validation_status == TranslationValidationStatus.OK and
                   not force_suggestion):
-                # activesubmission is updated only if the translation is
-                # valid and it's an editor.
-                selection.activesubmission = None
-                selection.reviewer = person
-                selection.date_reviewed = UTC_NOW
+                self.setActiveSubmission(pluralform, None)
 
-        # If nothing was submitted, return None
-        if text is None:
-            # make a note that the translation is not complete
-            if published:
-                self.publishedcomplete = False
-            else:
-                if is_editor:
-                    self.iscomplete = False
-            # we return because there is nothing further to do. Perhaps when
-            # ResettingTranslations is implemented we will continue to
-            # record the submission of the NULL translation.
+            # we return because there is nothing further to do.
             return None
 
         # Find or create a POTranslation for the specified text
@@ -417,12 +682,6 @@ class POMsgSet(SQLBase):
             translation = POTranslation.byTranslation(text)
         except SQLObjectNotFound:
             translation = POTranslation(translation=text)
-
-        # create the selection if there wasn't one
-        if selection is None:
-            selection = POSelection(
-                pomsgset=self,
-                pluralform=pluralform)
 
         # find or create the relevant submission. We always create a
         # translation submission, unless this translation is already active
@@ -438,30 +697,29 @@ class POMsgSet(SQLBase):
 
         # test if we are working with the published pofile, and if this
         # translation is already published
-        if published and selection.publishedsubmission is not None:
-            if selection.publishedsubmission.potranslation == translation:
-                # Sets the validation status to the current status.
-                # We do it always so the changes in our validation code will
-                # apply automatically.
-                selection.publishedsubmission.validationstatus = \
-                    validation_status
+        if (published and
+            published_submission is not None and
+            published_submission.potranslation == translation):
+            # Sets the validation status to the current status.
+            # We do it always so the changes in our validation code will
+            # apply automatically.
+            published_submission.validationstatus = validation_status
 
-                # return the existing submission that made this translation
-                # the published one in the db
-                return selection.publishedsubmission
-        # if we are working with the active submission, see if the selection
-        # of this translation is already active
-        if not published and selection.activesubmission:
-            if selection.activesubmission.potranslation == translation:
-                # Sets the validation status to the current status.
-                # If our validation code has been improved since the last
-                # import we might detect new errors in previously validated
-                # strings, so we always do this, regardless of the status in
-                # the database.
-                selection.activesubmission.validationstatus = \
-                    validation_status
-                # and return the active submission
-                return selection.activesubmission
+            # return the existing submission that made this translation
+            # the published one in the db
+            return published_submission
+
+        if (not published and
+            active_submission is not None and
+            active_submission.potranslation == translation):
+            # Sets the validation status to the current status.
+            # If our validation code has been improved since the last
+            # import we might detect new errors in previously validated
+            # strings, so we always do this, regardless of the status in
+            # the database.
+            active_submission.validationstatus = validation_status
+            # and return the active submission
+            return active_submission
 
         # let's make a record of whether this translation was published
         # complete, was actively complete, and was an updated one
@@ -472,17 +730,26 @@ class POMsgSet(SQLBase):
         else:
             origin = RosettaTranslationOrigin.ROSETTAWEB
 
-        # Try to get the submission from the suggestions one.
-        submission = POSubmission.selectOneBy(
-            pomsgset=self, pluralform=pluralform, potranslation=translation)
+        # Try to find the submission belonging to translation back in our
+        # submissions cache.  There should be at most one match.
+        submission = None
+        if self.attached_submissions.get(pluralform) is not None:
+            for candidate in self.attached_submissions[pluralform]:
+                if candidate.potranslation == translation:
+                    assert submission is None, (
+                        "Duplicate translations in POMsgSet")
+                    submission = candidate
 
         if submission is None:
             # We need to create the submission, it's the first time we see
             # this translation.
             submission = POSubmission(
-                pomsgset=self, pluralform=pluralform, potranslation=translation,
-                origin=origin, person=person,
+                pomsgset=self, pluralform=pluralform,
+                potranslation=translation, origin=origin, person=person,
                 validationstatus=validation_status)
+            # Add the new submission to our cache.
+            self.attached_submissions.setdefault(pluralform, [])
+            self.attached_submissions[pluralform].insert(0, submission)
 
         potemplate = self.pofile.potemplate
         if (not published and not is_editor and
@@ -490,7 +757,7 @@ class POMsgSet(SQLBase):
             submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
             # We only give karma for adding suggestions to people that send
             # non published strings and aren't editors. Editors will get their
-            # subbmissions automatically approved, and thus, will get karma
+            # submissions automatically approved, and thus, will get karma
             # just when they get their submission autoapproved.
             # The Rosetta Experts team never gets karma.
             person.assignKarma(
@@ -500,16 +767,16 @@ class POMsgSet(SQLBase):
                 sourcepackagename=potemplate.sourcepackagename)
 
         # next, we need to update the existing active and possibly also
-        # published selections
+        # published submissions.
         if published:
-            selection.publishedsubmission = submission
+            self.setPublishedSubmission(pluralform, submission)
 
         if is_editor and validation_status == TranslationValidationStatus.OK:
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
-            if (submission is not None and not published and
-                (selection.activesubmission is None or
-                 selection.activesubmission.id != submission.id)):
+            if (not published and
+                (active_submission is None or
+                 active_submission.id != submission.id)):
                 # The active submission changed and is not published, that
                 # means that the submission came from Rosetta UI instead of
                 # upstream imports and we should give Karma.
@@ -533,53 +800,68 @@ class POMsgSet(SQLBase):
                         distribution=potemplate.distribution,
                         sourcepackagename=potemplate.sourcepackagename)
 
-            if not force_suggestion:
-                # Now that we assigned all karma, is time to update the active
-                # submission, the person that reviewed it and when it was done.
-                selection.activesubmission = submission
-                selection.reviewer = person
-                selection.date_reviewed = UTC_NOW
+            if published:
+                if (self.isfuzzy or active_submission is None or
+                    (not is_fuzzy and
+                     published_submission == active_submission and
+                     self.isfuzzy == self.publishedfuzzy)):
+                    # Either we lack or don't use the active translation in
+                    # Launchpad, or the new published translation we got could
+                    # be used as a valid one, and previous active translation
+                    # in Launchpad matches with previous published translation.
+                    self.setActiveSubmission(pluralform, submission)
+            elif not force_suggestion:
+                # It's not a published submission and we are not forcing the
+                # submission to be a suggestion, so we should apply the active
+                # submission change.
+                self.setActiveSubmission(pluralform, submission)
+            else:
+                # We are forcing the submission as as a suggestion, and thus,
+                # the active submission is not changed.
+                pass
 
-                # And this is the latest submission that this IPOFile got.
-                self.pofile.latestsubmission = submission
+        # We need this syncUpdate so we don't set self.isfuzzy to the wrong
+        # value because cache problems. See bug #102382 as an example of what
+        # happened without having this flag + broken code. Our tests were not
+        # able to find the problem.
+        submission.syncUpdate()
 
         # return the submission we have just made
         return submission
 
     def updateFlags(self):
-        """See IPOMsgSet."""
-        # make sure we are working with the very latest data
-        flush_database_updates()
+        """See `IPOMsgSet`."""
 
-        # we only want to calculate the number of plural forms expected for
-        # this pomsgset once
+        # Make sure we are working with the very latest data.
+        flush_database_updates()
+        self.initializeSubmissionsCaches()
+
+        # Avoid re-evaluation of self.pluralforms.
         pluralforms = self.pluralforms
 
-        # calculate the number of published plural forms
-        published_count = POSelection.select("""
-            POSelection.pomsgset = %s AND
-            POSelection.publishedsubmission IS NOT NULL AND
-            POSelection.pluralform < %s
-            """ % sqlvalues(self.id, pluralforms)).count()
-        if published_count == pluralforms:
-            self.publishedcomplete = True
-        else:
-            self.publishedcomplete = False
+        # Calculate the number of published plural forms.
+        # Since every POFile may have its own plural expression, it's possible
+        # for submissions to have plural-form numbers that the language itself
+        # does not define.  That's fine, and people have used it for some edge
+        # cases, but they must not count towards the msgset's completeness.
+        published_count = 0
+        for (plural, published) in self.published_submissions.items():
+            if plural < pluralforms and published.id is not None:
+                published_count += 1
+
+        self.publishedcomplete = (published_count == pluralforms)
 
         if published_count == 0:
             # If we don't have translations, this entry cannot be fuzzy.
             self.publishedfuzzy = False
 
-        # calculate the number of active plural forms
-        active_count = POSelection.select("""
-            POSelection.pomsgset = %s AND
-            POSelection.activesubmission IS NOT NULL AND
-            POSelection.pluralform < %s
-            """ % sqlvalues(self.id, pluralforms)).count()
-        if active_count == pluralforms:
-            self.iscomplete = True
-        else:
-            self.iscomplete = False
+        # Calculate the number of active plural forms.
+        active_count = 0
+        for (plural, active) in self.active_submissions.items():
+            if plural < pluralforms and active.id is not None:
+                active_count += 1
+
+        self.iscomplete = (active_count == pluralforms)
 
         if active_count == 0:
             # If we don't have translations, this entry cannot be fuzzy.
@@ -588,86 +870,49 @@ class POMsgSet(SQLBase):
         flush_database_updates()
 
         # Let's see if we got updates from Rosetta
-        updated = POMsgSet.select("""
+        # XXX: JeroenVermeulen 2007-06-13: does this really work?
+        updated_pomsgset = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
             POMsgSet.publishedfuzzy = FALSE AND
             POMsgSet.iscomplete = TRUE AND
             POMsgSet.publishedcomplete = TRUE AND
-            POSelection.pomsgset = POMsgSet.id AND
-            POSelection.pluralform < %s AND
-            ActiveSubmission.id = POSelection.activesubmission AND
-            PublishedSubmission.id = POSelection.publishedsubmission AND
-            ActiveSubmission.datecreated > PublishedSubmission.datecreated
-            """ % sqlvalues(self.id, pluralforms),
-            clauseTables=['POSelection',
-                          'POSubmission AS ActiveSubmission',
-                          'POSubmission AS PublishedSubmission']).count()
-        if updated:
-            # We found rows that change from what we got from upstream.
-            self.isupdated = True
-        else:
-            # We have the same information as upstream gave us.
-            self.isupdated = False
+            published_submission.pomsgset = POMsgSet.id AND
+            published_submission.pluralform < %s AND
+            published_submission.published IS TRUE AND
+            active_submission.pomsgset = POMsgSet.id AND
+            active_submission.pluralform = published_submission.pluralform AND
+            active_submission.active IS TRUE AND
+            POMsgSet.date_reviewed > published_submission.datecreated
+            """ % sqlvalues(self, pluralforms),
+            clauseTables=['POSubmission AS active_submission',
+                          'POSubmission AS published_submission']).count()
+
+        self.isupdated = (updated_pomsgset > 0)
 
         flush_database_updates()
 
-    def getWikiSubmissions(self, pluralform):
-        """See IPOMsgSet."""
-        posubmission_ids = self._connection.queryAll('''
-            SELECT DISTINCT POSubmission.id
-            FROM POSubmission
-                JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
-                                  POMsgSet.isfuzzy = FALSE)
-                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
-                                POFile.language = %s)
-                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
-                                   POTMsgSet.primemsgid = %s)
-            WHERE
-                POSubmission.pluralform = %s
-            ''' % sqlvalues(
-                self.pofile.language.id, self.potmsgset.primemsgid_ID,
-                pluralform))
+    def getNewSubmissions(self, pluralform):
+        """See `IPOMsgSet`."""
+        self.initializeSubmissionsCaches()
 
-        active_submission = self.getActiveSubmission(pluralform)
-
-        if (active_submission is not None and
-            active_submission.potranslation is not None):
-            # We look for all the IPOSubmissions with the same translation.
-            same_translation = POSubmission.select(
-                "POSubmission.potranslation = %s" %
-                    sqlvalues(active_submission.potranslation.id))
-
-            # Remove it so we don't show as suggestion something that we
-            # already have as active.
-            for posubmission_id in same_translation:
-                if posubmission_id in posubmission_ids:
-                    posubmission_ids.remove(posubmission_id)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(L[0]) for L in posubmission_ids]
-            return POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated')
-        else:
+        applicable_submissions = self.attached_submissions.get(pluralform)
+        if applicable_submissions is None:
             return []
 
-    def getSuggestedSubmissions(self, pluralform):
-        """See IPOMsgSet."""
-        selection = self.getSelection(pluralform)
-        active = None
-        query = '''pomsgset = %s AND
-                   pluralform = %s''' % sqlvalues(self.id, pluralform)
-        if selection is not None and selection.activesubmission is not None:
-            active = selection.activesubmission
-        if active is not None:
-            # Don't show suggestions older than the current one.
-            query += ''' AND datecreated > %s
-                    ''' % sqlvalues(active.datecreated)
-        return POSubmission.select(query, orderBy=['-datecreated'])
+        active = self.getActiveSubmission(pluralform)
+        if active is None:
+            return applicable_submissions
+
+        # Return only submissions that are newer than the active one.
+        active_date = active.datecreated
+        return [
+            submission
+            for submission in applicable_submissions
+            if submission.datecreated > active_date]
 
     def getCurrentSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         subs = self.potmsgset.getCurrentSubmissions(self.pofile.language,
                                                     pluralform)
         # While getCurrentSubmissions itself does prejoining and

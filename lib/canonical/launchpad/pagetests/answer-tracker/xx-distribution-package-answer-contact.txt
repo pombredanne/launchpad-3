@@ -1,0 +1,135 @@
+= Answer Contacts for Distribution Source Package =
+
+Support on source packages is handled both by the source package answer
+contacts as well as the distribution answer contacts.
+
+    # Register a Sample Person as an answer contact for the distribution.
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILanguageSet, ILaunchBag)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('test@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> # Answer contacts must speak a language
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.addLanguage(getUtility(ILanguageSet)['en'])
+    >>> ubuntu.addAnswerContact(user)
+    True
+    >>> flush_database_updates()
+    >>> logout()
+
+To reflect this, a user visiting a source package 'Answers' facet will
+see both a portlet listing the answer contacts for the source package
+and another one listing those of the distribution.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/evolution')
+    >>> anon_browser.getLink('Answers').click()
+    >>> portlet = find_portlet(
+    ...     anon_browser.contents,
+    ...     'Answer contacts for evolution in ubuntu')
+    >>> print portlet.first('div').renderContents()
+    <p>
+      <i>There are no answer contacts.</i>
+    </p>
+    >>> for answer_contact in find_portlet(
+    ...     anon_browser.contents, 'Answer contacts for Ubuntu').fetch('a'):
+    ...     print answer_contact.renderContents()
+    Sample Person
+
+To register himself as answer contact, the user clicks on the
+'Set answer contact' link. He needs to login to access that function.
+
+    >>> anon_browser.getLink('Set answer contact').click()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/evolution/+questions')
+    >>> browser.getLink('Answers').click()
+    >>> browser.getLink('Set answer contact').click()
+    >>> print browser.title
+    Answer contact for Source Package "evolution" in Ubuntu Linux
+
+On this page, the user can choose to become an answer contact by
+clicking a checkbox. All the teams, he's a member of are also displayed
+and he can register these teams as well.
+
+    >>> browser.getControl(
+    ...     "I want to be an answer contact for evolution").selected
+    False
+    >>> browser.getControl(
+    ...     "I want to be an answer contact for "
+    ...     "evolution").selected = True
+    >>> browser.getControl("Landscape Developers").selected
+    False
+    >>> browser.getControl("Landscape Developers").selected = True
+
+To save his choices, the user clicks on the 'Continue' button and
+a message is displayed to confirm the changes:
+
+    >>> browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print extract_text(message)
+    You have been added as an answer contact for evolution in ubuntu.
+    English was added to Landscape Developers's preferred languages.
+    Landscape Developers has been added as an answer contact for
+    evolution in ubuntu.
+
+The answer contacts portlet for the source package was updated:
+
+    >>> for answer_contact in find_portlet(
+    ...     browser.contents,
+    ...     'Answer contacts for evolution in ubuntu').fetch('a'):
+    ...     print answer_contact.renderContents()
+    Landscape Developers
+    Sample Person
+
+To unregister as answer contact, the same page is used. Instead this
+time, we unselect the checkboxes:
+
+    >>> browser.getLink('Set answer contact').click()
+    >>> browser.getControl(
+    ...     "I want to be an answer contact for evolution").selected
+    True
+    >>> browser.getControl(
+    ...     "I want to be an answer contact for "
+    ...     "evolution").selected = False
+
+Again a confirmation message is displayed and the answer contacts
+portlet for the source package is updated.
+
+    >>> browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print message.renderContents()
+    You have been removed as an answer contact for evolution in ubuntu.
+
+    >>> for answer_contact in find_portlet(
+    ...     browser.contents,
+    ...     'Answer contacts for evolution in ubuntu').fetch('a'):
+    ...     print answer_contact.renderContents()
+    Landscape Developers
+
+== Distribution Release Source Package Answer Contacts ==
+
+The 'Set answer contacts' action is also available on distribution
+release source package. Altough in this case, it's exactly like working
+with the distribution source package.
+
+For example, the answer contacts registered on the evolution package
+in Ubuntu are shown on the evolution package in Hoary:
+
+    >>> browser.open(
+    ...     "http://answers.launchpad.dev/ubuntu/hoary/+source/evolution")
+    >>> browser.getLink('Set answer contact').click()
+    >>> print browser.url
+    http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact
+
+The Landscape developers team is selected as answer contact, like for
+the distribution source package.
+
+    >>> browser.getControl('Landscape Developers').selected
+    True

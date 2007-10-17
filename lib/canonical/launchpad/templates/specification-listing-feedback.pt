@@ -1,7 +1,7 @@
 <table width="100%">
   <tr>
     <td width="10px">
-      <img src="/@@/spec" />
+      <img src="/@@/blueprint" />
     </td>
     <td width="80%">
       <a tal:attributes="
@@ -31,9 +31,7 @@
   <tr class="lesser" tal:repeat="fbreq view/feedbackrequests">
     <td>&nbsp;</td>
     <td colspan="2">
-      <img src="/@@/user" />
-      <a tal:content="fbreq/requester/browsername"
-         tal:attributes="href fbreq/requester/fmt:url">Foo Bar</a>
+      <a tal:replace="structure fbreq/requester/fmt:link">Foo Bar</a>
       wants your feedback:<br />
       <span tal:replace="fbreq/queuemsg">
         Feedback queue message

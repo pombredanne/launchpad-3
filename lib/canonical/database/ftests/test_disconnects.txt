@@ -58,5 +58,5 @@ Close our connection
 Clean up the proxy.
 
     >>> portforward.tearDown()
-    >>> os.remove(portforward.logfile)
+
 

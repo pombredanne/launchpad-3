@@ -32,8 +32,10 @@
           everything else owned by it.
         <p class="discreet">
           Note: If you no longer have access to the duplicated account's
-          email address, you may place a support request or contact the
-          Launchpad users mailing list; Launchpad administrators will
+          email address, you may place a
+          <a href="/launchpad/+addquestion">support request</a> or contact the
+          <a href="http://lists.canonical.com/mailman/listinfo/launchpad-users"
+            >Launchpad users</a> mailing list; Launchpad administrators will
           tend to your request.
         </p>
 

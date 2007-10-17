@@ -1,43 +1,52 @@
-<div class="portlet">
-  <h2 tal:content="context/title">branch title</h2>
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
+  <h2>Current details</h2>
   <div class="portletBody portletContent">
-
-        <tal:has_homepage condition="context/home_page">
-          <b>External links:</b><br />
-          <img src="/@@/link" alt="" />
-          <a tal:attributes="href context/home_page"
-             class="link">Home page</a><br />
-        </tal:has_homepage>
-
-        <tal:has_author condition="context/author">
-          <b>Author:</b><br />
-          <img alt="" src="/@@/user" />
-          <a tal:attributes="href context/author/fmt:url"
-             tal:content="context/author/browsername"
-             class="link">Author Nome</a><br />
-        </tal:has_author>
-
-        <tal:different_registrant condition="not:view/author_is_owner">
-          <b>Registrant:</b><br />
-          <img alt="" src="/@@/user" />
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/browsername"
-             class="link">Owner Name</a><br />
-        </tal:different_registrant>
-
-        <tal:has_product condition="context/product">
-          <b>Product:</b><br />
-          <a tal:attributes="href context/product/fmt:url"
-             tal:content="context/product/displayname">Mozilla Firefox</a><br />
-        </tal:has_product>
-
-        <b>Status:</b><br />
-        <span id="branch-details-status-value"
-              tal:content="context/lifecycle_status/title"
-              tal:attributes="
-                class string:branchstatus${context/lifecycle_status/name}"
+    <table>
+      <tbody>
+        <tr>
+          <th>Type:</th>
+          <td><tal:branch-type replace="context/branch_type/title" /></td>
+        </tr>
+        <tr tal:condition="context/home_page">
+          <th>External links:</th>
+          <td>
+            <a tal:attributes="href context/home_page"
+               class="link">Home page</a>
+          </td>
+        </tr>
+        <tr tal:condition="context/author">
+          <th>Author:</th>
+          <td>
+            <tal:author replace="structure context/author/fmt:link"/>
+          </td>
+        </tr>
+        <tr tal:condition="not:view/author_is_owner">
+          <th>Registrant:</th>
+          <td>
+            <tal:registrant replace="structure context/owner/fmt:link"/>
+          </td>
+        </tr>
+        <tr tal:condition="context/product">
+          <th>Project:</th>
+          <td>
+            <a tal:attributes="href context/product/fmt:url"
+               tal:content="context/product/displayname">Mozilla Firefox</a>
+          </td>
+        </tr>
+        <tr>
+          <th>Status:</th>
+          <td>
+            <span id="branch-details-status-value"
+                  tal:content="context/lifecycle_status/title"
+                  tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
                 >Experimental</span>
-        <br />
-
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>

@@ -1,12 +1,22 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:do-this-first tal:content="view/process_form" />
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform" 
+  i18n:domain="launchpad"
 >
   <head metal:fill-slot="head_epilogue">
-    <meta name="robots" content="noindex">
+    <meta name="robots" content="noindex" />
   </head>
   <body>
     <tal:comment condition="nothing">
@@ -56,40 +66,39 @@
             <h1>Registration mail sent</h1>
             <p>
               Instructions on completing your registration have been sent to
-              <code tal:content="view/email">email@domain.com</code>.
+              <strong><code tal:content="view/email"
+                >email@domain.com</code></strong>.
             </p>
-            <div class="discreet">
-              <p>
-                If you don&rsquo;t receive the instructions within a few
-                minutes, it might be because:
-              </p>
-              <ul>
-                <li>
-                  <p>
-                    Your mail provider uses &ldquo;greylisting&rdquo; to reduce
-                    spam. If so, you&rsquo;ll need to wait an hour or two
-                    for the message to arrive.
-                  </p>
-                </li>
-                <li>
-                  <p>
-                    Your mail provider mistakenly blocks messages from Launchpad.
-                    Try signing up using a service like
-                    <a href="http://gmail.com/">Gmail</a> or
-                    <a href="http://mail.yahoo.com/">Yahoo Mail</a>.
-                    If that works, complain to your usual mail provider.
-                  </p>
-                </li>
-                <li>
-                  <p>
-                    If neither of those work, Launchpad might be broken somehow.
-                    Let us know on the <a href=
-                    "https://lists.canonical.com/mailman/listinfo/launchpad-users"
-                    >launchpad-users mailing list</a> (requires subscription).
-                  </p>
-                </li>
-              </ul>
-            </div>
+            <p>
+              If you don&rsquo;t receive the instructions within a few
+              minutes, it might be because:
+            </p>
+            <ul>
+              <li>
+                <p>
+                  Your mail provider uses &ldquo;greylisting&rdquo; to reduce
+                  spam. If so, you&rsquo;ll need to wait an hour or two
+                  for the message to arrive.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Your mail provider mistakenly blocks messages from Launchpad.
+                  Try signing up using a service like
+                  <a href="http://gmail.com/">Gmail</a> or
+                  <a href="http://mail.yahoo.com/">Yahoo Mail</a>.
+                  If that works, complain to your usual mail provider.
+                </p>
+              </li>
+              <li>
+                <p>
+                  If neither of those work, Launchpad might be broken somehow.
+                  Let us know on the <a href=
+                  "https://lists.canonical.com/mailman/listinfo/launchpad-users"
+                  >launchpad-users mailing list</a> (requires subscription).
+                </p>
+              </li>
+            </ul>
           </tal:registered>
 
           <tal:block condition="not: view/registration_success">
@@ -207,4 +216,4 @@
     </div>
   </body>
 </html>
-</tal:layout>
+</tal:root>

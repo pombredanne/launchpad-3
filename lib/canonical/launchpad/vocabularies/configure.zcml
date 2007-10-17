@@ -1,38 +1,8 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <vocabulary
-    name="BinaryAndSourcePackageName"
-    factory="canonical.launchpad.vocabularies.BinaryAndSourcePackageNameVocabulary"
-    />
-
-  <vocabulary
-    name="BinaryPackageName"
-    factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
-    />
-
-  <vocabulary
     name="Bounty"
     factory="canonical.launchpad.vocabularies.BountyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyDifficulty"
-    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyStatus"
-    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchLifecycleStatus"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchLifecycleStatusFilter"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusFilterVocabulary"
     />
 
   <vocabulary
@@ -51,13 +21,8 @@
     />
 
   <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BugNominatableReleases"
-    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    name="BugNominatableSerieses"
+    factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />
 
   <vocabulary
@@ -68,11 +33,6 @@
   <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
-
-  <vocabulary
-    name="BugTaskStatus"
-    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
     />
 
   <vocabulary
@@ -101,6 +61,11 @@
       />
 
   <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -121,23 +86,43 @@
     />
 
   <vocabulary
-    name="DistroRelease"
-    factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+    name="DistroSeries"
+    factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
     />
 
   <vocabulary
-    name="DistributionReleaseStatus"
-    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
+    name="DistroSeriesStatus"
+    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroArchRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroArchReleaseVocabulary"
+    name="FAQ"
+    factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
+    name="FilteredDeltaLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    />
+
+   <vocabulary
+    name="FilteredDistroArchSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredDistroSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredFullLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
     />
 
   <vocabulary
@@ -148,11 +133,6 @@
   <vocabulary
     name="FutureSprint"
     factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
-    />
-
-  <vocabulary
-    name="GPGKeyAlgorithm"
-    factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
     />
 
   <vocabulary
@@ -171,28 +151,13 @@
     />
 
   <vocabulary
+    name="TranslatableLanguage"
+    factory="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
+    />
+
+  <vocabulary
     name="Milestone"
     factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorContent"
-    factory="canonical.launchpad.vocabularies.MirrorContentVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorPulseType"
-    factory="canonical.launchpad.vocabularies.MirrorPulseTypeVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorSpeed"
-    factory="canonical.launchpad.vocabularies.MirrorSpeedVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorStatus"
-    factory="canonical.launchpad.vocabularies.MirrorStatusVocabulary"
     />
 
   <vocabulary
@@ -211,11 +176,6 @@
     />
 
   <vocabulary
-    name="PackagingType"
-    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-    />
-
-  <vocabulary
     name="PersonAccountToMerge"
     factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
     />
@@ -226,13 +186,8 @@
     />
 
   <vocabulary
-    name="PollAlgorithm"
-    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-    />
-
-  <vocabulary
-    name="PollSecrecy"
-    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
+    name="PersonTeamParticipations"
+    factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
     />
 
   <vocabulary
@@ -266,28 +221,18 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskStatus"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
+    name="ProjectProducts"
+    factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    />
+
+  <vocabulary
+    name="ProjectProductsUsingMalone"
+    factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
     />
 
   <vocabulary
     name="RemoteBugTaskImportance"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
-    name="RevisionControlSystems"
-    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
-    name="ShipItFlavour"
-    factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
-    />
-
-  <vocabulary
-    name="SourcePackageName"
-    factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
     />
 
   <vocabulary
@@ -301,8 +246,8 @@
     />
 
   <vocabulary
-    name="SpecificationDelivery"
-    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    name="SpecificationImplementationStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -316,8 +261,8 @@
     />
 
   <vocabulary
-    name="SpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    name="SpecificationDefinitionStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
     />
 
   <vocabulary
@@ -336,33 +281,13 @@
     />
 
   <vocabulary
-    name="TeamSubscriptionPolicy"
-    factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
-    />
-
-  <vocabulary
-    name="TicketAction"
-    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
-    />
-
-  <vocabulary
-    name="TicketPriority"
-    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="TicketSort"
-    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
-    />
-
-  <vocabulary
-    name="TicketStatus"
-    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
-    />
-
-  <vocabulary
     name="TimezoneName"
     factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
     />
 
   <vocabulary
@@ -376,8 +301,13 @@
     />
 
   <vocabulary
-    name="UpstreamFileType"
-    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
+    name="UserTeamsParticipation"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
+    name="ActiveMailingList"
+    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
     />
 
   <vocabulary
@@ -398,6 +328,11 @@
   <vocabulary
     name="ValidOwner"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeam"
+    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
     />
 
   <vocabulary
@@ -428,16 +363,6 @@
   <vocabulary
     name="DistributionOrProductOrProject"
     factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
-    />
-
-  <!-- Define the widget used by Choice fields that use huge vocabularies -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for="zope.schema.interfaces.IChoice
-      canonical.launchpad.vocabularies.IHugeVocabulary"
-    provides="zope.app.form.interfaces.IInputWidget"
-    factory="canonical.widgets.SinglePopupWidget"
-    permission="zope.Public"
     />
 
 </configure>

@@ -1,11 +1,12 @@
 
 Sample Person already has a deactivated key.
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
-    >>> user_browser.url
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+    >>> browser.url
     'http://launchpad.dev/~name12/+editpgpkeys'
 
-    >>> print user_browser.contents
+    >>> print browser.contents
     <...
     ...Deactivated keys...
     ...1024D/DFD20543...
@@ -14,18 +15,18 @@ Sample Person already has a deactivated key.
 Now he'll request his key to be reactivated.
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> user_browser.getControl('Reactivate Key').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> browser.getControl('Reactivate Key').click()
+    >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('p', 'error message'):
     ...     print tag.renderContents()
     No Key(s) selected for reactivation.
 
-    >>> user_browser.getControl('1024D/DFD20543').selected = True
-    >>> user_browser.getControl('Reactivate Key').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> browser.getControl('1024D/DFD20543').selected = True
+    >>> browser.getControl('Reactivate Key').click()
+    >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
-    An email was sent to test@canonical.com with instructions to reactivate...
+    A message has been sent to test@canonical.com with instructions to reactivate...
 
 
 Get the token from the body of the email sent.
@@ -34,22 +35,22 @@ Get the token from the body of the email sent.
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.ftests import decrypt_content
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_msg)  
+    >>> msg = email.message_from_string(raw_msg)
     >>> cipher_body = msg.get_payload(decode=1)
     >>> body = decrypt_content(cipher_body, 'test')
     >>> link = re.findall(r'http.*/token/.*', body)[0]
     >>> token = re.sub(r'.*token/', '', link)
     >>> token_url = 'http://launchpad.dev/token/%s' % token.encode('ascii')
- 
+
 
 Going to the token page will get us redirected to the page of that specific
 token type (+validategpg).
 
-    >>> user_browser.open(token_url)
-    >>> user_browser.url == '%s/+validategpg' % token_url
+    >>> browser.open(token_url)
+    >>> browser.url == '%s/+validategpg' % token_url
     True
 
-    >>> print user_browser.contents
+    >>> print browser.contents
     <...
     ...Confirm the OpenPGP key...A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
     ...Sample Person...
@@ -57,19 +58,19 @@ token type (+validategpg).
 
 Now Sample Person confirms the reactivation.
 
-    >>> user_browser.getControl('Confirm').click()
-    >>> user_browser.url
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
     'http://launchpad.dev/~name12'
 
-    >>> print user_browser.contents
+    >>> print browser.contents
     <...
     ...Key 1024D/DFD20543 successfully reactivated...
 
 
 And now we can see the key listed as one of Sample Person's active keys.
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
-    >>> print user_browser.contents
+    >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+    >>> print browser.contents
     <...
     ...Active keys...
     ...1024D/DFD20543...

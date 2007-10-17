@@ -1,0 +1,129 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+>
+  <form method="get" name="filter" id="filter_form"
+        style="padding-bottom: 0.5em"
+        tal:attributes="action context/request/URL">
+    <label tal:attributes="for context/view/widgets/lifecycle/name">
+    Show branches with status of</label>
+    <div tal:replace="structure context/view/widgets/lifecycle"/>
+    <noscript>
+      <input type="submit" value="Filter"/>
+    </noscript>
+  </form>
+
+<script type="text/javascript">
+function submit_filter()
+{
+  var f = document.getElementById('filter_form');
+  f.submit()
+}
+
+var field = document.getElementById('field.lifecycle');
+field.onchange = submit_filter;
+</script>
+
+  <tal:needs-batch condition="context/multiple_pages">
+    <div id="branch-batch-links">
+      <tal:navigation replace="structure context/@@+navigation-links-upper" />
+    </div>
+  </tal:needs-batch>
+
+  <table tal:attributes="class context/table_class" id="branchtable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th tal:condition="context/show_column/author|nothing">
+          Author
+        </th>
+        <th>Status</th>
+        <th>Last Commit</th>
+        <th tal:condition="context/show_column/date_created|nothing">
+          Registered
+        </th>
+        <th tal:condition="context/show_column/product|nothing">
+          Project
+        </th>
+        <th tal:condition="context/show_column/role|nothing">
+          Role
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="branch context/branches">
+        <td>
+          <a tal:attributes="href branch/fmt:url;
+                             title branch/displayname"
+             tal:content="branch/name/fmt:shorten/30">
+               Name
+          </a>
+          <img src="/@@/private" alt="private" title="Private"
+               tal:condition="branch/private"/>
+          <img src="/@@/bug" alt="bug" title="Related to a bug"
+               tal:condition="branch/bugbranches"/>
+        </td>
+        <td tal:condition="context/show_column/author|nothing">
+          <a tal:condition="branch/author"
+             tal:attributes="href branch/author/fmt:url"
+             tal:content="branch/author/browsername">
+               Author
+          </a>
+        </td>
+        <td>
+          <span tal:condition="not:context/multiple_pages"
+                tal:content="branch/lifecycle_status/sortkey"
+                class="sortkey">23</span>
+          <span tal:content="branch/lifecycle_status/title"
+                tal:attributes="
+                  class string:branchstatus${branch/lifecycle_status/name}">
+                  Status</span>
+        </td>
+        <td>
+          <tal:has_commit condition="branch/last_commit">
+            <span class="sortkey"
+                  tal:content="branch/last_commit/fmt:datetime">
+               2005-02-12 13:45 EST
+            </span>
+            <tal:comment replace="nothing">
+              sabdfl - let's keep the approximateduration here rather than
+              using the standard approximatedate
+            </tal:comment>
+            <span tal:attributes="title branch/last_commit/fmt:datetime"
+                  tal:content="branch/elapsed_time/fmt:approximateduration">
+              sometime
+            </span> ago
+          </tal:has_commit>
+        </td>
+        <td tal:condition="context/show_column/date_created|nothing">
+          <span class="sortkey"
+                tal:content="branch/date_created/fmt:datetime">
+            2005-02-12 13:45 EST
+          </span>
+          <span tal:attributes="title branch/date_created/fmt:datetime"
+                tal:content="branch/since_created/fmt:approximateduration">
+            sometime
+            </span> ago
+        </td>
+        <td tal:condition="context/show_column/product|nothing">
+          <a tal:condition="branch/product"
+             tal:attributes="href branch/product/fmt:url"
+             tal:content="branch/product/name">
+               Project
+          </a>
+        </td>
+        <td tal:condition="context/show_column/role|nothing">
+          <span tal:replace="branch/role">Role of the person</span>
+        </td>
+      </tr>
+      <tr tal:condition="not:context/batch/total">
+        <td tal:attributes="colspan context/column_count">
+          <div id="no-branch-message"
+               tal:content="structure context/view/no_branch_message" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <tal:navigation replace="structure context/@@+navigation-links-lower" />
+
+</div>

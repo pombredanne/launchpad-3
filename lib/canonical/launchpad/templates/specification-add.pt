@@ -8,30 +8,16 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Once you&#8217;ve entered the details of a specification,
-      you can link it to bug reports and track its review process.
-    </div>
-
-  </div>
+  <div metal:use-macro="context/@@launchpad_form/form" />
 
 </div>
-    
 </body>
 </html>
-

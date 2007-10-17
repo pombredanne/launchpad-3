@@ -34,10 +34,17 @@ class ISQLObjectToBeModifiedEvent(IObjectEvent):
     user = Attribute("The user who will modify the object.")
 
 
-class IJoinTeamRequestEvent(Interface):
-    """An user requested to join a team."""
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
 
-    user = Attribute("The user who requested to join the team.")
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
+
+
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
+
+    member = Attribute("The person/team who was invited.")
     team = Attribute("The team.")
 
 

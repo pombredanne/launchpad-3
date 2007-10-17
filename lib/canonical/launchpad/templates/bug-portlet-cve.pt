@@ -1,14 +1,17 @@
-<div class="portlet" tal:condition="context/cves"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
-
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-cve" tal:condition="context/cves"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url"
+>
   <h2>
     <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
-    references:
+    references
   </h2>
-
   <div class="portletBody">
-    <div class="portletContent">
+
       <ul>
         <li class="cve" tal:repeat="cve context/cves">
           <a tal:attributes="href cve/fmt:url;
@@ -18,7 +21,5 @@
         </li>
       </ul>
 
-    </div>
   </div>
-
 </div>

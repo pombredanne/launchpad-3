@@ -25,6 +25,7 @@ country.
     ...     for mirror in mirrors:
     ...         assert mirror.country.name == country
     ...     print "%s: %d mirror(s)" % (country, len(mirrors))
-    British Indian Ocean Territory: 2 mirror(s)
+    France: 2 mirror(s)
     Germany: 1 mirror(s)
+    United Kingdom: 1 mirror(s)
 

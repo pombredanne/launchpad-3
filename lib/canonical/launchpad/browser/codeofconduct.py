@@ -50,7 +50,7 @@ class CodeOfConductContextMenu(ContextMenu):
     links = ['sign', 'download']
 
     def sign(self):
-        text = 'Sign This Version'
+        text = 'Sign this version'
         if self.context.current and self.user and not self.user.is_ubuntero:
             enabled = True
         else:
@@ -58,7 +58,7 @@ class CodeOfConductContextMenu(ContextMenu):
         return Link('+sign', text, enabled=enabled, icon='edit')
 
     def download(self):
-        text = 'Download This Version'
+        text = 'Download this version'
         is_current=self.context.current
         return Link('+download', text, enabled=is_current, icon='download')
 
@@ -70,7 +70,7 @@ class CodeOfConductSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Administrator Console'
+        text = 'Administration console'
         return Link('console', text, icon='edit')
 
 
@@ -98,7 +98,7 @@ class SignedCodeOfConductContextMenu(ContextMenu):
             return Link('+activate', text, icon='edit')
 
     def adminconsole(self):
-        text = 'Administrator Console'
+        text = 'Administration console'
         return Link('../', text, icon='info')
 
 
@@ -194,7 +194,7 @@ class SignedCodeOfConductAckView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        # XXX cprov 20050323
+        # XXX cprov 2005-03-23:
         # rename unused key:value
         kw['user'] = kw['owner']
         del kw['owner']
@@ -240,7 +240,7 @@ class SignedCodeOfConductAdminView:
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         self.results = sCoC_util.searchByDisplayname(name,
                                                      searchfor=searchfor)
-            
+
         return True
 
 
@@ -280,7 +280,7 @@ class SignedCodeOfConductActiveView(EditView):
             # now redirect to view the SignedCoC
             self.request.response.redirect(self.request.URL[-1])
 
-        # XXX: cprov 20050226
+        # XXX: cprov 2005-02-26:
         # How to proceed with no admincomment ?
 
 class SignedCodeOfConductDeactiveView(EditView):
@@ -321,13 +321,6 @@ class SignedCodeOfConductDeactiveView(EditView):
             self.request.response.redirect(self.request.URL[-1])
 
 
-        # XXX: cprov 20050226
+        # XXX: cprov 2005-02-26:
         # How to proceed with no admincomment ?
-
-
-
-
-
-
-
 

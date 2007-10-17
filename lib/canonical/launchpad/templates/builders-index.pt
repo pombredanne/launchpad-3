@@ -1,15 +1,22 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
+
     <metal:heading fill-slot="pageheading">
       <h1>Build machines for Launchpad</h1>
     </metal:heading>
 
 <metal:block fill-slot="head_epilogue">
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="300" />
 </metal:block>
 
   <div metal:fill-slot="main">
@@ -17,7 +24,7 @@
       <table class="listing sortable" tal:attributes="id string:builders">
       <thead>
         <tr>
-            <th>Name</th>
+            <th>Builder</th>
             <th>Architecture</th>
             <th>Owner</th>
             <th>Status</th>
@@ -27,24 +34,60 @@
         <tal:builder repeat="builder context/getBuilders">
           <tr>
             <td>
-              <img alt="[builder]" src="/@@/info" />
-              <a tal:attributes="href builder/fmt:url">
-                 <span tal:replace="builder/name" />
-              </a>
+              <a tal:attributes="href builder/fmt:url"
+                 tal:content="builder/name"
+                 /><br />
+              <tal:manual condition="builder/manual">Manual</tal:manual>
+              <tal:auto condition="not: builder/manual">Automatic</tal:auto>
             </td>
-            <td tal:content="builder/processor/name">LOCATION</td>
             <td>
-              <img alt="[owner]" src="/@@/user"/>
-              <a tal:content="builder/owner/displayname"
-                 tal:attributes="href builder/owner/fmt:url">Owner</a>
+              <span tal:replace="builder/processor/name">i386</span>
+              <tal:hardened
+                 condition="not: builder/trusted">&nbsp;Virtual</tal:hardened>
             </td>
-            <td tal:content="builder/status">STATUS</td>
+            <td>
+              <a tal:replace="structure builder/owner/fmt:link" />
+            </td>
+            <td>
+              <tal:problem condition="not: builder/builderok">
+                Not available
+                <tal:reason condition="builder/failnotes">
+                  because:<br />
+                  <span tal:replace="builder/failnotes">Live CD</span>
+                </tal:reason>
+              </tal:problem>
+              <tal:ok condition="builder/builderok">
+                <tal:building condition="builder/currentjob">
+                <tal:build define="build builder/currentjob/build">
+                  Building
+                  <span tal:replace="build/sourcepackagerelease/name" />
+                  <span tal:replace="build/sourcepackagerelease/version" />
+                  <br />
+                  for
+                  <tal:ppa condition="build/archive/purpose/enumvalue:PPA">
+                    <a tal:replace="structure build/archive/owner/fmt:link" />
+                  </tal:ppa>
+                  <span tal:replace="build/distribution/displayname" />
+                  <span tal:replace="build/distroseries/displayname" />
+                  <tal:ppa condition="build/archive/purpose/enumvalue:PPA">
+                    PPA
+                  </tal:ppa>
+                  <tal:no_ppa condition="not: build/archive/purpose/enumvalue:PPA">
+                    (<span tal:replace="build/pocket/name/fmt:lower" />)
+                  </tal:no_ppa>
+                </tal:build>
+                </tal:building>
+                <tal:idle condition="not: builder/currentjob">
+                  Idle
+                </tal:idle>
+              </tal:ok>
+            </td>
           </tr>
         </tal:builder>
       </tbody>
       </table>
 
-      <p class="discreet">Last updated <span tal:replace="view/now"/></p>
+      <p class="discreet">Generated at <span tal:replace="view/now"/></p>
 
   </div>
 </body>

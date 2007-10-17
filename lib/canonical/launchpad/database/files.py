@@ -6,13 +6,15 @@ __all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile']
 from zope.interface import implements
 
 from sqlobject import ForeignKey
+
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    BinaryPackageFileType, SourcePackageFileType)
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageFile, ISourcePackageReleaseFile)
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import (
-    BinaryPackageFileType, SourcePackageFileType)
 
 
 class BinaryPackageFile(SQLBase):

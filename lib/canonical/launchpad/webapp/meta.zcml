@@ -23,9 +23,23 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
+      name="renamed-page"
+      schema="canonical.launchpad.webapp.metazcml.IRenamedPageDirective"
+      handler="canonical.launchpad.webapp.metazcml.renamed_page"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
       name="favicon"
       schema="canonical.launchpad.webapp.metazcml.IFaviconDirective"
       handler="canonical.launchpad.webapp.metazcml.favicon"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="tour"
+      schema="canonical.launchpad.webapp.metazcml.ITourPageDirective"
+      handler="canonical.launchpad.webapp.metazcml.tour_page"
       />
 
   <complexDirective

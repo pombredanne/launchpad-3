@@ -21,59 +21,60 @@ The event display page, when not logged in:
 The event display page, when logged in (notice that the start time has
 been adjusted to the user's local time zone):
 
-  >>> user_browser.open(
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open(
   ...     'http://localhost/~name12/+calendar/events/1/+display')
 
-  >>> '2005-01-03 16:00:00 WST' in user_browser.contents
+  >>> '2005-01-03 16:00:00 WST' in browser.contents
   True
 
 When we have write access, we get redirected to an event view page
 instead.
 
-  >>> user_browser.open('http://localhost/~name12/+calendar/events/1/')
-  >>> user_browser.url
+  >>> browser.open('http://localhost/~name12/+calendar/events/1/')
+  >>> browser.url
   'http://localhost/~name12/+calendar/events/1/+edit'
 
-  >>> user_browser.title
+  >>> browser.title
   'Change \xe2\x80\x9cEvent 1\xe2\x80\x9d event details'
-  >>> 'Change event details' in user_browser.contents
+  >>> 'Change event details' in browser.contents
   True
-  >>> user_browser.getControl('Name').value
+  >>> browser.getControl('Name').value
   'Event 1'
-  >>> user_browser.getControl('Description').value
+  >>> browser.getControl('Description').value
   'Desc 1'
-  >>> user_browser.getControl('Starting date and time').value
+  >>> browser.getControl('Starting date and time').value
   '2005-01-03 16:00:00'
 
 The "+add" page is used to add events to the calendar.
 "Add" links on the calendar view pages include a date in the query string:
 
   >>> name12_cal_url = 'http://localhost/~name12/+calendar'
-  >>> user_browser.open(
+  >>> browser.open(
   ...   name12_cal_url + '/+add?field.dtstart=2005-04-01%2008:00:00')
 
 When we add the event, we get redirected to the week view page
 containing the event's start date:
 
-  >>> user_browser.title
+  >>> browser.title
   "Add event to Sample Person's Calendar"
-  >>> user_browser.getControl('Name').value = 'April Fools'
-  >>> user_browser.getControl('Description').value = 'fool people'
+  >>> browser.getControl('Name').value = 'April Fools'
+  >>> browser.getControl('Description').value = 'fool people'
 
 The 'Starting date and time' field already comes pre-filled.
 
-  >>> user_browser.getControl('Starting date and time').value
+  >>> browser.getControl('Starting date and time').value
   '2005-04-01 08:00:00'
-  >>> user_browser.getControl('Duration').value = '3'
-  >>> user_browser.getControl('Add').click()
+  >>> browser.getControl('Duration').value = '3'
+  >>> browser.getControl('Add').click()
 
-  >>> user_browser.url
+  >>> browser.url
   'http://localhost/~name12/+calendar/2005-W13'
 
 The start time for the new event is interpreted according to the
 user's preferred time zone:
 
-  >>> anon_browser.open(user_browser.url)
+  >>> anon_browser.open(browser.url)
   >>> anon_browser.getLink('Friday, 1 April').click()
   >>> anon_browser.url
   'http://localhost/%7Ename12/+calendar/2005-04-01'
@@ -90,69 +91,69 @@ user's preferred time zone:
   >>> '2005-04-01 00:00:00 UTC' in anon_browser.contents
   True
 
-  >>> user_browser.getLink('Friday, 1 April').click()
-  >>> user_browser.title
+  >>> browser.getLink('Friday, 1 April').click()
+  >>> browser.title
   "Sample Person's Calendar - 1 April 2005"
 
-  >>> user_browser.getLink('8:00 - April Fools').click()
+  >>> browser.getLink('8:00 - April Fools').click()
 
-  >>> 'April Fools' in user_browser.contents
+  >>> 'April Fools' in browser.contents
   True
-  >>> 'fool people' in user_browser.contents
+  >>> 'fool people' in browser.contents
   True
-  >>> '2005-04-01 08:00:00' in user_browser.contents
+  >>> '2005-04-01 08:00:00' in browser.contents
   True
 
 We can add events directly to the top-level calendar. First we check if the
 page is accessible.
 
-  >>> user_browser.open('http://localhost/calendar/+add')
-  >>> user_browser.title
+  >>> browser.open('http://localhost/calendar/+add')
+  >>> browser.title
   'Add event to Merged Calendar for Sample Person'
 
 And then we try to add an event.
 
-  >>> user_browser.getControl('Name').value = 'This is a test event'
-  >>> user_browser.getControl('Description').value = 'test'
-  >>> user_browser.getControl(
+  >>> browser.getControl('Name').value = 'This is a test event'
+  >>> browser.getControl('Description').value = 'test'
+  >>> browser.getControl(
   ...     'Starting date and time').value = '2006-03-31 23:00:00'
-  >>> user_browser.getControl('Duration').value = '10'
-  >>> user_browser.getControl(name='field.duration.unit').value = ['d']
-  >>> user_browser.getControl('Add').click()
+  >>> browser.getControl('Duration').value = '10'
+  >>> browser.getControl(name='field.duration.unit').value = ['d']
+  >>> browser.getControl('Add').click()
 
-  >>> user_browser.url
+  >>> browser.url
   'http://localhost/calendar/2006-W13'
 
 Navigate to the month view.
 
-  >>> user_browser.getLink('Month').click()
-  >>> user_browser.url
+  >>> browser.getLink('Month').click()
+  >>> browser.url
   'http://localhost/calendar/2006-03'
 
 Check that the event is there.
 
-  >>> user_browser.getLink('23:00 - This is a test event').url
+  >>> browser.getLink('23:00 - This is a test event').url
   'http://localhost/~name12/+calendar/events/7'
 
 Since this event lasts for 10 days it should span to the next month.
 
-  >>> user_browser.getLink('Next Month').click()
-  >>> user_browser.getLink('1').click()
-  >>> user_browser.url
+  >>> browser.getLink('Next Month').click()
+  >>> browser.getLink('1').click()
+  >>> browser.url
   'http://localhost/calendar/2006-04-01'
 
-  >>> '1 April 2006' in user_browser.contents
+  >>> '1 April 2006' in browser.contents
   True
-  >>> user_browser.getLink('23:00 - This is a test event').click()
-  >>> user_browser.url
+  >>> browser.getLink('23:00 - This is a test event').click()
+  >>> browser.url
   'http://localhost/%7Ename12/+calendar/events/7/+edit'
 
-  >>> user_browser.getControl('Name').value
+  >>> browser.getControl('Name').value
   'This is a test event'
-  >>> user_browser.getControl('Starting date and time').value
+  >>> browser.getControl('Starting date and time').value
   '2006-03-31 23:00:00'
-  >>> user_browser.getControl('Duration').value
+  >>> browser.getControl('Duration').value
   '10.0'
-  >>> user_browser.getControl(name='field.duration.unit').value
+  >>> browser.getControl(name='field.duration.unit').value
   ['d']
 

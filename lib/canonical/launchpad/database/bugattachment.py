@@ -3,15 +3,19 @@
 __metaclass__ = type
 __all__ = ['BugAttachment', 'BugAttachmentSet']
 
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 
 from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
+
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+
+from canonical.launchpad.event.sqlobjectevent import SQLObjectDeletedEvent
 from canonical.launchpad.interfaces import (
     IBugAttachmentSet, IBugAttachment, NotFoundError)
-from canonical.database.sqlbase import SQLBase
 
 
 class BugAttachment(SQLBase):
@@ -32,6 +36,10 @@ class BugAttachment(SQLBase):
     message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
+    def removeFromBug(self):
+        """See IBugAttachment."""
+        notify(SQLObjectDeletedEvent(self))
+        self.destroySelf()
 
 class BugAttachmentSet:
     """A set for bug attachments."""
@@ -54,7 +62,7 @@ class BugAttachmentSet:
                attach_type=None):
         """See IBugAttachmentSet."""
         if attach_type is None:
-            # XXX kiko: this should use DEFAULT; depends on bug 1659
+            # XXX kiko 2005-08-03 bug=1659: this should use DEFAULT.
             attach_type = IBugAttachment['type'].default
         return BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,

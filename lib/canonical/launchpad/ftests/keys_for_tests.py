@@ -24,8 +24,8 @@ from zope.component import getUtility
 
 import gpgme
 
-from canonical.lp.dbschema import GPGKeyAlgorithm
-from canonical.launchpad.interfaces import IGPGKeySet, IGPGHandler, IPersonSet
+from canonical.launchpad.interfaces import (
+    IGPGKeySet, IGPGHandler, IPersonSet, GPGKeyAlgorithm)
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
 
@@ -52,7 +52,7 @@ def import_public_key(email_addr):
         if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.
             return
-        
+
     # Insert the key into the database.
     getUtility(IGPGKeySet).new(
         ownerID=personset.getByEmail(email_addr).id,
@@ -78,6 +78,10 @@ def import_secret_test_key():
     # We import the secret key manually here because this is the only place
     # where we import a secret key and thus we don't need an API for this
     # on GPGHandler.
+
+    # Make sure that gpg-agent doesn't interfer.
+    if 'GPG_AGENT_INFO' in os.environ:
+        del os.environ['GPG_AGENT_INFO']
     seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
     context = gpgme.Context()
     context.armor = True
@@ -102,10 +106,10 @@ def decrypt_content(content, password):
     """Return the decrypted content or None if failed
 
     content and password must be traditional strings. It's up to
-    the caller to encode or decode properly. 
+    the caller to encode or decode properly.
 
     :content: encrypted data content
-    :password: unicode password to unlock the secret key in question 
+    :password: unicode password to unlock the secret key in question
     """
     if isinstance(password, unicode):
         raise TypeError('Password cannot be Unicode.')

@@ -1,25 +1,13 @@
-<div class="portlet">
-
-  <h2>Rosetta statistics</h2>
-
-  <div class="portletBody portletContent">
-
-    <ul>
-      <li><span tal:replace="context/potemplate_count">5</span>
-      Templates</li>
-      <li><span tal:replace="context/pomsgid_count">5</span> Strings</li>
-      <li><span tal:replace="context/pofile_count">5</span> PO Files</li>
-      <li><span tal:replace="context/language_count">5</span> Languages</li>
-      <li><span tal:replace="context/translator_count">5</span>
-      Translators</li>
-    </ul>
-
-    <p>
-      Statistics are updated daily, and may understate the scale of
-      Rosetta. They were last generated on
-      <span tal:replace="context/statsdate/fmt:date">23-4-65</span> at
-      <span tal:replace="context/statsdate/fmt:time">23-4-65</span>.
-    </p>
-
-  </div>
+<div>
+  <strong tal:content="context/pomsgid_count" /> strings
+  in <strong tal:content="context/potemplate_count" /> translation templates
+</div>
+<div>
+  <a tal:attributes="href context/languages/fmt:url">
+     <strong tal:content="context/language_count" /> languages,</a>
+  <strong tal:content="context/translator_count" /> translators and
+  <a tal:attributes="href context/translation_groups/fmt:url">
+    <strong tal:content="context/translation_groups/getGroupsCount" />
+    translation groups
+  </a>
 </div>

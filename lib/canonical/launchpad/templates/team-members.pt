@@ -14,18 +14,24 @@
 
 <div metal:fill-slot="main">
 
-  <h1>
-    Members of
+  <h1>Members of
     &#8220;<span tal:replace="context/browsername" />&#8221;
   </h1>
 
-  <p tal:condition="not: view/allMembersCount">
-    This team currently has no members.
-  </p>
+  <p>Active, pending and former members of this team.</p>
 
-  <tal:block condition="view/allMembersCount">
-    <tal:block condition="context/active_member_count">
+  <ul>
+    <li tal:condition="context/active_member_count">
       <h2>Active members</h2>
+
+      <p>
+        There are <span tal:replace="context/active_member_count">15</span>
+        direct members of the 
+        "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
+        and <span tal:replace="context/all_member_count">23</span> people are
+        members in total, directly and indirectly through other team
+        memberships.
+      </p>
 
       <table class="listing sortable" id="activemembers">
         <thead>
@@ -39,79 +45,160 @@
         </thead>
 
         <tbody>
-          <tr tal:repeat="membership view/activeMemberships">
+          <tr tal:repeat="membership context/getActiveMemberships">
             <tal:block define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"
                    tal:content="member/browsername" />
               </td>
-              <td
-                tal:content="membership/datejoined/fmt:date"
-              >2005-06-14</td>
-              <td
-                tal:condition="not: membership/dateexpires"
-              >&ndash;</td>
-              <td
-                tal:condition="membership/dateexpires"
-                tal:content="membership/dateexpires/fmt:date"
-              >2006-06-13</td>
+              <td>
+                <span class="sortkey"
+                  tal:content="membership/datejoined/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/datejoined/fmt:datetime"
+                  tal:content="membership/datejoined/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
+              <td>
+                <tal:block condition="not: membership/dateexpires">
+                  &ndash;
+                </tal:block>
+                <span class="sortkey"
+                  tal:content="membership/dateexpires/fmt:datetime" />
+                <span
+                  tal:attributes="title membership/dateexpires/fmt:datetime"
+                  tal:content="membership/dateexpires/fmt:approximatedate">
+                  2005-06-14
+                </span>
+              </td>
               <td tal:content="membership/statusname"></td>
               <td tal:condition="context/required:launchpad.Edit">
-                [<a tal:attributes="href membership/fmt:url">Edit</a>]
+                <a tal:attributes="href membership/fmt:url"
+                  ><img src="/@@/edit"
+                        title="Change membership duration or status" /></a>
               </td>
             </tal:block>
           </tr>
         </tbody>
       </table>
-    </tal:block>
+      <br />
+    </li>
 
-    <tal:block condition="context/proposedmembers/count">
-      <h2>Proposed members</h2>
+    <li tal:condition="not: context/active_member_count">
+      <h2>
+        &#8220;<span tal:replace="context/browsername" />&#8221; has no 
+        members
+      </h2>
+
+      <p>This team doesn't have any members yet.</p>
+    </li>
+    <br />
+
+    <li tal:condition="context/pendingmembers">
+      <h2>Pending members</h2>
+
+      <tal:invited condition="context/invited_members">
+        <h3>Invited members</h3>
+
+        <p>These teams have been invited to join this team, but one of
+        their admins must accept this invitation before they become actual
+        members.</p>
+
+        <table class="listing sortable" id="invitedmembers">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Invited</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="membership context/getInvitedMemberships">
+              <tal:block tal:define="member membership/person">
+                <td>
+                  <a tal:attributes="href member/fmt:url"
+                     tal:content="member/browsername" />
+                </td>
+                <td>
+                  <span class="sortkey"
+                    tal:content="membership/datejoined/fmt:datetime" />
+                  <span
+                    tal:attributes="title membership/datejoined/fmt:datetime"
+                    tal:content="membership/datejoined/fmt:approximatedate">
+                    2005-06-14
+                  </span>
+                </td>
+                <td tal:condition="membership/status/enumvalue:INVITED">
+                  Pending
+                </td>
+                <td tal:condition="membership/status/enumvalue:INVITATION_DECLINED">
+                  Declined
+                </td>
+              </tal:block>
+            </tr>
+          </tbody>
+        </table>
+      </tal:invited>
+
+      <tal:proposed condition="context/proposedmembers">
+        <h3>Proposed members</h3>
+
+        <p>
+          Proposed members may be approved or declined by a
+          team administrator.
+        </p>
+
+        <table class="listing sortable" id="proposedmembers">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Applied for membership</th>
+              <th>&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="membership context/getProposedMemberships">
+              <tal:block tal:define="member membership/person">
+              <td>
+                <a tal:attributes="href member/fmt:url"
+                   tal:content="member/browsername" />
+              </td>
+                <td>
+                  <span class="sortkey"
+                    tal:content="membership/datejoined/fmt:datetime" />
+                  <span
+                    tal:attributes="title membership/datejoined/fmt:datetime"
+                    tal:content="membership/datejoined/fmt:approximatedate">
+                    2005-06-14
+                  </span>
+                </td>
+              <td tal:condition="context/required:launchpad.Edit">
+                <a tal:attributes="href membership/fmt:url"
+                  ><img src="/@@/edit"
+                        title="Change membership duration or status" /></a>
+              </td>
+              </tal:block>
+            </tr>
+          </tbody>
+        </table>
+
+        <ul class="edit" tal:condition="context/required:launchpad.Edit">
+          <li>
+            <a href="+editproposedmembers"
+            >Approve or decline members</a>
+          </li>
+        </ul>
+      </tal:proposed>
+    </li>
+    <br />
+
+    <li tal:condition="context/inactivemembers">
+      <h2>Former members</h2>
 
       <p>
-        Proposed members may be approved or declined by a
-        team administrator.
-      </p>
-
-      <table class="listing sortable" id="proposedmembers">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Applied for membership</th>
-            <th>&nbsp;</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="membership view/proposedMemberships">
-            <tal:block tal:define="member membership/person">
-            <td>
-              <a tal:attributes="href member/fmt:url"
-                 tal:content="member/browsername" />
-            </td>
-            <td
-              tal:content="membership/datejoined/fmt:date"
-            >2005-04-01</td>
-            <td tal:condition="context/required:launchpad.Edit">
-              [<a tal:attributes="href membership/fmt:url">Edit</a>]
-            </td>
-            </tal:block>
-          </tr>
-        </tbody>
-      </table>
-
-      <ul class="edit" tal:condition="context/required:launchpad.Edit">
-        <li>
-          <a href="+editproposedmembers"
-          >Approve or decline members&#8230;</a>
-        </li>
-      </ul>
-    </tal:block>
-    <tal:block condition="context/inactivemembers/count">
-      <h2>Inactive members</h2>
-      <p>
-        Inactive members are those whose
-        subscriptions have expired, or were
-        deactivated by themselves or by an admin.
+        These are the members whose subscriptions have expired, or were
+        deactivated by themselves or by a team administrator.
       </p>
       <table class="listing sortable" id="inactivemembers">
         <thead>
@@ -123,7 +210,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="membership view/inactiveMemberships">
+          <tr tal:repeat="membership context/getInactiveMemberships">
             <tal:block define="member membership/person">
             <td>
               <a tal:attributes="href member/fmt:url"
@@ -142,19 +229,17 @@
               tal:condition="not: membership/isExpired"
               tal:content="membership/statusname" />
             <td tal:condition="context/required:launchpad.Edit">
-              [<a tal:attributes="href membership/fmt:url">Edit</a>]
+              <a tal:attributes="href membership/fmt:url"
+                ><img src="/@@/edit"
+                      title="Change membership duration or status" /></a>
             </td>
             </tal:block>
           </tr>
         </tbody>
       </table>
-    </tal:block>
+    </li>
+  </ul>
 
-    <ul class="add" tal:condition="context/required:launchpad.Edit">
-      <li><a href="+addmember">Add a new member</a></li>
-    </ul>
-
-  </tal:block>
 </div>
 
 </body>

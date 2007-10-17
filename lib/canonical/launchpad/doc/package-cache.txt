@@ -28,12 +28,13 @@ DistributionSourcePackageCache table, including:
   ...     distribution=ubuntu)
 
   >>> ubuntu_caches.count()
-  9
+  10
 
   >>> for cache in ubuntu_caches.orderBy('name'):
   ...     print cache.name
   alsa-utils
   cnews
+  commercialpackage
   evolution
   foobar
   libstdc++
@@ -43,10 +44,10 @@ DistributionSourcePackageCache table, including:
   pmount
 
 
-Cached information for binaries is stored in DistroReleasePackageCache
+Cached information for binaries is stored in DistroSeriesPackageCache
 table, including:
 
- * distrorelease, IDistroRelease where the binary is published.
+ * distroseries, IDistroSeries where the binary is published.
  * binarypackagename, respective IBinaryPackageName.
  * name, binary name in text format.
  * summary, binary summary in text format.
@@ -57,10 +58,10 @@ table, including:
    for name, summary, description, summaries and descriptions.
 
   >>> from canonical.launchpad.database import (
-  ...      DistroReleasePackageCache)
+  ...      DistroSeriesPackageCache)
 
   >>> warty = ubuntu['warty']
-  >>> warty_caches = DistroReleasePackageCache.selectBy(distrorelease=warty)
+  >>> warty_caches = DistroSeriesPackageCache.selectBy(distroseries=warty)
   >>> warty_caches.count()
   5
   >>> for cache in warty_caches.orderBy('name'):
@@ -156,7 +157,7 @@ cache when it's updated the next time.
   >>> cdrkit_cache is None
   True
 
-We can invoke the cache updater directly on IDistrorelease:
+We can invoke the cache updater directly on IDistroSeries:
 
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    ztm=transaction, log=TestLog())
@@ -207,13 +208,13 @@ cache when it's updated.
   >>> len(warty.searchPackages('foobar'))
   1
 
-  >>> foobar_bin_cache = DistroReleasePackageCache.selectOneBy(
-  ...     distrorelease=warty, name='foobar')
+  >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
+  ...     distroseries=warty, name='foobar')
 
   >>> foobar_bin_cache is not None
   True
 
-Binary cache updates are driven by distrorelease, IDistroRelease
+Binary cache updates are driven by distroseries, IDistroSeries
 instance offers a method for removing obsolete records in cache:
 
   >>> warty.removeOldCacheItems(log=TestLog())
@@ -224,8 +225,8 @@ instance offers a method for removing obsolete records in cache:
   >>> len(warty.searchPackages('foobar'))
   0
 
-  >>> foobar_bin_cache = DistroReleasePackageCache.selectOneBy(
-  ...     distrorelease=warty, name='foobar')
+  >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
+  ...     distroseries=warty, name='foobar')
 
   >>> foobar_bin_cache is None
   True
@@ -241,13 +242,13 @@ cache will be added to it.
   >>> len(warty.searchPackages('cdrkit'))
   0
 
-  >>> cdrkit_bin_cache = DistroReleasePackageCache.selectOneBy(
-  ...     distrorelease=warty, name='cdrkit')
+  >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
+  ...     distroseries=warty, name='cdrkit')
 
   >>> cdrkit_bin_cache is None
   True
 
-We can invoke the cache updater directly on IDistrorelease:
+We can invoke the cache updater directly on IDistroSeries:
 
   >>> warty.updateCompletePackageCache(
   ...    ztm=transaction, log=TestLog())
@@ -273,8 +274,8 @@ reached via searches:
   >>> len(warty.searchPackages('cdrkit'))
   1
 
-  >>> cdrkit_bin_cache = DistroReleasePackageCache.selectOneBy(
-  ...     distrorelease=warty, name='cdrkit')
+  >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
+  ...     distroseries=warty, name='cdrkit')
 
   >>> cdrkit_bin_cache is not None
   True
@@ -283,7 +284,7 @@ reached via searches:
 == Package Counters ==
 
 We also store counters for the number of Sources and Binaries
-published in a DistroRelease pocket RELEASE:
+published in a DistroSeries pocket RELEASE:
 
   >>> warty.sourcecount
   3
@@ -292,18 +293,18 @@ published in a DistroRelease pocket RELEASE:
 
 Since we have modified the publication list for warty in order to test
 the caching system, we expect similar changes in the
-counters. IDistroRelease provides a method to update its own cache:
+counters. IDistroSeries provides a method to update its own cache:
 
   >>> warty.updatePackageCount()
 
 New values were stored:
 
   >>> warty.sourcecount
-  4
-  >>> warty.binarycount
   5
+  >>> warty.binarycount
+  6
 
-A similar mechanism is offered by IDistroArchRelease, but only for
+A similar mechanism is offered by IDistroArchSeries, but only for
 binaries (of course):
 
   >>> warty_i386 = warty['i386']
@@ -318,4 +319,4 @@ Invoke the counter updater on this architecture:
 New values were stored:
 
   >>> warty_i386.package_count
-  6
+  8

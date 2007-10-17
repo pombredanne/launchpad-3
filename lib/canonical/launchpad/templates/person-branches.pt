@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -9,94 +9,21 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+
+    <div tal:replace="structure context/@@+portlet-teambranches" />
+
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/browsername">Context Title</h3>
-  <h1>Bazaar branches</h1>
+  <h1><span tal:replace="view/title_prefix">Bazaar</span> branches</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="branchviewset view/visible_branches;
-                 branchset view/branches">
+     tal:define="branches view/branches">
 
-  <tal:branchlist condition="branchset">
+  <tal:branchlisting content="structure branches/@@+branch-listing" />
 
-  <metal:branch-filter
-      metal:use-macro="context/@@branch-filtering-macros/branch-filter" />
-
-  <table class="listing sortable" id="branchtable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Title</th>
-        <th>Author</th>
-        <th>Status</th>
-        <th class="initial-sort">Product</th>
-        <th>Role</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="branch branchviewset">
-        <!-- Name -->
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
-        <!-- Title -->
-        <td>
-          <a tal:attributes="href branch/fmt:url"
-             tal:content="branch/displayname/fmt:shorten/50">
-               Title Goes Here!
-          </a>
-        </td>
-        <!-- Author -->
-        <td>
-          <span tal:condition="branch/author"
-                tal:replace="branch/author/browsername">Author</span>
-        </td>
-        <!-- Status -->
-        <td>
-          <span tal:content="branch/lifecycle_status/sortkey"
-                class="sortkey">23</span>
-          <span tal:content="branch/lifecycle_status/title"
-                tal:attributes="
-                  class string:branchstatus${branch/lifecycle_status/name}">
-                  Status</span>
-        </td>
-        <!-- Product -->
-        <td>
-          <span tal:condition="branch/product"
-                tal:replace="branch/product/name">
-            Product
-          </span>
-        </td>
-        <!-- Role -->
-        <td tal:define="role python:view.branch_role(branch)">
-          <span class="sortkey" tal:content="role/sortkey">12</span>
-          <span tal:replace="role/title">Role of the person</span>
-        </td>
-      </tr>
-      <tr tal:condition="not: branchviewset">
-        <td colspan="6">
-          <i>There are branches registered for
-            <span tal:replace="context/name">James Jiggler</span> but none of them
-            match the current filter criteria for this page.  Try filtering on
-            "Any Status".</i>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  </tal:branchlist>
-  
-
-  <p tal:condition="not:branchset">
-    There are no branches related to
-    <span tal:replace="context/displayname">Steve Alexander</span>
-    in Launchpad today. You can use Launchpad as a registry for Bazaar
-    branches, and encourage broader community participation in your project
-    using distributed version control.
-  </p>
-
-</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+</div>
 
 <metal:block fill-slot="help">
 
@@ -115,7 +42,10 @@
 
     <li>The <strong>author</strong> is the person being given credit for the
       branch. The author cannot modify the branch in any way, and should
-      normally be the same as the registrant.</li>
+      normally be the same as the registrant. We have both fields to allow
+      you to register a branch which is useful for you and the community,
+      and which you want to monitor through Launchpad, but for which you
+      are not the author.</li>
 
     <li>A <strong>subscriber</strong> is a person expressing interest in a
       branch. Subscribing to a branch does not give any right, and is only
@@ -126,18 +56,6 @@
     <em>author</em> of a branch, it appears as the <em>author</em>. A person or
     team is presented as the registrant only if the branch has different
     author, or if the author is not specified.</p>
-
-  <p>From this page you can:<p>
-
-  <ul>
-    <li>Browse to every listed branch.</li>
-
-    <li>See detailed listings that only show the branches of which this
-      person is the author, the registrant (and not the author), or a
-      subcriber.</li>
-
-    <li>Register a new mirror branch whose author is this person.</li>
-  </ul>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 

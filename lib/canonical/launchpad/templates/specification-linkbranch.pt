@@ -7,13 +7,6 @@
 >
   <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
-
-  <h3 metal:fill-slot="pageheading"
-      tal:content="context/title">Spec Title</h3>
-
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_form/form">
@@ -22,8 +15,8 @@
   </div>
 
   <div metal:fill-slot="help">
-    <p>If you have a branch related to a specification (implementing
-    the feature, or fixing the problem the specification outlines),
+    <p>If you have a branch related to a blueprint (implementing
+    the feature, or fixing the problem the blueprint outlines),
     you can create a link between them.  The summary field can be used
     to leave a note about the relationship.</p>
   </div>

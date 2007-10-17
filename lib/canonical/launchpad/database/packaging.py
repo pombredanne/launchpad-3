@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
@@ -8,13 +8,16 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
-from canonical.lp.dbschema import EnumCol, PackagingType
+from canonical.database.enumcol import EnumCol
+
+from canonical.launchpad.interfaces import (
+        PackagingType, IPackaging, IPackagingUtil)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+
 class Packaging(SQLBase):
-    """A Packaging relating a SourcePackageName in DistroRelease and a Product.
+    """A Packaging relating a SourcePackageName in DistroSeries and a Product.
     """
 
     implements(IPackaging)
@@ -27,18 +30,18 @@ class Packaging(SQLBase):
     sourcepackagename = ForeignKey(foreignKey="SourcePackageName",
                                    dbName="sourcepackagename",
                                    notNull=True)
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
                                dbName='distrorelease',
                                notNull=True)
     packaging = EnumCol(dbName='packaging', notNull=True,
-                        schema=PackagingType)
+                        enum=PackagingType)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     @property
     def sourcepackage(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
-        return SourcePackage(distrorelease=self.distrorelease,
+        return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
 
@@ -47,21 +50,21 @@ class PackagingUtil:
     implements(IPackagingUtil)
 
     def createPackaging(self, productseries, sourcepackagename,
-                        distrorelease, packaging, owner):
+                        distroseries, packaging, owner):
         """See IPackaging."""
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
-                  distrorelease=distrorelease,
+                  distroseries=distroseries,
                   packaging=packaging,
                   owner=owner)
 
     def packagingEntryExists(self, productseries, sourcepackagename,
-                             distrorelease):
+                             distroseries):
         """See IPackaging."""
         result = Packaging.selectOneBy(
             productseries=productseries,
             sourcepackagename=sourcepackagename,
-            distrorelease=distrorelease)
+            distroseries=distroseries)
         if result is None:
             return False
         return True

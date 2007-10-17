@@ -2,7 +2,7 @@ The Queue Builder
 =================
 
 QueueBuilder is a script to sanely initialise new build jobs, it
-verifies the available DistroArchReleases, for which we are able to
+verifies the available DistroArchSeriess, for which we are able to
 build packages, repairs broken Builds entries that makes sense,
 verifies the packages pending to build, install the jobs in
 BuildQueue table and scores the build acording a bunch of
@@ -19,10 +19,10 @@ import the bunch of required database classes:
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.database import (
-  ...      SourcePackageRelease, SourcePackageName, DistroRelease,
+  ...      SourcePackageRelease, SourcePackageName, DistroSeries,
   ...      SourcePackagePublishingHistory,
   ...      SecureSourcePackagePublishingHistory,
-  ...      PocketChroot, DistroArchRelease, Build, BuildQueue,
+  ...      PocketChroot, DistroArchSeries, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
   >>> from canonical.lp.dbschema import (
@@ -51,35 +51,35 @@ Now we have satisfied all needs for BuildMaster, let's instantiate it.
 Emulates a PocketChroot entry to validate the distroarchrelese
 Ubuntu/Hoary/i386/RELEASE and Debian/Woody/i386/RELEASE:
 
-  >>> hoary = DistroRelease.selectOneBy(name='hoary')
-  >>> hoary_dar = DistroArchRelease.selectOneBy(distrorelease=hoary,
+  >>> hoary = DistroSeries.selectOneBy(name='hoary')
+  >>> hoary_dar = DistroArchSeries.selectOneBy(distroseries=hoary,
   ...                                           architecturetag='i386')
-  >>> hoary_dar2 = DistroArchRelease.selectOneBy(distrorelease=hoary,
+  >>> hoary_dar2 = DistroArchSeries.selectOneBy(distroseries=hoary,
   ...                                            architecturetag='hppa')
 
-  >>> woody = DistroRelease.selectOneBy(name='woody')
-  >>> woody_dar = DistroArchRelease.selectOneBy(distrorelease=woody,
+  >>> woody = DistroSeries.selectOneBy(name='woody')
+  >>> woody_dar = DistroArchSeries.selectOneBy(distroseries=woody,
   ...                                           architecturetag='i386')
 
 Pick up any existent librarian file as chroot.
 
-  >>> pocket = PocketChroot(distroarchrelease=hoary_dar, chroot=1)
-  >>> pocket = PocketChroot(distroarchrelease=hoary_dar2, chroot=2)
-  >>> pocket = PocketChroot(distroarchrelease=woody_dar, chroot=3)
+  >>> pocket = PocketChroot(distroarchseries=hoary_dar, chroot=1)
+  >>> pocket = PocketChroot(distroarchseries=hoary_dar2, chroot=2)
+  >>> pocket = PocketChroot(distroarchseries=woody_dar, chroot=3)
 
-Produce a set of available DistroArchRelease, for which the
+Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
 
-  >>> distroreleases = set()
-  >>> for dar in DistroArchRelease.select():
-  ...     distroreleases.add(dar.distrorelease)
-  ...     bm.addDistroArchRelease(dar)
-  >>> distroreleases = sorted(distroreleases, key=operator.attrgetter('name'))
+  >>> distroserieses = set()
+  >>> for dar in DistroArchSeries.select():
+  ...     distroserieses.add(dar.distroseries)
+  ...     bm.addDistroArchSeries(dar)
+  >>> distroserieses = sorted(distroserieses, key=operator.attrgetter('name'))
 
 Only Ubuntu/Hoary/i386 and Debian/Woody/i386 have an available CHROOT.
 
-  >>> sorted((arch.distrorelease.name, arch.architecturetag)
-  ...        for arch in bm._archreleases.keys())
+  >>> sorted((arch.distroseries.name, arch.architecturetag)
+  ...        for arch in bm._archserieses.keys())
   [(u'hoary', u'hppa'), (u'hoary', u'i386'), (u'woody', u'i386')]
 
 Ensure sampledata is processed
@@ -87,15 +87,11 @@ Ensure sampledata is processed
 
 Kick off any pending builds we have to avoid any lint in our tests (there are a
 couple that will be created based on our sampledata). This is to allow
-us to study carefully what is being added as we add new releases and
-builds.
+us to study carefully what is being added as we add new series and builds.
 
-  >>> for dr in distroreleases:
+  >>> for dr in distroserieses:
   ...      bm.createMissingBuilds(dr)
-  WARNING:root:Chroots missing for breezy-autotest, skipping
-  WARNING:root:No nominatedarchindep for hoary-test, skipping
-  WARNING:root:Chroots missing for warty, skipping
-  WARNING:root:No nominatedarchindep for woody, skipping
+
   >>> flush_database_updates()
 
 Add the missing build queue entres, but don't run
@@ -110,60 +106,63 @@ Store current status of the database:
   >>> old_builds = set(Build.select())
   >>> old_jobs = set(BuildQueue.select())
 
-Create some releases and publications
--------------------------------------
+Create some series and publications
+-----------------------------------
 
-Define a helper function to create releases and publications for those
-releases.
+Define a helper function to create series and publications for those
+series.
 
 We need to publish the source in order to get it visible to the
 createMissingBuilds() method. Additionally if the target is an already
-released distrorelease it can only be visible if published in in
+released distroseries it can only be visible if published in in
 special pocket (UPDATES, SECURITY or BACKPORTS)
 
-  >>> from canonical.launchpad.database import Manifest
   >>> count = 1
-  >>> def createPackageAndPublication(name, release, architecturehintlist):
+  >>> def createPackageAndPublication(name, series, architecturehintlist,
+  ...     archive=None):
   ...     """Create a SourcePackageRelease, ReleaseFile and publication.
   ...
   ...     Return a tuple with (SourcePackageRelease, publication)
   ...     """
   ...     global count
-  ...     manifest = Manifest(uuid="fake %d" % count)
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
   ...     release_pocket = PackagePublishingPocket.UPDATES
+  ...     if archive is None:
+  ...        archive = series.main_archive
   ...     srcpkgrel = SourcePackageRelease(
   ...         creator=1,
   ...         version=str(666+count),
   ...         section=1,
   ...         maintainer=1,
   ...         component=1,
-  ...         uploaddistrorelease=1,
+  ...         uploaddistroseries=1,
   ...         sourcepackagename=name,
   ...         architecturehintlist=architecturehintlist,
   ...         builddependsindep='foo (<< 1.0)',
   ...         builddepends=None,
   ...         dsc=None,
+  ...         copyright='placeholder ...',
   ...         changelog=None,
-  ...         manifest=manifest,
   ...         dscsigningkey=None,
   ...         dsc_format="1.0",
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
   ...         dsc_standards_version="3.6.9",
-  ...         dsc_binaries="%s" % name.name)
+  ...         dsc_binaries="%s" % name.name,
+  ...         upload_archive=archive)
   ...     srcfile = SourcePackageReleaseFile(
   ...         sourcepackagerelease=srcpkgrel,
   ...         libraryfile=1,
   ...         filetype=tar)
   ...     p = SecureSourcePackagePublishingHistory(
   ...         sourcepackagerelease=srcpkgrel,
-  ...         distrorelease=release,
+  ...         distroseries=series,
   ...         status=published,
   ...         pocket=release_pocket,
   ...         component=srcpkgrel.component,
   ...         section=srcpkgrel.section,
-  ...         datecreated=UTC_NOW)
+  ...         datecreated=UTC_NOW,
+  ...         archive=archive)
   ...     count += 1
   ...     return srcpkgrel, p
 
@@ -269,7 +268,7 @@ Binary PAS
 To check binary PAS listings we'll use a publication for
 mozilla-firefox, which already has its data set up.
 
-  >>> warty = DistroRelease.selectOneBy(name="warty")
+  >>> warty = DistroSeries.selectOneBy(name="warty")
   >>> firefox_pub = SecureSourcePackagePublishingHistory.get(18)
   >>> legal_archs = set(warty.architectures)
   >>> pas_verify = getPASVerifier("mozilla-firefox: i386 sparc", dar=warty)
@@ -292,16 +291,13 @@ pas.py:_handleBinaryPAS for more information on why.
 Create and verify the new builds
 --------------------------------
 
-Create missing builds (packages w/o build entry) for those distroreleases.
+Create missing builds (packages w/o build entry) for those distroserieses.
 We expect to have a couple of new builds for the sane Hoary and a warning about
 the absence of nominatedarchindep field for Woody:
 
-  >>> for dr in distroreleases:
+  >>> for dr in distroserieses:
   ...      bm.createMissingBuilds(dr)
-  WARNING:root:Chroots missing for breezy-autotest, skipping
-  WARNING:root:No nominatedarchindep for hoary-test, skipping
-  WARNING:root:Chroots missing for warty, skipping
-  WARNING:root:No nominatedarchindep for woody, skipping
+
   >>> flush_database_updates()
 
 Check that we only created new Build entries for the new hoary releases:
@@ -317,12 +313,11 @@ Check that we only created new Build entries for the new hoary releases:
   hppa build of test-buildd-4 670 in ubuntu hoary UPDATES
   hppa build of test-buildd-6 672 in ubuntu hoary UPDATES
   i386 build of test-buildd-7 673 in ubuntu hoary UPDATES
-  
 
-And have a look at our arch-all release's build:
+And have a look at our arch-all series's build:
 
   >>> b = Build.selectOneBy(sourcepackagerelease=spr_all)
-  >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)
+  >>> (b.sourcepackagerelease.name, b.distroarchseries.distroseries.name)
   (u'test-buildd', u'hoary')
 
 Create and verify the new queue entries
@@ -347,7 +342,7 @@ the default score value of 0:
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-  >>> bq.component_name
+  >>> bq.current_component.name
   u'main'
   >>> bq.build.sourcepackagerelease.component.name
   u'main'
@@ -359,14 +354,6 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
 
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)
@@ -380,10 +367,64 @@ And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 buildmaster/master.py code. The job presented should won
-exactly ** 995 ** points last turn (5 for the default urgency 'LOW'
-1000 for the 'Main' component and -10 for one unsatisfied dependency,
-further tests for scoring are in buildd-scoring.txt)
+exactly ** 1005 ** points last turn (5 for the default urgency 'LOW'
+and 1000 for the 'Main' component, further tests for scoring are in
+buildd-scoring.txt)
 
   >>> job.lastscore
-  995
+  1005
 
+== PPA work ==
+
+Currently all Build/BuildQueue are processed in the same batch,
+independently of the targeted archive.
+
+For testing PPA we will snapshot the current build/buildqueue status
+again:
+
+  >>> old_builds = set(Build.select())
+  >>> old_jobs = set(BuildQueue.select())
+
+Then we can create new publication target to PPA archive present in
+the sample data:
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+  >>> name6 = SourcePackageName(name="test-ppa")
+  >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
+  ...     name6, hoary, "i386 hppa", archive=cprov.archive)
+
+Now we create builds and buildqueues and check their contents:
+
+  >>> for dr in distroserieses:
+  ...      bm.createMissingBuilds(dr)
+  >>> flush_database_updates()
+
+Check that we only created new Build entry for ppa publication:
+
+  >>> new_builds = set(Build.select()) - old_builds
+  >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
+  ...   print build.title
+  i386 build of test-ppa 674 in ubuntu hoary UPDATES
+
+Note that it did not create a build for 'hppa' as is requested in the
+given 'architeturehintlist' ('i386 hppa'). Only 'i386' and 'amd64' are
+allowed for PPA (see further comments in buildmaster/master.py).
+
+Check if BuildQueue are also created for ppa_builds:
+
+  >>> bm.addMissingBuildQueueEntries()
+  >>> jobs = bm.sanitiseAndScoreCandidates()
+
+  >>> new_jobs = [job for job in jobs if job not in old_jobs]
+  >>> len(new_jobs)
+  1
+
+Check if the BuildQueue/Build contains the right Archive, which would
+suffice for the build being dispatched and collected correctly (see
+buildd-slavescanner.txt):
+
+  >>> ppa_job = new_jobs[0]
+  >>> ppa_job.build.archive.owner.name
+  u'cprov'

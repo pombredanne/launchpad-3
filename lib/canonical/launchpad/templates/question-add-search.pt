@@ -1,0 +1,53 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-latestquestions" />
+</metal:leftportlets>
+
+<metal:main fill-slot="main">
+  <metal:form use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="extra_info">
+      <p>
+        Please enter a short description (at least 4 words) in the language
+        of your choice, that describes your problem. We will use it to look
+        for similar questions that may already exist.
+      </p>
+
+      <tal:comment replace="nothing">
+        This link should appear in the appropriate widget description,
+        but cannot because of bug #72730.
+      </tal:comment>
+      <p><a href="/+editmylanguages">Change your
+        preferred languages</a> to modify the list of languages available
+        for writing the question.
+      </p>
+    </div>
+
+    <div class="actions" metal:fill-slot="buttons">
+      <input tal:replace="structure view/continue_action/render" />
+    </div>
+
+  </metal:form>
+</metal:main>
+
+<metal:help fill-slot="help">
+  <p>For best results use a short but complete sentence that describes the
+    problem. Be as specific as you can. Try to name the precise part of the
+    application with which you're having a problem. Grammatical words like
+    articles or prepositions, as well as other common words will be ignored.
+  </p>
+  <p>You can consult the
+    <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
+    Support in Launchpad</a> document for more information.</p>
+</metal:help>
+</body>
+</html>
+

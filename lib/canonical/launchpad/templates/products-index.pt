@@ -1,94 +1,174 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Products registered in Launchpad</h1>
-</metal:heading>
+  <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet">
-    <h2>Product statistics in Launchpad</h2>
-    <div class="portletBody portletContent">
-      <img src="/@@/info" />
-      There are <span tal:replace="context/count_all">5</span>
-      products registered in Launchpad, of which
-      <span tal:replace="context/count_buggy">5</span> have bugs reported,
-      <span tal:replace="context/count_translatable">5</span> 
-      have translations,
-      <span tal:replace="context/count_bounties">5</span> have bounties,
-      <span tal:replace="context/count_featureful">5</span> have
-      feature specifications registered,
-      and <span tal:replace="context/count_reviewed">5</span>
-      have been reviewed.
-    </div>
-  </div>
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-  <tal:notsearching condition="not:view/searchrequested">
-    <p>
-      In Launchpad, <dfn>products</dfn> are individual computer programs,
-      applications, libraries, and documents that are developed as software.
-    </p>
-  </tal:notsearching>
 
-  <form method="get">
-  
-          <input name="text" tal:attributes="value view/text" />
-          <input tal:condition="view/searchrequested"
-            type="submit"
-            value="Search Again"
-            />
-          <input tal:condition="not: view/searchrequested"
-            type="submit"
-            value="Search Products"
-            />
-
-  </form>
+    <form class="central" method="get" action="#"
+          tal:attributes="action request/URL"
+          accept-charset="UTF-8">
+      <input size="30" name="text" tal:attributes="value view/search_string" />
+      <input tal:condition="view/searchrequested"
+        type="submit"
+        value="Search again"
+        />
+      <input tal:condition="not: view/searchrequested"
+        type="submit"
+        value="Search projects"
+        />
+    </form>
 
   <tal:searching condition="view/searchrequested">
 
-    <table
-      tal:condition="view/matches"
-      tal:define="results view/searchresults"
-    >
-      <thead>
-        <tr class="results">
-          <td>
-            <span tal:replace="view/matches">3</span>
-            <span tal:condition="python: view.matches == 1">result</span>
-            <span tal:condition="python: view.matches != 1">results</span>
-          </td>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="product results">
-          <td tal:content="structure product/@@+listing-detailed" />
-        </tr>
-      </tbody>
-    </table>
-        <p tal:condition="not: view/matches">
-          No products matching
-          &#8220;<span tal:replace="view/text">moz</span>&#8221;
-          were found.
-        </p>
+    <p id="empty-search-string" tal:condition="not: view/search_string">
+      Enter one or more words related to the project you want to find.
+    </p>
+
+    <tal:non-empty-search-string condition="view/search_string">
+      <p tal:condition="view/tooManyResultsFound"
+           class="informational message">
+        More than <span tal:replace="view/max_results_to_display" /> projects
+        were found, so we're displaying only the ones that are most relevant
+        to your search terms.
+        If the project you are looking for is not on the list below, please
+        do another search with more relevant search terms.  
+      </p>
+
+      <p>
+        <span tal:replace="view/matches">3</span>
+        <span tal:condition="python: view.matches == 1">project found</span>
+        <span tal:condition="python: view.matches != 1">projects found</span>
+        matching &#8220;<tal:string replace="view/search_string" />&#8221;
+        <span tal:condition="view/tooManyResultsFound">,
+          showing the most relevant
+          <span tal:replace="view/max_results_to_display" />
+        </span>
+      </p>
+
+      <table
+        tal:condition="view/matches"
+        tal:define="results view/searchresults"
+        id="search-results"
+        >
+        <tbody>
+          <tr tal:repeat="pillar results" tal:replace="structure pillar/@@+listing-simple">
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="error" id="application-summary"
+         tal:condition="not: view/searchresults">
+        No projects matching
+        &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
+        were found.
+      </p>
+
+      <h2>Haven&#8217;t found your project?</h2>
+
+      <p id="application-summary">
+        If the project you are looking for isn't here, go ahead and register
+        it yourself!
+      </p>
+
+      <ul class="rollover buttons">
+        <li>
+          <a href="/projects/+new">
+            <img
+              alt="Register a project"
+              src="/+icing/but-lrg-registerproj.gif"
+            />
+          </a>
+        </li>
+      </ul>
+
+      <h2>Why register?</h2>
+
+      <p id="application-summary">
+        Launchpad is designed to make it much easier to collaborate with
+        other free software projects. Registering a project here will mean
+        that you, and others, can collaborate efficiently on work related
+        to that project.
+      </p>
+
+    </tal:non-empty-search-string>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
 
-    <h2>Most recently registered</h2>
+    <p id="application-summary">
+      Launchpad is designed to make it much easier to collaborate with
+      other free software projects. Registering a project here will mean
+      that you, and others, can collaborate efficiently on work related
+      to that project.
+    </p>
 
-    <div tal:repeat="product context/latest"
-         tal:replace="structure product/@@+listing-detailed" />
+    <div class="left">
 
+      <div class="portlet">
+
+        <h2>Latest teams registered</h2>
+
+        <table>
+          <tbody>
+            <tr tal:repeat="team context/people/latest_teams">
+              <td tal:content="structure team/image:icon" />
+              <td><a tal:content="team/displayname"
+                     tal:attributes="href team/fmt:url">A-Team</a>
+                  registered
+                  <span tal:attributes="title team/datecreated/fmt:datetime"
+                        tal:content="team/datecreated/fmt:displaydate">
+                    2007-09-17
+                  </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p><a href="/people/+teamlist">&raquo; Show all teams</a></p>
+      </div>
+
+    </div>
+
+    <div class="right">
+
+      <div class="portlet">
+        <h2>Latest projects registered</h2>
+        <table>
+          <tr tal:repeat="product context/latest">
+            <td tal:content="structure product/image:icon" />
+            <td>
+            <a
+              tal:attributes="href product/fmt:url"
+              tal:content="product/displayname"
+              /> registered
+            <tal:date replace="product/datecreated/fmt:displaydate" />
+          </tr>
+        </table>
+        <p><a href="/projects/+all">&raquo; Show all projects</a></p>
+      </div>
+    </div>
   </tal:no_search>
 
-</div>
+  <div class="clear"></div>
 
+  <div id="application-footer">
+    There are <strong tal:content="context/count_all">19</strong>
+    projects registered in Launchpad, of which<br />
+    <strong tal:content="context/count_buggy">5</strong> have bugs reported,
+    <strong tal:content="context/count_translatable">6</strong>
+    have translations,
+    <strong tal:content="context/count_codified">7</strong>
+    have Bazaar branches,<br />
+    <strong tal:content="context/count_featureful">8</strong>
+    have blueprints,
+    and <strong tal:content="context/count_answered">9</strong>
+    have questions &amp; answers.
+  </div>
+
+</div>
 </body>
 </html>

@@ -1,6 +1,6 @@
-<div class="portlet">
-  <h2>Portlet heading:</h2>
-  <div class="portletBody portletContent">
+<div class="portlet" id="portlet-CHANGE-THIS">
+  <h2>Portlet heading</h2>
+  <div class="portletBody">
     
   </div>
 </div>

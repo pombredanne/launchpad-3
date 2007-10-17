@@ -1,5 +1,4 @@
-        Binary Package Release
-        ^^^^^^^^^^^^^^^^^^^^^^
+= BinaryPackageRelease =
 
 BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
@@ -7,7 +6,7 @@ across build records.
    >>> from canonical.launchpad.database import BinaryPackageRelease
    >>> from canonical.launchpad.interfaces import (
    ...       IBinaryPackageRelease, IBinaryPackageReleaseSet)
-   >>> from zope.interface.verify import verifyObject
+   >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> firefox_bin_release = BinaryPackageRelease.get(12)
    >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)
@@ -21,14 +20,37 @@ Useful properties:
 
    >>> firefox_bin_release.lastversions()
    []
-   >>> from canonical.launchpad.interfaces import IDistroReleaseSet
-   >>> warty = getUtility(IDistroReleaseSet).get(1)
+   >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+   >>> warty = getUtility(IDistroSeriesSet).get(1)
    >>> warty.name
    u'warty'
-   >>> hoary = getUtility(IDistroReleaseSet).get(3)
+   >>> hoary = getUtility(IDistroSeriesSet).get(3)
    >>> hoary.name
    u'hoary'
 
+Retrieve the respective DistributionSourcePackageRelease, which allow
+us to easily link to a source reference published in the web-ui.
+
+   >>> from canonical.launchpad.interfaces import (
+   ...     IDistributionSourcePackageRelease)
+   >>> verifyObject(
+   ...    IDistributionSourcePackageRelease,
+   ...    firefox_bin_release.distributionsourcepackagerelease)
+   True
+
+The 'is_new' property tells us whether or not this
+BinaryPackageRelease has ever been published for the DistroArchSeries
+it was built for. If not, then 'is_new' will be True, otherwise False.
+
+   >>> firefox_bin_release.is_new
+   False
+
+   >>> pmount_bin_release = BinaryPackageRelease.get(20)
+   >>> pmount_bin_release.name, pmount_bin_release.version
+   (u'pmount', u'0.1-1')
+
+   >>> pmount_bin_release.is_new
+   True
 
 Check IBinaryPackageRelease.override() behaviour:
 
@@ -88,69 +110,69 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> ret = binset.findByNameInDistroSeries(warty, 'cdr')
    >>> for item in ret:
    ...     print item.name
-   mozilla-firefox
+   cdrkit
 
 Note that two pmounts are returned because they are published in
 different architectures:
 
-   >>> ret = binset.getByNameInDistroRelease(hoary.id, 'pmount')
+   >>> ret = binset.getByNameInDistroSeries(hoary, 'pmount')
    >>> for item in ret:
    ...     print item.name
    pmount
    pmount
 
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'moz')
+   >>> result = binset.findByNameInDistroSeries(warty, 'moz')
    >>> print len(list(result))
-   1
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'nosuchpackage')
-   >>> print len(list(result))
-   0
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'Web Browser',
-   ...                                           fti=True)
-   >>> print len(list(result))
-   1
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'X50keBLvzk',
-   ...                                           fti=True)
+   5
+   >>> result = binset.findByNameInDistroSeries(warty, 'nosuchpackage')
    >>> print len(list(result))
    0
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'moz',
-   ...                                           archtag="nosucharch")
+   >>> result = binset.findByNameInDistroSeries(
+   ...      warty, 'Web Browser', fti=True)
+   >>> print len(list(result))
+   2
+   >>> result = binset.findByNameInDistroSeries(
+   ...     warty, 'X50keBLvzk', fti=True)
+   >>> print len(list(result))
+   0
+   >>> result = binset.findByNameInDistroSeries(
+   ...     warty, 'moz', archtag="nosucharch")
    >>> print len(list(result))
    0
 
 
-getByNameInDistroRelease
+getByNameInDistroSeries
 ------------------------
 
-   >>> result = binset.getByNameInDistroRelease(warty.id)
+   >>> result = binset.getByNameInDistroSeries(warty)
    >>> print len(list(result))
-   6
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox')
+   9
+   >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox')
    >>> print len(list(result))
-   1
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'nosuchpackage')
-   >>> print len(list(result))
-   0
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
-   ...                                          version='0.9')
-   >>> print len(list(result))
-   1
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
-   ...                                          version='nosuchversion')
+   3
+   >>> result = binset.getByNameInDistroSeries(warty, 'nosuchpackage')
    >>> print len(list(result))
    0
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
-   ...                                          archtag='i386')
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', version='0.9')
    >>> print len(list(result))
-   1
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
-   ...                                          archtag='nosucharch')
+   2
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', version='nosuchversion')
+   >>> print len(list(result))
+   0
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', archtag='i386')
+   >>> print len(list(result))
+   2
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', archtag='nosucharch')
    >>> print len(list(result))
    0
 
 XXX: bug 5947, still lacking tests for getByNameVersion, getByArchTag,
-     getDistroReleasePackages and getBySourceName -- kiko, 2006-02-22
+     getDistroSeriesPackages and getBySourceName -- kiko, 2006-02-22
 

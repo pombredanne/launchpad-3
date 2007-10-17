@@ -20,9 +20,9 @@
 <table>
 <tbody>
 <tr>
-<td width="75%">
+<td width="75%" style="vertical-align: top;" id="maincontent">
 
-<tal:shipit-is-open condition="view/standardShipItRequests">
+<tal:shipit-is-open condition="view/is_open" define="user view/user">
 
   <p class="informational message"
      tal:define="status view/process_status"
@@ -55,8 +55,7 @@
     </div>
   </tal:current_request>
 
-  <tal:pastrequests condition="view/user/pastShipItRequests"
-                    define="user view/user">
+  <tal:pastrequests condition="user/pastShipItRequests">
     <h1>Shipped/Cancelled requests</h1>
 
     <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
@@ -74,20 +73,26 @@
 
   <tal:no-current-order condition="not: view/current_order">
     <h1 tal:condition="not: view/current_order">
-      Request <span tal:replace="view/flavour/title" /> 6.06 LTS
-      (Dapper Drake) CDs
+      <span tal:condition="view/prerelease_mode">Pre-order</span>
+      <span tal:condition="not: view/prerelease_mode">Request</span>
+      <span tal:replace="view/flavour/title" />
+      <span tal:replace="view/series/title" /> CDs
     </h1>
 
     <p class="informational message">
-      We can send you CDs free of charge, but it will take from
-      six to ten weeks to deliver, so you may prefer to
-      <a tal:attributes="href view/download_url">download the CD images</a>
-      and record them yourself.
-    </p>
-    <p class="informational message">
-      We are currently accepting requests for 
+      <tal:no-prerelease condition="not: view/prerelease_mode">
+        We can send you CDs free of charge, but it will take from
+        six to ten weeks to deliver, so you may prefer to
+        <a tal:attributes="href view/download_url">download the CD images</a>
+        and record them yourself.
+      </tal:no-prerelease>
+      <tal:prerelease condition="view/prerelease_mode">
       <span tal:replace="view/flavour/title" />
-      6.06 LTS (Dapper Drake) CDs.
+        <span tal:replace="view/series/title" /> has not been released yet,
+        but we'll record your request and send you the CDs as soon as that
+        happens. Note that delivery will take from six to ten weeks once
+        they are sent.
+      </tal:prerelease>
     </p>
   </tal:no-current-order>
 
@@ -120,12 +125,6 @@
         based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
         EM64T Xeon).
       </li>
-
-      <li tal:condition="not: view/is_kubuntu">
-        <strong>Mac</strong> Edition, for Apple Macintosh
-        G3, G4, and G5 computers, including iBooks and PowerBooks.
-      </li> 
-    </ul>
   </tal:not-edubuntu>
 
   <tal:custom-request condition="view/should_show_custom_request">
@@ -144,6 +143,14 @@
     </div>
   </tal:custom-request>
 
+  <tal:standard-request condition="not: view/should_show_custom_request">
+    <p class="informational message" tal:condition="user/is_trusted_on_shipit">
+      The Ubuntu community would like to thank you for your
+      contributions to the Ubuntu project. In recognition of this, we
+      offer you an expanded set of options for your ShipIt request.
+    </p>
+  </tal:standard-request>
+
   <!-- Without using setTimeout() to disable the submit button it'll be
   disabled before the browser generates the request, which will cause the
   request to not contain the name/value of the button.
@@ -152,10 +159,10 @@
         accept-charset="UTF-8"
         onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
-  <table>
+  <table class="headers-right-aligned">
   <tbody>
   <tr>
-    <th>I would like:</th>
+    <th style="vertical-align: top;">I would like:</th>
     <td tal:define="selected_id view/selected_standardrequest">
 
       <tal:standard-request condition="not: view/should_show_custom_request">
@@ -163,13 +170,14 @@
           <label>
             <input type="radio" name="ordertype"
               tal:attributes="value request_type/id;
-                              checked python:request_type.id == selected_id">
+                              checked python:request_type.id == selected_id" />
             <span tal:content="request_type/description" />
           </label>
         </div>
 
         <p>You can make a <a href="/specialrequest">special request</a>
-        for different quantities, but note this will take longer to process.
+        for different quantities, but note this will take longer to process
+        and may not be approved at all.
         We will consider special requests if you are a teacher giving CDs to
         your students, or if you are distributing CDs at a conference or other
         organized event.
@@ -191,7 +199,10 @@
         <br />
         <div tal:define="widget nocall:view/reason_widget">
           <label>Why are you requesting these CDs?</label>
-          <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+          <div style="color: #999; font-size: smaller">
+            (Your answer must be in English)
+          </div>
+          <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
         </div>
 
         <input type="hidden" name="custom" value="1" />
@@ -239,8 +250,13 @@
 
 </tal:shipit-is-open>
 
-<tal:shipit-is-closed condition="not: view/standardShipItRequests">
+<tal:shipit-is-closed condition="not: view/is_open">
   <h1>ShipIt is currently closed</h1>
+
+  <p class="informational message">We'll be back in a few days, shipping
+  <span tal:replace="view/flavour/title" />
+  <span tal:replace="view/series/title" /> CDs.
+  </p>
 
   <tal:pastrequests condition="view/user/pastShipItRequests"
                     define="user view/user">
@@ -251,11 +267,10 @@
 </tal:shipit-is-closed>
 
 </td>
-<td
-  width="25%"
-  style="vertical-align: top;"
-  tal:content="structure view/dvds_section"
-/>
+<td width="25%" style="vertical-align: top;" id="amazon-links"
+    tal:condition="view/is_open">
+  <span tal:content="structure view/dvds_section" />
+</td>
 </tr>
 </table>  
   

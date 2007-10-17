@@ -6,21 +6,23 @@ another distribution, the source package field is pre-filled with the
 first source package found in the "Affects" list.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu-product/+bug/2')
+    ...     'http://launchpad.dev/tomcat/+bug/2')
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> affects_table = soup.first('table', {'class': 'listing'})
-    >>> [tr.td.a.renderContents()
-    ...  for tr in affects_table.tbody.findAll('tr', recursive=False)
-    ...  if tr.td.a]
-    ['ubuntu (upstream)', 'Choose&hellip;',
-     'Hoary', 'Choose&hellip;',
-     'mozilla-firefox (Debian)', 'Choose&hellip;',
-     'Woody', 'Choose&hellip;']
+    >>> for tr in affects_table.tbody.findAll('tr', recursive=False):
+    ...     if tr.td.table:
+    ...         continue
+    ...     print extract_text(tr.findAll('td', limit=1)[0])
+    Tomcat
+    Ubuntu
+    Hoary
+    mozilla-firefox (Debian)
+    Woody
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu-product/+bug/2/+distrotask'
+    'http://bugs.launchpad.dev/tomcat/+bug/2/+distrotask'
     >>> user_browser.getControl('Source Package').value
     'mozilla-firefox'
 

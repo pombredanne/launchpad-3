@@ -1,0 +1,229 @@
+Start out by verifying the members page is sane.
+
+  >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
+  >>> 'Ubuntu Team' in browser.contents
+  True
+  >>> 'Mark Shuttleworth' in browser.contents
+  True
+
+Let's take a look at Colin's subscription page. Colin is an
+administrator and his subscription never expires.
+
+  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> browser.reload()
+  >>> url = '/~ubuntu-team/+member/kamion'
+  >>> browser.getLink(url=url).click()
+
+  >>> "Colin Watson's membership status in Ubuntu Team" in browser.contents
+  True
+  >>> "Active member" in browser.contents
+  True
+  >>> browser.getControl(name='admin').value
+  ['yes']
+
+  >>> browser.getControl(name='expires').value
+  ['never'] 
+
+Post an incomplete date and remove his administrator status.
+
+  >>> browser.getControl(name='admin').value = ['no']
+  >>> browser.getControl(name='expires').value = ['date']
+  >>> browser.getControl(name='day').value = ['16']
+  >>> browser.getControl(name='month').value = ['0']
+  >>> browser.getControl(name='year').value = ['0']
+  >>> browser.getControl('Change').click()
+
+We get a nice error message
+
+  >>> 'incomplete date provided.' in browser.contents
+  True
+
+Give up on change, nothing should have changed with Colin:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, ITeamMembershipSet)
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+  >>> login(ANONYMOUS)
+  >>> personset = getUtility(IPersonSet)
+  >>> teammembershipset = getUtility(ITeamMembershipSet)
+  >>> ubuntu_team = personset.getByName('ubuntu-team')
+  >>> kamion = personset.getByName('kamion')
+  >>> kamion_membership = teammembershipset.getByPersonAndTeam(
+  ...     kamion, ubuntu_team)
+  >>> kamion_membership.statusname
+  'Administrator'
+  >>> print kamion_membership.dateexpires
+  None
+  >>> logout()
+
+
+Now revoke Colin's administrator status and make him expire in November
+next year -- successfully.
+
+  >>> from datetime import datetime
+  >>> next_year = datetime.utcnow().year + 1
+
+  >>> browser.getControl(name='admin').value = ['no']
+  >>> browser.getControl(name='expires').value = ['date']
+  >>> browser.getControl(name='day').value = ['14']
+  >>> browser.getControl(name='month').value = ['11']
+  >>> browser.getControl(name='year').value = [str(next_year)]
+  >>> browser.getControl(name='comment').value = 'Arfie'
+  >>> browser.getControl('Change').click()
+
+We're redirected to the +members page
+
+  >>> browser.url
+  'http://launchpad.dev/~ubuntu-team/+members'
+
+  >>> login(ANONYMOUS)
+  >>> kamion_membership = teammembershipset.getByPersonAndTeam(
+  ...     kamion, ubuntu_team)
+  >>> kamion_membership.statusname
+  'Approved'
+  >>> expire_date = datetime(next_year, 11, 14)
+  >>> kamion_membership.dateexpires.date() == expire_date.date()
+  True
+  >>> logout()
+
+Now check Jeff's subscription. Jeff's also an administrator and his
+subscription never expires, but he can demote himself.
+
+  >>> jdub_browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> jdub_browser.open('http://launchpad.dev/~ubuntu-team/+members')
+  >>> url = '/~ubuntu-team/+member/jdub' 
+  >>> jdub_browser.getLink(url=url).click()
+
+  >>> "Jeff Waugh's membership status in Ubuntu Team" in jdub_browser.contents
+  True
+  >>> "Active member" in jdub_browser.contents
+  True
+
+  >>> jdub_browser.getControl(name='admin').value = ['no']
+  >>> jdub_browser.getControl('Change').click()
+
+  >>> jdub_browser.url
+  'http://launchpad.dev/~ubuntu-team/+members'
+
+  >>> login(ANONYMOUS)
+  >>> jdub = personset.getByName('jdub')
+  >>> jdub_membership = teammembershipset.getByPersonAndTeam(
+  ...     jdub, ubuntu_team)
+  >>> jdub_membership.statusname
+  'Approved'
+  >>> logout()
+
+Sample person had his membership declined to the guadamen group. Test
+that the page works and that foo.bar@canonical can access it.
+
+  >>> browser.open('http://launchpad.dev/~guadamen/+member/name12/')
+
+  >>> 'Declined member' in browser.contents
+  True
+
+Dave Miller is a proposed member in Ubuntu Gnome Team.
+If two people try to accept him as a member at the same time, the first one
+should succeed and the second one receive a nice error message.
+
+  >>> browser.open('http://launchpad.dev/~name18/+members')
+  >>> url = '/~name18/+member/justdave'
+  >>> browser.getLink(url=url).click()
+
+  >>> second_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+  >>> second_browser.open('http://launchpad.dev' + url)
+
+Approve the membership in the first browser.
+
+  >>> browser.getControl('Approve').click()
+
+We're redirected to the members page.
+
+  >>> browser.url
+  'http://launchpad.dev/~name18/+members'
+
+  >>> login(ANONYMOUS)
+  >>> dave = personset.getByName('justdave')
+  >>> ubuntu_gnome_team = personset.getByName('name18')
+  >>> dave_membership = teammembershipset.getByPersonAndTeam(
+  ...     dave, ubuntu_gnome_team)
+  >>> dave_membership.statusname
+  'Approved'
+  >>> logout()
+
+
+But in the second browser with the stale data we get an error message:
+
+  >>> second_browser.getControl('Approve').click()
+  >>> message = (
+  ...     'The membership request for Dave Miller has already been processed')
+  >>> message in second_browser.contents
+  True
+
+
+Team Participation page
+=======================
+
+The team participation page shows the team in which a person is a direct
+member, as well as the teams in which they are an indirect member. We will
+just make sure that this page is displaying without errors in several cases:
+
+ - for a person with no memberships at all
+ - for a person with direct memberships only
+ - for a person with some indirect memberships
+ - for a team with direct memberships only
+
+First, Kiko has not joined any teams:
+
+  >>> browser = setupBrowser()
+  >>> browser.open('http://launchpad.dev/~kiko/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  True
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> print direct
+  None
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> print indirect
+  None
+
+
+Next, Alexander Limi is only a direct member:
+
+  >>> browser.open('http://launchpad.dev/~limi/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  False
+  >>> print extract_text(find_portlet(browser.contents, 'Direct membership'))
+  Direct membership
+  Ubuntu Gnome Team
+  Joined on ...
+  Ubuntu Team
+  Joined on ...
+  >>> print find_portlet(browser.contents, 'Indirect membership')
+  None
+
+
+Next, Sample Person has both direct and indirect memberships:
+
+  >>> browser.open('http://launchpad.dev/~name12/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  False
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> 'Landscape Developers' in direct.renderContents()
+  True
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> 'Ubuntu Gnome Team' in indirect.renderContents()
+  True
+
+
+The Ubuntu Team is only a direct member of other teams:
+
+  >>> browser.open('http://launchpad.dev/~ubuntu-team/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  False
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> 'GuadaMen' in direct.renderContents()
+  True
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> print indirect
+  None
+

@@ -1,11 +1,14 @@
-<div class="portlet">
-  <h2>Subscribers to bug <span tal:replace="context/id">4</span></h2>
-
-  <div class="portletBody portletContent"
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-subscribers">
+  <h2>Subscribers</h2>
+  <div class="portletBody"
        tal:define="from_dupes_subscribers context/getSubscribersFromDuplicates;
                    also_notified_subscribers context/getAlsoNotifiedSubscribers">
 
-    <ul class="people">
+    <ul class="person">
       <li tal:repeat="subscriber context/getDirectSubscribers">
         <a href="#"
            tal:content="subscriber/browsername"
@@ -19,7 +22,7 @@
     <div tal:condition="from_dupes_subscribers">
       <br />
       <b>From duplicates:</b><br />
-      <ul class="people">
+      <ul class="person">
         <li tal:repeat="subscriber from_dupes_subscribers">
           <a href="#"
              tal:content="subscriber/browsername"
@@ -32,7 +35,7 @@
 
       <br />
       <b>Also notified:</b><br />
-      <ul class="people">
+      <ul class="person">
         <li tal:repeat="subscriber also_notified_subscribers">
           <a href="#"
              tal:content="subscriber/browsername"
@@ -41,4 +44,5 @@
       </ul>
 
     </div>
+  </div>
 </div>

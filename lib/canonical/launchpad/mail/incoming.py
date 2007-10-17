@@ -146,7 +146,7 @@ def handleMail(trans=transaction):
 
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
-                file_alias_url = file_alias.url
+                file_alias_url = file_alias.http_url
 
                 # If something goes wrong when handling the mail, the
                 # transaction will be aborted. Therefore we need to commit the
@@ -174,6 +174,13 @@ def handleMail(trans=transaction):
                         "Message had an empty Return-Path.",
                         file_alias_url, notify=False
                         )
+                    continue
+                if mail.get_content_type() == 'multipart/report':
+                    # Mails with a content type of multipart/report are
+                    # generally DSN messages and should be ignored.
+                    _handle_error(
+                        "Got a multipart/report message.",
+                        file_alias_url, notify=False)
                     continue
 
                 try:

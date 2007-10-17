@@ -1,0 +1,28 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Origin: Ubuntu/warty
+Format: 1.7
+Date: Thu, 02 Mar 2006 01:20:25 +0100
+Architecture: all
+Version: 20060302.0120
+Distribution: breezy-autotest
+Source: dist-upgrader
+Binary: dist-upgrader
+Urgency: low
+Maintainer: Foo Bar <foo.bar@canonical.com>
+Changed-By: Foo Bar <foo.bar@canonical.com>
+Changes:
+
+ * Test version.
+ 
+Files:
+ 98c20cb3b3a828b73c95d119e0b6f6e7 378 raw-dist-upgrader - dist-upgrader_20060302.0120_all.tar.gz
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFF2dqHjn63CGxkqMURAgzEAJwK6t0n6NdKPNY16SKDPusK07g1lwCgl1BX
+0bb+ldiFv/GPcIscb+31RTA=
+=IwNJ
+-----END PGP SIGNATURE-----

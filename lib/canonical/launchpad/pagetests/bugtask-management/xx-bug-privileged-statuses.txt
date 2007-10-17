@@ -1,0 +1,130 @@
+= Bug Privileged Statuses =
+
+Some statuses, e.g. Won't Fix, are restricted. Only members of the Bug
+Contact team may change a bug to that status.
+
+    >>> def print_highlighted_bugtask(browser):
+    ...     contents = browser.contents
+    ...     for listing in find_tags_by_class(contents, 'listing'):
+    ...         for highlight in listing('tr', attrs={'class':'highlight'}):
+    ...             for td in highlight('td')[0:3]:
+    ...                 print ' '.join(td(text=lambda t: not t.isspace()))
+
+== Unprivileged users ==
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = user_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ['New']
+
+An unprivileged user can confirm the bug:
+
+    >>> status_control.displayValue = ['Confirmed']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
+    >>> print_highlighted_bugtask(user_browser)
+    mozilla-firefox (Ubuntu)  Confirmed  Medium
+
+But he cannot change the status to Won't Fix or to Triaged, and so
+those statuses are not shown in the UI:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = user_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ['Confirmed']
+
+    >>> status_control.displayValue = ["Won't Fix"]
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: Won't Fix
+
+    >>> status_control.displayValue = ["Triaged"]
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: Triaged
+
+== Bug Contact ==
+
+Ubuntu needs a Bug Contact first of all:
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugcontact')
+    >>> admin_browser.getControl('Bug Contact').value = (
+    ...     'test@canonical.com')
+    >>> admin_browser.getControl('Change').click()
+
+    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print tag.renderContents()
+    Successfully changed the distribution bug contact to test@canonical.com
+
+The new Bug Contact for Ubuntu can change the status to Won't Fix:
+
+    >>> bug_contact_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+
+    >>> bug_contact_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = bug_contact_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ['Confirmed']
+
+    >>> status_control.displayValue = ["Won't Fix"]
+    >>> bug_contact_browser.getControl('Save Changes').click()
+
+    >>> print bug_contact_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
+    >>> print_highlighted_bugtask(bug_contact_browser)
+    mozilla-firefox (Ubuntu)  Won't Fix  Medium
+
+Now the bug has been changed, a regular user can see the Won't Fix
+status. Earlier it was not even displayed as an option.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = user_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ["Won't Fix"]
+
+And a regular user can change other aspects of the bug:
+
+    >>> package_control = user_browser.getControl('Package')
+    >>> print package_control.value
+    mozilla-firefox
+
+    >>> package_control.value = 'iceweasel'
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> print bug_contact_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
+    >>> print_highlighted_bugtask(bug_contact_browser)
+    mozilla-firefox (Ubuntu)  Won't Fix  Medium
+
+The Bug Contact for Ubuntu can also change the status to Triaged:
+
+    >>> bug_contact_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'iceweasel/+bug/1/+editstatus')
+
+    >>> status_control = bug_contact_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ["Won't Fix"]
+
+    >>> status_control.displayValue = ["Triaged"]
+    >>> bug_contact_browser.getControl('Save Changes').click()
+
+    >>> print bug_contact_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1
+    >>> print_highlighted_bugtask(bug_contact_browser)
+    iceweasel (Ubuntu)  Triaged  Medium
+

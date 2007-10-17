@@ -1,0 +1,235 @@
+= Adding members to a team =
+
+Any administrator of a team can add new members to that team.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Add member').click()
+    >>> browser.url
+    'http://launchpad.dev/~landscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Celso Providelo (cprov) has been added as a member of this team.
+
+Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
+
+    >>> from canonical.launchpad.database import Person, TeamMembership
+    >>> cprov = Person.byName('cprov')
+    >>> landscape_team = Person.byName('landscape-developers')
+    >>> cprov_landscape_membership = TeamMembership.selectOneBy(
+    ...     personID=cprov.id, teamID=landscape_team.id)
+    >>> cprov_landscape_membership.statusname
+    'Approved'
+    >>> cprov.inTeam(landscape_team)
+    True
+
+If the new member is already an approved member of that team, we'll say that.
+
+    >>> browser.url
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    Celso Providelo (cprov) is already a member of Landscape Developers.
+
+On the other hand, if the member is among the inactive/proposed members of
+the team, we'll simply change the membership's status and say that it was
+successfully added.
+
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> cprov_landscape_membership.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
+    >>> cprov_landscape_membership.syncUpdate()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Celso Providelo (cprov) has been added as a member of this team.
+
+== Adding teams ==
+
+Teams are not added as members like we do with people. Instead, teams are
+invited and one of their admins have to accept the invitation for them to
+become a member.
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
+    >>> browser.getControl('New member').value = 'launchpad'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Launchpad Developers (launchpad) has been invited to join this team.
+
+As we can see, the launchpad team will not be one of the team's active
+members.
+
+    >>> launchpad = Person.byName('launchpad')
+    >>> launchpad in landscape_team.activemembers
+    False
+    >>> membership = TeamMembership.selectOneBy(
+    ...     person=launchpad, team=landscape_team)
+    >>> membership.statusname
+    'Invited'
+
+And nor will the admins of Landscape Developers be able to do any changes
+with the TeamMembership representing the invitation sent to the Launchpad
+team, not even if they manually craft the URL.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+member/launchpad')
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Invited member
+    Launchpad Developers (launchpad) has been invited to join this team, but
+    hasn't responded to the invitation yet.
+
+    >>> landscape_admin_browser = browser
+
+=== Accepting/Declining invitations ===
+
+Any admin of the team which receives an invitation can either accept or deny
+it. Although they get a link to the invitation's page, there's also a page
+listing all open invitation sent to a given team.
+
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~launchpad')
+    >>> browser.getLink('Show received invitations').click()
+    >>> browser.url
+    'http://launchpad.dev/~launchpad/+invitations'
+
+As said above, only admins of the invited team can accept/decline the
+invitation. Not even an admin of the landscape team (which as so has the
+rights to edit the membership in question) can do it.
+
+    >>> landscape_admin_browser.open(
+    ...     'http://launchpad.dev/~launchpad/+invitation/landscape-developers')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+First, let's accept the invitation sent on behalf of Landscape Developers to
+the Launchpad Developers.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'invitations'))
+    Sent by         On behalf of
+    Sample Person   Landscape Developers
+
+    >>> browser.getLink(
+    ...     url='/~launchpad/+invitation/landscape-developers').click()
+    >>> browser.url
+    'http://launchpad.dev/~launchpad/+invitation/landscape-developers'
+
+    >>> browser.getControl(name='field.reviewercomment').value = (
+    ...     'This is just a test')
+    >>> browser.getControl('Accept').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~launchpad'
+    >>> print extract_text(
+    ...     find_tags_by_class(browser.contents, 'informational')[0])
+    This team is now a member of Landscape Developers
+
+Now we'll decline the invitation sent on behalf of Ubuntu Team to
+Warty Security Team:
+
+    >>> browser.open('http://launchpad.dev/~name20/+invitation/ubuntu-team')
+    >>> browser.getControl('Decline').click()
+    >>> browser.url
+    'http://launchpad.dev/~name20'
+    >>> print extract_text(
+    ...     find_tags_by_class(browser.contents, 'informational')[0])
+    Declined the invitation to join Ubuntu Team
+
+== Corner cases ==
+
+Given that team can have more than one admin, it's possible that at the time
+one admin is browsing the invitation page, another admin might be doing the
+same. When an admin accepts or declines an invitation, the other admin can't
+take action on that invitation anymore.
+
+First invite ubuntu-team to be member of the name21 team.
+
+    >>> browser.open('http://launchpad.dev/~name21/+addmember')
+    >>> browser.getControl('New member:').value = 'ubuntu-team'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Ubuntu Team (ubuntu-team) has been invited to join this team.
+
+Open the invitations page with one admin browser.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+invitation/name21')
+
+Open the same page with another admin browser.
+
+    >>> second_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> second_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+invitation/name21')
+
+Accept the invitation in the first browser.
+
+    >>> browser.getControl('Accept').click()
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team'
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    This team is now a member of Hoary Gnome Team
+
+Accepting the invitation in the second browser, redirects to the team page
+and a message is displayed.
+
+    >>> second_browser.getControl('Accept').click()
+    >>> second_browser.url
+    'http://launchpad.dev/~ubuntu-team'
+
+    >>> for tag in find_tags_by_class(second_browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    This invitation has already been processed.
+
+== Evil workarounds ==
+
+One thing to keep in mind is that we can't invite a team without active
+members.
+XXX: This restriction was added as a workaround for
+https://launchpad.net/bugs/94164, but I don't think it's the correct fix for
+the bug sice we could skip the notification sent to the team in this case.
+-- Guilherme Salgado, 2007-05-09
+
+    # Ideally we should do this using the web UI, but doing it this way is a
+    # lot simpler.
+    >>> carlos = Person.byName('carlos')
+    >>> ubuntu_translators = Person.byName('ubuntu-translators')
+    >>> carlos_translators_membership = TeamMembership.selectOneBy(
+    ...     personID=carlos.id, teamID=ubuntu_translators.id)
+    >>> carlos_translators_membership.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
+    >>> carlos_translators_membership.syncUpdate()
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
+    >>> browser.getControl('New member').value = 'ubuntu-translators'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    You can't add a team that doesn't have any active members.
+

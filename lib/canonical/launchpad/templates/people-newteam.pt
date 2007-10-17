@@ -8,22 +8,18 @@
       <h1>Register a new team</h1>
     </metal:heading>
 
-  <tal:comment condition="nothing">
-    This page uses the launchpad-addform.pt METAL.
-  </tal:comment>
-
   <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
         <p metal:fill-slot="extra_info">
           Use a team to group people involved in a common task.
-          For example, a team can be the maintainer of a product,
+          For example, a team can be the maintainer of a project,
           the assignee of a bug,
           or the editor of a package for a particular language.
         </p>
 
-  </div>
+    </div>
 
   </div>
   </body>

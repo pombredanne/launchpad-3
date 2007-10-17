@@ -40,15 +40,29 @@ class ILibraryFileAlias(Interface):
     expires = Datetime(
             title=_('Expiry time'), required=False, readonly=True,
             description=_('''
-                When file can be removed. Set to None if the file 
+                When file can be removed. Set to None if the file
                 should only be removed when it is no longer referenced
                 in the database. Set it to NEVER_EXPIRES to keep it in
                 the Librarian permanently.
                 ''')
             )
 
-    url = Attribute(_("The URL to this file"))
-    secure_url = Attribute(_("The secure URL to this file"))
+    # XXX Guilherme Salgado, 2007-01-18 bug=80487:
+    # We can't use TextLine here because they return
+    # byte strings.
+    http_url = Attribute(_("The http URL to this file"))
+    https_url = Attribute(_("The https URL to this file"))
+
+    def getURL():
+        """Return this file's http or https URL.
+
+        The generated URL will be https if the use_https config variable is
+        set, in order to prevent warnings about insecure objects from
+        happening in some browsers.
+
+        If config.launchpad.virtual_host.use_https is set, then return the
+        https URL. Otherwise return the http URL.
+        """
 
     def open():
         """Open this file for reading."""
@@ -101,9 +115,9 @@ class ILibraryFileAliasSet(Interface):
         from the Librarian at this time. See LibrarianGarbageCollection.
         """
 
-    def __getitem__(self, key):
+    def __getitem__(key):
         """Lookup an ILibraryFileAlias by id."""
-    
+
     def findBySHA1(sha1):
         """Return all LibraryFileAlias whose content's sha1 match the given
         sha1.

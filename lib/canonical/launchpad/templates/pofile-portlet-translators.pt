@@ -1,20 +1,22 @@
-<div class="portlet">
+<div class="portlet" id="portlet-translators">
   <h2><span tal:replace="context/language/englishname">Spanish</span>
   translators</h2>
 
   <div class="portletBody portletContent">
 
     <tal:block repeat="translator context/translators">
-      <h5 class="languages">
+      <div>
+        <img alt="" src="/@@/translation" />
         <a tal:content="translator/translationgroup/title"
            tal:attributes="href translator/translationgroup/fmt:url">
            Ubuntu Translation Group</a>:
-      </h5>
-      <h6 class="person">
+      </div>
+      <div>
+        <img alt="" src="/@@/team" />
         <a tal:content="translator/translator/browsername"
            tal:attributes="href translator/translator/fmt:url">Ubuntu
            Afrikaans Team</a>
-      </h6>
+      </div>
       <tal:block condition="translator/translator/isTeam">
         <ul>
           <li class="person"

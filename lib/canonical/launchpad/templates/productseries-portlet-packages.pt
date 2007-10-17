@@ -1,13 +1,14 @@
-<div class="portlet" tal:condition="context/sourcepackages">
+<div class="portlet" id="portlet-packages"
+     tal:condition="context/sourcepackages">
   <h2>Distribution packaging</h2>
 
   <div class="portletBody portletContent ">
     This series is packaged in the following places:
     <ul>
       <li tal:repeat="package context/sourcepackages">
-         <span tal:replace="package/distrorelease/distribution/name"
+         <span tal:replace="package/distroseries/distribution/name"
          />
-         <span tal:replace="package/distrorelease/name"
+         <span tal:replace="package/distroseries/name"
          />
          <a tal:content="package/name"
             tal:attributes="href package/fmt:url">apache</a>

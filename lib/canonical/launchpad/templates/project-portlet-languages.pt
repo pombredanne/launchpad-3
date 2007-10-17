@@ -1,4 +1,4 @@
-<div class="portlet"> 
+<div class="portlet" id="portlet-languages">
     <h2>Your languages</h2>
 
     <div class="portletBody">
@@ -6,7 +6,7 @@
 
         <table class="listing" border="0" width="100%">
             <tr><th></th></tr>
-            <tr tal:repeat="language view/languages">
+            <tr tal:repeat="language view/translatable_languages">
                 <td><b><span tal:replace="language/englishname">language</span></b>
                     <span tal:condition="language/nativename" tal:omit-tag>
                         (<span tal:replace="language/nativename">nativename</span>)

@@ -1,0 +1,101 @@
+= POTemplate index page =
+
+The index page for a POTemplate lists all available translations
+for a source package. No Privileges Person visits the 
+evolution-2.2 POTemplate page.
+
+    >>> anon_browser.open("http://translations.launchpad.dev/"
+    ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
+    >>> anon_browser.title
+    'Translation status for...
+    ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...'
+
+The page lists the status of all the translations. It merges the
+No Privileges Person's languages (which are South African) with
+the translated languages. English, which is a South African language
+is not included because it is not translatable. For each language, we
+show the number of messages that are untranslated, the percentage
+that represents, when the translation was updated, and by whom.
+
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(content.findAll('h1')[0])
+    Translation status for evolution-2.2
+
+    >>> table = content.findAll('table')[0]
+    >>> for row in table.findAll('tr'):
+    ...     print extract_text(row).encode('us-ascii', 'backslashreplace')
+    Language        Status  Untranslated Need review Changed Last    Edited By
+    Afrikaans       100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+    Japanese        095.45  21 21        0 ...       0 ...   ...     Carlos...
+    Sotho, Southern 100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+    Spanish         068.18  15 15        0 ...       1 1     ...     Foo Bar
+    Xhosa           100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+    Zulu            100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+
+The 'Template details' portlet summarizes the state of the POTemplate.
+
+    >>> details = find_portlet(anon_browser.contents, 'Template details')
+    >>> print extract_text(details)
+    Template details...
+    22 messages...
+    ...2 Languages...
+    ...Owner:...
+    ...Rosetta Administrators...
+    ...Created:  on 2005-05-06...
+    ...Domain: evolution-2.2...
+    ...
+
+When products have more than one template, the page informs the user
+that there are alternates that may be translated.
+
+    >>> anon_browser.open("http://translations.launchpad.dev/"
+    ...     "evolution/trunk/+pots/evolution-2.2-test")
+    >>> alternate_notice = find_main_content(
+    ...     anon_browser.contents).findAll('p')[1]
+    >>> print extract_text(alternate_notice)
+    Other templates from the same source: evolution-2.2.
+
+The notice links to the alternate template.
+
+    >>> print alternate_notice
+    <p>...Other templates from the same source:
+    <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...</p>
+
+English is not translatable. We do not display English in the list of
+languages when the user speaks English or even when English
+translations exist. The Mozilla sourcepackage pkgconf-mozilla has
+English translations, but they are not displayed to the user.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/mozilla/+pots/pkgconf-mozilla')
+    >>> table = find_tag_by_id(anon_browser.contents, 'language-chart')
+    >>> for row in table.findAll('tr')[0:6]:
+    ...     print extract_text(row).encode('us-ascii', 'backslashreplace')
+    Language    Status  Untranslated Need review Changed Last  Edited By
+    Afrikaans   100.00  9 9          0 ...       0 ...   ...   &mdash;
+    Czech       000.00  0 ...        0 ...       0 ...   ...   Miroslav Kure
+    Danish      000.00  0 ...        0 ...       0 ...   ...   Morten Brix...
+    Dutch       000.00  0 ...        0 ...       0 ...   ...   Luk Claes
+    Finnish     000.00  0 ...        0 ...       0 ...   ...   P\xf6ll\xe4
+
+We are presented not only with links to alternate templates from the same
+source, but also with links to the same template in (other) distroseries.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2')
+    >>> alternate_notice = find_main_content(
+    ...     anon_browser.contents).findAll('p')[2]
+    >>> print extract_text(alternate_notice)
+    See the same template in: Ubuntu Hoary.
+    >>> print alternate_notice
+    <p>...<a href="/ubuntu/hoary/+source/evolution/+pots/evolution-2.2"...
+
+The template in the other distroseries links back to this one.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> alternate_notice = find_main_content(
+    ...     anon_browser.contents).findAll('p')[2]
+    >>> print extract_text(alternate_notice)
+    See the same template in: Evolution trunk.
+    >>> print alternate_notice
+    <p>...<a href="/evolution/trunk/+pots/evolution-2.2"...
+

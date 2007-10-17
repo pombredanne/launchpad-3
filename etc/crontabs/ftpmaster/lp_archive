@@ -1,0 +1,12 @@
+# m h  dom mon dow   command
+
+
+PATH=/home/lp_archive/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/srv/launchpad.net/codelines/current/scripts/ftpmaster-tools
+LPCONFIG=ftpmaster
+
+*/30 *    *   *   *    $HOME/bin/publish-queue -Q unapproved >> $HOME/logs/publish-queue.log 2>&1
+*/35 *    *   *   *    $HOME/bin/publish-queue -s feisty-proposed -Q unapproved >> $HOME/logs/publish-queue.log 2>&1
+*/30 *    *   *   *    $HOME/bin/publish-queue -Q new >> $HOME/logs/publish-queue.log 2>&1
+*/35 *    *   *   *    $HOME/bin/publish-queue -s feisty-proposed -Q new >> $HOME/logs/publish-queue.log 2>&1
+
+

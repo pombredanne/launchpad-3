@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
@@ -37,20 +36,11 @@
         for="canonical.launchpad.interfaces.IBazaarApplication"
         permission="zope.Public"
         class="canonical.launchpad.browser.BazaarApplicationView"
-        facet="branches"
-        lp:url="/+code">
+        facet="branches">
         <browser:page
             name="+index"
             template="../templates/bazaar-index.pt"
-            lp:url="/+code/+index" />
-        <browser:page
-            name="+all-branches"
-            template="../templates/bazaar-all-branches.pt"
-            lp:url="/+code/+all-branches" />
-        <browser:page
-            name="+portlet-importstats"
-            template="../templates/bazaar-portlet-importstats.pt"
-            lp:url="/+code/+portlet-importstats" />
+            />
     </browser:pages>
 
 <xmlrpc:view

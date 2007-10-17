@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -9,6 +8,12 @@
   <content class="canonical.launchpad.database.BinaryPackageRelease">
     <allow interface="canonical.launchpad.interfaces.IBinaryPackageRelease" />
   </content>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IBinaryPackageRelease"
+    path_expression="name"
+    attribute_to_parent="build"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IBinaryPackageRelease"
@@ -20,7 +25,7 @@
     />
 
   <browser:pages
-    for="canonical.launchpad.database.BinaryPackageRelease" 
+    for="canonical.launchpad.database.BinaryPackageRelease"
     class="canonical.launchpad.browser.BinaryPackageView"
     facet="overview"
     permission="zope.Public">

@@ -4,7 +4,7 @@ It should be possible to register yourself to attend the sprint:
 
   >>> browser.open('http://launchpad.dev/sprints/ubz')
 
-  >>> browser.getLink('Register Yourself').click()
+  >>> browser.getLink('Register yourself').click()
   >>> browser.url
   'http://launchpad.dev/sprints/ubz/+attend'
 
@@ -82,7 +82,7 @@ Now, Sample Person should be listed as an attendee.
 If we return to the "Register Yourself" form, the previously entered
 dates are prefilled (they have been clamped to the sprint duration):
 
-  >>> browser.getLink('Register Yourself').click()
+  >>> browser.getLink('Register yourself').click()
   >>> print browser.getControl('Starting At').value
   2006-01-10 10:30:00
   >>> print browser.getControl('Finishing At').value
@@ -91,7 +91,7 @@ dates are prefilled (they have been clamped to the sprint duration):
 Also, it is possible to register someone else. Let's register Carlos.
 
   >>> browser.open('http://launchpad.dev/sprints/ubz')
-  >>> browser.getLink('Register Someone').click()
+  >>> browser.getLink('Register someone else').click()
   >>> browser.url
   'http://launchpad.dev/sprints/ubz/+register'
 

@@ -1,5 +1,4 @@
-Team Membership/Participation
-=============================
+= Team Membership/Participation =
 
 When a person joins a team, we store the relationship in the TeamMembership
 table. In this table we store the membership status, the join date and the
@@ -13,207 +12,500 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.database import Person
-    >>> from canonical.lp.dbschema import (
-    ...     TeamSubscriptionPolicy, TeamMembershipStatus)
+    >>> from canonical.launchpad.interfaces import (
+    ...     TeamSubscriptionPolicy, TeamMembershipStatus,
+    ...     TeamMembershipRenewalPolicy)
 
-    >>> o = TeamSubscriptionPolicy.OPEN
-    >>> m = TeamSubscriptionPolicy.MODERATED
+XXX: This doctest needs a lot of cleanups!
+-- Guilherme Salgado, 2006-12-15
 
-    >>> p = Person.byName('name16')
-    >>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)
-    >>> t2 = Person(subscriptionpolicy=o, name='t2', displayname='t2', teamowner=p)
-    >>> t3 = Person(subscriptionpolicy=m, name='t3', displayname='t3', teamowner=p)
-    >>> t4 = Person(subscriptionpolicy=o, name='t4', displayname='t4', teamowner=p)
-    >>> t5 = Person(subscriptionpolicy=o, name='t5', displayname='t5', teamowner=p)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> foobar = personset.getByName('name16')
+    >>> reviewer = foobar
+    >>> t1 = personset.newTeam(
+    ...     foobar, 't1', 't1',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> t2 = personset.newTeam(
+    ...     foobar, 't2', 't2',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> t3 = personset.newTeam(
+    ...     foobar, 't3', 't3',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    >>> t4 = personset.newTeam(
+    ...     foobar, 't4', 't4',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> t5 = personset.newTeam(
+    ...     foobar, 't5', 't5',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
 
-One of your users want to join the t3 and t4 teams.
+    # Make sure the teams have predictable (and different) creation dates as
+    # some of our tests depend on that.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> oldest = t1.datecreated
+    >>> removeSecurityProxy(t2).datecreated = oldest + timedelta(hours=1)
+    >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
+    >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
+    >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
-    >>> p.join(t3)
-    True
-    >>> p.join(t4)
-    True
-    >>> [m.displayname for m in t3.allmembers]
-    []
+== Adding new members ==
 
-But these are MODERATED teams, somebody has to approve 'name16' as a member:
+One way of adding new members to a team is by having the user himself join the
+team he wants.
 
-    >>> t4.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
+    >>> salgado = personset.getByName('salgado')
+    >>> salgado.join(t3)
+    >>> salgado.join(t4)
+
+Note that since t3 is a MODERATED team, Salgado is not really added as a
+member of that team --somebody has to approve his membership first:
+
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar']
+    [u'Foo Bar', u'Guilherme Salgado']
 
-    >>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
+    >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
+    >>> flush_database_updates()
+    >>> [m.displayname for m in t3.allmembers]
+    [u'Foo Bar', u'Guilherme Salgado']
 
-Now we add t3 as a member of t2. But t3 is a team, and because teams take no
-actions, it can't actually "join" t2. Instead, an administrator of t2 have 
-to addMember() it.
+The join() method is not allowed for teams whose subscription policy is
+RESTRICTED. And it'll be a no-op in case the user has already joined the
+given team.
 
-    >>> t3.join(t2)
+    >>> launchpad = personset.getByName('launchpad')
+    >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
+    True
+    >>> salgado.join(launchpad)
+    Traceback (most recent call last):
+    ...
+    JoinNotAllowed: This is a restricted team
+
+    >>> salgado.join(t3)
+    >>> salgado in t3.activemembers
+    True
+    >>> salgado.join(t4)
+    >>> salgado in t4.activemembers
+    True
+
+Also note that the join() method must only be called from an person object;
+never from a team, because teams can't perform actions in launchpad, so it
+doesn't make sense to have a team joining another one. (Hint: see below a way
+to add a team as a member of another one)
+
+    >>> t2.join(t3)
     Traceback (most recent call last):
     ...
     AssertionError: Teams take no actions in Launchpad...
 
-    >>> t2.addMember(t3)
+Another API for adding members is ITeam.addMember(), which ensures the given
+person has a membership entry for that team, regardless of whether the person
+was already an active/inactive member or has never been a member before.
 
-By making t3 a member of t2, that means that all members of t3 will also be
-added as a member of t2.
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> t3.addMember(
+    ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> flush_database_updates()
+    >>> membership = membershipset.getByPersonAndTeam(salgado, t3)
+    >>> membership.reviewer == sabdfl
+    True
+    >>> membership.status == TeamMembershipStatus.ADMIN
+    True
+    >>> salgado in t3.activemembers
+    True
 
+    >>> marilize = personset.getByName('marilize')
+    >>> t3.addMember(
+    ...     marilize, reviewer=sabdfl, status=TeamMembershipStatus.PROPOSED)
+    >>> flush_database_updates()
+    >>> marilize in t3.activemembers
+    False
+
+Note that, by default, the ITeam.addMember() API works slightly different
+when the added member is a team. In that case the team will actually be
+invited to be a member and one of the team's admins will have to accpet the
+invitation before the team is made a member.
+
+    >>> t1.addMember(t2, reviewer)
+    >>> membership = membershipset.getByPersonAndTeam(t2, t1)
+    >>> membership.status == TeamMembershipStatus.INVITED
+    True
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar']
+
+Once one of the t2 admins approve the membership, t2 is shown as a member
+of t1.
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(t2.teamowner.preferredemail.email)
+    >>> t2.acceptInvitationToBeMemberOf(t1, comment='something')
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar', u't2']
+
+A team admin can also decline an invitation made to his team.
+
+    >>> t2.addMember(t3, reviewer=sabdfl)
+    >>> login(t3.teamowner.preferredemail.email)
+    >>> t3.declineInvitationToBeMemberOf(t2, comment='something')
+    >>> membership = membershipset.getByPersonAndTeam(t3, t2)
+    >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
+    True
+
+In some cases it's necessary to bypass the invitation workflow and directly
+add teams as members of other teams. We can do that by passing an extra
+force_team_add=True to addMember(). We'll use that to add t3 as a member of
+t2, thus making all t3 members be considered members of t2 as well.
+
+    >>> login(ANONYMOUS)
+    >>> t2.addMember(t3, reviewer=sabdfl, force_team_add=True)
     >>> [m.displayname for m in t2.allmembers]
-    [u'Foo Bar', u't3']
+    [u'Foo Bar', u'Guilherme Salgado', u't3']
+
+And members of t1 as well, since t2 is a member of t1.
+
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
 Can we add t2 as a member of t3? No, we prevent this kind of loop, and users
 can't do this because our vocabularies won't allow members that would cause
 loops.
 
-    >>> t3.addMember(t2)
+    >>> t3.addMember(t2, reviewer)
     Traceback (most recent call last):
     ...
-    AssertionError: Team 't3' is a member of 't2'. As a consequence, 't2' can't be added as a member of 't3'
-
-Adding t2 as a member of t1 will add all t2 members as t1 members too.
-
-    >>> t1.addMember(t2)
-    >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar', u't2', u't3']
+    AssertionError: Team 't3' is a member of 't2'. As a consequence, 't2'
+    can't be added as a member of 't3'
 
 Adding t2 as a member of t5 will add all t2 members as t5 members too.
 
-    >>> t5.addMember(t2)
+    >>> t5.addMember(t2, reviewer, force_team_add=True)
     >>> [m.displayname for m in t5.allmembers]
-    [u'Foo Bar', u't2', u't3']
+    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
 Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4 
 members too.
 
-    >>> t4.addMember(t5)
-    >>> t4.addMember(t1)
+    >>> t4.addMember(t5, reviewer, force_team_add=True)
+    >>> t4.addMember(t1, reviewer, force_team_add=True)
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar', u't1', u't2', u't3', u't5']
+    [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
+
+    >>> flush_database_updates()
 
 After adding all this mess, this is what we have:
 
+(This table doesn't include the team owner (Foo Bar), but since he's the
+owner he's also a direct member of all teams)
 =============================================================
-||  Team      ||  Members          ||  Indirect Members    ||
+||  Team      ||  Direct Members   ||  Indirect Members    ||
 =============================================================
-||   T1       ||  T2               ||  T3, 'Foo Bar'       ||
-||   T2       ||  T3               ||  'Foo Bar'           ||
-||   T3       ||  'Foo Bar'        ||                      ||
-||   T4       ||  T5, T1, 'Foo Bar'||  T2, T3, 'Foo Bar'   ||
-||   T5       ||  T2               ||  T3, 'Foo Bar'       ||
+||   T1       ||  T2               ||  T3, Salgado         ||
+||   T2       ||  T3               ||  Salgado             ||
+||   T3       ||  Salgado          ||                      ||
+||   T4       ||  T5, T1, Salgado  ||  T2, T3              ||
+||   T5       ||  T2               ||  T3, Salgado         ||
 
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+We can use IPerson.findPathToTeam() to check some of the relationships drawn
+above, either from a person to a given team ...
+
+    >>> [team.name for team in salgado.findPathToTeam(t1)]
+    [u't3', u't2', u't1']
+    >>> [team.name for team in salgado.findPathToTeam(t5)]
+    [u't3', u't2', u't5']
+    >>> [team.name for team in salgado.findPathToTeam(t3)]
+    [u't3']
+
+... or from a team to another one:
+
+    >>> [team.name for team in t3.findPathToTeam(t4)]
+    [u't2', u't1', u't4']
 
 t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
 if t2 shouldn't be a member of t5 anymore.
 
-    >>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED)
+    >>> t5.setMembershipData(t2, TeamMembershipStatus.DEACTIVATED, reviewer)
 
 Removing t2 from t5 will have implications in all teams that have t5 as a
 (direct or indirect) member.
 
 t5 had only one member and two other indirect members. Now that t2 is not its
-member anymore, it doesn't have any indirect members either.
+member anymore, it doesn't have any members apart from its owner.
 
     >>> [m.displayname for m in t5.allmembers]
-    []
+    [u'Foo Bar']
 
 Removing t2 from t5 won't remove it from t4, because t2 is also a member of
 t1, which is a member of t4.
+
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar', u't1', u't2', u't3', u't5']
+    [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
 Nothing changes in t1, because t5 wasn't one of its members.
-    >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar', u't2', u't3']
 
-If 'Foo Bar' decides to leave t3, he'll also be removed from t1, t2, but not
-from t4, because he's a direct member of t4.
-    >>> p.leave(t3)
-    >>> p in t1.allmembers
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
+
+If 'Guilherme Salgado' decides to leave t3, he'll also be removed from t1
+and t2, but not from t4, because he's a direct member of t4.
+
+    >>> salgado.leave(t3)
+    >>> salgado in t1.allmembers
     False
-    >>> p in t2.allmembers 
+    >>> salgado in t2.allmembers 
     False
-    >>> p in t4.allmembers
+    >>> salgado in t4.allmembers
     True
 
 
-This is what we have now, after removing t2 from t5:
+This is what we have now, after removing t2 from t5 and Salgado from t3.
 
+(This table doesn't include the team owner (Foo Bar), but since he's the
+owner he's also a direct member of all teams)
 =============================================================
 ||  Team      ||  Members          ||  Indirect Members    ||
 =============================================================
-||   T1       ||  T2               ||  T3, 'Foo Bar'       ||
-||   T2       ||  T3               ||  'Foo Bar'           ||
-||   T3       ||  'Foo Bar'        ||                      ||
-||   T4       ||  T5, T1, 'Foo Bar'||  T2, T3, 'Foo Bar'   ||
+||   T1       ||  T2               ||  T3                  ||
+||   T2       ||  T3               ||                      ||
+||   T3       ||                   ||                      ||
+||   T4       ||  T5, T1, Salgado  ||  T2, T3              ||
 ||   T5       ||                   ||                      ||
 
 
 Now, if I add a new member to t3, will it be added to t2, t1 and t4 as well?
 Let's see...
 
-    >>> t3.addMember(Person.byName('salgado'))
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> t3.addMember(cprov, reviewer)
     >>> [m.displayname for m in t3.allmembers]
-    [u'Guilherme Salgado']
+    [u'Celso Providelo', u'Foo Bar']
 
     >>> [m.displayname for m in t2.allmembers]
-    [u'Guilherme Salgado', u't3']
+    [u'Celso Providelo', u'Foo Bar', u't3']
 
     >>> [m.displayname for m in t1.allmembers]
-    [u'Guilherme Salgado', u't2', u't3']
+    [u'Celso Providelo', u'Foo Bar', u't2', u't3']
 
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
+    [u'Celso Providelo', u'Foo Bar', u'Guilherme Salgado', u't1', u't2',
+     u't3', u't5']
 
 
-It's important to note that even if p is not a member of t5, he still retains
-his rights over the team because he's the team's owner:
+It's important to note that even if Foo Bar leaves the team he's the owner,
+he'll retains his rights over the team because he's the team's owner. This
+ensures we'll never have teams which can't be managed.
 
+    >>> foobar.leave(t5)
     >>> flush_database_updates()
-    >>> p.inTeam(t5)
+    >>> [m.displayname for m in t5.allmembers]
+    []
+    >>> foobar.inTeam(t5)
     True
 
 
-Flagging expired memberships
-----------------------------
+== Changing membership data ==
+
+The only bits of a TeamMembership that can be changed are its status, expiry
+date, reviewer[comment] and the date the user joined. From these ones, the
+most interesting ones are the status and expiry date, which can only be set
+through a specific API (setStatus() and setExpirationDate()) protected with
+the launchpad.Edit permission. Also, since we don't want team admins to change
+the expiry date of their own memberships, the setExpirationDate() method does
+an extra check to ensure that doesn't happen.
+
+    # Foo Bar is a launchpad admin, but even so he can't change a membership's
+    # status/expiry-date by hand.
+    >>> login('foo.bar@canonical.com')
+    >>> membership = foobar.myactivememberships[0]
+    >>> membership.status = None
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+    >>> membership.dateexpires = None
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+Foo Bar asked to join Warty Security Team on 2006-01-26 and he's been doing
+good work, so we'll approve his membership.
+
+    >>> warty_team = getUtility(IPersonSet).getByName('name20')
+    >>> membership = membershipset.getByPersonAndTeam(foobar, warty_team)
+    >>> print membership.status.title
+    Proposed
+    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    2006-01-26
+
+When we approve his membership, the datejoined will contain the date that it
+was approved.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print membership.status.title
+    Approved
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> membership.datejoined.date() == utc_now.date()
+    True 
+
+On the other hand, when we deactivate an active membership, the datejoined is
+not changed.
+
+    >>> buildd_admins = getUtility(IPersonSet).getByName(
+    ...     'launchpad-buildd-admins')
+    >>> foobar_on_buildd = membershipset.getByPersonAndTeam(
+    ...     foobar, buildd_admins)
+    >>> print foobar_on_buildd.status.title
+    Administrator
+    >>> print foobar_on_buildd.datejoined.strftime("%Y-%m-%d")
+    2006-05-15
+
+    >>> foobar_on_buildd.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, reviewer=foobar)
+    >>> print foobar_on_buildd.status.title
+    Deactivated
+    >>> print foobar_on_buildd.datejoined.strftime("%Y-%m-%d")
+    2006-05-15
+
+Finally, if we reactivate his membership, the datejoined will once again be
+updated.
+
+    >>> foobar_on_buildd.setStatus(
+    ...     TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print foobar_on_buildd.status.title
+    Approved
+    >>> foobar_on_buildd.datejoined.date() == utc_now.date()
+    True 
+
+When changing the expiry date we need to provide a date in the future and,
+as mentioned above, the change can't be done by a team admin to his own
+membership.
+
+We're still logged in as Foo Bar, which is a launchpad admin and thus
+can change any membership's expiry date (even his own), as long as
+the new expiry date is not in the past.
+
+    >>> foobar == foobar_on_buildd.team.teamowner
+    True
+    >>> foobar_on_buildd.canChangeExpirationDate(foobar)
+    True
+    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> foobar_on_buildd.setExpirationDate(one_day_ago, foobar)
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+    >>> foobar_on_buildd.setExpirationDate(tomorrow, foobar)
+
+Team owners can also renew any memberships of the team they own.
+
+    >>> landscape = getUtility(IPersonSet).getByName(
+    ...     'landscape-developers')
+    >>> sampleperson = getUtility(IPersonSet).getByName(
+    ...     'name12')
+    >>> sampleperson_on_landscape = membershipset.getByPersonAndTeam(
+    ...     sampleperson, landscape)
+    >>> landscape.teamowner.name
+    u'name12'
+    >>> sampleperson_on_landscape.canChangeExpirationDate(sampleperson)
+    True
+    >>> sampleperson_on_landscape.setExpirationDate(tomorrow, sampleperson)
+
+In the case of a mere team admin, though, he can only change the expiry
+date of other's memberships, not his own.
+
+    >>> cprov_on_buildd = membershipset.getByPersonAndTeam(
+    ...     cprov, buildd_admins)
+    >>> buildd_admins.teamowner.name
+    u'name16'
+    >>> print cprov_on_buildd.status.title
+    Administrator
+
+    >>> foobar_on_buildd.canChangeExpirationDate(cprov)
+    True
+    >>> foobar_on_buildd.setExpirationDate(tomorrow, cprov)
+
+    >>> cprov_on_buildd.canChangeExpirationDate(cprov)
+    False
+    >>> cprov_on_buildd.setExpirationDate(tomorrow, cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+
+== Flagging expired memberships ==
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
 expired.
 
-    >>> from canonical.launchpad.database import TeamMembershipSet, Person
-    >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
-    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
+To find out which memberships are already expired, we use
+TeamMembershipSet.getMembershipsToExpire(). As you can see, we don't have any
+membership to expire right now.
 
-Let's change the expiry date of an active membership, so we have something for
-our script to flag as expired.
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire()]
+    []
 
-    >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name16'),
-    ...     Person.selectOneBy(name='admins'))
+Let's change the expiry date of an active membership, so we have something
+that should be expired. Since we can't set an expiry date in the past for a
+membership using setExpirationDate(), we'll have to cheat and access the
+dateexpires attribute directly.
+
+    >>> foobar_on_admins = membershipset.getByPersonAndTeam(
+    ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.dateexpires is None
     True
     >>> foobar_on_admins.status.title
     'Administrator'
-    >>> foobar_on_admins.dateexpires = one_day_ago
+    >>> login('foo.bar@canonical.com')
+    >>> removeSecurityProxy(foobar_on_admins).dateexpires = one_day_ago
+    >>> flush_database_updates()
 
-And here we change the expiry date of a membership that's already deactivated.
-The cronscript will not change this membership, because it's not active.
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire()]
+    [(u'name16', u'admins')]
 
-    >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name12'),
-    ...     Person.selectOneBy(name='ubuntu-translators'))
+And here we change the expiry date of a membership that's already
+deactivated, so it should not be flagged as expired.
+
+    >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
+    ...     personset.getByName('name12'),
+    ...     personset.getByName('ubuntu-translators'))
     >>> sp_on_ubuntu_translators.dateexpires is None
     True
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
-    >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
+    >>> removeSecurityProxy(sp_on_ubuntu_translators).dateexpires = one_day_ago
+    >>> flush_database_updates()
+
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire()]
+    [(u'name16', u'admins')]
+
+The getMembershipsToExpire() method also accepts an optional 'when' argument.
+When that argument is provided, we get the memberships that are supposed to
+expire on that date or before.
+
+    >>> sabdfl_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     personset.getByName('sabdfl'),
+    ...     personset.getByName('ubuntu-team'))
+    >>> sabdfl_on_ubuntu_team.dateexpires is not None
+    True
+    >>> sabdfl_on_ubuntu_team.status.title
+    'Administrator'
+
+    >>> when = sabdfl_on_ubuntu_team.dateexpires + timedelta(days=1)
+    >>> [(membership.person.name, membership.team.name)
+    ...  for membership in membershipset.getMembershipsToExpire(when=when)]
+    [(u'sabdfl', u'ubuntu-team'), (u'name16', u'admins'),
+     (u'ubuntu-team', u'guadamen'), (u'name16', u'launchpad-buildd-admins'),
+     (u'name12', u'landscape-developers')]
 
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
@@ -238,77 +530,228 @@ while the one that was inactive hasn't changed.
 
     # These two objects were updated in another transaction, so we need to
     # expire them.
-    >>> foobar_on_admins.expire()
-    >>> sp_on_ubuntu_translators.expire()
+    >>> removeSecurityProxy(foobar_on_admins).expire()
+    >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 
-    >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name16'),
-    ...     Person.selectOneBy(name='admins'))
+    >>> foobar_on_admins = membershipset.getByPersonAndTeam(
+    ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.status.title
     'Expired'
+    >>> foobar_on_admins.reviewer.name
+    u'janitor'
 
-    >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
-    ...     Person.selectOneBy(name='name12'),
-    ...     Person.selectOneBy(name='ubuntu-translators'))
+    >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
+    ...     personset.getByName('name12'),
+    ...     personset.getByName('ubuntu-translators'))
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
 
 
-Querying team memberships
--------------------------
+== Renewing team memberships ==
+
+A team membership can be renewed before it has been expired by either
+changing its dateexpires (which can be done only by admins of the
+membership's team) or by using IPerson.renewTeamMembership, which is
+accessible only to the membership's member a few days before it expires.
+Also, for a member to renew his own membership, it's necessary that the
+team's renewal policy is set to ONDEMAND and that the membership is
+still active.
+
+    >>> karl = personset.getByName('karl')
+    >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
+    >>> karl_on_mirroradmins = membershipset.getByPersonAndTeam(
+    ...     karl, mirror_admins)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+    >>> print karl_on_mirroradmins.dateexpires
+    None
+
+The member himself can't change the expiration date of his membership.
+
+    >>> login(karl.preferredemail.email)
+    >>> karl_on_mirroradmins.setExpirationDate(tomorrow, karl)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+Only a team admin can.
+
+    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> karl_on_mirroradmins.setExpirationDate(
+    ...     tomorrow, mirror_admins.teamowner)
+    >>> karl_on_mirroradmins.dateexpires == tomorrow
+    True
+
+If the team's renewal policy is ONDEMAND, the membership can be renewed
+by the member himself. (That is only true because this membership is
+active and set to expire tomorrow).
+
+    >>> print karl_on_mirroradmins.team.renewal_policy.name
+    NONE
+    >>> karl_on_mirroradmins.canBeRenewedByMember()
+    False
+    >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> karl_on_mirroradmins.team.renewal_policy = ondemand
+
+    # When a user renews his own membership, we use the team's default
+    # renewal period, so we must specify that for the mirror admins
+    # team.
+    >>> mirror_admins.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+
+    >>> karl_on_mirroradmins.canBeRenewedByMember()
+    True
+
+    >>> login(karl.preferredemail.email)
+    >>> karl.renewTeamMembership(mirror_admins)
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(karl_on_mirroradmins)
+
+Now the membership can't be renewed by the member as it's not going to
+expire soon.
+    
+    >>> karl_on_mirroradmins.dateexpires == tomorrow + timedelta(days=365)
+    True
+    >>> karl_on_mirroradmins.canBeRenewedByMember()
+    False
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+
+
+== Querying team memberships ==
 
 You can check a person's direct memberships by using myactivememberships:
 
-    >>> salgado = Person.byName('salgado')
-    >>> [(membership.team.name,
-    ...  membership.status.title) for membership in salgado.myactivememberships]
-    [(u'admins', 'Administrator'),
-     (u't3', 'Approved')]
+    >>> [(membership.team.name, membership.status.title)
+    ...  for membership in salgado.myactivememberships]
+    [(u'landscape-developers', 'Approved'),
+     (u'admins', 'Administrator'), (u't4', 'Approved')]
 
-And you can check which direct memberships a team has by using activememberships:
-
-    >>> [(membership.person.name, membership.status.title)
-    ...     for membership in t3.activememberships]
-    [(u'salgado', 'Approved')]
-
-A team has a number of other methods that return what people are members
-of it, all based on Person._getMembersByStatus:
+And you can check which direct memberships a team has by using
+getActiveMemberships():
 
     >>> [(membership.person.name, membership.status.title)
-    ...     for membership in t3.declinedmembers]
-    []
+    ...  for membership in t3.getActiveMemberships()]
+    [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
+
+A team has a number of other methods that return the people which are members
+of it, all based on Person.getMembersByStatus:
+
+    >>> [person.unique_displayname for person in t3.approvedmembers]
+    [u'Celso Providelo (cprov)']
 
 (which is the same as saying
 
-    >>> [(membership.person.name, membership.status.title)
-    ...     for membership in t3._getMembersByStatus(TeamMembershipStatus.DECLINED)]
-    []
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(TeamMembershipStatus.APPROVED)]
+    [u'Celso Providelo (cprov)']
 
 except shorter)
 
-Querying a person for team participation
-----------------------------------------
+We can also change the sort order of the results of getMembersByStatus.
+
+    >>> cprov.leave(t3)
+    >>> flush_database_updates()
+
+    >>> deactivated = TeamMembershipStatus.DEACTIVATED
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated)]
+    [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
+
+    >>> orderBy = '-TeamMembership.datejoined'
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
+    [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
+
+== Finding team administrators ==
+
+Another convenient method is getDirectAdministrators(), which returns the
+admin members plus the owner in case he is not one of the admin members.
+
+    >>> [admin.unique_displayname for admin in t3.adminmembers]
+    [u'Foo Bar (name16)']
+    >>> list(t3.getDirectAdministrators()) == list(t3.adminmembers)
+    True
+
+    >>> shipit_admins = personset.getByName('shipit-admins')
+    >>> shipit_admins.adminmembers.count() == 0
+    True
+    >>> owner = shipit_admins.teamowner
+    >>> list(shipit_admins.getDirectAdministrators()) == [owner]
+    True
+
+Note that the team administrators can contain teams, so if you want to
+check if a user is an admin of the team, you should use inTeam() to
+check if the user is a member of these administrators. For example,
+cprov isn't a direct administrator of the guadamen team, but he is
+an indirect administrator by being a member of the Ubuntu team (which
+is a direct administrator of the guadamen team):
+
+    >>> guadamen_team = personset.getByName('guadamen')
+    >>> [person.name for person in guadamen_team.getDirectAdministrators()]
+    [u'name16', u'ubuntu-team']
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> cprov.inTeam(ubuntu_team)
+    True
+    >>> foobar in guadamen_team.getDirectAdministrators()
+    True
+    >>> cprov in guadamen_team.getDirectAdministrators()
+    False
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Edit', guadamen_team)
+    True
+
+There is also the getAdministratedTeams() method that returns all the
+teams for which the person/team has admin rights.
+
+    >>> [team.name for team in cprov.getAdministratedTeams()]
+    [u'guadamen', u'launchpad-buildd-admins']
+
+== Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being
 participants of teams by virtue of being members of other teams which are in
 turn members of these teams.
 
 We can ask a person what teams they participate in. The
-teams_participated_in attribute works recusively, listing all teams the
+teams_participated_in attribute works recursively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
-    t1
-    t2
-    t3
+    landscape-developers
+    mailing-list-experts
     t4
 
-    >>> t2.setMembershipStatus(t3, TeamMembershipStatus.DEACTIVATED)
+Adding admins as a member of t1 will make Salgado a member of t1 as well.
+
+    >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
-    >>> transaction.commit()
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
-    t3
+    landscape-developers
+    mailing-list-experts
+    t1
+    t4
+
+On the other hand, making t2 a member of admins won't change anything
+for Salgado.
+
+    >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
+    >>> flush_database_updates()
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
+    admins
+    landscape-developers
+    mailing-list-experts
+    t1
+    t4
 

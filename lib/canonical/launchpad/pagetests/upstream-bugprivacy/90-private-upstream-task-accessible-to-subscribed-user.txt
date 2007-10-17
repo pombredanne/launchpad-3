@@ -1,8 +1,0 @@
-Sample Person accesses the task page of a task on a private bug. He is
-allowed to view the task page because he is explicitly subscribed to
-the bug.
-
-    >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/firefox/+bug/11/+editstatus")
-    >>> print browser.headers["Status"]
-    200 Ok

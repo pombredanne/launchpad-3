@@ -1,103 +1,221 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
-  metal:use-macro="context/@@main_template_2col/master"
-  i18n:domain="launchpad">
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:condition="context/title|nothing"
-      tal:content="context/title">Foo Series: main</h3>
-  <h1>Report a new bug</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <h1>
+        <img
+          tal:condition="view/isPrivate"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          style="float: right;"
+          title="This bug report will be private, though you can disclose it later."
+        />
+        <tal:heading condition="not:view/similar_bugs">
+          Report a bug
+        </tal:heading>
+        <tal:heading condition="view/similar_bugs">
+          Is the bug you&rsquo;re reporting one of these?
+        </tal:heading>
+      </h1>
+
+  <metal:not_uses_malone
+      use-macro="context/@@+filebug-macros/not_uses_malone" />
+
+  <tal:uses_malone tal:condition="view/contextUsesMalone">
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
-
-      <p tal:condition="view/found_possible_duplicates">
-      <strong>Your bug may have already been reported.</strong>
-      Please take a few moments to look through the bugs below
-      to see if your bug has already been reported.
+      <p tal:condition="not: view/similar_bugs">
+        No similar bug reports were found.
       </p>
-      <p class="informational message"
-         tal:condition="not: view/found_possible_duplicates">
-        No similar bugs were found.
-      </p>
-
-      <tal:similar-bugs condition="view/similar_bugs">
-        <table class="listing" id="similar-bugs" style="clear: both">
-          <thead>
-            <tr><th colspan="2">Summary</th></tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug view/similar_bugs"
-                tal:attributes="title bug/description/fmt:shorten/500"
-                title="bug description goes here">
-              <td tal:content="bug/id" class="amount" width="10%">1</td>
-              <td>
-                <a href="#"
-                   tal:content="bug/title"
-                   tal:attributes="href bug/fmt:url">
-                   Firefox doesn't work
-                </a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </tal:similar-bugs>
-
-      <tal:most-common-bugs condition="view/most_common_bugs">
-        <h2 style="clear: both">Most Frequently Reported Bugs</h2>
-
-        <table class="listing" id="most-common-bugs">
-          <thead>
-            <tr><th colspan="2">Summary</th></tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug view/most_common_bugs"
-                tal:attributes="title bug/description/fmt:shorten/500"
-                title="bug description goes here">
-              <td class="amount" tal:content="bug/id" width="10%">1</td>
-              <td>
-                <a href="#"
-                   tal:content="bug/title"
-                   tal:attributes="href bug/fmt:url">
-                   Firefox doesn't work
-                </a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </tal:most-common-bugs>
-
     </div>
 
     <metal:widgets metal:fill-slot="widgets">
 
-      <p tal:condition="view/found_possible_duplicates">
-        If your bug hasn't been reported before, please describe your
-        problem more in detail.
-      </p>
+      <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
+        <table class="form">
+          <metal:basic_filebug_widgets
+              metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+        </table>
+        <div class="actions">
+          <input tal:replace="structure view/submit_bug_action/render" />
+        </div>
+      </div>
 
-      <table class="form">
+      <div tal:condition="view/similar_bugs">
 
-        <metal:basic_filebug_widgets
-            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+        <tal:similar-bugs condition="view/contextUsesMalone">
 
-      </table>
+          <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
+            <li tal:repeat="bug view/similar_bugs"
+                tal:attributes="title bug/description/fmt:shorten/500"
+                title="bug description goes here" class="similar-bug">
+              <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
+                <tbody>
+                  <tr>
+                    <td>
+                      <input type="radio" name="field.bug_already_reported_as"
+                             tal:attributes="id string:bug-already-reported-as-${bug/id};
+                                             value string:${bug/id};
+                                             checked python: path('repeat/bug/start') and not (
+                                                 path('view/this_is_my_bug_action/submitted') or
+                                                 path('view/submit_bug_action/submitted'))" />
+                    </td>
+                    <td>
+                      <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                             tal:condition="bugtask"
+                             tal:content="structure bugtask/image:icon" />
+                      <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
+                    </td>
+                    <td>
+                      <div>
+                        <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                               style="font-weight: normal">
+                          #<tal:bug-id replace="bug/id">4</tal:bug-id>
+                          <a tal:attributes="href bug/fmt:url"
+                             tal:content="bug/title">Bug title here</a>
+                        </label>
+                      </div>
+                      <div class="lesser" tal:condition="bugtask">
+                        <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                               style="font-weight: normal">
+                          <tal:status replace="bugtask/status/title" />,
+                          last updated
+                          <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
+                            2007-07-03
+                          </tal:last-updated>
+                        </label>
+                      </div>
+                      <div class="lesser" tal:condition="not:bugtask">
+                        <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                               style="font-weight: normal">
+                          <tal:closed condition="bug/is_complete">Closed,</tal:closed>
+                          <tal:open condition="not:bug/is_complete">Open,</tal:open>
+                          last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
+                        </label>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </li>
+          </ul>
+
+          <p tal:define="error_message view/widget_errors/bug_already_reported_as|nothing"
+             tal:condition="error_message" tal:content="error_message" class="error message" />
+
+          <div class="actions" style="margin-top: 0.5em; margin-bottom: 2em; margin-left: 2em">
+            <input tal:replace="structure view/this_is_my_bug_action/render" />
+          </div>
+
+          <ul style="list-style: none; margin-left: 0">
+            <li style="margin-top: 1em">
+              <tal:comment replace="nothing">
+                We hide this next paragraph if the context doesn't use
+                malone because in that situation we're showing the form
+                after an error message and in that context the message
+                makes no sense.
+              </tal:comment>
+              <table tal:condition="view/contextUsesMalone">
+                <tbody>
+                  <tr>
+                    <td>
+                      <input id="bug-not-already-reported" type="radio"
+                             name="field.bug_already_reported_as" value=""
+                             tal:attributes="checked view/submit_bug_action/submitted|nothing" />
+                    </td>
+                    <td>
+                      <label for="bug-not-already-reported">
+                        No, I'd like to report a new bug
+                      </label>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </li>
+          </ul>
+
+        </tal:similar-bugs>
+
+        <tal:submit-new-bug>
+          <div id="bug_reporting_form">
+            <table class="form">
+              <metal:basic_filebug_widgets
+                  metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+            </table>
+            <div class="actions">
+              <input tal:replace="structure view/submit_bug_action/render" />
+            </div>
+          </div>
+        </tal:submit-new-bug>
+
+      </div>
+
+      <script type="text/javascript" tal:condition="view/similar_bugs">
+        /*
+         * Arrange the bug form for either the state where the user is selecting
+         * an existing bug report, or for where they're filing a new bug.
+         */
+        function arrangeBugForm(event) {
+          var no_radiobtn = $('bug-not-already-reported');
+
+          if (no_radiobtn.checked) {
+            showElement('bug_reporting_form');
+            // Try to get the whole bug form into view.
+            $('field.actions.submit_bug').focus();
+            $('field.comment').focus();
+          } else {
+            hideElement('bug_reporting_form');
+          }
+
+          // Disable "Subscribe to This Bug Report" to avoid accidental use.
+          $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
+        }
+
+        /*
+         * On-load, make sure that the 'No' stuff is displayed correctly.
+         * We must always work from the data in the form, not just from
+         * events. Some browsers (e.g. Firefox) refill the form when a page
+         * is refreshed and you don't get onchange/onkeypress events.
+         */
+        connect(window, 'onload', arrangeBugForm);
+
+        /*
+         * Arrange the form if any of the radio buttons are clicked.
+         */
+        forEach(
+          getElementsByTagAndClassName('input', null, 'similar-bugs'),
+          function(element) {
+            connect(element, 'onclick', arrangeBugForm);
+          });
+        connect('bug-not-already-reported', 'onclick', arrangeBugForm);
+      </script>
 
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons">
-      <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+      <tal:comment replace="nothing">
+        This suppresses the normal action buttons.
+      </tal:comment>
     </div>
 
   </div>
+
+  </tal:uses_malone>
 
 </div>
 

@@ -2,19 +2,25 @@
 <table class="listing"
   tal:condition="context/releases"
   tal:attributes="id string:series_${context/name}">
-  <thead class="lesser">
+  <thead>
     <tr>
       <th>Version</th>
       <th>Codename</th>
       <th>Date Released</th>
     </tr>
   </thead>
-  <tbody class="lesser">
+  <tbody>
     <tr tal:repeat="release context/releases">
       <td><a tal:content="release/version"
              tal:attributes="href release/fmt:url">version</a></td> 
       <td><span tal:replace="release/codename">code name</span></td>
-      <td tal:content="release/datereleased/fmt:date">date</td>
+      <td>
+        <span
+          tal:attributes="title release/datereleased/fmt:datetime"
+          tal:content="release/datereleased/fmt:approximatedate">
+          2005-12-13
+        </span>
+      </td>
     </tr>
   </tbody>
 </table>

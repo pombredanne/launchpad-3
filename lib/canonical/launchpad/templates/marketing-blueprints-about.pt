@@ -1,0 +1,73 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <div id="about" metal:fill-slot="contents">
+    <div id="primary">
+      <h2>Blueprints</h2>
+      <h3 class="byline">Overview</h3>
+    </div>
+
+    <h2 class="headline">Collaborative feature development</h2>
+
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Discuss and implement ideas</th>
+          <th>Manage releases</th>
+          <th>Schedule meetings and sprints</th>
+          <th>Create a roadmap</th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/blueprints-feature-discuss.png"
+                   alt="Blueprints discuss ideas mini screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-release.png"
+                   alt="Blueprints release mini screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-sprints.png"
+                   alt="Blueprints sprints mini screenshot" /></td>
+          <td><img src="/+icing/blueprints-feature-roadmap.png"
+                   alt="Blueprints roadmap mini screenshot" /></td>
+        </tr>
+        <tr>
+          <td>Blueprints help your community track ideas and manage their
+              implementation.
+          </td>
+          <td>Target blueprints to future releases of your software.</td>
+          <td>Organise real world meetings, and register attendees, with an
+            agenda made up of blueprints.
+          </td>
+          <td>Launchpad generates your project roadmap based on blueprint
+            dependencies and priorities.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About the Blueprint Tracker</h3>
+
+        <p>Code isn't the only part of your project that can benefit from open
+           development. Launchpad's unique Blueprint Tracker lets anyone
+           suggest and discuss ideas for your project.
+        </p>
+
+        <p>You can accept or reject blueprints, prioritise and assign their
+           development to particular team members, schedule development at
+           sprints and tie them to specific releases. The Blueprint Tracker
+           reduces the barriers to participating in your project and gives you
+           a simple way to track new features from idea to release.
+         </p>
+      </div>
+    </div> <!-- content -->
+  </div>
+</body>
+</html>

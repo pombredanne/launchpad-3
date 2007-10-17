@@ -23,11 +23,14 @@
       <li tal:repeat="poll view/openpolls">
         <a tal:attributes="href poll/fmt:url">
           <span tal:replace="poll/title" />
-        </a> - closes <span tal:replace="poll/datecloses/fmt:datetime" />.
+        </a> - closes
+        <span
+          tal:attributes="title poll/datecloses/fmt:datetime"
+          tal:content="poll/datecloses/fmt:displaydate" />.
 
         <tal:block define="user request/lp:person" condition="user">
           <tal:block condition="python: poll.personVoted(user)">
-            You have 
+            You have
             <span tal:replace="poll/closesIn/fmt:approximateduration" /> 
             to change your vote if you wish.
           </tal:block>
@@ -44,7 +47,10 @@
       <li tal:repeat="poll view/notyetopenedpolls">
         <a tal:attributes="href poll/fmt:url">
           <span tal:replace="poll/title" />
-        </a> - opens <span tal:replace="poll/dateopens/fmt:datetime" />
+        </a> - opens
+        <span
+          tal:attributes="title poll/dateopens/fmt:datetime"
+          tal:content="poll/dateopens/fmt:displaydate" />
       </li>
     </ul>
 
@@ -55,7 +61,10 @@
         <li tal:repeat="poll view/closedpolls">
           <a tal:attributes="href poll/fmt:url">
             <span tal:replace="poll/title" />
-          </a> - closed <span tal:replace="poll/datecloses/fmt:datetime" />
+          </a> - closed
+          <span
+            tal:attributes="title poll/datecloses/fmt:datetime"
+            tal:content="poll/datecloses/fmt:displaydate" />
         </li>
       </ul>
     </tal:block>

@@ -1,0 +1,73 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<div metal:fill-slot="help">
+</div>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Projects <span tal:replace="context/displayname" /> is involved with</h1>
+</metal:heading>
+
+<div metal:fill-slot="main"> 
+  <p tal:condition="view/tooManyRelatedProjectsFound"
+       class="informational message">
+      <span tal:replace="view/related_projects_count" /> projects are related
+        to <span tal:replace="context/displayname" />. Displaying only the
+        first <span tal:replace="view/max_results_to_display" />:
+  </p>
+ 
+  <table tal:condition="view/relatedProjects"
+         tal:define="pillarnames view/relatedProjects" 
+         class="listing" 
+         id="related-projects">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Bugs</th>
+        <th>Blueprints</th>
+        <th>Questions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="pillarname pillarnames">
+        <td>
+          <a tal:attributes="href pillarname/pillar/fmt:url"
+             tal:content="pillarname/pillar/title">
+          </a>
+        </td>
+        <td style="text-align: right">
+          <a tal:attributes="href string:${pillarname/pillar/fmt:url}/+bugs"
+             tal:content="python: pillarname.pillar.open_bugtasks.count()">
+          </a>
+        </td>
+        <td style="text-align: right">
+          <a tal:attributes="href string:${pillarname/pillar/fmt:url}/+specs"
+             tal:content="python: pillarname.pillar.specifications().count()">
+          </a>
+        </td>
+        <td style="text-align: right">
+          <a tal:attributes="href string:${pillarname/pillar/fmt:url}/+questions"
+             tal:content="python: pillarname.pillar.searchQuestions().count()">
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p tal:condition="not: view/relatedProjects">
+    <span tal:replace="context/title">Foo Bar</span>
+    doesn't own or drive any projects.
+  </p>
+</div>
+</body>
+</html>

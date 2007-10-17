@@ -1,32 +1,51 @@
 <html>
     <head>
-        <title tal:content="view/title">Title</title>
-        <tal:comment condition="nothing">
-            This javascript iterates over all forms and their elements in
-            the source window, and sets the elements value if the elements
-            name matches. It would be much nicer if the source form had a
-            name... or I knew Javascript ;-)
-        </tal:comment>
+        <style type="text/css">
+        <!--
+            body {
+                font-size: 80%;
+            }
+            h1 {
+                font-size: 95%;
+                display: block;
+                background: #e0e0e0;
+                padding: 0.5em;
+            }
+        -->
+        </style>
         <script language="Javascript" type="text/javascript"
             tal:content="string:field = '${request/form/field}';" />
         <script language="Javascript" type="text/javascript">
             function update(value) {
-                e = window.opener.document.getElementById(field);
+                e = window.parent.document.getElementById(field);
                 if (e == null) {
                     alert(field);
                 }
                 if (e != null) {
                     e.value = value;
-                    window.close();
+                    hide();
                     }
-                }
+            }
+            function hide() {
+                parent_doc = window.parent.document
+                iframe = parent_doc.getElementById('popup_iframe_' + field);
+                // XXX: kiko 2007-03-12:
+                // when we alter the iframe's display value, the
+                // @@popup-window page is reloaded for some reason, and
+                // I can't find out why. I've tried
+                // event.preventBubble() and return false.
+                iframe.style.display = 'none';
+                return false;
+            }
         </script>
+        <title tal:content="view/title">Title</title>
     </head>
     <body onLoad="document.searchform.search.focus()">
-        <div tal:define="batch view/search">
+        <div style="float: right; padding: 0.5em;"><a href="#"
+            style="text-decoration: none;" onClick="javascript: hide()"><small>[cancel]</small></a></div>
+        <div tal:define="batchnav view/search">
             <h1 tal:content="view/title">Title</h1>
-
-            <form method="GET" name="searchform">
+            <form method="get" name="searchform" style="text-align: center">
                 <input type="text" name="search"
                     tal:attributes="value request/search|nothing" />
                 <input type="submit" value="Search" />
@@ -39,9 +58,9 @@
             <table tal:condition="view/hasMoreThanOnePage">
                 <tr>
                     <th>
-                        <a tal:attributes="href batch/prevBatchURL">&larr;</a>
+                        <a tal:attributes="href batchnav/prevBatchURL">&larr;</a>
                     </th>
-                    <tal:x repeat="page_link batch/batchPageURLs">
+                    <tal:x repeat="page_link batchnav/batchPageURLs">
                         <th tal:condition="python:not
                                 str(page_link.keys()[0]).startswith('_')">
                             <a tal:attributes="href
@@ -50,21 +69,26 @@
                         </th>
                     </tal:x>
                     <th>
-                        <a tal:attributes="href batch/nextBatchURL">&rarr;</a>
+                        <a tal:attributes="href batchnav/nextBatchURL">&rarr;</a>
                     </th>
                 </tr>
             </table>
-            <dl>
-                <tal:x repeat="item view/currentTokenizedBatch">
-                    <dt>
-                        <a href="#" title="Click to select"
-                            tal:content="item/token"
-                            tal:attributes="onclick 
-                            string:update('${item/token}')">Token</a>
-                    </dt>
-                    <dd tal:content="item/title">Title</dd>
-                </tal:x>
-            </dl>
+            <tal:has-search condition="request/search|nothing">
+              <dl>
+                  <tal:x repeat="item batchnav/currentBatch">
+                      <dt><img src="/@@/bullet" alt="" border="" />
+                          <a href="#" title="Click to select"
+                              tal:content="item/token"
+                              tal:attributes="onclick 
+                              string:update('${item/token}')">Token</a>
+                      </dt>
+                      <dd tal:content="item/title">Title</dd>
+                  </tal:x>
+              </dl>
+              <tal:no-items condition="not: batchnav/currentBatch">
+                  No results found for keyword '<span tal:replace="request/search" />'.
+              </tal:no-items>
+            </tal:has-search>
         </div>
     </body>
 </html>

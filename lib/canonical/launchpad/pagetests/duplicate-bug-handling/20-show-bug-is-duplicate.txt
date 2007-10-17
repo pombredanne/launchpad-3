@@ -1,11 +1,40 @@
-When a bug is marked as a duplicate of another bug, the main bug page
-will show such information in a prominent way.
+When a bug is marked as a duplicate of another bug, the duplicate bug's
+page shows this prominently, and the comment field is accompanied by an extra
+warning that it's a duplicate.
 
-  >>> print http(r"""
-  ... GET /debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-        This report is a duplicate of
-        <a href="...">bug #1</a>
-  ...
+    >>> user_browser.open(
+    ... 'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2')
+    >>> messages = find_tags_by_class(user_browser.contents, 'message')
+    >>> for message in messages:
+    ...     print extract_text(message)
+    This report is a duplicate of...bug #1...
+    ...Comment here only if...
+
+The "Affects" lines are also not expandable, preventing people from changing
+the bug's status to no effect.
+
+    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
+    >>> "toggleFormVisibility('task" in affects_table
+    False
+
+If the bug is no longer marked as a duplicate,
+
+    >>> user_browser.getLink('Mark as duplicate').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2/+duplicate'
+    >>> user_browser.getControl(name='field.duplicateof').value = ''
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
+
+the duplicate notifications disappear,
+
+    >>> find_tags_by_class(user_browser.contents, 'message')
+    []
+
+and the "Affects" lines become expandable once more.
+
+    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
+    >>> print affects_table
+    <...
+    ...toggleFormVisibility('task...

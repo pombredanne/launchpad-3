@@ -9,13 +9,8 @@ shows contextual directions on how to upload to it.
 We will need multiple browsers, logged in with different users. Set them up
 now.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> name12_browser = Browser()
-  >>> name12_browser.addHeader(
-  ...     'Authorization', 'Basic test@canonical.com:test')
-  >>> ddaa_browser = Browser()
-  >>> ddaa_browser.addHeader(
-  ...     'Authorization', 'Basic david.allouche@canonical.com:test')
+  >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> ddaa_browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
 
 We will also need a ssh key. Save it now.
 
@@ -48,10 +43,10 @@ the branch, and suggest logging in for directions.
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions.renderContents()
   Only
-  <a href="http://code.launchpad.dev/~name12">Sample Person</a>
-  can upload to this branch. If this is you,
-  <a href="+login">log in</a> for directions.
- 
+  <a href="/~name12">Sample Person</a>
+  can upload to this branch. If you are Sample Person please
+  <a href="+login">log in</a> for upload directions.
+
 If the user is logged in, and is not the owner of the branch, we can be
 definitive that it is not possible to upload to this branch.
 
@@ -60,7 +55,7 @@ definitive that it is not possible to upload to this branch.
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions.renderContents()
   You cannot upload to this branch. Only
-  <a href="http://code.launchpad.dev/~name12">Sample Person</a>
+  <a href="/~name12">Sample Person</a>
   can upload to this branch.
 
 The user is the owner of the branch and logs in. The page gives the full upload
@@ -69,9 +64,9 @@ URL for the branch.
   >>> name12_browser.open(branch_page)
   >>> content = name12_browser.contents
   >>> instructions = find_tag_by_id(content, 'upload-directions')
-  >>> print instructions.renderContents()
-  You can <b>upload</b> to this branch at:
-  <span class="lesser">sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed</span>
+  >>> print extract_text(instructions)
+  bzr push bzr+ssh://name12@bazaar.launchpad.dev/~name12/gnome-terminal/pushed
+
 
 == SSH key directions ==
 
@@ -82,7 +77,7 @@ First, unregister the existing SSH key for Sample Person.
 
   >>> name12_browser.open('http://launchpad.dev/')
   >>> name12_browser.getLink('Sample Person').click()
-  >>> name12_browser.getLink('SSH Keys').click()
+  >>> name12_browser.getLink('Update SSH keys').click()
   >>> name12_browser.getControl('Remove').click()
 
 The branch page now displays directions and a link to register a SSH key.
@@ -92,7 +87,7 @@ The branch page now displays directions and a link to register a SSH key.
   >>> instructions = find_tag_by_id(content, 'ssh-key-directions')
   >>> print instructions.renderContents()
   To authenticate with the Launchpad branch upload service, you need to
-  <a href="http://code.launchpad.dev/~name12/+editsshkeys">
+  <a href="/~name12/+editsshkeys">
   register a SSH key </a>.
 
 Click the link and register a key.
@@ -133,10 +128,10 @@ which is owned by Sample Person.
 Reassign the branch to the team.
 
   >>> name12_browser.open(branch_page)
-  >>> name12_browser.getLink('Change Registrant').click()
+  >>> name12_browser.getLink('Change registrant').click()
   >>> name12_browser.getControl(name='field.owner').value = (
   ...     'landscape-developers')
-  >>> name12_browser.getControl('Change Owner').click()
+  >>> name12_browser.getControl('Change Registrant').click()
 
 This changes the URL of the branch. Save the new URL.
 
@@ -150,7 +145,7 @@ owner is a team.
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions.renderContents()
   Members of <a
-  href="http://code.launchpad.dev/~landscape-developers">Landscape
+  href="/~landscape-developers">Landscape
   Developers</a> can upload to this branch. <a href="+login">Log in</a> for
   directions.
 
@@ -162,14 +157,14 @@ link to easily join.
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions.renderContents()
   You cannot upload to this branch. Members of <a
-  href="http://code.launchpad.dev/~landscape-developers">Landscape
-  Developers</a> can upload to this branch.
-  <a href="http://code.launchpad.dev/~landscape-developers/+join">Join the
+  href="/~landscape-developers">Landscape
+  Developers</a> can upload to this branch.  You may want to
+  <a href="/~landscape-developers/+join">join the
   team</a>.
 
 Check that the "Join the team" link is not broken.
 
-  >>> ddaa_browser.getLink("Join the team").click()
+  >>> ddaa_browser.getLink("join the team").click()
 
 Finally, if the user is a member of the team, we display the same "you can
 upload" message as before. Of course the upload URL looks different, in
@@ -179,7 +174,18 @@ owning team's name.
   >>> name12_browser.open(branch_page)
   >>> content = name12_browser.contents
   >>> instructions = find_tag_by_id(content, 'upload-directions')
-  >>> print instructions.renderContents()
-  You can <b>upload</b> to this branch at:
-  <span class="lesser">sftp://name12@bazaar.canonical.com/~landscape-developers/gnome-terminal/pushed</span>
+  >>> print extract_text(instructions)
+  bzr push bzr+ssh://name12@bazaar.launchpad.dev/~landscape-developers/gnome-terminal/pushed
 
+
+== Import branch ==
+
+Upload directions should not be displayed for import branches.
+
+  >>> import_branch_page = (
+  ...     'http://code.launchpad.dev/~vcs-imports/evolution/main')
+  >>> anon_browser.open(import_branch_page)
+  >>> content = anon_browser.contents
+  >>> instructions = find_tag_by_id(content, 'upload-directions')
+  >>> print instructions
+  None

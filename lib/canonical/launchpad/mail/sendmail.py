@@ -53,8 +53,9 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     An AssertionError will be raised if one of the parameters is
     invalid.
     """
-    # XXX: These checks need to be migrated upstream if this bug
-    # still exists in modern Z3 -- StuartBishop 20050319
+    # XXX StuartBishop 2005-03-19:
+    # These checks need to be migrated upstream if this bug
+    # still exists in modern Z3.
     assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert zisinstance(from_addr, basestring), 'Invalid From: %r' % from_addr
@@ -92,19 +93,21 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII string.
 
-    Arbitrary headers can be set using the headers parameter. If the value for a
-    given key in the headers dict is a list or tuple, the header will be added
-    to the message once for each value in the list.
+    Arbitrary headers can be set using the headers parameter. If the value for
+    a given key in the headers dict is a list or tuple, the header will be
+    added to the message once for each value in the list.  Note however that
+    the `Precedence` header will always be set to `bulk`, overriding any
+    `Precedence` header in `headers`.
 
-    Returns the Message-Id.
+    Returns the `Message-Id`.
     """
     if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
 
     # It's the caller's responsibility to encode the address fields to
     # ASCII strings.
-    # XXX CarlosPerelloMarin 20060320: Spiv is working on fixing this so we
-    # can provide a Unicode string and get the right encoding.
+    # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
+    # so we can provide a Unicode string and get the right encoding.
     for address in [from_addr] + list(to_addrs):
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
@@ -198,6 +201,11 @@ def sendmail(message, to_addrs=None):
     if 'return-path' not in message:
         message['Return-Path'] = config.bounce_address
 
+    # Add Precedence header to prevent automatic reply programs
+    # (e.g. vacation) from trying to respond to our messages.
+    del message['Precedence']
+    message['Precedence'] = 'bulk'
+
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
@@ -218,7 +226,7 @@ def sendmail(message, to_addrs=None):
                 # (because actual delivery is done later).
                 smtp = SMTP(
                     config.zopeless.smtp_host, config.zopeless.smtp_port)
-                
+
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
                 smtp.sendmail(config.bounce_address, to_addrs, raw_message)

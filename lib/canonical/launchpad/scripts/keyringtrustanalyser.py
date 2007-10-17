@@ -7,9 +7,8 @@ import gpgme
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet)
+    IGPGHandler, IPersonSet, IEmailAddressSet, PersonCreationRationale)
 from canonical.launchpad.validators.email import valid_email
-from canonical.lp.dbschema import PersonCreationRationale
 
 __metaclass__ = type
 
@@ -36,7 +35,7 @@ def addOtherKeyring(filename):
 
 def getValidUids(minvalid=gpgme.VALIDITY_MARGINAL):
     """Returns an iterator yielding (fingerprint, email) pairs.
-    
+
     Only UIDs assigned a validity of at least 'minvalid' are returned.
     """
     gpg = getUtility(IGPGHandler)
@@ -49,7 +48,7 @@ def getValidUids(minvalid=gpgme.VALIDITY_MARGINAL):
 
 def findEmailClusters(minvalid=gpgme.VALIDITY_MARGINAL):
     """Returns an iterator yielding sets of related email addresses.
-    
+
     Two email addresses are considered to be related if they appear as
     valid user IDs on a PGP key in the keyring.
     """

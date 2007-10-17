@@ -2,191 +2,101 @@
 
 There are several views of the branches related to a person.
 
+Branch lists for people also include branches that are owned by
+teams that the person is participating in.
+
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> browser.open('http://code.launchpad.dev/~name12')
   >>> print browser.contents
   <!DOCTYPE...
   ...Sample Person...
   ...Bazaar branches...
 
-
-Then get the detailed branch listing (related branches) for an user which has
-branches in each lifecycle.
-
-  >>> browser.open('http://launchpad.dev/~name12/+branchlisting')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...<h2>Mature</h2>...
-  ...<h2>Development</h2>...
-  ...<h2>Experimental</h2>...
-  ...<h2>Merged</h2>...
-  ...<h2>Abandoned</h2>...
-  ...<h2>New</h2>...
-
-If a person does not have any related branches, we should print an informative
+If a person does not have any related branches, we print an informative
 message.
 
-  >>> browser.open('http://launchpad.dev/~ddaa/+branches')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...There are no branches related to David Allouche...
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
+  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+  There may be branches related to Daniel Silverstone but none
+  of them match the current filter criteria for this page. Try
+  filtering on "Any Status".
 
-This informative message should also appear in the detailed branch listing.
+OK, lets follow the advice.
 
-  >>> browser.open('http://launchpad.dev/~ddaa/+branchlisting')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...There are no branches related to David Allouche...
+  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
+  >>> browser.getControl('Filter').click()
+  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+  There are no branches related to Daniel Silverstone in Launchpad today.
+  You can use Launchpad as a registry for Bazaar branches, and encourage
+  broader community participation in your project using
+  distributed version control.
+
+== Default view for a person on code root site ==
+
+The default view for a person on the code root site is the 
+normal branch listing view for that person.
+
+  >>> browser.open('http://code.launchpad.dev/~kinnison')
+  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+  There may be branches related to Daniel Silverstone but none 
+  of them match the current filter criteria for this page. Try
+  filtering on "Any Status".
+
 
 == Authored Branches ==
 
-There should be a link in the branch context menu for person which points to
+There is a link in the branch context menu for person which points to
 the authored branches page.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Authored')
-  >>> print link.url
-  http://launchpad.dev/~name12/+authoredbranches
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('Show authored branches').click()
+   >>> print browser.title
+   Authored branches for Sample Person
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   main         ... New           firefox
+   klingon      ... Experimental  gnome-terminal
+   feature-x    ... New           landscape
+   trunk        ... New           landscape
+   junk.contrib ... New
+      2005-10-31 12:03:57 ... weeks ago
 
-And we can load the authored branches page.
-
-  >>> link.click()
-  >>> browser.url
-  'http://launchpad.dev/~name12/+authoredbranches'
 
 == Registered Branches ==
 
-There should also be a link which points to the registered branches page.
+There is also a link which points to the registered branches page.
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Registered')
-  >>> print link.url
-  http://launchpad.dev/~name12/+registeredbranches
-
-And we can load the registered branches page.
-
-  >>> link.click()
-  >>> browser.url
-  'http://launchpad.dev/~name12/+registeredbranches'
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('Show registered branches').click()
+   >>> print browser.title
+   Registered branches for Sample Person 
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   2.6                   ... Mature       gnome-terminal
+   main                  ... Development  gnome-terminal
+   mirrored              ... New          gnome-terminal
+   pushed                ... New          gnome-terminal
+   scanned               ... New          gnome-terminal
+   junk.dev Ubuntu Team  ... Experimental  2005-10-31 12:03:57 ... weeks ago
 
 == Subscribed branches ==
 
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> link = browser.getLink('Branches Subscribed')
-  >>> print link.url
-  http://launchpad.dev/~name12/+subscribedbranches
+From the persons main listing page, there is also a link to subscribed
+branches.
 
-And we can load the subscribed branches page.
-
-  >>> link.click()
-  >>> browser.url
-  'http://launchpad.dev/~name12/+subscribedbranches'
-
-== Branch filtering ==
-
-This is a helper function to print out the branches that
-are visible to the user.
-
-  >>> def visible_branches(contents):
-  ...   table = find_tag_by_id(contents, 'branchtable')
-  ...   for row in table.tbody.fetch('tr'):
-  ...     cells = row.fetch('td')
-  ...     name = cells[0].renderContents()
-  ...     status = cells[-3].fetch('span')[-1].renderContents()
-  ...     print name, status
-
-
-When the branches for a person is first loaded, only the 'Current'
-branches are shown.  Current branches are those that have a 
-lifecycle status of New, Development, Experimental or Mature.
-Merged or Abandoned branches are not shown.
-
-  >>> browser.open('http://launchpad.dev/~name12/+branches')
-  >>> visible_branches(browser.contents)
-  junk.dev     Experimental
-  junk.contrib New
-  main         New
-  2.6          Mature
-  main         Development
-  klingon      Experimental
-  pushed       New
-  launchpad    New
-
-
-There is a select control that is used to define which
-subset of the branches are shown.
-  
-  >>> filter_control = browser.getControl(name='field.lifecycle')
-  >>> filter_control
-  <ListControl name='field.lifecycle' type='select'>
-  >>> filter_control.value
-  ['New, Experimental, Development or Mature']
-  >>> filter_control.displayOptions
-  ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
-    
-Changing the value of the select control will (in a javascript
-enabled browser) cause the form to be submitted automatically.
-For browsers with javascript disabled, there is a form submit
-button.
-
-  >>> filter_control.displayValue = ['Any Status']
-  >>> browser.getControl('Filter').click()
-
-Now all types of branches should be shown.
-
-  >>> visible_branches(browser.contents)
-  junk.dev     Experimental
-  junk.contrib New
-  main         New
-  2.6          Mature
-  main         Development
-  klingon      Experimental
-  slowness     Merged
-  2.4          Abandoned
-  pushed       New
-  launchpad    New
-
-
-Selecting an individual lifecycle status from the select control 
-will cause only branches with that status to be listed.
-
-  >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
-  >>> browser.getControl('Filter').click()
-  >>> visible_branches(browser.contents)
-  2.4     Abandoned
-
-If anyone tries to hack the URL, and put in an invalid
-status value, it will default to current branches.
-
-  >>> browser.open(
-  ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
-  >>> browser.getControl(name='field.lifecycle').displayValue
-  ['New, Experimental, Development or Mature']
-  >>> visible_branches(browser.contents)
-  junk.dev     Experimental
-  junk.contrib New
-  main         New
-  2.6          Mature
-  main         Development
-  klingon      Experimental
-  pushed       New
-  launchpad    New
-
-
-If the user does have branches, but they are not visible with
-the current filter, the table is shown, and a (hopefully)
-helpful message supplied.
-
-  >>> browser.open('http://code.launchpad.dev/'
-  ...   '~launchpad/+branches?field.lifecycle=Mature')
-  >>> browser.getControl(name='field.lifecycle').displayValue
-  ['Mature']
-  >>> table = find_tag_by_id(browser.contents, 'branchtable')
-  >>> cell = table.tbody.fetch('tr')[0].fetch('td')[0]
-  >>> print cell.renderContents()
-  <i>There are branches registered for launchpad but none of them match the
-  current filter criteria for this page. Try filtering on "Any Status".</i>
-
+   >>> browser.open('http://code.launchpad.dev/~name12')
+   >>> browser.getLink('Show subscribed branches').click()
+   >>> print browser.title
+   Subscribed branches for Sample Person
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+   launchpad   Launchpad Developers ... New gnome-terminal
+   junk.dev    Ubuntu Team          ... Experimental
+      2005-10-31 12:03:57 ... weeks ago

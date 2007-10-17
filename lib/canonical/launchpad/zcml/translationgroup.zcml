@@ -1,9 +1,10 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
+
+<facet facet="translations">
 
     <!-- TranslationGroup -->
     <content class="canonical.launchpad.database.TranslationGroup">
@@ -20,11 +21,8 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        name="+index" />
-
-    <browser:menus
-        module="canonical.launchpad.browser"
-        classes="TranslationGroupSetContextMenu TranslationGroupContextMenu"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:url
@@ -35,56 +33,58 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
         class="canonical.launchpad.browser.TranslationGroupView"
-        permission="zope.Public">
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             template="../templates/translationgroup-index.pt"
             name="+index"
-            lp:url="/rosetta/groups/$TranslationGroup.name/+index" />
+            />
         <!-- TranslationGroup portlets -->
         <browser:page
             name="+portlet-relateds"
             template="../templates/translationgroup-portlet-relateds.pt"
-            lp:url="/rosetta/groups/$TranslationGroup.name/+portlet-relateds" />
+            />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/translationgroup-portlet-details.pt"
+            />
     </browser:pages>
 
     <browser:page
-        name="+rm"
+        name="+edit"
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.TranslationGroupView"
-        attribute="removals"
+        class="canonical.launchpad.browser.TranslationGroupEditView"
+        template="../templates/translationgroup-edit.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:editform
-        name="+edit"
-        schema="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
-        label="Edit translation group details"
-        fields="name title summary"
-        permission="launchpad.Edit"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/rosetta/groups/$TranslationGroup.name/+edit" />
-
-    <browser:addform
+    <browser:page
         name="+appoint"
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
-        schema="canonical.launchpad.interfaces.ITranslator"
-        fields="translationgroup language translator"
-        keyword_arguments="translationgroup language translator"
         permission="launchpad.Edit"
-        content_factory="canonical.launchpad.database.Translator"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
         template="../templates/translationgroup-appoint.pt"
-        lp:url="/rosetta/groups/$TranslationGroup.name/+appoint">
-        <browser:widget
-            field="translationgroup"
-            class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
+    <browser:page
+        name="+reassign"
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslationGroupReassignmentView"
+        template="../templates/translationgroup-reassignment.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+      for="*"
+      permission="launchpad.Edit"
+      name="+object-reassignment"
+      template="../templates/object-reassignment.pt"
+      layer="canonical.launchpad.layers.TranslationsLayer"
+      />
 
     <!-- TranslationGroupSet -->
     <securedutility
@@ -95,35 +95,32 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        path_expression="string:groups"
-        parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+        path_expression="string:+groups"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
-    <browser:addform
+    <browser:page
         name="+new"
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        schema="canonical.launchpad.interfaces.ITranslationGroup"
-        label="Create a new translation group"
-        fields="name title summary"
-        content_factory="canonical.launchpad.database.TranslationGroup"
-        class="canonical.launchpad.browser.TranslationGroupSetAddView"
+        class="canonical.launchpad.browser.TranslationGroupAddView"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/rosetta/groups/+new">
-    </browser:addform>
+        template="../templates/translationgroup-add.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        facet="translations"
-        permission="zope.Public">
-        <browser:page
-            template="../templates/translationgroups-index.pt"
-            name="+index"
-            lp:url="/rosetta/groups/+index" />
-    </browser:pages>
+        permission="zope.Public"
+        template="../templates/translationgroups-index.pt"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
+</facet>
 </configure>

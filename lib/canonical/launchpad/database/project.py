@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Launchpad Project-related Database Table Objects."""
 
 __metaclass__ = type
@@ -10,32 +10,50 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-        ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, SQLRelatedJoin)
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, NotFoundError)
+    ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
+    IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, TranslationPermission)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter)
+    ImportStatus, SpecificationSort, SpecificationFilter,
+    SprintSpecificationStatus, SpecificationImplementationStatus)
+
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.cal import Calendar
+from canonical.launchpad.database.faq import FAQ, FAQSearch
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
+from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
-from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.sprint import HasSprintsMixin
+from canonical.launchpad.database.question import QuestionTargetSearch
+from canonical.launchpad.helpers import shortlist
 
 
-class Project(SQLBase, BugTargetBase):
+class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
+              HasSprintsMixin, KarmaContextMixin,
+              BranchVisibilityPolicyMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner)
+    implements(ICalendarOwner, IProject, IFAQCollection, IHasIcon, IHasLogo,
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -52,10 +70,12 @@ class Project(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+    icon = ForeignKey(
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
+    logo = ForeignKey(
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -79,11 +99,12 @@ class Project(SQLBase, BugTargetBase):
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    products = SQLMultipleJoin('Product', joinColumn='project',
-                            orderBy='name')
-
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    @property
+    def products(self):
+        return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -96,16 +117,60 @@ class Project(SQLBase, BugTargetBase):
         return Product.selectOneBy(project=self, name=name)
 
     def ensureRelatedBounty(self, bounty):
-        """See IProject."""
+        """See `IProject`."""
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
-        linker = ProjectBounty(project=self, bounty=bounty)
+        ProjectBounty(project=self, bounty=bounty)
         return None
 
     @property
+    def mentoring_offers(self):
+        """See `IProject`"""
+        via_specs = MentoringOffer.select("""
+            Product.project = %s AND
+            Specification.product = Product.id AND
+            Specification.id = MentoringOffer.specification
+            """ % sqlvalues(self.id) + """ AND NOT
+            (""" + Specification.completeness_clause +")",
+            clauseTables=['Product', 'Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select("""
+            Product.project = %s AND
+            BugTask.product = Product.id AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            """ % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause + ")",
+            clauseTables=['Product', 'BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
+
+    def translatables(self):
+        """See `IProject`."""
+        return Product.select('''
+            Product.project = %s AND
+            Product.official_rosetta = TRUE AND
+            Product.id = ProductSeries.product AND
+            POTemplate.productseries = ProductSeries.id
+            ''' % sqlvalues(self),
+            clauseTables=['ProductSeries', 'POTemplate'],
+            distinct=True)
+
+    def _getBaseQueryAndClauseTablesForQueryingSprints(self):
+        query = """
+            Product.project = %s
+            AND Specification.product = Product.id
+            AND Specification.id = SprintSpecification.specification
+            AND SprintSpecification.sprint = Sprint.id
+            AND SprintSpecification.status = %s
+            """ % sqlvalues(self, SprintSpecificationStatus.ACCEPTED)
+        return query, ['Product', 'Specification', 'SprintSpecification']
+
+    @property
     def has_any_specifications(self):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
         return self.all_specifications.count()
 
     @property
@@ -117,7 +182,7 @@ class Project(SQLBase, BugTargetBase):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
         # were passed as a filter
@@ -128,7 +193,8 @@ class Project(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = (
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -146,7 +212,8 @@ class Project(SQLBase, BugTargetBase):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -173,20 +240,21 @@ class Project(SQLBase, BugTargetBase):
             clauseTables=['Product'])
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
-    # XXX: A Project shouldn't provide IBugTarget, since it's not really
-    #      a bug target, thus bugtargetname and createBug don't make sense
-    #      here. IBugTarget should be split into two interfaces; one that
-    #      makes sense for Project to implement, and one containing the rest
-    #      of IBugTarget. -- Bjorn Tillenius, 2006-08-17
-    bugtargetname = None
+    # XXX: Bjorn Tillenius 2006-08-17:
+    #      A Project shouldn't provide IBugTarget, since it's not really
+    #      a bug target, thus bugtargetdisplayname and createBug don't make
+    #      sense here. IBugTarget should be split into two interfaces; one
+    #      that makes sense for Project to implement, and one containing the
+    #      rest of IBugTarget.
+    bugtargetdisplayname = None
 
     def searchTasks(self, search_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -194,7 +262,7 @@ class Project(SQLBase, BugTargetBase):
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -202,9 +270,124 @@ class Project(SQLBase, BugTargetBase):
             "BugTask.product IN (%s)" % ",".join(product_ids), user)
 
     def createBug(self, bug_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         raise NotImplementedError('Cannot file bugs against a project')
 
+    def _getBugTaskContextClause(self):
+        """See `BugTargetBase`."""
+        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+
+    # IQuestionCollection
+    def searchQuestions(self, search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None, unsupported=False):
+        """See `IQuestionCollection`."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+
+        return QuestionTargetSearch(
+            project=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
+
+    def getQuestionLanguages(self):
+        """See `IQuestionCollection`."""
+        return set(Language.select("""
+            Language.id = Question.language AND
+            Question.product = Product.id AND
+            Product.project = %s""" % sqlvalues(self.id),
+            clauseTables=['Question', 'Product'], distinct=True))
+
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.name
+
+    # IFAQCollection
+    def getFAQ(self, id):
+        """See `IQuestionCollection`."""
+        faq = FAQ.getForTarget(id, None)
+        if (faq is not None
+            and IProduct.providedBy(faq.target)
+            and faq.target in self.products):
+            # Filter out faq not related to this project.
+            return faq
+        else:
+            return None
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IQuestionCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            project=self).getResults()
+
+    def hasProducts(self):
+        """Returns True if a project has products associated with it, False
+        otherwise.
+
+        If the project has < 1 product, selected links will be disabled.
+        This is to avoid situations where users try to file bugs against
+        empty project groups (Malone bug #106523).
+        """
+        return self.products.count() != 0
+
+    def _getMilestones(self, only_visible):
+        """Return a list of milestones for this project.
+
+        If only_visible is True, only visible milestones are returned,
+        else all milestones.
+
+        A project has a milestone named 'A', if at least one of its
+        products has a milestone named 'A'.
+        """
+        if only_visible:
+            having_clause = 'HAVING bool_or(Milestone.visible)=True'
+        else:
+            having_clause = ''
+        query = """
+            SELECT Milestone.name, min(Milestone.dateexpected),
+                bool_or(Milestone.visible)
+                FROM Milestone, Product
+                WHERE Product.project = %s
+                    AND Milestone.product = product.id
+                GROUP BY Milestone.name
+                %s
+                ORDER BY min(Milestone.dateexpected), Milestone.name
+            """ % (self.id, having_clause)
+        cur = cursor()
+        cur.execute(query)
+        result = cur.fetchall()
+        # bool_or returns an integer, but we want visible to be a boolean
+        return shortlist(
+            [ProjectMilestone(self, name, dateexpected, bool(visible))
+             for name, dateexpected, visible in result])
+
+    @property
+    def milestones(self):
+        """See `IProject`."""
+        return self._getMilestones(True)
+
+    @property
+    def all_milestones(self):
+        """See `IProject`."""
+        return self._getMilestones(False)
+
+    def getMilestone(self, name):
+        """See `IProject`."""
+        for milestone in self.all_milestones:
+            if milestone.name == name:
+                return milestone
+        return None
 
 class ProjectSet:
     implements(IProjectSet)
@@ -222,10 +405,10 @@ class ProjectSet:
         return project
 
     def get(self, projectid):
-        """See canonical.launchpad.interfaces.project.IProjectSet.
+        """See `canonical.launchpad.interfaces.project.IProjectSet`.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu-project'
+        u'apache'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
@@ -238,7 +421,7 @@ class ProjectSet:
         return project
 
     def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.project.IProjectSet."""
+        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
         if ignore_inactive:
             project = Project.selectOneBy(name=name, active=True)
         else:
@@ -248,24 +431,8 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner):
-        r"""See canonical.launchpad.interfaces.project.IProjectSet
-
-        >>> ps = getUtility(IProjectSet)
-        >>> p = ps.new(
-        ...     name=u'footest',
-        ...     displayname=u'T\N{LATIN SMALL LETTER E WITH ACUTE}st',
-        ...     title=u'The T\N{LATIN SMALL LETTER E WITH ACUTE}st Project',
-        ...     homepageurl=None,
-        ...     summary=u'Mandatory Summary',
-        ...     description=u'Blah',
-        ...     owner=1
-        ...     )
-        >>> p.name
-        u'footest'
-        >>> p.displayname
-        u'T\xe9st'
-        """
+            description, owner, mugshot=None, logo=None, icon=None):
+        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
         return Project(
             name=name,
             displayname=displayname,
@@ -274,7 +441,10 @@ class ProjectSet:
             description=description,
             homepageurl=homepageurl,
             owner=owner,
-            datecreated=UTC_NOW)
+            datecreated=UTC_NOW,
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 
     def count_all(self):
         return Project.select().count()

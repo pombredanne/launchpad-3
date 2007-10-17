@@ -9,16 +9,17 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import BugTrackerType
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
+class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
     """Test base for testing BugWatchSet.extractBugTrackerAndBug."""
+    layer = LaunchpadFunctionalLayer
 
     # A URL to an unregistered bug tracker.
     base_url = None
@@ -33,7 +34,6 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
     bug_id = None
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
         login(ANONYMOUS)
         self.bugwatch_set = getUtility(IBugWatchSet)
         self.bugtracker_set = getUtility(IBugTrackerSet)
@@ -80,6 +80,15 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
 
 
+class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
+
+    bugtracker_type = BugTrackerType.MANTIS
+    bug_url = 'http://some.host/bugs/view.php?id=3224'
+    base_url = 'http://some.host/bugs/'
+    bug_id = '3224'
+
+
 class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Make sure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
 
@@ -121,13 +130,25 @@ class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Debbugs URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
     bug_url = 'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'
     base_url = 'http://some.host/some/path/'
     bug_id = '42'
 
+
+class DebbugsExtractBugTrackerAndBugShorthandTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with compact Debbugs URLs."""
+
+    bugtracker_type = BugTrackerType.DEBBUGS
+    bug_url = 'http://bugs.debian.org/42'
+    base_url = 'http://bugs.debian.org/'
+    bug_id = '42'
+
+    def test_unregistered_tracker_url(self):
+        # bugs.debian.org is already registered, so no dice.
+        pass
 
 class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Make sure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
@@ -157,7 +178,9 @@ def test_suite():
     suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     return suite
 
 

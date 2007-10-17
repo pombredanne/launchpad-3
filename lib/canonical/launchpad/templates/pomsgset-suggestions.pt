@@ -1,41 +1,85 @@
 <tal:block condition="context/submissions">
-  <tr class="discreet secondary translation">
-    <th colspan="3" style="border: inherit;">
-      <label tal:content="string:${context/title}:" />
-    </th>
-  </tr>
   <tal:submission repeat="submission context/submissions">
-  <tr class="discreet secondary"
-      tal:define="submissionlang submission/pomsgset/pofile/language">
-    <td colspan="3" />
+  <tr class="secondary">
     <td class="icon left right">
-      <input type="image" src="/@@/copy" title="Copy text"
-          tal:condition="request/lp:person"
+      <tal:form-writeable condition="context/form_is_writeable">
+      <tal:user-is-official-translator
+        condition="context/user_is_official_translator">
+        <input
+          type="radio"
           tal:attributes="
-            name string:msgset_${context/pomsgset/potmsgset/id}_${submissionlang/code}_suggestion_${submission/id}_${submission/pluralform}_copy"
-        />
+            name string:${submission/translation_html_id}_radiobutton;
+            id string:${submission/suggestion_html_id}_radiobutton;
+            value string:${submission/suggestion_html_id};
+            onClick string:
+              javascript:copyInnerHTMLById(
+                '${submission/suggestion_html_id}',
+                '${submission/translation_html_id}_new')
+            " />
+      </tal:user-is-official-translator>
+      <tal:user-is-not-official-translator condition="not:context/user_is_official_translator">
+        <a href=""
+          tal:attributes="
+            onClick string:
+              javascript:copyInnerHTMLById(
+                '${submission/suggestion_html_id}',
+                '${submission/translation_html_id}_new');;
+              selectWidget('${submission/translation_html_id}_new_select', event);;
+            return false;;
+          "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+      </tal:user-is-not-official-translator>
+      </tal:form-writeable>
     </td>
     <td>
-      <div tal:attributes="lang submissionlang/dashedcode;
-                           dir submissionlang/abbreviated_text_dir"
-           tal:content="structure submission/potranslation/translation/fmt:text-to-html">
-        suggestion</div>
+      <div
+        tal:condition="not:context/user_is_official_translator"
+        tal:attributes="
+          lang submission/language/dashedcode;
+          dir submission/language/abbreviated_text_dir;
+          id string:${submission/suggestion_html_id}"
+        tal:content="structure submission/suggestion_text">
+        suggestion
+      </div>
+      <label
+        style="white-space: normal"
+        tal:condition="context/user_is_official_translator"
+        tal:attributes="
+          lang submission/language/dashedcode;
+          dir submission/language/abbreviated_text_dir;
+          id string:${submission/suggestion_html_id};
+          for string:${submission/suggestion_html_id}_radiobutton;"
+        tal:content="structure submission/suggestion_text">
+        suggestion
+      </label>
     </td>
   </tr>
-  <tr class="suggestion secondary">
-    <th colspan="3">
-      Coming from:
-    </th>
+  <tr class="discreet secondary"
+    tal:attributes="id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
     <td class="icon left right" />
-    <td style="overflow: auto;">
+    <td style="overflow: auto;"
+        tal:condition="python:context.isFromSamePOFile(submission)">
+      Suggested by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/datecreated/fmt:datetime"
+        tal:content="submission/datecreated/fmt:displaydate">
+        2006-08-05
+      </span>
+    </td>
+    <td style="overflow: auto;"
+        tal:condition="python:not(context.isFromSamePOFile(submission))">
+      <tal:source content="string:${context/title}" />
       <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
          tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
         Spanish translation for evolution
       </a> by
       <a tal:content="submission/person/browsername"
-         tal:attributes="href submission/person/fmt:url">Foo Bar</a> on
-      <span tal:content="submission/datecreated/fmt:datetime">
-        2006-08-05 01:04 UTC
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/datecreated/fmt:datetime"
+        tal:content="submission/datecreated/fmt:displaydate">
+        2006-08-05
       </span>
     </td>
   </tr>

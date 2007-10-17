@@ -52,7 +52,7 @@
 
   We navigate to the current Code page
   >>> current_coc_link.click()
-  >>> browser.getLink("Sign This Version").click()
+  >>> browser.getLink("Sign this version").click()
   >>> browser.url
   'http://launchpad.dev/codeofconduct/1.0.1/+sign'
 

@@ -1,19 +1,18 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-conflicts">
 
   <h2>Conflicts</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="relationships view/conflicts">
 
-    <ul>
-      <li tal:repeat="binconflicts view/conflicts">
-        <a tal:content="binconflicts/name"
-           tal:attributes="href string:../../binconflicts/name}"/> 
-          <tal:dummy condition="binconflicts/signal">
-            (<span tal:replace="binconflicts/signal" /> 
-              <span tal:replace="binconflicts/version" />)
-          </tal:dummy> 
-      </li>
-    </ul>
+     <tal:has_dep condition="relationships/has_items">
+        <tal:block replace="structure relationships/@@+render-list"/>
+     </tal:has_dep>
+
   </div>
 
 </div>

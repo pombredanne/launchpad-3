@@ -5,20 +5,12 @@ On the advanced search page it's possible to search for a specific tag.
     >>> anon_browser.getControl('Tags').value = 'crash'
     >>> anon_browser.getControl('Search', index=0).click()
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> def print_bugtasks(text):
-    ...     """Print all the bugtasks in the text."""
-    ...     soup = BeautifulSoup(anon_browser.contents)
-    ...     table = soup.first('table', {'id': 'buglisting'})
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         icon, id, description = tr('td', limit=3)
-    ...         print id.string, description.a.string
-
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     9 Thunderbird crashes
+      thunderbird Medium Confirmed
     10 another test bug
+       linux-source-2.6.15 Medium New
 
 If more than one tag is entered, bugs with any those tags will be
 shown.
@@ -29,8 +21,11 @@ shown.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     9 Thunderbird crashes
+      thunderbird Medium Confirmed
     10 another test bug
+       linux-source-2.6.15 Medium New
     2 Blackhole Trash folder
+      &mdash; Medium New
 
 If an invalid tag name is entered, an error message will be displayed.
 

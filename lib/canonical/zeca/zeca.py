@@ -27,7 +27,7 @@ $ gpg --export -a cprov > 0x681B6469.get
 
 __metaclass__ = type
 
-__all__ = ['Zeca', 'KeyServer', 'LookUp']  
+__all__ = ['Zeca', 'KeyServer', 'LookUp']
 
 import os
 import cgi
@@ -62,9 +62,9 @@ class LookUp(Resource):
     def __init__(self, root):
         Resource.__init__(self)
         self.root = root
-    
+
     def render_GET(self, request):
-        # XXX cprov 20050513
+        # XXX cprov 2005-05-13:
         # WTF is that way to recover the HTTP GET attributes
         try:
             action = request.args['op'][0]
@@ -73,7 +73,7 @@ class LookUp(Resource):
             return 'Invalid Arguments %s' % request.args
 
         return self.processRequest(action, keyid)
-    
+
     def processRequest(self, action, keyid):
         if (action not in self.permitted_actions) or not keyid:
             return 'Forbidden: "%s" on ID "%s"' % (action, keyid)
@@ -87,7 +87,7 @@ class LookUp(Resource):
         filename = '%s.%s' % (keyid, action)
 
         path = os.path.join(self.root, filename)
-        
+
         try:
             fp = open(path)
         except IOError:
@@ -105,12 +105,12 @@ if __name__ == "__main__":
     from canonical.config import config
 
     root = config.zeca.root
-    
+
     zeca = Zeca()
     keyserver = KeyServer()
     keyserver.putChild('lookup', LookUp(root))
     zeca.putChild('pks', keyserver)
-    
+
     site = server.Site(zeca)
     reactor.listenTCP(11371, site)
     reactor.run()

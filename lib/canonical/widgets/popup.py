@@ -11,9 +11,12 @@ from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.publisher.interfaces import NotFound
+from zope.component.interfaces import ComponentLookupError
 
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.vocabularies import IHugeVocabulary
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.cachedproperty import cachedproperty
 
 
@@ -26,6 +29,10 @@ class ISinglePopupWidget(ISimpleInputWidget):
     style = Attribute('''CSS style to be applied to the input widget''')
     def formToken():
         'The token representing the value to display, possibly invalid'
+    def chooseLink():
+        'The HTML link text and inline frame for the Choose.. link.'
+    def inputField():
+        'The HTML for the form input that is linked to this popup'
     def popupHref():
         'The contents to go into the href tag used to popup the select window'
     def matches():
@@ -46,12 +53,12 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     __call__ = ViewPageTemplateFile('templates/popup.pt')
 
     default = ''
-    displayWidth = 20
-    displayMaxWidth = None
 
+    displayWidth = '20'
+    displayMaxWidth = ''
     onKeyPress = ''
-    style = None
-    cssClass = None
+    style = ''
+    cssClass = ''
 
     @cachedproperty
     def matches(self):
@@ -69,16 +76,14 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         if not isinstance(formValue, basestring):
             return [vocab.getTerm(formValue)]
 
-        # Search
-        search_results = vocab.search(formValue)
+        search_results = vocab.searchForTerms(formValue)
 
-        # If we have too many results to be useful in a list,
-        # return an empty list.
         if search_results.count() > 25:
+            # If we have too many results to be useful in a list, return
+            # an empty list.
             return []
 
-        # Or convert to a list
-        return [vocab.toTerm(item) for item in vocab.search(formValue)]
+        return search_results
 
     @cachedproperty
     def formToken(self):
@@ -91,18 +96,43 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         # Just return the existing invalid token
         return val
 
+    def inputField(self):
+        d = {
+            'formToken' : self.formToken,
+            'name': self.name,
+            'displayWidth': self.displayWidth,
+            'displayMaxWidth': self.displayMaxWidth,
+            'onKeyPress': self.onKeyPress,
+            'style': self.style,
+            'cssClass': self.cssClass
+        }
+        return """<input type="text" value="%(formToken)s" id="%(name)s"
+                         name="%(name)s" size="%(displayWidth)s"
+                         maxlength="%(displayMaxWidth)s"
+                         onKeyPress="%(onKeyPress)s" style="%(style)s"
+                         class="%(cssClass)s" />""" % d
+
+    def chooseLink(self):
+        return """(<a href="%s">Choose&hellip;</a>)
+
+            <iframe style="display: none"
+                    id="popup_iframe_%s"
+                    name="popup_iframe_%s"></iframe>
+        """ % (self.popupHref(), self.name, self.name)
+
     def popupHref(self):
         template = (
             '''javascript:'''
             '''popup_window('@@popup-window?'''
-            '''vocabulary=%s&field=%s','''
-            ''''500','400')'''
-            ) % (self.context.vocabularyName, self.name)
+            '''vocabulary=%s&field=%s&search='''
+            ''''+escape(document.getElementById('%s').value),'''
+            ''''%s','300','420')'''
+            ) % (self.context.vocabularyName, self.name, self.name, self.name)
         if self.onKeyPress:
-            # XXX: I suspect onkeypress() here is non-standard, but it
-            # works for me, and enough researching for tonight. It may
-            # be better to use dispatchEvent or a compatibility function
-            # -- kiko, 2005-09-27
+            # XXX kiko 2005-09-27: I suspect onkeypress() here is
+            # non-standard, but it works for me, and enough researching for
+            # tonight. It may be better to use dispatchEvent or a
+            # compatibility function
             template += ("; document.getElementById('%s').onkeypress()" %
                          self.name)
         return template
@@ -116,23 +146,28 @@ class ISinglePopupView(Interface):
         """Title to use on the popup page"""
 
     def vocabulary():
-        """Return the IHugeVocabulary to display in the popup window"""
+        """Return the IHugeVocabulary to display in the popup window."""
 
     def search():
-        """Return the BatchNavigator of the current results to display"""
+        """Return the BatchNavigator of the current terms to display."""
 
     def hasMoreThanOnePage(self):
         """Return True if there's more than one page with results."""
-
-    def currentTokenizedBatch(self):
-        """Return the ITokenizedTerms for the current batch."""
 
 
 class SinglePopupView(object):
     implements(ISinglePopupView)
 
-    _batchsize = 15
+    _batchsize = 10
     batch = None
+
+    def __init__(self, context, request):
+        if ("vocabulary" not in request.form or
+            "field" not in request.form):
+            # Hand-hacked URLs get no love from us
+            raise NotFound(self, "/@@popup-window", request)
+        self.context = context
+        self.request = request
 
     def title(self):
         """See ISinglePopupView"""
@@ -140,26 +175,30 @@ class SinglePopupView(object):
 
     def vocabulary(self):
         """See ISinglePopupView"""
-        factory = zapi.getUtility(IVocabularyFactory,
-            self.request.form['vocabulary'])
+        vocabulary_name = self.request.form_ng.getOne('vocabulary')
+        if not vocabulary_name:
+            raise UnexpectedFormData('No vocabulary specified')
+        try:
+            factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
+        except ComponentLookupError:
+            # Couldn't find the vocabulary? Adios!
+            raise UnexpectedFormData('Unknown vocabulary %s' % vocabulary_name)
+
         vocabulary = factory(self.context)
-        assert IHugeVocabulary.providedBy(vocabulary), (
-            'Invalid vocabulary %s' % self.request.form['vocabulary'])
+
+        if not IHugeVocabulary.providedBy(vocabulary):
+            raise UnexpectedFormData('Non-huge vocabulary %s' % vocabulary_name)
+
         return vocabulary
 
     def search(self):
         """See ISinglePopupView"""
         search_text = self.request.get('search', None)
-        self.batch = BatchNavigator(self.vocabulary().search(search_text),
+        self.batch = BatchNavigator(self.vocabulary().searchForTerms(search_text),
                                     self.request, size=self._batchsize)
         return self.batch
 
     def hasMoreThanOnePage(self):
         """See ISinglePopupView"""
         return len(self.batch.batchPageURLs()) > 1
-
-    def currentTokenizedBatch(self):
-        """See ISinglePopupView"""
-        vocabulary = self.vocabulary()
-        return [vocabulary.toTerm(item) for item in self.batch.currentBatch()]
 

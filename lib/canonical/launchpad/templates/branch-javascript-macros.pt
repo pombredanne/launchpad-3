@@ -1,0 +1,32 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="branch-name-from-url">
+
+<script type="text/javascript">
+
+function populate_branch_name_from_url(name_id, url_id)
+{
+   url_field = document.getElementById(url_id);
+   var url_text = trim(url_field.value);
+   // strip of any trailing slashes
+   url_text = url_text.replace(/\/+$/, '')
+   if (url_text != url_field.value) {
+      url_field.value = url_text;
+   }
+   var name_field = document.getElementById(name_id);
+   if (name_field.value == '') 
+   {
+      // parse the value of the url field
+      url_bits = url_text.split('/');
+      if (url_bits.length > 2) {
+         // attempt at not barfing on something completely invalid
+         last_bit = url_bits[url_bits.length - 1];
+         name_field.value = last_bit;
+      }
+   }
+}
+</script>
+<tal:view_script replace="structure view/script_hook"/>
+
+</div>

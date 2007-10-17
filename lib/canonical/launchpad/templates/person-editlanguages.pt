@@ -14,12 +14,18 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main" >
+ 
+  <h1 tal:condition="not: view/is_current_user">
+    <span tal:replace="context/displayname">Someone</span>'s
+    language preferences
+  </h1>
 
-  <h1>Your language preferences</h1>
+  <h1 tal:condition="view/is_current_user">
+    Your language preferences
+  </h1>
 
   <p class="documentDescription">
-    Your preferred languages will be used for translations and support
-    requests.
+    Preferred languages will be used for translations and support requests.
   </p>
 
   <form action="" method="post">
@@ -48,6 +54,21 @@
     </div>
   </form>
 
+</div>
+
+<div metal:fill-slot="help">
+  <p>
+    Please select the languages that you speak well.  There are many languages
+    to choose from.  Once you have selected your preferred languages,
+    Launchpad knows which ones you are most interested in and can avoid
+    bothering you with the full list.
+  </p>
+  <ul class="info">
+    <li>
+      <a href="https://help.launchpad.net/RosettaFAQ"
+        >Frequently asked questions</a>
+    </li>
+  </ul>
 </div>
 
 </body>

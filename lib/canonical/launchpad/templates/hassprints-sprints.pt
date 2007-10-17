@@ -1,0 +1,38 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <metal:portlets fill-slot="portlets">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:portlets>
+
+  <div metal:fill-slot="main">
+
+  <tal:has-sprints condition="context/sprints">
+    <h1>Events related to <span tal:replace="context/displayname" /></h1>
+
+    <div tal:define="sprints context/sprints" tal:condition="sprints">
+      <table>
+        <tal:per_sprint repeat="sprint sprints"
+                        replace="structure sprint/@@+listing-detailed" />
+      </table>
+    </div>
+  </tal:has-sprints>
+
+  <tal:no-sprints condition="not: context/sprints">
+    <h1>There are no events related to
+      <span tal:replace="context/displayname" />
+    </h1>
+  </tal:no-sprints>
+
+  </div>
+</body>
+</html>

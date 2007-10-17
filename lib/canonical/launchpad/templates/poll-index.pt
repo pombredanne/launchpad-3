@@ -40,8 +40,10 @@
 
     <h2>Voting has closed</h2>
 
-    <p>The voting is closed since 
-      <span tal:replace="context/datecloses/fmt:date" />.
+    <p>Voting closed
+      <span
+        tal:attributes="title context/datecloses/fmt:datetime"
+        tal:content="context/datecloses/fmt:displaydate" />.
     </p>
 
     <tal:block condition="view/userVoted">
@@ -157,8 +159,11 @@
   <tal:block condition="context/isNotYetOpened">
     <h2>Voting hasn't opened yet</h2>
 
-    <p>The vote will commence at
-      <span tal:replace="context/dateopens/fmt:datetime" />.
+    <p>
+      The vote will commence
+      <span
+        tal:attributes="title context/dateopens/fmt:datetime"
+        tal:content="context/dateopens/fmt:displaydate" />.
     </p>
   </tal:block>
 

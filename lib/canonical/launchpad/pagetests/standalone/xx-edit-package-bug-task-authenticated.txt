@@ -8,10 +8,10 @@ Any authenticated user can edit a source package bug task.
     >>> status_control = browser.getControl(
     ...     name="ubuntu_mozilla-firefox.status")
     >>> status_control.value
-    ['Unconfirmed']
+    ['New']
     >>> status_control.value = ["Confirmed"]
 
-    >>> browser.getControl(name="FORM_SUBMIT").click()
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.actions.save").click()
 
     >>> browser.open(
     ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox"
@@ -21,6 +21,6 @@ Any authenticated user can edit a source package bug task.
     ...     name="ubuntu_mozilla-firefox.status")
     >>> status_control.value
     ['Confirmed']
-    >>> status_control.value = ["Unconfirmed"]
+    >>> status_control.value = ["New"]
 
-    >>> browser.getControl(name="FORM_SUBMIT").click()
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.actions.save").click()

@@ -1,93 +1,102 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """IBugMessage-related browser view classes."""
 
 __metaclass__ = type
 __all__ = [
-    'BugMessageAddFormView']
+    'BugMessageAddFormView',
+    ]
 
 from StringIO import StringIO
 
-from zope.app.form.interfaces import WidgetsError, MissingInputError
+from zope.formlib import form
 from zope.schema import ValidationError
 
 from canonical.launchpad.interfaces import IBugMessageAddForm
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp import action, canonical_url
+from canonical.launchpad.webapp import LaunchpadFormView
 
-class BugMessageAddFormView(GeneralFormView):
+
+class BugMessageAddFormView(LaunchpadFormView):
     """Browser view class for adding a bug comment/attachment."""
 
     schema = IBugMessageAddForm
+    initial_focus_widget = None
 
     @property
     def initial_values(self):
-        return dict(
-            subject=self.context.bug.followup_subject())
+        return dict(subject=self.context.bug.followup_subject())
+
+    @property
+    def action_url(self):
+        # override the default form action url to to go the addcomment
+        # page for processing instead of the default which would be the
+        # bug index page.
+        return "%s/+addcomment" % canonical_url(self.context)
 
     def validate(self, data):
-        """Verify that an attachment also includes a description."""
-        include_attachment = data.get("include_attachment")
-        filecontent = data.get("filecontent")
-        attachment_description = data.get("attachment_description")
 
-        if (include_attachment and filecontent and not attachment_description):
-            raise WidgetsError([
-                MissingInputError(
-                    self.attachment_description_widget.name,
-                    self.attachment_description_widget.label,
-                    "An attachment requires a description.")])
+        # Ensure either a comment or filecontent was provide, but only
+        # if no errors have already been noted.
+        if len(self.errors) == 0:
+            comment = data.get('comment', None)
+            filecontent = data.get('filecontent', None)
+            if not comment and not filecontent:
+                self.addError("Either a comment or attachment "
+                              "must be provided.")
 
-    def process(self, include_attachment=None, subject=None, filecontent=None,
-                patch=None, attachment_description=None, comment=None,
-                email_me=None):
+    @action(u"Save Changes", name='save')
+    def save_action(self, action, data):
         """Add the comment and/or attachment."""
+
         bug = self.context.bug
 
-        if email_me:
+        # Subscribe to this bug if the checkbox exists and was selected
+        if data.get('email_me'):
             bug.subscribe(self.user)
 
-        # XXX: Write proper FileUpload field and widget instead of this
-        # hack. -- Bjorn Tillenius, 2005-06-16
-        file_ = self.request.form.get(self.filecontent_widget.name)
+        # XXX: Bjorn Tillenius 2005-06-16:
+        # Write proper FileUpload field and widget instead of this hack.
+        file_ = self.request.form.get(self.widgets['filecontent'].name)
 
         message = None
-        if comment or (include_attachment and file_):
-            message = bug.newMessage(
-                subject=subject, content=comment, owner=self.user)
+        if data['comment'] or file_:
+            message = bug.newMessage(subject=data['subject'],
+                                     content=data['comment'],
+                                     owner=self.user)
 
-            # An blank comment with only a subect line is always added
+            # A blank comment with only a subect line is always added
             # when the user attaches a file, so show the add comment
             # feedback message only when the user actually added a
             # comment.
-            if comment:
+            if data['comment']:
                 self.request.response.addNotification(
                     "Thank you for your comment.")
 
-        if not (include_attachment and file_):
-            return
+        if file_:
 
-        # Slashes in filenames cause problems, convert them to dashes
-        # instead.
-        filename = file_.filename.replace('/', '-')
+            # Slashes in filenames cause problems, convert them to dashes
+            # instead.
+            filename = file_.filename.replace('/', '-')
 
-        # Process the attachment.
-        bug.addAttachment(
-            owner=self.user, file_=StringIO(filecontent),
-            filename=filename, description=attachment_description,
-            comment=message, is_patch=patch)
+            # if no description was given use the converted filename
+            file_description = None
+            if 'attachment_description' in data:
+                file_description = data['attachment_description']
+            if not file_description:
+                file_description = filename
 
-        self.request.response.addNotification(
-            "Attachment %(filename)s added to bug.", filename=filename)
+            # Process the attachment.
+            bug.addAttachment(
+                owner=self.user, file_=StringIO(data['filecontent']),
+                filename=filename, description=file_description,
+                comment=message, is_patch=data['patch'])
 
-    @property
-    def _keyword_arguments(self):
-        return self.fieldNames
+            self.request.response.addNotification(
+                "Attachment %(filename)s added to bug.", filename=filename)
+
+        self.next_url = canonical_url(self.context)
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""
-        return (not self.context.bug.isSubscribed(self.user))
-
-    def nextURL(self):
-        """Redirect to the main bug page."""
-        self.request.response.redirect(canonical_url(self.context))
+        return not self.context.bug.isSubscribed(self.user)

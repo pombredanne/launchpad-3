@@ -1,0 +1,7 @@
+<h2>Recently registered</h2>
+<table tal:define="speclist context/latest_specifications">
+  <tbody>
+    <tr tal:repeat="spec speclist"
+        tal:replace="structure spec/@@+listing-compact" />
+  </tbody>
+</table>

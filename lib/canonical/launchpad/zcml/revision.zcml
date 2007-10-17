@@ -12,8 +12,8 @@
     <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
   </content>
 
-  <content class="canonical.launchpad.database.RevisionNumber">
-    <allow interface="canonical.launchpad.interfaces.IRevisionNumber" />
+  <content class="canonical.launchpad.database.RevisionProperty">
+    <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
   </content>
 
   <!-- RevisionSet -->

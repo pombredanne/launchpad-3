@@ -31,17 +31,15 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
     def __init__(self, field, vocabulary, request):
-        # XXX flacoste 2006/07/23 Workaround Zope3 bug #545:
+        # XXX flacoste 2006-07-23 Workaround Zope3 bug #545:
         # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
 
 
-# XXX, Brad Bollenbach, 2006-08-10: This is a hack to workaround Zope's
-# RadioWidget not properly selecting the default value.
-#
-# See https://launchpad.net/bugs/56062 .
+# XXX Brad Bollenbach 2006-08-10 bugs=56062: This is a hack to
+# workaround Zope's RadioWidget not properly selecting the default value.
 class LaunchpadRadioWidget(RadioWidget):
     """A widget to work around a bug in RadioWidget."""
 
@@ -52,8 +50,8 @@ class LaunchpadRadioWidget(RadioWidget):
         return contents
 
     def renderItems(self, value):
-        """Render the items with with the correct radio button selected."""
-        # XXX, Brad Bollenbach, 2006-08-11: Workaround the fact that
+        """Render the items with the correct radio button selected."""
+        # XXX Brad Bollenbach 2006-08-11: Workaround the fact that
         # value is a value taken directly from the form, when it should
         # instead have been already converted to a vocabulary term, to
         # ensure the code in the rest of this method will select the

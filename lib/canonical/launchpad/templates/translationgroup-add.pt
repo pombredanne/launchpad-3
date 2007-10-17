@@ -1,0 +1,17 @@
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Translation groups</h1>
+
+    <div metal:fill-slot="main">
+      <div>
+        <a tal:attributes="href context/fmt:url">
+          Translation groups
+        </a>
+      </div>
+      <h1>Add a new Translation Group</h1>
+
+      <div metal:use-macro="context/@@launchpad_form/form" />
+    </div>
+  </body>
+</html>

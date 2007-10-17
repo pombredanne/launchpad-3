@@ -11,10 +11,10 @@ reasons why we teams can have polls attached to them.
   >>> import pytz
   >>> from datetime import datetime, timedelta
   >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
-  >>> from canonical.launchpad.interfaces import IPersonSet, IPollSubset
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IPollSubset, PollAlgorithm, PollSecrecy)
 
   >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
   >>> member = getUtility(IPersonSet).getByName('stevea')
@@ -61,7 +61,8 @@ Here we'll query using three different dates:
 
 Query for open polls in the exact second the poll is opening.
   >>> [p.name for p in pollsubset.getOpenPolls(when=opendate)]
-  [u'leader-election', u'never-closes', u'never-closes2', u'never-closes3']
+  [u'leader-election', u'never-closes', u'never-closes2', u'never-closes3',
+   u'never-closes4']
 
 Query for closed polls, one second after the poll closes.
   >>> [p.name for p in pollsubset.getClosedPolls(when=closedate + onesec)]
@@ -69,7 +70,7 @@ Query for closed polls, one second after the poll closes.
 
 Query for not-yet-opened polls, one second before the poll opens.
   >>> [p.name for p in pollsubset.getNotYetOpenedPolls(when=opendate - onesec)]
-  [u'leader-election']
+  [u'leader-election', u'not-yet-opened']
 
 All polls must have a set of options for people to choose, and they'll always
 start with zero options. We're responsible for adding new ones.

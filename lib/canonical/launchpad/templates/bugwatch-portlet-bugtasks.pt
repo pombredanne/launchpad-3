@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-bugtasks">
   <h2>Is linked to</h2>
   <div class="portletBody">
     <div class="portletContent">
@@ -6,7 +10,7 @@
         <li tal:repeat="task context/bugtasks">
           <a tal:attributes="href task/fmt:url">
             Bug #<span tal:replace="task/bug/id">42525</span> on
-             <span tal:replace="task/targetname">task context name</span>
+             <span tal:replace="task/bugtargetname">task context name</span>
           </a>
         </li>
       </ul>

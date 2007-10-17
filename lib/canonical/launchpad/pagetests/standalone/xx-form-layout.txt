@@ -89,11 +89,10 @@ label row:
 
 == Checkbox Widgets ==
 
-It is traditional for checkboxes to have their label to the right, so
-that's what we do for such widgets.  The launchpad usage form has such
-a widget.
+Checkboxes have their label to the right. One example is the checkbox for
+specifying whether your project uses Launchpad Translations.
 
-  >>> browser.open('http://launchpad.dev/evolution/+launchpad')
+  >>> browser.open('http://launchpad.dev/evolution/+edit')
   >>> content = find_main_content(browser.contents)
 
   >>> print content
@@ -103,8 +102,7 @@ a widget.
     <td width="100%">
       ...
       <input ... name="field.official_rosetta" type="checkbox" ... />
-      <label for="field.official_rosetta">Uses Rosetta Officially</label>
-      <p class="formHelp">...</p>
+      <label for="field.official_rosetta">Translations...</label>
     </td>
   </tr>
   ...

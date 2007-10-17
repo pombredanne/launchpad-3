@@ -1,436 +1,534 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
-    <!-- Distribution -->
-    <content class="canonical.launchpad.database.Distribution">
-        <allow interface="canonical.launchpad.interfaces.IDistribution"/>
-        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-        <require
-            permission="launchpad.Edit"
-            set_attributes="displayname title summary description
-                            translationgroup translationpermission
-                            driver members owner bugcontact
-                            official_malone official_rosetta
-                            security_contact upload_admin upload_sender
-                            mirror_admin homepage_content emblem gotchi"
-            />
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
-	    />
-        <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
-    </content>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistribution"
-        name="+index" />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistribution"
-        name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"
-        />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistribution"
-        layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs"
-        />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistribution"
-        layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
-        />
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="DistributionNavigation"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.BugTargetBugListingView"
-        facet="bugs"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-bugtasklist-releasebugs"
-            template="../templates/bugtask-portlet-releasebugs.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
-    </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        class="canonical.launchpad.browser.DistributionArchiveMirrorsView"
-        permission="zope.Public"
-        name="+archivemirrors"
-        template="../templates/distribution-mirrors.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        name="+archivemirrors-rss"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
-        template="../templates/distribution-mirrors-rss.pt"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
-        permission="zope.Public"
-        name="+cdmirrors"
-        template="../templates/distribution-mirrors.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        name="+cdmirrors-rss"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
-        template="../templates/distribution-mirrors-rss.pt"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
-        permission="zope.Public"
-        name="+disabledmirrors"
-        template="../templates/distribution-mirrors.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
-        permission="zope.Public"
-        name="+unofficialmirrors"
-        template="../templates/distribution-mirrors.pt" />
-
-    <browser:generalform
-        name="+newmirror"
-        facet="overview"
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionMirrorAddView"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
-        fields="
-            owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url official_candidate"
-        keyword_arguments="
-            owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url official_candidate"
-        permission="launchpad.AnyPerson"
-        template="../templates/distribution-newmirror.pt">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:generalform>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionView"
-        permission="zope.Public" >
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/distribution-index.pt"
-            lp:url="/distros/$Distribution.name/"
-            />
-        <browser:page
-            name="+search"
-            facet="overview"
-            template="../templates/distribution-search.pt"
-            lp:url="/distros/$Distribution.name/+search"
-            />
-        <browser:page
-            name="+bounties"
-            facet="bounties"
-            template="../templates/related-bounties.pt"
-            lp:url="/distros/$Distribution.name/+bounties"
-            />
-        <browser:page
-            name="+members"
-            facet="overview"
-            template="../templates/distribution-members.pt"
-            lp:url="/distros/$Distribution.name/+members"
-            />
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/distribution-translations.pt"
-            />
-        <browser:page
-            name="+builds"
-            facet="overview"
-            template="../templates/distribution-builds.pt"
-            lp:url="/distros/$distribution/+builds"
-            />
-        <browser:page
-            name="+builds-list"
-            template="../templates/builds-list.pt"
-            lp:url="/distros/$distribution/+builds-list"
-            />
-    </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionAllPackagesView"
-        permission="zope.Public"
-        name="+allpackages"
-        facet="overview"
-        template="../templates/distribution-allpackages.pt"
-        lp:url="/distros/$Distribution.name/+allpackages"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.CVEReportView"
-        permission="zope.Public"
-        name="+cve"
-        facet="bugs"
-        template="../templates/distribution-cvereport.pt" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistribution"
-        permission="zope.Public" >
-        <browser:page
-            name="+portlet-details"
-            template="../templates/distribution-portlet-details.pt"
-            lp:url="/distros/$Distribution.name/+portlet-details" />
-        <browser:page
-            name="+portlet-releases"
-            template="../templates/distribution-portlet-releases.pt"
-            lp:url="/distros/$Distribution.name/+portlet-releases" />
-        <browser:page
-            name="+portlet-milestones"
-            template="../templates/object-portlet-milestones.pt"
-            lp:url="/distros/$Distribution.name/+portlet-milestones" />
-        <browser:page
-            name="+portlet-uploaders"
-            template="../templates/distribution-portlet-uploaders.pt"
-            lp:url="/distros/$Distribution.name/+portlet-uploaders" />
-        <browser:page
-            name="+portlet-bounties"
-            template="../templates/object-portlet-bounties.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bounties" />
-        <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.Edit"
-        facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
-          <browser:page
-              name="+reassign"
-              template="../templates/object-reassignment.pt"
-              lp:url="/distros/$distro.id/+reassign" />
-    </browser:pages>
-
-    <browser:addform
-        name="+addrelease"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistroRelease"
-        label="Register a new distribution release"
-        fields="name displayname title summary description version
-        parentrelease"
-        content_factory="canonical.launchpad.database.DistroRelease"
-        class="canonical.launchpad.browser.DistroReleaseAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/distros/Distro.name/+add">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
-
-    <browser:editform
-        for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.Edit"
-        name="+edit"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        fields="displayname title summary description"
-        template="../templates/distribution-edit.pt"
-        lp:url="/distros/$Distribution.name/+edit" />
-
-    <browser:page
-        name="+launchpad"
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-launchpadusage.pt"
-        />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
-        fields="driver"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
-
-    <browser:editform
-        name="+uploadadmin"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
-        fields="upload_admin upload_sender"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/distribution-uploadadmin.pt"
-        lp:url="/$Project.name/+uploadadmin">
-    </browser:editform>
-
-
-    <browser:editform
-        name="+selectmemberteam"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        fields="members"
-        permission="launchpad.Edit"
-        template="../templates/distribution-memberteam.pt"
-        lp:url="/distros/$Distribution.name/+selectmemberteam" />
-
-    <browser:editform
-        name="+selectmirroradmins"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        facet="overview"
-        fields="mirror_admin"
-        permission="launchpad.Edit"
-        template="../templates/distribution-change-mirror-admin.pt" />
-
-    <browser:editform
-        name="+bugcontact"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
-        facet="bugs"
-        fields="bugcontact"
-        permission="launchpad.Edit"
-        template="../templates/distribution-bugcontact.pt"
-        lp:url="/distros/$Distribution.name/+bugcontact" />
-
-    <browser:editform
-        name="+changetranslators"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        facet="translations"
-        fields="translationgroup translationpermission"
-        permission="launchpad.Edit"
-        template="../templates/distribution-translators.pt"
-        lp:url="/distros/$Distribution.name/+changetranslators" />
-
-    <browser:addform
-      name="+linkbounty"
-      for="canonical.launchpad.interfaces.IDistribution"
-      schema="canonical.launchpad.interfaces.IDistributionBounty"
-      class="canonical.launchpad.browser.bounty.BountyLinkView"
-      facet="bounties"
-      fields="distribution bounty"
-      keyword_arguments="distribution bounty"
+  <!-- Distribution -->
+  <content class="canonical.launchpad.database.Distribution">
+    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <require
+      permission="launchpad.Edit"
+      set_attributes="displayname title summary description
+                      translationgroup translationpermission
+                      driver members owner bugcontact
+                      security_contact upload_admin upload_sender
+                      mirror_admin homepage_content icon logo
+                      mugshot"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="official_malone official_rosetta official_answers"
+      />
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="language_pack_admin"
+      />
+    <!-- IQuestionTarget -->
+    <allow attributes="getQuestion searchQuestions findSimilarQuestions
+      answer_contacts direct_answer_contacts getSupportedLanguages
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
+      />
+    <require
       permission="launchpad.AnyPerson"
-      template="../templates/bounty-link.pt"
-      lp:url="/distributions/$Distribution.name/+linkbounty">
-      <browser:widget
-        field="distribution"
-        class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+      attributes="newQuestion addAnswerContact removeAnswerContact"
+      />
+    <!-- IFAQTarget -->
+    <allow
+      interface="canonical.launchpad.interfaces.IFAQCollection"
+      attributes="findSimilarFAQs"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="newFAQ"
+      />
+  </content>
 
-    <browser:addform
-      name="+addbounty"
+  <browser:menus
+    module="canonical.launchpad.browser.distribution"
+    classes="
+      DistributionFacets DistributionOverviewMenu DistributionBugsMenu
+      DistributionBountiesMenu DistributionSpecificationsMenu
+      DistributionTranslationsMenu DistributionSetFacets
+      DistributionSetContextMenu
+      "
+    />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.DistributionDynMenu"
+    attribute="__call__"
+    name="+menudata"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistribution"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs-index"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistribution"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+questions"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistributionNavigation"
+    />
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistribution"
+    factory="canonical.launchpad.browser.DistributionSOP"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionArchiveMirrorsView"
+    permission="zope.Public"
+    name="+archivemirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
+
+  <browser:page
       for="canonical.launchpad.interfaces.IDistribution"
-      schema="canonical.launchpad.interfaces.IBounty"
-      label="Register a bounty"
-      fields="name title summary usdvalue difficulty description"
-      class="canonical.launchpad.browser.BountyAddView"
-      facet="bounties"
-      permission="launchpad.AnyPerson"
-      template="../templates/bounty-add.pt"
+      name="+countrymirrors-archive"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.DistributionCountryArchiveMirrorsView"
       />
 
-    <!-- DistributionSet -->
-    <content class="canonical.launchpad.database.DistributionSet">
-        <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
-    </content>
+  <browser:page
+      for="canonical.launchpad.interfaces.IDistribution"
+      name="+archivemirrors-rss"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.DistributionArchiveMirrorsRSSView"
+      template="../templates/distribution-mirrors-rss.pt"
+      />
 
-    <securedutility
-        class="canonical.launchpad.database.DistributionSet"
-        provides="canonical.launchpad.interfaces.IDistributionSet">
-        <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
-    </securedutility>
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsView"
+    permission="zope.Public"
+    name="+cdmirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        name="+index" />
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+cdmirrors-rss"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsRSSView"
+    template="../templates/distribution-mirrors-rss.pt"
+    />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="DistributionSetNavigation"
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
+    permission="zope.Public"
+    name="+disabledmirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
+    permission="zope.Public"
+    name="+unofficialmirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
+
+  <browser:page
+    name="+newmirror"
+    facet="overview"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionMirrorAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/distribution-newmirror.pt">
+  </browser:page>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public" >
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/distribution-index.pt"
+      />
+    <browser:page
+      name="+series"
+      facet="overview"
+      template="../templates/distribution-series.pt"
+      />
+    <browser:page
+      name="+search"
+      facet="overview"
+      template="../templates/distribution-search.pt"
+      />
+    <browser:page
+      name="+bounties"
+      facet="bounties"
+      template="../templates/related-bounties.pt"
+      />
+    <browser:page
+      name="+builds"
+      facet="overview"
+      template="../templates/distribution-builds.pt"
+      />
+    <browser:page
+      name="+builds-list"
+      template="../templates/builds-list.pt"
+     />
+  </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionPPASearchView"
+    name="+ppas"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/distribution-ppa-list.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTargetBugsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionAllPackagesView"
+    permission="zope.Public"
+    name="+allpackages"
+    facet="overview"
+    template="../templates/distribution-allpackages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.CVEReportView"
+    permission="zope.Public"
+    name="+cve"
+    facet="bugs"
+    template="../templates/distribution-cvereport.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="zope.Public" >
+    <browser:page
+      name="+portlet-details"
+      template="../templates/distribution-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-lifecycle"
+      template="../templates/distribution-portlet-lifecycle.pt"
+      />
+    <browser:page
+      name="+portlet-series"
+      template="../templates/distribution-portlet-series.pt"
+      />
+    <browser:page
+      name="+portlet-milestones"
+      template="../templates/object-portlet-milestones.pt"
+      />
+    <browser:page
+      name="+milestones"
+      facet="overview"
+      template="../templates/object-milestones.pt"
+      />
+    <browser:page
+      name="+portlet-uploaders"
+      template="../templates/distribution-portlet-uploaders.pt"
+      />
+    <browser:page
+      name="+portlet-bounties"
+      template="../templates/object-portlet-bounties.pt"
+      />
+    <browser:page
+      name="+portlet-aboutcve"
+      template="../templates/portlet-aboutcve.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="launchpad.Edit"
+    facet="overview"
+    class="canonical.launchpad.browser.ObjectReassignmentView">
+    <browser:page
+      name="+reassign"
+      template="../templates/object-reassignment.pt"
+      />
+  </browser:pages>
+
+  <browser:addform
+    name="+addseries"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
+    label="Register a new series"
+    fields="name displayname title summary description version parentseries"
+    content_factory="canonical.launchpad.database.DistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesAddView"
+    facet="overview"
+    permission="launchpad.Admin"
+    template="../templates/launchpad-addform.pt" >
+      <browser:widget
+        field="owner"
+        class="canonical.widgets.HiddenUserWidget"
         />
+  </browser:addform>
 
-    <browser:url
-        for="canonical.launchpad.interfaces.IDistribution"
-        path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.DistributionEditView"
+    name="+edit"
+    facet="overview"
+    template="../templates/distribution-edit.pt"
+    />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        permission="zope.Public"
-        facet="overview"
-        class="canonical.launchpad.browser.DistributionSetView">
-        <browser:page
-            name="+index"
-            template="../templates/distros-index.pt"
-            lp:url="/distros/" />
-    </browser:pages>
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.DistributionBrandingView"
+    name="+branding"
+    facet="overview"
+    template="../templates/object-branding.pt"
+    />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        permission="zope.Public"
-        facet="overview"
-        class="canonical.launchpad.browser.DistributionSetView">
-    </browser:pages>
+  <browser:editform
+    name="+uploadadmin"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
+    fields="upload_admin upload_sender"
+    facet="overview"
+    permission="launchpad.Edit"
+    template="../templates/distribution-uploadadmin.pt"
+    >
+  </browser:editform>
 
-    <browser:addform
-        name="+add"
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        schema="canonical.launchpad.interfaces.IDistribution"
-        label="Register a distribution in Soyuz"
-        fields="name displayname title summary description domainname owner
-                members"
-        content_factory="canonical.launchpad.database.Distribution"
-        class="canonical.launchpad.browser.DistributionSetAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/distros/+add">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+  <browser:editform
+    name="+selectmemberteam"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    fields="members"
+    permission="launchpad.Edit"
+    template="../templates/distribution-memberteam.pt"
+    />
 
-    <browser:menus
-        module="canonical.launchpad.browser.distribution"
-        classes="
-            DistributionFacets DistributionOverviewMenu DistributionBugsMenu
-            DistributionBountiesMenu DistributionSpecificationsMenu
-            DistributionTranslationsMenu
-            "
-            />
+  <browser:editform
+    name="+selectmirroradmins"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    fields="mirror_admin"
+    permission="launchpad.Edit"
+    template="../templates/distribution-change-mirror-admin.pt"
+    />
+
+  <browser:editform
+    name="+bugcontact"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
+    facet="bugs"
+    fields="bugcontact"
+    permission="launchpad.Edit"
+    template="../templates/distribution-bugcontact.pt"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+translations"
+    facet="translations"
+    template="../templates/distribution-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistribution"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
+
+  <browser:editform
+    name="+changetranslators"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistribution"
+    facet="translations"
+    fields="translationgroup translationpermission"
+    permission="launchpad.Edit"
+    template="../templates/distribution-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+select-language-pack-admin"
+    class="canonical.launchpad.browser.DistributionLanguagePackAdminView"
+    facet="translations"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distribution-language-pack-admin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:addform
+    name="+linkbounty"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IDistributionBounty"
+    class="canonical.launchpad.browser.bounty.BountyLinkView"
+    facet="bounties"
+    fields="distribution bounty"
+    keyword_arguments="distribution bounty"
+    permission="launchpad.AnyPerson"
+    template="../templates/bounty-link.pt">
+    <browser:widget
+      field="distribution"
+      class="canonical.widgets.ContextWidget"
+      />
+  </browser:addform>
+
+  <browser:addform
+    name="+addbounty"
+    for="canonical.launchpad.interfaces.IDistribution"
+    schema="canonical.launchpad.interfaces.IBounty"
+    label="Register a bounty"
+    fields="name title summary usdvalue difficulty description"
+    class="canonical.launchpad.browser.BountyAddView"
+    facet="bounties"
+    permission="launchpad.AnyPerson"
+    template="../templates/bounty-add.pt"
+    />
+
+  <!-- DistributionSet -->
+  <content class="canonical.launchpad.database.DistributionSet">
+    <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.DistributionSet"
+    provides="canonical.launchpad.interfaces.IDistributionSet">
+    <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
+  </securedutility>
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    factory="canonical.launchpad.browser.DistributionSetSOP"
+    permission="zope.Public"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    name="+index"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistributionSetNavigation"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistribution"
+    path_expression="name"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    permission="zope.Public"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionSetView">
+    <browser:page
+      name="+index"
+      template="../templates/distros-index.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    permission="zope.Public"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionSetView">
+  </browser:pages>
+
+  <browser:page
+    name="+add"
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    class="canonical.launchpad.browser.DistributionAddView"
+    facet="overview"
+    permission="launchpad.Admin"
+    template="../templates/distribution-add.pt"
+    />
 
 </configure>

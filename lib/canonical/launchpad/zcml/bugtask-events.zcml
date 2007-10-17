@@ -32,4 +32,10 @@
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
+<subscriber
+   for="canonical.launchpad.interfaces.IBugTask
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   handler="canonical.launchpad.mailnotification.dispatch_linked_question_notifications"
+   />
+
 </configure>

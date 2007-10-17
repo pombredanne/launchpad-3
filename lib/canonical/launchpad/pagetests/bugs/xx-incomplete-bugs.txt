@@ -1,0 +1,72 @@
+= Incomplete bugs =
+
+Bugs can have their status set to 'Incomplete', to indicate that more
+information is required before they can be confirmed.
+
+We open a bug and set its status to 'Incomplete'.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+editstatus')
+    >>> user_browser.getControl('Status').value = ['Incomplete']
+    >>> user_browser.getControl('Save Changes').click()
+    >>> print extract_text(
+    ...     find_tags_by_class(user_browser.contents, 'statusINCOMPLETE')[0])
+    Incomplete
+
+We can now search for the bug using the advanced search form.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+
+Bugs that have been marked 'Incomplete' but for which no new information
+was supplied (through comments) are 'Incomplete (without response)'.
+
+    >>> user_browser.getControl(name='field.status:list').value = (
+    ...     ['INCOMPLETE_WITHOUT_RESPONSE'])
+    >>> user_browser.getControl('Search', index=1).click()
+    >>> find_tag_by_id(user_browser.contents, 'buglisting').findChild('a')
+    <a href="/jokosher/+bug/11">...</a>
+
+Bugs that have been marked incomplete and for which new information was
+supplied are 'Incomplete (with response)'.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.getControl(name='field.status:list').value = (
+    ...     ['INCOMPLETE_WITH_RESPONSE'])
+    >>> user_browser.getControl('Search', index=1).click()
+
+The bug we examined earlier does not have any new information, so we
+wouldn't expect it to show in the list.
+
+    >>> print find_tag_by_id(user_browser.contents, 'buglisting')
+    None
+
+We can supply new information by posting a new comment for the bug.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
+    >>> user_browser.getControl(name='field.comment').value = (
+    ...     'More information here.')
+    >>> user_browser.getControl('Save Changes', index=1).click()
+
+    >>> import transaction
+    >>> transaction.commit()
+
+Let's try again to find that bug using the advanced search form.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.getControl(name='field.status:list').value = (
+    ...     ['INCOMPLETE_WITH_RESPONSE'])
+    >>> user_browser.getControl('Search', index=1).click()
+    >>> find_tag_by_id(user_browser.contents, 'buglisting').findChild('a')
+    <a href="/jokosher/+bug/11">...</a>
+
+The bug is there, since we supplied new information in a comment. Let's
+make sure that it no longer is in the list of incomplete bugs without
+response.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.getControl(name='field.status:list').value = (
+    ...     ['INCOMPLETE_WITH_RESPONSE'])
+    >>> user_browser.getControl('Search', index=1).click()
+    >>> ('<a href="/jokosher/+bug/11">' in
+    ...     find_tag_by_id(user_browser.contents, 'buglisting'))
+    False

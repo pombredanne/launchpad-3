@@ -1,7 +1,7 @@
 Bug Export
 ==========
 
-Some projects require regular exports of thier bugs as a condition of
+Some projects require regular exports of their bugs as a condition of
 using Launchpad.  This provides them an exit strategy in the event
 that they can't use Launchpad anymore.
 
@@ -10,8 +10,7 @@ export information about all bug tasks -- only those for the product
 in question.
 
 The export is also limited to bug information -- it does not include
-links to other Launchpad features such as specifications or support
-tickets.
+links to other Launchpad features such as specifications or questions.
 
 
 Exporting one bug
@@ -51,7 +50,7 @@ Now we serialise it as XML, and print it:
   <BLANKLINE>
   The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.</description>
   <reporter name="name12">Sample Person</reporter>
-  <status>UNCONFIRMED</status>
+  <status>NEW</status>
   <importance>LOW</importance>
   <assignee name="sabdfl">Mark Shuttleworth</assignee>
   <subscriptions>
@@ -82,7 +81,7 @@ successively serialising each of the tasks for that product.
   >>> ztm = ZopelessTransactionManager._installed
 
   >>> export_bugtasks(ztm, firefox, sys.stdout)
-  <launchpad-bugs>
+  <launchpad-bugs xmlns="https://launchpad.net/xmlns/2006/bugs">
   <bug id="1">
   ...
   </bug>
@@ -102,7 +101,7 @@ successively serialising each of the tasks for that product.
   </bug>
   <bug id="6">
   ...
-  <duplicateof bug="5" />
+  <duplicateof>5</duplicateof>
   ...
   <title>Firefox crashes when Save As dialog for a nonexistent window is closed</title>
   ...
@@ -122,14 +121,13 @@ the file when we later serialise the bug:
   >>> bug1 = getUtility(IBugSet).get(1)
   >>> sampleperson = getUtility(IPersonSet).getByEmail('test@canonical.com')
   >>> bug1.addAttachment(sampleperson, StringIO('Hello World'),
-  ...                    '"Hello World" attachment', 'Added attachment',
-  ...                    'hello.txt')
+  ...                    'Added attachment', 'hello.txt',
+  ...                    description='"Hello World" attachment')
   <BugAttachment ...>
   >>> ztm.commit()
 
-A reference to the attachment is included with the new comment, and
-then later the attachment contents are included using base-64
-encoding:
+A reference to the attachment is included with the new comment with
+the attachment contents encoded using base-64:
 
   >>> node = serialise_bugtask(bug1.bugtasks[0])
   >>> tree = ET.ElementTree(node)
@@ -140,15 +138,15 @@ encoding:
   <sender name="name12">Sample Person</sender>
   <date>...</date>
   <text>Added attachment</text>
-  <attachment href="http://localhost:58000/.../hello.txt" />
-  </comment>
   <attachment href="http://localhost:58000/.../hello.txt">
   <type>UNSPECIFIED</type>
+  <filename>hello.txt</filename>
   <title>"Hello World" attachment</title>
   <mimetype>text/plain</mimetype>
   <contents>SGVsbG8gV29ybGQ=
   </contents>
   </attachment>
+  </comment>
   ...
 
 

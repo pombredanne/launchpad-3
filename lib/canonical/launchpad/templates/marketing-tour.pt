@@ -1,0 +1,97 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <div id="tour" metal:fill-slot="contents">
+    <div id="primary">
+      <h2 tal:content="view/title">App Name</h2>
+      <h3 class="byline">Application tour</h3>
+
+      <ul id="pane-selector">
+        <li tal:repeat="screen_title view/screen_titles"
+            tal:attributes="class python: repeat['screen_title'].index() == view.current_screen_index and 'current' or ''"
+          ><a href="#"
+              tal:attributes="href string:${request/URL}?screen=${repeat/screen_title/index}"
+              tal:content="screen_title">Getting started</a></li>
+      </ul>
+
+      <div class="info"
+            tal:replace="nothing">
+        <h5>Translations</h5>
+        <p><strong>Translations is a web-based system for translating open source software into any language.</strong>
+          All you need to start translating is a web browser, a good knowledge of the application you're translating,
+          and a thorough understanding of the English language</p>
+      </div> <!-- info -->
+    </div> <!-- primary -->
+
+    <div id="secondary"
+         tal:define="screen view/current_screen">
+
+      <h4 id="tour-headline"
+          tal:content="screen/headline">Headline</h4>
+
+      <div id="pane">
+        <div id="summary"
+             tal:content="structure screen/summary">Screen summary</div>
+
+        <div id="screen">
+          <ol class="callouts"
+              tal:condition="screen/callouts">
+            <tal:callout repeat="callout screen/callouts">
+              <li id="p1" style="top: 0px; left: 0px"
+                  tal:condition="callout/left"
+                  tal:attributes="id string:p${repeat/callout/number};
+                                  style string:top: ${callout/top}px;; left: ${callout/left}px;; ;"
+                  tal:content="repeat/callout/number"
+                  >One</li>
+            </tal:callout>
+          </ol>
+          <img src="#" alt="Screenshot"
+               tal:attributes="src screen/screenshot;
+                               alt string:${screen/title} Screenshot"/>
+        </div>
+        <ul class="info"
+            tal:condition="screen/callouts">
+          <li id="point-1"
+              tal:repeat="callout view/current_screen_callouts_layout"
+              tal:attributes="id string:point-${callout/number};
+                              class python:repeat['callout'].index() == 2 and 'newline' or '';"
+              tal:content="structure callout/text">Description of point 1.</li>
+        </ul>
+
+        <div id="transition"
+             tal:condition="screen/transition"
+             tal:content="structure screen/transition">
+          Next screen is about...
+        </div>
+
+        <a class="button next" href="+tour" title="Next"
+           tal:condition="view/next_screen_index"
+           tal:attributes="href string:${request/URL}?screen=${view/next_screen_index}"
+           >Next &gt;</a>
+
+        <tal:next_tour condition="not: view/next_screen_index">
+          <a class="button next" href="+tour" title="Next tour"
+              tal:condition="view/next_tour_url"
+              tal:attributes="href view/next_tour_url"
+            >Next Tour &gt;</a>
+        </tal:next_tour>
+
+        <tal:comment replace="nothing">
+          This line break is needed to make sure that pane heights includes
+          all the above floating elements.
+        </tal:comment>
+        <br clear="all" />
+      </div> <!-- pane -->
+  </div> <!-- secondary -->
+  </div>
+</body>
+</html>

@@ -1,0 +1,602 @@
+= Mentorship =
+
+Launchpad allows people who are members of a team to offer to mentor anyone
+implementing a particular bug or blueprint.
+
+The menu text, and the links within a page to offer mentoring, should all
+use standardised text:
+
+  >>> menu_mentoring_offer = 'Offer mentorship'
+  >>> menu_mentoring_retract = 'Retract mentorship'
+  >>> page_mentoring_offer = 'Offer to mentor someone'
+  >>> page_mentoring_retract = 'Retract my offer of mentorship'
+
+You have to be logged in to see the offers of mentoring. Let's try viewing
+the bug and spec as an anonymous user. We should see neither the page link
+nor the menu link to offer mentoring.
+
+  >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> menu_mentoring_offer not in anon_browser.contents
+  True
+  >>> page_mentoring_offer not in anon_browser.contents
+  True
+  >>> anon_browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> menu_mentoring_offer not in anon_browser.contents
+  True
+  >>> page_mentoring_offer not in anon_browser.contents
+  True
+
+However, a person who is a member of any teams should have the ability to
+offer mentorship. Since they can offer mentorship, they should not be able
+to retract it at the same time.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> menu_mentoring_offer in browser.contents
+  True
+  >>> page_mentoring_offer in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> menu_mentoring_offer in browser.contents
+  True
+  >>> page_mentoring_offer in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+
+We confirm that a person who is not a member of any teams will not see the
+ability to offer mentorship:
+
+  >>> browser = setupBrowser(auth="Basic no-team-memberships@test.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> menu_mentoring_offer in browser.contents
+  False
+  >>> page_mentoring_offer in browser.contents
+  False
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> menu_mentoring_offer in browser.contents
+  False
+  >>> page_mentoring_offer in browser.contents
+  False
+
+
+We should never see the ability to offer mentorship when the bug or
+spec is complete. For the bug, we will just take a look at Bug #8 which is
+complete.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/8')
+  >>> menu_mentoring_offer in browser.contents
+  False
+  >>> page_mentoring_offer in browser.contents
+  False
+
+Now let's look at a spec which is complete:
+
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/thinclient-local-devices')
+  >>> menu_mentoring_offer in browser.contents
+  False
+  >>> page_mentoring_offer in browser.contents
+  False
+
+
+In the case of bugs, we should not be able to offer mentorship on a bug
+which is a duplicate:
+
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/6')
+  >>> menu_mentoring_offer in browser.contents
+  False
+  >>> page_mentoring_offer in browser.contents
+  False
+
+== Making offers of mentorship ==
+
+So, we have established that a person who is a team member can offer
+membership in the right bugs and specs. Let's make sure those pages work all
+right.
+
+First, we will make an offer of mentorship on a bug.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> print browser.url
+  http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
+  >>> print browser.title
+  Offer to mentor this work
+  >>> browser.getControl('Offer Mentoring').click()
+  >>> print browser.url
+  http://bugs.launchpad.dev/tomcat/+bug/2
+  >>> 'Blackhole Trash folder' in browser.title
+  True
+
+We should see the listing of mentors, now:
+
+  >>> 'Mentors:' in browser.contents
+  True
+
+And most importantly, we should no longer be able to offer mentoring on this
+bug, because we are ALREADY a mentor!
+
+  >>> menu_mentoring_offer not in browser.contents
+  True
+  >>> page_mentoring_offer not in browser.contents
+  True
+
+Similarly, because we are now a mentor, we should see a menu and page link
+which allow us to retract this offer of mentorship.
+
+  >>> menu_mentoring_retract in browser.contents
+  True
+  >>> page_mentoring_retract in browser.contents
+  True
+
+However, somebody ELSE should still be able to offer mentoring, and not yet
+offer mentoring:
+
+  >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> menu_mentoring_offer in browser.contents
+  True
+  >>> page_mentoring_offer in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+
+Now, let's repeat the whole exercise with a Blueprint.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> print browser.title
+  Offer to mentor this work
+  >>> browser.getControl('Offer Mentoring').click()
+  >>> 'Facilitate mass installs' in browser.title
+  True
+
+We should see the listing of mentors, now:
+
+  >>> 'Mentors:' in browser.contents
+  True
+
+And most importantly, we should no longer be able to offer mentoring on this
+bug, because we are ALREADY a mentor!
+
+  >>> menu_mentoring_offer not in browser.contents
+  True
+  >>> page_mentoring_offer not in browser.contents
+  True
+
+Similarly, because we are now a mentor, we should see a menu and page link
+which allow us to retract this offer of mentorship.
+
+  >>> menu_mentoring_retract in browser.contents
+  True
+  >>> page_mentoring_retract in browser.contents
+  True
+
+However, somebody ELSE should still be able to offer mentoring, and not yet
+offer mentoring:
+
+  >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> menu_mentoring_offer in browser.contents
+  True
+  >>> page_mentoring_offer in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+
+
+== Mentorship Listings ==
+
+OK, now we have a bunch of mentorships in the system. Let's make sure all
+the listing pages are working.
+
+First, any offers should show up on the page of the person making the offer.
+
+  >>> anon_browser.open('http://launchpad.dev/~one-membership/+mentoring')
+  >>> print anon_browser.title
+  Mentoring offered by One Membership
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  True
+  >>> 'cluster-installation' in anon_browser.contents
+  True
+
+They should also show up on the page for the team which is the beneficiary
+of this mentorship.
+
+  >>> anon_browser.open('http://launchpad.dev/~simple-team/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available for newcomers to Simple Team
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  True
+  >>> 'cluster-installation' in anon_browser.contents
+  True
+
+
+There is also a listing of mentorships available for a product:
+
+  >>> anon_browser.open('http://launchpad.dev/tomcat/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Tomcat
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  True
+
+And for a project:
+
+  >>> anon_browser.open('http://launchpad.dev/apache/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Apache
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  True
+
+And for a distribution
+
+  >>> anon_browser.open('http://launchpad.dev/kubuntu/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Kubuntu
+  >>> 'cluster-installation' in anon_browser.contents
+  True
+
+
+We also have the special Mentorship Manager. This is only acessible to
+launchpad Admins:
+
+  >>> user_browser.open('http://launchpad.dev/+mentoring/')
+  Traceback (most recent call last):
+    ...
+  Unauthorized:...
+
+
+When we login as an admin, we can see listed here all the outstanding
+mentorship offers:
+
+  >>> admin_browser.open('http://launchpad.dev/+mentoring/')
+  >>> print admin_browser.title
+  Mentoring available in the Launchpad Mentorship Manager
+  >>> 'Blackhole Trash folder' in admin_browser.contents
+  True
+  >>> 'cluster-installation' in admin_browser.contents
+  True
+
+
+== Mentorships on private bugs ==
+
+When a bug for which mentoring was offered is marked private, it
+will no longer show up on any of these listings.
+
+We are going to now poke into the back of the db's head, and "privatise" the
+bug we have been using.
+
+   >>> from canonical.launchpad.interfaces import (
+   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet)
+   >>> from canonical.launchpad.ftests import login, logout, syncUpdate
+   >>> from canonical.database.sqlbase import flush_database_updates
+   >>> login('foo.bar@canonical.com')
+   >>> from zope.component import getUtility
+   >>> distroset = getUtility(IDistributionSet)
+   >>> personset = getUtility(IPersonSet)
+   >>> bugset = getUtility(IBugSet)
+   >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+   >>> kubuntu = distroset.getByName('kubuntu')
+   >>> bug_2 = bugset.get(2)
+   >>> bug_2.private
+   False
+   >>> bug_2.private = True
+   >>> syncUpdate(bug_2)
+   >>> bug_2.private
+   True
+   >>> logout()
+
+Right, brain surgery completed. The bug is now private.
+
+This bug should not show in the "mentorship available" listing:
+
+  >>> admin_browser.open('http://launchpad.dev/+mentoring')
+  >>> print admin_browser.title
+  Mentoring available in the Launchpad Mentorship Manager
+  >>> 'Blackhole Trash folder' in admin_browser.contents
+  False
+
+  #>>> 'cluster-installation' in admin_browser.contents
+  #False
+
+Nor in any of the listings which previously showed the bug:
+
+  >>> anon_browser.open('http://launchpad.dev/~one-membership/+mentoring')
+  >>> print anon_browser.title
+  Mentoring offered by One Membership
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+  #>>> 'cluster-installation' in anon_browser.contents
+  #False
+
+Including on the page for the team which is the beneficiary
+of this mentorship.
+
+  >>> anon_browser.open('http://launchpad.dev/~simple-team/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available for newcomers to Simple Team
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+  #>>> 'cluster-installation' in anon_browser.contents
+  #False
+
+Or the listing of mentorships available for a product:
+
+  >>> anon_browser.open('http://launchpad.dev/tomcat/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Tomcat
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+Or for a project:
+
+  >>> anon_browser.open('http://launchpad.dev/apache/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Apache
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+Or for a distribution:
+
+  >>> anon_browser.open('http://launchpad.dev/debian/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Debian
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+Let's make this bug public again:
+
+   >>> login('foo.bar@canonical.com')
+   >>> bug_2.private = False
+   >>> syncUpdate(bug_2)
+   >>> bug_2.private
+   False
+   >>> logout()
+
+== Completed mentorships ==
+
+When a bug or blueprint, for which mentoring was offered, is complete, it
+will no longer show up on any of these listings except for the "recent
+successes" list (if the mentorship was offered less than a year ago).
+
+We are going to now poke into the back of the db's head, and "complete" the
+bug and the blueprint we have been using.
+
+   >>> from canonical.launchpad.interfaces import ILaunchBag
+   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+   >>> login('foo.bar@canonical.com')
+   >>> spec_1 = kubuntu.getSpecification('cluster-installation')
+   >>> bug_2.is_complete
+   False
+   >>> spec_1.is_complete
+   False
+   >>> for task in bug_2.bugtasks:
+   ...   if task.conjoined_master is None:
+   ...     task.transitionToStatus(
+   ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+   >>> flush_database_updates()
+   >>> bug_2.is_complete
+   True
+   >>> spec_1.implementation_status = \
+   ...     SpecificationImplementationStatus.IMPLEMENTED
+   >>> newstate = spec_1.updateLifecycleStatus(foo_bar)
+   >>> syncUpdate(spec_1)
+   >>> spec_1.is_complete
+   True
+   >>> logout()
+
+Right, brain surgery completed. The spec and the bug are now complete.
+
+So, first, these completed items should show up in the Mentorship Manager's
+"recent successes" listing:
+
+  >>> admin_browser.open('http://launchpad.dev/+mentoring/+success')
+  >>> print admin_browser.title
+  Successful mentorships over the past year.
+  >>> 'Blackhole Trash folder' in admin_browser.contents
+  True
+  >>> 'cluster-installation' in admin_browser.contents
+  True
+
+But not in the "mentorship available" listing:
+
+  >>> admin_browser.open('http://launchpad.dev/+mentoring')
+  >>> print admin_browser.title
+  Mentoring available in the Launchpad Mentorship Manager
+  >>> 'Blackhole Trash folder' in admin_browser.contents
+  False
+  >>> 'cluster-installation' in admin_browser.contents
+  False
+
+Nor in any of the listings which previously showed these items:
+
+  >>> anon_browser.open('http://launchpad.dev/~one-membership/+mentoring')
+  >>> print anon_browser.title
+  Mentoring offered by One Membership
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+  >>> 'cluster-installation' in anon_browser.contents
+  False
+
+They should also show up on the page for the team which is the beneficiary
+of this mentorship.
+
+  >>> anon_browser.open('http://launchpad.dev/~simple-team/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available for newcomers to Simple Team
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+  >>> 'cluster-installation' in anon_browser.contents
+  False
+
+
+There is also a listing of mentorships available for a product:
+
+  >>> anon_browser.open('http://launchpad.dev/tomcat/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Tomcat
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+And for a project:
+
+  >>> anon_browser.open('http://launchpad.dev/apache/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Apache
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+And for a distribution
+
+  >>> anon_browser.open('http://launchpad.dev/kubuntu/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Kubuntu
+  >>> 'cluster-installation' in anon_browser.contents
+  False
+
+== Retraction of mentoring ==
+
+When an item is complete, the mentors will still be listed but you cannot
+retract mentoring that you have offered.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> 'Mentors:' in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> 'Mentors:' in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+
+
+Finally, though, we do want to test the retraction mechanism, so we will
+re-open the bug and change the state of the spec so that neither is
+complete. This should allow us to retract our offer of mentoring in both
+cases.
+
+   >>> login('foo.bar@canonical.com')
+   >>> for task in bug_2.bugtasks:
+   ...   if task.conjoined_master is None:
+   ...     task.transitionToStatus(
+   ...       BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+   >>> flush_database_updates()
+   >>> bug_2.is_complete
+   False
+   >>> spec_1.implementation_status = \
+   ...     SpecificationImplementationStatus.NOTSTARTED
+   >>> newstate = spec_1.updateLifecycleStatus(foo_bar)
+   >>> syncUpdate(spec_1)
+   >>> spec_1.is_complete
+   False
+   >>> logout()
+
+
+Right. Let's retract the offer of mentorship from the specification. It
+should take us back to the blueprint page, and we should be able to offer
+mentoring again.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> browser.getLink(menu_mentoring_retract).click()
+  >>> print browser.title
+  Retract offer of mentorship
+  >>> browser.getControl('Retract Mentoring').click()
+  >>> 'Facilitate mass installs' in browser.title
+  True
+  >>> menu_mentoring_offer in browser.contents
+  True
+
+And finally let's do it on the bug.
+
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+  >>> browser.getLink(menu_mentoring_retract).click()
+  >>> print browser.title
+  Retract offer of mentorship
+  >>> browser.getControl('Retract Mentoring').click()
+  >>> 'Blackhole Trash folder' in browser.title
+  True
+  >>> menu_mentoring_offer in browser.contents
+  True
+
+
+Subscribing when offering mentorship
+====================================
+
+When you offer to mentor some work, you are offered the option to subscribe
+to that bug or blueprint. We will demonstrate this in action.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+
+First we show that 'One Membership' is not initially a subscriber to the
+blueprint:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
+  >>> print subs
+  None
+
+Now we offer mentoring, and along the way we request to be subscribed:
+
+  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getControl(name='field.subscription_request').value = True
+  >>> browser.getControl('Offer Mentoring').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation'
+
+And now 'One Membership' is a subscriber:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
+  >>> 'One Membership' in subs.renderContents()
+  True
+
+
+
+Now let's do the same with a bug.
+
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10')
+
+First we show that 'One Membership' is not initially a subscriber to the
+bug:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
+  >>> 'One Membership' in subs.renderContents()
+  False
+
+Now we offer mentoring, and along the way we request to be subscribed:
+
+  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getControl(name='field.subscription_request').value = True
+  >>> browser.getControl('Offer Mentoring').click()
+  >>> browser.url
+  'http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10'
+
+And now 'One Membership' is a subscriber:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
+  >>> 'One Membership' in subs.renderContents()
+  True
+
+

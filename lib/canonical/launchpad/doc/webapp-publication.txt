@@ -1,0 +1,224 @@
+= Launchpad Publication =
+
+Launchad uses the generic Zope3 publisher. It installs
+a LaunchpadRequestPublicationFactory which dispatches to our
+implementation of the appropriate zope.publisher.IRequest and
+zope.publisher.IPublication for the request.
+
+    # Z3 doesn't make this available as a utility.
+    >>> from zope.app.publication.requestpublicationregistry import (
+    ...     factoryRegistry)
+
+    # Defines an helper function that returns the appropriate
+    # IRequest and IPublication.
+    >>> from cStringIO import StringIO
+    >>> def get_request_and_publication(method='GET',
+    ...                                 in_stream='', host='localhost'):
+    ...     environment = {'HTTP_HOST': host,
+    ...                    'REQUEST_METHOD': method }
+    ...     launchpad_factory = factoryRegistry.lookup(
+    ...         method, 'text/html', environment)
+    ...     request_factory, publication_factory = launchpad_factory()
+    ...     request = request_factory(StringIO(in_stream), environment)
+    ...     # Since Launchpad doesn't use ZODB, we use None here.
+    ...     publication = publication_factory(None)
+    ...     return request, publication
+
+All Launchpad requests provides the ILaunchpadBrowserApplicationRequest
+interface. That interface is an extension of the zope standard
+IBrowserApplicationRequest.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     ILaunchpadBrowserApplicationRequest)
+
+    >>> request, publication = get_request_and_publication()
+    >>> verifyObject(ILaunchpadBrowserApplicationRequest, request)
+    True
+
+== Handling form data using IBrowserFormNG ==
+
+Submitted form data is available in the form_ng request attribute. This
+is an object providing the IBrowserFormNG interface which offers two
+methods to obtain form data. (Form data is also available through the
+regular Zope3 form attribute using the dictionary interface.)
+
+    >>> from canonical.launchpad.webapp.interfaces import IBrowserFormNG
+    >>> verifyObject(IBrowserFormNG, request.form_ng)
+    True
+
+You can check the presence of an uploaded field using the regular
+python 'in' operator.
+
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadBrowserRequest)
+    >>> from urllib import urlencode
+    >>> environment = {'QUERY_STRING': urlencode({
+    ...     'a_field': 'a_value',
+    ...     'items_field': [1, 2, 3]}, doseq=True)}
+    >>> request = LaunchpadBrowserRequest('', environment)
+    >>> request.processInputs()
+
+    >>> 'a_field' in request.form_ng
+    True
+    >>> 'another_field' in request.form_ng
+    False
+
+The advantage of the IBrowserFormNG API is that it offers methods that
+checks the number of values you are expecting. The getOne() method
+should be used when you expect only one value for the field.
+
+    >>> request.form_ng.getOne('a_field')
+    u'a_value'
+
+UnexpectedFormData is raised if more than one value was submitted for
+the field:
+
+    >>> request.form_ng.getOne('items_field')
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData:...
+
+None is returned if the field wasn't submitted:
+
+    >>> request.form_ng.getOne('another_field') is None
+    True
+
+You can provide a default value that is returned if the field wasn't
+submitted:
+
+    >>> request.form_ng.getOne('another_field', u'default')
+    u'default'
+
+The getAll() method should be used when you are expecting a list of
+values.
+
+    >>> request.form_ng.getAll('items_field')
+    [u'1', u'2', u'3']
+
+If only one value was submitted, it will still be returned as part of
+a list:
+
+    >>> request.form_ng.getAll('a_field')
+    [u'a_value']
+
+An empty list is returned when no value was submitted for the field:
+
+    >>> request.form_ng.getAll('another_field')
+    []
+
+That method also accepts a default value that is to be returned when
+no value was submitted with the field.
+
+    >>> request.form_ng.getAll('another_field', [u'default'])
+    [u'default']
+
+All the submitted field names can be iterated over:
+
+    >>> for name in sorted(request.form_ng):
+    ...     print name
+    a_field
+    items_field
+
+
+== Transaction Logging ==
+
+The publication implementation is responsible for putting the name
+of the logged in user in the transaction. (The afterCall() hook is
+responsible for that part. In these examples, None is passed as the
+published object, because the implementation doesn't make use of it.)
+
+The user attribute is an empty string, when no user is logged in.
+
+    >>> import transaction
+    >>> txn = transaction.begin()
+    >>> print request.principal
+    None
+    >>> request, publication = get_request_and_publication()
+    >>> publication.afterCall(request, None)
+    >>> txn.user
+    ''
+
+But if there is a logged in user, the transaction user attribute will
+contains its ID (as well as an empty '/' path, which is a Zope artefact
+allowing different authentication based on the traversed objects):
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> foo_bar.id
+    16
+    >>> request.setPrincipal(foo_bar)
+    >>> publication.afterCall(request, None)
+    >>> print txn.user
+     / 16
+
+
+== Read-Only Requests ==
+
+Our publication implementation make sure that requests supposed to be
+read-only (GET and HEAD) don't change anything in the database.
+(Actually, if the published method calls transaction.commit() itself,
+that assumption won't hold.) 
+
+Again this is handled by the afterCall() publication hook.
+
+For example, the following database modification will be automatically
+reverted in a GET request.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    >>> login('foo.bar@canonical.com')
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> print foo_bar.city
+    None
+    >>> foo_bar.city = 'Montreal'
+    >>> syncUpdate(foo_bar)
+
+    >>> request, publication = get_request_and_publication('GET')
+    >>> publication.afterCall(request, None)
+    >>> publication.clearSQLOSCache()
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> print foo_bar.city
+    None
+
+But not if the request uses POST, the changes will be preserved.
+
+    >>> foo_bar.city = 'Montreal'
+    >>> syncUpdate(foo_bar)
+
+    >>> request, publication = get_request_and_publication('POST')
+    >>> publication.afterCall(request, None)
+    >>> publication.clearSQLOSCache()
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> print foo_bar.city
+    Montreal
+
+
+== HEAD requests have empty body ==
+
+The publication implementation also makes sure that no body is
+returned as part of HEAD requests. (Again this is handled by the
+afterCall() publication hook.)
+
+    >>> txn = transaction.begin()
+    >>> request, publication = get_request_and_publication('HEAD')
+    >>> response = request.response
+    >>> response.setResult('Content that will disappear.')
+    >>> publication.afterCall(request, None)
+    >>> request.response.consumeBody()
+    ''
+
+In other cases, like a GET, the body would be unchanged.
+
+    >>> txn = transaction.begin()
+    >>> request, publication = get_request_and_publication('GET')
+    >>> response = request.response
+    >>> response.setResult('Some boring content.')
+    >>> publication.afterCall(request, None)
+    >>> print request.response.consumeBody()
+    Some boring content.

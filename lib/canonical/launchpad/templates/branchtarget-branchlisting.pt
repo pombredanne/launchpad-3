@@ -1,16 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context Title</h3>
-  <h1>Bazaar branches</h1>
-</metal:heading>
 
 <div metal:fill-slot="main">
 
@@ -26,12 +25,13 @@
     -->
   </tal:comment>
 
+      <h1>
+        Branches
+        <tal:role replace="view/context_relationship" />
+        <tal:person replace="context/displayname" />
+      </h1>
+
   <tal:related-branches condition="view/branches">
-  <p>
-    These branches are
-    <span tal:replace="view/context_relationship">related to</span>
-    <span tal:replace="context/displayname">Steve Alexander</span>.
-  </p>
 
   <tal:block repeat="category view/categories">
     <h2 tal:content="category/status/title">Experimental</h2>
@@ -51,31 +51,19 @@
       There are no branches
       <span tal:replace="view/context_relationship">related to</span>
       <span tal:replace="context/displayname">Steve Alexander</span>
-      in Launchpad today. You can use Launchpad as a registry for Bazaar
+      recorded in Launchpad. You can use Launchpad as a registry for Bazaar
       branches, and encourage broader community participation in your project
       using distributed version control.
     </p>
     <p tal:condition="view/in_product_context">
       There are no branches registered for
-      <span tal:replace="context/displayname">Firefox</span> in Launchpad
-      today. We recommend you visit
+      <span tal:replace="context/displayname">Firefox</span> in Launchpad.
+      We recommend you visit
       <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> for more
       information about how you can use the Bazaar revision control system to
-      improve community participation in this product.
+      improve community participation in this project.
     </p>
   </tal:no-branch>
-
-
-  <h2>Further information</h2>
-
-  <p class="discreet">
-    This page shows the Bazaar branches that
-    are <span tal:replace="view/context_relationship">related to</span>
-    <span tal:replace="context/displayname">Steve Alexander</span>.
-    Bazaar is a distributed version control system, see
-    <a href="http://www.bazaar-vcs.org/">www.bazaar-vcs.org</a> for more
-    information.
-  </p>
 
 </div>
 </body>

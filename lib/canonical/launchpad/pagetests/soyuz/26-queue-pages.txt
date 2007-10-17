@@ -1,20 +1,12 @@
 Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
-Currently the queue page is only available for DistroReleases.
-
-  >>> from zope.testbrowser.testing import Browser
-
+Currently the queue page is only available for DistroSeriess.
 Setup a browser as the upload manager:
-
-  >>> upload_manager_browser = Browser()
-  >>> upload_manager_browser.handleErrors = False
-  >>> upload_manager_browser.addHeader(
-  ...     "Authorization", "Basic carlos@canonical.com:test")
 
 Change ubuntu's upload manager to be carlos:
 
   >>> admin_browser.open("http://localhost/ubuntu")
-  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
   >>> admin_browser.getControl("Change").click()
 
@@ -22,14 +14,21 @@ We are at "Distribution Overview" page, let's check the stored values:
 
   >>> admin_browser.url
   'http://localhost/ubuntu'
-  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value
-  'carlos@canonical.com'
+  'carlos'
 
-Authentication is required for queue page.
+Even if the link "View Uploads" is presented also for anonymous
+requests in Distrorelease page, authentication is required to access
+queue page itself:
 
-  >>> anon_browser.open(
-  ...     "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> anon_browser.open("http://localhost/ubuntu/breezy-autotest")
+  >>> queue_link = anon_browser.getLink("Show uploads")
+
+  >>> queue_link.url
+  'http://localhost/ubuntu/breezy-autotest/+queue'
+
+  >>> queue_link.click()
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -68,10 +67,21 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ...     "+queue?queue_state=1")
   Traceback (most recent call last):
   ...
-  Unauthorized: ...
+  Unauthorized: User don't have permission to see this queue.
 
-And allowed for upload manager and admins as well:
+Page access denied also for empty queues (bug #74965):
 
+  >>> user_browser.open(
+  ...     "http://localhost/distros/ubuntu/warty/"
+  ...     "+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: User don't have permission to see this queue.
+
+Allow access from upload managers and admins:
+
+  >>> upload_manager_browser = setupBrowser(
+  ...       auth="Basic carlos@canonical.com:test")
   >>> upload_manager_browser.open(
   ...     "http://localhost/ubuntu/breezy-autotest/+queue")
   >>> upload_manager_browser.getControl(
@@ -101,6 +111,44 @@ normal user auth:
   ...netapplet...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
+
+
+== Queue item filelist ==
+
+Each queue item has a hidden 'filelist' section which is
+toggled via javascript by clicking in the 'expand' arrow
+image:
+
+  >>> print find_tag_by_id(user_browser.contents, 'queue4-filelist-view')
+  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-view" />
+
+The 'filelist' is a expanded as another table row, right below the
+clicked item:
+
+  >>> filelist = find_tag_by_id(user_browser.contents, 'queue4-filelist')
+
+It contains a list of files related to the queue item clicked followed
+by its size, one file per line:
+
+  >>> print extract_text(filelist)
+  alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
+
+And each filename links to its respective librarian URL:
+
+  >>> print filelist.find('a')
+  <a href="http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc">alsa-utils_1.0.9a-4ubuntu1.dsc</a>
+
+On binary queue items we also present the stamp 'NEW' for files never
+published in the archive (it helps archive-admins when reviewing
+candidates):
+
+  >>> filelist = find_tag_by_id(user_browser.contents, 'queue2-filelist')
+  >>> print extract_text(filelist)
+  NEW pmount_1.9-1_all.deb (3 bytes)
+
+XXX cprov 20070726: we should extend the test when we are able to
+probe javascripts events.
+
 
 Inspect the ACCEPTED queue
 

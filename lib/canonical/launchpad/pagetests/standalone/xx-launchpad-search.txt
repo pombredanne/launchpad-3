@@ -1,13 +1,27 @@
-== Searching for Projects, Products and Distributions ==
+= Searching for Projects, Products and Distributions =
 
 Launchpad provides a way for people to search across products, projects and
-distributions. This is done at the /+search page.
+distributions.
 
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q').value = 'ubuntu'
+    >>> browser.open('http://launchpad.dev/')
+    >>> browser.getControl(name='text').value = 'whizzbar'
+    >>> browser.getControl('Search').click()
+
+The actual search is done at the /projects page:
+
+    >>> browser.url
+    'http://launchpad.dev/projects/?text=whizzbar'
+
+And when no matches are found, we are told so:
+
+    >>> 'No projects matching' in browser.contents
+    True
+
+    >>> browser.open('http://launchpad.dev/projects')
+    >>> browser.getControl(name='text').value = 'ubuntu'
     >>> browser.getControl('Search').click()
     >>> browser.url
-    'http://launchpad.dev/+search?q=ubuntu&search=Search'
+    'http://launchpad.dev/projects/+index?text=ubuntu'
 
 We'll only show up to config.launchpad.default_batch_size results; if there
 are more results than that, we'll show an informational message and ask the
@@ -24,89 +38,106 @@ user to refine his search.
     were found, so we're displaying only the ones that are most relevant
     to your search terms.
     If the project you are looking for is not on the list below, please
-    do another search with more search terms.
- 
+    do another search with more relevant search terms.
+
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> print search_results.renderContents()
-    <...
-    ...<a href="/ubuntu">
-    ...Ubuntu Linux...
-    ...(distribution)...
-    ...<a href="/ubuntu-product">
-    ...Ubuntu...
-    ...(product)...
-    ...<a href="/ubuntu-project">
-    ...The Ubuntu Project...
-    ...(project)...
+    >>> for tr in search_results.tbody('tr'):
+    ...     image_td, description_td = tr('td')
+    ...     print description_td.a.renderContents()
+    Ubuntu Linux
+    Ubuntu Test
+    The Evolution Groupware Application
+    Tomcat
+    The Gnome Panel Applets
 
 We can follow one of these links to go straight to the
 Product/Project/Distribution.
 
-    >>> browser.getLink('The Ubuntu Project').click()
+    >>> browser.getLink('Tomcat').click()
     >>> browser.url
-    'http://launchpad.dev/ubuntu-project'
-
-
-On that same page it's also possible to enter a product/distribution/project
-name and go straight to its Launchpad page.
-
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q').value = 'ubuntu'
-    >>> browser.getControl('Go').click()
-    >>> browser.url
-    'http://launchpad.dev/ubuntu'
-
-If there's no product/distribution/project whose name exactly matches the
-given string, we'll then display a list of results and a message explaining
-that no exact match was found.
-
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q').value = 'foo'
-    >>> browser.getControl('Go').click()
-
-    >>> tags = find_tags_by_class(browser.contents, "informational message")
-    >>> for tag in tags:
-    ...   print tag.renderContents()
-    We couldn't find an exact match for your search term. Below you can see
-    some projects that are likely to be what you are looking for.
-
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> print search_results.renderContents()
-    <...
-    ...<a href="/iso-codes">
-    ...The iso-codes...
-    ...(product)...
-    ...<a href="/iso-codes-project">
-    ...iso-codes...
-    ...(project)...
+    'http://launchpad.dev/tomcat'
 
 
 If the user tries to do a search without any search terms, we ask him to enter
 some terms and do another search.
 
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.getControl(name='q').value
+    >>> browser.open('http://launchpad.dev/projects')
+    >>> browser.getControl(name='text').value
     ''
     >>> browser.getControl('Search').click()
     >>> empty_search = find_tag_by_id(browser.contents, 'empty-search-string')
     >>> print empty_search.renderContents()
-    Enter one or more words on the box above to search the existent
-    Launchpad projects.
+    <BLANKLINE>
+    ...Enter one or more words related to the project you want to find.
+    <BLANKLINE>
 
 
 Also, we want to make it easy for people to enter the search string on the
 URL, saving them a page load.
 
-    >>> browser.open('http://launchpad.dev/+search?q=ubuntu')
+    >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> print search_results.renderContents()
-    <...
-    ...<a href="/ubuntu">
-    ...Ubuntu Linux...
-    ...(distribution)...
-    ...<a href="/ubuntu-product">
-    ...Ubuntu...
-    ...(product)...
-    ...<a href="/ubuntu-project">
-    ...The Ubuntu Project...
-    ...(project)...
+    >>> for tr in search_results.tbody('tr'):
+    ...     image_td, description_td = tr('td')
+    ...     print description_td.a.renderContents()
+    Ubuntu Linux
+    Ubuntu Test
+    The Evolution Groupware Application
+    Tomcat
+    The Gnome Panel Applets
+
+== Showing icons ==
+
+Each item in the search result has an image. By default it's the
+standard images used for products/projects/distributions.
+
+    >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> for tr in search_results.tbody('tr'):
+    ...     image_td, description_td = tr('td')
+    ...     print image_td.img['src'], description_td.a.renderContents()
+    /@@/distribution Ubuntu Linux
+    /@@/distribution Ubuntu Test
+    /@@/product The Evolution Groupware Application
+    /@@/product Tomcat
+    /@@/product The Gnome Panel Applets
+
+If the project has specified an icon, that is shown in the listing
+instead.
+
+    >>> import os.path
+    >>> import canonical.launchpad
+    >>> image_dir = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__), 'images')
+    >>> ubuntu_icon = open(os.path.join(image_dir, 'branch.png'))
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+branding')
+    >>> emblem_ctrl = admin_browser.getControl(name='field.icon.action')
+    >>> emblem_ctrl.getControl('Change to').selected = True
+    >>> admin_browser.getControl(name='field.icon.image').add_file(
+    ...     ubuntu_icon, 'image/png', 'ubuntu-icon.png')
+    >>> admin_browser.getControl('Change Branding', index=-1).click()
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu'
+
+    >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
+    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
+    >>> for tr in search_results.tbody('tr'):
+    ...     image_td, description_td = tr('td')
+    ...     print image_td.img['src'], description_td.a.renderContents()
+    http://.../ubuntu-icon.png Ubuntu Linux
+    /@@/distribution Ubuntu Test
+    /@@/product The Evolution Groupware Application
+    /@@/product Tomcat
+    /@@/product The Gnome Panel Applets
+
+== Robustness ==
+
+When multiple search strings are submitted, an UnexpectedFormData is
+raised:
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/projects/?text=foo&text=bar')
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: ...

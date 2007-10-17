@@ -1,23 +1,24 @@
-<div class="portlet">
-
-  <h2>Malone statistics</h2>
-
-  <div class="portletBody">
-    <div class="portletContent">
-
-      <img alt="" src="/@@/info" />
-      <span tal:replace="context/bug_count">5</span> Bugs<br />
-      <img alt="" src="/@@/info" />
-      <span tal:replace="context/bugwatch_count">5</span> Remote Bugs<br />
-      <img alt="" src="/@@/info" />
-      <span tal:replace="context/bugtracker_count">5</span> Bug Trackers<br />
-      <img alt="" src="/@@/info" />
-      <span tal:replace="context/bugextref_count">5</span> Web links<br />
-      <img alt="" src="/@@/info" />
-      <span tal:replace="context/bugtask_count">5</span> Bug Tasks<br />
-      <img alt="" src="/@@/info" />
-      <span tal:replace="view/getCveBugLinkCount">5</span> CVE Bug Links<br />
-
-    </div>
-  </div>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<div>
+  <strong tal:content="context/bug_count">5</strong> bugs reported across
+  <strong tal:content="context/projects_with_bugs_count">5</strong> projects
 </div>
+<div>
+  including <strong tal:content="context/bugwatch_count">5</strong> links
+  to <strong tal:content="context/bugtracker_count">5</strong>
+  <a href="/bugs/bugtrackers">bug trackers</a>
+</div>
+<div>
+  <strong tal:content="context/shared_bug_count">7</strong> bugs are
+  <a href="http://help.launchpad.net/CrossProjectBugTracking">shared across
+  multiple projects</a>
+</div>
+<div>
+  and <strong tal:content="view/getCveBugLinkCount">5</strong>
+  bugs are related to <a href="/bugs/cve">CVE entries</a>
+</div>
+</tal:root>

@@ -1,0 +1,108 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-latestquestions" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+  <metal:form use-macro="context/@@launchpad_form/form">
+
+    <metal:extra_info fill-slot="extra_info">
+      <div>
+      <tal:similar-faqs condition="view/similar_faqs">
+        <p i18n:translate="">These FAQs seems similar to your question. Take
+          a look at them, you may find your answer in one these.
+        </p>
+      
+        <ul id="similar-faqs" class="faq">
+          <li tal:repeat="faq view/similar_faqs"
+              tal:attributes="title faq/content/fmt:shorten/320"
+              ><a href="#"
+                  tal:attributes="here faq/fmt:url"
+                  tal:content="faq/title">FAQ Title</a>
+          </li>
+        </ul>
+      </tal:similar-faqs>
+      <tal:similar-questions condition="view/similar_questions">
+        <p i18n:translate="">These other questions seem similar to yours. You may want to take a look at them.</p>
+
+        <table id="similar-questions">
+          <tbody>
+            <tr tal:repeat="question view/similar_questions"
+                tal:replace="structure question/@@+listing-detailed" />
+          </tbody>
+        </table>
+      </tal:similar-questions>
+
+      <tal:similar-items condition="view/has_similar_items">
+        <p i18n:translate="">If you did not find your problem in these
+          existing FAQs or questions, enter the details of your problem
+          to alert the
+          <tal:displayName content="context/displayname"
+                            i18n:name="displayname">Project</tal:displayName>
+          support community, so they can help you resolve the issue.
+        </p>
+      </tal:similar-items>
+
+      <tal:no-similar-items condition="not: view/has_similar_items">
+        <p i18n:translate="">There are no existing FAQs or questions similar to
+          the summary you entered.
+        </p>
+        <p i18n:translate="">Enter the details of your problem to alert the
+          <tal:displayName content="context/displayname"
+                            i18n:name="displayname">Project</tal:displayName>
+          support community, so they can help you resolve the issue.
+        </p>
+      </tal:no-similar-items>
+
+      <tal:comment replace="nothing">
+        This link should appear in the appropriate widget description,
+        but cannot because of bug #72730.
+      </tal:comment>
+      <p><a href="/+editmylanguages">Change your
+        preferred languages</a> to modify the list of languages available
+        for writing the question.
+      </p>
+
+      <metal:unsupported_languages_warning
+         use-macro="view/unsupported_languages_warning" />
+      </div>
+    </metal:extra_info>
+
+    <div class="actions" metal:fill-slot="buttons">
+      <input tal:replace="structure view/add_action/render" />
+    </div>
+
+  </metal:form>
+</div>
+
+<metal:help fill-slot="help">
+  <ol>
+    <li>If any similar FAQs or questions are found, take the time to look
+        to see if there is one that is the same as yours.<br />
+        <strong>Tip:</strong> Leaving your mouse over the FAQ or question
+        title will pop out the beginning of the content.
+    </li>
+    <li>If there is no similar items or none of them apply to your problem,
+      then enter the complete details of your question in the
+      <strong>Description</strong> field. Give as much
+      context information as possible: steps you have taken to resolve the
+      problem, version of the programs you were using, etc. Click the
+      <strong>Add</strong> button once you're satisfied with your description.
+    </li>
+  </ol>
+  <p>You can consult the
+    <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
+      Support in Launchpad</a> document for more information.</p>
+  </metal:help>
+
+</body>
+</html>
+

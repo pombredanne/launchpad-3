@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBugTarget',
-    'BugDistroReleaseTargetDetails']
+    'BugDistroSeriesTargetDetails']
 
 from zope.interface import Interface, Attribute
 
@@ -15,17 +15,18 @@ from zope.interface import Interface, Attribute
 class IBugTarget(Interface):
     """An entity on which a bug can be reported.
 
-    Examples include an IDistribution, an IDistroRelease and an
+    Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
-    # XXX, Brad Bollenbach, 2006-08-02: This attribute name smells. See
-    # https://launchpad.net/bugs/54974.
-    bugtargetname = Attribute("A display name for this bug target")
+    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
+    bugtargetdisplayname = Attribute("A display name for this bug target")
+    bugtargetname = Attribute("The target as shown in mail notifications.")
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
+    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
-    unconfirmed_bugtasks = Attribute("A list of Unconfirmed BugTasks for this target.")
+    new_bugtasks = Attribute("A list of New BugTasks for this target.")
     unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
 
@@ -66,21 +67,30 @@ class IBugTarget(Interface):
         bugs will be returned.
         """
 
+    def getBugCounts(user, statuses=None):
+        """Return a dict with the number of bugs in each possible status.
 
-class BugDistroReleaseTargetDetails:
-    """The details of a bug targeted to a specific IDistroRelease.
+            :user: Only bugs the user has permission to view will be
+                   counted.
+            :statuses: Only bugs with these statuses will be counted. If
+                       None, all statuses will be included.
+        """
+
+
+class BugDistroSeriesTargetDetails:
+    """The details of a bug targeted to a specific IDistroSeries.
 
     The following attributes are provided:
 
-    :release: The IDistroRelease.
-    :istargeted: Is there a fix targeted to this release?
+    :series: The IDistroSeries.
+    :istargeted: Is there a fix targeted to this series?
     :sourcepackage: The sourcepackage to which the fix would be targeted.
     :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if release is not targeted.
+    :status: A BugTaskStatus dbschema item, or None, if series is not targeted.
     """
-    def __init__(self, release, istargeted=False, sourcepackage=None,
+    def __init__(self, series, istargeted=False, sourcepackage=None,
                  assignee=None, status=None):
-        self.release = release
+        self.series = series
         self.istargeted = istargeted
         self.sourcepackage = sourcepackage
         self.assignee = assignee

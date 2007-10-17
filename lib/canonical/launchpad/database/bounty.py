@@ -9,20 +9,21 @@ from email.Utils import make_msgid
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from sqlobject import ForeignKey, StringCol 
+from sqlobject import ForeignKey, StringCol
 from sqlobject import CurrencyCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 
-from canonical.launchpad.interfaces import IBounty, IBountySet, NotFoundError
+from canonical.launchpad.interfaces import (
+    BountyDifficulty, BountyStatus, IBounty, IBountySet, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.bountymessage import BountyMessage
 from canonical.launchpad.database.bountysubscription import BountySubscription
-
-from canonical.lp.dbschema import EnumCol, BountyDifficulty, BountyStatus
 
 
 class Bounty(SQLBase):
@@ -39,9 +40,9 @@ class Bounty(SQLBase):
     summary = StringCol(notNull=True)
     description = StringCol( notNull=True)
     usdvalue = CurrencyCol(notNull=True)
-    bountystatus = EnumCol(schema=BountyStatus, notNull=True,
+    bountystatus = EnumCol(enum=BountyStatus, notNull=True,
         default=BountyStatus.OPEN)
-    difficulty = EnumCol(schema=BountyDifficulty, notNull=True,
+    difficulty = EnumCol(enum=BountyDifficulty, notNull=True,
         default=BountyDifficulty.NORMAL)
     reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person')
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)

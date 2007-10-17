@@ -1,0 +1,39 @@
+Every message has a flag named 'Someone should review this translation'.
+It's preserved with form submissions so the system doesn't lose that
+flag value unless the user decided to set/remove it.
+
+
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate')
+
+In this form, there is, at least, a message with the review flag set:
+
+  >>> needs_review_set = user_browser.getControl(
+  ...     name='msgset_132_es_needsreview')
+  >>> needs_review_set.value == ['fuzzy']
+  True
+
+and, at least, a message with the review flag unset:
+
+  >>> needs_review_unset = user_browser.getControl(
+  ...     name='msgset_131_es_needsreview')
+  >>> needs_review_unset.value == []
+  True
+
+And those messages keep their values once the form is submitted without any
+change.
+
+  >>> user_browser.getControl('Save & Continue').click()
+  >>> print user_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10
+  >>> user_browser.getLink('Previous').click()
+
+  >>> needs_review_set = user_browser.getControl(
+  ...     name='msgset_132_es_needsreview')
+  >>> needs_review_set.value == ['fuzzy']
+  True
+  >>> needs_review_unset = user_browser.getControl(
+  ...     name='msgset_131_es_needsreview')
+  >>> needs_review_unset.value == []
+  True

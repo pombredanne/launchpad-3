@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
 
   <h2>Translation file details</h2>
 
@@ -6,7 +6,7 @@
   <div class="portletContent">
 
     <ul>
-      <li class="languages">
+      <li class="language">
         <span tal:replace="context/language/englishname">Language</span>
         <tal:block condition="context/language/nativename">
           (<span tal:replace="context/language/nativename">native</span>)
@@ -15,9 +15,7 @@
     </ul>
     <tal:has_owner condition="context/owner">
       <b>Creator:</b><br />
-      <img src="/@@/user" />
-      <a tal:content="context/owner/browsername"
-         tal:attributes="href context/owner/fmt:url">Creator</a>
+      <a tal:replace="structure context/owner/fmt:link">Creator</a>
       <br />
     </tal:has_owner>
     <tal:has_series condition="context/potemplate/productseries">
@@ -49,18 +47,18 @@
       </tal:has_project>
     </tal:block>
     </tal:has_series>
-    <tal:block condition="context/potemplate/distrorelease">
-    <tal:block define="distro context/potemplate/distrorelease/distribution">
+    <tal:block condition="context/potemplate/distroseries">
+    <tal:block define="distro context/potemplate/distroseries/distribution">
     <b>Distribution:</b>
     <a tal:content="distro/displayname"
        tal:attributes="href string:/${distro/name}/" /><br />
-    <b>Release:</b>
-    <a tal:content="context/potemplate/distrorelease/name"
+    <b>Series:</b>
+    <a tal:content="context/potemplate/distroseries/name"
        tal:attributes="href
-         string:/${distro/name}/${context/potemplate/distrorelease/name}/" /><br />
+         string:/${distro/name}/${context/potemplate/distroseries/name}/" /><br />
     <b>Source package:</b><br />
     <a tal:attributes="href
-         string:/${distro/name}/${context/potemplate/distrorelease/name}/+sources/${context/potemplate/sourcepackagename/name}/">
+         string:/${distro/name}/${context/potemplate/distroseries/name}/+sources/${context/potemplate/sourcepackagename/name}/">
       <span tal:replace="context/potemplate/sourcepackagename/name" />
       <span tal:replace="context/potemplate/sourcepackageversion" />
     </a><br />

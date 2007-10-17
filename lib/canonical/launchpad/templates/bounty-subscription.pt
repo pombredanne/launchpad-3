@@ -1,16 +1,15 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Bounty name</h1>
-      <h2 tal:condition="not: view/subscription">Subscribe to bounty</h2>
-      <h2 tal:condition="view/subscription">Unsubscribe from bounty</h2>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -18,6 +17,10 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+      <div tal:content="context/title">Bounty name</div>
+      <h1 tal:condition="not: view/subscription">Subscribe to bounty</h1>
+      <h1 tal:condition="view/subscription">Unsubscribe from bounty</h1>
 
       <p>
         Bounty subscribers will be e-mailed copies of any comments made on
@@ -46,3 +49,4 @@
 
 </body>
 </html>
+<!-- 1-0 done -->

@@ -1,0 +1,122 @@
+Page to edit a product - does the page load as the product owner?
+
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox')
+  >>> browser.getLink('Change details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/+edit
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...<title>Change project details</title>...
+  ...<h1>Change project details</h1>...
+
+We try to change the project related to that product. First with a invalid
+project.
+
+  >>> browser.getControl('Part of', index=0).value = 'asdasfasd'
+  >>> browser.getControl(name='field.actions.change').click()
+  >>> for message in find_tags_by_class(browser.contents, 'error'):
+  ...     print message.renderContents()
+  There is 1 error.
+  <BLANKLINE>
+  ...
+  <div class="message">Invalid value</div>
+  ...
+
+
+Now we try to edit with a project that exists.
+
+  >>> browser.getControl('Part of', index=0).value = 'gnome'
+  >>> browser.getControl(name='field.actions.change').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox
+
+
+Now we test if we edited it successfully. 
+
+  >>> 'The GNOME Project' in browser.contents
+  True
+
+
+Setting Development Focus
+=========================
+
+The Firefox product's trunk series is set as the development focus:
+
+  >>> browser.open('http://launchpad.dev/firefox')
+  >>> print browser.contents
+  <!...
+  ...
+  ...trunk...development fo...
+  ...
+  ...1.0...
+  ...
+
+
+We can change this to the 1.0 series through the edit form:
+
+  >>> browser.open('http://launchpad.dev/firefox/+edit')
+  >>> browser.getControl('Development focus').getControl('firefox 1.0').click()
+  >>> browser.getControl(name='field.actions.change').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox
+  >>> print browser.contents
+  <!...
+  ...
+  ...1.0...development fo...
+  ...
+  ...trunk...
+  ...
+
+
+Renaming Products
+=================
+
+First a user adds a product named newproductname.
+
+  >>> user_browser.open('http://launchpad.dev/products/+new')
+  >>> user_browser.getControl('Name', index=0).value = 'newproductname'
+  >>> user_browser.getControl('Display Name').value = 'dname'
+  >>> user_browser.getControl('Title').value = 'title'
+  >>> user_browser.getControl('Summary').value = 'summary'
+  >>> user_browser.getControl('Description').value = 'description'
+  >>> user_browser.getControl('Add').click()
+  >>> print user_browser.url
+  http://launchpad.dev/newproductname
+
+
+Then a product named newproductname2.
+
+  >>> user_browser.open('http://launchpad.dev/products/+new')
+  >>> user_browser.getControl('Name', index=0).value = 'newproductname2'
+  >>> user_browser.getControl('Display Name').value = 'dname2'
+  >>> user_browser.getControl('Title').value = 'title2'
+  >>> user_browser.getControl('Summary').value = 'summary2'
+  >>> user_browser.getControl('Description').value = 'description2'
+  >>> user_browser.getControl('Add').click()
+  >>> print user_browser.url
+  http://launchpad.dev/newproductname2
+ 
+
+Now we try to change newproductname2's name to newproductname.
+
+  >>> admin_browser.open(
+  ...     'http://launchpad.dev/newproductname2/+review')
+  >>> admin_browser.getControl('Name').value = 'newproductname'
+  >>> admin_browser.getControl(name='field.actions.change').click()
+  >>> for message in find_tags_by_class(admin_browser.contents, 'error'):
+  ...     print message.renderContents()
+  There is 1 error.
+  <BLANKLINE>
+  ...
+  ...newproductname is already in use...
+  ...
+  <BLANKLINE>
+
+Now we try to change it to newproductname3.  We expect that the change will
+be accepted because there is no product called newproductname3
+
+  >>> admin_browser.getControl('Name').value = 'newproductname3'
+  >>> admin_browser.getControl(name='field.actions.change').click() 
+  >>> print admin_browser.url
+  http://launchpad.dev/newproductname3

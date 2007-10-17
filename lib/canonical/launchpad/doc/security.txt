@@ -63,7 +63,7 @@ it's hooked up to IProduct, where IProduct is protected with the launchpad.Edit
 permission:
 
     <adapter
-        provides="canonical.launchpad.interfaces.IAuthorization"
+        provides="canonical.launchpad.webapp.interfaces.IAuthorization"
         for="canonical.launchpad.interfaces.IProduct"
         name="launchpad.Edit"
         factory="canonical.launchpad.security.EditByOwner"

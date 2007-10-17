@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -12,9 +18,8 @@
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <!-- XXX: matsubara 20060213 
-       see bug https://launchpad.net/productslaunchpad/+bug/31342 
-       the main template is broken when there is no actions portlet -->
+  <!-- XXX: matsubara 2006-02-13 bug=31342
+       The main template is broken when there is no actions portlet -->
   <metal:rightportlets fill-slot="portlets_two">
     <div>&nbsp;</div>
   </metal:rightportlets>
@@ -33,7 +38,7 @@
     <ul tal:condition="context/files">
       <li class="download" tal:repeat="file context/files">
         <a tal:content="file/libraryfile/filename"
-           tal:attributes="href file/libraryfile/url"></a>
+           tal:attributes="href file/libraryfile/http_url"></a>
         (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
       </li>
     </ul>
@@ -45,113 +50,58 @@
 
     <table>
       <tbody>
-        <tr tal:condition="view/provides">
+          <tr id="provides" tal:define="relationships view/provides"
+            tal:condition="relationships/has_items">
           <th><label>Provides:</label></th>
           <td>
-            <ul >
-              <li tal:repeat="binprovides view/provides">
-                <span tal:content="binprovides/name" />
-		<tal:dummy condition="binprovides/signal">
-                  (<span tal:replace="binprovides/signal" />
-                  <span tal:replace="binprovides/version" />)
-		</tal:dummy>
-                </li>
-              </ul>
-            </td>
+              <tal:block replace="structure relationships/@@+render-list"/>
+           </td>
           </tr>
 
-          <tr  tal:condition="view/depends">
+          <tr id="depends" tal:define="relationships view/depends"
+              tal:condition="relationships/has_items">
             <th><label>Depends on:</label></th>
             <td>
-              <ul>
-                <li tal:repeat="bindepends view/depends">
-	        <a tal:content="bindepends/name"
-		tal:attributes="href string:../../../${bindepends/name}"/>
-		<tal:dummy condition="bindepends/signal">
-		              (<span tal:replace="bindepends/signal" />
-		              <span tal:replace="bindepends/version" />)
-		</tal:dummy>
-
-	              </li>
-	            </ul>
+              <tal:block replace="structure relationships/@@+render-list"/>
             </td>
           </tr>
 
-          <tr tal:condition="view/recommends">
+          <tr id="recommends" tal:define="relationships view/recommends"
+              tal:condition="relationships/has_items">
             <th><label>Recommends:</label></th>
             <td>
-              <ul>
-                <li tal:repeat="binrecommends view/recommends">
-
-	        <a tal:content="binrecommends/name"
-		tal:attributes="href string:../../../${binrecommends/name}"/>
-		<tal:dummy condition="binrecommends/signal">
-                  (<span tal:replace="binrecommends/signal" />
-                  <span tal:replace="binrecommends/version" />)
-		</tal:dummy>
-
-        	      </li>
-        	    </ul>
+              <tal:block replace="structure relationships/@@+render-list"/>
             </td>
           </tr>
 
-          <tr  tal:condition="view/suggests">
+          <tr id="suggests" tal:define="relationships view/suggests"
+              tal:condition="relationships/has_items">
             <th><label>Suggests:</label></th>
             <td>
-              <ul>
-                <li tal:repeat="binsuggests view/suggests">
-
-	        <a tal:content="binsuggests/name"
-		tal:attributes="href string:../../../${binsuggests/name}"/>
-		<tal:dummy condition="binsuggests/signal">
-                  (<span tal:replace="binsuggests/signal" />
-                  <span tal:replace="binsuggests/version" />)
-		</tal:dummy>
-
-                </li>
-              </ul>
+              <tal:block replace="structure relationships/@@+render-list"/>
             </td>
           </tr>
 
-          <tr tal:condition="view/conflicts">
+          <tr id="conflicts" tal:define="relationships view/conflicts"
+              tal:condition="relationships/has_items">
             <th><label>Conflicts with:</label></th>
             <td>
-              <ul>
-                <li tal:repeat="binconflicts view/conflicts">
-
-	        <a tal:content="binconflicts/name"
-		tal:attributes="href string:../../../${binconflicts/name}"/>
-		<tal:dummy condition="binconflicts/signal">
-                  (<span tal:replace="binconflicts/signal" />
-                  <span tal:replace="binconflicts/version" />)
-		</tal:dummy>
-
-                </li>
-              </ul>
-
+              <tal:block replace="structure relationships/@@+render-list"/>
             </td>
           </tr>
 
-          <tr tal:condition="view/replaces">
+          <tr id="replaces" tal:define="relationships view/replaces"
+              tal:condition="relationships/has_items">
             <th><label>Replaces:</label></th>
             <td>
-              <ul>
-                <li tal:repeat="binreplaces view/replaces">
-
-	        <a tal:content="binreplaces/name"
-		tal:attributes="href string:../../../${binreplaces/name}"/>
-		<tal:dummy condition="binreplaces/signal">
-                  (<span tal:replace="binreplaces/signal" />
-                  <span tal:replace="binreplaces/version" />)
-		</tal:dummy>
-
-                </li>
-              </ul>
+              <tal:block replace="structure relationships/@@+render-list"/>
             </td>
           </tr>
+
         </tbody>
       </table>
 
     </div>
   </body>
 </html>
+<!-- 1-0 todo Where is this used? -->

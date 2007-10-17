@@ -255,7 +255,7 @@ msgstr ""
 #: d/interfaces/cal.py:137
 #: d/interfaces/cal.py:153
 #: d/interfaces/distribution.py:26
-#: d/interfaces/distrorelease.py:26
+#: d/interfaces/distroseries.py:26
 #: d/interfaces/karma.py:83
 #: d/interfaces/milestone.py:26
 #: d/interfaces/mirror.py:28
@@ -281,7 +281,7 @@ msgstr ""
 #: d/interfaces/bugtracker.py:24
 #: d/interfaces/cveref.py:44
 #: d/interfaces/distribution.py:33
-#: d/interfaces/distrorelease.py:35
+#: d/interfaces/distroseries.py:35
 #: d/interfaces/milestone.py:27
 #: d/interfaces/product.py:65
 #: d/interfaces/productrelease.py:32
@@ -302,7 +302,7 @@ msgstr ""
 #: d/interfaces/bug.py:52
 #: d/interfaces/bugtracker.py:25
 #: d/interfaces/distribution.py:36
-#: d/interfaces/distrorelease.py:38
+#: d/interfaces/distroseries.py:38
 #: d/interfaces/product.py:69
 #: d/interfaces/productrelease.py:33
 #: d/interfaces/productseries.py:48
@@ -323,7 +323,7 @@ msgstr ""
 #: d/interfaces/bugattachment.py:34
 #: d/interfaces/country.py:39
 #: d/interfaces/distribution.py:42
-#: d/interfaces/distrorelease.py:42
+#: d/interfaces/distroseries.py:42
 #: d/interfaces/mirror.py:31
 #: d/interfaces/potemplate.py:41
 #: d/interfaces/product.py:73
@@ -677,7 +677,7 @@ msgstr ""
 
 #: d/interfaces/bugtask.py:45
 #: d/interfaces/bugtask.py:261
-#: d/interfaces/distrorelease.py:49
+#: d/interfaces/distroseries.py:49
 #: d/interfaces/maintainership.py:24
 #: d/interfaces/message.py:49
 #: d/interfaces/publishing.py:112
@@ -1076,74 +1076,74 @@ msgstr ""
 msgid "The bounties that are related to this distro."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:27
+#: d/interfaces/distroseries.py:27
 msgid "The name of this distribution release."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:29
+#: d/interfaces/distroseries.py:29
 msgid "Display name"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:30
+#: d/interfaces/distroseries.py:30
 msgid "The release's displayname."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:32
+#: d/interfaces/distroseries.py:32
 msgid "Release name"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:33
+#: d/interfaces/distroseries.py:33
 msgid "The release's full name, e.g. Ubuntu Warty"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:36
+#: d/interfaces/distroseries.py:36
 msgid ""
 "The title of this release. It should be distinctive \n"
 "                      and designed to look good at the top of a page."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:39
+#: d/interfaces/distroseries.py:39
 msgid "A brief summary of the highlights of this release. It should be no longer than a single paragraph, up to 200 words."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:43
+#: d/interfaces/distroseries.py:43
 msgid "A detailed description of this release, with information on the architectures covered, the availability of security updates and any other relevant information."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:47
+#: d/interfaces/distroseries.py:47
 #: d/interfaces/productrelease.py:27
 msgid "Version"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:48
+#: d/interfaces/distroseries.py:48
 msgid "The version string for this release."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:50
+#: d/interfaces/distroseries.py:50
 msgid "The distribution for which this is a release."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:53
+#: d/interfaces/distroseries.py:53
 msgid "Components"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:54
+#: d/interfaces/distroseries.py:54
 msgid "The release components."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:57
+#: d/interfaces/distroseries.py:57
 msgid "Section"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:58
+#: d/interfaces/distroseries.py:58
 msgid "The release sections."
 msgstr ""
 
-#: d/interfaces/distrorelease.py:65
+#: d/interfaces/distroseries.py:65
 msgid "Parent Release"
 msgstr ""
 
-#: d/interfaces/distrorelease.py:66
+#: d/interfaces/distroseries.py:66
 msgid "The Parente Distribution Release."
 msgstr ""
 
@@ -2486,7 +2486,7 @@ msgstr ""
 
 #: d/interfaces/publishing.py:35
 #: d/interfaces/publishing.py:330
-msgid "The distroarchrelease being published into"
+msgid "The distroarchseries being published into"
 msgstr ""
 
 #: d/interfaces/publishing.py:369
@@ -2550,7 +2550,7 @@ msgstr ""
 
 #: d/interfaces/publishing.py:83
 #: d/interfaces/publishing.py:259
-msgid "The distrorelease being published into"
+msgid "The distroseries being published into"
 msgstr ""
 
 #: d/interfaces/pyarch.py:534
@@ -2595,7 +2595,7 @@ msgid "The related source package release"
 msgstr ""
 
 #: d/interfaces/sourcepackageindistro.py:22
-msgid "DistroRelease"
+msgid "DistroSeries"
 msgstr ""
 
 #: d/interfaces/sourcepackageindistro.py:27
@@ -2725,12 +2725,12 @@ msgstr ""
 msgid "submit-button"
 msgstr ""
 
-#: d/templates/distrorelease-potemplates.pt:22
+#: d/templates/distroseries-potemplates.pt:22
 #: d/templates/sourcepackage-translations.pt:17
 msgid "Translation Templates"
 msgstr ""
 
-#: d/templates/distrorelease-translations.pt:23
+#: d/templates/distroseries-translations.pt:23
 msgid "Translation Status"
 msgstr ""
 

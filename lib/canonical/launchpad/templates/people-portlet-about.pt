@@ -1,14 +1,15 @@
-<div class="portlet">
+<div class="portlet" id="portlet-about">
 
-  <h2>About the Launchpad FOAF system</h2>
+  <h2>About these profiles</h2>
 
   <div class="portletBody portletContent">
 
-    <img alt="" src="/@@/info" /> The launchpad Friend-Of-A-Friend
-    system is a way of seeing how you are active in the open source world.
-    You can manage your account in the Launchpad, and you can create teams
-    of people who can be maintainers, translators, members, clubs... almost
-    any kind of grouping you need.
+    <img alt="" src="/@@/info" /> Launchpad profiles are based on actual
+    usage of Launchpad, as well as information available from public sources
+    such as bug trackers, mailing lists, public key servers and published
+    application translations.  You can manage your account in the Launchpad,
+    and you can create teams of people who can be maintainers, translators,
+    members, clubs... almost any kind of grouping you need.
 	
   </div>
 

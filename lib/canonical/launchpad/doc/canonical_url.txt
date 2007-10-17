@@ -11,7 +11,7 @@ In this test, we'll use a URL hierarchy /countries/England/+towns/London
 In this test, we'll use interfaces ICountrySet, ICountry and ITown, which we
 will put in canonical.launchpad.ftests.
 
-    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import Interface, Attribute, implements
 
     >>> class ICountrySet(Interface):
@@ -91,7 +91,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
 Now, there is an ICanonicalUrlData registered for ITown.
 
     >>> town_urldata = ICanonicalUrlData(town_instance)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, town_urldata)
     True
     >>> town_urldata.path
@@ -132,7 +132,7 @@ at it from zcml.  I'll put it in canonical.launchpad.ftests.
 Now, there is an ICanonicalUrlData registered for ICountry.
 
     >>> country_urldata = ICanonicalUrlData(country_instance)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, country_urldata)
     True
     >>> country_urldata.path
@@ -184,7 +184,7 @@ in canonical.launchpad.ftests.
 Now, there is an ICanonicalUrlData registered for ICountrySet.
 
     >>> countryset_urldata = ICanonicalUrlData(countryset_instance)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, countryset_urldata)
     True
     >>> countryset_urldata.path
@@ -349,6 +349,60 @@ given otherwise.
     u'http://muppet.example.com/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
     u'https://mandrill.example.org:23/countries/England'
+
+
+== canonical_url and overriding rootsite ==
+
+The optional parameter rootsite on the canonical_url function can be
+used to 'force' the url to a different rootsite.  Providing a rootsite
+overrides the rootsite defined by either the object or the request.
+
+Here is the current country instance without the ICanonicalUrlData specifying
+a rootsite.
+
+Overriding the rootsite from the default request:
+
+    >>> canonical_url(country_instance)
+    u'http://muppet.example.com/countries/England'
+    >>> canonical_url(country_instance, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+
+Overriding the rootsite from the specified request:
+
+    >>> canonical_url(country_instance, mandrill_request)
+    u'https://mandrill.example.org:23/countries/England'
+    >>> canonical_url(country_instance, mandrill_request, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+
+And if the configuration does provide a rootsite:
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure
+    ...     xmlns="http://namespaces.zope.org/zope"
+    ...     xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <configure package="zope.app.component">
+    ...       <include file="meta.zcml" />
+    ...   </configure>
+    ...   <utility
+    ...       provides="canonical.launchpad.ftests.ICountrySet"
+    ...       component="canonical.launchpad.ftests.countryset_instance"
+    ...       />
+    ...   <browser:url
+    ...       for="canonical.launchpad.ftests.ICountry"
+    ...       path_expression="name"
+    ...       parent_utility="canonical.launchpad.ftests.ICountrySet"
+    ...       rootsite="bugs"
+    ...       />
+    ... </configure>
+    ... """)
+
+    >>> canonical_url(country_instance)
+    u'http://bugs.launchpad.dev/countries/England'
+    >>> canonical_url(country_instance, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
+    >>> canonical_url(country_instance, mandrill_request, rootsite='code')
+    u'http://code.launchpad.dev/countries/England'
 
 
 == The 'nearest' helper function ==

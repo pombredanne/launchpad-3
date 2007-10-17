@@ -3,8 +3,10 @@ POMsgSet View
 
 On this section, we are going to test the view class for an IPOMsgSet object.
 
-    >>> from zope.component import getView
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import POMsgSet
+    >>> from canonical.launchpad.interfaces import TranslationConstants
+    >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
 
@@ -23,9 +25,8 @@ without the plural form information.
     >>> pomsgset = POMsgSet.get(1)
     >>> pofile_tlh = pomsgset.pofile.potemplate.getDummyPOFile('tlh')
     >>> pomsgset_tlh = pofile_tlh.getPOMsgSet(u'evolution addressbook')
-    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
-    >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL)
-    >>> pomsgset_page_view = getView(pomsgset_tlh, "+translate", request)
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset_tlh, "+translate", layer=TranslationsLayer)
     >>> pomsgset_page_view.initialize()
 
 Here we can see that it's lacking that information.
@@ -42,10 +43,13 @@ And the view class detects it correctly.
 Basic checks
 ------------
 
-Now, we will use a objects that we have in our database, instead of
+Now, we will use objects that we have in our database, instead of
 dummy ones.
 
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
     >>> pomsgset_page_view.initialize()
 
 We have the plural form information for this language.
@@ -89,9 +93,9 @@ item.
     >>> subview.context.potmsgset.sequence == 1
     True
 
-It does not have a plural msgid.
+It does not have a plural message
 
-    >>> subview.msgid_plural is None
+    >>> subview.plural_text is None
     True
 
 And thus, it only has one translation.
@@ -121,6 +125,17 @@ If we request a plural form that is not valid, we get an AssertionError.
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
+Published translation is defined and same as the active one.
+
+    >>> subview.getPublishedTranslation(0)
+    u'libreta de direcciones de Evolution'
+
+However, if we ask for incorrect plural form, we get an AssertionError.
+
+    >>> subview.getPublishedTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
 Web presentation
 ----------------
@@ -128,59 +143,66 @@ Web presentation
 Some characters are presented specially in the Web interface, and there are
 functions to determine whether to advise translators about their presence.
 
-First, msg_id_has_tab() determines whether a message set contains any tabs.
+We will use this helper function to simplify the test:
 
-    >>> subview.msgid_has_tab
+    >>> def changeMsgID(new_msgid):
+    ...     subview.context.potmsgset.makeMessageIDSighting(
+    ...         new_msgid, TranslationConstants.SINGULAR_FORM , update=True)
+    ...     flush_database_updates()
+
+First, text_has_tab() determines whether a message set contains any tabs.
+
+    >>> subview.text_has_tab
     False
 
 When we change the set to include a tab character, the function detects it.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\tBar'
-    >>> subview.msgid_has_tab
+    >>> changeMsgID(u'Foo\tBar')
+    >>> subview.text_has_tab
     True
 
-Similarly, msgid_has_newline() determines whether a message contains newlines.
+Similarly, text_has_newline() determines whether a message contains newlines.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
-    >>> subview.msgid_has_newline
+    >>> changeMsgID(u'Foo Bar')
+    >>> subview.text_has_newline
     False
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\nBar'
-    >>> subview.msgid_has_newline
+    >>> changeMsgID(u'Foo\nBar')
+    >>> subview.text_has_newline
     True
 
-And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
+And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Foo Bar')
+    >>> subview.text_has_leading_or_trailing_space
     False
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u' Leading space'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u' Leading space')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'  Leading spaces'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'  Leading space')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing space  '
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing space ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing spaces  '
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing space  ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Leading\n Space'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Leading\n Space  ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \nSpace'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing \nSpace  ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \r\nSpace'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing \r\nspace')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
     >>> import transaction
@@ -197,27 +219,29 @@ But first, let's see current values.
 
     >>> pomsgset = POMsgSet.get(1)
     >>> pomsgset.pofile.updateStatistics()
-    (7, 0, 0)
+    (7, 0, 1, 2)
     >>> pomsgset.pofile.currentCount()
     7
     >>> pomsgset.pofile.updatesCount()
     0
     >>> pomsgset.pofile.rosettaCount()
-    0
+    1
+    >>> pomsgset.pofile.unreviewedCount()
+    2
 
 Now we do the submit.
 
-    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'alt': None,
-    ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_new_checkbox': True,
-    ...         'msgset_1_es_translation_0_new': 'Foo',
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> form = {
+    ...     'alt': None,
+    ...     'msgset_1': None,
+    ...     'msgset_1_es_translation_0_new_checkbox': True,
+    ...     'msgset_1_es_translation_0_new': 'Foo',
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
 
 And when we initialise the view class, we detect that we missed the timestamp
 that allow us to know whether we are working with latest submitted value or
@@ -230,21 +254,20 @@ someone updated the database while we were working on those translations.
 
 We do a new submit, but this time including a lock_timestamp field.
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'lock_timestamp': '2006-11-28T13:00:00+00:00',
-    ...         'alt': None,
-    ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_new_checkbox': True,
-    ...         'msgset_1_es_translation_0_new': 'Foo',
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> form = {
+    ...     'lock_timestamp': '2006-11-28T13:00:00+00:00',
+    ...     'alt': None,
+    ...     'msgset_1': None,
+    ...     'msgset_1_es_translation_0_radiobutton':
+    ...         'msgset_1_es_translation_0_new',
+    ...     'msgset_1_es_translation_0_new': 'Foo',
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
     >>> pomsgset_page_view.initialize()
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 This time we didn't get any problem with the submission, and we can see that
 statistics were updated accordly.
@@ -255,7 +278,9 @@ statistics were updated accordly.
     >>> pomsgset.pofile.updatesCount()
     1
     >>> pomsgset.pofile.rosettaCount()
-    0
+    1
+    >>> pomsgset.pofile.unreviewedCount()
+    2
 
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last active translation was submitted.
@@ -264,7 +289,6 @@ than when last active translation was submitted.
     >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> old_timestamp_text = '2006-11-28T12:30:00+00:00'
     >>> old_timestamp = datetimeutils.parseDatetimetz(old_timestamp_text)
-    >>> selection = pomsgset.getSelection(TranslationConstants.SINGULAR_FORM)
 
 We can see here that translation in pomsgset is newer than old_timestamp.
 
@@ -278,17 +302,19 @@ And current value
 
 We do the submission with that lock_timestamp.
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'lock_timestamp': old_timestamp_text,
-    ...         'alt': None,
-    ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_new': 'Foos',
-    ...         'msgset_1_es_translation_0_new_checkbox': True,
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> form = {
+    ...     'lock_timestamp': old_timestamp_text,
+    ...     'alt': None,
+    ...     'msgset_1': None,
+    ...     'msgset_1_es_translation_0_radiobutton':
+    ...         'msgset_1_es_translation_0_new',
+    ...     'msgset_1_es_translation_0_new': 'Foos',
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
     >>> pomsgset_page_view.initialize()
     >>> for notification in pomsgset_page_view.request.notifications:
     ...     notification.message
@@ -315,17 +341,18 @@ Bogus translation submission
 What would happen if we get a submit for another msgset that isn't being
 considered?
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
-    ...         'alt': None,
-    ...         'msgset_2': None,
-    ...         'msgset_2_es_translation_0_new': 'Foo',
-    ...         'msgset_2_es_translation_0_new_checkbox': True,
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> form = {
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
+    ...     'alt': None,
+    ...     'msgset_2': None,
+    ...     'msgset_2_es_translation_0_new': 'Foo',
+    ...     'msgset_2_es_translation_0_new_checkbox': True,
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
     >>> pomsgset_page_view.initialize()
 
 The list of translations parsed will be empty because the submission is

@@ -1,100 +1,109 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Blueprint tracking</h1>
+    <div metal:fill-slot="main">
 
-<body>
+      <ul class="buttons">
+        <li>
+          <a href="/+tour">
+            <img
+              alt="Take a tour"
+              src="/+icing/but-lrg-takeatour.gif"
+              />
+          </a>
+        </li>
+        <li>
+          <a href="+new" id="addspec">
+            <img
+              alt="Register a blueprint"
+              src="/+icing/but-lrg-registeraspec.gif"
+              />
+          </a>
+        </li>
+      </ul>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+      <form class="central" action="" method="get"
+            tal:attributes="action request/URL">
+        <table>
+          <tbody>
+            <tr>
+              <td style="text-align: right;">
+                <input
+                  id="text"
+                  type="text"
+                  name="field.search_text"
+                  size="50"
+                  tal:attributes="value view/searchtext"
+                />
+              </td>
+              <td>
+                <input
+                  type="submit"
+                  name="field.actions.search"
+                  value="Find Blueprints"
+                />
+              </td>
+            </tr>
+            <tr tal:define="
+              target_widget nocall:view/widgets/scope/target_widget">
+              <td tal:attributes="class view/scope_css_class"
+                  style="text-align: right;">
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-overview" />
-  <div class="portlet">
+                <tal:scope
+                  replace="structure view/widgets/scope/renderScopeOptions" />
 
-    <h2>Search specifications</h2>
+                <tal:input replace="structure target_widget/inputField" />
 
-    <div class="portletBody portletContent">
-  
-      <form name="spec_search" method="get">
-        Show specifications containing:<br />
-        <span class="lesser">
-          <input type="text" name="searchtext" size="20"
-                 tal:attributes="value view/searchtext" />
-          <input tal:condition="view/searchrequested"
-            type="submit"
-            value="Search Again"
-            />
-          <input tal:condition="not: view/searchrequested"
-            type="submit"
-            value="Search"
-            />
-        </span>
-
+                <div class="message"
+                  tal:condition="view/scope_error"
+                  tal:content="structure view/scope_error">
+                  Error message
+                </div>
+              </td>
+              <td tal:content="structure target_widget/chooseLink" />
+            </tr>
+          </tbody>
+        </table>
       </form>
-    </div>
-  </div>
+      <tal:searchresults condition="view/searchrequested"
+                         define="specs view/specs" >
+        <p tal:condition="specs">
+          <span tal:replace="view/spec_count" />
+          blueprint(s) matching
+          &#8220;<tal:string replace="view/searchtext" />&#8221:
+        </p>
 
-  <div tal:replace="structure context/@@+portlet-sprints" />
-</metal:rightportlets>
+        <tal:nomatches condition="not: specs"
+                       replace="structure context/@@+nomatches" />
 
-<metal:heading fill-slot="pageheading">
-  <h3>Feature tracking in Launchpad</h3>
-  <h1>Welcome to Blueprint!</h1>
-</metal:heading>
+        <table id="specs-table">
+          <tr tal:repeat="spec specs"
+              tal:replace="structure spec/@@+listing-simple" />
+        </table>
 
-<div metal:fill-slot="main">
+      </tal:searchresults>
+      <tal:nosearchresults condition="not:view/searchrequested">
+        <p id="application-summary">
+          With Launchpad you can track blueprints
+          (lightweight feature specifications) from discussion through to
+          review, approval, and implementation.
+          <a href="/+about">Learn more&#8230;</a>
+        </p>
+        <div class="columns">
+          <div class="three column left"
+               tal:content="structure context/@@+portlet-latestregistered">
+          </div>
+          <div class="three column middle"
+               tal:content="structure context/@@+portlet-latestcompleted">
+          </div>
+          <div class="three column right"
+               tal:content="structure context/@@+portlet-sprints" />
+        </div>
+        <div id="application-footer">
+          <tal:stats replace="structure context/@@+portlet-stats" />
+        </div>
+      </tal:nosearchresults>
 
-  <p class="documentDescription">
-    Launchpad includes a feature tracker for applications and distributions.
-    Use this to plan your development roadmap.
-  </p>
-
-  <tal:searching condition="view/searchrequested" define="specs view/specs">
-
-    <h3>Specification search results:</h3>
-
-    <tal:nomatches condition="not: specs"
-                   replace="structure context/@@+nomatches" />
-
-    <tal:per_spec repeat="spec specs">
-      <div tal:replace="structure spec/@@+listing-detailed" />
-    </tal:per_spec>
-
-  </tal:searching>
-
-  <tal:no_search condition="not: view/searchrequested">
-
-    <ul class="info">
-      <li>
-        <a href="https://help.launchpad.net/BlueprintDocumentation"
-        >Blueprint documentation</a>
-      </li>
-    </ul>
-    <p>
-      If you have further questions, join us in #launchpad on
-      irc.freenode.net.
-    </p>
-
-    <h3>Recent specifications</h3>
-
-    <tal:per_recent_spec repeat="spec context/latest_specs">
-      <div tal:replace="structure spec/@@+listing-simple" />
-    </tal:per_recent_spec>
-
-    <p>
-      Features are tracked per distribution, and per product registered in the
-      Launchpad. Go to a specific product or distribution to see all the
-      planned features for that group, or to register new feature
-      specifications.
-    </p>
-
-  </tal:no_search>
-
-  <div tal:condition="view/specs"
-       tal:replace="structure context/@@+blueprint-legend" />
-
-</div>
-</body>
+    </div><!--main-->
+  </body>
 </html>

@@ -1,7 +1,25 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
 <tal:do-this-first tal:content="view/process_restricted_form" />
-<html>
   <head>
     <title>Log in to Launchpad</title>
+    <style type="text/css">
+      html {
+        font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+        font-size: 8pt;
+      }
+      h1 {background: none; color: #83ad23; font-size: 3em; font-weight: normal;}
+      th {font-weight: normal; text-align: right;}
+      .oopsid {color: #cc0000; font-weight: bold;}
+    </style>
   </head>
   <body>
     <h1>Log in to a Launchpad test site</h1>
@@ -89,6 +107,12 @@
         </table>
       </form>
 
+      <p tal:define="non_restricted_url request/form/production|nothing"
+         tal:condition="non_restricted_url">
+        You may be able to access this page
+        <a tal:attributes="href non_restricted_url">on the main
+        Launchpad site</a> instead.
+      </p>
     </tal:block>
   </body>
 </html>

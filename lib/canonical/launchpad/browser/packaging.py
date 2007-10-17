@@ -21,18 +21,18 @@ class PackagingAddView(GeneralFormView):
     def validate(self, form_values):
         productseries = self.context
         sourcepackagename = form_values['sourcepackagename']
-        distrorelease = form_values['distrorelease']
+        distroseries = form_values['distroseries']
         packaging = form_values['packaging']
 
         util = getUtility(IPackagingUtil)
         if util.packagingEntryExists(
-            productseries, sourcepackagename, distrorelease):
+            productseries, sourcepackagename, distroseries):
             self.top_of_page_errors.append(_(
                 "This series is already packaged in %s" %
-                distrorelease.displayname))
+                distroseries.displayname))
             raise WidgetsError(self.top_of_page_errors)
 
-    def process(self, distrorelease, sourcepackagename, packaging):
+    def process(self, distroseries, sourcepackagename, packaging):
         # get the user
         user = getUtility(ILaunchBag).user
         productseries = self.context
@@ -40,7 +40,7 @@ class PackagingAddView(GeneralFormView):
         # Invoke utility to create a packaging entry
         util = getUtility(IPackagingUtil)
         util.createPackaging(
-            productseries, sourcepackagename, distrorelease, 
+            productseries, sourcepackagename, distroseries,
             packaging, owner=user)
 
     def nextURL(self):

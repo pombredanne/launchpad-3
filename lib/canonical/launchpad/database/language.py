@@ -1,17 +1,19 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
+from zope.component import getUtility
 
-from sqlobject import StringCol, IntCol, BoolCol
-from sqlobject import SQLRelatedJoin, SQLObjectNotFound
+from sqlobject import (
+    StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
+    CONTAINSSTRING)
+
 from canonical.database.sqlbase import SQLBase
-from canonical.lp.dbschema import EnumCol, TextDirection
-
+from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, NotFoundError)
+    ILanguageSet, ILanguage, IPersonSet, NotFoundError, TextDirection)
 
 
 class Language(SQLBase):
@@ -19,30 +21,55 @@ class Language(SQLBase):
 
     _table = 'Language'
 
-    code = StringCol(dbName='code', notNull=True, unique=True,
-            alternateID=True)
+    code = StringCol(
+        dbName='code', notNull=True, unique=True, alternateID=True)
+    uuid = StringCol(dbName='uuid', notNull=False, default=None)
     nativename = StringCol(dbName='nativename')
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
     visible = BoolCol(dbName='visible', notNull=True)
-    direction = EnumCol(dbName='direction', notNull=True,
-                        schema=TextDirection, default=TextDirection.LTR)
+    direction = EnumCol(
+        dbName='direction', notNull=True, schema=TextDirection,
+        default=TextDirection.LTR)
 
-    translators = SQLRelatedJoin('Person', joinColumn='language',
-        otherColumn='person', intermediateTable='PersonLanguage')
+    translation_teams = SQLRelatedJoin(
+        'Person', joinColumn="language",
+        intermediateTable='Translator', otherColumn='translator')
 
-    countries = SQLRelatedJoin('Country', joinColumn='language',
-        otherColumn='country', intermediateTable='SpokenIn')
+    _countries = SQLRelatedJoin(
+        'Country', joinColumn='language', otherColumn='country',
+        intermediateTable='SpokenIn')
+
+    # Define a read/write property `countries` so it can be passed
+    # to language administration `LaunchpadFormView`.
+    def _getCountries(self):
+        return self._countries
+
+    def _setCountries(self, countries):
+        for country in self._countries:
+            if country not in countries:
+                self.removeCountry(country)
+        for country in countries:
+            if country not in self._countries:
+                self.addCountry(country)
+    countries = property(_getCountries, _setCountries)
 
     @property
     def displayname(self):
-        """See ILanguage."""
+        """See `ILanguage`."""
         return '%s (%s)' % (self.englishname, self.code)
 
     @property
     def alt_suggestion_language(self):
-        """See ILanguage."""
+        """See `ILanguage`.
+
+        Non-visible languages and English are not translatable, so they
+        are excluded. Brazilian Portuguese has diverged from Portuguese
+        to such a degree that it should be treated as a parent language.
+        Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
+        and may provide suggestions for each other.
+        """
         if self.code in ['pt_BR',]:
             return None
         elif self.code == 'nn':
@@ -50,24 +77,35 @@ class Language(SQLBase):
         elif self.code == 'nb':
             return Language.byCode('nn')
         codes = self.code.split('_')
-        if len(codes) == 2:
-            return Language.byCode(codes[0])
+        if len(codes) == 2 and codes[0] != 'en':
+            language = Language.byCode(codes[0])
+            if language.visible == True:
+                return language
+            else:
+                return None
         return None
 
     @property
     def dashedcode(self):
-        """See ILanguage"""
+        """See `ILanguage`."""
         return self.code.replace('_', '-')
 
     @property
     def abbreviated_text_dir(self):
-        """See ILanguage"""
+        """See `ILanguage`."""
         if self.direction == TextDirection.LTR:
             return 'ltr'
         elif self.direction == TextDirection.RTL:
             return 'rtl'
         else:
             assert False, "unknown text direction"
+
+    @property
+    def translators(self):
+        """See `ILanguage`."""
+        personset = getUtility(IPersonSet)
+        return personset.getTranslatorsByLanguage(self)
+
 
 class LanguageSet:
     implements(ILanguageSet)
@@ -79,23 +117,33 @@ class LanguageSet:
             orderBy='englishname'))
 
     def __iter__(self):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         return iter(Language.select(orderBy='englishname'))
 
     def __getitem__(self, code):
-        """See ILanguageSet."""
-        assert isinstance(code, basestring), code
+        """See `ILanguageSet`."""
+        language = self.getLanguageByCode(code)
+
+        if language is None:
+            raise NotFoundError, code
+
+        return language
+
+    def getLanguageByCode(self, code):
+        """See `ILanguageSet`."""
+        assert isinstance(code, basestring), (
+            "%s is not a valid type for 'code'" % type(code))
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:
-            raise NotFoundError, code
+            return None
 
     def keys(self):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         return [language.code for language in Language.select()]
 
     def canonicalise_language_code(self, code):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
 
         if '-' in code:
             language, country = code.split('-', 1)
@@ -105,7 +153,7 @@ class LanguageSet:
             return code
 
     def codes_to_languages(self, codes):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
 
         languages = []
 
@@ -118,7 +166,7 @@ class LanguageSet:
         return languages
 
     def getLanguageAndVariantFromString(self, language_string):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         if language_string is None:
             return (None, None)
 
@@ -137,3 +185,28 @@ class LanguageSet:
             return (None, None)
 
         return (language, language_variant)
+
+    def createLanguage(self, code, englishname, nativename=None,
+                       pluralforms=None, pluralexpression=None, visible=True,
+                       direction=TextDirection.LTR):
+        """See `ILanguageSet`."""
+        return Language(
+            code=code, englishname=englishname, nativename=nativename,
+            pluralforms=pluralforms, pluralexpression=pluralexpression,
+            visible=visible, direction=direction)
+
+    def search(self, text):
+        """See `ILanguageSet`."""
+        if text:
+            text.lower()
+            results = Language.select(
+                OR (
+                    CONTAINSSTRING(Language.q.code, text),
+                    CONTAINSSTRING(Language.q.englishname, text)
+                    ),
+                orderBy='englishname'
+                )
+        else:
+            results = None
+
+        return results

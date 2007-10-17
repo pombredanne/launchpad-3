@@ -1,96 +1,84 @@
-<div class="portlet">
-
-  <h2><span tal:replace="context/displayname">Ubuntu
-      </span> distribution details</h2>
-
-  <div class="portletBody portletContent">
-
-    <b>Registrant:</b><br />
-    <img alt="" src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-       tal:content="context/owner/browsername">owner name</a> <br />
-
-    <b>Members:</b><br />
-    <img alt="" src="/@@/user" />
-    <a tal:attributes="href string:${context/fmt:url}/+members"
-       tal:content="context/members/browsername">members name</a><br /> 
-
-    <b>Bug contact:</b><br />
-    <span tal:condition="context/bugcontact">
-      <img alt="" src="/@@/user" />
-      <a tal:attributes="href context/bugcontact/fmt:url"
-         tal:content="context/bugcontact/browsername">foo bar</a>
-    </span>
-    <span tal:condition="not:context/bugcontact">
-      <i>None</i>
-    </span>
-    <br />
-
-    <b>Security contact:</b><br />
-    <span tal:condition="context/security_contact">
-      <img alt="" src="/@@/user" />
-      <a tal:attributes="href context/security_contact/fmt:url"
-         tal:content="context/security_contact/browsername">sample person</a>
-    </span>
-    <span tal:condition="not:context/security_contact">
-      <i>None</i>
-    </span>
-    <br />
-
-    <b>Driver:</b><br />
-    <i tal:condition="not:context/driver">Not yet assigned</i>
-    <tal:has_driver condition="context/driver">
-      <img alt="" src="/@@/user" />
-      <a tal:content="context/driver/browsername"
-         tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
-    </tal:has_driver>
-    <br />
-
-    <b>Translation group:</b><br />
-    <img alt="" src="/@@/languages" />
-    <tal:block condition="context/translationgroup">
-    <a tal:attributes="href context/translationgroup/fmt:url"
-       tal:content="context/translationgroup/title"
-    >Group</a><br />
-    </tal:block>
-    <tal:block condition="not: context/translationgroup">
-    <i>Not assigned</i><br />
-    </tal:block>
-    <b>Translation policy:</b><br />
-    <span tal:replace="context/translationpermission/title">Open</span>
-    <br />
-
-    <div tal:condition="not: context/official_rosetta">
-      <i>Doesn&rsquo;t use Rosetta</i>
-    </div>
-
-    <div tal:condition="not: context/official_malone">
-      <i>Doesn&rsquo;t use Malone</i>
-    </div>
-
-    <b>Uploads:</b><br />
-    <tal:per_component repeat="dcu context/uploaders">
-      <span tal:replace="dcu/component/name">main</span>:
-      <img alt="" src="/@@/user" />
-      <a tal:content="dcu/uploader/browsername"
-         tal:attributes="href dcu/uploader/fmt:url" /><br />
-    </tal:per_component>
-
-    <b>Releases:</b><br />
-    <ul tal:condition="context/releases">
-      <li tal:repeat="release context/releases"
-          class="distroreleases">
-        <a tal:attributes="href release/fmt:url">
-          <span tal:replace="release/name"/>
-          <span tal:replace="release/version"/>
-          (<span tal:replace="release/releasestatus/name"/>)
-        </a>
-      </li>
-    </ul>
-
-    <p tal:condition="not: context/releases">
-       <span tal:replace="context/title"/> has no official releases yet.
-    </p>
-
-  </div>
-</div>
+<table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="summary">
+  <tbody>
+    <tr>
+      <th>Bug contact:</th>
+      <td tal:condition="not:context/bugcontact">None</td>
+      <td tal:condition="context/bugcontact">
+        <a
+          tal:attributes="href context/bugcontact/fmt:url"
+          tal:content="context/bugcontact/browsername"
+        />
+      </td>
+    </tr>
+    <tr>
+      <th>Security contact:</th>
+      <td tal:condition="not:context/security_contact">None</td>
+      <td tal:condition="context/security_contact">
+        <a
+          tal:attributes="href context/security_contact/fmt:url"
+          tal:content="context/security_contact/browsername"
+        />
+      </td>
+    </tr>
+    <tr>
+      <th>Driver:</th>
+      <td tal:condition="not:context/driver">None</td>
+      <td tal:condition="context/driver">
+        <a
+          tal:attributes="href context/driver/fmt:url"
+          tal:content="context/driver/displayname"
+        />
+      </td>
+    </tr>
+    <tr>
+      <th>Members:</th>
+      <td tal:condition="not:context/members">None</td>
+      <td tal:condition="context/members">
+        <a tal:replace="structure context/members/fmt:link" />
+      </td>
+    </tr>
+    <tr>
+      <th>Translations:</th>
+      <td tal:content="context/translationpermission/title">Open</td>
+    </tr>
+    <tr>
+      <th>Translation group:</th>
+      <td tal:condition="not:context/translationgroup">None</td>
+      <td tal:condition="context/translationgroup">
+        <a
+          tal:attributes="href context/translationgroup/fmt:url"
+          tal:content="context/translationgroup/title"
+        />
+      </td>
+    </tr>
+    <tr>
+      <th>Uses Launchpad for:</th>
+      <td tal:condition="not:context/full_functionality">Nothing</td>
+      <td tal:condition="context/full_functionality">
+          <tal:answers condition="context/official_answers">
+            Answers<br />
+          </tal:answers>
+          <tal:malone condition="context/official_malone">
+            Bug tracking<br />
+          </tal:malone>
+          <tal:rosetta condition="context/official_rosetta">
+            Translations<br />
+          </tal:rosetta>
+        <tal:neither condition="python:(not context.official_malone and not context.official_rosetta)">&mdash;</tal:neither>
+      </td>
+    </tr>
+    <tr>
+      <th>Uploaders:</th>
+    </tr>
+    <tr tal:repeat="dcu context/uploaders">
+      <th><tal:component replace="dcu/component/name" /></th>
+      <td>
+        <a tal:replace="structure dcu/uploader/fmt:link" />
+      </td>
+    </tr>
+  </tbody>
+</table>

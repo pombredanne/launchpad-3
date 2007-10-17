@@ -1,0 +1,117 @@
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+  <metal:top_slot define-slot="top" />
+  <html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    xml:lang="en"
+    lang="en"
+    dir="ltr"
+    i18n:domain="launchpad"
+    tal:define="
+          icingrev string:4;
+          vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs;
+          icingroot string:${vhosts/mainsite/rooturl}+icing/rev${icingrev};
+          site_message modules/canonical.config/config/launchpad/site_message;">
+    <head>
+      <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+      <link
+        rel="stylesheet"
+        href="/+icing/marketing-style.css"
+        tal:attributes="href string:${icingroot}/marketing-style.css"
+        type="text/css"
+        media="screen"
+      />
+      <!--[if IE]>
+      <link
+        rel="stylesheet"
+        href="/+icing/marketing-winie.css"
+        tal:attributes="href string:${icingroot}/marketing-winie.css"
+        type="text/css"
+        media="screen"
+      />
+      <![endif]-->
+    </head>
+    <body>
+      <div id="globalheader" tal:condition="site_message">
+        <div class="sitemessage" tal:content="structure site_message"/>
+        <img class="launchpad" width="90" height="20"
+             tal:attributes="src string:${icingroot}/globalheader_launchpad_bg.gif"
+             alt="Launchpad"/>
+      </div>
+      <div id="breadcrumb">
+        <dl>
+          <dt>Your location:</dt>
+          <dd>
+            <ul>
+              <li><a href="/"
+                     tal:attributes="href vhosts/mainsite/rooturl"
+                     >Home</a></li>
+              <li class="current"
+                  tal:content="context/@@marketing_breadcrumb_name">
+                About
+              </li>
+            </ul>
+          </dd>
+        </dl>
+      </div> <!-- breadcrumb -->
+      <div id="wrapper">
+        <div id="header"
+             tal:define="mainsite_url vhosts/mainsite/rooturl">
+          <h1><a href="/"
+                 tal:attributes="href mainsite_url"
+                 >Launchpad</a></h1>
+          <dl id="navigation">
+            <dt>Navigation</dt>
+            <dd>
+              <ul>
+                <li id="liHome"><a href="/+about"
+                                   tal:attributes="href string:${mainsite_url}+about;
+                                   class python:request.getURL() == mainsite_url + '+about' and 'current' or ''"
+                                   >Overview</a></li>
+                <li id="liAccount"
+                    tal:condition="not: request/lp:person"
+                    ><a href="+login"
+                        tal:attributes="href string:${request/URL}/+login"
+                        >Join Launchpad</a></li>
+                <li id="liTour"><a href="/+tour"
+                                   tal:attributes="href string:${mainsite_url}+tour;
+                                   class python:request.getURL().startswith(mainsite_url + '+tour') and 'current' or ''"
+                                   >Take a tour</a></li>
+              </ul>
+            </dd>
+          </dl>
+          <dl id="subnavigation"
+              tal:content="structure context/@@marketing_subnavigation" />
+        </div> <!-- header -->
+        <div id="main">
+          <metal:contents define-slot="contents" />
+
+          <div id="applications-footer"
+               tal:define="page python:request.get('PATH_INFO').split('/')[-1]">
+            <a tal:attributes="href string:${vhosts/code/rooturl}$page"
+               >Code</a> |
+            <a tal:attributes="href string:${vhosts/bugs/rooturl}$page"
+               >Bugs</a> |
+            <a tal:attributes="href string:${vhosts/blueprints/rooturl}$page"
+               >Blueprints</a> |
+            <a tal:attributes="href string:${vhosts/translations/rooturl}$page"
+               >Translations</a> |
+            <a tal:attributes="href string:${vhosts/answers/rooturl}$page"
+               >Answers</a>
+          </div>
+        </div> <!-- main -->
+        <div id="footer">
+          <p class="left">Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a></p>
+          <p class="right"> <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
+        <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
+        <a href="/faq">FAQ</a></p>
+        </div> <!-- footer -->
+      </div> <!-- wrapper -->
+    </body>
+  </html>
+</metal:page>

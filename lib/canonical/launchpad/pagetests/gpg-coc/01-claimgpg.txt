@@ -1,4 +1,3 @@
-
 This test verifies the basic claim a GPG key workflow.
 
   >>> import email, re
@@ -12,20 +11,21 @@ Setup the stub KeyServer:
 
 Start out with a clean page:
 
-  >>> user_browser.open("http://launchpad.dev/~name12/+editpgpkeys")
-  >>> "<title>Sample Person's OpenPGP keys</title>" in user_browser.contents
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
+  >>> "<title>Sample Person's OpenPGP keys</title>" in browser.contents
   True
-  >>> "1024D/DFD20543" in user_browser.contents
+  >>> "1024D/DFD20543" in browser.contents
   False
 
 Claim OpenPGP key:
 
   >>> key = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
-  >>> user_browser.getControl(name='fingerprint').value = key
-  >>> user_browser.getControl(name='import').click()
-  >>> "error message" not in user_browser.contents
+  >>> browser.getControl(name='fingerprint').value = key
+  >>> browser.getControl(name='import').click()
+  >>> "error message" not in browser.contents
   True
-  >>> print user_browser.contents
+  >>> print browser.contents
   <BLANKLINE>
   ...
   A message has been sent to <code>test@canonical.com</code>, encrypted
@@ -34,19 +34,52 @@ Claim OpenPGP key:
   link inside.
   ...
 
-Recover token URL..
+Recover token URL from the encrypted part, but also make sure there's a clear
+text part that provides useful information to users who -- for whatever reason
+-- cannot decrypt the token url.  Start by grabbing the confirmation message.
 
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
+  >>> msg.get_content_type()
+  'text/plain'
 
-..decoding the content, originally encoded in 'base-64' or 'quoted-printable':
-  
+The message will be a single text/plain part with clear text instructions,
+followed by ASCII armored encrypted confirmation instructions.  Ensure that
+the clear text instructions contain the expected URLs pointing to more help.
+
   >>> cipher_body = msg.get_payload(decode=True)
+  >>> print cipher_body
+  Hello,
+  <BLANKLINE>
+  This message contains the instructions for confirming registration of an
+  OpenPGP key for use in Launchpad.  The confirmation instructions have been
+  encrypted with the OpenPGP key you have attempted to register.  If you cannot
+  read the unencrypted instructions below, it may be because your mail reader
+  does not support automatic decryption of "ASCII armored" encrypted text.
+  <BLANKLINE>
+  Exact instructions for enabling this depends on the specific mail reader you
+  are using.  Please see this support page for more information:
+  <BLANKLINE>
+      https://help.launchpad.net/ReadingOpenPgpMail
+  <BLANKLINE>
+  For more general information on OpenPGP and related tools such as Gnu Privacy
+  Guard (GPG), please see:
+  <BLANKLINE>
+      https://help.ubuntu.com/community/GnuPrivacyGuardHowto
+  <BLANKLINE>
+  -----BEGIN PGP MESSAGE-----
+  ...
+  -----END PGP MESSAGE-----
+  <BLANKLINE>
+  <BLANKLINE>
+  Thanks,
+  <BLANKLINE>
+  The Launchpad Team
 
   >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)
 
-  >>> from canonical.launchpad.interfaces import IGPGHandler 
+  >>> from canonical.launchpad.interfaces import IGPGHandler
   >>> from zope.component import getUtility
   >>> gpghandler = getUtility(IGPGHandler)
 
@@ -66,7 +99,7 @@ instance to access this key and decrypt the message.
   >>> endInteraction()
 
 Do the usual procedure to extract the token URL:
- 
+
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
 
@@ -76,26 +109,26 @@ Ensure token is ascii to avoid utf-8 mess in URL:
 
 Go to the link sent by email, to validate the email address.
 
-  >>> user_browser.open("http://launchpad.dev%s" % base_path)
+  >>> browser.open("http://launchpad.dev%s" % base_path)
 
 Get redirected to +validategpg, and confirm token:
 
-  >>> print user_browser.url
+  >>> print browser.url
   http://launchpad.dev/token/.../+validategpg
-  >>> user_browser.getControl(name='VALIDATE').click()
+  >>> browser.getControl('Continue').click()
 
 Get redirected to the user's homepage with a greeting:
 
-  >>> user_browser.url
+  >>> browser.url
   'http://launchpad.dev/~name12'
-  >>> "The key 1024D/DFD20543 was successfully validated" in user_browser.contents
+  >>> "The key 1024D/DFD20543 was successfully validated" in browser.contents
   True
 
 Certify the key is imported:
 
-  >>> user_browser.open("http://launchpad.dev/~name12/+editpgpkeys")
+  >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
 
-  >>> print user_browser.contents
+  >>> print browser.contents
   <BLANKLINE>
   ...
   <h2>Active keys</h2>
@@ -106,10 +139,10 @@ Certify the key is imported:
 Make sure that UIDs were properly processed; in particular, check that
 the revoked UID in the key wasn't added as an email address:
 
-  >>> user_browser.open("http://launchpad.dev/~name12/+editemails")
-  >>> "sample.person@canonical.com_unvalidated" in user_browser.contents
+  >>> browser.open("http://launchpad.dev/~name12/+editemails")
+  >>> "sample.person@canonical.com_unvalidated" in browser.contents
   True
-  >>> "sample.revoked@canonical.com" in user_browser.contents
+  >>> "sample.revoked@canonical.com" in browser.contents
   False
 
 Verify that the key was imported with the "can encrypt" flag set:

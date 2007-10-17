@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -45,19 +51,21 @@
 
   </tal:resolved_issues>
 
-  <tal:releases condition="context/releases">
+  <tal:serieses
+        define="serieses context/serieses"
+        condition="serieses">
     <h2>CVE reports in releases of <span tal:replace="context/displayname" /></h2>
 
     <p>
       See also the CVE reports for individual distribution releases:
     </p>
       <ul>
-        <li tal:repeat="release context/releases">
-          <a tal:attributes="href string:${release/fmt:url}/+cve"
-             tal:content="release/displayname"></a>
+        <li tal:repeat="series serieses">
+          <a tal:attributes="href string:${series/fmt:url}/+cve"
+             tal:content="series/displayname"></a>
         </li>
       </ul>
-  </tal:releases>
+  </tal:serieses>
 
 </div> 
 </body>

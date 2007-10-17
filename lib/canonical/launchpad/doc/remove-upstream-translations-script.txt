@@ -36,14 +36,15 @@ We can remove all translations from a concrete potemplate.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
-    DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   Processing Spanish (es) translation of man in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
+    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 12 submissions
+    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
+    DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Removed 12 submissions in total.
@@ -69,10 +70,13 @@ Or with a concrete language.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Spanish (es) translation of man in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
+    DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
     DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
+    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
@@ -97,13 +101,10 @@ Or even with a concrete IPOTemplateName.
     >>> (output, empty) = process.communicate()
     >>> print output
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
     DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
+    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 0 submissions
-    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Removed 12 submissions in total.
@@ -130,12 +131,11 @@ And it also works for products!
     >>> (output, empty) = process.communicate()
     >>> print output
     DEBUG   Processing Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
-    DEBUG   Before the removal, latest submission came from: Diogo Matsubara
     DEBUG   Removed 6 submissions
+    DEBUG   After some removals, latest reviewer changed from Diogo Matsubara to Rosetta Administrators 
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
-    DEBUG   Before the removal, latest submission came from: Mark Shuttleworth
     DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   After some removals, latest reviewer changed from Carlos Perelló Marín to Rosetta Administrators 
     DEBUG   Removed 18 submissions in total.
     <BLANKLINE>
 

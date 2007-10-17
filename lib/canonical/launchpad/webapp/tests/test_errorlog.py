@@ -10,10 +10,15 @@ import unittest
 import shutil
 import StringIO
 from textwrap import dedent
+
+from zope.publisher.browser import TestRequest
+from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
 from canonical.testing import reset_logging
+from canonical.launchpad import versioninfo
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 UTC = pytz.timezone('UTC')
 
@@ -31,25 +36,22 @@ class TestErrorReport(unittest.TestCase):
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'traceback-text', 'username', 'url', 42,
                             [('name1', 'value1'), ('name2', 'value2'),
-                             ('name1', 'value3'),
-                             ('field.password', 'secret1'),
-                             ('PassWd2', 'secret2')],
+                             ('name1', 'value3')],
                             [(1, 5, 'SELECT 1'),
                              (5, 10, 'SELECT 2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
         self.assertEqual(entry.time, 'timestamp')
-        self.assertEqual(entry.tb_text, 'traceback-text')
+        self.assertEqual(entry.branch_nick, versioninfo.branch_nick)
+        self.assertEqual(entry.revno, versioninfo.revno)
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
         self.assertEqual(entry.duration, 42)
-        self.assertEqual(len(entry.req_vars), 5)
+        self.assertEqual(len(entry.req_vars), 3)
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
-        self.assertEqual(entry.req_vars[3], ('field.password', '<hidden>'))
-        self.assertEqual(entry.req_vars[4], ('PassWd2', '<hidden>'))
         self.assertEqual(len(entry.db_statements), 2)
         self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
         self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
@@ -60,8 +62,8 @@ class TestErrorReport(unittest.TestCase):
         entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',
                             datetime.datetime(2005, 04, 01, 00, 00, 00,
                                               tzinfo=UTC),
-                            'traceback-text',
-                            'Sample User', 'http://localhost:9000/foo', 42,
+                            'traceback-text', 'Sample User',
+                            'http://localhost:9000/foo', 42,
                             [('HTTP_USER_AGENT', 'Mozilla/5.0'),
                              ('HTTP_REFERER', 'http://localhost:9000/'),
                              ('name=foo', 'hello\nworld')],
@@ -74,18 +76,20 @@ class TestErrorReport(unittest.TestCase):
             Exception-Type: NotFound
             Exception-Value: error message
             Date: 2005-04-01T00:00:00+00:00
+            Branch: %s
+            Revision: %s
             User: Sample User
             URL: http://localhost:9000/foo
             Duration: 42
-            
+
             HTTP_USER_AGENT=Mozilla/5.0
             HTTP_REFERER=http://localhost:9000/
-            name%3Dfoo=hello%0Aworld
-            
+            name%%3Dfoo=hello%%0Aworld
+
             00001-00005 SELECT 1
             00005-00010 SELECT 2
 
-            traceback-text"""))
+            traceback-text""" % (versioninfo.branch_nick, versioninfo.revno)))
 
     def test_read(self):
         """Test ErrorReport.read()"""
@@ -98,7 +102,7 @@ class TestErrorReport(unittest.TestCase):
             User: Sample User
             URL: http://localhost:9000/foo
             Duration: 42
-            
+
             HTTP_USER_AGENT=Mozilla/5.0
             HTTP_REFERER=http://localhost:9000/
             name%3Dfoo=hello%0Aworld
@@ -111,7 +115,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.id, 'OOPS-A0001')
         self.assertEqual(entry.type, 'NotFound')
         self.assertEqual(entry.value, 'error message')
-        # XXX 20051130: jamesh
+        # XXX jamesh 2005-11-30:
         # this should probably convert back to a datetime
         self.assertEqual(entry.time, '2005-04-01T00:00:00+00:00')
         self.assertEqual(entry.tb_text, 'traceback-text')
@@ -209,22 +213,24 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'User: None\n')
-        self.assertEqual(lines[5], 'URL: None\n')
-        self.assertEqual(lines[6], 'Duration: -1\n')
-        self.assertEqual(lines[7], '\n')
-
-        # no request vars
-        self.assertEqual(lines[8], '\n')
-
-        # no database statements
+        self.assertEqual(lines[4], 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines[5], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'User: None\n')
+        self.assertEqual(lines[7], 'URL: None\n')
+        self.assertEqual(lines[8], 'Duration: -1\n')
         self.assertEqual(lines[9], '\n')
 
+        # no request vars
+        self.assertEqual(lines[10], '\n')
+
+        # no database statements
+        self.assertEqual(lines[11], '\n')
+
         # traceback
-        self.assertEqual(lines[10], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[12], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[13], 'Exception: xyz\n')
+        self.assertEqual(lines[15], 'Exception: xyz\n')
 
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
@@ -232,8 +238,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
-        class FakeRequest:
-            URL = 'http://localhost:9000/foo'
+        class TestRequestWithPrincipal(TestRequest):
             class principal:
                 id = 42
                 title = u'title'
@@ -244,14 +249,18 @@ class TestErrorReportingUtility(unittest.TestCase):
                 def getLogin():
                     return u'Login'
 
-            oopsid = None
-
-            def items(self):
-                return [('name2', 'value2'), ('name1', 'value1'),
-                        ('name1', 'value3 \xa7'),
-                        (u'\N{BLACK SQUARE}', u'value4')]
-
-        request = FakeRequest()
+        request = TestRequestWithPrincipal(
+                environ={
+                    'SERVER_URL': 'http://localhost:9000/foo',
+                    'HTTP_COOKIE': 'lp=cookies_hidden_for_security_reasons',
+                    'name1': 'value1',
+                    },
+                form={
+                    'name1': 'value3 \xa7',
+                    'name2': 'value2',
+                    u'\N{BLACK SQUARE}': u'value4',
+                    }
+                )
 
         try:
             raise Exception('xyz\nabc')
@@ -263,33 +272,98 @@ class TestErrorReportingUtility(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
+        self.assertEqual(lines.pop(0), 'Oops-Id: OOPS-91T1\n')
+        self.assertEqual(lines.pop(0), 'Exception-Type: Exception\n')
+        self.assertEqual(lines.pop(0), 'Exception-Value: xyz abc\n')
+        self.assertEqual(lines.pop(0), 'Date: 2006-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines.pop(0), 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines.pop(0), 'Revision: %s\n' % versioninfo.revno)
+        self.assertEqual(lines.pop(0), 'User: Login, 42, title, description |\\u25a0|\n')
+        self.assertEqual(lines.pop(0), 'URL: http://localhost:9000/foo\n')
+        self.assertEqual(lines.pop(0), 'Duration: -1\n')
+        self.assertEqual(lines.pop(0), '\n')
+
+        # request vars
+        self.assertEqual(lines.pop(0), 'CONTENT_LENGTH=0\n')
+        self.assertEqual(
+                lines.pop(0), 'GATEWAY_INTERFACE=TestFooInterface/1.0\n'
+                )
+        self.assertEqual(lines.pop(0), 'HTTP_COOKIE=%3Chidden%3E\n')
+        self.assertEqual(lines.pop(0), 'HTTP_HOST=127.0.0.1\n')
+        self.assertEqual(lines.pop(0), 'SERVER_URL=http://localhost:9000/foo\n')
+
+        # non-ASCII request var
+        self.assertEqual(lines.pop(0), '\\u25a0=value4\n')
+        self.assertEqual(lines.pop(0), 'lp=%3Chidden%3E\n')
+        self.assertEqual(lines.pop(0), 'name1=value3 \\xa7\n')
+        self.assertEqual(lines.pop(0), 'name2=value2\n')
+        self.assertEqual(lines.pop(0), '\n')
+
+        # no database statements
+        self.assertEqual(lines.pop(0), '\n')
+
+        # traceback
+        self.assertEqual(lines.pop(0), 'Traceback (innermost last):\n')
+        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
+        #    raise Exception(\'xyz\')
+        lines.pop(0)
+        lines.pop(0)
+        self.assertEqual(lines.pop(0), 'Exception: xyz\n')
+
+        # verify that the oopsid was set on the request
+        self.assertEqual(request.oopsid, 'OOPS-91T1')
+
+    def test_raising_for_script(self):
+        """Test ErrorReportingUtility.raising with a ScriptRequest."""
+        from canonical.launchpad.webapp.errorlog import (
+            ErrorReportingUtility, ScriptRequest)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise Exception('xyz\nabc')
+        except:
+            # Do not test escaping of request vars here, it is already tested
+            # in test_raising_with_request.
+            request = ScriptRequest([
+                ('name2', 'value2'), ('name1', 'value1'), ('name1', 'value3')],
+                URL='https://launchpad.net/example')
+            utility.raising(sys.exc_info(), request, now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+
+        # the header
         self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
-        self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')
-        self.assertEqual(lines[6], 'Duration: -1\n')
-        self.assertEqual(lines[7], '\n')
+        self.assertEqual(lines[4], 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines[5], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'User: None\n')
+        self.assertEqual(lines[7], 'URL: https://launchpad.net/example\n')
+        self.assertEqual(lines[8], 'Duration: -1\n')
+        self.assertEqual(lines[9], '\n')
 
         # request vars
-        self.assertEqual(lines[8], '\\u25a0=value4\n')    # non-ASCII request var
-        self.assertEqual(lines[9], 'name1=value1\n')
-        self.assertEqual(lines[10], 'name1=value3 \\xa7\n')
-        self.assertEqual(lines[11], 'name2=value2\n')
-        self.assertEqual(lines[12], '\n')
-
-        # no database statements
+        self.assertEqual(lines[10], 'name1=value1\n')
+        self.assertEqual(lines[11], 'name1=value3\n')
+        self.assertEqual(lines[12], 'name2=value2\n')
         self.assertEqual(lines[13], '\n')
 
+        # no database statements
+        self.assertEqual(lines[14], '\n')
+
         # traceback
-        self.assertEqual(lines[14], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[15], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[17], 'Exception: xyz\n')
+        self.assertEqual(lines[18], 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
+
 
     def test_raising_with_unprintable_exception(self):
         """Test ErrorReportingUtility.raising() with an unprintable exception"""
@@ -317,22 +391,60 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(lines[2], 'Exception-Value: <unprintable instance object>\n')
         self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'User: None\n')
-        self.assertEqual(lines[5], 'URL: None\n')
-        self.assertEqual(lines[6], 'Duration: -1\n')
-        self.assertEqual(lines[7], '\n')
-
-        # no request vars
-        self.assertEqual(lines[8], '\n')
-
-        # no database statements
+        self.assertEqual(lines[4], 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines[5], 'Revision: %s\n' % versioninfo.revno)
+        self.assertEqual(lines[6], 'User: None\n')
+        self.assertEqual(lines[7], 'URL: None\n')
+        self.assertEqual(lines[8], 'Duration: -1\n')
         self.assertEqual(lines[9], '\n')
 
+        # no request vars
+        self.assertEqual(lines[10], '\n')
+
+        # no database statements
+        self.assertEqual(lines[11], '\n')
+
         # traceback
-        self.assertEqual(lines[10], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[12], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
-        self.assertEqual(lines[13], 'UnprintableException: <unprintable instance object>\n')
+        self.assertEqual(lines[15], 'UnprintableException: <unprintable instance object>\n')
+
+    def test_raising_unauthorized(self):
+        """Test ErrorReportingUtility.raising() with an Unauthorized exception.
+
+        An OOPS is not recorded when a Unauthorized exceptions is raised.
+        """
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise Unauthorized('xyz')
+        except:
+            utility.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
+    def test_raising_translation_unavailable(self):
+        """Test ErrorReportingUtility.raising() with a TranslationUnavailable
+        exception.
+
+        An OOPS is not recorded when a TranslationUnavailable exception is
+        raised.
+        """
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise TranslationUnavailable('xyz')
+        except:
+            utility.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
 
 
 def test_suite():

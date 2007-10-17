@@ -12,13 +12,13 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
-  <form name="search" method="GET" tal:attributes="action request/URL">
-  <table>
+  <form name="search" method="get" tal:attributes="action request/URL">
+  <table class="headers-right-aligned">
     <tbody>
     <tr>
-      <th>Show:</th>
+      <th >Show:</th>
       <td colspan="2">
         <select name="statusfilter">
           <option tal:repeat="option view/status_options"
@@ -33,8 +33,8 @@
     <tr>
       <th>with:</th>
       <td>
-        <select name="releasefilter">
-          <option tal:repeat="option view/release_options"
+        <select name="seriesfilter">
+          <option tal:repeat="option view/series_options"
                   tal:attributes="
                     value option/name;
                     selected option/is_selected"
@@ -71,7 +71,7 @@
           <option value="-daterequested" 
             tal:attributes="selected python: orderby == '-daterequested'">
             newest first</option>
-          <option value="highpriority"
+          <option value="-highpriority"
             tal:attributes="selected python: orderby == '-highpriority'">
             priority</option>
         </select>
@@ -105,12 +105,12 @@
             <th>Recipient</th>
             <th>Date</th>
             <th>Country</th>
-            <th style="text-align: right">requested</th>
-            <th style="text-align: right">approved</th>
-            <th>status</th>
+            <th style="text-align: right">Requested</th>
+            <th style="text-align: right">Approved</th>
+            <th>Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="results-body">
           <tal:block repeat="shipitrequest shipitrequests">
             <tr tal:define="
               bg python: shipitrequest.highpriority and '#ff6666' or None;
@@ -125,7 +125,13 @@
                   tal:replace="shipitrequest/recipient_email"
                   />)
               </td>
-              <td tal:content="shipitrequest/daterequested/fmt:date" />
+              <td>
+                <span
+                  tal:attributes="
+                    title shipitrequest/daterequested/fmt:datetime"
+                  tal:content="
+                    shipitrequest/daterequested/fmt:approximatedate" />
+              </td>
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" tal:content="total_requested" />
               <td style="text-align: right" tal:content="total_approved" />
@@ -144,7 +150,7 @@
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />

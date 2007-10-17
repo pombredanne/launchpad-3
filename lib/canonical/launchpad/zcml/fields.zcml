@@ -1,19 +1,10 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
     <!-- Widgets -->
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IBaseImageUpload"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.image.ImageUploadWidget"
-        permission="zope.Public"
-        />
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -132,6 +123,22 @@
         for="canonical.launchpad.fields.IShipItQuantity"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.ShipItQuantityWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.IURIField"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.textwidgets.URIWidget"
+        permission="zope.Public"
+        />
+
+     <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.ContentNameField"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.textwidgets.LowerCaseTextWidget"
         permission="zope.Public"
         />
 

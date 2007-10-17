@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
 
@@ -15,67 +21,17 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Apache in Ubuntu Linux</h3>
   <h1>Change package bug contacts</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
-
-  <tal:call-process-method condition="view/processBugmailSettings" />
-
-  <form name="addbugcontact" action="" method="POST"
-        tal:define="current_user_is_bugcontact view/currentUserIsBugContact;
-                    team_memberships request/lp:person/myactivememberships">
-    <p>
-      A <dfn>bug contact</dfn> automatically receives e-mail notifications
-      of all public bugs filed on a package.
-      You can change these bugmail settings at any time.
-    </p>
-    <ul style="list-style: none">
-      <li>
-        <label>
-        <input type="checkbox"
-               name="make_me_a_bugcontact"
-               tal:attributes="checked current_user_is_bugcontact" />
-        I want to receive all bugmail for
-        <span tal:content="string:${context/displayname}" />
-        </label>
-      </li>
-    </ul>
-  <div tal:condition="team_memberships">
-    <br />
-    Team bug contacts (only teams you belong to are shown):
-    <div>
-      <ul style="list-style: none">
-        <li tal:repeat="team_membership team_memberships">
-          <label style="font-weight: normal">
-            <input type="checkbox" name="bugmail_contact_team.subscribe"
-                   tal:attributes="value team_membership/team/name;
-                                   checked python:context.isBugContact(team_membership.team)" />
-            <a href="#"
-               tal:content="team_membership/team/browsername"
-               tal:attributes="href team_membership/team/fmt:url">Ubuntu Team</a>
-            <span tal:condition="python:context.isBugContact(team_membership.team)">
-              (currently a bug contact)
-            </span>
-          </label>
-          <input type="hidden" name="bugmail_contact_team.visible"
-                 tal:attributes="value team_membership/team/name" />
-        </li>
-      </ul>
-    </div>
-  </div>
-  <div tal:condition="not:team_memberships">
-    <br />
-    <i>(You are currently not a member of any teams in Launchpad. If you join a
-    team, you'll be able to modify their bugmail subscriptions on this page
-    too.)</i>
-  </div>
+ 
   <p>
-    <input type="submit" name="save" value="Save these changes" />
-    <input type="submit" name="cancel" value="Cancel" />
+    A <dfn>bug contact</dfn> automatically receives e-mail notifications
+    of all public bugs filed on a package.
+    You can change these bugmail settings at any time.
   </p>
-  </form>
+  <div metal:use-macro="context/@@launchpad_form/form" />
 </div>
 </body>
 </html>

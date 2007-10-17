@@ -15,12 +15,7 @@ Setup the stub KeyServer
 
 Sign only keys are registered on the standard +editpgpkeys page.
 
-  >>> from zope.testbrowser.testing import Browser
-
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-
+  >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
   >>> browser.title
   "Sample Person's OpenPGP keys"
@@ -118,8 +113,8 @@ Below is a clear-signed version signed with a different key (DFD20543):
 
 The key validation does not succeed with this key:
 
-  >>> browser.getControl(name="signedcontent").value = signedcontent
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl("Signed text").value = signedcontent
+  >>> browser.getControl('Continue').click()
 
   >>> message = (
   ...     'The key used to sign the content '
@@ -144,8 +139,8 @@ this case, a truncated signature):
 
 The key validation does not succeed with this key:
 
-  >>> browser.getControl(name="signedcontent").value = signedcontent
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl("Signed text").value = signedcontent
+  >>> browser.getControl('Continue').click()
 
   >>> message = (
   ...     'Launchpad could not verify your signature: No data')
@@ -174,8 +169,8 @@ sign, signed with the correct key:
 Confirm the OpenPGP key by proving that we can sign the given phrase with
 the key:
 
-  >>> browser.getControl(name="signedcontent").value = signedcontent
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl("Signed text").value = signedcontent
+  >>> browser.getControl('Continue').click()
 
 On success, redirect to Sample Person's home page.
 
@@ -187,7 +182,7 @@ On success, redirect to Sample Person's home page.
 
 Check that the key has been imported:
 
-  >>> browser.getLink('OpenPGP Keys').click()
+  >>> browser.getLink('Update OpenPGP keys').click()
 
   >>> browser.title
   "Sample Person's OpenPGP keys"
@@ -215,7 +210,7 @@ Ask for a re-validation of the key.
   >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
-  An email was sent to test@canonical.com with instructions to reactivate...
+  A message has been sent to test@canonical.com with instructions to reactivate...
 
 Open the page again and check that the key is still displayed, pending
 revalidation.

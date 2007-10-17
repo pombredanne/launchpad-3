@@ -20,6 +20,7 @@ class TemporaryBlobStorageAddView(GeneralFormView):
     def process(self, blob):
         try:
             uuid = getUtility(ITemporaryStorageManager).new(blob)
+            self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
             return 'Your ticket is "%s"' % uuid
         except BlobTooLarge:
             return 'Uploaded file was too large.'

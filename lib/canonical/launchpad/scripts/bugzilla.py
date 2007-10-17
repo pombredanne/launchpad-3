@@ -4,9 +4,9 @@
 
 
 # Bugzilla schema:
-#  http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
+# http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
 
-# XXX: 20051018 jamesh
+# XXX: jamesh 2005-10-18
 # Currently unhandled bug info:
 #  * Operating system and platform
 #  * version (not really used in Ubuntu bugzilla though)
@@ -25,19 +25,16 @@ import re
 import logging
 import datetime
 import pytz
-import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
-    IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
-    IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
-    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError,
-    CreateBugParams)
+    BugTaskStatus, IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet,
+    ICveSet, IBugWatchSet, PersonCreationRationale, ILaunchpadCelebrities,
+    NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
+    BugTaskImportance, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -129,7 +126,7 @@ class BugzillaBackend:
                             '  FROM longdescs '
                             '  WHERE bug_id = %d '
                             '  ORDER BY bug_when' % bug_id)
-        # XXX: 2005-12-07 jamesh
+        # XXX: jamesh 2005-12-07:
         # Due to a bug in Debzilla, Ubuntu bugzilla bug 248 has > 7800
         # duplicate comments,consisting of someone's signature.
         # For the import, just ignore those comments.
@@ -153,8 +150,14 @@ class BugzillaBackend:
                      mimetype, ispatch, filename, thedata,
                      submitter_id) in self.cursor.fetchall()]
 
-    def findBugs(self, product=[], component=[], status=[]):
+    def findBugs(self, product=None, component=None, status=None):
         """Returns the requested bug IDs as a list"""
+        if product is None:
+            product = []
+        if component is None:
+            component = []
+        if status is None:
+            status = []
         joins = []
         conditions = []
         if product:
@@ -240,20 +243,28 @@ class Bug:
         Additional information about the bugzilla status is appended
         to the bug task's status explanation.
         """
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+
         if self.bug_status == 'ASSIGNED':
-            bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_importer)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
+            bugtask.transitionToStatus(
+                BugTaskStatus.INCOMPLETE, bug_importer)
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, bug_importer)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.FIXRELEASED, bug_importer)
             else:
-                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.INVALID, bug_importer)
         else:
-            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.NEW, bug_importer)
 
         # add the status to the notes section, to account for any lost
         # information
@@ -323,7 +334,7 @@ class Bugzilla:
             assert emailaddr is not None
             if person.preferredemail != emailaddr:
                 person.validateAndEnsurePreferredEmail(emailaddr)
-                
+
             self.person_mapping[bugzilla_id] = person.id
 
         return person
@@ -346,7 +357,7 @@ class Bugzilla:
                 pkgname = 'linux-source-2.6.15'
         else:
             pkgname = bug.component.encode('ASCII')
-        
+
         try:
             srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
         except NotFoundError, e:
@@ -386,7 +397,7 @@ class Bugzilla:
         if milestone is not None:
             return milestone
         else:
-            return self.ubuntu.currentrelease.newMilestone(name)
+            return self.ubuntu.currentseries.newMilestone(name)
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
@@ -397,8 +408,8 @@ class Bugzilla:
         srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
-        for release in self.ubuntu.releases:
-            srcpkg = release.getSourcePackage(srcpkgname)
+        for series in self.ubuntu.serieses:
+            srcpkg = series.getSourcePackage(srcpkgname)
             if srcpkg:
                 series = srcpkg.productseries
                 if series:
@@ -407,10 +418,10 @@ class Bugzilla:
             logger.warning('could not find upstream product for '
                            'source package "%s"', srcpkgname.name)
             return None
-        
+
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
     def replaceBugRef(self, match):
-        # XXX: 20051024 jamesh
+        # XXX: jamesh 2005-10-24:
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
         url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)
@@ -424,7 +435,7 @@ class Bugzilla:
         a bug watch), it is skipped.
         """
         logger.info('Handling Bugzilla bug %d', bug_id)
-        
+
         # is there a bug watch on the bug?
         lp_bug = self.bugset.queryByRemoteBug(self.bugtracker, bug_id)
 
@@ -459,13 +470,12 @@ class Bugzilla:
         lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)
 
         # add remaining comments, and add CVEs found in all text
-        lp_bug.findCvesInText(text)
+        lp_bug.findCvesInText(text, lp_bug.owner)
         for (who, when, text) in comments:
             text = self._bug_re.sub(self.replaceBugRef, text)
             msg = msgset.fromText(msg.followup_title, text,
                                   self.person(who), when)
             lp_bug.linkMessage(msg)
-            lp_bug.findCvesInText(text)
 
         # subscribe QA contact and CC's
         if bug.qa_contact:
@@ -615,13 +625,20 @@ class Bugzilla:
                 lpdupe.duplicateof = lpdupe_of
             trans.commit()
 
-    def importBugs(self, trans, product=[], component=[], status=[]):
+    def importBugs(self, trans, product=None, component=None, status=None):
         """Import Bugzilla bugs matching the given constraints.
 
         Each of product, component and status gives a list of
         products, components or statuses to limit the import to.  An
         empty list matches all products, components or statuses.
         """
+        if product is None:
+            product = []
+        if component is None:
+            component = []
+        if status is None:
+            status = []
+
         bugs = self.backend.findBugs(product=product,
                                      component=component,
                                      status=status)

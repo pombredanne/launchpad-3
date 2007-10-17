@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="context/branch_links">
+<div class="portlet" id="portlet-branches" tal:condition="view/branch_links">
   <h2>Branches</h2>
   <div class="portletBody portletContent">
     <ul class="branch">
@@ -7,7 +7,7 @@
            tal:content="branchlink/branch/title">Branch title</a>
         <a tal:condition="branchlink/required:launchpad.AnyPerson"
            tal:attributes="href branchlink/fmt:url"
-          >(edit)</a><tal:block condition="branchlink/summary"><br/>
+          ><img src="/@@/edit" title="Change this branch link" /></a><tal:block condition="branchlink/summary"><br/>
         <i tal:content="branchlink/summary">summary</i></tal:block>
       </li>
     </ul>

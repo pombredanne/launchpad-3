@@ -11,28 +11,26 @@ from os.path import join, isdir, exists
 from shutil import rmtree
 from subprocess import Popen, PIPE
 import tempfile
-from unittest import TestLoader
+from unittest import TestCase, TestLoader
 
 import bzrlib.branch
 
 import transaction
 from zope.component import getUtility
 
+from canonical.codehosting.tests.helpers import create_branch
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
-from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.scripts.supermirror.ftests import createbranch
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class BranchScannerTest(LaunchpadFunctionalTestCase):
-    layer = LaunchpadFunctionalLayer
+class BranchScannerTest(TestCase):
+    layer = LaunchpadZopelessLayer
     branch_id = 7
     """Branch to install branch-scanner test data on."""
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
+        TestCase.setUp(self)
         # Clear the HOME environment variable in order to ignore existing
         # user config files.
         self.testdir = tempfile.mkdtemp()
@@ -43,7 +41,8 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
     def tearDown(self):
         rmtree(self.testdir)
         os.environ.clear()
-        os.environ.update(self._saved_environ)            
+        os.environ.update(self._saved_environ)
+        TestCase.tearDown(self)
 
     def setupWarehouse(self):
         """Create a sandbox branch warehouse for testing.
@@ -62,14 +61,13 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         """Create a test data in the warehouse for the given branch object."""
         destination = join(self.warehouse, '%08x' % db_branch.id)
         assert not exists(destination)
-        createbranch(destination)
+        create_branch(destination)
         # record the last mirrored revision
         bzr_branch = bzrlib.branch.Branch.open(destination)
         db_branch.last_mirrored_id = bzr_branch.last_revision()
 
     def test_branch_scanner_script(self):
         # this test checks that branch-scanner.py does something
-        login(ANONYMOUS)
         self.setupWarehouse()
         branch = getUtility(IBranchSet)[self.branch_id]
         assert branch.revision_history.count() == 0
@@ -82,7 +80,7 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         output, error = process.communicate()
         status = process.returncode
         self.assertEqual(status, 0,
-                         'baz2bzr existed with status=%d\n'
+                         'baz2bzr exited with status=%d\n'
                          '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
                          % (status, output, error))
         # check that all branches were set to the test data

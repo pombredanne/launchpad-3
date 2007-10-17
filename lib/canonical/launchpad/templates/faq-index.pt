@@ -1,0 +1,45 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+
+<metal:portlets fill-slot="portlets">
+  <tal:lifecycle replace="structure context/@@+portlet-lifecycle" />
+  <tal:lifecycle replace="structure context/@@+portlet-related-questions" />
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+    <h1 tal:content="context/title">FAQ Title</h1>
+
+    <div id="faq-keywords"><b>Keywords: </b>
+        <tal:keywords content="context/keywords">keywords</tal:keywords>
+    </div>
+
+    <div id="faq-content"
+         tal:condition="context/content"
+         tal:content="structure context/content/fmt:text-to-html">Content</div>
+</div>
+
+  <metal:help fill-slot="help">
+    <p>FAQ documents contain a solution to a common problem (usually a question
+      that appears often in the Answer Tracker.
+    </p>
+    <p>Project owners and answer contacts can modify FAQ documents by using
+      the <b>Edit FAQ</b> menu item.
+    </p>
+    <p>The list of questions answered by this document can be found under
+      in the <b>Related questions</b> portlet.
+    </p>
+  </metal:help>
+</body>
+</html>
+

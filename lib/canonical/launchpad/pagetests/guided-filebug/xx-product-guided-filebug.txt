@@ -1,9 +1,19 @@
-Malone does its best to minimize duplicate bug reports. The +filebug
+= Filing bugs on Products =
+
+Launchpad does its best to minimize duplicate bug reports. The +filebug
 page for a product starts by asking the user to see if their bug has
 already been reported.
 
     >>> user_browser.open("http://bugs.launchpad.dev/firefox")
-    >>> user_browser.getLink('Report a Bug').click()
+    >>> user_browser.getLink('Report a bug').click()
+
+On this page and the user is shown a table of the most common bugs in
+the current context.
+
+    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+
+    >>> print_bugs_table(user_browser.contents, "most-common-bugs")
+    5 Firefox install instructions should be complete
 
 If no title is entered, the user is asked to supply one.
 
@@ -21,8 +31,7 @@ If no title is entered, the user is asked to supply one.
 The user fills in some keywords, and clicks a button to search existing
 bugs.
 
-
-    >>> user_browser.getControl(name="field.title").value = (
+    >>> user_browser.getControl("Summary").value = (
     ...     "SVG images aren't displayed")
     >>> user_browser.getControl("Continue").click()
 
@@ -32,23 +41,21 @@ it difficult to bypass the search-for-dupes bit.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+filebug
 
-After searching, the user is presented with a list of similar bugs and
-a list of most common bugs in the current context.
+After searching, the user is presented with a list of similar bugs in
+the current context.
 
-    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+    >>> from canonical.launchpad.ftests.bug import print_bugs_list
 
-    >>> print_bugs_table(user_browser.contents, "similar-bugs")
-    1 Firefox does not support SVG
-
-    >>> print_bugs_table(user_browser.contents, "most-common-bugs")
-    5 Firefox install instructions should be complete
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #1 Firefox does not support SVG
+    New, last updated 2006-05-19
 
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
 
 If no description is entered, an error message is displayed.
 
-    >>> user_browser.getControl(name="field.comment").value
+    >>> user_browser.getControl("Further information").value
     ''
     >>> user_browser.getControl("Submit Bug Report").click()
     >>> print user_browser.url
@@ -61,11 +68,14 @@ If no description is entered, an error message is displayed.
 If the user for some reason would erase the summary, an error message
 will be displayed as well.
 
-    >>> user_browser.getControl(name="field.comment").value = "not empty"
-    >>> user_browser.getControl(name="field.title").value = ''
+    >>> user_browser.getControl("Further information").value = "not empty"
+    >>> user_browser.getControl("Summary").value = ''
     >>> user_browser.getControl("Submit Bug Report").click()
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+filebug
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
@@ -73,9 +83,73 @@ will be displayed as well.
 
 With both values set, the bug is created.
 
-    >>> user_browser.getControl(name="field.title").value = "a brand new bug"
-    >>> user_browser.getControl(name="field.comment").value = "test"
+    >>> user_browser.getControl("Summary").value = "a brand new bug"
+    >>> user_browser.getControl("Further information").value = "test"
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/...
+
+
+== Subscribing to a similar bug ==
+
+If our bug is described by one of the suggested similar bugs, we can
+subscribe to it instead of filing a new bug. This also loosely implies
+a "me too" vote.
+
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> user_browser.getControl("Summary").value = (
+    ...     "SVG images aren't displayed")
+    >>> user_browser.getControl("Continue").click()
+
+As before, we get a list of similar bugs to choose from.
+
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #1 Firefox does not support SVG
+    New, last updated 2006-05-19
+
+This one matches, so we subscribe.
+
+    >>> user_browser.getControl(
+    ...     '#1 Firefox does not support SVG').selected = True
+    >>> user_browser.getControl('Subscribe to This Bug Report').click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/1
+
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    You have been subscribed to this bug.
+
+
+== Filing a bug when there are none similar ==
+
+When no similar bugs are found the form works the same but appears
+different in the user agent.
+
+    >>> user_browser.open("http://launchpad.dev/firefox/+filebug")
+
+Submitting some distinctive details...
+
+    >>> user_browser.getControl('Summary').value = (
+    ...     "Frankenzombulon reanimated neighbour's dead pet")
+    >>> user_browser.getControl('Continue').click()
+
+...yields no similar bugs. In fact, the similar bugs table is not even
+shown.
+
+    >>> similar_bugs_list = find_tag_by_id(
+    ...     user_browser.contents, "similar-bugs")
+    >>> print similar_bugs_list
+    None
+
+But, as before, entering a description and submitting the bug takes
+the user to the bug page.
+
+    >>> user_browser.getControl('Further information').value = (
+    ...     'Frankenzombulon is only meant to check my mail.')
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/...'
+    >>> user_browser.title
+    "Bug #... in Mozilla Firefox: ...Frankenzombulon reanimated..."

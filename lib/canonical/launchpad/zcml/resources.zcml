@@ -1,6 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/browser">
     <!-- Style sheets -->
-    <resource name="launchpad.css" file="../templates/launchpad.css" />
     <resource name="ubuntu.css" file="../templates/ubuntu.css" />
     <resource name="ubuntu-discs.css" file="../templates/ubuntu-discs.css" />
     <resource name="ubuntu-plone.css" file="../templates/ubuntu-plone.css" />
@@ -10,44 +9,45 @@
     <resource name="edubuntu-screen.css" file="../templates/edubuntu-screen.css" />
     <resource name="edubuntu-common.css" file="../templates/edubuntu-common.css" />
 
-    <!-- Javascript -->
-    <resource name="launchpad.js" file="../templates/launchpad.js" />
-    <resource name="SignalWrapper.js" file="../templates/SignalWrapper.js" />
-    <resource name="lpmenu.js" file="../templates/lpmenu.js" />
-    <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
-
     <!-- Missing images -->
-    <resource name="nyet" file="../images/nyet.png" />
-    <resource name="nyet-mini" file="../images/nyet-mini.png" />
+    <resource name="nyet-badge" file="../images/nyet-badge.png" />
+    <resource name="nyet-icon" file="../images/nyet-icon.png" />
     <resource name="nyet-large" file="../images/nyet-large.png" />
-    <resource name="nyet-heading" file="../images/nyet-heading.png" />
-    <resource name="nyet-mugshot" file="../images/nyet-mugshot.png" />   
-
-    <!-- App-specific Images -->
-    <resource name="malone" file="../images/malone.png" />
-    <resource name="rosetta" file="../images/rosetta.png" />
-    <resource name="soyuz" file="../images/soyuz.png" />
+    <resource name="nyet-logo" file="../images/nyet-logo.png" />
+    <resource name="nyet-mugshot" file="../images/nyet-mugshot.png" />
 
     <!-- General Images -->
-    <resource name="add" file="../images/add.gif" />
-    <resource name="add-large" file="../images/nyet-large.png" />
+    <resource name="add" file="../images/add.png" />
+    <resource name="add-badge" file="../images/add-badge.png" />
+    <resource name="add-large" file="../images/add-large.png" />
     <resource name="architecture" file="../images/architecture.png" />
-    <!-- arrowBlank is used in lib/contrib/templates/sorttable.js -->
+    <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
-    <resource name="arrowBottom" file="../images/arrowBottom.gif" />
+    <resource name="arrowBottom" file="../images/arrowBottom.png" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
-    <resource name="arrowDown" file="../images/arrowDown.gif" />
+    <resource name="arrowDown" file="../images/arrowDown.png" />
+    <resource name="arrowTop" file="../images/arrowTop.png" />
+    <resource name="arrowUp" file="../images/arrowUp.png" />
     <resource name="arrowRight" file="../images/arrowRight.gif" />
-    <resource name="arrowTop" file="../images/arrowTop.gif" />
-    <resource name="arrowUp" file="../images/arrowUp.gif" />
+    <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
+    <resource name="build-failedtoupload" file="../images/build-failedtoupload.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
+    <resource name="build-superseded" file="../images/build-superseded.png" />
     <resource name="blue-bar" file="../images/blue-bar.png" />
-    <resource name="bounty" file="../images/bounty.jpg" />
-    <resource name="branch" file="../images/list.png" />
+    <resource name="blueprint" file="../images/blueprint.png" />
+    <resource name="blueprint-essential" file="../images/blueprint-essential.png" />
+    <resource name="blueprint-high" file="../images/blueprint-high.png" />
+    <resource name="blueprint-medium" file="../images/blueprint-medium.png" />
+    <resource name="blueprint-low" file="../images/blueprint-low.png" />
+    <resource name="blueprint-undefined" file="../images/blueprint-undefined.png" />
+    <resource name="blueprint-not" file="../images/blueprint-not.png" />
+    <resource name="bounty" file="../images/bounty.png" />
+    <resource name="branch" file="../images/branch.png" />
+    <resource name="branch-large" file="../images/branch-large.gif" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
@@ -56,84 +56,105 @@
     <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
     <resource name="bug-undecided" file="../images/bug-undecided.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-status-collapse"
+              file="../images/bug-status-collapse.png" />
+    <resource name="bug-status-expand" file="../images/bug-status-expand.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
-    <resource name="bullet" file="../images/bullet.gif" />
+    <resource name="bullet" file="../images/bullet.png" />
     <resource name="copy" file="../images/copy.png" />
-    <resource name="cve" file="../images/cve.ico" />
+    <resource name="cve" file="../images/cve.png" />
     <resource name="demo" file="../images/demo.png" />
-    <resource name="distribution" file="../images/nyet.png" />
-    <resource name="distribution-mini" file="../images/nyet-mini.png" />
-    <resource name="distribution-heading" file="../images/nyet-heading.png" />
-    <resource name="distribution-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="distribution" file="../images/distribution.png" />
+    <resource name="distribution-badge" file="../images/distribution-badge.png" />
+    <resource name="distribution-logo" file="../images/distribution-logo.png" />
+    <resource name="distribution-mugshot" file="../images/distribution-mugshot.png" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
     <resource name="download" file="../images/download.png" />
-    <resource name="edit" file="../images/edit.gif" />
-    <resource name="email" file="../images/mail_icon.gif" />
+    <resource name="download-large" file="../images/download-large.png" />
+    <resource name="edit" file="../images/edit.png" />
     <resource name="error" file="../images/error.png" />
-    <resource name="error-large" file="../images/nyet-large.png" />
+    <resource name="error-badge" file="../images/error-badge.png" />
+    <resource name="error-large" file="../images/error-large.png" />
+    <resource name="expand" file="../images/bug-status-expand.png" />
+    <resource name="faq" file="../images/faq.png" />
+    <resource name="favourite-yes" file="../images/fav-yes.png" />
+    <resource name="favourite-no" file="../images/fav-no.png" />
     <resource name="green-bar" file="../images/green-bar.png" />
-    <resource name="info" file="../images/info_icon.gif" />
-    <resource name="info-large" file="../images/nyet-large.png" />
+    <resource name="info" file="../images/info.png" />
+    <resource name="info-large" file="../images/info-large.png" />
+    <resource name="involved-no" file="../images/involved-no-badge.png" />
+    <resource name="involved-yes" file="../images/involved-yes-badge.png" />
     <resource name="launchpad" file="../images/launchpad.png" />
-    <resource name="launchpad-large" file="../images/nyet-large.png" />
-    <resource name="launchpad-heading" file="../images/nyet-heading.png" />
+    <resource name="launchpad-large" file="../images/launchpad-large.png" />
+    <resource name="launchpad-logo" file="../images/launchpad-logo.png" />
     <resource name="list" file="../images/list.png" />
-    <resource name="languages" file="../images/languages.gif" />
-    <resource name="link" file="../images/link_icon.gif" />
-    <resource name="locked" file="../images/padlock.png" />
-    <resource name="locked-large" file="../images/nyet-large.png" />
-    <resource name="mail" file="../images/mail_icon.gif" />
-    <resource name="milestone" file="../images/target.png" />
+    <resource name="language" file="../images/language.png" />
+    <resource name="link" file="../images/link.png" />
+    <resource name="mail" file="../images/mail.png" />
+    <resource name="maybe" file="../images/maybe.png" />
+    <resource name="mentoring" file="../images/mentoring.png" />
+    <resource name="mentoring-large" file="../images/mentoring-large.png" />
+    <resource name="milestone" file="../images/milestone.png" />
+    <resource name="news" file="../images/news.png" />
+    <resource name="no" file="../images/no.png" />
     <resource name="package-binary" file="../images/package-binary.png" />
     <resource name="package-source" file="../images/package-source.png" />
-    <resource name="person" file="../images/nyet.png" />
-    <resource name="person-mini" file="../images/nyet-mini.png" />
-    <resource name="person-heading" file="../images/nyet-heading.png" />
-    <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
-    <resource name="person-inactive" file="../images/nyet.png" />
-    <resource name="person-inactive-mini" file="../images/nyet-mini.png" />
-    <resource name="person-inactive-heading" file="../images/nyet-heading.png" />
-    <resource name="person-inactive-mugshot" file="../images/nyet-mugshot.png" />
-    <resource name="product" file="../images/product_icon.gif" />
-    <resource name="product-mini" file="../images/nyet-mini.png" />
-    <resource name="product-heading" file="../images/nyet-heading.png" />
-    <resource name="product-mugshot" file="../images/nyet-mugshot.png" />
-    <resource name="progress" file="../images/progress.gif" />
-    <resource name="project" file="../images/product_icon.gif" />
-    <resource name="project-mini" file="../images/nyet-mini.png" />
-    <resource name="project-heading" file="../images/nyet-heading.png" />
-    <resource name="project-mugshot" file="../images/nyet-mugshot.png" />
+    <resource name="person" file="../images/person.png" />
+    <resource name="person-badge" file="../images/person-badge.png" />
+    <resource name="person-logo" file="../images/person-logo.png" />
+    <resource name="person-mugshot" file="../images/person-mugshot.png" />
+    <resource name="person-inactive" file="../images/person-inactive.png" />
+    <resource name="person-inactive-badge" file="../images/person-inactive-badge.png" />
+    <resource name="person-inactive-logo" file="../images/person-inactive-logo.png" />
+    <resource name="person-inactive-mugshot" file="../images/person-inactive-mugshot.png" />
+    <resource name="private" file="../images/padlock.png" />
+    <resource name="private-bg" file="../images/private-bg.png" />
+    <resource name="private-large" file="../images/padlock-large.png" />
+    <resource name="product" file="../images/product.png" />
+    <resource name="product-badge" file="../images/product-badge.png" />
+    <resource name="product-logo" file="../images/product-logo.png" />
+    <resource name="product-mugshot" file="../images/product-mugshot.png" />
+    <resource name="project" file="../images/project.png" />
+    <resource name="project-badge" file="../images/project-badge.png" />
+    <resource name="project-logo" file="../images/project-logo.png" />
+    <resource name="project-mugshot" file="../images/project-mugshot.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
+    <resource name="question" file="../images/question.png" />
+    <resource name="read-only" file="../images/pencil-crossed.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
-    <resource name="remove" file="../images/remove.gif" />
+    <resource name="remove" file="../images/remove.png" />
     <resource name="required" file="../images/required.gif" />
-    <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
+    <!-- XXX mpt 2006-08-22: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
-    <resource name="search" file="../images/search_icon.gif" />
+    <resource name="search" file="../images/search.png" />
+    <resource name="security" file="../images/warning.png" />
+    <resource name="security-large" file="../images/warning-large.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
-    <resource name="spec" file="../images/topic_icon.gif" />
     <resource name="stop" file="../images/stop.png" />
-    <resource name="sprint" file="../images/backtalk.gif" />
-    <resource name="subscriber-essential" file="../images/star_on.gif" />
-    <resource name="subscriber-inessential" file="../images/star_off.gif" />
-    <resource name="team" file="../images/nyet.png" />
-    <resource name="team-mini" file="../images/nyet-mini.png" />
-    <resource name="team-heading" file="../images/nyet-heading.png" />
-    <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
-    <resource name="ticket" file="../images/ticket.png" />
-    <resource name="topic" file="../images/topic_icon.gif" />
-    <resource name="translation-file" file="../images/nyet.png" />
+    <resource name="meeting" file="../images/meeting.png" />
+    <resource name="meeting-logo" file="../images/meeting-logo.png" />
+    <resource name="meeting-mugshot" file="../images/meeting-mugshot.png" />
+    <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
+    <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
+    <resource name="team" file="../images/team.png" />
+    <resource name="team-badge" file="../images/team-badge.png" />
+    <resource name="team-logo" file="../images/team-logo.png" />
+    <resource name="team-mugshot" file="../images/team-mugshot.png" />
+    <resource name="translation-file" file="../images/translation-file.png" />
     <resource name="translation-newline" file="../images/translation-newline.png" />
     <resource name="translation-space" file="../images/translation-space.png" />
-    <resource name="translation-template" file="../images/nyet.png" />
-    <resource name="translations" file="../images/rosetta-icon.png" />
-    <resource name="treeCollapsed" file="../images/treeCollapsed.gif" />
-    <resource name="treeExpanded" file="../images/treeExpanded.gif" />
-    <resource name="user" file="../images/user.gif" />
-    <resource name="warning" file="../images/warning.gif" />
-    <resource name="warning-large" file="../images/nyet-large.png" />
+    <resource name="translation-template" file="../images/translation-template.png" />
+    <resource name="translation" file="../images/translation.png" />
+    <resource name="treeCollapsed" file="../images/treeCollapsed.png" />
+    <resource name="treeExpanded" file="../images/treeExpanded.png" />
+    <resource name="user" file="../images/person.png" />
+    <resource name="warning" file="../images/warning.png" />
+    <resource name="helpwanted" file="../images/helpwanted.gif" />
+    <resource name="warning-badge" file="../images/warning-badge.png" />
+    <resource name="warning-large" file="../images/warning-large.png" />
+    <resource name="yes" file="../images/yes.png" />
     <resource name="zoom-in" file="../images/zoom-in.png" />
     <resource name="zoom-out" file="../images/zoom-out.png" />
 
@@ -151,7 +172,7 @@
         file="../images/kubuntu-footer-bg.png" />
     <resource name="kubuntu-header" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
-    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
+    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" />
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
     <resource name="kubuntu-tab_on_ns1.gif" file="../images/kubuntu-tab_on_ns1.gif" />
     <resource name="kubuntu-favicon.png" file="../images/kubuntu-favicon.png" />

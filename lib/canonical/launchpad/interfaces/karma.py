@@ -9,7 +9,7 @@ __all__ = [
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
-    'IKarmaPersonCategoryCacheView',
+    'IKarmaCacheManager',
     'IKarmaTotalCache',
     'IKarmaCategory',
     'IKarmaContext',
@@ -39,7 +39,7 @@ class IKarma(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The date this karma was assigned to the user."))
 
-    product = Attribute(_("Product"))
+    product = Attribute(_("Project"))
 
     distribution = Attribute(_("Distribution"))
 
@@ -93,7 +93,7 @@ class IKarmaActionSet(IAddFormCustomization):
 
 class IKarmaCache(Interface):
     """A cached value of a person's karma, grouped by category and context.
-    
+
     Context, in this case, means the Product/Distribution on which the person
     performed an action that in turn caused the karma to be assigned.
 
@@ -109,7 +109,7 @@ class IKarmaCache(Interface):
                       "category, and thus got the karma."))
 
     category = Choice(
-        title=_("Category"), required=True, readonly=True,
+        title=_("Category"), required=False, readonly=True,
         vocabulary='KarmaCategory')
 
     karmavalue = Int(
@@ -117,29 +117,37 @@ class IKarmaCache(Interface):
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
 
-    product = Attribute(_("Product"))
+    product = Attribute(_("Project"))
+
+    project = Attribute(_("Project Group"))
 
     distribution = Attribute(_("Distribution"))
 
     sourcepackagename = Attribute(_("Source Package"))
 
 
-class IKarmaPersonCategoryCacheView(Interface):
-    """A cached value of a person's karma, grouped by category."""
+class IKarmaCacheManager(Interface):
 
-    person = Int(
-        title=_("Person"), required=True, readonly=True,
-        description=_("The person which performed the actions of this "
-                      "category, and thus got the karma."))
+    def new(value, person_id, category_id, product_id=None,
+            distribution_id=None, sourcepackagename_id=None, project_id=None):
+        """Create and return a new KarmaCache.
 
-    category = Choice(
-        title=_("Category"), required=True, readonly=True,
-        vocabulary='KarmaCategory')
+        We expect the objects IDs (instead of the real objects) here because
+        foaf-update-karma-cache.py (our only client) only has them.
+        """
 
-    karmavalue = Int(
-        title=_("Karma Points"), required=True, readonly=True,
-        description=_("The karma points of all actions of this category "
-                      "performed by this person."))
+    def updateKarmaValue(value, person_id, category_id, product_id=None,
+                         distribution_id=None, sourcepackagename_id=None,
+                         project_id=None):
+        """Update the karmavalue attribute of the KarmaCache with the given
+        person_id, category_id, product_id, distribution_id and
+        sourcepackagename_id.
+
+        Raise NotFoundError if there's no KarmaCache with those attributes.
+
+        We expect the objects IDs (instead of the real objects) here because
+        foaf-update-karma-cache.py (our only client) only has them.
+        """
 
 
 class IKarmaTotalCache(Interface):
@@ -161,6 +169,7 @@ class IKarmaTotalCache(Interface):
 class IKarmaCategory(Interface):
     """A catgory of karma events."""
 
+    id = Int(title=_("Database ID"), required=True, readonly=True)
     name = Attribute("The name of the category.")
     title = Attribute("The title of the karma category.")
     summary = Attribute("A brief summary of this karma category.")
@@ -175,8 +184,6 @@ class IKarmaContext(Interface):
         """Return a dict mapping categories to the top contributors (and their
         karma) of this context on that specific category.
 
-        This context must implement either IProduct or IDistribution.
-
         For each category, limit the number of contributors returned to the
         given limit, if it's not None.
 
@@ -186,8 +193,6 @@ class IKarmaContext(Interface):
     def getTopContributors(category=None, limit=None):
         """Return the people with the highest amount of Karma, and their
         karma, on this context.
-
-        The given context must implement either IProduct or IDistribution.
 
         The number of people returned is limited to the given limit, if it's
         not None.

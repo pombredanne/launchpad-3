@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:do-this-first condition="view/process_form" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
@@ -12,7 +17,7 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
   <p tal:condition="view/no_exports">
     No exports were made yet
@@ -31,11 +36,19 @@
       </thead>
       <tbody>
         <tr tal:repeat="export view/unsent_exports">
-          <td tal:content="export/datecreated/fmt:date" />
+          <td>
+            <span class="sortkey"
+              tal:content="export/datecreated/fmt:datetime" />
+            <span
+              tal:attributes="title export/datecreated/fmt:datetime"
+              tal:content="export/datecreated/fmt:approximatedate">
+              2007-02-19
+            </span>
+          </td>
           <td style="text-align: right"
               tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
-                 tal:attributes="href export/csvfile/url" />
+                 tal:attributes="href export/csvfile/http_url" />
           </td>
           <td class="formControls" style="text-align: center">
             <form action="" method="POST" name="sent"
@@ -61,11 +74,19 @@
       </thead>
       <tbody>
         <tr tal:repeat="export view/sent_exports">
-          <td tal:content="export/datecreated/fmt:date" />
+          <td>
+            <span class="sortkey"
+              tal:content="export/datecreated/fmt:datetime" />
+            <span
+              tal:attributes="title export/datecreated/fmt:datetime"
+              tal:content="export/datecreated/fmt:approximatedate">
+              2007-02-19
+            </span>
+          </td>
           <td style="text-align: right"
               tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
-                 tal:attributes="href export/csvfile/url" />
+                 tal:attributes="href export/csvfile/http_url" />
           </td>
         </tr>
       </tbody>
@@ -74,7 +95,7 @@
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />
@@ -85,3 +106,4 @@
 
 </body>
 </html>
+</tal:root>

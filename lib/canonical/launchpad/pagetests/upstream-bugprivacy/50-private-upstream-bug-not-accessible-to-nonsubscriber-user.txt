@@ -9,10 +9,10 @@ View bugs on Mozilla Firefox as the no-privs user:
       Mozilla Firefox
   ...
 
-Note that the no-privs user doesn't have the permissions to see bug #11.
+Note that the no-privs user doesn't have the permissions to see bug #13.
 
   >>> print http(r"""
-  ... GET /firefox/+bug/11 HTTP/1.1
+  ... GET /firefox/+bug/14 HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -24,7 +24,7 @@ This is also true if no-privs tries to access the bug from another
 context.
 
   >>> print http(r"""
-  ... GET /ubuntu-product/+bug/11 HTTP/1.1
+  ... GET /tomcat/+bug/14 HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden

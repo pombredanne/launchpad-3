@@ -1,24 +1,28 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackageName', 'BinaryPackageNameSet',
-           'BinaryAndSourcePackageName']
+__all__ = [
+    'BinaryPackageName',
+    'BinaryPackageNameSet',
+    'BinaryPackageNameVocabulary',
+    'getBinaryPackageDescriptions'
+]
 
 # Zope imports
 from zope.interface import implements
+from zope.schema.vocabulary import SimpleTerm
 
 # SQLObject/SQLBase
 from sqlobject import (
     SQLObjectNotFound, StringCol, SQLMultipleJoin, CONTAINSSTRING)
 
-# launchpad imports
-from canonical.database.sqlbase import SQLBase
-
-
-# interfaces and database 
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.webapp.vocabulary import (
+    NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError,
-    IBinaryAndSourcePackageName)
+    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 
 
 class BinaryPackageName(SQLBase):
@@ -79,16 +83,55 @@ class BinaryPackageNameSet:
             return BinaryPackageName(name=name)
 
 
-class BinaryAndSourcePackageName(SQLBase):
-    """See IBinaryAndSourcePackageName"""
+class BinaryPackageNameIterator(BatchedCountableIterator):
+    """An iterator for BinaryPackageNameVocabulary.
 
-    implements(IBinaryAndSourcePackageName)
+    Builds descriptions based on releases of that binary package name.
+    """
+    def getTermsWithDescriptions(self, results):
+        # Prefill the descriptions dictionary with the latest
+        # description uploaded for that package name.
+        descriptions = getBinaryPackageDescriptions(results)
+        return [SimpleTerm(obj, obj.name,
+                    descriptions.get(obj.name, "Not uploaded"))
+                for obj in results]
 
-    _table = 'BinaryAndSourcePackageNameView'
-    _idName = 'name'
-    _idType = str
-    _defaultOrder = 'name'
 
-    name = StringCol(dbName='name', notNull=True, unique=True,
-                     alternateID=True)
+class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+    """A vocabulary for searching for binary package names."""
+    _table = BinaryPackageName
+    _orderBy = 'name'
+    displayname = 'Select a Binary Package'
+    iterator = BinaryPackageNameIterator
+
+
+def getBinaryPackageDescriptions(results, use_names=False, max_title_length=50):
+    """Return a dict of descriptions keyed by package name.
+
+    See sourcepackage.py:getSourcePackageDescriptions, which is analogous.
+    """
+    if use_names:
+       clause = ("BinaryPackageName.name in %s" %
+                 sqlvalues([pn.name for pn in results]))
+    else:
+       clause = ("BinaryPackageName.id in %s" %
+                 sqlvalues([bpn.id for bpn in results]))
+
+    descriptions = {}
+    releases = BinaryPackageRelease.select(
+        """BinaryPackageRelease.binarypackagename =
+            BinaryPackageName.id AND
+           %s""" % clause,
+        clauseTables=["BinaryPackageRelease", "BinaryPackageName"],
+        orderBy=["-BinaryPackageRelease.datecreated"])
+
+    for release in releases:
+        binarypackagename = release.binarypackagename.name
+        if not descriptions.has_key(binarypackagename):
+            description = release.description.strip().replace("\n", " ")
+            if len(description) > max_title_length:
+                description = (release.description[:max_title_length]
+                              + "...")
+            descriptions[binarypackagename] = description
+    return descriptions
 

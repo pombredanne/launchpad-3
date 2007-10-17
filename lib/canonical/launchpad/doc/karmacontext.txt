@@ -3,36 +3,44 @@ Karma Context
 
 Now that we track the Product/Distribution in which a given karma-giving
 action was performed, we're able to find out who contributes the most to a
-given product.  We can have this on a per-category (Bug Management,
-Translations, etc) basis or in general, across all categories.
+given product/project/distribution.  We can have this on a per-category
+(Bug Management, Translations, etc) basis or in general, across all
+categories.
 
     >>> import operator
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
-    ...     ISourcePackageNameSet, IDistributionSet)
+    ...     ISourcePackageNameSet, IDistributionSet, IKarmaContext)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
+    >>> verifyObject(IKarmaContext, firefox)
+    True
+    >>> verifyObject(IKarmaContext, ubuntu)
+    True
+    >>> verifyObject(IKarmaContext, firefox.project)
+    True
+
     >>> [(person.name, karmavalue)
     ...  for person, karmavalue in firefox.getTopContributors(limit=3)]
-    [(u'name12', 105L), (u'sabdfl', 61L), (u'name16', 17L)]
+    [(u'name12', 66), (u'sabdfl', 27), (u'name16', 8)]
 
     >>> from canonical.launchpad.database.karma import KarmaCategory
     >>> bugs = KarmaCategory.byName('bugs')
     >>> top_bugmasters = firefox.getTopContributors(category=bugs, limit=2)
     >>> [(person.name, karmavalue) for person, karmavalue in top_bugmasters]
-    [(u'name12', 105L), (u'name16', 17L)]
+    [(u'name12', 66), (u'name16', 8)]
 
     >>> specs = KarmaCategory.byName('specs')
     >>> top_speccers = firefox.getTopContributors(category=specs, limit=1)
     >>> [(person.name, karmavalue) for person, karmavalue in top_speccers]
-    [(u'sabdfl', 61L)]
+    [(u'sabdfl', 27)]
 
 We also have a way of retrieving the top contributors of a given
-product/distribution grouped by categories.
+product/project/distribution grouped by categories.
 
     >>> contributors = ubuntu.getTopContributorsGroupedByCategory(limit=2)
     >>> sorted_categories = sorted(contributors.keys(),
@@ -41,8 +49,28 @@ product/distribution grouped by categories.
     ...     people = [(person.name, karmavalue) 
     ...               for person, karmavalue in contributors[category]]
     ...     print "%s: %s" % (category.title, people)
-    Bug Management: [(u'name16', 39L), (u'name12', 35L)]
-    Specification Tracking: [(u'sabdfl', 49L)]
+    Bug Management: [(u'name16', 26), (u'name12', 13)]
+    Specification Tracking: [(u'sabdfl', 37)]
 
+The top contributors of a project are the ones with the most karma in all
+products of that project.
 
+Note that Foo Bar's karma on the mozilla project is the sum of Foo Bar's
+karma on the firefox and thunderbird products, which are both part of
+the mozilla project.
+
+    >>> [(person.name, karmavalue)
+    ...  for person, karmavalue in firefox.project.getTopContributors(limit=3)]
+    [(u'name12', 66), (u'sabdfl', 27), (u'name16', 23)]
+
+    >>> [(person.name, karmavalue)
+    ...  for person, karmavalue in firefox.getTopContributors(limit=3)]
+    [(u'name12', 66), (u'sabdfl', 27), (u'name16', 8)]
+
+    >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
+    >>> thunderbird.project == firefox.project
+    True
+    >>> [(person.name, karmavalue)
+    ...  for person, karmavalue in thunderbird.getTopContributors(limit=3)]
+    [(u'name16', 15)]
 

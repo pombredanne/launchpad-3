@@ -1,4 +1,3 @@
-<tal:tag condition="view/update"/>
 <html
     xmlns="http://www.w3.org/1999/xhtml"
     xml:lang="en"
@@ -8,28 +7,13 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context Title Here</h3>
   <h1>Appoint driver</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_editform/editform">
-
-    <p metal:fill-slot="extra_info">
-      A "driver" is responsible for approving the
-      list of features and bugs that are supposed to be implemented or fixed
-      in any given major release.
-    </p>
-
+  <div metal:use-macro="context/@@launchpad_form/form">
   </div>
 
 </div>

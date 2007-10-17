@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -9,6 +8,12 @@
     <content class="canonical.launchpad.database.SourcePackageRelease">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackageRelease"
+        path_expression="string:${version}"
+        attribute_to_parent="sourcepackage"
+        />
 
     <browser:pages
       for="canonical.launchpad.interfaces.ISourcePackageRelease"
@@ -26,13 +31,36 @@
         template="../templates/sourcepackagerelease-portlet-details.pt"
         />
       <browser:page
-        name="+portlet-distroreleases"
-        template="../templates/sourcepackagerelease-portlet-distroreleases.pt"
+        name="+portlet-distroseries"
+        template="../templates/sourcepackagerelease-portlet-distroseries.pt"
         />
       <browser:page
         name="+portlet-details-content"
         template="../templates/sourcepackagerelease-portlet-details-content.pt"
         />
     </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
+    name="+open_questions_count"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    class="canonical.launchpad.browser.SourcePackageReleaseView"
+    permission="zope.Public">
+    <browser:page
+      name="+changelog"
+      template="../templates/sourcepackagerelease-changelog.pt"
+    />
+  </browser:pages>
+
+  <adapter
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
+    factory="canonical.launchpad.components.answertracker.sourcepackagerelease_to_questiontarget"
+    />
 
 </configure>

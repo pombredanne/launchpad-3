@@ -13,7 +13,7 @@
     <content class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <allow
         interface="
-          canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
+          canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
       <allow
@@ -26,44 +26,44 @@
 
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
-        <allow interface="canonical.launchpad.interfaces.ILinkData" />
+        <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
     </content>
 
     <adapter
-        for="canonical.launchpad.interfaces.ILinkData"
-        provides="canonical.launchpad.interfaces.ILink"
+        for="canonical.launchpad.webapp.interfaces.ILinkData"
+        provides="canonical.launchpad.webapp.interfaces.ILink"
         factory="canonical.launchpad.webapp.menu.MenuLink"
         />
 
     <content class="canonical.launchpad.webapp.menu.MenuLink">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.ILink"
+            interface="canonical.launchpad.webapp.interfaces.ILink"
             />
     </content>
 
     <adapter
-        for="canonical.launchpad.interfaces.ILinkData"
-        provides="canonical.launchpad.interfaces.IFacetLink"
+        for="canonical.launchpad.webapp.interfaces.ILinkData"
+        provides="canonical.launchpad.webapp.interfaces.IFacetLink"
         factory="canonical.launchpad.webapp.menu.FacetLink"
         />
 
     <content class="canonical.launchpad.webapp.menu.FacetLink">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IFacetLink"
+            interface="canonical.launchpad.webapp.interfaces.IFacetLink"
             />
     </content>
 
     <!-- Launchpad root object -->
     <utility
-        provides="canonical.launchpad.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         component="canonical.launchpad.webapp.publisher.rootObject"
         />
 
     <adapter
-        provides="canonical.launchpad.interfaces.ICanonicalUrlData"
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
         />
 
@@ -79,7 +79,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lp.dbschema.Item"
+        for="canonical.lazr.BaseItem"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -101,12 +101,70 @@
         name="count"
         />
 
+    <!-- TALES macro: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PageMacroDispatcher"
+        name="macro"
+        />
+
     <!-- TALES htmlform: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
         name="htmlform"
+        />
+
+    <!-- TALES image: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IKarmaCategory"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBuild"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.browser.PillarSearchItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
+        name="image"
         />
 
     <!-- TALES fmt: namespace -->
@@ -121,15 +179,17 @@
         name="fmt"
         />
 
-    <!-- The next directive should be registered for 'int' only.
-        However, there's a bug in adapter registration that stops
-        this working.  To be fixed in ZopeX3 RSN.
-        XXX: SteveAlexander, 2005-05-21.
-        -->
     <adapter
-        for="*"
+        for="int"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
+        name="lp"
+        />
+
+    <adapter
+        for="dict"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.GotoStructuralObject"
         name="lp"
         />
 
@@ -183,23 +243,30 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IPerson"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBranch"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBuild"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildFormatterAPI"
         name="fmt"
         />
 
@@ -218,7 +285,7 @@
         />
 
     <subscriber
-        for="canonical.launchpad.interfaces.IAfterTraverseEvent"
+        for="canonical.launchpad.webapp.interfaces.IAfterTraverseEvent"
         handler="canonical.launchpad.webapp.authentication.handle"
         />
 
@@ -285,14 +352,14 @@
     <!-- LaunchBag Utility -->
     <utility
         factory="canonical.launchpad.webapp.launchbag.LaunchBag"
-        provides="canonical.launchpad.interfaces.IOpenLaunchBag"
+        provides="canonical.launchpad.webapp.interfaces.IOpenLaunchBag"
         permission="zope.Public"
         />
 
     <content class="canonical.launchpad.webapp.launchbag.LaunchBag">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.ILaunchBag"
+            interface="canonical.launchpad.webapp.interfaces.ILaunchBag"
             />
     </content>
 
@@ -308,7 +375,7 @@
         /@@/launchpad-icon-small to access resource and resourceDirectory -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
@@ -322,7 +389,7 @@
         permission="zope.Public"
         template="../templates/rdf-macros.pt"
         />
-
+<!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
         <factory id="zope.da.LaunchpadDA" />
@@ -335,7 +402,7 @@
             interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
             />
     </content>
-
+-->
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->
@@ -369,30 +436,30 @@
         to view and adjust the visual rendering of the notifications.
     -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/root-index.pt"
+        template="../templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
@@ -410,6 +477,12 @@
         handler="canonical.database.revision.confirm_dbrevision_on_startup"
         />
 
+    <!-- Confirm that no main thread event handlers use the connection cache -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
@@ -425,5 +498,23 @@
         attributes="publishTraverse"
         />
     </content>
+
+    <!-- the URI class -->
+    <class class="canonical.launchpad.webapp.uri.URI">
+      <allow attributes="scheme userinfo host port path query fragment
+          authority hier_part
+          __str__ __repr__ __eq__ __ne__ replace resolve append contains
+          ensureSlash ensureNoSlash" />
+    </class>
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.SinglePopupWidget"
+      permission="zope.Public"
+      />
 
 </configure>

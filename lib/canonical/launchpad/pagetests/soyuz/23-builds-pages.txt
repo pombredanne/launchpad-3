@@ -16,15 +16,14 @@ according the selected buildstate, by default All
   ...     by state and "mismatch" if the page, erroneously,  provide only
   ...     part of the required arguments to enable filter by name.
   ...     """
-  ...     assert find_tag_by_id(contents, 'build_state') is not None
   ...     assert '<input type="submit" value="Update" />' in contents
   ...
-  ...     field_present = find_tag_by_id(contents, 'build_text')
-  ...     label_present = "with names containing:" in contents
+  ...     field_state = find_tag_by_id(contents, 'build_state') is not None
+  ...     field_name = find_tag_by_id(contents, 'build_text') is not None
   ...
-  ...     if label_present and field_present:
+  ...     if field_state and field_name:
   ...         return "State and Name present"
-  ...     elif not label_present and not field_present:
+  ...     elif field_state and not field_name :
   ...         return "State present, Name not present"
   ...     else:
   ...         return "mismatch"
@@ -42,21 +41,28 @@ For Distribution, it's possible to filter build results by state and name:
 For Distrorelease, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/ubuntu/hoary")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
-For DistroArchRelease, same as Distribution:
+For DistroArchSeries, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/ubuntu/hoary/i386")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
 For Builder, same as Distribution:
 
   >>> browser.open("http://launchpad.dev/+builds/bob")
-  >>> browser.getLink("Build History").click()
+  >>> browser.getLink("Show build history").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
+For Archive (PPA), same as Distribution:
+
+  >>> browser.open("http://launchpad.dev/~cprov/+archive")
+  >>> browser.getLink("View build records").click()
   >>> print check_builds_options(browser.contents)
   State and Name present
 
@@ -64,10 +70,16 @@ For SourcePackage, it's only possible to filter by state.
 
   >>> browser.open(
   ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
-  >>> browser.getLink("View Builds").click()
+  >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State present, Name not present
 
+The source package default state is "all states":
+
+  >>> soup = find_main_content(browser.contents)
+  >>> [results] = soup.findAll(attrs={'selected': 'selected'})
+  >>> print extract_text(results)
+  All states
 
 Check the contents of the distro builds list page.
 
@@ -82,55 +94,71 @@ initialised' one (fix bug #52704)
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
-  <...
+  >>> print find_tags_by_class(
+  ...     browser.contents, 'builds_list')[0].renderContents()
+  <BLANKLINE>
+  ...
+  ...FULLYBUILT...
+  ...hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE...
+  ...FULLYBUILT...
+  ...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
+  ...FAILEDTOUPLOAD...
+  ...i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE...
+  ...FAILEDTOBUILD...
+  ...i386 build of cdrkit 1.0 in ubuntu warty RELEASE...
+  ...FAILEDTOBUILD...
+  ...i386 build of foobar 1.0 in ubuntu warty RELEASE...
+
+  # We had too many results. Some of them are on the second batch.
+  >>> browser.getLink("Next").click()
+  >>> print find_tags_by_class(
+  ...     browser.contents, 'builds_list')[0].renderContents()
+  <BLANKLINE>
+  ...
   ...NEEDSBUILD...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE...
-
-  # We had too many results. Some of them are on the second batch.
-  >>> browser.getLink("Next").click()
-  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
-  <...
   ...SUPERSEDED...
-  ... i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE...
+  ...i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE...
   ...MANUALDEPWAIT...
   ...i386 build of libstdc++ b8p in ubuntu hoary RELEASE...
-  ...Missing Dependencies...
-  ...cpp (&gt;= 4:4.0.1-3), gcc-4.0 (&gt;= 4.0.1-2)...
-  ...Build started:...
-  ...2006-02-27 23:53:59 UTC...
-  ...Bob The Builder...
-  ...Build finished:...
-  ...2006-02-28 00:00:01 UTC...
+  ...Missing dep...
+  ...cpp...gcc-4.0...
+  ...Build star...
+  ...2006-02-27...
+  ...finis...
+  ...2006-02-28...
   ...six minutes...see the log...
-
-  >>> browser.getControl(name="build_state").value = ['built']
-  >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
 
 Check the results of some searches on build state.
 
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of pmount 0.1-1 in ubuntu hoary...
-  ...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
+  >>> print browser.contents
+  <BLANKLINE>
+  ...
+  ...hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE...
+  ...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
+  ...
 
   >>> browser.getControl(name="build_state").value = ['depwait']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of libstdc++ b8p in ubuntu hoary...'
+  >>> print browser.contents
+  <BLANKLINE>
+  ...
+  ...i386 build of libstdc++ b8p in ubuntu hoary...
+  ...
 
   >>> browser.getControl(name="build_state").value = ['failed']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of pmount 0.1-1 in ubuntu warty...'
-
+  >>> print browser.contents
+  <BLANKLINE>
+  ...
+  ...i386 build of pmount 0.1-1 in ubuntu warty...
+  ...
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
@@ -156,13 +184,13 @@ to raise the correct exception:
 Check if page still working for sourcepackages with no builds. (bug #62545)
 
   >>> browser.open(
-  ...    "http://launchpad.dev/ubuntu/hoary/+source/pmount/+builds")
+  ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
 
   >>> print find_tag_by_id(browser.contents, 'empty-result')
    <div id="empty-result">
-           No builds for pmount in Test Distro Hoary.
+           No builds for mozilla-firefox in Test Distro Hoary.
    </div>
 
 
@@ -178,29 +206,38 @@ doesn't have any builds.
   >>> browser.contents
   '...No builds for Debian GNU/Linux...'
 
-Succesfully built Build page provides link(s) to the produced
-binaries independent of their context, the raw IBinaryPackageRelease
-content class/page.
 
-Let's find a build with reasonable contents:
+== Partner builds ==
 
-  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
-  >>> browser.getControl(name="build_state").value = ['built']
-  >>> browser.getControl("Update").click()
-  >>> browser.getLink(
-  ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
-  ...     'warty RELEASE').click()
-  >>> browser.url
-  'http://launchpad.dev/+builds/+build/2'
+Builds of partner packages show up on the builds page as any other package
+from the primary archive.
 
-This build produced one BinaryPackage, called 'mozilla-firefox 0.9',
-which is presented in the right portlet, called 'Resulting Binaries'.
-Let's just check if the page is presented without errors (see bug
-#76163):
+  >>> browser.open(
+  ...    "http://launchpad.dev/ubuntu//+builds?build_text="
+  ...    "commercialpackage&build_state=built")
+  >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
+  i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
+  ...
 
-  >>> browser.getLink('mozilla-firefox 0.9').click()
-  >>> browser.url
-  'http://launchpad.dev/+builds/+build/2/mozilla-firefox'
+And also on the distro series builds page:
 
-XXX cprov 20061217: this pages is a bad joke, it simply links to
-binaries mentioned in package relationship without any verification.
+  >>> browser.open("http://launchpad.dev/ubuntu/breezy-autotest/+builds?build_text=commercialpackage&build_state=built")
+  >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
+  i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
+  ...
+
+
+== Upload status ==
+
+A (distro) source package release page shows any builds for that source and
+the status of the build.  If the build has been uploaded, then an upload
+status is shown in parentheses after the build status.
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
+    >>> print extract_text(find_tag_by_id(browser.contents,"portlet-builds"))
+    Builds of mozilla-firefox - 0.9
+    warty hppa Successfully built
+    hoary i386 Currently building
+    breezy-autotest i386 Successfully built (NEW)
+    warty i386 Successfully built
+

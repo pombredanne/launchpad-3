@@ -1,0 +1,71 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  i18n_domain="launchpad">
+
+  <!-- CodeImport -->
+
+  <content class="canonical.launchpad.database.CodeImport">
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImport"
+      />
+    <require
+      permission="launchpad.Edit"
+      set_schema="canonical.launchpad.interfaces.ICodeImport"
+      />
+  </content>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ICodeImport"
+    path_expression="string:+code-import"
+    attribute_to_parent="branch"
+    rootsite="code" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICodeImport"
+    name="+index"
+    layer="canonical.launchpad.layers.CodeLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ICodeImport"
+    class="canonical.launchpad.browser.CodeImportView"
+    name="+index"
+    template="../templates/codeimport.pt"
+    permission="launchpad.View"
+    />
+
+  <!-- CodeImportSet -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportSet"
+    provides="canonical.launchpad.interfaces.ICodeImportSet" >
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportSet" />
+  </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    path_expression="string:+code-imports"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    rootsite="code" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    name="+index"
+    layer="canonical.launchpad.layers.CodeLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    class="canonical.launchpad.browser.CodeImportSetView"
+    name="+index"
+    template="../templates/codeimport-list.pt"
+    permission="launchpad.View"
+    />
+
+</configure>

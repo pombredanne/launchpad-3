@@ -29,6 +29,9 @@
         <mirror:country tal:content="mirror/country/name">
           France
         </mirror:country>
+        <mirror:countrycode tal:content="mirror/country/iso3166code2">
+          FR
+        </mirror:countrycode>
       </mirror:location>
 
       <pubDate tal:condition="mirror/last_probe_record"

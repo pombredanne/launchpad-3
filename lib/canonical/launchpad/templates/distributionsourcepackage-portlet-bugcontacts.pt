@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-bug-contacts">
 
   <h2>Bug contacts</h2>
 
@@ -8,7 +12,7 @@
     <b>For this package:</b>
     <br />
     <div tal:condition="pkg_bug_contacts">
-      <ul class="people">
+      <ul class="person">
         <li tal:repeat="pkg_bug_contact pkg_bug_contacts">
           <a href="#"
              tal:content="pkg_bug_contact/bugcontact/browsername"
@@ -25,7 +29,7 @@
     <b tal:content="string:For all ${distribution/name/title} packages:">For all Debian packages:</b>
     <br />
     <div tal:condition="distribution/bugcontact">
-      <ul class="people">
+      <ul class="person">
         <li>
           <a href="#"
              tal:content="distribution/bugcontact/browsername"

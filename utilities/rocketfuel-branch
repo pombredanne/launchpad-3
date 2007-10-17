@@ -1,0 +1,33 @@
+#! /bin/bash
+
+#
+# Creates a new branch of RF trunk
+#
+
+LPBRANCHES="~/canonical/lp-branches"
+# force tilde (~) expansion
+LPBRANCHES=$(eval echo ${LPBRANCHES})
+
+if [ "x$1" == "x" ]; then 
+    echo "Usage: $0 new-branch-name"
+    echo "Example: '$0 fixes-bug-54356'"
+    exit 2
+fi
+
+if [ -e "${LPBRANCHES}/$1" ]; then
+    echo "Error: '$1' already exists"
+    exit 1
+fi
+
+cd ${LPBRANCHES}
+echo "Checking if we are online..."
+ping -w 10 chinstrap.canonical.com
+if [ $? -eq 0 ]; then
+  echo "Ensuring we are up to date..."
+  trunk/utilities/rocketfuel-get
+fi
+bzr branch trunk $1
+cd $1
+utilities/link-external-sourcecode.sh ../../lp-sourcedeps
+make
+

@@ -1,13 +1,18 @@
-<div class="portlet" tal:condition="context/spec_links">
-  <h2>Specifications</h2>
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-blueprints"
+  tal:condition="context/spec_links">
+  <h2>Blueprints</h2>
   <div class="portletBody portletContent">
-    <ul class="spec">
+    <ul class="blueprint">
       <li tal:repeat="speclink context/spec_links">
         <a tal:attributes="href speclink/specification/fmt:url"
            tal:content="speclink/specification/title">Spec title</a>
         <a tal:condition="speclink/required:launchpad.AnyPerson"
            tal:attributes="href speclink/fmt:url"
-          >(edit)</a><tal:block condition="speclink/summary"><br/>
+          ><img src="/@@/edit" title="Change this blueprint link" /></a><tal:block condition="speclink/summary"><br/>
         <i tal:content="speclink/summary">summary</i></tal:block>
       </li>
     </ul>

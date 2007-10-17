@@ -1,11 +1,10 @@
 Lets try to change dpl-2080's name to election-2100
 
-  >>> team_admin_browser = browser
-  >>> team_admin_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser = setupBrowser(
+  ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
   ...   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
-  >>> team_admin_browser.getLink('Edit this Poll').click()
+  >>> team_admin_browser.getLink('Change details').click()
 
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+edit'
@@ -59,7 +58,7 @@ We successfully change the polls name
 Trying to edit a poll that's already open isn't possible.
 
   >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team/')
-  >>> team_admin_browser.getLink('Polls').click()
+  >>> team_admin_browser.getLink('Show polls').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+polls'
 
@@ -67,14 +66,14 @@ Trying to edit a poll that's already open isn't possible.
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple'
 
-  >>> team_admin_browser.getLink('Edit this Poll').click()
+  >>> team_admin_browser.getLink('Change details').click()
   >>> "This poll can't be edited" in team_admin_browser.contents
   True
 
 It's also not possible to edit a poll that's already closed.
 
   >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team/')
-  >>> team_admin_browser.getLink('Polls').click()
+  >>> team_admin_browser.getLink('Show polls').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+polls'
 
@@ -85,6 +84,6 @@ It's also not possible to edit a poll that's already closed.
   >>> 'Voting has closed' in team_admin_browser.contents
   True
 
-  >>> team_admin_browser.getLink('Edit this Poll').click()
+  >>> team_admin_browser.getLink('Change details').click()
   >>> "This poll can't be edited" in team_admin_browser.contents
   True

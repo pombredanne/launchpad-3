@@ -1,5 +1,4 @@
-Bug Notification Email
-======================
+== Bug Notification Email ==
 
 This document describes the internal workings of how bug notification
 emails are generated and how said emails are formatted. It does not
@@ -29,11 +28,10 @@ examples that follow:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet,
-    ...     ICve)
+    ...     ICve, IEmailAddressSet)
     >>> from canonical.launchpad.components.bug import BugDelta
 
-Filing a bug
-------------
+= Filing a bug =
 
 generate_bug_add_email accepts one argument: the IBug that was just
 added. With that, it generates an appropriately-formatted notification
@@ -42,6 +40,7 @@ message, and returns it as a (subject, body) tuple.
 So, let's pretend that we filed bug 4 just now:
 
     >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.tags = []
 
 Let's take a look at what the notification email looks like:
 
@@ -54,16 +53,35 @@ Let's take a look at what the notification email looks like:
     Malone pages that use more complex layouts with portlets and fancy CSS
     are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
 
 (In reality, the importance of a newly-reported bug would not have been
 decided yet, so it would appear as Undecided.)
 
+If the filed bug would have tags, these are included in the notification
+as well.
 
-Editing a bug
--------------
+    >>> bug_four.tags = [u'foo', u'bar']
+
+    >>> subject, body = generate_bug_add_email(bug_four)
+    >>> subject
+    u'[Bug 4] Reflow problems with complex page layouts'
+    >>> print body
+    Public bug reported:
+    <BLANKLINE>
+    Malone pages that use more complex layouts with portlets and fancy CSS
+    are sometimes not getting properly reflowed after rendering.
+    <BLANKLINE>
+    ** Affects: firefox
+         Importance: Medium
+             Status: New
+    <BLANKLINE>
+    ** Tags: bar foo
+
+
+= Editing a bug =
 
 get_bug_edit_notification_texts accepts an object that provides
 IBugDelta, and returns a list of text representations of the changes
@@ -213,8 +231,7 @@ If we change one tag, it's basically removing one and adding another:
     ** Tags removed: bar
     -----------------------------
 
-Adding a new bug task
----------------------
+= Adding a new bug task =
 
 Because adding a new task is sort of like "editing" a bug,
 get_bug_edit_notification_texts generates text representations when a
@@ -234,25 +251,25 @@ pretend we had just added task five:
     ...     print "-----------------------------"
     ** Also affects: mozilla-firefox (Ubuntu)
        Importance: Medium
-           Status: Unconfirmed
+           Status: New
     -----------------------------
 
-Editing a bug task
-------------------
+= Editing a bug task =
 
 As you might expect, get_bug_edit_notification_texts handles generating the
 text representations of the changes when a bug task is edited.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskDelta, IBugTaskSet
-    >>> from canonical.launchpad.components.bugtask import BugTaskDelta
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IBugTaskDelta, IBugTaskSet)
+    >>> from canonical.launchpad.database.bugtask import BugTaskDelta
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
-    >>> edited_bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> edited_bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> edited_bugtask.transitionToAssignee(sample_person)
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=edited_bugtask,
-    ...     status={'old' : BugTaskStatus.UNCONFIRMED, 'new' : edited_bugtask.status},
+    ...     status={'old' : BugTaskStatus.NEW, 'new' : edited_bugtask.status},
     ...     assignee={'old' : None, 'new' : edited_bugtask.assignee})
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -262,16 +279,16 @@ text representations of the changes when a bug task is edited.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Changed in: ubuntu-product (upstream)
-         Assignee: (unassigned) => Sample Person
-           Status: Unconfirmed => Confirmed
+    ** Changed in: tomcat
+         Assignee: (unassigned) => Sample Person (name12)
+           Status: New => Confirmed
     -----------------------------
 
 Let's take a look at how it looks like when a distribution task is
 edited:
 
     >>> debian_bugtask = getUtility(IBugTaskSet).get(5)
-    >>> print debian_bugtask.targetname
+    >>> print debian_bugtask.bugtargetname
     mozilla-firefox (Debian)
     >>> debian_bugtask.transitionToAssignee(None)
     >>> bugtask_delta = BugTaskDelta(
@@ -286,11 +303,10 @@ edited:
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: mozilla-firefox (Debian)
-         Assignee: Sample Person => (unassigned)
+         Assignee: Sample Person (name12) => (unassigned)
     -----------------------------
 
-Adding and editing web links
-----------------------------
+= Adding and editing web links =
 
 Adding a web link can be seen as "editing" a bug.
 
@@ -344,8 +360,7 @@ modified link as having been "Added" (though no actual "adding" or
     ** Web link added: http://www.example.com/foo/bar
     -----------------------------
 
-Adding and editing bug watches
-------------------------------
+= Adding and editing bug watches =
 
 Here's an example that demonstrates the notification email that gets
 generated when a bug watch is added:
@@ -417,15 +432,14 @@ We can also add a bugwatch while adding a new bugtask.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Also affects: firefox (upstream) via
+    ** Also affects: firefox via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
        Importance: High
-           Status: Unconfirmed
+           Status: New
     -----------------------------
 
 
-Adding and editing CVE relationships
-------------------------------------
+= Adding and editing CVE relationships =
 
 Adding a CVE will generate a notification that looks as follows:
 
@@ -479,14 +493,13 @@ Similarly, removing a CVE ref will result in an email:
     ** CVE removed: http://cve.mitre.org/whatsit?id=CVE-2004-0719
     -----------------------------
 
-Adding attachments
-------------------
+= Adding attachments =
 
 Adding an attachment will generate a notification that looks as follows:
 
     >>> class MockLibraryFile:
     ...     def __init__(self, url):
-    ...         self.url = url
+    ...         self.http_url = url
     >>> class MockAttachment:
     ...     def __init__(self, title, libraryfile):
     ...         self.title = title
@@ -506,3 +519,49 @@ Adding an attachment will generate a notification that looks as follows:
     ** Attachment added: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
+
+= Generation of From: and Reply-To: addresses =
+
+The Reply-To: and From: addresses used to send email are generated in a
+pair of handy functions defined in mailnotification.py:
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     get_bugmail_from_address, get_bugmail_replyto_address)
+
+The Reply-To address generation is straightforward:
+
+    >>> get_bugmail_replyto_address(bug_four)
+    u'Bug 4 <4@bugs.launchpad.net>'
+
+The From address generator handles a few special cases. The trivial case
+is, well, trivial. Stuart has four email addresses:
+
+    >>> stub = getUtility(IPersonSet).getByName("stub")
+    >>> [(email.email, email.status.name) for email 
+    ...  in getUtility(IEmailAddressSet).getByPerson(stub)]
+    [(u'stuart.bishop@canonical.com', 'PREFERRED'),
+     (u'stuart@stuartbishop.net', 'VALIDATED'),
+     (u'stub@fastmail.fm', 'NEW'),
+     (u'zen@shangri-la.dropbear.id.au', 'OLD')]
+
+But we use his preferred one:
+
+    >>> get_bugmail_from_address(stub, bug_four)
+    'Stuart Bishop <stuart.bishop@canonical.com>'
+
+Now, mpo doesn't have a validated email address, but we pick out the
+first address we find:
+
+    >>> mpo = getUtility(IPersonSet).getByName("mpo")
+    >>> get_bugmail_from_address(mpo, bug_four)
+    '=?utf-8?b?TWF0dGkgUMO2bGzDpA==?= <mpo@iki.fi>'
+
+(As you can see in the above example, get_bugmail_from_address() takes
+care of encoding the person's displayname correctly.)
+
+The team janitor doesn't have an email address at all!
+
+    >>> janitor = getUtility(IPersonSet).getByName("team-membership-janitor")
+    >>> get_bugmail_from_address(janitor, bug_four)
+    'Team Membership Janitor <4@bugs.launchpad.net>'
+

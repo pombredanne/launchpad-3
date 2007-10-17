@@ -13,13 +13,16 @@
    id="svg2"
    sodipodi:version="0.32"
    inkscape:version="0.44"
-   sodipodi:docbase="/home/mpt/hacking/lpsrc/trivial/lib/canonical/launchpad/images"
-   sodipodi:docname="demo.svg">
+   sodipodi:docbase="/home/mpt/hacking/lpsrc/2007-01-graphics/lib/canonical/launchpad/images"
+   sodipodi:docname="demo.svg"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2007-01-graphics/lib/canonical/launchpad/images/demo.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs4" />
   <sodipodi:namedview
      id="base"
-     pagecolor="#ddd"
+     pagecolor="white"
      bordercolor="#666666"
      borderopacity="1.0"
      gridtolerance="10000"
@@ -29,7 +32,7 @@
      inkscape:pageshadow="2"
      inkscape:zoom="1"
      inkscape:cx="375"
-     inkscape:cy="929.53449"
+     inkscape:cy="929.03449"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      inkscape:window-width="916"
@@ -65,5 +68,5 @@
            x="157.14285"
            y="209.50504" /></flowRegion><flowPara
          id="flowPara1878"
-         style="font-size:72px;font-weight:bold;fill:#e6e6e6">demo</flowPara></flowRoot>  </g>
+         style="font-size:72px;font-weight:bold;fill:#eee;fill-opacity:1">demo</flowPara></flowRoot>  </g>
 </svg>

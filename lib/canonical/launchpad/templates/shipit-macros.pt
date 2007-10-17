@@ -14,37 +14,39 @@
 
   <table tal:attributes="cols view/ordered_architectures/count:len"
          style="width: auto; margin-left: 0">
-    <tr>
-      <thead>
+    <thead>
+      <tr>
         <th>&nbsp;</th>
         <tal:headers repeat="arch view/ordered_architectures">
           <th tal:content="arch/title" />
         </tal:headers>
-      </thead>
-    </tr>
-    <tr tal:repeat="row widgets_matrix">
-      <tal:block repeat="cell row">
-      <tal:comment replace="nothing">
-        We need to save the widget with this nocall: here because if we
-        don't do that, our dear zope will turn it into a string for us.
-      </tal:comment>
-      <tal:save-widget define="widget nocall:cell">
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="row widgets_matrix">
+        <tal:block repeat="cell row">
+        <tal:comment replace="nothing">
+          We need to save the widget with this nocall: here because if we
+          don't do that, our dear zope will turn it into a string for us.
+        </tal:comment>
+        <tal:save-widget define="widget nocall:cell">
 
-        <tal:is-header condition="repeat/cell/start">
-          <th tal:content="cell" />
-        </tal:is-header>
-        <tal:is-not-header condition="not: repeat/cell/start">
-          <td style="text-align: center">
-            <tal:block condition="cell">
-              <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
-            </tal:block>
-            <span tal:condition="not: cell">n/a</span>
-          </td>
-        </tal:is-not-header>
+          <tal:is-header condition="repeat/cell/start">
+            <th tal:content="cell" />
+          </tal:is-header>
+          <tal:is-not-header condition="not: repeat/cell/start">
+            <td style="text-align: center">
+              <tal:block condition="cell">
+                <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
+              </tal:block>
+              <span tal:condition="not: cell">n/a</span>
+            </td>
+          </tal:is-not-header>
 
-      </tal:save-widget>
-      </tal:block>
-    </tr>
+        </tal:save-widget>
+        </tal:block>
+      </tr>
+    </tbody>
   </table>
 
 </metal:quantity_widgets>
@@ -64,26 +66,9 @@
     >Label:</label>
   </th>
   <td>
-    <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+    <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
   </td>
 </metal:display_widget>
-
-
-<metal:display_raw_widget define-macro="display_raw_widget">
-  <tal:comment replace="nothing">
-    This macro expects the following variables defined:
-        :widget: The widget that's going to be rendered.
-  </tal:comment>
-
-  <div tal:attributes="class python:error and 'error' or None"
-       tal:define="error widget/error">
-    <span tal:replace="structure widget" />
-    <span tal:condition="widget/required"
-          class="fieldRequired"
-          title="Required">(Required)</span>
-    <div tal:condition="error" tal:content="structure error" />
-  </div>
-</metal:display_raw_widget>
 
 
 <metal:shipping_details define-macro="shipping_details">
@@ -156,15 +141,25 @@
 
   <ul>
     <li tal:repeat="pastorder user/pastShipItRequests">
-      <span tal:replace="pastorder/getTotalCDs" /> CDs requested in
-      <span tal:replace="pastorder/daterequested/fmt:date" />.
+      <span tal:replace="pastorder/getTotalCDs" /> CDs requested
+      <span
+        tal:attributes="title pastorder/daterequested/fmt:datetime"
+        tal:content="pastorder/daterequested/fmt:displaydate">
+        2005-12-31
+      </span>.
       <span tal:condition="pastorder/isCancelled">This request was
         cancelled, so no CDs were shipped.</span>
       <tal:notcancelled tal:condition="not: pastorder/isCancelled">
         <tal:shipped condition="pastorder/shipment">
           <span tal:replace="pastorder/getTotalApprovedCDs" />
-          CDs approved and sent to the shipping company in
-          <span tal:replace="pastorder/shipment/shippingrun/datecreated/fmt:date" />.
+          CDs were approved and sent to the shipping company
+          <span
+            tal:attributes="
+              title pastorder/shipment/shippingrun/datecreated/fmt:datetime"
+            tal:content="
+              pastorder/shipment/shippingrun/datecreated/fmt:displaydate">
+          2006-02-13
+          </span>.
           <strong>Please note requests usually take from 4 to 6 weeks to
             deliver, depending on the country of shipping.</strong>
         </tal:shipped>
@@ -185,16 +180,16 @@
                     xml:lang default_language|default;">
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Launchpad style sheet -->
-    <style type="text/css"
-        media="screen">@import url(/@@/launchpad.css);</style>
-    <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/@@/launchpad.js"></script>
-    <script type="text/javascript" src="/@@/sorttable.js"></script>
 
+    <tal:comment condition="nothing">
+      We want this here to make sure that whatever is in shipit.css overrides
+      things coming from ubuntu.com's css.
+    </tal:comment>
     <metal:extra-head define-slot="extra-head" />
-
     <metal:block define-slot="head_epilogue"></metal:block>
+
+    <style type="text/css" media="screen" >
+      @import url(/+icing/shipit.css);</style>
 </head>
 
   <body>

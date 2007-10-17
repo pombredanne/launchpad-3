@@ -2,36 +2,43 @@
 
 __metaclass__ = type
 
+from zope.publisher.publish import mapply
+
+from new import instancemethod
 import thread
 import traceback
-from new import instancemethod
-
-from zope.interface import implements, providedBy
-from zope.component import getUtility, queryView
-from zope.event import notify
-from zope.app import zapi  # used to get at the adapters service
-
-import zope.app.publication.browser
-from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.publisher.interfaces import IPublishTraverse, Retry, Redirect
-
-import transaction
-
-from zope.security.proxy import removeSecurityProxy
-from zope.security.interfaces import Unauthorized
-from zope.security.management import newInteraction
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
-
-from canonical.launchpad.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent,
-    IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
-import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-import canonical.launchpad.webapp.adapter as da
-from canonical.config import config
+import urllib
 
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
+
+import transaction
+
+from zope.app import zapi  # used to get at the adapters service
+import zope.app.publication.browser
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.component import getUtility, queryView
+from zope.event import notify
+from zope.interface import implements, providedBy
+
+from zope.publisher.interfaces import IPublishTraverse, Retry
+from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
+from zope.security.management import newInteraction
+
+from canonical.config import config
+from canonical.launchpad.webapp.interfaces import (
+    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
+    BeforeTraverseEvent, OffsiteFormPostError)
+import canonical.launchpad.layers as layers
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+import canonical.launchpad.webapp.adapter as da
+from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from canonical.launchpad.webapp.vhosts import allvhosts
+
 
 __all__ = [
     'LoginRoot',
@@ -71,22 +78,15 @@ class LaunchpadBrowserPublication(
         self.db = db
 
     def annotateTransaction(self, txn, request, ob):
-        """Set some useful meta-information on the transaction. This
-        information is used by the undo framework, for example.
+        """See `zope.app.publication.zopepublication.ZopePublication`.
 
-        This method is not part of the `IPublication` interface, since
-        it's specific to this particular implementation.
+        We override the method to simply save the authenticated user id
+        in the transaction.
         """
         # It is possible that request.principal is None if the principal has
         # not been set yet.
-
         if request.principal is not None:
             txn.setUser(request.principal.id)
-
-        # Work around methods that are usually used for views
-        bare = removeSecurityProxy(ob)
-        if isinstance(bare, instancemethod):
-            ob = bare.im_self
 
         return txn
 
@@ -118,9 +118,9 @@ class LaunchpadBrowserPublication(
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
         #
-        # XXX: Move this to SQLOS, in a method that is subscribed to the
-        # transaction begin event rather than hacking it into traversal.
-        # -- Steve Alexander, Tue Dec 14 13:15:06 UTC 2004
+        # XXX Steve Alexander 2004-12-14: Move this to SQLOS, in a method
+        # that is subscribed to the transaction begin event rather than
+        # hacking it into traversal.
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
@@ -174,8 +174,12 @@ class LaunchpadBrowserPublication(
 
         request.setPrincipal(p)
         self.maybeRestrictToTeam(request)
+        self.maybeBlockOffsiteFormPost(request)
 
     def maybeRestrictToTeam(self, request):
+
+        from canonical.launchpad.interfaces import (
+            IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
         restrict_to_team = config.launchpad.restrict_to_team
         if not restrict_to_team:
             return
@@ -209,10 +213,114 @@ class LaunchpadBrowserPublication(
             else:
                 location = '/%s' % restrictedinfo
 
+        non_restricted_url = self.getNonRestrictedURL(request)
+        if non_restricted_url is not None:
+            location += '?production=%s' % urllib.quote(non_restricted_url)
+
         request.response.setResult('')
         request.response.redirect(location, temporary_if_possible=True)
         # Quash further traversal.
         request.setTraversalStack([])
+
+    def getNonRestrictedURL(self, request):
+        """Returns the non-restricted version of the request URL.
+
+        The intended use is for determining the equivalent URL on the
+        production Launchpad instance if a user accidentally ends up
+        on a restrict_to_team Launchpad instance.
+
+        If a non-restricted URL can not be determined, None is returned.
+        """
+        base_host = config.launchpad.vhosts.mainsite.hostname
+        production_host = config.launchpad.non_restricted_hostname
+        # If we don't have a production hostname, or it is the same as
+        # this instance, then we can't provide a nonRestricted URL.
+        if production_host is None or base_host == production_host:
+            return None
+
+        # Are we under the main site's domain?
+        uri = URI(request.getURL())
+        if not uri.host.endswith(base_host):
+            return None
+
+        # Update the hostname, and complete the URL from the request:
+        new_host = uri.host[:-len(base_host)] + production_host
+        uri = uri.replace(host=new_host, path=request['PATH_INFO'])
+        query_string = request.get('QUERY_STRING')
+        if query_string:
+            uri = uri.replace(query=query_string)
+        return str(uri)
+
+    def maybeBlockOffsiteFormPost(self, request):
+        """Check if an attempt was made to post a form from a remote site.
+
+        The OffsiteFormPostError exception is raised if the following
+        holds true:
+          1. the request method is POST
+          2. the HTTP referer header is not empty
+          3. the host portion of the referrer is not a registered vhost
+        """
+        if request.method != 'POST':
+            return
+        referrer = request.getHeader('referer') # match HTTP spec misspelling
+        if not referrer:
+            return
+        # XXX: jamesh 2007-04-26 bug=98437:
+        # The Zope testing infrastructure sets a default (incorrect)
+        # referrer value of "localhost" or "localhost:9000" if no
+        # referrer is included in the request.  We let it pass through
+        # here for the benefits of the tests.  Web browsers send full
+        # URLs so this does not open us up to extra XSRF attacks.
+        if referrer in ['localhost', 'localhost:9000']:
+            return
+        # Extract the hostname from the referrer URI
+        try:
+            hostname = URI(referrer).host
+        except InvalidURIError:
+            hostname = None
+        if hostname not in allvhosts.hostnames:
+            raise OffsiteFormPostError(referrer)
+
+    def callObject(self, request, ob):
+
+        # Don't render any content on a redirect.
+        if request.response.getStatus() in [301, 302, 303, 307]:
+            return ''
+
+        # Set the launchpad user-id and page-id (if available) in the
+        # wsgi environment, so that the request logger can access it.
+        request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
+        usedfor = getattr(removeSecurityProxy(ob), '__used_for__', None)
+        if usedfor is not None:
+            name = getattr(removeSecurityProxy(ob), '__name__', '')
+            pageid = '%s:%s' % (usedfor.__name__, name)
+            request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
+        return mapply(ob, request.getPositionalArguments(), request)
+
+    def afterCall(self, request, ob):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Our implementation aborts() the transaction on read-only requests.
+        Because of this we cannot chain to the superclass and implement
+        the whole behaviour here.
+        """
+
+        # Annotate the transaction with user data. That was done by
+        # zope.app.publication.zopepublication.ZopePublication.
+        txn = transaction.get()
+        self.annotateTransaction(txn, request, ob)
+
+        # Abort the transaction on a read-only request.
+        if request.method in ['GET', 'HEAD']:
+            txn.abort()
+        else:
+            txn.commit()
+
+        # Don't render any content for a HEAD.  This was done
+        # by zope.app.publication.browser.BrowserPublication
+        if request.method == 'HEAD':
+            request.response.setResult('')
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -253,6 +361,9 @@ class LaunchpadBrowserPublication(
         # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
+        # Retry the request if we get a database disconnection.
+        if retry_allowed and isinstance(exc_info[1], da.DisconnectionError):
+            raise Retry(exc_info)
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,
                                    retry_allowed)
@@ -268,4 +379,26 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
         da.clear_request_started()
+
+        # Maintain operational statistics.
+        OpStats.stats['requests'] += 1
+
+        # Increment counters for HTTP status codes we track individually
+        # NB. We use IBrowserRequest, as other request types such as
+        # IXMLRPCRequest use IHTTPRequest as a superclass.
+        # This should be fine as Launchpad only deals with browser
+        # and XML-RPC requests.
+        if IBrowserRequest.providedBy(request):
+            OpStats.stats['http requests'] += 1
+            status = request.response.getStatus()
+            if status == 404: # Not Found
+                OpStats.stats['404s'] += 1
+            elif status == 500: # Unhandled exceptions
+                OpStats.stats['500s'] += 1
+            elif status == 503: # Timeouts
+                OpStats.stats['503s'] += 1
+
+            # Increment counters for status code groups.
+            OpStats.stats[str(status)[0] + 'XXs'] += 1
+
 

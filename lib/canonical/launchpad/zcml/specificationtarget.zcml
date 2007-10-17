@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -17,11 +16,11 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IHasSpecifications"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/specificationtarget-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+categorized"
       template="../templates/specificationtarget-categorized.pt" />
@@ -39,33 +38,13 @@
       template="../templates/specificationtarget-portlet-latestspecs.pt" />
   </browser:pages>
 
-  <browser:addform
-    name="+addspec"
+  <browser:page
+    name="+register-a-blueprint-button"
     for="canonical.launchpad.interfaces.ISpecificationTarget"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationAddView"
-    label="Register a feature specification"
-    fields="name title specurl summary status owner 
-            assignee drafter approver"
-    keyword_arguments="name title specurl summary status
-                       owner assignee drafter approver"
-    permission="launchpad.AnyPerson"
-    template="../templates/specification-add.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-    <browser:widget
-      field="summary"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="6"
-      width="60"
-      />
-    <browser:widget
-      field="specurl"
-      class="zope.app.form.browser.TextWidget"
-      displayWidth="60" />
-  </browser:addform>
+    class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+    permission="zope.Public"
+    />
+
 
 </facet>
 

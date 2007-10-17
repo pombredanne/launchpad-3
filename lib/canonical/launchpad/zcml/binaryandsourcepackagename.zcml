@@ -1,0 +1,20 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <facet facet="overview">
+
+    <!-- BinaryAndSourcePackagename -->
+    <content class="canonical.launchpad.database.BinaryAndSourcePackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
+    </content>
+
+    <vocabulary
+      name="BinaryAndSourcePackageName"
+      factory="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
+      />
+
+  </facet>
+</configure>

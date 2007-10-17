@@ -1,93 +1,42 @@
-= Branches Overview =
+= Product Branches Overview =
 
-Products should link their branch listing page.
+Products link their branch listing page.
 
-  >>> browser.open('http://launchpad.dev/gnome-terminal')
-  >>> browser.getLink('Code').url
-  'http://code.launchpad.dev/gnome-terminal/'
+   >>> browser.open('http://launchpad.dev/gnome-terminal')
+   >>> browser.getLink('Code').click()
+   >>> print browser.title
+   GNOME Terminal's Bazaar branches registered in Launchpad
 
-There are two listings of branches for a product. The short tabular listing,
-and the detailed branch listing that includes branch summaries and more
-hyperlinks. We'll use the presence of the summary for the Gnome Terminal
-Mainline branch to distinguish the pages.
+We are be able to display a list of branches for a product at +branches.
 
-  >>> gterm_main_summary = "Release branch of GNOME Terminal for the GNOME 2.6 environment."
+   >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
+   >>> print browser.title
+   GNOME Terminal's Bazaar branches registered in Launchpad
+  
+== Default page for code site ==
 
-We should be able to display a list of branches for a product at +branches.
+When going directly to a product on the code rootsite for launchpad,
+the +branches is the default page shown.
 
-  >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
-  >>> gterm_main_summary in browser.contents
-  False
+   >>> browser.open('http://code.launchpad.dev/applets')
+   >>> print browser.title
+   Gnome Applets's Bazaar branches registered in Launchpad
 
-And another at +branchlisting. That one is the detailed branch listing.
+If there are not any branches, a relevant message is shown.
 
-  >>> browser.open('http://launchpad.dev/gnome-terminal/+branchlisting')
-  >>> gterm_main_summary in browser.contents
-  True
+   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+   There may be branches registered for Gnome Applets but none of
+   them match the current filter criteria for this page.
+   Try filtering on "Any Status".
 
-If there are no branches, we should display a message stating that there is no
-branch registered for this product.
+OK, lets follow the advice.
 
-  >>> browser.open('http://launchpad.dev/applets/+branchlisting')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...There are no branches registered for...
-
-== Branch Filtering ==
-
-This is a helper function to print out the branches that
-are visible to the user.
-
-  >>> def visible_branches(contents):
-  ...   table = find_tag_by_id(contents, 'branchtable')
-  ...   for row in table.tbody.fetch('tr'):
-  ...     cells = row.fetch('td')
-  ...     name = cells[0].renderContents()
-  ...     status = cells[-1].fetch('span')[-1].renderContents()
-  ...     print name, status
-
-Branches shown for products are filterable in the same way that 
-branches for people are filterable (see xx-person-branches.txt).
-
-  >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
-  >>> visible_branches(browser.contents)
-  2.6       Mature
-  main      Development
-  klingon   Experimental
-  pushed    New
-  launchpad New
-
-And to look at all branches, select 'Any Status'
-
-  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
-  >>> browser.getControl('Filter').click()
-  >>> visible_branches(browser.contents)
-  2.6        Mature
-  main       Development
-  klingon    Experimental
-  slowness   Merged
-  2.4        Abandoned
-  pushed     New
-  launchpad  New
-
-Selecting an individual lifecycle status from the select control 
-will cause only branches with that status to be listed.
-
-  >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
-  >>> browser.getControl('Filter').click()
-  >>> visible_branches(browser.contents)
-  2.4   Abandoned
-
-If the product does have branches, but they are not visible with
-the current filter, the table is shown, and a (hopefully)
-helpful message supplied.
-
-  >>> browser.open('http://code.launchpad.dev/'
-  ...   'firefox/+branches?field.lifecycle=Mature')
-  >>> browser.getControl(name='field.lifecycle').displayValue
-  ['Mature']
-  >>> table = find_tag_by_id(browser.contents, 'branchtable')
-  >>> cell = table.tbody.fetch('tr')[0].fetch('td')[0]
-  >>> print cell.renderContents()
-  <i>There are branches registered for firefox but none of them match the
-  current filter criteria for this page. Try filtering on "Any Status".</i>
+   >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
+   >>> browser.getControl('Filter').click()
+   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+   There are no branches registered for Gnome Applets in Launchpad today.
+   We recommend you visit
+   <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>
+   for more information about how you can use
+   the Bazaar revision control system to improve community
+   participation in this project.

@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import logging
 import pytz
 
 from zope.interface import implements
@@ -15,11 +16,16 @@ from zope.interface import implements
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
+from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IBuildQueue, IBuildQueueSet, NotFoundError)
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingStatus, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -41,9 +47,9 @@ class BuildQueue(SQLBase):
         self.manual = True
 
     @property
-    def archrelease(self):
+    def archseries(self):
         """See IBuildQueue."""
-        return self.build.distroarchrelease
+        return self.build.distroarchseries
 
     @property
     def urgency(self):
@@ -51,14 +57,29 @@ class BuildQueue(SQLBase):
         return self.build.sourcepackagerelease.urgency
 
     @property
-    def component_name(self):
+    def current_component(self):
         """See IBuildQueue."""
-        # check currently published version
-        publishings = self.build.sourcepackagerelease.publishings
-        if publishings.count() > 0:
-            return publishings[0].component.name
-        # if not found return the original component
-        return self.build.sourcepackagerelease.component.name
+        pub = self._currentPublication()
+        if pub is not None:
+            return pub.component
+        return self.build.sourcepackagerelease.component
+
+    def _currentPublication(self):
+        """See IBuildQueue."""
+        allowed_status = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        query = """
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.status IN %s
+        """ % sqlvalues(
+            self.build.distroseries, self.build.sourcepackagerelease,
+            self.build.archive, allowed_status)
+
+        return SourcePackagePublishingHistory.selectFirst(
+            query, orderBy='-datecreated')
 
     @property
     def archhintlist(self):
@@ -93,6 +114,126 @@ class BuildQueue(SQLBase):
             now = datetime.now(UTC)
             return now - self.buildstart
         return None
+
+    @property
+    def is_trusted(self):
+        """See IBuildQueue"""
+        return self.build.is_trusted
+
+    def score(self):
+        """See IBuildQueue"""
+        # Grab any logger instance available.
+        logger = logging.getLogger()
+    
+        if self.manual:
+            logger.debug(
+                "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
+            return
+
+        score_componentname = {
+            'multiverse': 0,
+            'universe': 250,
+            'restricted': 750,
+            'main': 1000,
+            'partner' : 1250,
+            }
+
+        score_urgency = {
+            SourcePackageUrgency.LOW: 5,
+            SourcePackageUrgency.MEDIUM: 10,
+            SourcePackageUrgency.HIGH: 15,
+            SourcePackageUrgency.EMERGENCY: 20,
+            }
+
+        # Define a table we'll use to calculate the score based on the time
+        # in the build queue.  The table is a sorted list of (upper time
+        # limit in seconds, score) tuples.
+        queue_time_scores = [
+            (14400, 100),
+            (7200, 50),
+            (3600, 20),
+            (1800, 15),
+            (900, 10),
+            (300, 5),
+        ]
+
+        score = 0
+        msg = "%s (%d) -> " % (self.build.title, self.lastscore)
+
+        # Calculates the urgency-related part of the score.
+        score += score_urgency[self.urgency]
+        msg += "U+%d " % score_urgency[self.urgency]
+
+        # Calculates the component-related part of the score.
+        score += score_componentname[self.current_component.name]
+        msg += "C+%d " % score_componentname[self.current_component.name]
+
+        # Calculates the build queue time component of the score.
+        right_now = datetime.now(pytz.timezone('UTC'))
+        eta = right_now - self.created
+        for limit, dep_score in queue_time_scores:
+            if eta.seconds > limit:
+                score += dep_score
+                msg += "T+%d " % dep_score
+                break
+        else:
+            msg += "T+0 "
+
+        # Store current score value.
+        self.lastscore = score
+
+        logger.debug("%s= %d" % (msg, self.lastscore))
+
+    def getLogFileName(self):
+        """See IBuildQueue"""
+        sourcename = self.build.sourcepackagerelease.name
+        version = self.build.sourcepackagerelease.version
+        # we rely on previous storage of current buildstate
+        # in the state handling methods.
+        state = self.build.buildstate.name
+
+        dar = self.build.distroarchseries
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
+        archname = dar.architecturetag
+
+        # logfilename format:
+        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
+        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
+        # as:
+        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
+        # it fix request from bug # 30617
+        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
+            distroname, distroseriesname, archname, sourcename, version, state
+            ))
+
+    def updateBuild_IDLE(self, build_id, build_status, logtail,
+                         filemap, dependencies, logger):
+        """See IBuildQueue."""
+        logger.warn(
+            "Builder %s forgot about build %s -- resetting buildqueue record"
+            % (self.builder.url, self.build.title))
+        self.builder = None
+        self.buildstart = None
+        self.build.buildstate = BuildStatus.NEEDSBUILD
+
+    def updateBuild_BUILDING(self, build_id, build_status,
+                             logtail, filemap, dependencies, logger):
+        """See IBuildQueue"""
+        self.logtail = encoding.guess(str(logtail))
+
+    def updateBuild_ABORTING(self, buildid, build_status,
+                             logtail, filemap, dependencies, logger):
+        """See IBuildQueue"""
+        self.logtail = "Waiting for slave process to be terminated"
+
+    def updateBuild_ABORTED(self, buildid, build_status,
+                            logtail, filemap, dependencies, logger):
+        """See IBuildQueue"""
+        self.builder.cleanSlave()
+        self.builder = None
+        self.buildstart = None
+        self.build.buildstate = BuildStatus.BUILDING
 
 
 class BuildQueueSet(object):
@@ -138,15 +279,15 @@ class BuildQueueSet(object):
             "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
             prejoins=['builder'])
 
-    def calculateCandidates(self, archreleases, state):
+    def calculateCandidates(self, archserieses, state):
         """See IBuildQueueSet."""
-        if not archreleases:
+        if not archserieses:
             # return an empty SQLResult instance to make the callsites happy.
             return BuildQueue.select("1=2")
 
-        if not isinstance(archreleases, list):
-            archrelease = [archreleases]
-        arch_ids = [d.id for d in archreleases]
+        if not isinstance(archserieses, list):
+            archseries = [archserieses]
+        arch_ids = [d.id for d in archserieses]
 
         candidates = BuildQueue.select("""
         build.distroarchrelease IN %s AND

@@ -1,19 +1,26 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
   <body>
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
 
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <metal:extra_info metal:fill-slot="extra_info">
 
@@ -32,28 +39,24 @@
     </div>
 
 
-    <div metal:fill-slot="extra_bottom"
-         tal:define="widgets view/bugwatch_widgets">
+    <div metal:fill-slot="extra_bottom">
 
-      <p>
-            If the bug has been reported in another bug tracker, you can
-            link to it in order to keep track of its status. Malone
-            synchronizes the status automatically for you.
-      </p>
+      <div tal:define="widgets view/compulsory_widgets">
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+      </div>
 
-      <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+      <div tal:define="widgets view/bugwatch_widgets">
+        <p>
+          If the bug has been reported in another bug tracker, you can
+          link to it in order to keep track of its status. Launchpad
+          synchronizes the status automatically for you.
+        </p>
+
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+      </div>
 
     </div>
 
-    <div class="row" metal:fill-slot="extra_buttons" tal:replace="nothing">
-      If you wish to add some more buttons to the form, put those here.
-    </div>
-
-  </div>
-
-  <div tal:replace="nothing">
-    This piece will appear at the bottom of the form if you want to add
-    a footer.
   </div>
 
 </div>

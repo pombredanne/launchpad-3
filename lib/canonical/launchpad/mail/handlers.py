@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -7,17 +7,17 @@ from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
-from zope.interface import implements, providedBy
+from zope.interface import implements
 from zope.event import notify
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
-    IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
-    IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
+    IBugEditEmailCommand, IBugTaskEditEmailCommand,
+    IMailHandler, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, ITicket, ITicketSet,
-    ISpecificationSet)
+    IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
+    ISpecificationSet, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -25,14 +25,11 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
+    SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
-    ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
-
-from canonical.lp.dbschema import TicketStatus
+    ISQLObjectCreatedEvent)
 
 
 def get_main_body(signed_msg):
@@ -53,7 +50,7 @@ def get_bugtask_type(bugtask):
     """Returns the specific IBugTask interface the the bugtask provides.
 
         >>> from canonical.launchpad.interfaces import (
-        ...     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+        ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
         >>> from zope.interface import classImplementsOnly
         >>> class BugTask:
         ...     pass
@@ -75,12 +72,12 @@ def get_bugtask_type(bugtask):
         >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
         <...IDistroBugTask>
 
-        >>> classImplementsOnly(BugTask, IDistroReleaseBugTask)
+        >>> classImplementsOnly(BugTask, IDistroSeriesBugTask)
         >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroReleaseBugTask>
+        <...IDistroSeriesBugTask>
     """
     bugtask_interfaces = [
-        IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask
+        IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask
         ]
     for interface in bugtask_interfaces:
         if interface.providedBy(bugtask):
@@ -266,25 +263,28 @@ class MaloneHandler:
         return True
 
 
-class SupportTrackerHandler:
-    """Handles emails sent to the support tracker."""
+class AnswerTrackerHandler:
+    """Handles emails sent to the Answer Tracker."""
 
     implements(IMailHandler)
 
     allow_unknown_users = False
 
-    _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
+    # XXX flacoste 2007-04-23: The 'ticket' part is there for backward
+    # compatibility with the old notification address. We probably want to
+    # remove it in the future.
+    _question_address = re.compile(r'^(ticket|question)(?P<id>\d+)@.*')
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
-        match = self._ticket_address.match(to_addr)
+        match = self._question_address.match(to_addr)
         if not match:
             return False
 
-        ticket_id = int(match.group('id'))
-        ticket = getUtility(ITicketSet).get(ticket_id)
-        if ticket is None:
-            # No such ticket, don't process the email.
+        question_id = int(match.group('id'))
+        question = getUtility(IQuestionSet).get(question_id)
+        if question is None:
+            # No such question, don't process the email.
             return False
 
         messageset = getUtility(IMessageSet)
@@ -294,47 +294,48 @@ class SupportTrackerHandler:
             filealias=filealias,
             parsed_message=signed_msg)
 
-        if message.owner == ticket.owner:
-            self.processOwnerMessage(ticket, message)
+        if message.owner == question.owner:
+            self.processOwnerMessage(question, message)
         else:
-            self.processUserMessage(ticket, message)
+            self.processUserMessage(question, message)
         return True
 
-    def processOwnerMessage(self, ticket, message):
+    def processOwnerMessage(self, question, message):
         """Choose the right workflow action for a message coming from
-        the ticket owner.
+        the question owner.
 
-        When the ticket status is OPEN or NEEDINFO,
+        When the question status is OPEN or NEEDINFO,
         the message is a GIVEINFO action; when the status is ANSWERED
         or EXPIRED, we interpret the message as a reopenening request;
         otherwise it's a comment.
         """
-        if ticket.status in [
-            TicketStatus.OPEN, TicketStatus.NEEDSINFO]:
-            ticket.giveInfo(message)
-        elif ticket.status in [
-            TicketStatus.ANSWERED, TicketStatus.EXPIRED]:
-            ticket.reopen(message)
+        if question.status in [
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
+            question.giveInfo(message)
+        elif question.status in [
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED]:
+            question.reopen(message)
         else:
-            ticket.addComment(message.owner, message)
+            question.addComment(message.owner, message)
 
-    def processUserMessage(self, ticket, message):
+    def processUserMessage(self, question, message):
         """Choose the right workflow action for a message coming from a user
-        that is not the ticket owner.
+        that is not the question owner.
 
-        When the ticket status is OPEN, NEEDSINFO, or ANSWERED, we interpret
+        When the question status is OPEN, NEEDSINFO, or ANSWERED, we interpret
         the message as containing an answer. (If it was really a request for
         more information, the owner will still be able to answer it while
         reopening the request.)
 
         In the other status, the message is a comment without status change.
         """
-        if ticket.status in [
-            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]:
-            ticket.giveAnswer(message.owner, message)
+        if question.status in [
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+	    QuestionStatus.ANSWERED]:
+            question.giveAnswer(message.owner, message)
         else:
             # In the other states, only a comment can be added.
-            ticket.addComment(message.owner, message)
+            question.addComment(message.owner, message)
 
 
 class SpecificationHandler:
@@ -382,13 +383,13 @@ class SpecificationHandler:
         if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
             if log and filealias:
                 log.warning(
-                    'Got back a notification we sent: %s' % filealias.url)
+                    'Got back a notification we sent: %s' % filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
         if signed_msg['Sender'] == config.bounce_address:
             if log and filealias:
-                log.warning(
-                    'We received an email from Launchpad: %s' % filealias.url)
+                log.warning('We received an email from Launchpad: %s'
+                            % filealias.http_url)
             return True
         # When sending the email, the sender will be set so that it's
         # clear that we're the one sending the email, not the original
@@ -427,7 +428,10 @@ class MailHandlers:
         self._handlers = {
             config.launchpad.bugs_domain: MaloneHandler(),
             config.launchpad.specs_domain: SpecificationHandler(),
-            config.tickettracker.email_domain: SupportTrackerHandler()
+            config.answertracker.email_domain: AnswerTrackerHandler(),
+            # XXX flacoste 2007-04-23 Backward compatibility for old domain.
+            # We probably want to remove it in the future.
+            'support.launchpad.net': AnswerTrackerHandler(),
             }
 
     def get(self, domain):

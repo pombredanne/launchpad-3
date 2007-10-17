@@ -1,0 +1,231 @@
+= Buildd Dispatching =
+
+  >>> import transaction
+  >>> import logging
+  >>> logger = logging.getLogger()
+  >>> logger.setLevel(logging.DEBUG)
+
+The buildd dispatching basically consists of finding a available
+Buildd-slave in IDLE state, push required files to it, then request
+the it to start a build procedure.
+
+Those tasks are implemented by the BuilddMaster and BuilderGroup
+classes.
+
+  >>> from canonical.buildmaster.master import BuilddMaster
+  >>> bm = BuilddMaster(logger, transaction)
+
+Setup the test builder:
+
+  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+  >>> BuilddSlaveTestSetup().setUp()
+
+Setup a suitable chroot for Hoary i386:
+
+  >>> from canonical.librarian.interfaces import ILibrarianClient
+  >>> from StringIO import StringIO
+  >>> librarian_client = getUtility(ILibrarianClient)
+
+  >>> content = 'anything'
+  >>> alias_id = librarian_client.addFile(
+  ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, ILibraryFileAliasSet)
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+
+  >>> pocket = PackagePublishingPocket.RELEASE
+  >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
+  >>> pc = hoary_i386.addOrUpdateChroot(pocket=pocket, chroot=chroot)
+
+Activate builders present in sampledata, we need to be logged in as a
+member of launchpad-buildd-admin:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login('celso.providelo@canonical.com')
+
+Set IBuilder.builderok of all present builders:
+
+  >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> builder_set = getUtility(IBuilderSet)
+
+  >>> builder_set.count()
+  2
+
+  >>> from canonical.launchpad.ftests import syncUpdate
+  >>> for b in builder_set:
+  ...     b.builderok = True
+  ...     syncUpdate(b)
+
+
+Clean up previous BuildQueue results from sampledata:
+
+  >>> from canonical.launchpad.interfaces import IBuildQueueSet
+  >>> lost_job = getUtility(IBuildQueueSet).get(1)
+  >>> lost_job.builder.name
+  u'bob'
+  >>> lost_job.destroySelf()
+
+Setup BuilddMaster class:
+
+  >>> bm.addDistroArchSeries(hoary_i386)
+  >>> bm.setupBuilders(hoary_i386)
+
+Check if there builders available:
+
+  >>> available_builder = (
+  ...     bm._archserieses[hoary_i386]['builders'].firstAvailable(
+  ...     is_trusted=True))
+  >>> available_builder.name
+  u'bob'
+  >>> available_builder.trusted
+  True
+
+Verify how the inexistent builder was excluded, marked as failed:
+
+  >>> excluded_builder = builder_set['frog']
+  >>> excluded_builder.builderok
+  False
+  >>> excluded_builder.failnotes
+  u'<socket.error instance at ...>'
+
+Now let's check the build candidates which will be considered:
+
+  >>> jobs_by_proc = bm.sortAndSplitByProcessor()
+
+jobs_by_proc is a dictionary which keys are the initialised
+distroarchseriess 'processorfamily's, in this case
+hoary_i386.processorfamily only:
+
+  >>> proc = hoary_i386.processorfamily
+  >>> jobs = jobs_by_proc[proc]
+
+And the value is a list of BuildQueue records:
+
+  >>> len(jobs)
+  1
+
+The single BuildQueue found is a trusted pending build:
+
+  >>> job = jobs[0]
+
+  >>> job.id
+  2
+  >>> job.build.buildstate.name
+  'NEEDSBUILD'
+  >>> job.builder is None
+  True
+  >>> job.buildstart is None
+  True
+  >>> job.is_trusted
+  True
+
+Update the SourcePackageReleaseFile corresponding to this job:
+
+  >>> content = 'anything'
+  >>> alias_id = librarian_client.addFile(
+  ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
+
+  >>> sprf = job.build.sourcepackagerelease.files[0]
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> naked_sprf = removeSecurityProxy(sprf)
+  >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
+  >>> flush_database_updates()
+
+Check the dispatching method itself:
+
+  >>> bm.dispatchByProcessor(proc, jobs)
+  >>> flush_database_updates()
+
+Verify if the job (BuildQueue) was updated appropriately:
+
+  >>> job.builder.id == available_builder.id
+  True
+  >>> job.build.buildstate.name
+  'BUILDING'
+  >>> job.buildstart
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+Shutdown builder, mark the build record as failed and remove the
+buildqueue record, so the build was eliminated:
+
+  >>> BuilddSlaveTestSetup().tearDown()
+
+  >>> from canonical.lp.dbschema import BuildStatus
+  >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
+  >>> job.destroySelf()
+  >>> flush_database_updates()
+
+Restart buildd-slave:
+
+  >>> BuilddSlaveTestSetup().setUp()
+
+Create new Build record of the same source targeted for a PPA archive:
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+  >>> ppa_build = sprf.sourcepackagerelease.createBuild(
+  ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov.archive)
+
+Create BuildQueue record and inspect some parameters:
+
+  >>> ppa_job = ppa_build.createBuildQueueEntry()
+  >>> ppa_job.id
+  3L
+  >>> ppa_job.builder == None
+  True
+  >>> ppa_job.buildstart == None
+  True
+  >>> ppa_job.is_trusted
+  False
+
+Update the BuildMaster list of pending jobs, check if the new:
+
+  >>> jobs_by_proc = bm.sortAndSplitByProcessor()
+  >>> jobs = jobs_by_proc[proc]
+  >>> len(jobs) == 1
+  True
+  >>> ppa_job.id in [j.id for j in jobs]
+  True
+
+Check if the job doesn't get dispatched since 'bob' builder is
+designed to build only TRUSTED code:
+
+  >>> bm.dispatchByProcessor(proc, jobs)
+  >>> flush_database_updates()
+
+  >>> ppa_job.builder == None
+  True
+
+The job can only be dispatched after modifying the current builder
+parameters:
+
+  >>> builder_set['bob'].trusted = False
+  >>> flush_database_updates()
+
+Unfortunately, re-building the entire BuildMaster class is also,
+necessary. It's mainly required because the use of the 'notes'
+(buildmaster/notes.py) infrastructure, which retains the annotated
+contents in python domain.
+
+  >>> new_bm = BuilddMaster(logger, transaction)
+  >>> new_bm.addDistroArchSeries(hoary_i386)
+  >>> new_bm.setupBuilders(hoary_i386)
+  >>> jobs_by_proc = new_bm.sortAndSplitByProcessor()
+  >>> jobs = jobs_by_proc[proc]
+  >>> new_bm.dispatchByProcessor(proc, jobs)
+  >>> flush_database_updates()
+
+Anyway, after making 'bob' builder available to build *untrusted*
+code, and dispatching pending jobs, we can see that ppa_job is building:
+
+  >>> ppa_job.builder.name
+  u'bob'
+  >>> ppa_job.build.buildstate.name
+  'BUILDING'
+  >>> ppa_job.buildstart
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+

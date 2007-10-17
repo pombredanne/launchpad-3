@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -29,17 +28,17 @@
     </browser:pages>
 
     <!-- browser:pages for the registry application -->
-    <browser:pages 
+    <browser:pages
         for="canonical.launchpad.interfaces.IRegistryApplication"
         facet="overview"
         permission="zope.Public"
-        lp:url="registry">
+        >
         <browser:page name="+index"
             template="../templates/registry-index.pt"
-            lp:url="registry/+index" />
+            />
         <browser:page name="+about"
             template="../templates/registry-about.pt"
-            lp:url="registry/+about" />
+            />
     </browser:pages>
 
 </configure>

@@ -10,6 +10,7 @@ __all__ = [
     'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
     'ShippingRequestSetNavigation', 'ShipitFrontPageView']
 
+from operator import attrgetter
 
 from zope.event import notify
 from zope.component import getUtility
@@ -21,9 +22,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import (
-    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease,
-    ShippingRequestStatus)
 from canonical.launchpad.helpers import (
     intOrZero, get_email_template, shortlist)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -40,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
     ILaunchpadCelebrities, IShippingRunSet, IShipItApplication,
     IShipItReportSet, UnexpectedFormData, IShippingRequestUser,
-    ShipItConstants)
+    ShipItConstants, ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
+    ShippingRequestStatus)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -60,22 +59,21 @@ class ShipItUnauthorizedView(SystemErrorView):
 
 class ShipitFrontPageView(LaunchpadView):
 
+    series = ShipItConstants.current_distroseries
+
     def initialize(self):
-        if not config.shipit.switch_to_edgy:
-            self.request.response.redirect('login')
         self.flavour = _get_flavour_from_layer(self.request)
 
     @property
-    def download_or_buy_link(self):
-        if self.flavour == ShipItFlavour.UBUNTU:
-            return 'http://www.ubuntu.com/products/GetUbuntu'
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return 'http://www.kubuntu.org/download.php'
-        elif self.flavour == ShipItFlavour.EDUBUNTU:
-            return 'http://www.edubuntu.org/Download'
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
 
     @property
-    def download_link(self):
+    def beta_download_link(self):
+        return config.shipit.beta_download_link
+
+    @property
+    def download_or_buy_link(self):
         if self.flavour == ShipItFlavour.UBUNTU:
             return 'http://www.ubuntu.com/download'
         elif self.flavour == ShipItFlavour.KUBUNTU:
@@ -84,23 +82,37 @@ class ShipitFrontPageView(LaunchpadView):
             return 'http://www.edubuntu.org/Download'
 
 
-# XXX: The LoginOrRegister class is not really designed to be reused. That
+def shipit_is_open(flavour):
+    """Return True if shipit is open.
+
+    Shipit is considered open if we have at least one standard option of
+    the given flavour.
+    """
+    return bool(getUtility(IStandardShipItRequestSet).getByFlavour(
+        flavour, getUtility(ILaunchBag).user))
+
+
+# XXX: GuilhermeSalgado 2005-09-09:
+# The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
-# class which doesn't reuses LoginOrRegister here. -- GuilhermeSalgado
-# 2005-09-09
+# class which doesn't reuses LoginOrRegister here.
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
         ShipItFlavour.EDUBUNTU: 'shipit-edubuntu'}
-        
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
         self.origin = self.possible_origins[self.flavour]
+
+    def is_open(self):
+        return shipit_is_open(self.flavour)
 
     def getApplicationURL(self):
         return 'https://launchpad.net'
@@ -151,6 +163,10 @@ class ShipItRequestView(GeneralFormView):
         ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
 
     should_show_custom_request = False
+    # This only exists so that our tests can simulate the creation (through
+    # the web UI) of requests containing CDs of serieses other than the
+    # current one.
+    series = ShipItConstants.current_distroseries
 
     # Field names that are part of the schema but don't exist in our
     # context object.
@@ -182,7 +198,6 @@ class ShipItRequestView(GeneralFormView):
         if self.flavour == ShipItFlavour.UBUNTU:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.PPC: 'ubuntu_quantityppc',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
         elif self.flavour == ShipItFlavour.KUBUNTU:
             self.quantity_fields_mapping = {
@@ -198,9 +213,19 @@ class ShipItRequestView(GeneralFormView):
         self.fieldNames.append('reason')
         self.fieldNames.extend(self._extra_fields)
 
+    def is_open(self):
+        return shipit_is_open(self.flavour)
+
+    @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
+
     @property
     def dvds_section(self):
         """Get the HTML containing links to DVD sales for this flavour."""
+        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
+        # amazon.com. -- Guilherme Salgado, 2007-09-24
+        return u''
         if self.flavour == ShipItFlavour.UBUNTU:
             return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
                 self)
@@ -226,13 +251,6 @@ class ShipItRequestView(GeneralFormView):
         return [getattr(self, field_name + '_widget')
                 for field_name in self.quantity_fields_mapping.values()]
 
-    def currentOrderIsCustom(self):
-        """Return True if the current order contains custom quantities of CDs
-        of self.flavour.
-        """
-        return self.current_order.containsCustomQuantitiesOfFlavour(
-            self.flavour)
-
     def _setUpWidgets(self, context=None):
         # First we set up the standard widgets
         setUpWidgets(
@@ -245,7 +263,7 @@ class ShipItRequestView(GeneralFormView):
             setUpWidgets(
                 self, self.schema, IInputWidget, names=self._extra_fields,
                 initial=self.extra_fields_initial_values, context=context)
-                    
+
     def renderCustomrequestForm(self):
         self._setExtraFields()
         self.should_show_custom_request = True
@@ -317,13 +335,13 @@ class ShipItRequestView(GeneralFormView):
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
-            self.flavour)
-        return sorted(requests, key=lambda request: request.totalCDs)
+            self.flavour, self.user)
+        return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
     def current_order_standard_id(self):
         """The current order's StandardShipItRequest id, or None.
-        
+
         If there's no current order or the current order doesn't contain any
         CDs of self.flavour, None will be returned.
         """
@@ -364,7 +382,7 @@ class ShipItRequestView(GeneralFormView):
         selected.
 
         If the submitted form contains a 'ordertype' variable, that's the one
-        that should be requested. If not, we check if the current shipit 
+        that should be requested. If not, we check if the current shipit
         request is a standard one, and if so, return the standard request id
         of this shipit request. Lastly, if none of the above exists, we return
         the standard request whose isdefault attribute is True.
@@ -467,7 +485,8 @@ class ShipItRequestView(GeneralFormView):
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
-        current_order.setQuantities({self.flavour: quantities})
+        current_order.setQuantities(
+            {self.flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
@@ -477,9 +496,8 @@ class ShipItRequestView(GeneralFormView):
 
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
-        shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
+        shipped_orders = self.user.shippedShipItRequestsOfCurrentSeries()
         if new_total_of_cds > max_size_for_auto_approval:
-            assert current_order.isCustom()
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
             if (current_order.isApproved() and
@@ -487,10 +505,10 @@ class ShipItRequestView(GeneralFormView):
                 current_order.clearApproval()
         elif current_order.isAwaitingApproval():
             assert not current_order.isDenied()
-            if (not shipped_orders or 
+            if (not shipped_orders or
                 not self.userAlreadyRequestedFlavours(current_flavours)):
                 # This is either the first order containing CDs of the current
-                # distrorelease made by this user or it contains only CDs of
+                # distroseries made by this user or it contains only CDs of
                 # flavours this user hasn't requested before.
                 current_order.approve()
         elif (self.userAlreadyRequestedFlavours(current_flavours) and
@@ -503,7 +521,9 @@ class ShipItRequestView(GeneralFormView):
             # No need to approve or clear approval for this order.
             pass
 
-        if shipped_orders.count() >= 2:
+        if current_order.addressIsDuplicated():
+            current_order.markAsDuplicatedAddress()
+        elif shipped_orders.count() >= 2:
             # User has more than 2 shipped orders. Now we need to check if any
             # of the flavours contained in this order is also contained in two
             # or more of this user's previous orders and, if so, mark this
@@ -534,10 +554,10 @@ class ShipItRequestView(GeneralFormView):
 
     def userAlreadyRequestedFlavours(self, flavours):
         """Return True if any of the given flavours is contained in any of
-        this users's shipped requests of the current distrorelease.
+        this users's shipped requests of the current distroseries.
         """
         flavours = set(flavours)
-        for order in self.user.shippedShipItRequestsOfCurrentRelease():
+        for order in self.user.shippedShipItRequestsOfCurrentSeries():
             if flavours.intersection(order.getContainedFlavours()):
                 return True
         return False
@@ -572,7 +592,7 @@ class ShipItRequestView(GeneralFormView):
         subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
         recipient = order.recipient
         headers = {'Reply-To': order.recipient_email}
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
+        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
         replacements = {'recipientname': order.recipientdisplayname,
                         'recipientemail': order.recipient_email,
                         'requesturl': canonical_url(order),
@@ -590,7 +610,7 @@ class _SelectMenuOption:
     This class simply stores a name, a title and whether the option should be
     selected or not.
     """
-    
+
     def __init__(self, name, title, is_selected=False):
         self.name = name
         self.title = title
@@ -605,7 +625,7 @@ class ShippingRequestsView:
     # making tests more readable.
     selectedStatus = ShippingRequestStatus.PENDING.name
     selectedFlavourName = 'any'
-    selectedDistroReleaseName = ShipItConstants.current_distrorelease.name
+    selectedDistroSeriesName = ShipItConstants.current_distroseries.name
     recipient_text = ''
 
     @cachedproperty
@@ -638,15 +658,15 @@ class ShippingRequestsView:
         names_and_titles.append(('any', 'Any flavour'))
         return self._build_options(names_and_titles, self.selectedFlavourName)
 
-    def release_options(self):
-        names_and_titles = [(release.name, release.title) 
-                            for release in ShipItDistroRelease.items]
+    def series_options(self):
+        names_and_titles = [(series.name, series.title)
+                            for series in ShipItDistroSeries.items]
         names_and_titles.append(('any', 'Any'))
         return self._build_options(
-            names_and_titles, self.selectedDistroReleaseName)
+            names_and_titles, self.selectedDistroSeriesName)
 
     def status_options(self):
-        names_and_titles = [(status.name, status.title) 
+        names_and_titles = [(status.name, status.title)
                             for status in ShippingRequestStatus.items]
         names_and_titles.append(('all', 'All'))
         return self._build_options(names_and_titles, self.selectedStatus)
@@ -665,11 +685,11 @@ class ShippingRequestsView:
         else:
             status = ShippingRequestStatus.items[self.selectedStatus]
 
-        self.selectedDistroReleaseName = request.get('releasefilter')
-        if self.selectedDistroReleaseName == 'any':
-            release = None
+        self.selectedDistroSeriesName = request.get('seriesfilter')
+        if self.selectedDistroSeriesName == 'any':
+            series = None
         else:
-            release = ShipItDistroRelease.items[self.selectedDistroReleaseName]
+            series = ShipItDistroSeries.items[self.selectedDistroSeriesName]
 
         self.selectedFlavourName = request.get('flavourfilter')
         if self.selectedFlavourName == 'any':
@@ -677,12 +697,19 @@ class ShippingRequestsView:
         else:
             flavour = ShipItFlavour.items[self.selectedFlavourName]
 
-        orderby = str(request.get('orderby'))
+        # Sort as directed by form, but also by id as a tie-breaker
+        # XXX: JeroenVermeulen bug=136345 2007-08-31: Indeterministic sorting
+        # was breaking the xx-shipit-search-for-requests.txt test most of the
+        # time (and blocking PQM).  This is a quick fix, but it looks like we
+        # could also use some extra input checking here.  SQL sorting
+        # expressions are hard-coded in the template, plus not selecting an
+        # order would trigger an exception in this line.
+        orderby = [str(request.get('orderby')), 'id']
         self.recipient_text = request.get('recipient_text')
 
         requestset = getUtility(IShippingRequestSet)
         results = requestset.search(
-            status=status, flavour=flavour, distrorelease=release,
+            status=status, flavour=flavour, distroseries=series,
             recipient_text=self.recipient_text, orderBy=orderby)
         self.batchNavigator = self._getBatchNavigator(results)
 
@@ -713,7 +740,8 @@ class StandardShipItRequestAddView(AddView):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
-        quantityppc = data.get('quantityppc')
+        # We're not shipping PPC CDs anymore.
+        quantityppc = 0
         isdefault = data.get('isdefault')
         request = getUtility(IStandardShipItRequestSet).new(
             flavour, quantityx86, quantityamd64, quantityppc, isdefault)
@@ -735,13 +763,11 @@ class ShippingRequestAdminMixinView:
 
     # This is the order in which we display the quantity widgets for each
     # flavour in the UI
-    ordered_architectures = (
-        ShipItArchitecture.X86, ShipItArchitecture.AMD64,
-        ShipItArchitecture.PPC)
+    ordered_architectures = (ShipItArchitecture.X86, ShipItArchitecture.AMD64)
 
     def widgetsMatrixWithFlavours(self):
         """Return a matrix in which each row contains a ShipItFlavour and one
-        quantity widget for each ShipItArchitecture that we ship CDs. 
+        quantity widget for each ShipItArchitecture that we ship CDs.
 
         The architectures of CDs that we ship are dependent on the
         flavour.
@@ -794,15 +820,12 @@ class ShippingRequestApproveOrDenyView(
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
-             ShipItArchitecture.PPC: 'ubuntu_quantityppcapproved',
              ShipItArchitecture.AMD64: 'ubuntu_quantityamd64approved'},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86approved',
-             ShipItArchitecture.PPC: None,
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
-             ShipItArchitecture.PPC: None,
              ShipItArchitecture.AMD64: None}
         }
 
@@ -819,9 +842,9 @@ class ShippingRequestApproveOrDenyView(
             # This order was exported after the form was rendered; we can't
             # allow changing it, so we return to render the page again,
             # without the buttons that allow changing it.
-            # XXX: It's probably a good idea to notify the user about what
+            # XXX: Guilherme Salgado 2006-07-27:
+            # It's probably a good idea to notify the user about what
             # happened here.
-            # -- Guilherme Salgado, 2006-07-27
             return
 
         if 'DENY' not in form:
@@ -918,10 +941,10 @@ class ShippingRequestApproveOrDenyView(
         """Return True if the recipient has other requests that were already
         sent to the shipping company."""
         recipient = self.context.recipient
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
+        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
         if not shipped_requests:
             return False
-        elif (shipped_requests.count() == 1 
+        elif (shipped_requests.count() == 1
               and shipped_requests[0] == self.context):
             return False
         else:
@@ -929,7 +952,7 @@ class ShippingRequestApproveOrDenyView(
 
     def contextCanBeModified(self):
         """Return true if the context can be modified.
-        
+
         A ShippingRequest can be modified only if it's not shipped nor
         cancelled.
         """
@@ -942,34 +965,26 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86',
-             ShipItArchitecture.PPC: 'ubuntu_quantityppc',
              ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86',
-             ShipItArchitecture.PPC: None,
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
-             ShipItArchitecture.PPC: None,
              ShipItArchitecture.AMD64: None}
         }
 
+    series = ShipItConstants.current_distroseries
     current_order = None
     shipping_details_fields = [
         'recipientdisplayname', 'country', 'city', 'addressline1', 'phone',
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        release = request.form.get('release')
-        if release is not None and release.lower() == 'edgy':
-            self.release = ShipItDistroRelease.EDGY
-        else:
-            self.release = ShipItConstants.current_distrorelease
-            # We only allow changing requests of the current release.
-            order_id = request.form.get('order')
-            if order_id is not None and order_id.isdigit():
-                self.current_order = getUtility(IShippingRequestSet).get(
-                    int(order_id))
+        order_id = request.form.get('order')
+        if order_id is not None and order_id.isdigit():
+            self.current_order = getUtility(IShippingRequestSet).get(
+                int(order_id))
         GeneralFormView.__init__(self, context, request)
 
     @property
@@ -988,9 +1003,9 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         return initial
 
     def validate(self, data):
-        # XXX: Even shipit admins shouldn't be allowed to make requests with 0
+        # XXX: Guilherme Salgado 2006-04-21:
+        # Even shipit admins shouldn't be allowed to make requests with 0
         # CDs. We need to check this here.
-        # Guilherme Salgado, 2006-04-21
         errors = []
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
@@ -1031,7 +1046,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             # This is a newly created request, and because it's created by a
             # shipit admin we set both approved and requested quantities and
             # approve it.
-            current_order.setQuantities(quantities, distrorelease=self.release)
+            current_order.setQuantities(quantities, distroseries=self.series)
             current_order.approve()
         else:
             for name in self.shipping_details_fields:
@@ -1100,12 +1115,12 @@ class ShipItNavigation(Navigation):
 
     @stepto('requests')
     def requests(self):
-        # XXX: permission=launchpad.Admin
+        # XXX: SteveAlexander 2005-10-06: permission=launchpad.Admin
         return getUtility(IShippingRequestSet)
 
     @stepto('standardoptions')
     def standardoptions(self):
-        # XXX: permission=launchpad.Admin
+        # XXX: SteveAlexander 2005-10-06: permission=launchpad.Admin
         return getUtility(IStandardShipItRequestSet)
 
 

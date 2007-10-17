@@ -32,12 +32,15 @@ working comparisons::
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
-    >>> Person.select(Person.q.subscriptionpolicy==proxied_policy).count()
-    64
+
+    # We don't want this test to fail when we add new person entries, so we
+    # compare it against a base number.
+    >>> Person.select(Person.q.subscriptionpolicy==proxied_policy).count() > 60
+    True
     >>> person = Person.select(Person.q.subscriptionpolicy==proxied_policy)[0]
     >>> person.subscriptionpolicy.name
     'MODERATED'
@@ -46,14 +49,14 @@ XXX: stevea: 20051018: Rewrite this test to use security proxies directly
 XXX: bug 3315
 DB schema objects should be comparable correctly when proxied...
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
-    >>> from canonical.lp.dbschema import DistributionReleaseStatus
-    >>> hoary = getUtility(IDistroReleaseSet).get(3)
-    >>> print hoary.releasestatus.name
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> from canonical.lp.dbschema import DistroSeriesStatus
+    >>> hoary = getUtility(IDistroSeriesSet).get(3)
+    >>> print hoary.status.name
     DEVELOPMENT
-    >>> hoary.releasestatus == DistributionReleaseStatus.DEVELOPMENT
+    >>> hoary.status == DistroSeriesStatus.DEVELOPMENT
     True
-    >>> hoary.releasestatus is DistributionReleaseStatus.DEVELOPMENT
+    >>> hoary.status is DistroSeriesStatus.DEVELOPMENT
     False
 
 Finally, tear down the test:

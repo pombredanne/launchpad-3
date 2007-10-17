@@ -1,3 +1,4 @@
+
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Run all of the pagetests, in priority order.
 
@@ -10,7 +11,11 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
+    NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+
+from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.testbrowser.testing import Browser
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
@@ -19,15 +24,42 @@ from canonical.testing import PageTestLayer
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+class UnstickyCookieHTTPCaller(HTTPCaller):
+    """HTTPCaller subclass that do not carry cookies across requests.
+
+    HTTPCaller propogates cookies between subsequent requests.
+    This is a nice feature, except it triggers a bug in Launchpad where
+    sending both Basic Auth and cookie credentials raises an exception
+    (Bug 39881).
+    """
+    def __init__(self, *args, **kw):
+        if kw.get('debug'):
+            self._debug = True
+            del kw['debug']
+        else:
+            self._debug = False
+        HTTPCaller.__init__(self, *args, **kw)
+    def __call__(self, *args, **kw):
+        if self._debug:
+            import pdb; pdb.set_trace()
+        try:
+            return HTTPCaller.__call__(self, *args, **kw)
+        finally:
+            self.resetCookies()
+
+    def resetCookies(self):
+        self.cookies = SimpleCookie()
+
+
 class DuplicateIdError(Exception):
     """Raised by find_tag_by_id if more than one element has the given id."""
 
 
 def find_tag_by_id(content, id):
-    """Find and return the tags with the given ID"""
-    soup = BeautifulSoup(content)
-    elements_with_id = soup.findAll(attrs={'id': id})
-    if not elements_with_id:
+    """Find and return the tag with the given ID"""
+    elements_with_id = [tag for tag in BeautifulSoup(
+        content, parseOnlyThese=SoupStrainer(id=id))]
+    if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
         return elements_with_id[0]
@@ -36,15 +68,25 @@ def find_tag_by_id(content, id):
             'Found %d elements with id %r' % (len(elements_with_id), id))
 
 
-def find_tags_by_class(content, class_):
-    """Find and return the tags matching the given class(s)"""
+def first_tag_by_class(content, class_):
+    """Find and return the first tag matching the given class(es)"""
+    return find_tags_by_class(content, class_, True)
+
+
+def find_tags_by_class(content, class_, only_first=False):
+    """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
         if value is None: return False
         classes = set(value.split())
         return match_classes.issubset(classes)
-    soup = BeautifulSoup(content)
-    return soup.findAll(attrs={'class': class_matcher})
+    soup = BeautifulSoup(
+        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
+    if only_first:
+        find=BeautifulSoup.find
+    else:
+        find=BeautifulSoup.findAll
+    return find(soup, attrs={'class': class_matcher})
 
 
 def find_portlet(content, name):
@@ -55,26 +97,158 @@ def find_portlet(content, name):
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
-        portlet_title = portlet.find('h2').renderContents()
-        if name == whitespace_re.sub(' ', portlet_title.strip()):
-            return portlet
+        if portlet.find('h2'):
+            portlet_title = portlet.find('h2').renderContents()
+            if name == whitespace_re.sub(' ', portlet_title.strip()):
+                return portlet
     return None
 
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
-    soup = BeautifulSoup(content)
-    tag = soup.find(attrs={'id': 'region-content'})
-    if tag:
-        return tag
-    return soup.find(attrs={'id': 'content'})
+    return find_tag_by_id(content, 'maincontent')
 
+
+def get_feedback_messages(browser):
+    """Find and return the feedback messages of the page."""
+    message_classes = [
+        'message', 'informational message', 'error message', 'warning message']
+    strainer = SoupStrainer(['div', 'p'], {'class': message_classes})
+    soup = BeautifulSoup(browser.contents, parseOnlyThese=strainer)
+    return [extract_text(tag) for tag in soup]
+
+
+IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
+ELEMENTS_INTRODUCING_NEWLINE = [
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
+    'div', 'noscript', 'blockquote', 'form', 'hr', 'table', 'fieldset',
+    'address', 'li', 'dt', 'dd', 'th', 'td', 'caption', 'br']
+
+
+NEWLINES_RE = re.compile(u'\n+')
+LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
+NBSP_RE = re.compile(u'&nbsp;|&#160;')
+
+
+def extract_text(content):
+    """Return the text stripped of all tags.
+
+    All runs of tabs and spaces are replaced by a single space and runs of
+    newlines are replaced by a single newline. Leading and trailing white
+    spaces is stripped.
+    """
+    if not isinstance(content, PageElement):
+        soup = BeautifulSoup(content)
+    else:
+        soup = content
+
+    result = []
+    nodes = list(soup)
+    while nodes:
+        node = nodes.pop(0)
+        if type(node) in IGNORED_ELEMENTS:
+            continue
+        elif isinstance(node, NavigableString):
+            result.append(unicode(node))
+        else:
+            if isinstance(node, Tag):
+                if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
+                    result.append(u'\n')
+            # Process this node's children next.
+            nodes[0:0] = list(node)
+
+    text = u''.join(result)
+    text = NBSP_RE.sub(' ', text)
+    text = TABS_AND_SPACES_RE.sub(' ', text)
+    text = LEADING_AND_TRAILING_SPACES_RE.sub('', text)
+    text = NEWLINES_RE.sub('\n', text)
+
+    # Remove possible newlines at beginning and end.
+    return text.strip()
+
+
+# XXX cprov 2007-02-07: This function seems to be more specific to a
+# particular product (soyuz) than the rest. Maybe it belongs to
+# somewhere else.
+def parse_relationship_section(content):
+    """Parser package relationship section.
+
+    See package-relationship-pages.txt and related.
+    """
+    soup = BeautifulSoup(content)
+    section = soup.find('ul')
+    whitespace_re = re.compile('\s+')
+    for li in section.findAll('li'):
+        if li.a:
+            link = li.a
+            content = whitespace_re.sub(' ', link.string.strip())
+            url = link['href']
+            print 'LINK: "%s" -> %s' % (content, url)
+        else:
+            content = whitespace_re.sub(' ', li.string.strip())
+            print 'TEXT: "%s"' % content
+
+
+def print_tab_links(content):
+    """Print tabs url or 'Unavailable' if there isn't one."""
+    chooser = find_tag_by_id(content, 'applicationchooser')
+    tabs = chooser.findAll('li')
+    for tab in tabs:
+        if 'current' in tab['class']:
+            print '%s: %s' % (tab.a.string, tab.a['href'])
+        else:
+            print '%s: Unavailable' % (tab.string,)
+
+
+def print_action_links(content):
+    """Print action menu urls."""
+    actions = find_portlet(content, 'Actions')
+    entries = actions.findAll('li')
+    for entry in entries:
+        print '%s: %s' % (entry.a.string, entry.a['href'])
+
+def print_comments(page):
+    """Print the comments on a BugTask index page."""
+    main_content = find_main_content(page)
+    for comment in main_content('div', 'boardCommentBody'):
+        for li_tag in comment('li'):
+            print "Attachment: %s" % li_tag.a.renderContents()
+        print comment.div.renderContents()
+        print "-"*40
 
 def setUpGlobs(test):
+    # Our tests report being on a different port.
+    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+
+    # Set up our Browser objects with handleErrors set to False, since
+    # that gives a tracebacks instead of unhelpful error messages.
+    def setupBrowser(auth=None):
+        browser = Browser()
+        browser.handleErrors = False
+        if auth is not None:
+            browser.addHeader("Authorization", auth)
+        return browser
+
+    test.globs['setupBrowser'] = setupBrowser
+    test.globs['browser'] = setupBrowser()
+    test.globs['anon_browser'] = setupBrowser()
+    test.globs['user_browser'] = setupBrowser(
+        auth="Basic no-priv@canonical.com:test")
+    test.globs['admin_browser'] = setupBrowser(
+        auth="Basic foo.bar@canonical.com:test")
+
     test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_text'] = extract_text
+    test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['print_tab_links'] = print_tab_links
+    test.globs['print_action_links'] = print_action_links
+    test.globs['print_comments'] = print_comments
 
 
 class PageStoryTestCase(unittest.TestCase):

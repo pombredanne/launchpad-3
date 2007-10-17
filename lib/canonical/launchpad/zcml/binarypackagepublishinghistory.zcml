@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -27,7 +26,7 @@
     <allow
      interface="canonical.launchpad.interfaces.IBinaryPackageFilePublishing"/>
     <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
-    <!-- XXX cprov 20060614: missing security adapter -->
+    <!-- XXX cprov 2006-06-14: missing security adapter -->
   </content>
 
   <!-- SecureBinaryPackagePublishingHistory -->

@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -14,10 +20,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <tal:has_packages condition="context/sample_binary_packages">
@@ -27,7 +29,7 @@
          tal:content="context/sourcepackage/name"/>:
     </p>
 
-    <ul class="packages">
+    <ul class="binary package">
       <li tal:repeat="drbp context/sample_binary_packages">
         <a tal:attributes="href drbp/fmt:url">
            <span tal:replace="drbp/name">apache-utils</span>:
@@ -43,25 +45,7 @@
     </ul>
   </tal:has_packages>
 
-  <h2>Publishing history</h2>
-  <table class="listing">
-  <thead>
-  <tr>
-    <th>Time</th>
-    <th>Status</th>
-    <th>Target</th>
-    <th>Pocket</th>
-    <th>Component</th>
-    <th>Section</th>
-    <th>Version</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tal:block repeat="publishing context/publishing_history"
-             replace="structure publishing/@@+listing-detailed">
-  </tal:block>
-  </tbody>
-  </table>
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
 
   <h2>Download</h2>
 
@@ -70,12 +54,32 @@
         <li tal:repeat="file files">
           <a
             tal:content="file/libraryfile/filename"
-            tal:attributes="href file/libraryfile/url">evolution_2.tar.gz</a>
+            tal:attributes="href file/libraryfile/http_url">evolution_2.tar.gz</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>
      <i tal:condition="not:files">No files available for download.</i>
    </div>
+
+  <h2>Publishing history</h2>
+  <table class="listing">
+    <thead>
+    <tr>
+        <th>When</th>
+        <th>Status</th>
+        <th>Target</th>
+        <th>Pocket</th>
+        <th>Component</th>
+        <th>Section</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tal:block repeat="publishing context/publishing_history"
+                 replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </tbody>
+  </table>
 
 
 </div>

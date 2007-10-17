@@ -1,0 +1,154 @@
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
+  <body>
+    <h1 metal:fill-slot="heading">Questions and answers</h1>
+    <div metal:fill-slot="main">
+
+                        <ul class="rollover buttons">
+                          <li>
+                            <a href="/+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
+                        <form class="central" action="" method="get"
+                              tal:attributes="action request/URL">
+                          <table>
+                            <tbody>
+                              <tr>
+                                <td style="text-align: right;">
+                                  <input
+                                    id="text"
+                                    type="text"
+                                    name="field.search_text"
+                                    size="50"
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    tal:replace="structure view/search_action/render"
+                                    type="submit"
+                                    value="Find Answers"
+                                  />
+                                </td>
+                              </tr>
+                              <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
+                                <td tal:attributes="class view/scope_css_class"
+                                    style="text-align: right;">
+
+                                  <tal:scope
+                                    replace="structure view/widgets/scope/renderScopeOptions" />
+
+                                    <tal:input replace="structure target_widget/inputField" />
+
+                                  <tal:sort
+                                    replace="structure view/widgets/sort/hidden" />
+                                  <tal:status
+                                    replace="structure view/widgets/status/hidden" />
+                                  <div class="message"
+                                    tal:condition="view/scope_error"
+                                    tal:content="structure view/scope_error">
+                                    Error message
+                                  </div>
+                                </td>
+                                <td tal:content="structure target_widget/chooseLink" />
+                              </tr>
+                            </tbody>
+                          </table>
+                          <div>
+                        </form>
+                        <p id="application-summary">
+                          Launchpad Answers helps you build a
+                          community support network and knowledge base for
+                          your project. Encourage new users to ask questions
+                          rather than file bugs!
+                          <a href="/+about">Learn more&#8230;</a>
+                        </p>
+
+      <div class="columns">
+        <div id="most-active-projects" class="three column left">
+          <h2 i18n:translate="">Most active projects</h2>
+
+          <ul tal:define="projects view/most_active_projects"
+              tal:condition="projects"
+              style="list-style: none;">
+            <li tal:repeat="project projects">
+              <a href="#"
+                 tal:attributes="href project/fmt:url">
+                <img alt="" tal:replace="structure project/image:icon" />
+                <span tal:replace="project/displayname" />
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div id="latest-questions-asked" class="three column middle">
+          <h2 i18n:translate="">Latest questions asked</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_asked"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      
+        <div id="latest-questions-solved" class="three column right">
+          <h2 i18n:translate="">Latest questions solved</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_solved"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      </div>
+                        <div id="application-footer" i18n:translate="">
+                          <div>
+                            <strong
+                              i18n:name="answered_question_count"
+                              tal:content="view/answered_question_count"
+                            >52</strong>
+                            questions answered and
+                            <strong
+                              i18n:name="solved_question_count"
+                              tal:content="view/solved_question_count"
+                            >52</strong>
+                            questions solved out of
+                          </div>
+                          <div>
+                            <strong
+                              i18n:name="question_count"
+                              tal:content="view/question_count"
+                            >318</strong>
+                            questions asked across
+                            <strong
+                              i18n:name="projects_with_questions_count"
+                              tal:content="view/projects_with_questions_count"
+                            >28</strong>
+                            projects
+                          </div>
+                        </div>
+
+    </div><!--main-->
+
+  <metal:help fill-slot="help">
+    <p>This page gives you a quick overview of the recent
+    activity in the Launchpad Answer Tracker.
+    </p>
+    <p>To post a new question, navigate to the project
+      you are having a problem with and use the <emph>Ask a Question</emph>
+      button.
+    </p>
+    <p>You can enter a question id in the search text field to quickly
+      navigate to the question.
+    </p>
+    <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
+        documention</a> for the Answer Tracker application is available in the
+      Help wiki.</p>
+  </metal:help>
+
+  </body>
+</html>
+<!-- 1-0 inprogress needs search of all answers -->

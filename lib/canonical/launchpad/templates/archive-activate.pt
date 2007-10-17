@@ -1,0 +1,59 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="extra_info">
+       <p> Read the current version of <a 
+           href="https://help.launchpad.net/PPATermsofUse"
+           >PPA Terms of Use</a> before activating your PPA.</p>
+    </div>
+
+    <div class="form" metal:fill-slot="widgets">
+
+      <div tal:define="widget nocall:view/widgets/accepted|nothing"
+           tal:condition="widget" style="padding-bottom: 1em">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </div>
+
+      <div tal:define="widget nocall:view/widgets/description|nothing"
+           tal:condition="widget">
+         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </div>
+
+   </div>
+
+  <div class="actions" metal:fill-slot="buttons">
+    <input tal:replace="structure view/actions/field.actions.activate/render" />
+  </div>
+
+  </div>
+
+</div>
+
+    <p metal:fill-slot="help">
+       Once you activate your PPA you will be able to upload source
+       packages to it and Launchpad will build and publish their
+       binaries for you. Check the procedure details in the
+       quick-start <a href="https://help.launchpad.net/PPAQuickStart"
+       >guide</a>.
+    </p>
+
+</body>
+</html>

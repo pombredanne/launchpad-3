@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
     <h2 tal:content="context/title">bugtracker title</h2>
 
     <div class="portletBody">
@@ -22,10 +26,7 @@
         in a long mess</span><br />
 
         <b>Creator:</b>
-        <img alt="" src="/@@/user" />
-        <a tal:attributes="href context/owner/fmt:url"
-           tal:content="context/owner/browsername"
-           class="link">ownername</a><br />
+        <a tal:replace="structure context/owner/fmt:link">ownername</a><br />
 
         </div>
     </div>

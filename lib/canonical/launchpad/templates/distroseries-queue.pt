@@ -1,0 +1,234 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/distribution/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Upload and build queue</h1>
+</metal:heading>
+
+<div metal:fill-slot="main"
+     tal:define="setup view/setupQueueList;
+                 message view/performQueueAction;
+                 error view/error|nothing">
+
+  <script type="text/javascript">
+    function toggleQueueFilelistVisibility(row_id) {
+      row = document.getElementById(row_id)
+      view_icon = document.getElementById(row_id + "-view")
+      if (row.style.display == "none") {
+        row.style.display = "table-row";
+        view_icon.setAttribute("src", "/@@/treeExpanded")
+      } else {
+        row.style.display = "none";
+        view_icon.setAttribute("src", "/@@/treeCollapsed")
+      }
+      return false;
+    }
+  </script>
+
+  <p class="informational message"
+     tal:condition="message"
+     tal:content="structure message">
+     This call to view/performQueueAction actually parses the form and does
+     the database queries based on actions posted (packages accepted or
+     rejected), and shows the status of those actions here.
+  </p>
+
+  <p class="error message"
+      tal:condition="error"
+      tal:content="error"/>
+
+  <div class="queue_list" tal:condition="not: error">
+
+    <tal:batch define="batch view/batchnav/currentBatch|nothing">
+
+    <form name="queue_items_state" action="" method="GET">
+
+      Show:
+
+      <select name="queue_state" size="1">
+
+        <option tal:repeat="option view/filtered_options"
+                tal:attributes="selected option/selected;
+                                value option/value"
+                tal:content="option/name" />
+
+      </select>
+
+      uploads with names like:
+
+      <input size="10" type="text" name="queue_text"
+                       tal:attributes="value view/name_filter" />
+
+      <input type="submit" value="Update" />
+
+    </form>
+
+    <br />
+
+     <tal:navigation
+        replace="structure view/batchnav/@@+navigation-links-upper" />
+
+     <form name="queue_items_action" action="" method="POST">
+     <table class="listing sortable" tal:condition="batch"
+            id="distroseriesqueue">
+       <thead>
+         <tr>
+           <th tal:condition="view/availableActions">
+           </th>
+           <th>
+           </th>
+           <th>
+             Package
+           </th>
+           <th>
+             Version
+           </th>
+           <th>
+             Pocket
+           </th>
+           <th>
+             When
+           </th>
+           <th>
+             Changes File
+           </th>
+         </tr>
+       </thead>
+       <tbody class="lesser">
+         <tal:batch repeat="queue batch">
+           <tal:block define="filelist_id string:queue${queue/id}-filelist">
+           <tr>
+              <td class="icon left" tal:condition="view/availableActions">
+                 <input type="checkbox" name="QUEUE_ID"
+                        tal:attributes="value queue/id"/>
+              </td>
+              <td width="14">
+                <a tal:attributes="
+	           href string:./+queue;
+                   onclick string:return toggleQueueFilelistVisibility('${filelist_id}')"
+                   ><img tal:attributes="id string:${filelist_id}-view"
+                         width="14" height="14"
+                         src="/@@/treeCollapsed" alt="view files"/></a>
+              </td>
+  	      <td>
+                <tal:iconlist replace="structure queue/@@+iconlist" />
+              </td>
+              <td tal:content="queue/displayversion">2.0.17-6</td>
+              <td tal:content="queue/pocket/title">Updates</td>
+              <td>
+                <span class="sortkey"
+                  tal:content="queue/datecreated/fmt:datetime" />
+                <span
+                  tal:attributes="title queue/datecreated/fmt:datetime"
+                  tal:content="queue/datecreated/fmt:approximatedate">
+                  2006-03-15
+                </span>
+              </td>
+              <td>[<a tal:attributes="
+                href queue/changesfile/http_url">view</a>]
+              </td>
+           </tr>
+           <tr tal:attributes="id filelist_id"
+               style="display: none">
+              <td colspan="7">
+                <tal:filelist replace="structure queue/@@+filelist" />
+              </td>
+           </tr>
+           </tal:block>
+         </tal:batch>
+       </tbody>
+     </table>
+
+     <tal:has_items tal:condition="batch">
+     <table class="listing" tal:condition="view/availableActions">
+       <tfoot>
+         <tr>
+           <td colspan="7">
+              <input tal:repeat="action view/availableActions"
+                     tal:attributes="value action; name action"
+                     type="submit"/>
+           </td>
+         </tr>
+       </tfoot>
+     </table>
+     </tal:has_items>
+
+     </form>
+
+     <div class="portalMessage" tal:condition="not: batch">
+       The <span tal:replace="view/state/title" /> queue
+       is empty.
+     </div>
+
+     <tal:navigation
+        replace="structure view/batchnav/@@+navigation-links-lower" />
+
+     </tal:batch>
+  </div>
+
+</div>
+
+<div metal:fill-slot="help">
+  <p>
+    The packages incorporation work-flow within a distroseries is
+    represented as a pipeline.
+  </p>
+  <p>
+    The pipeline can process three types of packages: Sources, which
+    contain one uploaded source package each submitted by the
+    developers; Builds, which can contain, at least, one binary packages
+    and optionally, one or more custom packages, it's resulted of the
+    build of a published source; and Customs, a single custom package.
+  </p>
+  <p>
+    Custom uploads are special files, usually a tarball, that are not
+    targeted to be build normally (i.e, they are not sources, neither
+    binaries), instead they have specific contents to be directly
+    processed by one of the available custom processors in
+    Launchpad. Currently, the following custom processors are offered:
+    Installer, Dist-Upgrader, DDTP and Translations.
+  </p>
+  <p>
+    All incoming packages tend to go for the stable states, DONE or
+    REJECTED, the end of the pipeline, which means that the package
+    was completely incorporated or excluded, respectively, in the
+    distroseries in question.
+  </p>
+  <p>
+    All incoming packages, essentially, start in NEW stage. Already
+    known packages, which previous versions are already incorporated,
+    are automatically moved to ACCEPTED stage, the remaining ones
+    need manual approval of the archive administrators for this
+    distroseries to continue.
+  </p>
+  <p>
+    Packages with some policy restrictions, like post-release updates
+    and security updates, also wait manual approval as UNAPPROVED.
+  </p>
+  <p>
+    Once a package is in ACCEPTED stage, it waits the distroseries
+    periodic publication cycle to happen, then sources will get
+    published and will start building and builds and customs will be
+    published in the archive appropriately, ending up in DONE.
+  </p>
+</div>
+
+</body>
+</html>

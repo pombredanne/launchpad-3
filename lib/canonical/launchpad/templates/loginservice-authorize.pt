@@ -1,0 +1,54 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:block fill-slot="auth">
+      <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
+
+      <form action="/+decide" method="post" accept-charset="UTF-8">
+        <tal:widget replace="structure view/widgets/nonce/hidden" />
+
+        <p class="error message"
+          tal:repeat="form_wide_error view/form_wide_errors"
+          tal:content="structure form_wide_error">
+          Schema validation errors.
+        </p>
+
+        <div>
+            <p>
+              These details will be sent to
+              <tal:title replace="view/rpconfig/displayname |
+                                  view/openid_request/trust_root" />:
+            </p>
+
+          <ul tal:define="fields view/sreg_fields">
+            <li tal:repeat="field fields"
+                tal:content="python:field[1]" />
+            <li tal:condition="not:fields">
+              <!-- XXX: jamesh 2007-07-03
+                   This text should be friendlier -->
+              <em>Only your identity URL</em>
+            </li>
+          </ul>
+        </div>
+
+        <div style="float: left; text-align: left; width: 25%;">
+          <tal:submit replace="structure view/auth_action/render" />
+        </div>
+        <div style="float: right; text-align: right; text-wrap: none; width: 75%;">
+          <tal:submit replace="structure view/deny_action/render" />
+          <tal:submit replace="structure view/logout_action/render" />
+        </div>
+
+      </form>
+    </metal:block>
+  </body>
+</html>

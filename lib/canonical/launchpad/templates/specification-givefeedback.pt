@@ -11,19 +11,9 @@
   <div tal:replace="structure context/@@+portlet-feedbackqueue" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h4><span tal:replace="context/target/displayname">Firefox</span>
-      Feature Specification:</h4>
-  <h2 tal:content="context/title">Spec Title</h2>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <h1>Give feedback on this specification</h1>
+  <h1>Give feedback on this blueprint</h1>
 
   <p class="documentDescription">
     Select the requests which you wish to remove from your queue.
@@ -59,7 +49,7 @@
     </table>
 
     <div class="discreet">
-      Select the items that you have addressed in this specification, and
+      Select the items that you have addressed in this blueprint, and
       click "Continue" to clear those feedback requests from your queue.
     </div>
 

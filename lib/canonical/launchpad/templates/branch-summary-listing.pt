@@ -1,22 +1,18 @@
-<li>
+<li xmlns:tal="http://xml.zope.org/namespaces/tal">
   <div>
     <a tal:attributes="href context/fmt:url"
         tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a>
     <tal:person-link condition="view/show_person_link">
-      - <img src="/@@/user" />
-      <tal:author condition="context/author">
-	<a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches"
-	    tal:content="context/author/browsername">Author</a>
-      </tal:author>
-      <tal:no-author condition="not:context/author">
-	<a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches"
-	    tal:content="context/owner/browsername">Registrant</a>
-      </tal:no-author>
+      -
+      <a tal:condition="context/author"
+         tal:replace="structure context/author/fmt:link/+authoredbranches" />
+      <a tal:condition="not:context/author"
+         tal:replace="structure context/owner/fmt:link/+registeredbranches" />
     </tal:person-link>
     <tal:product-link condition="view/show_product_link">
       - <img src="/@@/product" />
       <a tal:attributes="href string:${context/product/fmt:url}/+branches"
-	  tal:content="context/product/displayname">Product</a>
+	  tal:content="context/product/displayname">Project</a>
     </tal:product-link>
   </div>
   <div>

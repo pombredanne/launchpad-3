@@ -1,5 +1,4 @@
-Person Pages
-============
+= Person Pages =
 
 In every person page, the 'Bugs' facet has a series of bug listings for
 that person. These pages provide simple and advanced search forms.
@@ -9,15 +8,15 @@ that person. These pages provide simple and advanced search forms.
 
 Let's define a helper function to make it easier to construct a view.
 
-    >>> from zope.component import getView
-    >>> from zope.publisher.browser import TestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def create_view(context, name, form=None):
-    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view = getMultiAdapter(
+    ...         (context, LaunchpadTestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
 
-Assigned bugs
--------------
+== Assigned bugs ==
 
 All bug tasks assigned to this person.
 
@@ -28,7 +27,7 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
     >>> assigned_bugtasks = list(assigned_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
-    [(7, 'UNCONFIRMED')]
+    [(7, 'NEW')]
 
 Using the advanced form we can query for closed bugs.
 
@@ -44,24 +43,22 @@ Using the advanced form we can query for closed bugs.
     ...     for bugtask in closed_bugtasks]
     [(8, 'FIXRELEASED')]
 
-Reported bugs
--------------
+== Reported bugs ==
 
 All bug tasks reported by someone. By default we'll get assigned and
 unassigned bug tasks.
 
     >>> reported_bugtasks_view = create_view(name16, '+reportedbugs')
     >>> reported_bugtasks = list(reported_bugtasks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name,
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.bug.owner.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None),
-     (2, 'UNCONFIRMED', None),
-     (3, 'UNCONFIRMED', None),
-     (5, 'UNCONFIRMED', None),
-     (7, 'UNCONFIRMED', u'name16'),
-     (9, 'CONFIRMED', None),
-     (10, 'UNCONFIRMED', None)]
+    [(3, 'NEW', u'name16', None),
+     (7, 'NEW', u'name16', u'name16'),
+     (9, 'CONFIRMED', u'name16', None),
+     (10, 'NEW', u'name16', None),
+     (11, 'NEW', u'name16', None),
+     (12, 'CONFIRMED', u'name16', None)]
 
 But the advanced search allows us to query only the bug tasks that aren't
 assigned.
@@ -74,33 +71,34 @@ assigned.
     >>> reported_bugtasks = sorted(
     ...     reported_bugtasks_view.search().batch,
     ...     key=lambda bugtask: (bugtask.bug.id, bugtask.id))
-    >>> [(bugtask.bug.id, bugtask.status.name,
+    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.bug.owner.name,
     ...   getattr(bugtask.assignee, 'name', None))
     ... for bugtask in reported_bugtasks]
-    [(1, 'UNCONFIRMED', None),
-     (2, 'UNCONFIRMED', None),
-     (3, 'UNCONFIRMED', None),
-     (5, 'UNCONFIRMED', None),
-     (9, 'CONFIRMED', None),
-     (10, 'UNCONFIRMED', None)]
+    [(3, 'NEW', u'name16', None),
+     (9, 'CONFIRMED', u'name16', None),
+     (10, 'NEW', u'name16', None),
+     (11, 'NEW', u'name16', None),
+     (12, 'CONFIRMED', u'name16', None)]
 
 Using the advanced form we can also query for closed bugs reported by someone.
-Let's first close a bug setting its status to 'Rejected'.
+Let's first close a bug setting its status to 'Invalid'.
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> bug_task = reported_bugtasks[0]
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> bug_task = reported_bugtasks[1]
     >>> print bug_task.distribution.name
     ubuntu
     >>> print bug_task.sourcepackagename.name
-    mozilla-firefox
+    thunderbird
     >>> bug_task.bug.id
-    1
-    >>> reported_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
+    9
+    >>> old_status = bug_task.status
+    >>> bug_task.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 And now we query for it.
@@ -110,7 +108,7 @@ And now we query for it.
     ...     'assignee_option': 'none',
     ...     'field.assignee': '',
     ...     'advanced': 1,
-    ...     'field.status': 'Rejected',
+    ...     'field.status': 'Invalid',
     ...     'search': 'Search bugs reported by Foo Bar'}
     >>> closed_reported_bugtasks_view = create_view(
     ...     name16, '+reportedbugs', form)
@@ -119,11 +117,14 @@ And now we query for it.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in closed_reported_bugtasks])
-    [(1, 'REJECTED', None)]
+    [(9, 'INVALID', None)]
+
+    >>> bug_task.transitionToStatus(
+    ...     old_status, getUtility(ILaunchBag).user)
+    >>> flush_database_updates()
 
 
-Subscribed bugs
----------------
+== Subscribed bugs ==
 
 All bug tasks someone is subscribed to. By default we'll get bug tasks
 with any importance.
@@ -134,9 +135,11 @@ with any importance.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'LOW'),
-     (1, 'UNCONFIRMED', 'LOW'),
-     (4, 'UNCONFIRMED', 'MEDIUM'),
-     (9, 'CONFIRMED', 'MEDIUM')]
+     (1, 'NEW', 'LOW'),
+     (1, 'NEW', 'MEDIUM'),
+     (4, 'NEW', 'MEDIUM'),
+     (9, 'CONFIRMED', 'MEDIUM'),
+     (13, 'NEW', 'UNDECIDED')]
 
 Using the advanced form we can query for closed bugs someone is subscribed to.
 
@@ -156,8 +159,8 @@ Using the advanced form we can query for closed bugs someone is subscribed to.
     ...         for bugtask in closed_subscribed_bugtasks])
     [(8, 'FIXRELEASED', u'name16')]
 
-Bugs for Bug Contact
---------------------
+
+== Bugs for Bug Contact ==
 
 Malone can generate bug reports for packages on which a user is a bug
 contact. The Person context is used only to get a list of packages that
@@ -228,13 +231,13 @@ Unassigned, and In Progress bug lists.
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
     >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
     >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
     >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
+    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.unassigned=on&search=Search'
 
     >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
@@ -269,20 +272,49 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts['package_search_url']
     u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
-    >>> ubuntu_firefox_bugcounts['open_bugs_count']
+    >>> print ubuntu_firefox_bugcounts['open_bugs_count']
+    1
+    >>> print ubuntu_firefox_bugcounts['critical_bugs_count']
     0
-    >>> ubuntu_firefox_bugcounts['critical_bugs_count']
-    0
-    >>> ubuntu_firefox_bugcounts['unassigned_bugs_count']
-    0
-    >>> ubuntu_firefox_bugcounts['inprogress_bugs_count']
+    >>> print ubuntu_firefox_bugcounts['unassigned_bugs_count']
+    1
+    >>> print ubuntu_firefox_bugcounts['inprogress_bugs_count']
     0
 
     >>> ubuntu_firefox_bugcounts['open_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['critical_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
+    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.unassigned=on&search=Search'
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
     u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+
+
+== Bugs commented on by a Person ==
+
+It is possible to search for all the bugs commented on by a specific Person
+using that Person's +commentedbugs page. Since No Privileges Person hasn't
+commented on any bugs, viewing his +commentedbugs page will return no bugs:
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> commented_bugtasks_view = create_view(no_priv, '+commentedbugs')
+    >>> commented_bugs = list(commented_bugtasks_view.search().batch)
+    >>> [bugtask.bug.id for bugtask in sorted(commented_bugs)]
+    []
+
+If No Privileges Person comments on bug one, his +commentedbugs page will list
+that bug as being one of the bugs on which he has commented. The bug will be
+listed three times since there are three BugTasks for that particular bug (see
+bug 1357):
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.newMessage(no_priv, 'Some message', 'Contents')
+    <Message at ...>
+
+    >>> commented_bugtasks_view = create_view(no_priv, '+commentedbugs')
+    >>> commented_bugs = list(commented_bugtasks_view.search().batch)
+    >>> [bugtask.bug.id for bugtask in sorted(commented_bugs)]
+    [1, 1, 1]
+

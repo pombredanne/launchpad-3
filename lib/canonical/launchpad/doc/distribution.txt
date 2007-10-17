@@ -1,5 +1,4 @@
-Distributions
-=============
+= Distributions =
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -16,10 +15,10 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     MirrorPulseType)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistribution, IDistributionSet, IHasTranslationImports)
+    >>> from canonical.lp.dbschema import PackagePublishingPocket
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -31,6 +30,17 @@ To retrieve a specific distribution, use IDistributionSet.get:
 Or, to grab one by name, use:
 
     >>> gentoo = distroset.getByName("gentoo")
+
+Let's make sure a distribution object properly implements its interfaces.
+
+    >>> IDistribution.providedBy(gentoo)
+    True
+    >>> verifyObject(IDistribution, gentoo)
+    True
+    >>> IHasTranslationImports.providedBy(gentoo)
+    True
+    >>> verifyObject(IHasTranslationImports, gentoo)
+    True
 
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
@@ -63,25 +73,25 @@ have a SourcePackageName object for it.
 
 You can also get a release by name:
 
-    >>> hoary = ubuntu.getRelease("hoary")
+    >>> hoary = ubuntu.getSeries("hoary")
     >>> print hoary.name
     hoary
 
 Or by version:
 
-    >>> v504 = ubuntu.getRelease("5.04")
+    >>> v504 = ubuntu.getSeries("5.04")
     >>> print v504.name
     hoary
 
-You can list development distroreleases:
+You can list development distroseriess:
 
-    >>> devdists = ubuntu.getDevelopmentReleases()
+    >>> devdists = ubuntu.getDevelopmentSerieses()
     >>> for devdist in devdists:
     ...     print devdist.name
     hoary
 
-Guessing package names
-======================
+
+== Guessing package names ==
 
 IDistribution allows us to retrieve packages by name, returning a tuple
 of Source/BinaryPackageName instances published within this
@@ -121,20 +131,20 @@ Raises NotFoundError for following conditions:
     ...
     NotFoundError: 'Unknown package: 1234'
 
-It also raises NotFoundError on distributions with no releases:
+It also raises NotFoundError on distributions with no series:
 
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
     Traceback (most recent call last):
     ...
-    NotFoundError: u"Gentoo has no releases; 'pmount' was never published in it"
+    NotFoundError: u"Gentoo has no series; 'pmount' was never published in it"
 
-Even if we add a release to Gentoo, no packages have ever been published
+Even if we add a series to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> distroreleaseset = getUtility(IDistroReleaseSet)
-    >>> gentoo_two = distroreleaseset.new(gentoo, 'gentoo-two', 'Gentoo Two',
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
+    >>> gentoo_two = distroseriesset.new(gentoo, 'gentoo-two', 'Gentoo Two',
     ...                                   'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
     ...                                   '2.0', None, gentoo.owner)
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
@@ -153,8 +163,41 @@ binary and source packages but for which only the source is published:
     >>> source_name.name
     u'alsa-utils'
 
-Distribution Sorting
-====================
+It's possible for a binary package to have the same name as a source
+package, yet not be derived from that source package. In this case, we
+want to prefer the source package with that name.
+
+First, we need a function to help testing:
+
+    >>> def print_guessed_names(package_name):
+    ...     source, binary = ubuntu.guessPackageNames(package_name)
+    ...     print "source: %r" % source.name
+    ...     print "binary: %r" % getattr(binary, 'name', None)
+
+Note that source packages can produces lots of differently named
+binary packages so only return a match if it's got the same name as
+the source package rather than returning an arbitrary binary package:
+
+Both iceweasel and mozilla-firefox source packages produce
+mozilla-firefox binary packages.
+
+    >>> print_guessed_names('mozilla-firefox')
+    source: u'mozilla-firefox'
+    binary: u'mozilla-firefox'
+    >>> print_guessed_names('iceweasel')
+    source: u'iceweasel'
+    binary: None
+
+If we don't get a hit on the source package we search binary
+packages. Because there is a many to one relationship from binary
+packages to source packages we can always return a source package
+name even if it differs:
+
+    >>> print_guessed_names('linux-2.6.12')
+    source: u'linux-source-2.6.15'
+    binary: u'linux-2.6.12'
+
+== Distribution Sorting ==
 
 If you ask for all the distributions in the DistributionSet you should get
 Ubuntu first and the rest alphabetically:
@@ -163,15 +206,14 @@ Ubuntu first and the rest alphabetically:
     ...     print item.name
     ubuntu
     kubuntu
+    ubuntutest
     debian
     gentoo
     guadalinex
     redhat
-    ubuntutest
 
 
-Searching for DistributionSourcePackages
-----------------------------------------
+=== Searching for DistributionSourcePackages ===
 
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
@@ -191,55 +233,52 @@ and even on substrings:
     1
 
 
-Finding distroreleases and pockets from distribution names
-----------------------------------------------------------
+=== Finding distroseriess and pockets from distribution names ===
 
-A distribution knows what distroreleases it has. Those distroreleases have
+A distribution knows what distroseriess it has. Those distroseriess have
 pockets which have suffixes used by the archive publisher. Because we sometimes
-need to talk about distroreleases such as ubuntu/hoary-security we need some
-way to decompose that into the distrorelease and the pocket. Distribution
+need to talk about distroseriess such as ubuntu/hoary-security we need some
+way to decompose that into the distroseries and the pocket. Distribution
 can do that for us.
 
-If we ask for a totally unknown distrorelease, we raise NotFoundError
-    >>> ubuntu.getDistroReleaseAndPocket('unknown')
+If we ask for a totally unknown distroseries, we raise NotFoundError
+    >>> ubuntu.getDistroSeriesAndPocket('unknown')
     Traceback (most recent call last):
     ...
     NotFoundError: 'unknown'
 
-If we ask for a plain distrorelease, it should come back with the RELEASE
+If we ask for a plain distroseries, it should come back with the RELEASE
 pocket as the pocket.
-    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary')
+    >>> dr, pocket = ubuntu.getDistroSeriesAndPocket('hoary')
     >>> print dr.name
     hoary
     >>> print pocket.name
     RELEASE
 
-If we ask for a security pocket in a known distrorelease it should come out
+If we ask for a security pocket in a known distroseries it should come out
 on the other side.
-    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-security')
+    >>> dr, pocket = ubuntu.getDistroSeriesAndPocket('hoary-security')
     >>> print dr.name
     hoary
     >>> print pocket.name
     SECURITY
 
 Find the backports pocket, too:
-    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-backports')
+    >>> dr, pocket = ubuntu.getDistroSeriesAndPocket('hoary-backports')
     >>> print dr.name
     hoary
     >>> print pocket.name
     BACKPORTS
 
-If we ask for a valid distrorelease which doesn't have a given pocket it should
+If we ask for a valid distroseries which doesn't have a given pocket it should
 raise NotFoundError for us
-    >>> ubuntu.getDistroReleaseAndPocket('hoary-bullshit')
+    >>> ubuntu.getDistroSeriesAndPocket('hoary-bullshit')
     Traceback (most recent call last):
     ...
     NotFoundError: 'hoary-bullshit'
 
 
-
-Upload related stuff
---------------------
+=== Upload related stuff ===
 
 When uploading to a distribution we need to query its uploaders. Each
 uploader record is in fact a DistroComponentUploader record which
@@ -261,9 +300,10 @@ people.
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).
 
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').url
+    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').getURL()
     'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', source=False).url
+    >>> ubuntu.getFileByName(
+    ...     'mozilla-firefox_0.9_i386.deb', source=False).getURL()
     'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
     >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', binary=False)
     Traceback (most recent call last):
@@ -275,23 +315,26 @@ incomplete source is uploaded).
     AssertionError: searching in an explicitly empty space is pointless
 
 
-Launchpad Usage
----------------
+=== Launchpad Usage ===
 
-A distribution can specify if it uses Malone or Rosetta officially.
-Ubuntu uses both Malone and Rosetta:
+A distribution can specify if it uses Malone, Rosetta, or Answers 
+officially. Ubuntu uses all of them:
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
     True
     >>> ubuntu.official_rosetta
     True
-
-While Debian uses neither:
+    >>> ubuntu.official_answers
+    True
+    
+While Debian uses none:
 
     >>> debian.official_malone
     False
     >>> debian.official_rosetta
+    False
+    >>> debian.official_answers
     False
 
 Gentoo only uses Malone
@@ -300,11 +343,11 @@ Gentoo only uses Malone
     True
     >>> print gentoo.official_rosetta
     False
+    >>> print gentoo.official_answers
+    False
 
 
-
-Specification Listings
-======================
+=== Specification Listings ===
 
 We should be able to get lists of specifications in different states
 related to a distro.
@@ -378,18 +421,292 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
  ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.status = SpecificationStatus.OBSOLETE
+ ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
  ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name
  kde-desktopfile-langpacks
 
+== Milestones ==
+
+We can use IDistribution.milestones to get all milestones associated with any
+series of a distribution.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in debian.milestones]
+    [u'3.1-rc1', u'3.1']
+
+    >>> woody = debian['woody']
+    >>> debian_milestone = woody.newMilestone(
+    ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in debian.milestones]
+    [(u'woody-rc1', '2028-10-01'), (u'3.1-rc1', '2056-02-16'),
+     (u'3.1', '2056-05-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> debian_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in debian.milestones]
+    [u'3.1-rc1', u'3.1']
+
+To get all milestones of a given distro we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in debian.all_milestones]
+    [u'woody-rc1', u'3.1-rc1', u'3.1']
+
+
+== Handling Personal Package Archives ==
+
+`IDistribution` provides a series of methods to lookup PPAs:
+
+ * getAllPPAs
+ * searchPPAs
+ * getPendingAcceptancePPAs
+ * getPendingPublicationPPAs
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+
+=== Iteration over all PPAs  ===
+
+getAllPPAs method provides all returns, as the suggests, all PPAs for
+the distribution in question:
+
+    >>> [archive.owner.name for archive in ubuntu.getAllPPAs()]
+    [u'cprov', u'sabdfl', u'no-priv']
+
+    >>> [archive.owner.name for archive in debian.getAllPPAs()]
+    []
+
+
+=== Searching PPAs ===
+
+Via searchPPAs, the callsites are able to look for PPA given a string
+matching Person.fti or PPA.description and also restrict the result to
+active/inactive (whether the PPA contains or not valid publications):
+
+There is only one 'active' PPA:
+
+    >>> cprov.archive.getPublishedSources().count()
+    3
+    >>> sabdfl.archive.getPublishedSources().count()
+    1
+    >>> no_priv.archive.getPublishedSources().count()
+    0
+  
+    >>> result = ubuntu.searchPPAs()
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'sabdfl']
+  
+PPAs can be reached passing a filter matching (substring) its
+description or the person string indexes:
+
+    >>> print cprov.archive.description
+    packages to help my friends.
+  
+    >>> result = ubuntu.searchPPAs(text='friend')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov']
+  
+    >>> result = ubuntu.searchPPAs(text='celso')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov']
+  
+    >>> result = ubuntu.searchPPAs(text='oink')
+    >>> [archive.owner.name for archive in result]
+    []
+
+Incluing 'inactive' PPAs:
+
+    >>> result = ubuntu.searchPPAs(show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'no-priv', u'sabdfl']
+  
+    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'no-priv']
+  
+    >>> print sabdfl.archive.description
+    packages to help the humanity (you know, ubuntu)
+  
+    >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'sabdfl']
+
+
+== Retrieving only pending-acceptance PPAs ==
+
+'getPendingAcceptancePPAs' lookup will only return PPA which have
+Package Upload (queue) records in ACCEPTED state, it it used in
+'process-accepted' in '--ppa' mode to avoid quering all PPAs:
+
+Nothing is pending-acceptance in sampledata:
+
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+Create a NEW PackageUpload record for cprov PPA:
+
+      >>> hoary = ubuntu['hoary']
+
+      >>> from canonical.lp.dbschema import PackagePublishingPocket
+      >>> queue = hoary.createQueueEntry(
+      ...      pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+      ...      changesfilename='foo', changesfilecontent='bar')
+      >>> queue.status.name
+      'NEW'
+
+Records in NEW do not make cprov PPA pending-acceptance:
+
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+Neither in UNAPPROVED:
+
+      >>> queue.setUnapproved()
+      >>> from canonical.launchpad.ftests import syncUpdate
+      >>> syncUpdate(queue)
+      >>> queue.status.name
+      'UNAPPROVED'
+
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+Only records in ACCEPTED does:
+
+      >>> queue.setAccepted()
+      >>> syncUpdate(queue)
+      >>> queue.status.name
+      'ACCEPTED'
+
+      >>> pending_ppas = ubuntu.getPendingAcceptancePPAs()
+      >>> [pending_ppa] = pending_ppas
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Records in DONE also do not trigger pending-acceptance state in PPAs:
+
+      >>> queue.setDone()
+      >>> syncUpdate(queue)
+      >>> queue.status.name
+      'DONE'
+      
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+
+== Retrieving only pending-acceptance PPAs ==
+
+
+'getPendingPublicationPPAs'lookup will only return PPA which have
+PENDING publishing records, it's used in 'publish-distro' in '--ppa'
+mode to avoiding querying all PPAs.
+
+Nothing is pending-publication in sampledata:
+
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+Making cprov PPA pending publication by creating a new source
+publishing record: 
+
+      >>> from canonical.database.constants import UTC_NOW
+      >>> from canonical.launchpad.database.publishing import (
+      ...     SecureSourcePackagePublishingHistory, 
+      ...     SecureBinaryPackagePublishingHistory) 
+      >>> from canonical.lp.dbschema import PackagePublishingStatus
+
+      >>> pmount = hoary.getSourcePackage('pmount')
+      >>> pmount_spr = pmount.currentrelease.sourcepackagerelease
+
+      >>> src_pub = SecureSourcePackagePublishingHistory(
+      ...     distroseries=hoary, sourcepackagerelease=pmount_spr,
+      ...     component=pmount_spr.component, section=pmount_spr.section,
+      ...     embargo=False, datecreated=UTC_NOW,
+      ...     status=PackagePublishingStatus.PENDING,
+      ...     pocket=PackagePublishingPocket.RELEASE,
+      ...     archive=cprov.archive)
+
+      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
+      >>> [pending_ppa] = pending_ppas
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Publishing the record removing cprov PPA from pending-publication
+state: 
+
+      >>> src_pub.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(src_pub)
+
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+Binary pending publications also moves PPA to the pending-publication
+state: 
+
+      >>> hoary_i386 = hoary['i386']
+      >>> pmount_bin = hoary_i386.getBinaryPackage('pmount')
+      >>> pmount_bpr = pmount_bin.currentrelease.binarypackagerelease
+
+      >>> bin_pub = SecureBinaryPackagePublishingHistory(
+      ...     binarypackagerelease=pmount_bpr,
+      ...     distroarchseries=hoary_i386, priority=pmount_bpr.priority,
+      ...     component=pmount_bpr.component, section=pmount_bpr.section,
+      ...     datecreated=UTC_NOW, embargo=False, archive=cprov.archive,
+      ...     status=PackagePublishingStatus.PENDING,
+      ...     pocket=PackagePublishingPocket.RELEASE)
+
+      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
+      >>> [pending_ppa] = pending_ppas
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Similarly to sources, binary publishing the record removes the PPA
+from pending-publication state:
+
+      >>> bin_pub.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(bin_pub)
+
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+
+== Distribution Archives ==
+
+`IDistribution.all_distro_archives` returns all archives associated with
+the distribution.  This list does not, therefore, include PPAs.
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> for archive in ubuntutest.all_distro_archives:
+  ...     print archive.purpose.title
+  Primary Archive
+  Partner Archive
+
+`IDistribution.getArchiveByComponent` retrieves an IArchive given a component
+name.  If the component is unknown, None is returned.
+
+  >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
+  >>> partner_archive.description
+  u'Partner archive'
+
+  >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
+  >>> print other_archive
+  None
 

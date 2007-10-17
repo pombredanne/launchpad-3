@@ -1,0 +1,26 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <p metal:fill-slot="extra_info">
+      These images are used to throughout Launchpad to represent
+      <span tal:replace="context/displayname">Ubuntu Linux</span>.
+      Changing them here will affect every page related to
+      <span tal:replace="context/displayname">Ubuntu Linux</span> as well as
+      listings which include it. You must use <strong>exactly</strong> the
+      correct size of image.
+    </p>
+
+  </div>
+
+</div>
+
+</body>
+</html>

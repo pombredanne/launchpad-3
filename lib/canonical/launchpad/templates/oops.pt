@@ -1,10 +1,7 @@
-<tal:layout define="columns1 default">
-<html metal:use-macro="context/@@main_template/master">
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 class="exception">Oops!</h1>
-    </metal:heading>
     <div metal:fill-slot="main">
+      <h1 class="exception">Oops!</h1>
       <p>
         Sorry, something just went wrong in Launchpad.
         We&#8217;ve recorded what happened,
@@ -23,4 +20,3 @@
     </div>
   </body>
 </html>
-</tal:layout>

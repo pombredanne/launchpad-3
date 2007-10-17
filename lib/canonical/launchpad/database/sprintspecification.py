@@ -6,16 +6,16 @@ __all__ = ['SprintSpecification']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, BoolCol, StringCol
+from sqlobject import ForeignKey, StringCol
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+
+from canonical.lp.dbschema import SprintSpecificationStatus
 
 from canonical.launchpad.interfaces import ISprintSpecification
-
-from canonical.lp.dbschema import EnumCol, SprintSpecificationStatus
-
-from canonical.database.sqlbase import SQLBase
 
 
 class SprintSpecification(SQLBase):

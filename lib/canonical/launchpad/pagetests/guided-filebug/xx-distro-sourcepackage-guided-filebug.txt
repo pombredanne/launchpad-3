@@ -19,9 +19,9 @@ similar matching bugs.
     >>> similar_bugs_table is None
     True
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    No similar bugs were found.
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
 
 And no duplicated bugs in this package.
 
@@ -45,4 +45,4 @@ So we need fill in only a title and description.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...

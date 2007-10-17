@@ -5,20 +5,14 @@ This document discusses TALES techniques and IBugTask object
 attributes that may be useful to you, if you're writing some code to
 display bug and bug task information.
 
-Displaying an Icon with fmt:icon
+Displaying an Icon with image:icon
 --------------------------------
 
-fmt:icon is a TALES adapter that renders an icon for a bugtask.
+image:icon is a TALES adapter that renders an icon for a bugtask.
 The icon is dependent on the importance of the IBugTask object.
 
 Let's use a few examples to demonstrate:
 
-  XXX: Brad Bollenbach, 2005-08-30: removeSecurityProxy usage in this
-  test is a workaround for the following bug:
-
-    https://launchpad.net/bugs/1971
-
-  >>> from zope.security.proxy import removeSecurityProxy
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import IBugTaskSet
   >>> from canonical.launchpad.ftests import test_tales
@@ -31,28 +25,28 @@ Let's use a few examples to demonstrate:
   >>> ORIGINAL_IMPORTANCE = test_task.importance
 
   >>> test_task.importance = BugTaskImportance.CRITICAL
-  >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(critical)" title="Critical importance" src="/@@/bug-critical" />'
+  >>> test_tales("bugtask/image:icon", bugtask=test_task)
+  '<img height="14" width="14" alt="(critical)" title="Critical importance" src="/@@/bug-critical" />'
 
   >>> test_task.importance = BugTaskImportance.HIGH
-  >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(high)" title="High importance" src="/@@/bug-high" />'
+  >>> test_tales("bugtask/image:icon", bugtask=test_task)
+  '<img height="14" width="14" alt="(high)" title="High importance" src="/@@/bug-high" />'
 
   >>> test_task.importance = BugTaskImportance.MEDIUM
-  >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(medium)" title="Medium importance" src="/@@/bug-medium" />'
+  >>> test_tales("bugtask/image:icon", bugtask=test_task)
+  '<img height="14" width="14" alt="(medium)" title="Medium importance" src="/@@/bug-medium" />'
 
   >>> test_task.importance = BugTaskImportance.LOW
-  >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(low)" title="Low importance" src="/@@/bug-low" />'
+  >>> test_tales("bugtask/image:icon", bugtask=test_task)
+  '<img height="14" width="14" alt="(low)" title="Low importance" src="/@@/bug-low" />'
 
   >>> test_task.importance = BugTaskImportance.WISHLIST
-  >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(wishlist)" title="Wishlist" src="/@@/bug-wishlist" />'
+  >>> test_tales("bugtask/image:icon", bugtask=test_task)
+  '<img height="14" width="14" alt="(wishlist)" title="Wishlist" src="/@@/bug-wishlist" />'
 
   >>> test_task.importance = BugTaskImportance.UNDECIDED
-  >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(undecided)" title="Undecided" src="/@@/bug-undecided" />'
+  >>> test_tales("bugtask/image:icon", bugtask=test_task)
+  '<img height="14" width="14" alt="(undecided)" title="Undecided" src="/@@/bug-undecided" />'
 
   >>> test_task.importance = ORIGINAL_IMPORTANCE
 
@@ -72,8 +66,7 @@ you might prefer that to read, simply:
 We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
-  >>> from canonical.launchpad.interfaces import ILaunchBag
-  >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
   >>> from zope.component import getView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
@@ -94,43 +87,47 @@ Let's see some examples of how this works:
   'Confirmed (unassigned)'
 
   >>> test_task.transitionToAssignee(foobar)
-  >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.NEW, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
-  u'Unconfirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'New, assigned to ...Foo Bar...'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
-  u'Confirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'Confirmed, assigned to ...Foo Bar...'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
-  u'Rejected by <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'Invalid by ...Foo Bar...'
 
   >>> test_task.transitionToAssignee(None)
   >>> render_bugtask_status(test_task)
-  'Rejected (unassigned)'
+  'Invalid (unassigned)'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
   'Fix released (unassigned)'
 
   >>> test_task.transitionToAssignee(foobar)
   >>> render_bugtask_status(test_task)
-  u'Fix released, assigned to <img alt="" src="/@@/user" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
+  u'Fix released, assigned to ...Foo Bar...'
 
 This code also works for null bug tasks:
 
-  >>> from canonical.launchpad.components.bugtask import NullBugTask
-  >>> from canonical.launchpad.database import Bug, Product
+  >>> from canonical.launchpad.database import Bug, NullBugTask, Product
   >>> bug_one = Bug.get(1)
   >>> netapplet = Product.selectOneBy(name="netapplet")
   >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
   >>> render_bugtask_status(null_bugtask)
-  u'Not reported in netapplet (upstream)'
+  u'Not reported in netapplet'
 
 Lastly, some cleanup:
 
-  >>> test_task.transitionToStatus(ORIGINAL_STATUS)
+  >>> test_task.transitionToStatus(
+  ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
   >>> test_task.transitionToAssignee(ORIGINAL_ASSIGNEE)
 
 Status Elsewhere
@@ -163,12 +160,14 @@ statuselsewhere value is affected:
 
   >>> related_task = bugtaskset.get(2).related_tasks[0]
   >>> ORIGINAL_STATUS = related_task.status
-  >>> related_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+  >>> related_task.transitionToStatus(
+  ...   BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
   >>> render_bugtask_status_elsewhere(bugtaskset.get(2))
   'fixed in 1 of 3 places'
 
-  >>> related_task.transitionToStatus(ORIGINAL_STATUS)
+  >>> related_task.transitionToStatus(
+  ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
 
 Null tasks are also supported:
 

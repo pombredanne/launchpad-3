@@ -1,0 +1,51 @@
+= External Bug Tracker: checkwatches =
+
+Strictly speaking, checkwatches is the name of a cronscript and a
+module in the Launchpad codebase. In the absence of a more complete
+testing infrastructure for the external bug tracking system, this
+document will collect functional tests relating to both checkwatches
+elements.
+
+XXX Bug #126593 (Testing of external bug trackers is not extensive
+enough) is tracking the provision of a more extensive testing
+framework.
+  -- Gavin Panella, 2007-07-18
+
+
+== get_external_bugtracker ==
+
+get_external_bugtracker is used to get an ExternalBugTracker suitable
+for a particular bugtracker.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     get_external_bugtracker, UnknownBugTrackerTypeError)
+    >>> from canonical.launchpad.scripts import log
+    >>> from canonical.lp.dbschema import BugTrackerType
+
+get_external_bugtracker supports four external bug tracker types:
+
+    >>> bugtracker_types = [
+    ...     BugTrackerType.BUGZILLA,
+    ...     BugTrackerType.DEBBUGS,
+    ...     BugTrackerType.MANTIS,
+    ...     BugTrackerType.ROUNDUP,
+    ...     BugTrackerType.TRAC]
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> for bugtracker_type in bugtracker_types:
+    ...     bugtracker = new_bugtracker(bugtracker_type)
+    ...     try:
+    ...         # Suppress log messages in DebBugs
+    ...         log.setLevel(log.level + 100)
+    ...         external_bugtracker = get_external_bugtracker(
+    ...             bugtracker)
+    ...     finally:
+    ...         log.setLevel(log.level - 100)
+    ...     print "%s --> %s" % (bugtracker_type.title,
+    ...         external_bugtracker)
+    Bugzilla --> <...externalbugtracker.Bugzilla object at ...>
+    Debbugs --> <...externalbugtracker.DebBugs object at ...>
+    Mantis --> <...externalbugtracker.Mantis object at ...>
+    Roundup --> <...externalbugtracker.Roundup object at ...>
+    Trac --> <...externalbugtracker.Trac object at ...>

@@ -48,7 +48,7 @@ Add a translation.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
 
 Check that this submission is now the active one for this msgset/pluralform
 
@@ -56,15 +56,15 @@ Check that this submission is now the active one for this msgset/pluralform
     >>> submission.potranslation.translation == u'foo'
     True
 
-Check that this submission is not the published one
+Check that this submission is the published one
 
     >>> pomsgset.getPublishedSubmission(0) == submission
-    False
+    True
 
 Test the origin enum column.
 
-    >>> from canonical.lp.dbschema import RosettaTranslationOrigin
-    >>> submission.origin == RosettaTranslationOrigin.ROSETTAWEB
+    >>> from canonical.launchpad.interfaces import RosettaTranslationOrigin
+    >>> submission.origin == RosettaTranslationOrigin.SCM
     True
 
 Get a list of the translations again to check the new one has been added.
@@ -133,9 +133,9 @@ In fact, the published submission should still be the original one, from Pa:
     >>> pomsgset.getPublishedSubmission(0) == submission
     True
 
-And the latestsubmission for this pofile should be this one.
+And the last_touched_pomsgset for this pofile should be this one.
 
-    >>> pofile.latestsubmission == web_submission
+    >>> pofile.last_touched_pomsgset == web_submission.pomsgset
     True
 
 Now, let's see what happens if Pc submits exactly the same translation that
@@ -175,7 +175,7 @@ Testing NoneEditorTranslations
 Let's see if there are any suggestions for this pomsgset. We are not
 expecting any.
 
-    >>> list(pomsgset.getSuggestedSubmissions(0))
+    >>> pomsgset.getNewSubmissions(0)
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
@@ -193,31 +193,35 @@ to see a non-editor published submission.
 Now let's try again, this time we are not using a public API, but we need it
 to test the code more easily:
 
+    >>> is_fuzzy = False
+    >>> plural_form = 0
     >>> noneditor_submission = pomsgset._makeSubmission(
-    ...    Pn, u'bong', 0, published=False)
+    ...    Pn, u'bong', is_fuzzy, plural_form, published=False)
 
 This submission should come from the new non-editor person:
 
     >>> noneditor_submission.person == Pn
     True
 
-And latest submission field for this POFile should not change, as this one is
-not from an editor:
+And latest touched pomsgset field for this POFile should not change, as this
+one is not from an editor:
 
-    >>> pofile.latestsubmission == web_submission
+    >>> pofile.last_touched_pomsgset == web_submission.pomsgset
     True
 
-And now we need to cheat, just a little bit. We need to
-pretend that the noneditor submission was made a few seconds AFTER the other
-one. Since both use the DEFAULT datecreated, which is NOW, and both are
-inside the same transaction, they APPEAR to have happened simultaneously.
-We need to nudge that, so we bump up the noneditor_submission.datecreated by
-a whole 2 seconds.
+And now we need to cheat, just a little bit.  We need to pretend that the
+noneditor submission was made a few seconds AFTER the other one. Since both
+use the DEFAULT datecreated, which is NOW, and both are inside the same
+transaction, they APPEAR to have happened simultaneously.  We need to change
+that, so we bump up the noneditor_submission.datecreated by a whole 2 seconds
+and re-initialize the pomsgset's in-memory caches.
 
     >>> import datetime
     >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(pomsgset)._invalidateSubmissionsCaches()
 
 Let's make sure:
 
@@ -237,6 +241,6 @@ And it should definitely not be published:
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> pomsgset.getSuggestedSubmissions(0).count()
+    >>> len(pomsgset.getNewSubmissions(0))
     1
 

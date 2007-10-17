@@ -5,13 +5,14 @@ __all__ = ['Translator', 'TranslatorSet']
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey
+from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import \
     ITranslator, ITranslatorSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
 
 class Translator(SQLBase):
     """A Translator in a TranslationGroup."""
@@ -28,14 +29,11 @@ class Translator(SQLBase):
         foreignKey='Language', notNull=True)
     translator = ForeignKey(dbName='translator', foreignKey='Person',
         notNull=True)
-    datecreated = DateTimeCol(notNull=True, default=DEFAULT)
+    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
 
 class TranslatorSet:
-
     implements(ITranslatorSet)
-
-    title = 'Rosetta Translators'
 
     def new(self, translationgroup, language, translator):
         return Translator(

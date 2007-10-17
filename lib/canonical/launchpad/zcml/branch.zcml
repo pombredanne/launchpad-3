@@ -2,17 +2,25 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <!-- Branch -->
-    <content class="canonical.launchpad.database.Branch">
-        <allow interface="canonical.launchpad.interfaces.IBranch" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBranch"
+  <!-- Branch -->
+  <content class="canonical.launchpad.database.Branch">
+    <require
+        permission="launchpad.View"
+        interface="canonical.launchpad.interfaces.IBranch"
         />
-    </content>
+    <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IBranch"
+        />
+  </content>
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      factory="canonical.launchpad.browser.BranchSOP"
+      />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -24,8 +32,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBranch"
-        path_expression="string:+branch/${product_name}/${name}"
-        attribute_to_parent="owner" />
+        path_expression="string:${product_name}/${name}"
+        attribute_to_parent="owner"
+        rootsite="code" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -39,13 +48,19 @@
         <browser:page
             name="+index"
             template="../templates/branch-index.pt"
-            lp:url="bazaar/branches/$Branch.id/" />
+            />
         <browser:page
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
         <browser:page
             name="+series-reference"
             template="../templates/branch-series-reference.pt" />
+        <browser:page
+            name="+associations"
+            template="../templates/branch-associations.pt" />
+        <browser:page
+            name="+landing-candidates"
+            template="../templates/branch-landing-candidates.pt" />
     </browser:pages>
 
   <browser:pages
@@ -54,10 +69,15 @@
     <browser:page
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />
-    <browser:page
-        name="+portlet-subscribers"
-        template="../templates/branch-portlet-subscribers.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+portlet-subscribers"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionsView"
+    facet="branches"
+    permission="zope.Public"
+    template="../templates/branch-portlet-subscribers.pt" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
@@ -65,8 +85,8 @@
       permission="zope.Public"
       class="canonical.launchpad.browser.BranchInProductView" >
     <browser:page
-      name="+product-summary-listing"
-      template="../templates/branch-summary-listing.pt" />
+        name="+product-summary-listing"
+        template="../templates/branch-summary-listing.pt" />
   </browser:pages>
 
   <browser:pages
@@ -79,47 +99,138 @@
         template="../templates/branch-summary-listing.pt" />
   </browser:pages>
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchView"
-    facet="branches"
-    permission="launchpad.AnyPerson">
-    <browser:page
-      name="+subscribe"
-      template="../templates/branch-subscription.pt" />
-  </browser:pages>
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranch"
+      name="+macros"
+      permission="zope.Public"
+      template="../templates/branch-macros.pt" />
 
   <browser:page
       for="*"
-      name="branch-filtering-macros"
+      name="branch-javascript-macros"
       permission="zope.Public"
-      template="../templates/branch-filtering-macros.pt" />
+      template="../templates/branch-javascript-macros.pt" />
 
   <browser:page
-    name="+edit"
-    for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchEditView"
-    facet="branches"
-    permission="launchpad.Edit"
-    template="../templates/branch-edit.pt" />
+      name="+edit"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branch-edit.pt" />
 
   <browser:page
-    name="+reassign"
+      name="+delete"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchDeletionView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branch-delete.pt" />
+
+  <browser:page
+      name="+reassign"
+      for="canonical.launchpad.interfaces.IBranch"
+      permission="launchpad.Edit"
+      facet="branches"
+      class="canonical.launchpad.browser.BranchReassignmentView"
+      template="../templates/object-reassignment.pt" />
+
+  <!-- Subscribe to a branch -->
+  <browser:page
+      name="+subscribe"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchSubscriptionAddView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branch-subscription.pt" />
+
+  <browser:page
+      name="+register-merge"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.RegisterBranchMergeProposalView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branch-register-merge-proposal.pt" />
+
+  <browser:page
+    name="+linkbug"
     for="canonical.launchpad.interfaces.IBranch"
-    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.BranchLinkToBugView"
     facet="branches"
-    class="canonical.launchpad.browser.BranchReassignmentView"
-    template="../templates/object-reassignment.pt" />
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-link-to-bug.pt" />
+
+  <browser:page
+    name="+addsubscriber"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-subscription.pt" />
+
+  <!-- Edit subscription or unsubscribe from a branch -->
+  <browser:page
+      name="+edit-subscription"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchSubscriptionEditOwnView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branch-edit-subscription.pt" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranchBatchNavigator"
+      name="+branch-listing"
+      template="../templates/branch-listing.pt"
+      permission="zope.Public" />
 
   <!-- BranchSet -->
   <content class="canonical.launchpad.database.BranchSet">
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </content>
 
+  <!-- BranchVisibilityPolicy -->
+  <content class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
+    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy" />
+  </content>
+
+  <browser:page
+      name="+branchvisibility"
+      for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+      facet="overview"
+      class="canonical.launchpad.browser.BranchVisibilityPolicyView"
+      permission="launchpad.Admin"
+      template="../templates/branch-visibility.pt" />
+
+  <browser:page
+      name="+addbranchvisibilitypolicy"
+      for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+      facet="overview"
+      class="canonical.launchpad.browser.AddBranchVisibilityTeamPolicyView"
+      permission="launchpad.Admin"
+      template="../templates/branch-visibility-edit.pt" />
+
+  <browser:page
+      name="+removebranchvisibilitypolicy"
+      for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+      facet="overview"
+      class="canonical.launchpad.browser.RemoveBranchVisibilityTeamPolicyView"
+      permission="launchpad.Admin"
+      template="../templates/branch-visibility-edit.pt" />
+
+  <!-- BranchDelta -->
+  <content class="canonical.launchpad.components.branch.BranchDelta">
+    <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
+  </content>
+
   <securedutility
-    class="canonical.launchpad.database.BranchSet"
-    provides="canonical.launchpad.interfaces.IBranchSet" >
-      <allow interface="canonical.launchpad.interfaces.IBranchSet" />
+      class="canonical.launchpad.database.BranchSet"
+      provides="canonical.launchpad.interfaces.IBranchSet" >
+    <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </securedutility>
+
+  <subscriber
+      for="canonical.launchpad.interfaces.IBranch
+           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+      handler="canonical.launchpad.mailnotification.send_branch_modified_notifications" />
 
 </configure>

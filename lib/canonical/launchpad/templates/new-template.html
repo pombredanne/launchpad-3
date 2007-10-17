@@ -1,0 +1,249 @@
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:block define-slot="top_slot" />
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  tal:attributes="lang default_language|default;
+                  xml:lang default_language|default;">
+  <head>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <!-- Launchpad JS code -->
+    <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/@@/sorttable.js"></script>
+    <style type="text/css">
+      body {font-family: serif;}
+      h1, h2, #structuralobject, #structuralobjectchildren, #globalsearch,
+      #immediateobjectheading, #applicationchooser, #globalheader, #globalfooter {
+        font-family: sans-serif;
+        font-weight: normal;
+      }
+      #locationbar>li {display: inline;}
+      .portlet {
+        background-color: #ffb;
+        font-size: smaller;
+        margin: 0 0.25em 0.25em;
+        padding: 0.25em 0.5em;
+      }
+      .portlet h2 {font-size: 1.125em; margin-top: 0;}
+      #globalheader, #globalfooter {
+        font-size: smaller;
+      }
+    </style>
+    <link rel="shortcut icon" href="/@@/launchpad" />
+    <metal:block define-slot="head_epilogue"></metal:block>
+  </head>
+  <body>
+    <div id="globalheader"
+      style="background-color: #999; color: white;"
+    >Launchpad - globalheader</div>
+    <div id="logincontrol"
+      style="background-color: #3c3; color: black; float: right;"
+      xtal:content="structure context/@@login_status">
+      logincontrol
+    </div>
+    <ul id="locationbar"
+      style="background-color: #3c3; color: black; float: left; margin: 0;"
+      xtal:content="structure context/@@+breadcrumbs">
+      <li>locationbar</li>
+      <li>- you</li>
+      <li>- are</li>
+      <li>- here</li>
+    </ul>
+    <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    <div id="structuralobject"
+      style="clear: both; float: left; width: 50%; background-color: #cff;">
+      <div class="secondary">structural object secondary</div>
+      <div class="primary">structural object primary</div>
+    </div>
+    <div id="structuralobjectchildren"
+      style="float: left; width: 25%; background-color: #eee; font-size: x-small;">
+      <div class="primary">structuralobjectchildren primary</div>
+      <div class="secondary">structuralobjectchildren secondary</div>
+    </div>
+    <form id="globalsearch" action="search"
+      style="float: left; width: 25%; background-color: #fed; font-size: smaller;">
+      globalsearch
+      <input type="text" id="q" name="q" />
+      <input type="submit" value="Search" />
+      <div class="scope">
+        globalsearch scope
+        <label><input type="radio" checked="checked" />projects in Launchpad</label>
+        <label><input type="radio" />packages in Ubuntu 6.10</label>
+      </div>
+    </form>
+    <div id="applicationchooser" style="clear: both; background-color: #fdb;">
+      applicationchooser
+      <span>Overview</span>
+      <span>Code</span>
+      <span>Bugs</span>
+      <span>Specifications</span>
+      <span>Translations</span>
+      <span>Abswers</span>
+    </div>
+    <div id="immediateobjectheading" style="background-color: #ccf;">
+      <p class="secondary">immediateobjectheading secondary</p>
+      <h1>immediateobjectheading primary</h1>
+    </div>
+    <div id="pagecontent" style="float: right; width: 75%;">
+      <div class="warning message"
+      style="background-color: #ff6;">warning message example</div>
+      pagecontent goes here. I'm surrounded by colored boxes!
+      <p>
+Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+      </p>
+
+
+<tal:oldstuff condition="nothing">
+
+    <div tal:condition="columns1|nothing" class="body">
+        <div class="pageheading">
+          <metal:block define-slot="pageheading">
+          </metal:block>
+        </div>
+        <tal:notifications
+          define="notifications request/notifications"
+          condition="notifications"
+        ><metal:notifications
+            use-macro="context/@@+main-template-macros/notifications" />
+        </tal:notifications>
+        <metal:block define-slot="main">
+        </metal:block>
+
+    </div>
+    <div tal:condition="not: columns1|nothing" class="columns">
+
+        <div id="portal-columns">
+          <div id="portal-column-content">
+            <div class="pageheading">
+              <metal:block define-slot="pageheading">
+              </metal:block>
+            </div>
+            <div id="region-content">
+              <tal:block
+                define="notifications request/notifications"
+                condition="notifications"
+              >
+                <metal:notifications
+                  use-macro="context/@@+main-template-macros/notifications" />
+              </tal:block>
+
+              <metal:main define-slot="main" tal:condition="nothing">
+                <p>Main content area.</p>
+              </metal:main>
+            </div>
+          </div>
+        <!-- start of right (by default at least) column -->
+        <div id="portal-column-two">
+          <metal:portlets define-slot="portlets_two">
+          </metal:portlets>
+          &nbsp; <tal:x condition="nothing">Forces the left column to show up.</tal:x>
+        </div>
+        <!-- start of the left (by default at least) column -->
+        <div id="portal-column-one">
+          <tal:notlogin condition="python: '+login' not in request.getURL()">
+              <tal:menu
+                 condition="not:exists:body"
+                 replace="structure CONTEXTS/@@+menubox"
+                 />
+
+              <ul
+                 tal:define="facetmenu CONTEXTS/menu:facet"
+                 tal:condition="facetmenu"
+                 class="facets"
+              >
+                <tal:facet repeat="link facetmenu">
+                  <tal:available condition="link/enabled">
+                    <li
+                       tal:condition="link/selected"
+                       tal:attributes="title link/summary"
+                       class="current"
+                       >
+                      <a tal:condition="link/linked"
+                         tal:attributes="href link/url"
+                         tal:content="structure link/escapedtext"
+                         >abc</a>
+                      <span
+                         tal:condition="not: link/linked"
+                         tal:replace="structure link/escapedtext"
+                         >def</span>
+                    </li>
+                    <li
+                       tal:condition="not: link/selected"
+                       tal:attributes="title link/summary"
+                       ><a
+                           tal:attributes="href link/url"
+                           tal:content="structure link/escapedtext"
+                           >ghi</a><span
+                                      class="disabled"
+                                      tal:condition="not: link/linked"
+                                      tal:content="structure link/escapedtext"
+                                      >jkl</span></li>
+                  </tal:available>
+                  <li
+                     tal:condition="not: link/enabled"
+                     tal:attributes="title link/summary"
+                     tal:content="structure link/escapedtext"
+                     class="unavailable"
+                     />
+                </tal:facet>
+              </ul>
+          </tal:notlogin>
+          <div metal:define-slot="portlets_one">
+          </div>
+        </div>
+      </div>
+    </div>
+
+</tal:oldstuff>
+
+
+
+    </div>
+    <ul id="actions"
+      style="float: left; margin: 0; padding: 0; width: 24%; background-color: #ff9;">
+      <li>actions</li>
+      <li>menu</li>
+    </ul>
+    <div id="portlets" style="clear: left; float: left; width: 24%;">
+      <div class="portlet" style="background-color: #ffb;">
+        <h2>Where</h2>
+        We all live in a yellow portlet
+      </div>
+      <div class="portlet" style="background-color: #ffb;">
+        <h2>Who</h2>
+        And our friends are all aboard
+      </div>
+    </div>
+    <div id="nearby"
+    style="float: right; width: 75%; padding: 0; background-color: #eee;">
+      <h2 style="font-size: 1.2em; color: #999;">Nearby</h2>
+      <ul>
+        <li>sibling</li>
+        <li>sibling</li>
+      </ul>
+    </div>
+
+    <div id="helppanel" style="display: none;">
+      <h2>Help</h2>
+      <p>Help goes here.</p>
+    </div>
+
+    <div id="globalfooter"
+    style="clear: both; width: 100%; background-color: #999; color: #fff;">
+      globalfooter. Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+      &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
+      <a href="/feedback">Feedback</a>
+    </div>
+  </body>
+</html>
+</metal:page>
+<!-- 1-0 todo
+Lots of stuff.
+-->

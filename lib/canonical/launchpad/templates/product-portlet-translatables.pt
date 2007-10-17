@@ -1,5 +1,6 @@
-<div class="portlet" tal:condition="context/translatable_series">
-  <h2>Translatable branches</h2>
+<div class="portlet" id="portlet-translatable-branches"
+     tal:condition="context/translatable_series">
+  <h2>All translatable branches</h2>
 
   <div class="portletBody portletContent">
 
@@ -15,9 +16,10 @@
   </div>
 </div>
 
-<div class="portlet" tal:condition="context/translatable_packages">
+<div class="portlet" id="portlet-translatable-packages"
+     tal:condition="context/translatable_packages">
 
-  <h2>Translatable distro packages</h2>
+  <h2>All translatable distribution packages</h2>
 
   <div class="portletBody portletContent ">
 
@@ -25,7 +27,7 @@
       <li class="translations"
           tal:repeat="pkg context/translatable_packages">
         <a tal:content="pkg/title"
-               tal:attributes="href string:/${pkg/distribution/name}/${pkg/distrorelease/name}/+sources/${pkg/name}/+translations">
+               tal:attributes="href string:/${pkg/distribution/name}/${pkg/distroseries/name}/+sources/${pkg/name}/+translations">
           package title</a>
       </li>
     </ul>

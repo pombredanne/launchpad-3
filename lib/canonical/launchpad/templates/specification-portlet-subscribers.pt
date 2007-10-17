@@ -1,8 +1,7 @@
 <tal:subs define="subscriptions context/subscriptions">
-  <div tal:condition="subscriptions" class="portlet">
-    <h2>Specification subscribers</h2>
-
-    <div class="portletBody portletContent">
+  <div class="portlet" id="portlet-subscribers" tal:condition="subscriptions">
+    <h2>Subscribers</h2>
+    <div class="portletBody">
       <tal:comment replace="nothing">
         This is messy, but the portlet has to convey both subscribers and
         whether or not they are essential. Also, in the case where a person
@@ -10,7 +9,7 @@
         essentiality indicator needs to be clickable to edit, otherwise not.
         Hence all the duplication.
       </tal:comment>
-      <tal:per_sub repeat="subscription subscriptions">
+      <div tal:repeat="subscription subscriptions">
         <a tal:condition="subscription/required:launchpad.Edit"
            tal:attributes="href subscription/fmt:url">
            <img tal:condition="subscription/essential"
@@ -24,13 +23,8 @@
            <img tal:condition="not: subscription/essential"
              src="/@@/subscriber-inessential" />
         </tal:no_edit>
-        <img src="/@@/user" />
-        <a href="#"
-           tal:content="subscription/person/browsername"
-           tal:attributes="
-             href subscription/person/fmt:url">Dafydd Harries</a>
-        <br />
-      </tal:per_sub>
+        <a tal:replace="structure subscription/person/fmt:link"/>
+      </div>
     </div>
   </div>
 </tal:subs>

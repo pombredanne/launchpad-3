@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-stats">
 
     <h2>Statistics</h2>
 
@@ -15,9 +15,7 @@
             <tal:block condition="context/lasttranslator">
                 <b>Latest contributor:</b>
                 <br />
-                <img src="/@@/user" />
-                <a tal:content="context/lasttranslator/browsername"
-                   tal:attributes="href context/lasttranslator/fmt:url">
+                <a tal:replace="structure context/lasttranslator/fmt:link">
                     Foo Bar
                 </a><br />
                 <br />

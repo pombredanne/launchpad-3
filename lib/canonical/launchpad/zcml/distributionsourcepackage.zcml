@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -9,35 +8,45 @@
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       attributes="distribution sourcepackagename name displayname title
-                  distro by_distroreleases subscribers currentrelease
+                  distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
-                  searchTasks isBugContact open_bugtasks
+                  searchTasks isBugContact open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks getUsedBugTags
-                  getUsedBugTagsWithOpenCounts bugtargetname
-                  getMostCommonBugs" />
+                  new_bugtasks all_bugtasks getUsedBugTags
+                  getUsedBugTagsWithOpenCounts bugtargetdisplayname
+                  bugtargetname getMostCommonBugs getBugCounts" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact subscribe createBug " />
+      attributes="addBugContact removeBugContact subscribe createBug" />
 
-    <!-- ITicketTarget -->
-    <allow attributes="getTicket searchTickets findSimilarTickets
-        support_contacts direct_support_contacts getSupportedLanguages
-	getTicketLanguages"
-	/>
+    <!-- IQuestionTarget -->
+    <allow attributes="getQuestion searchQuestions findSimilarQuestions
+      answer_contacts direct_answer_contacts
+      getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
+      />
     <require permission="launchpad.AnyPerson"
-      attributes="newTicket addSupportContact removeSupportContact" />
+      attributes="newQuestion addAnswerContact removeAnswerContact" />
   </content>
-
+  <adapter
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.components.answertracker.distrosourcepackage_to_faqtarget"
+    />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     layer="canonical.launchpad.layers.AnswersLayer"
-    name="+tickets"
+    name="+questions"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs"
     />
 
   <browser:url
@@ -51,6 +60,13 @@
     classes="DistributionSourcePackageNavigation"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.browser.DistributionSourcePackageSOP"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
@@ -59,11 +75,16 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    class="canonical.launchpad.browser.DistributionSourcePackageView"
     permission="zope.Public">
     <browser:page
       name="+index"
       facet="overview"
-      template="../templates/distributionsourcepackage-index.pt" />
+      template="../templates/distrosourcepackage-index.pt" />
+    <browser:page
+      name="+publishinghistory"
+      facet="overview"
+      template="../templates/distrosourcepackage-publishinghistory.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page

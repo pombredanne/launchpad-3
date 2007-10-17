@@ -1,29 +1,26 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
     <!-- Build -->
     <content class="canonical.launchpad.database.Build">
        <allow interface="canonical.launchpad.interfaces.IBuild"/>
-       <!-- XXX cprov 20051027: we need a autobuild celebrity, bug #3580 -->
+       <!-- XXX cprov 2005-10-27 bug=3580: We need a autobuild celebrity. -->
        <require
             permission="zope.Public"
             set_attributes="buildlog datebuilt buildduration builder
                             buildstate dependencies"/>
     </content>
 
-    <browser:defaultView 
+    <browser:defaultView
         for="canonical.launchpad.interfaces.IBuild"
         name="+index"/>
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuild"
-        path_expression="string:+build/${id}"
-        parent_utility="canonical.launchpad.interfaces.IBuilderSet"
-        />
+        urldata="canonical.launchpad.browser.build.BuildUrl" />
 
     <browser:menus
         module="canonical.launchpad.browser.build"
@@ -34,10 +31,10 @@
         classes="BuildNavigation"
         />
 
-    <browser:pages 
+    <browser:pages
       for="canonical.launchpad.interfaces.IBuild"
       permission="zope.Public">
-      <browser:page 
+      <browser:page
         name="+index"
         facet="overview"
         template="../templates/build-index.pt"
@@ -52,21 +49,28 @@
         />
     </browser:pages>
 
-    <browser:pages 
+    <browser:pages
       for="canonical.launchpad.interfaces.IBuild"
       class="canonical.launchpad.browser.BuildView"
-      permission="launchpad.Admin">
-      <browser:page 
+      permission="launchpad.Edit">
+      <browser:page
         name="+retry"
         facet="overview"
         template="../templates/build-retry.pt"
         />
-      <browser:page 
+    </browser:pages>
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBuild"
+      class="canonical.launchpad.browser.BuildView"
+      permission="launchpad.Admin">
+      <browser:page
         name="+rescore"
         facet="overview"
         template="../templates/build-rescore.pt"
         />
     </browser:pages>
+
 
     <!-- BuildSet -->
     <securedutility

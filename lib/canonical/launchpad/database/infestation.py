@@ -15,6 +15,8 @@ from zope.interface import implements
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
 from sqlobject import ForeignKey, IntCol
 
 from canonical.launchpad.interfaces import (
@@ -23,7 +25,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
 
 
 class BugProductInfestation(SQLBase):

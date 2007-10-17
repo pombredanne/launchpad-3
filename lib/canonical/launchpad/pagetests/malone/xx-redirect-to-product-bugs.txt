@@ -1,9 +1,0 @@
-
-Check that the magic redirection on the Malone homepage works:
-
-  >>> browser.open("http://launchpad.dev/bugs")
-  >>> browser.getControl(name='text').value = 'evolution'
-  >>> browser.getControl(name="jump_to_product").click()
-  >>> browser.url
-  'http://launchpad.dev/evolution/+bugs'
-

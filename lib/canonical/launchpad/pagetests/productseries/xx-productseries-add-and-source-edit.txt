@@ -1,0 +1,155 @@
+Open the "Upstream Source Import" page for a series.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox/trunk')
+  >>> browser.getLink('Edit source').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk/+source
+  >>> print browser.title
+  Set upstream revision control system for trunk
+
+Currently, no revision details are selected.  We can submit the form
+as is, which will leave us with no revision control system selected:
+
+  >>> browser.getControl('No revision control system, or Bazaar').selected
+  True
+  >>> browser.getControl('Update Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+
+Now we'll go back to the edit source form and add some CVS details:
+
+  >>> browser.getLink('Edit source').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk/+source
+  >>> browser.getControl('CVS').click()
+  >>> browser.getControl('Repository').value = (
+  ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
+  >>> browser.getControl('Module').value = 'mozilla'
+  >>> browser.getControl(name='field.cvsbranch').value = 'MAIN'
+  >>> browser.getControl('Update Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+We check if the info we just entered on the form is displayed correctly
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'cvs-root'))
+  :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot
+  >>> print extract_text(find_tag_by_id(browser.contents, 'cvs-module'))
+  mozilla
+  >>> print extract_text(find_tag_by_id(browser.contents, 'cvs-branch'))
+  MAIN
+
+Test if the RCS details validator is working properly by adding the same
+CVS details to another ProductSeries. The error message must link to the
+product series with the conflicting CVS details.
+
+  >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
+  >>> browser.getControl('CVS').click()
+  >>> browser.getControl('Repository').value = (
+  ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
+  >>> browser.getControl('Module').value = 'mozilla'
+  >>> browser.getControl(name='field.cvsbranch').value = 'MAIN'
+  >>> browser.getControl('Update Details').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  Those CVS details are already specified for
+  <a href="http://launchpad.dev/firefox/trunk">Mozilla Firefox trunk</a>.
+
+Just to be sure let's check the link can be traversed.
+
+  >>> browser.getLink('Mozilla Firefox trunk').click()
+
+Now we test if we can edit again changing the RCS to Subversion:
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('Subversion').click()
+  >>> browser.getControl(name='field.svnrepository').value = (
+  ...     'svn://svn.mozilla.org/firefox/trunk')
+  >>> browser.getControl('Update Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'svn-url'))
+  svn://svn.mozilla.org/firefox/trunk
+
+
+After changing to over to Subversion, the CVS details are unset in the
+form:
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('Repository').value
+  ''
+  >>> browser.getControl('Module').value
+  ''
+  >>> browser.getControl(name='field.cvsbranch').value
+  ''
+
+If the specified Subversion URL has a trailing slash, it is silently
+removed.
+
+  >>> browser.open('http://launchpad.dev/firefox/1.0/+source')
+  >>> browser.getControl('Subversion').click()
+  >>> browser.getControl(name='field.svnrepository').value = (
+  ...     'svn://svn.mozilla.org/firefox/branches/1.0/')
+  >>> browser.getControl('Update Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/1.0
+  >>> print extract_text(find_tag_by_id(browser.contents, 'svn-url'))
+  svn://svn.mozilla.org/firefox/branches/1.0
+  >>> browser.open('http://launchpad.dev/firefox/1.0/+source')
+  >>> print browser.getControl(name='field.svnrepository').value
+  svn://svn.mozilla.org/firefox/branches/1.0
+
+If the specified Subversion URL has a trailing slash AND some trailing
+whitespace, then the trailing slash and whitespace are silently removed.
+
+  >>> browser.open('http://launchpad.dev/firefox/1.0/+source')
+  >>> browser.getControl(name='field.svnrepository').value = (
+  ...     'svn://svn.mozilla.org/firefox/branches/1.0/  ')
+  >>> browser.getControl('Update Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/1.0
+  >>> extract_text(find_tag_by_id(browser.contents, 'svn-url'))
+  u'svn://svn.mozilla.org/firefox/branches/1.0'
+  >>> browser.open('http://launchpad.dev/firefox/1.0/+source')
+  >>> browser.getControl(name='field.svnrepository').value
+  'svn://svn.mozilla.org/firefox/branches/1.0'
+
+
+Test if the RCS details validator is working properly by adding the same
+svnrepository to another ProductSeries. The error message must link to the
+product series with the conflicting Subversion branch.
+
+  >>> browser.open('http://launchpad.dev/netapplet/trunk/+source')
+  >>> browser.getControl('Subversion').click()
+  >>> browser.getControl(name='field.svnrepository').value = (
+  ...     'svn://svn.mozilla.org/firefox/trunk')
+  >>> browser.getControl('Update Details').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  ...>This Subversion branch URL is already specified for
+  <a href="http://launchpad.dev/firefox/trunk">Mozilla Firefox trunk</a>.<...
+
+Just to be sure let's check the link can be traversed.
+
+  >>> browser.getLink('Mozilla Firefox trunk').click()
+
+
+If we set the series back to no upstream details, the subversion
+details are blanked:
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('Update Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/trunk
+
+  >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
+  >>> browser.getControl('No revision control system, or Bazaar').selected
+  True
+  >>> browser.getControl(name='field.svnrepository').value
+  ''

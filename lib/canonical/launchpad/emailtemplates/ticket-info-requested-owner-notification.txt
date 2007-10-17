@@ -1,9 +1,0 @@
-Your support request #%(ticket_id)s on %(target_name)s changed:
-%(ticket_url)s
-
-%(body)s
-
-_______________________________________________________________________
-To answer this request for more information, you can either reply to
-this email or enter your reply at the following page:
-%(ticket_url)s

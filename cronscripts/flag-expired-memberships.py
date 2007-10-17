@@ -1,57 +1,58 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+
+"""Flag expired team memberships and warn about impending expiration."""
 
 import _pythonpath
 
-import sys
-from optparse import OptionParser
+import pytz
+from datetime import datetime, timedelta
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import initZopeless
-from canonical.lp.dbschema import TeamMembershipStatus
-from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger_options, logger
-        )
-from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.interfaces import ITeamMembershipSet
-
-_default_lock_file = '/var/lock/launchpad-flag-expired-memberships.lock'
+from canonical.launchpad.interfaces import (
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
+    ITeamMembershipSet)
+from canonical.launchpad.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
 
 
-def flag_expired_memberships():
-    ztm = initZopeless(
-        dbuser=config.expiredmembershipsflagger.dbuser, implicitBegin=False)
+class ExpireMemberships(LaunchpadCronScript):
+    """A script for expired team memberships."""
 
-    ztm.begin()
-    for membership in getUtility(ITeamMembershipSet).getMembershipsToExpire():
-        membership.setStatus(TeamMembershipStatus.EXPIRED)
-    ztm.commit()
+    def flag_expired_memberships_and_send_warnings(self):
+        """Flag expired team memberships and warn about impending expiration.
+
+        Flag expired team memberships and send warnings for members whose
+        memberships are going to expire in one week (or less) from now.
+        """
+        membershipset = getUtility(ITeamMembershipSet)
+        self.txn.begin()
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        membershipset.handleMembershipsExpiringToday(reviewer)
+        self.txn.commit()
+
+        min_date_for_warning = datetime.now(pytz.timezone('UTC')) + timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        self.txn.begin()
+        for membership in membershipset.getMembershipsToExpire(
+                min_date_for_warning):
+            membership.sendExpirationWarningEmail()
+        self.txn.commit()
+
+    def main(self):
+        """Flag expired team memberships."""
+        if self.args:
+            raise LaunchpadScriptFailure(
+                "Unhandled arguments %s" % repr(self.args))
+        self.logger.info("Flagging expired team memberships.")
+        self.flag_expired_memberships_and_send_warnings()
+        self.logger.info("Finished flagging expired team memberships.")
 
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    logger_options(parser)
-    (options, arguments) = parser.parse_args()
-    if arguments:
-        parser.error("Unhandled arguments %s" % repr(arguments))
-    execute_zcml_for_scripts()
-
-    log = logger(options, 'membershipupdater')
-    log.info("Flagging expired team memberships.")
-
-    lockfile = LockFile(_default_lock_file, logger=log)
-    try:
-        lockfile.acquire()
-    except OSError:
-        log.info("lockfile %s already exists, exiting", _default_lock_file)
-        sys.exit(1)
-
-    try:
-        flag_expired_memberships()
-    finally:
-        lockfile.release()
-
-    log.info("Finished flagging expired team memberships.")
+    script = ExpireMemberships('flag-expired-memberships',
+                               dbuser=config.expiredmembershipsflagger.dbuser)
+    script.lock_and_run()
 

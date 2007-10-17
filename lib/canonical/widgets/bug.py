@@ -4,13 +4,26 @@ __metaclass__ = type
 
 import re
 
+from zope.app.form import CustomWidgetFactory, InputWidget
 from zope.app.form.browser.textwidgets import IntWidget, TextWidget
-from zope.app.form.interfaces import ConversionError, WidgetInputError
+from zope.app.form.browser.widget import BrowserWidget, renderElement
+from zope.app.form.interfaces import (
+    ConversionError, IInputWidget, InputErrors, MissingInputError,
+    WidgetInputError)
+from zope.app.form.utility import setUpWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.interface import implements
+from zope.schema import Choice
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.launchpad.interfaces import IBugSet, NotFoundError
+from canonical.launchpad.interfaces import (
+    IBugSet, IDistribution, IDistributionSourcePackage, IProduct,
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.interfaces import (
+    IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
+from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class BugWidget(IntWidget):
@@ -27,6 +40,11 @@ class BugWidget(IntWidget):
         if input == self._missing:
             return self.context.missing_value
         else:
+            input = input.strip()
+            # Bug ids are often prefixed with '#', but getByNameOrID
+            # doesn't accept such ids.
+            if input.startswith('#'):
+                input = input[1:]
             try:
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
@@ -53,7 +71,10 @@ class BugTagsWidget(TextWidget):
         if input == self._missing:
             return []
         else:
-            return sorted(tag.lower() for tag in re.split(r'[,\s]+', input))
+            tags = set(tag.lower()
+                       for tag in re.split(r'[,\s]+', input)
+                       if len(tag) != 0)
+            return sorted(tags)
 
     def getInputValue(self):
         try:
@@ -75,3 +96,4 @@ class BugTagsWidget(TextWidget):
                 raise self._error
             else:
                 raise
+

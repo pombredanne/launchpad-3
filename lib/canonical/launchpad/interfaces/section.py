@@ -26,9 +26,9 @@ class ISection(Interface):
 
 
 class ISectionSelection(Interface):
-    """Represents the allowed section within a Distrorelease."""
+    """Represents the allowed section within a DistroSeries."""
     id = Attribute("The ID")
-    distrorelease = Attribute("Target DistroRelease")
+    distroseries = Attribute("Target DistroSeries")
     section = Attribute("Selected Section")
 
 

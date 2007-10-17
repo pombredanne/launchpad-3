@@ -14,7 +14,8 @@ from zope.interface import implements
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectToBeModifiedEvent,
     ISQLObjectCreatedEvent, ISQLObjectDeletedEvent)
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+
 
 class SQLObjectEventBase:
     """Base class for all SQLObject event."""

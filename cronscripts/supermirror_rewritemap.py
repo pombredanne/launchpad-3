@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 """Generate a file mapping ~user/product/branch to on-disk paths, suitable for
@@ -22,53 +22,30 @@ Apache config notes:
 __metaclass__ = type
 
 import _pythonpath
-
-import sys
-from optparse import OptionParser
 import logging
 
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import supermirror_rewritemap
-from canonical.lp import initZopeless
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
+    LaunchpadScriptFailure)
 from canonical.config import config
 
-_default_lock_file = '/var/lock/supermirror-rewritemap.lock'
 
-def main():
-    parser = OptionParser(description=__doc__)
-    logger_options(parser, default=logging.WARNING)
+class SupermirrorRewriteMap(LaunchpadCronScript):
+    loglevel = logging.WARNING
+    def main(self):
+        if len(self.args) != 1:
+            raise LaunchpadScriptFailure('expected a filename argument')
 
-    (options, args) = parser.parse_args()
-
-    if len(args) != 1:
-        parser.error('expected a filename argument')
-    
-    filename = args[0]
-
-    log = logger(options)
-
-    lockfile = LockFile(_default_lock_file, logger=log)
-    try:
-        lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
-        sys.exit(1)
-
-    try:
-        execute_zcml_for_scripts()
-        ztm = initZopeless(
-                dbuser=config.supermirror.dbuser, implicitBegin=False
-                )
-        ztm.begin()
+        filename = self.args[0]
+        self.txn.begin()
         outfile = open(filename, 'wb')
         supermirror_rewritemap.write_map(outfile)
         outfile.close()
-        ztm.abort()
-    finally:
-        lockfile.release()
+        self.txn.abort()
 
 
 if __name__ == '__main__':
-    main()
+    script = SupermirrorRewriteMap('supermirror-rewritemap',
+                dbuser=config.supermirror.dbuser)
+    script.lock_and_run(implicit_begin=False)
+

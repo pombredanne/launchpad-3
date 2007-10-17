@@ -1,0 +1,35 @@
+= Filing security related bugs =
+
+There's an option to file a security related bug on the +filebug page.
+It's only visible on the second step, after the summary has been submitted.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.getControl('This bug is a security vulnerability')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> user_browser.getControl('Distribution').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['ubuntu']
+    >>> user_browser.getControl('Summary').value = 'Security bug'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> security_related = user_browser.getControl(
+    ...     'This bug is a security vulnerability')
+    >>> security_related is not None
+    True
+
+    >>> security_related.click()
+    >>> user_browser.getControl('Further information').value = 'A security bug.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/ubuntu/+bug/...'
+    >>> user_browser.title
+    'Bug #... in Ubuntu: ...Security bug...'
+    >>> print find_tag_by_id(user_browser.contents, 'bug-properties')
+    <...
+    ...Security vulnerability...
+    ...Private...

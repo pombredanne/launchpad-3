@@ -1,9 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -11,7 +16,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -24,6 +28,23 @@
 
 <div metal:fill-slot="main">
 
+    <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
+      <div tal:condition="context/whiteboard" class="highlighted"
+           id="whiteboard">
+        <p tal:content="context/whiteboard">Whiteboard goes here.</p>
+      </div>
+    </tal:is-owner-or-admin>
+
+    <p id="status">
+      <strong>
+        <tal:official condition="context/isOfficial">Official</tal:official>
+        <tal:not-official condition="not:context/isOfficial">Unofficial</tal:not-official>
+      </strong>
+      <span tal:replace="context/distribution/title" /> Mirror registered by
+      <span tal:content="structure context/owner/fmt:link" /> 
+      <span tal:content="context/date_created/fmt:displaydate" />
+    </p>
+
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
       <p tal:replace="structure context/description/fmt:text-to-html">
@@ -31,9 +52,24 @@
       </p>
     </div>
 
+    <table id="mirror-details" class="summary" style="float: none">
+      <tr>
+        <th>Speed:</th>
+        <td tal:content="context/speed/title">2 Mbps</td>
+      </tr>
+      <tr>
+        <th>Country:</th>
+        <td tal:content="context/country/name">Brazil</td>
+      </tr>
+      <tr>
+        <th>Content:</th>
+        <td tal:content="context/content/title">Archive</td>
+      </tr>
+    </table>
+
     <h2>Mirror URLs</h2>
 
-    <ul class="webref">
+    <ul class="webref" id="mirror-urls">
       <li tal:condition="context/http_base_url" >
         Web: <a tal:content="context/http_base_url"
                  tal:attributes="href context/http_base_url">http://url/</a>
@@ -49,7 +85,7 @@
       </li>
     </ul>
 
-    <tal:last-probe define="probe context/last_probe_record">
+    <div id="last-probe" tal:define="probe context/last_probe_record">
       <h2>Last probe</h2>
 
       <tal:no-last-probe condition="not: probe">
@@ -65,31 +101,33 @@
       </tal:no-last-probe>
 
       <tal:has-last-probe condition="probe">
-        <p>This mirror was last verified on 
-          <span tal:replace="probe/date_created/fmt:date" />.
+        <p>This mirror was last verified
+          <span
+            tal:attributes="title probe/date_created/fmt:datetime"
+            tal:content="probe/date_created/fmt:approximatedate" />.
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 
-            <a tal:attributes="href probe/log_file/url">log file</a> of the
+            <a tal:attributes="href probe/log_file/http_url">log file</a> of the
             probe.
           </tal:is-owner>
         </p>
       </tal:has-last-probe>
-    </tal:last-probe>
+    </div>
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
-        define="arch_releases view/getSummarizedMirroredArchReleases;
-                source_releases view/getSummarizedMirroredSourceReleases">
+        define="arch_serieses view/getSummarizedMirroredArchSerieses;
+                source_serieses view/getSummarizedMirroredSourceSerieses">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>
 
-      <tal:release-mirror condition="context/content/enumvalue:RELEASE"
-        define="flavours_by_releases view/getCDImageMirroredFlavoursByRelease">
+      <tal:cdimage-mirror condition="context/content/enumvalue:RELEASE"
+        define="flavours_by_serieses view/getCDImageMirroredFlavoursBySeries">
         <metal:mirror-content
-          use-macro="context/@@+distributionmirror-macros/release-mirror-content" />
-      </tal:release-mirror>
+          use-macro="context/@@+distributionmirror-macros/cdimage-mirror-content" />
+      </tal:cdimage-mirror>
     </tal:has-last-probe>
 
 </div>

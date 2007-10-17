@@ -1,0 +1,53 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- DistroArchSeriesBinaryPackageRelease -->
+  <content
+    class="canonical.launchpad.database.DistroArchSeriesBinaryPackageRelease">
+    <allow
+      interface="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease" />
+  </content>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease"
+    name="+index" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease"
+    path_expression="string:${name}/${version}"
+    attribute_to_parent="distroarchseries"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistroArchSeriesBinaryPackageReleaseNavigation"
+    />
+
+  <browser:menus
+    module="canonical.launchpad.browser.distroarchseriesbinarypackagerelease"
+    classes="DistroArchSeriesBinaryPackageReleaseFacets"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease"
+    class="canonical.launchpad.browser.DistroArchSeriesBinaryPackageReleaseView"
+    permission="zope.Public"
+    >
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/distroarchseriesbinarypackagerelease-index.pt"
+      />
+
+    <!-- DistroArchSeriesBinaryPackageRelease Portlets -->
+    <browser:page
+      name="+portlet-details"
+      facet="overview"
+      template="../templates/distroarchseriesbinarypackagerelease-portlet-details.pt"
+      />
+  </browser:pages>
+
+</configure>

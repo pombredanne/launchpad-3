@@ -44,7 +44,8 @@ def elided_source(tested, actual, debug=False, show=False,
             else:
                 string, startofremainder = result
                 currentpos += startofremainder
-                # XXX: off by one.  should be += startofremainder+1
+                # XXX: ddaa 2005-03-25:
+                # Off by one. Should be += startofremainder + 1
                 results.append(ResultChunk(string, currentpos))
         previous_chunk, chunk = chunk, next_chunk
 
@@ -78,7 +79,7 @@ def elided_source(tested, actual, debug=False, show=False,
         if starts_with_ellipsis:
             output = '...'
         else:
-            # XXX: test this code path!
+            # XXX: ddaa 2005-03-25: Test this code path!
             output = ''
         last_result = None
         for result in results:
@@ -90,7 +91,7 @@ def elided_source(tested, actual, debug=False, show=False,
                 break
 
     else:
-        # XXX: test this code path!
+        # XXX: ddaa 2005-03-25: Test this code path!
         output = actual
 
     return output
@@ -143,7 +144,8 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
                     else:
                         beginning_pos = re.search(
                             beginning_for_regex, actual).start()
-                        # XXX this should be .span()[1].  needs a test.
+                        # XXX ddaa 2005-03-25: This should be .span()[1]. 
+                        # Needs a test.
                         #beginning_pos = actual.find(beginning)
                     break
                 else:
@@ -169,7 +171,8 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
                 else:
                     beginning_pos = re.search(
                         beginning_for_regex, actual).start()
-                    # XXX this should be .span()[1].  needs a test.
+                    # XXX ddaa 2005-03-25: This should be .span()[1]. 
+                    # Needs a test.
                     #beginning_pos = actual.find(beginning)
             else:
                 return None
@@ -206,11 +209,12 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
                     end_for_regex = manyfound_end_for_regex
                     end_pos = re.search(end_for_regex, actual).start()
                     #end_pos = actual.find(end, beginning_pos)
-                    # XXX: this was wrong -- shouldn't be beginning_pos as
+                    # XXX: ddaa 2005-03-25:
+                    #      This was wrong -- shouldn't be beginning_pos as
                     #      we've already chopped off the beginning!
                     #      Or is it?  We chopped the beginning of the chunk,
-                    #      not the actual stuff.  So, using beginning_pos
-                    #      still holds.  Need to chop that off and add on
+                    #      not the actual stuff. So, using beginning_pos
+                    #      still holds. Need to chop that off and add on
                     #      its length.
                     break
                 else:
@@ -218,7 +222,7 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
             elif numfound == 1:
                 end_pos = re.search(end_for_regex, actual).start()
                 #end_pos = actual.rfind(end)
-                # XXX: only one found, so why not use find() ?
+                # XXX: ddaa 2005-03-25: Only one found, so why not use find()?
                 break
             else:
                 manyfound = True
@@ -239,5 +243,5 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
         output = '[%s]%s[%s]' % (beginning, chunk_equivalent, end)
     else:
         output = '%s%s%s' % (beginning, chunk_equivalent, end)
-    # XXX: end_pos+1 is the end of chunk_equivalent, not end.
+    # XXX: ddaa 2005-03-25: end_pos+1 is the end of chunk_equivalent, not end.
     return (output, end_pos+1)

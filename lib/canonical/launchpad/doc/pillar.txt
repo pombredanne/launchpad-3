@@ -5,38 +5,73 @@ to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
 share their name namespace are Product, Project and Distribution.
 
->>> from canonical.launchpad.interfaces import (
-...     IPillarNameSet, IProduct, IProject, IDistribution
-...     )
->>> pillar_set = getUtility(IPillarNameSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPillarNameSet, IProduct, IProject, IDistribution
+    ...     )
+    >>> pillar_set = getUtility(IPillarNameSet)
 
->>> 'ubuntu' in pillar_set
-True
->>> pillar_set['ubuntu'].name
-u'ubuntu'
->>> IDistribution.providedBy(pillar_set['ubuntu'])
-True
+    >>> 'ubuntu' in pillar_set
+    True
+    >>> pillar_set['ubuntu'].name
+    u'ubuntu'
+    >>> IDistribution.providedBy(pillar_set['ubuntu'])
+    True
 
->>> 'ubuntu-product' in pillar_set
-True
->>> pillar_set['ubuntu-product'].name
-u'ubuntu-product'
->>> IProduct.providedBy(pillar_set['ubuntu-product'])
-True
+    >>> 'tomcat' in pillar_set
+    True
+    >>> pillar_set['tomcat'].name
+    u'tomcat'
+    >>> IProduct.providedBy(pillar_set['tomcat'])
+    True
 
->>> 'ubuntu-project' in pillar_set
-True
->>> pillar_set['ubuntu-project'].name
-u'ubuntu-project'
->>> IProject.providedBy(pillar_set['ubuntu-project'])
-True
+    >>> 'apache' in pillar_set
+    True
+    >>> pillar_set['apache'].name
+    u'apache'
+    >>> IProject.providedBy(pillar_set['apache'])
+    True
 
->>> 'fnord' in pillar_set
-False
->>> pillar_set['fnord']
-Traceback (most recent call last):
-...
-NotFoundError: 'fnord'
+    >>> 'fnord' in pillar_set
+    False
+    >>> pillar_set['fnord']
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'fnord'
+
+Inactive products/projects are not available through PillarNameSet unless we
+use the special getByName() method which returns active/inactive pillars..
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> 'gimp' in pillar_set
+    True
+    >>> IProject.providedBy(pillar_set['gimp'])
+    True
+    >>> login('mark@hbd.com')
+    >>> pillar_set['gimp'].active = False
+    >>> flush_database_updates()
+    >>> 'gimp' in pillar_set
+    False
+    >>> pillar_set['gimp']
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'gimp'
+    >>> IProject.providedBy(pillar_set.getByName('gimp'))
+    True
+
+    >>> 'launchpad' in pillar_set
+    True
+    >>> IProduct.providedBy(pillar_set['launchpad'])
+    True
+    >>> pillar_set['launchpad'].active = False
+    >>> flush_database_updates()
+    >>> 'launchpad' in pillar_set
+    False
+    >>> pillar_set['launchpad']
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'launchpad'
+    >>> IProduct.providedBy(pillar_set.getByName('launchpad'))
+    True
 
 
 == Searching for Pillars ==
@@ -44,31 +79,73 @@ NotFoundError: 'fnord'
 We can also use PillarNameSet to do a search across some of our pillars.
 Right now this search is done across Products, Projects and Distributions.
 
->>> def get_meaningful_rank(row):
-...     rank = row['rank']
-...     if rank >= 1.0:
-...         return 'perfect'
-...     elif rank > 0.5 and rank < 1.0:
-...         return 'high'
-...     else:
-...         return 'low'
+    >>> def get_meaningful_rank(row):
+    ...     rank = row['rank']
+    ...     if rank >= 1.0:
+    ...         return 'perfect'
+    ...     elif rank > 0.5 and rank < 1.0:
+    ...         return 'high'
+    ...     else:
+    ...         return 'low'
 
->>> for row in pillar_set.search('mozilla', limit=3):
-...     rank = get_meaningful_rank(row)
-...     print ("%s: %s (%s) [relevance: %s]"
-...            % (row['type'], row['title'], row['name'], rank))
-project: The Mozilla Project (mozilla) [relevance: perfect]
-product: Mozilla Firefox (firefox) [relevance: high]
-product: Mozilla Thunderbird (thunderbird) [relevance: high]
+    >>> for row in pillar_set.search('mozilla', limit=3):
+    ...     rank = get_meaningful_rank(row)
+    ...     print ("%s: %s (%s) [relevance: %s]"
+    ...            % (row['type'], row['title'], row['name'], rank))
+    project group: The Mozilla Project (mozilla) [relevance: perfect]
+    project: Mozilla Firefox (firefox) [relevance: high]
+    project: Mozilla Thunderbird (thunderbird) [relevance: high]
 
->>> for row in pillar_set.search('ubuntu', limit=6):
-...     rank = get_meaningful_rank(row)
-...     print ("%s: %s (%s) [relevance: %s]"
-...            % (row['type'], row['title'], row['name'], rank))
-distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
-product: Ubuntu (ubuntu-product) [relevance: perfect]
-project: The Ubuntu Project (ubuntu-project) [relevance: high]
-distribution: Ubuntu Test (ubuntutest) [relevance: low]
-product: The Evolution Groupware Application (evolution) [relevance: low]
-distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+    >>> for row in pillar_set.search('ubuntu', limit=5):
+    ...     rank = get_meaningful_rank(row)
+    ...     print ("%s: %s (%s) [relevance: %s]"
+    ...            % (row['type'], row['title'], row['name'], rank))
+    distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
+    distribution: Ubuntu Test (ubuntutest) [relevance: low]
+    project: The Evolution Groupware Application (evolution) [relevance: low]
+    project: Tomcat (tomcat) [relevance: low]
+    project: The Gnome Panel Applets (applets) [relevance: low]
+
+Note that inactive products and projects won't be included in the results.
+
+    >>> pillar_set['firefox'].active = False
+    >>> flush_database_updates()
+    >>> for row in pillar_set.search('mozilla', limit=3):
+    ...     rank = get_meaningful_rank(row)
+    ...     print ("%s: %s (%s) [relevance: %s]"
+    ...            % (row['type'], row['title'], row['name'], rank))
+    project group: The Mozilla Project (mozilla) [relevance: perfect]
+    project: Mozilla Thunderbird (thunderbird) [relevance: high]
+
+    >>> pillar_set['apache'].active = False
+    >>> flush_database_updates()
+    >>> for row in pillar_set.search('ubuntu', limit=6):
+    ...     rank = get_meaningful_rank(row)
+    ...     print ("%s: %s (%s) [relevance: %s]"
+    ...            % (row['type'], row['title'], row['name'], rank))
+    distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
+    distribution: Ubuntu Test (ubuntutest) [relevance: low]
+    project: The Evolution Groupware Application (evolution) [relevance: low]
+    project: Tomcat (tomcat) [relevance: low]
+    project: The Gnome Panel Applets (applets) [relevance: low]
+    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+
+
+== PillarName objects ==
+
+PillarName objects have a pillar attribute that returns the object referenced
+by that pillar name
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProjectSet)
+    >>> from canonical.launchpad.database import PillarName
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> ubuntu_pillarname = PillarName.selectOneBy(name='ubuntu')
+    >>> ubuntu_pillarname.pillar == ubuntu
+    True
+    >>> gnome_pillarname = PillarName.selectOneBy(name='gnome')
+    >>> gnome_pillarname.pillar == gnome
+    True
 

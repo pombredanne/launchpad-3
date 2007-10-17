@@ -1,0 +1,62 @@
+= Redirecting users after the registration process =
+
+We want to be nice with your users (the new ones, at least ;) and redirect
+them to any page they were trying to access before they were asked to create
+the new account.
+
+The most important case for us is when people get a file-bug URL from apport
+on an Ubuntu system. When this happens we need to make sure they're
+redirected to exactly the same URL they got from apport.
+
+Let's say Granny was playing around with Evolution (everybody's #1 MUA) and
+it crashed. Apport then gave her the following URL (which she promptly
+clicked): http://launchpad.dev/firefox/+filebug/121212
+
+    >>> anon_browser.handleErrors = True
+    >>> anon_browser.open('http://launchpad.dev/firefox/+filebug/121212')
+    >>> anon_browser.url
+    'http://launchpad.dev/firefox/+filebug/121212/+login'
+
+    >>> anon_browser.getControl(name='redirection_url').value
+    'http://launchpad.dev/firefox/+filebug/121212'
+
+
+Similarly, if she wants to join a launchpad team, we'll try hard to redirect
+them back to that same team, after the registration is complete.
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+join')
+    >>> anon_browser.url
+    'http://launchpad.dev/%7Eubuntu-team/+join/+login'
+
+    >>> anon_browser.getControl(name='redirection_url').value
+    'http://launchpad.dev/%7Eubuntu-team/+join'
+
+    # Clean up stub.test_emails to make sure other tests don't fuck us over.
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails = []
+
+
+If she now creates a new account, we'll certainly redirect her back to
+whatever we had stored on the redirection_url hidden field.
+
+    >>> anon_browser.getControl('E-mail address:', index=1).value = (
+    ...     'granny@canonical.com')
+    >>> anon_browser.getControl('Register').click()
+    >>> print anon_browser.contents
+    <...
+    <h1>Registration mail sent</h1>
+    ...
+
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> url = get_token_url_from_email(msg)
+    >>> anon_browser.open(url)
+
+    >>> anon_browser.getControl('Display Name').value = 'Granny'
+    >>> anon_browser.getControl(name='field.password').value = 'foo'
+    >>> anon_browser.getControl(name='field.password_dupe').value = 'foo'
+    >>> anon_browser.getControl('Continue').click()
+
+    >>> anon_browser.url
+    'http://launchpad.dev/%7Eubuntu-team/+join'

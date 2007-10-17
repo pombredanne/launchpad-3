@@ -1,5 +1,11 @@
 = Specification Branch Links =
 
+  >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from canonical.launchpad.interfaces import ISpecificationBranch
+  >>> from canonical.launchpad.database import SpecificationBranch
+  >>> verifyObject(ISpecificationBranch, SpecificationBranch.get(1))
+  True
+
 A specification can be linked to a number of branches.  For example,
 the Ubuntu media-integrity-check specifcation has a branch link:
 

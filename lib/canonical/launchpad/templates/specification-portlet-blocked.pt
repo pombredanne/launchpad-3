@@ -1,5 +1,5 @@
 <tal:blocked_specs define="blocked_specs context/blocked_specs">
-  <div tal:condition="blocked_specs" class="portlet">
+  <div class="portlet" id="portlet-blocked" tal:condition="blocked_specs">
 
     <h2>Blocks</h2>
 
@@ -8,11 +8,11 @@
       <ul tal:condition="blocked_specs">
         <li class="spec" tal:repeat="spec blocked_specs">
           <a tal:attributes="href spec/fmt:url"
-             tal:content="spec/title">Spec Title Goes Here</a>
+             tal:content="spec/title">Blueprint Title Goes Here</a>
         </li>
       </ul>
       <p tal:condition="not: blocked_specs">
-        No specifications are blocked on this one.
+        No blueprints are blocked on this one.
       </p>
 	
     </div>

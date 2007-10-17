@@ -1,65 +1,138 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
 >
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet replace="structure context/@@+portlet-lifecycle" />
+      <tal:portlet replace="structure context/@@+portlet-milestones" />
+    </metal:portlets>
 
-<body>
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
-  <h1>Distribution overview</h1>
-</metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="view/translation_focus"
-       tal:replace="structure view/translation_focus/@@+portlet-langstats"
-       />
-</metal:leftportlets>
-
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <!-- XXX: Removed pending performance refactoring - StuartBishop 20061206 -->
-  <div tal:condition="nothing" tal:replace="structure context/@@+portlet-top-contributors" />
-  <div tal:replace="structure context/@@+portlet-milestones" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-  <p class="documentDescription" tal:content="context/summary">
-      Distribution Summary
-  </p>
-
-  <h3>Search packages in <span tal:replace="context/title"/></h3>
+    <div metal:fill-slot="main">
+      <span tal:replace="structure context/image:mugshot" />
+      <h1 tal:content="context/title">Ubuntu Linux</h1>
+      <div
+        class="description"
+        tal:content="structure context/summary/fmt:text-to-html"
+      />
+      <div
+        class="description"
+        tal:content="structure context/description/fmt:text-to-html"
+      />
+      <ul class="buttons">
+        <li>
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+          </a>
+        </li>
+        <li tal:content="structure context/@@+ask-a-question-button" />
+        <li tal:content="structure context/@@+help-translate-button" />
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
+          </a>
+        </li>
+      </ul>
 
   <form name="search" action="+search" method="get">
-  
+
     <input type="text"
       name="text"
       size="35"
       tal:attributes="value request/name|nothing" />
 
-    <input type="submit" value="Search"/>
+        <input type="submit" value="Find a Package"/>
 
   </form>
 
-  <p class="discreet lesser">
-    Search for a package in
-    <span tal:replace="context/displayname">Ubuntu</span> using the form.
-    Enter any word in the package title or description.
-  </p>
-
-  <tal:description replace="structure context/description/fmt:text-to-html">
-    Distribution description
-  </tal:description>
-
-  <div tal:replace="structure context/@@+portlet-latesttickets" />
-
-  <div tal:replace="structure context/@@+portlet-latestbugs" />
-
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-
-</div>
-
-</body>
+      <div class="left">
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-coming-sprints"
+        />
+        <div class="portlet" tal:condition="context/serieses">
+          <h2>Series</h2>
+          <ul class="distroseries">
+            <tal:per_series repeat="series context/serieses">
+              <li tal:condition="series/active">
+                <a tal:attributes="href series/fmt:url">
+                  <tal:version replace="series/version" />
+                  "<tal:codename replace="series/displayname" />"
+                </a>
+                - <tal:status replace="series/status/name/fmt:lower" />
+              </li>
+            </tal:per_series>
+          </ul>
+          <a href="+series">See all versions...</a>
+        </div>
+        <div class="portlet" tal:condition="context/currentseries">
+          <h2>
+            Architectures for
+            <tal:latestseries replace="context/currentseries/displayname" />
+          </h2>
+          <p tal:condition="not:context/currentseries/architectures">
+            <tal:name replace="context/currentseries/displayname" />
+            has no architectures managed in Launchpad.
+          </p>
+          <ul
+            tal:condition="context/currentseries/architectures"
+            class="architecture"
+          >
+            <tal:official
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
+            </li>
+            </tal:official>
+            <tal:unofficial
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="not: architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
+                (unofficial)
+            </li>
+            </tal:unofficial>
+          </ul>
+        </div>
+        <div tal:content="structure context/@@+portlet-latestbugs" />
+        <div
+          tal:condition="context/currentseries"
+          tal:content="structure context/currentseries/@@+portlet-latestuploads"
+        />
+      </div>
+      <div class="right">
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-details"
+        />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-top-contributors"
+        />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-latestspecs"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+      </div>
+    </div>
+  </body>
 </html>

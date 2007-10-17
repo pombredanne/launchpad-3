@@ -1,9 +1,4 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-  lang="en"
-  metal:use-macro="context/@@main_template_2col/master"
-  i18n:domain="rosetta"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="bazaar">
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -15,20 +10,16 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
-  <h1>Upstream source import</h1>
+  <h1>Upstream source details</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
-      Once you enter the details of the
-      <abbr title="revision control system">RCS</abbr> you use for
-      this product series, Launchpad can attempt to import that code
-      and publish it as a Bazaar branch.  This lets distributors share
-      code with you more efficiently, and also allows distributed
-      upstream development.
+      Once you enter the details of the revision control system you use for
+      this release series, Launchpad Administrators will attempt to import that
+      code and publish it as a Bazaar branch.
     </p>
 
     <metal:formbody fill-slot="widgets">
@@ -106,10 +97,10 @@
               break;
             }
           }
-          form['field.cvsroot'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.cvsbranch'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.cvsmodule'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.svnrepository'].disabled = (rcstype != 'Subversion');
+          form['field.cvsroot'].disabled = (rcstype != 'CVS');
+          form['field.cvsbranch'].disabled = (rcstype != 'CVS');
+          form['field.cvsmodule'].disabled = (rcstype != 'CVS');
+          form['field.svnrepository'].disabled = (rcstype != 'SVN');
         }
         updateWidgets();
       </script>
@@ -120,4 +111,4 @@
 </div>
 </body>
 </html>
-</tal:layout>
+<!-- 1-0 in-progress -->

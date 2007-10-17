@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -11,14 +11,12 @@ import mimetypes
 import urlparse
 import urllib
 
-from hct.util import path
+from cscvs.dircompare import path
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IProductSet, IProductReleaseSet)
+    ILibraryFileAliasSet, IProductSet, IProductReleaseSet, UpstreamFileType)
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
@@ -49,7 +47,7 @@ class ProductReleaseFinder:
         for product in products:
             filters = []
 
-            for series in product.serieslist:
+            for series in product.serieses:
                 if not series.releasefileglob:
                     continue
 
@@ -131,8 +129,7 @@ class ProductReleaseFinder:
 
             alias = getUtility(ILibraryFileAliasSet).create(
                 filename, size, file, content_type)
-            release.addFileAlias(alias)
-
+            release.addFileAlias(alias, uploader=product.owner)
             self.ztm.commit()
         except:
             self.ztm.abort()
@@ -149,20 +146,20 @@ class ProductReleaseFinder:
 
         version = path.split_version(path.name(filename))[1]
 
-        # Tarballs pulled from a Debian-style archive often have
-        # ".orig" appended to the version number.  We don't want this.
-        if version.endswith('.orig'):
-            version = version[:-len('.orig')]
-        
-        self.log.debug("Version is %s", version)
         if version is None:
             self.log.error("Unable to parse version from %s", url)
             return
 
+        # Tarballs pulled from a Debian-style archive often have
+        # ".orig" appended to the version number.  We don't want this.
+        if version.endswith('.orig'):
+            version = version[:-len('.orig')]
+
+        self.log.debug("Version is %s", version)
         if not sane_version(version):
             self.log.error("Version number '%s' for '%s' is not sane",
                            version, url)
-            return 
+            return
 
         if self.hasReleaseTarball(product_name, series_name, version):
             self.log.debug("Already have a tarball for release %s", version)

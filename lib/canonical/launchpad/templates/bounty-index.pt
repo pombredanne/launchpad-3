@@ -1,13 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Bounty name</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -19,6 +21,8 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <h1 tal:content="context/title">Bounty name</h1>
 
   <p tal:repeat="notice view/notices"
      tal:content="notice"
@@ -45,11 +49,14 @@
       <div class="boardCommentDetails">
         <strong tal:content="message/title">$Message.title</strong>
 
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
-                              tal:content="message/owner/browsername|string:(none)">
+        Posted
+        <span
+          tal:attributes="title message/datecreated/fmt:datetime"
+          tal:content="message/datecreated/fmt:displaydate"
+          >2 minutes ago</span>
+        by <a href="#" tal:attributes="href message/owner/fmt:url" 
+                       tal:content="message/owner/browsername|string:(nobody)">
           $Person.browsername</a>
-        at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
-        13:21</span>
       </div>
 
       <div class="boardCommentBody">
@@ -86,3 +93,4 @@
 
 </body>
 </html>
+<!-- 1-0 done -->

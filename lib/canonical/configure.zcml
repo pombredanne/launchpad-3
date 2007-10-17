@@ -53,6 +53,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.LaunchpadRootIndexView"
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
@@ -131,7 +132,7 @@
     <!-- virtual host: answers -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="support"
+        name="questions"
         layer="canonical.launchpad.layers.AnswersLayer"
         />
     <browser:page
@@ -141,6 +142,16 @@
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.AnswersLayer"
+        />
+
+    <!-- virtual host: openid -->
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.OpenIdLayer"
         />
 
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
@@ -193,22 +204,8 @@
           template="launchpad/templates/root-portlet-foaf.pt" />
     </browser:pages>
 
-    <!-- The root index for the debug view at /+debug-index.
-
-         This is a good place to get access to functionality we're
-         developing, but don't want explicitly linked yet.
-      -->
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="+debug-index"
-        template="launchpad/templates/debug-root-index.pt"
-        permission="zope.Public"
-        layer="canonical.launchpad.layers.DebugLayer"
-        />
-
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
-
-    <include package="canonical.lp" />
+    <include package="canonical.lazr" />
 
 </configure>

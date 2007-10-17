@@ -1,0 +1,74 @@
+<div class="portlet" id="portlet-details">
+
+  <h2><span tal:replace="context/target/displayname">Ubuntu</span> question
+      #<span tal:replace="context/id">234</span></h2>
+
+  <div class="portletBody portletContent">
+
+    <b>Question from:</b><br />
+    <a tal:replace="structure context/owner/fmt:link">Foo Bar</a><br />
+
+    <b>Language:</b>
+    <span tal:replace="context/language/englishname">English</span><br />
+
+    <b>Status:</b>
+    <span tal:replace="context/status/title">Open</span><br />
+
+    <b>For:</b>
+    <span tal:condition="context/product"
+          tal:replace="context/product/name">Firefox</span>
+    <span tal:condition="context/distribution"
+          tal:replace="context/distribution/name">ubuntu</span>
+    <span tal:condition="context/sourcepackagename"
+          tal:replace="context/sourcepackagename/name">moz-ff</span>
+    <br />
+
+    <tal:block condition="context/datedue">
+      <b>Due:</b>
+      <span
+        tal:attributes="title context/datedue/fmt:datetime"
+        tal:content="context/datedue/fmt:approximatedate" /><br />
+    </tal:block>
+
+    <b>Created:</b>
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:approximatedate" /><br />
+
+    <b>Assignee:</b><br />
+    <tal:block condition="context/assignee">
+      <a tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
+    </tal:block>
+    <tal:block condition="not: context/assignee">
+      <i>No assignee</i>
+    </tal:block>
+    <br />
+
+    <tal:block condition="context/answerer">
+      <b>Solved by:</b><br />
+      <a tal:replace="structure context/answerer/fmt:link">Foo Bar</a>
+      <br />
+    </tal:block>
+
+    <b>Last query:</b>
+    <span
+      tal:attributes="title context/datelastquery/fmt:datetime"
+      tal:content="context/datelastquery/fmt:approximatedate" /><br />
+
+    <tal:block condition="context/datelastresponse">
+      <b>Last reply:</b>
+      <span
+        tal:attributes="title context/datelastresponse/fmt:datetime"
+        tal:content="context/datelastresponse/fmt:approximatedate" /><br />
+    </tal:block>
+
+    <tal:block condition="context/date_solved">
+      <b>Solved:</b>
+      <span
+        tal:attributes="title context/date_solved/fmt:datetime"
+        tal:content="context/date_solved/fmt:approximatedate" /><br />
+    </tal:block>
+
+  </div>
+
+</div>

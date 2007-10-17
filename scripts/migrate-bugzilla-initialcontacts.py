@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 import logging

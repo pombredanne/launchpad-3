@@ -1,124 +1,157 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Malone</h1>
-      <div><i>The Launchpad bug tracker</i></div>
-    </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-about" />
-    <div tal:replace="structure context/@@+portlet-stats" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-bugtrackers" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-  <p tal:condition="view/error_message"
-     tal:content="view/error_message" class="error message"
-    >Error message.</p>
-
-  <ul>
-
-        <li>
-          <form method="GET" action="" name="goto">
-            Jump to bug report: <input type="text" name="id" size="5" />
-            <noscript>
-              <input type="submit" name="jump_to_bug" value="Go">
-            </noscript>
-          </form>
-          <script type="text/javascript"><!--
-            setFocusByName('id');
-          // --></script>
-        </li>
-
-        <li>
-          <a
-            tal:condition="request/lp:person"
-            tal:attributes="href string:${request/lp:person/fmt:url}/+assignedbugs"
-          >Bugs assigned to you</a>
-          <a tal:condition="not:request/lp:person" href="assigned"
-          >Bugs assigned to you</a>
-        </li>
-      </ul>
-      <h2>Bugs in distribution packages</h2>
-      <ul>
-
-    <li>
-      <a href="bugs/+package">Report a bug in a package</a>
-    </li>
-    <li>
-      <tal:XXX condition="nothing">
-        kiko 2005-07-05: ubuntu is hardcoded
-      </tal:XXX>
-
-        <a href="/distros/ubuntu/+bugs">Bugs in Ubuntu</a>
-
-    </li>
-  </ul>
-
-      <h2>Bugs in upstream products</h2>
-
-  <ul>
-    <li>
-      <form method="GET" action="products">
-        <input type="hidden" name="malone" value="1">
-        <input type="hidden" name="exact_name" value="1">
-        Jump to product: <input type="text" name="text" size="20">
-        <noscript>
-          <input type="submit" name="jump_to_product" value="Go">
-        </noscript>
-      </form>
-    </li>
-    <li>
-      <a href="products">Locate a product</a>
-      to view, search or report bugs
-    </li>
-  </ul>
-
-      <h2>Latest bugs reported across Malone</h2>
-
-  <table>
-    <tbody>
-      <tr
-        tal:repeat="bug context/latest_bugs"
-        tal:replace="structure bug/@@+listing-detailed"
-      />
-    </tbody>
-  </table>
-
-
-  <h2>Most recently fixed bugs across Malone</h2>
-
-  <table id='fixed-bugs'>
-    <tbody>
-      <tr
-        tal:repeat="fixed_bug view/getMostRecentlyFixedBugs"
-        tal:replace="structure fixed_bug/@@+listing-detailed"
-      />
-    </tbody>
-  </table>
-
-    </div>
     <div metal:fill-slot="help">
       <p>
-        Read more <a href="+about">about Malone</a>, the collaborative bug
-        tracker for the open source world, and how you can share information
-        about bugs in distributions and upstream.
+        Read more <a href="+about">about the Launchpad Bug Tracker</a>,
+        the collaborative bug tracker for the open source world, and how you
+        can share information about bugs in distributions and upstream.
       </p>
       <ul class="info">
         <li>
-        	<a href="https://help.launchpad.net/UsingMaloneEmail">
-        		Using Malone by e-mail
-          </a>
+          <a href="https://help.launchpad.net/UsingMaloneEmail"
+          >Sending commands by e-mail</a>
         </li>
       </ul>
     </div>
+
+    <h1 metal:fill-slot="heading">Bug tracking</h1>
+
+    <div metal:fill-slot="main">
+
+      <ul class="rollover buttons">
+        <li>
+          <a href="/+tour">
+            <img
+              alt="Take a tour"
+              src="/+icing/but-lrg-takeatour.gif"
+            />
+          </a>
+        </li>
+        <li>
+          <a href="+filebug">
+            <img
+              alt="Report a bug"
+              src="/+icing/but-lrg-reportabug.gif"
+            />
+          </a>
+        </li>
+      </ul>
+      <p
+        tal:condition="view/error_message"
+        tal:content="view/error_message"
+        class="error message"
+      >Error message.</p>
+      <form class="central" action="/bugs/+bugs" method="get">
+        <table>
+          <tbody>
+            <tr>
+              <td style="text-align: right;">
+                <input
+                  tal:replace="structure view/widgets/searchtext"
+                  id="text"
+                  type="text"
+                  name="field.searchtext"
+                  size="50"
+                />
+              </td>
+              <td>
+                <input
+                  type="submit"
+                  name="search"
+                  value="Search Bug Reports"
+                />
+              </td>
+            </tr>
+            <tr tal:define="options nocall:view/widgets/scope/options;
+                            target_widget nocall:view/widgets/scope/target_widget">
+              <td tal:attributes="class view/target_css_class"
+                  style="text-align: right;">
+               <div>
+                <label>
+                  <input
+                    tal:replace="structure options/all"
+                    name="scope"
+                    type="radio"
+                    value="all"
+                    checked="checked"
+                  />
+                  All projects
+                </label>
+                <label>
+                  <input
+                    tal:replace="structure options/project"
+                    name="scope"
+                    id="scope.project"
+                    type="radio"
+                    value="project"
+                    onclick="document.getElementById('field.target').focus();"
+                  />
+                  One project:
+                  <tal:input replace="structure target_widget/inputField" />
+                </label>
+               </div>
+               <div class="message"
+                    tal:condition="view/target_error"
+                    tal:content="structure view/target_error">
+                  Error message
+               </div>
+              </td>
+              <td tal:content="structure target_widget/chooseLink" />
+            </tr>
+          </tbody>
+        </table>
+        <script type="text/javascript"
+                tal:define="script view/focusedElementScript"
+                tal:condition="script"
+                tal:content="structure script" />
+      </form>
+      <p id="application-summary">
+        Launchpad&rsquo;s bug tracker allows collaboration
+        between software teams on bug reports and fixes.
+        <a href="/+about">Learn more&#8230;</a>
+      </p>
+      <div class="columns">
+        <div class="two column left">
+          <h2>Recently reported</h2>
+          <table>
+            <tbody>
+              <tr
+                tal:repeat="bug context/latest_bugs"
+                tal:replace="structure bug/@@+listing-detailed"
+              />
+            </tbody>
+          </table>
+        </div>
+        <div class="two column right">
+          <h2>Recently fixed</h2>
+          <table id="fixed-bugs">
+            <tbody>
+              <tr
+                tal:repeat="fixed_bug view/getMostRecentlyFixedBugs"
+                tal:replace="structure fixed_bug/@@+listing-detailed"
+              />
+            </tbody>
+          </table>
+        </div>
+      </div><!--columns-->
+      <div class="clear"></div>
+      <div
+        id="application-footer"
+        tal:content="structure context/@@+portlet-stats"
+      />
+
+
+    </div><!--main-->
   </body>
 </html>

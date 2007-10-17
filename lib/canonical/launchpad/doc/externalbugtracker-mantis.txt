@@ -1,0 +1,187 @@
+= ExternalBugTracker: Mantis =
+
+This covers the implementation of the Mantis bug watch updater.
+
+
+== Basics ==
+
+The class that implements ExternalBugTracker for Mantis is called,
+surprisingly, Mantis! It doesn't do any version probing and simply
+stores a base URL which it will use to construct URLs to pull a CSV
+export from.
+
+    >>> from canonical.launchpad.components.externalbugtracker import Mantis
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> alsa_mantis = Mantis(new_bugtracker(BugTrackerType.MANTIS))
+
+As with all ExternalBugTrackers, Mantis contains a function for converting one
+of its own status to a Malone status. Mantis' function takes a string
+in the form "status: resolution" as follows:
+
+    >>> alsa_mantis.convertRemoteStatus('assigned: open').title
+    'In Progress'
+    >>> alsa_mantis.convertRemoteStatus("resolved: won't fix").title
+    "Won't Fix"
+    >>> alsa_mantis.convertRemoteStatus('confirmed: open').title
+    'Confirmed'
+    >>> alsa_mantis.convertRemoteStatus('closed: suspended').title
+    'Invalid'
+    >>> alsa_mantis.convertRemoteStatus('closed: fixed').title
+    'Fix Released'
+
+If the status can't be converted, Unknown is returned, and a warning
+is logged.
+
+    >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
+    WARNING:...:Unknown status/resolution foo/bar.
+    'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
+warning. This handles the case where we've tried to probe for a bug
+but didn't succeed. For example, if the bug number was invalid.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> alsa_mantis.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+
+
+== Updating Bug Watches ==
+
+Let's set up a BugTracker and some watches for the Example.com Bug
+Tracker:
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestMantis)
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1550, sample_person)
+
+
+We use a specially hacked Mantis instance that doesn't do network
+calls to verify here:
+
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker)
+
+Collect the Example.com watches:
+
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    1550: None
+
+And have our special Mantis instance process them:
+
+    >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    1550: assigned: open
+
+Let's add a few more watches:
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+
+    >>> bug_watch_set = getUtility(IBugWatchSet)
+    >>> expected_remote_statuses = dict(
+    ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...     for bug_watch in example_bug_tracker.watches)
+
+    >>> expected_remote_statuses
+    {1550: u'assigned: open'}
+
+    >>> remote_bugs = [
+    ...     (1550, dict(status='assigned', resolution='open')),
+    ...     (1679, dict(status='closed', resolution='unable to reproduce')),
+    ...     (1730, dict(status='assigned', resolution='open')),
+    ...     (1738, dict(status='feedback', resolution='open')),
+    ...     (1748, dict(status='resolved', resolution='fixed')),
+    ...     (1798, None), # Remote bug doesn't exist.
+    ... ]
+
+    >>> for remote_bug_id, remote_bug in remote_bugs:
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=example_bug, owner=sample_person,
+    ...         bugtracker=example_bug_tracker,
+    ...         remotebug=str(remote_bug_id))
+    ...     if remote_bug is None:
+    ...         expected_remote_statuses[remote_bug_id] = 'UNKNOWN'
+    ...     else:
+    ...         expected_remote_statuses[remote_bug_id] = (
+    ...             "%s: %s" % (remote_bug['status'],
+    ...                         remote_bug['resolution']))
+
+Instead of issuing one request per bug watch, like was done before,
+updateBugWatches() issues only one request to update all watches:
+
+    >>> from operator import attrgetter
+    >>> getid = attrgetter('id')
+
+    >>> example_ext_bug_tracker.trace_calls = True
+    >>> example_ext_bug_tracker.updateBugWatches(
+    ...     sorted(example_bug_tracker.watches, key=getid))
+    CALLED _getPage(u'view.php?id=1550')
+    CALLED _getPage(u'view.php?id=1679')
+    CALLED _getPage(u'view.php?id=1730')
+    CALLED _getPage(u'view.php?id=1738')
+    CALLED _getPage(u'view.php?id=1748')
+    CALLED _getPage(u'view.php?id=1798')
+    WARNING:root:Didn't find bug u'1798' on http://...  (local bugs: 10).
+
+    >>> remote_statuses = dict(
+    ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...     for bug_watch in example_bug_tracker.watches)
+
+    >>> for remote_bug_id in sorted(set(remote_statuses).union(
+    ...     expected_remote_statuses)):
+    ...     remote_status = remote_statuses[remote_bug_id]
+    ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
+    ...     print 'Remote bug %d' % (remote_bug_id,)
+    ...     print ' * Expected << %s >>' % (expected_remote_status,)
+    ...     print ' *      Got << %s >>' % (remote_status,)
+    Remote bug 1550
+     * Expected << assigned: open >>
+     *      Got << assigned: open >>
+    Remote bug 1679
+     * Expected << closed: unable to reproduce >>
+     *      Got << closed: unable to reproduce >>
+    Remote bug 1730
+     * Expected << assigned: open >>
+     *      Got << assigned: open >>
+    Remote bug 1738
+     * Expected << feedback: open >>
+     *      Got << feedback: open >>
+    Remote bug 1748
+     * Expected << resolved: fixed >>
+     *      Got << resolved: fixed >>
+    Remote bug 1798
+     * Expected << UNKNOWN >>
+     *      Got << UNKNOWN >>
+
+    >>> example_ext_bug_tracker.trace_calls = False
+
+updateBugWatches() updates the lastchecked attribute on the watches, so
+now no bug watches are in need of updating:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    0
+
+If the status isn't different, the lastchanged attribute doesn't get
+updated:
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> bug_watch = sorted(example_bug_tracker.watches, key=getid)[0]
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> old_last_changed = bug_watch.lastchanged
+    >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
+    >>> bug_watch.lastchanged == old_last_changed
+    True

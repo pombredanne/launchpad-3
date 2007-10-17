@@ -1,6 +1,5 @@
 <tal:Make_sure_we_process_the_authorization_challenge_first
   condition="view/issueChallenge" />
-<tal:layout define="columns1 default">
 <html metal:use-macro="context/@@standard_macros/page">
 
 <div xmetal:fill-slot="main">
@@ -8,4 +7,3 @@
     <p tal:content="context"/>
 </div>
 </html>
-</tal:layout>

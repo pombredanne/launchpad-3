@@ -4,7 +4,7 @@
 
 import re
 from canonical.launchpad.ftests.test_pages import (
-    find_portlet, find_tag_by_id)
+    extract_text, find_main_content, find_portlet, find_tag_by_id)
 
 DIRECT_SUBS_PORTLET_INDEX = 0
 INDIRECT_SUBS_PORTLET_INDEX = 1
@@ -20,11 +20,10 @@ def print_indirect_subscribers(bug_page):
 def print_subscribers(bug_page, subscriber_portlet_index):
     """Print the subscribers listed in the subscriber portlet."""
     bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
-    subscriber_portlet = find_portlet(
-        bug_page, 'Subscribers to bug %s' % bug_id)
+    subscriber_portlet = find_portlet(bug_page, 'Subscribers')
     try:
         portlet = subscriber_portlet.fetch(
-            'ul', "people")[subscriber_portlet_index]
+            'ul', "person")[subscriber_portlet_index]
     except IndexError:
         # No portlet with this index, as can happen if there are
         # no indirect subscribers, so just print an empty string
@@ -48,3 +47,31 @@ def print_bugs_table(content, table_id):
             continue
         bug_id, bug_title = tr("td", limit=2)
         print bug_id.string, bug_title.a.string
+
+
+def print_bugs_list(content, list_id):
+    """Print the bugs list with the given ID.
+
+    Right now this is quite simplistic, in that it just extracts the
+    text from the element specified by list_id. If the bug listing
+    becomes more elaborate then this function will be the place to
+    cope with it.
+    """
+    bugs_list = find_tag_by_id(content, list_id).findAll(
+        None, {'class': 'similar-bug'})
+    for node in bugs_list:
+        print extract_text(node)
+
+
+def print_bugtasks(text):
+    """Print all the bugtasks in the text."""
+    print '\n'.join(extract_bugtasks(text))
+
+
+def extract_bugtasks(text):
+    """Extracts a list of strings for all the bugtasks in the text."""
+    main_content = find_main_content(text)
+    table = main_content.find('table', {'id': 'buglisting'})
+    if table is None:
+        return []
+    return [extract_text(tr) for tr in table('tr') if tr.td is not None]

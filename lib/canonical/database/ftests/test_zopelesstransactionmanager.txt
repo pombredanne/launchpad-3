@@ -38,7 +38,7 @@ And different in different threads:
 True
 
  
-XXX: This bit is overly dependent on the db...
+XXX: ddaa 2005-05-10: This bit is overly dependent on the db...
 Show that concurrent transactions in different threads work correctly
 
 >>> from sqlobject import StringCol

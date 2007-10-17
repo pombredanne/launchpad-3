@@ -1,7 +1,11 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="malone"
 >
@@ -10,15 +14,14 @@
       <div>
         <img alt="" src="/@@/bug" />
         <a tal:attributes="href context/fmt:url"
-        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
-        <tal:title replace="context/title">Something doesn't work</tal:title>
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Something doesn't work</tal:title>
       </div>
       <h1>Remove link to <abbr>CVE</abbr> report</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-cve" />
+  <div tal:replace="structure context/bug/@@+portlet-cve" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -27,7 +30,7 @@
 
     <p metal:fill-slot="extra_info">
       Are you sure you want to remove the link between
-      <span tal:replace="context/displayname">Bug #123</span> and the
+      <span tal:replace="context/bug/displayname">Bug #123</span> and the
       <abbr>CVE</abbr> entry?
     </p>
 

@@ -1,24 +1,40 @@
-<html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en" lang="en"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
+    <h1 metal:fill-slot="heading">Translation groups</h1>
+
+    <div metal:fill-slot="main">
       <div>
-        <a href="/translations/groups">Translation groups</a>:
-        <strong><a tal:attributes="href context/fmt:url" tal:content="context/title"
-        >The foo group</a></strong>
+        <a tal:attributes="href context/fmt:url"
+           tal:content="string:${context/title} translation group">
+            Foo bar translation group
+        </a>
       </div>
       <h1>Appoint a translator</h1>
-    </metal:heading>
-    <metal:leftportlets fill-slot="portlets_one">
-    </metal:leftportlets>
-    <metal:rightportlets fill-slot="portlets_two">
-    </metal:rightportlets>
-    <div metal:fill-slot="main">
-      <div metal:use-macro="context/@@launchpad_addform/addform" />
+
+      <div metal:use-macro="context/@@launchpad_form/form" />
+    </div>
+
+    <div metal:fill-slot="help">
+      <p>
+        Here you can appoint a translator to be responsible for a particular
+        language within this translation group.  One translator can take care
+        of any number of languages, but the group can have only one translator
+        for any single language.  To avoid mistakes, this form will not allow
+        you to appoint a new translator for a language that already has a
+        translator in this group.
+      </p>
+      <p>
+        A translator does not have to be a single person.  If you want to have
+        several people taking care of a single language in this translation
+        group, make them a team and appoint that whole team as a translator.
+      </p>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequently asked questions</a>
+        </li>
+      </ul>
     </div>
   </body>
 </html>

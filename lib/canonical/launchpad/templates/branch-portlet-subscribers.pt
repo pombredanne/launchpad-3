@@ -1,17 +1,20 @@
-<div class="portlet">
-  <h2>Subscribers to <span tal:replace="context/title">Thunderbird Mainline</span></h2>
-
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-subscribers">
+  <h2>Subscribers</h2>
   <div class="portletBody portletContent">
-
-    <ul class="people">
-      <li tal:repeat="person context/subscribers">
+    <ul class="person">
+      <li tal:repeat="subscription view/subscriptions">
         <a href="#"
-           tal:content="person/browsername"
-           tal:attributes="href person/fmt:url">Dafydd Harries</a>
-      </li>
-      <li class="info" tal:condition="not: context/subscribers">
-        <i>No subscribers</i>
+           tal:content="subscription/person/browsername"
+           tal:attributes="href subscription/person/fmt:url">Dafydd Harries</a>
+        <a tal:attributes="href subscription/fmt:url"
+           tal:condition="subscription/editable">
+          <img src="/@@/edit" alt="Edit subscription"/></a>
       </li>
     </ul>
-
+    <p tal:condition="not:view/subscriptions">No subscribers.</p>
+  </div>
 </div>

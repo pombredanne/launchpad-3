@@ -1,30 +1,37 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
-import unittest
 from cStringIO import StringIO
+import datetime
+import unittest
 from urllib2 import urlopen, HTTPError
 
-import transaction
+import pytz
 
-from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+import transaction
+from zope.component import getUtility
+
+from canonical.config import config
+from canonical.database.sqlbase import commit, flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.config import config
 from canonical.database.sqlbase import commit
+from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
 class LibrarianWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
     layer = LaunchpadFunctionalLayer
+    dbuser = 'librarian'
 
     # Add stuff to a librarian via the upload port, then check that it's
     # immediately visible on the web interface. (in an attempt to test ddaa's
     # 500-error issue).
 
     def commit(self):
+        flush_database_updates()
         transaction.commit()
 
     def test_uploadThenDownload(self):
@@ -144,23 +151,115 @@ class LibrarianWebTestCase(unittest.TestCase):
 
         self.failUnlessEqual(client.getFileByAlias(id1).read(), 'sample')
         self.failUnlessEqual(client.getFileByAlias(id2).read(), 'sample')
-                    
+
     def test_robotsTxt(self):
         url = 'http://%s:%d/robots.txt' % (
             config.librarian.download_host, config.librarian.download_port)
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
-        
+
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+
     def commit(self):
-        commit()
+        LaunchpadZopelessLayer.commit()
+
+    def test_accessTime(self):
+        # Test to ensure the Librarian updates last_accessed as specced
+        # when files are retrieved via the web.
+        # We only test this under Zopeless because we need to connect as
+        # a non-standard database user, and because there doesn't seem
+        # any point running this test under both environments.
+
+        # XXX: Stuart Bishop 2007-04-11 Bug=4613: Disabled due to Bug #4613.
+        return
+
+        # Add a file.
+        client = LibrarianClient()
+        filename = 'sample.txt'
+        id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        self.commit()
+
+        # Manually force last accessed time to be some time way in the past, so
+        # that it'll be very clear if it's updated or not (otherwise, depending
+        # on the resolution of clocks and things, an immediate access might not
+        # look any newer).
+        LibraryFileAlias.get(id1).last_accessed = datetime.datetime(
+            2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
+        self.commit()
+
+        # Check that last_accessed is updated when the file is accessed over the
+        # web.
+        access_time_1 = LibraryFileAlias.get(id1).last_accessed
+        client = LibrarianClient()
+        url = client.getURLForAlias(id1)
+        urlopen(url).close()
+        self.commit()
+        access_time_2 = LibraryFileAlias.get(id1).last_accessed
+
+        self.failUnless(access_time_1 < access_time_2)
+
+
+class DeletedContentTestCase(unittest.TestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+
+    def test_deletedContentNotFound(self):
+        # Use a user with rights to change the deleted flag in the db.
+        # This currently means a superuser.
+        LaunchpadZopelessLayer.switchDbUser('')
+
+        alias = getUtility(ILibraryFileAliasSet).create(
+                'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'
+                )
+        alias_id = alias.id
+        LaunchpadZopelessLayer.commit()
+
+        client = LibrarianClient()
+
+        # This works
+        alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        alias.open()
+        alias.read()
+        alias.close()
+
+        # And it can be retrieved via the web
+        url = alias.http_url
+        retrieved_content = urlopen(url).read()
+        self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
+
+
+        # But when we flag the content as deleted
+        cur = cursor()
+        cur.execute("""
+            UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
+            """, (alias.content.id,)
+            )
+        LaunchpadZopelessLayer.commit()
+
+        # Things become not found
+        alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        self.failUnlessRaises(DownloadFailed, alias.open)
+
+        # And people see a 404 page
+        try:
+            urlopen(url)
+            self.fail('404 not raised')
+        except HTTPError, x:
+            self.failUnlessEqual(x.code, 404)
+
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(LibrarianWebTestCase))
     suite.addTest(unittest.makeSuite(LibrarianZopelessWebTestCase))
+    suite.addTest(unittest.makeSuite(DeletedContentTestCase))
     return suite
 

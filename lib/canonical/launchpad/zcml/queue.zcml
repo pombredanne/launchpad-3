@@ -2,47 +2,69 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.DistroReleaseQueue">
+    <content class="canonical.launchpad.database.PackageUploadQueue">
       <implements
-          interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+          interface="canonical.launchpad.interfaces.IPackageUploadQueue" />
+    </content>
+
+    <content class="canonical.launchpad.database.PackageUpload">
+      <implements
+          interface="canonical.launchpad.interfaces.IPackageUpload" />
+      <allow 
+          attributes="status"
+          />
       <require
           permission="launchpad.View"
-          attributes="id status distrorelease pocket changesfile
-                      sources builds customfiles
+          attributes="id distroseries pocket changesfile
+                      signing_key archive sources builds customfiles
                       datecreated sourcepackagerelease
                       containsSource containsBuild
                       containsTranslation containsInstaller containsUpgrader
-                      containsDdtp displayname displayarchs displayversion"
+                      containsDdtp displayname displayarchs displayversion
+                      isPPA"
           />
       <require
           permission="launchpad.Edit"
           attributes="setNew setUnapproved setRejected setAccepted setDone
-                      realiseUpload addSource addBuild addCustom syncUpdate"
-          set_attributes="status distrorelease pocket changesfile"
+                      realiseUpload addSource addBuild addCustom syncUpdate
+                      notify"
+          set_attributes="status distroseries pocket changesfile archive"
           />
     </content>
 
-    <content class="canonical.launchpad.database.DistroReleaseQueueSource">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueSource" />
+    <browser:pages
+      for="canonical.launchpad.interfaces.IPackageUpload"
+      permission="zope.Public">
+      <browser:page
+        name="+filelist"
+        template="../templates/packageupload-filelist.pt"
+        />
+      <browser:page
+        name="+iconlist"
+        template="../templates/packageupload-iconlist.pt"
+        />
+    </browser:pages>
+
+    <content class="canonical.launchpad.database.PackageUploadSource">
+        <allow interface="canonical.launchpad.interfaces.IPackageUploadSource" />
     </content>
 
-    <content class="canonical.launchpad.database.DistroReleaseQueueBuild">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueBuild" />
+    <content class="canonical.launchpad.database.PackageUploadBuild">
+        <allow interface="canonical.launchpad.interfaces.IPackageUploadBuild" />
     </content>
 
-    <content class="canonical.launchpad.database.DistroReleaseQueueCustom">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueCustom" />
+    <content class="canonical.launchpad.database.PackageUploadCustom">
+        <allow interface="canonical.launchpad.interfaces.IPackageUploadCustom" />
     </content>
 
-    <!-- DistroReleaseQueueSet -->
+    <!-- PackageUploadSet -->
     <securedutility
-        class="canonical.launchpad.database.DistroReleaseQueueSet"
-        provides="canonical.launchpad.interfaces.IDistroReleaseQueueSet">
+        class="canonical.launchpad.database.PackageUploadSet"
+        provides="canonical.launchpad.interfaces.IPackageUploadSet">
         <allow
-          interface="canonical.launchpad.interfaces.IDistroReleaseQueueSet" />
+          interface="canonical.launchpad.interfaces.IPackageUploadSet" />
     </securedutility>
 
 

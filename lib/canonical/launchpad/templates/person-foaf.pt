@@ -6,8 +6,10 @@
     <foaf:Person tal:condition="not:context/isTeam">
         <foaf:name tal:content="context/displayname">Display Name</foaf:name>
         <foaf:nick tal:content="context/name">Nick name</foaf:nick>
-        <foaf:img tal:condition="context/gotchi"
-                  tal:attributes="rdf:resource context/gotchi/url" />
+        <foaf:img tal:condition="context/logo"
+                  tal:attributes="rdf:resource context/logo/http_url" />
+        <foaf:img tal:condition="context/mugshot"
+                  tal:attributes="rdf:resource context/mugshot/http_url" />
         <foaf:mbox_sha1sum
             tal:condition="context/preferredemail"
             tal:content="context/preferredemail_sha1"
@@ -28,8 +30,12 @@
             Team Display Name
         </foaf:name>
         <foaf:nick tal:content="context/name">Nick name</foaf:nick>
-        <foaf:img tal:condition="context/emblem"
-                  tal:attributes="rdf:resource context/emblem/url" />
+        <foaf:img tal:condition="context/icon"
+                  tal:attributes="rdf:resource context/icon/http_url" />
+        <foaf:img tal:condition="context/logo"
+                  tal:attributes="rdf:resource context/logo/http_url" />
+        <foaf:img tal:condition="context/mugshot"
+                  tal:attributes="rdf:resource context/mugshot/http_url" />
         <foaf:member tal:repeat="member context/allmembers">
             <foaf:Person>
                 <foaf:name tal:content="member/displayname">

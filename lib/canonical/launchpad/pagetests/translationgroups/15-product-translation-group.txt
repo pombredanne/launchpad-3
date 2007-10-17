@@ -3,16 +3,14 @@ We should also be able to set a translation group and translation
 permissions on a product. We'll use the Netapplet product for this test.
 First make sure it has no translation group and permissions.
 
-  >>> print http(r"""
-  ... GET /netapplet/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
+  >>> browser.open('http://launchpad.dev/netapplet')
+  >>> print browser.contents
+  <!...
   ...Network Applet
-  ...Not assigned...
-  ...Open...
+  ...Translation group:...Not assigned...
+
+  >>> 'Translations:' in browser.contents
+  False
 
 Now let's make sure we can see the page to let us change translation group
 and permissions.
@@ -20,6 +18,7 @@ and permissions.
   >>> print http(r"""
   ... GET /netapplet/+changetranslators HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -31,6 +30,7 @@ Now let's post to the form. We should be redirected to the product page.
 
   >>> print http(r"""
   ... POST /netapplet/+changetranslators HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... Content-Length: 738
   ... Content-Type: multipart/form-data; boundary=---------------------------6923855761766169312285474874
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -52,7 +52,7 @@ Now let's post to the form. We should be redirected to the product page.
   ... 
   ... 1
   ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
   ... Change
   ... -----------------------------6923855761766169312285474874--
@@ -63,17 +63,20 @@ Now let's post to the form. We should be redirected to the product page.
   Location: http://.../netapplet
 
 Now these changes should show up in the product page.
+(XXX mpt 20070126: The translation permissions still don't show up, because
+the product isn't recorded as using Translations. The previous test should
+be adjusted to test this properly. Launchpad should also be fixed so that
+you can't set translation group/permissions without using Translations.)
 
   >>> print http(r"""
   ... GET /netapplet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  ...href="/translations/groups/polyglot/"...The PolyGlot Translation Group...
-  ...Open...
+  ...href="/translations/groups/polyglot"...The PolyGlot Translation Group...
   ...
-

@@ -7,7 +7,12 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Download translations</h1>
+  <h1>
+    Download translations for
+    <tal:title replace="context/title">
+      Template "evolution-2.2" in Evolution trunk
+    </tal:title>
+  </h1>
 
   <h2>Select files to download</h2>
 

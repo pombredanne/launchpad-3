@@ -26,6 +26,7 @@ class DistributionSourcePackageCache(SQLBase):
     binpkgnames = StringCol(notNull=False, default=None)
     binpkgsummaries = StringCol(notNull=False, default=None)
     binpkgdescriptions = StringCol(notNull=False, default=None)
+    changelog = StringCol(notNull=False, default=None)
 
     @property
     def distributionsourcepackage(self):

@@ -6,11 +6,11 @@ On this section, we are going to test the view class for an IPOTemplate.
 First, we need some imports.
 
     >>> from StringIO import StringIO
-    >>> from zope.component import getView
     >>> from zope.publisher.browser import FileUpload
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
+    >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 All the tests will be submitted as comming from the No Privilege person.
@@ -23,10 +23,10 @@ Let's got some needed objects.
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
     >>> distribution = distributionset['ubuntu']
-    >>> release = distribution['hoary']
+    >>> series = distribution['hoary']
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     distrorelease=release, sourcepackagename=sourcepackagename)
+    ...     distroseries=series, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
 
 It's time to check that the upload form sets the right fields.
@@ -48,11 +48,12 @@ headers.
 
 Now, we do the upload.
 
-    >>> request = LaunchpadTestRequest(form={
+    >>> form = {
     ...     'file': FileUpload(FileUploadArgument()),
-    ...     'UPLOAD': 'Upload'})
-    >>> request.method = 'POST'
-    >>> potemplate_view = getView(potemplate, '+upload', request)
+    ...     'UPLOAD': 'Upload'}
+    >>> potemplate_view = create_view(
+    ...     potemplate, '+upload', form=form, layer=TranslationsLayer)
+    >>> potemplate_view.request.method = 'POST'
     >>> potemplate_view.initialize()
 
 As we can see, we have now three entries in our queue.
@@ -67,14 +68,6 @@ the entry should be linked with the IPOTemplate we are using.
     >>> entry.potemplate == potemplate
     True
 
-And for the path, we are going to use the one we already have for the
-given POTemplate instead of the one given with the submit.
-
-    >>> entry.path == potemplate.path
-    True
-    >>> potemplate.path
-    u'po/evolution-2.2.pot'
-
 From the IPOTemplate upload form, we can also upload .po files. Let's check
 that feature...
 
@@ -85,11 +78,12 @@ that feature...
 
 We do the upload...
 
-    >>> request = LaunchpadTestRequest(form={
+    >>> form = {
     ...     'file': FileUpload(FileUploadArgument()),
-    ...     'UPLOAD': 'Upload'})
-    >>> request.method = 'POST'
-    >>> potemplate_view = getView(potemplate, '+upload', request)
+    ...     'UPLOAD': 'Upload'}
+    >>> potemplate_view = create_view(
+    ...     potemplate, '+upload', form=form, layer=TranslationsLayer)
+    >>> potemplate_view.request.method = 'POST'
     >>> potemplate_view.initialize()
 
 As we can see, we have now another entry in our queue.

@@ -1,39 +1,30 @@
-#!/usr/bin/python
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2007 Canonical Ltd. All rights reserved.
 
 """Functions for language pack creation script."""
 
 __metaclass__ = type
 
+__all__ = [
+    'export_language_pack',
+    ]
+
 import datetime
+import os
 import sys
 import tempfile
-import transaction
 from shutil import copyfileobj
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (flush_database_updates, sqlvalues,
-    cursor)
+from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.launchpad.interfaces import (
+    IDistributionSet, ILanguagePackSet, IVPOExportSet, LanguagePackType)
+from canonical.launchpad.translationformat.translation_export import (
+    LaunchpadWriteTarFile)
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
-from canonical.launchpad.components.poexport import (DistroReleasePOExporter,
-    DistroReleaseTarballPOFileOutput, RosettaWriteTarFile)
-from canonical.launchpad.interfaces import IDistributionSet, IVPOExportSet
-from canonical.launchpad.mail import simple_sendmail
 
-def get_distribution(name):
-    """Return the distribution with the given name."""
-    return getUtility(IDistributionSet)[name]
 
-def get_release(distribution_name, release_name):
-    """Return the release with the given name in the distribution with the
-    given name.
-    """
-    return get_distribution(distribution_name).getRelease(release_name)
-
-def iter_sourcepackage_translationdomain_mapping(release):
+def iter_sourcepackage_translationdomain_mapping(series):
     """Return an iterator of tuples with sourcepackagename - translationdomain
     mapping.
 
@@ -52,85 +43,91 @@ def iter_sourcepackage_translationdomain_mapping(release):
             JOIN POTemplateName ON
                 POTemplate.potemplatename = POTemplateName.id
         ORDER BY SourcePackageName.name, POTemplateName.translationdomain
-        """ % sqlvalues(release))
+        """ % sqlvalues(series))
 
     for (sourcepackagename, translationdomain,) in cur.fetchall():
         yield (sourcepackagename, translationdomain)
 
-def export(distribution_name, release_name, component, update, force_utf8,
-    logger):
+
+def export(distroseries, component, update, force_utf8, logger):
     """Return a pair containing a filehandle from which the distribution's
     translations tarball can be read and the size of the tarball i bytes.
 
-    :distribution_name: The name of the distribution.
-    :release_name: The name of the distribution release.
-    :component: The component name from the given distribution release.
-    :update: Whether the export should be an update from the last export.
-    :force_utf8: Whether the export should have all files exported as UTF-8.
-    :logger: The logger object.
+    :arg distroseries: The `IDistroSeries` we want to export from.
+    :arg component: The component name from the given distribution series.
+    :arg update: Whether the export should be an update from the last export.
+    :arg force_utf8: Whether the export should have all files exported as
+        UTF-8.
+    :arg logger: A logger object.
     """
-    release = get_release(distribution_name, release_name)
-    exporter = DistroReleasePOExporter(release)
+    # We will need when the export started later to add the timestamp for this
+    # export inside the exported tarball.
+    start_date = datetime.datetime.utcnow().strftime('%Y%m%d')
     export_set = getUtility(IVPOExportSet)
 
     logger.debug("Selecting PO files for export")
 
+    date = None
     if update:
-        if release.datelastlangpack is None:
-            # It's the first language pack for this release so the update must
-            # be the released date for the distro release.
-            date = release.datereleased
-        else:
-            date = release.datelastlangpack
-    else:
-        date = release.datereleased
+        # Get the export date for the current base language pack.
+        date = distroseries.language_pack_base.date_exported
 
-    pofile_count = export_set.get_distrorelease_pofiles_count(
-        release, date, component, languagepack=True)
+    pofile_count = export_set.get_distroseries_pofiles_count(
+        distroseries, date, component, languagepack=True)
     logger.info("Number of PO files to export: %d" % pofile_count)
 
     filehandle = tempfile.TemporaryFile()
-    archive = RosettaWriteTarFile(filehandle)
-    pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
+    archive = LaunchpadWriteTarFile(filehandle)
 
     index = 0
-    for pofile in export_set.get_distrorelease_pofiles(
-        release, date, component, languagepack=True):
+    for pofile in export_set.get_distroseries_pofiles(
+        distroseries, date, component, languagepack=True):
         logger.debug("Exporting PO file %d (%d/%d)" %
             (pofile.id, index + 1, pofile_count))
+
+        potemplate = pofile.potemplate
+        domain = potemplate.potemplatename.translationdomain.encode('ascii')
+        language_code = pofile.language.code.encode('ascii')
+
+        if pofile.variant is not None:
+            code = '%s@%s' % (language_code, pofile.variant.encode('UTF-8'))
+        else:
+            code = language_code
+
+        path = os.path.join(
+            'rosetta-%s' % distroseries.name, code, 'LC_MESSAGES',
+            '%s.po' % domain)
 
         try:
             # We don't want obsolete entries here, it makes no sense for a
             # language pack.
             contents = pofile.uncachedExport(
-                included_obsolete=False, force_utf8=force_utf8)
+                ignore_obsolete=True, force_utf8=force_utf8)
 
-            pofile_output(
-                potemplate=pofile.potemplate,
-                language=pofile.language,
-                variant=pofile.variant,
-                contents=contents)
+            # Store it in the tarball.
+            archive.add_file(path, contents)
         except:
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
         index += 1
 
-    logger.debug("Adding timestamp file")
-    contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
-    archive.add_file('rosetta-%s/timestamp.txt' % release.name, contents)
+    logger.info("Adding timestamp file")
+    # Is important that the timestamp contain the date when the export
+    # started, not when it finished because that notes how old is the
+    # information the export contains.
+    archive.add_file(
+        'rosetta-%s/timestamp.txt' % distroseries.name, '%s\n' % start_date)
 
-    logger.debug("Adding mapping file")
+    logger.info("Adding mapping file")
     mapping_text = ''
-    mapping = iter_sourcepackage_translationdomain_mapping(release)
+    mapping = iter_sourcepackage_translationdomain_mapping(distroseries)
     for sourcepackagename, translationdomain in mapping:
         mapping_text += "%s %s\n" % (sourcepackagename, translationdomain)
-    archive.add_file('rosetta-%s/mapping.txt' % release.name, mapping_text)
+    archive.add_file(
+        'rosetta-%s/mapping.txt' % distroseries.name, mapping_text)
 
     logger.info("Done.")
-
-    if not update:
-        release.datelastlangpack = UTC_NOW
 
     archive.close()
     size = filehandle.tell()
@@ -138,71 +135,52 @@ def export(distribution_name, release_name, component, update, force_utf8,
 
     return filehandle, size
 
-def upload(filename, filehandle, size):
-    """Upload a translation tarball to the Librarian.
 
-    Return the file alias of the uploaded file.
+def export_language_pack(distribution_name, series_name, logger,
+                         component=None, force_utf8=False, output_file=None):
+    """Export a language pack for the given distribution series.
+
+    :param distribution_name: Name of the distribution we want to export the
+        language pack from.
+    :param series_name: Name of the distribution series we want to export the
+        language pack from.
+    :param logger: Logger object.
+    :param component: The component for the given distribution series. This
+        will be used as a filtering option when selecting the files to export.
+    :param force_utf8: A flag indicating whether all files exported must be
+        force to use the UTF-8 encoding.
+    :param output_file: File path where this export file should be stored,
+        instead of using Librarian. If '-' is given, we use standard output.
+    :return: The exported language pack or None.
     """
+    distribution = getUtility(IDistributionSet)[distribution_name]
+    distroseries = distribution.getSeries(series_name)
 
-    uploader = getUtility(ILibrarianClient)
-    file_alias = uploader.addFile(
-        name=filename,
-        size=size,
-        file=filehandle,
-        contentType='application/octet-stream')
-
-    return file_alias
-
-def compose_mail(sender, recipients, headers, body):
-    """Compose a mail text."""
-
-    all_headers = dict(headers)
-    all_headers.update({
-        'To': ', '.join(recipients),
-        'From': sender
-        })
-
-    header = '\n'.join([
-        '%s: %s' % (key, all_headers[key])
-        for key in all_headers
-        ])
-
-    return header + '\n\n' + body
-
-def send_upload_notification(recipients, distribution_name, release_name,
-        component, file_alias):
-    """Send a notification of an upload to the Librarian."""
-
-    if component is None:
-        components = 'All available'
+    if distroseries.language_pack_full_export_requested:
+        # We were instructed that this export must be a full one.
+        update = False
+        logger.info('Got a request to do a full language pack export.')
+        # Also, unset that flag so next export will proceed normally.
+        distroseries.language_pack_full_export_requested = False
+    elif distroseries.language_pack_base is None:
+        # There is no full export language pack being used, we cannot produce
+        # an update.
+        update = False
     else:
-        components = component
-
-    simple_sendmail(
-        from_addr=config.rosetta.rosettaadmin.email,
-        to_addrs=recipients,
-        subject='Language pack export complete',
-        body=
-            'Distribution: %s\n'
-            'Release: %s\n'
-            'Component: %s\n'
-            'Librarian file alias: %s\n'
-            % (distribution_name, release_name, components, file_alias))
-
-def export_language_pack(distribution_name, release_name, component, update,
-        force_utf8, output_file, email_addresses, logger):
+        # There is a base package with a full export and we didn't get a
+        # request to do a full export, we will generate an update based on
+        # latest full export being used as the base language pack.
+        update = True
 
     # Export the translations to a tarball.
-
     try:
         filehandle, size = export(
-            distribution_name, release_name, component, update, force_utf8,
-            logger)
+            distroseries, component, update, force_utf8, logger)
     except:
         # Bare except statements are used in order to prevent premature
         # termination of the script.
         logger.exception('Uncaught exception while exporting')
-        return False
+        return None
 
     if output_file is not None:
         # Save the tarball to a file.
@@ -216,39 +194,49 @@ def export_language_pack(distribution_name, release_name, component, update,
     else:
         # Upload the tarball to the librarian.
 
-        if component is None:
-            filename = '%s-%s-translations.tar.gz' % (
-                distribution_name, release_name)
+        if update:
+            suffix = '-update'
         else:
-            filename = '%s-%s-%s-translations.tar.gz' % (
-                distribution_name, release_name, component)
+            suffix = ''
+
+        if component is None:
+            filename = '%s-%s-translations%s.tar.gz' % (
+                distribution_name, series_name, suffix)
+        else:
+            filename = '%s-%s-%s-translations%s.tar.gz' % (
+                distribution_name, series_name, component, suffix)
 
         try:
-            file_alias = upload(filename, filehandle, size)
+            uploader = getUtility(ILibrarianClient)
+            # For tar.gz files, the standard content type is
+            # application/x-gtar. You can see more info on
+            # http://en.wikipedia.org/wiki/List_of_archive_formats
+            file_alias = uploader.addFile(
+                name=filename,
+                size=size,
+                file=filehandle,
+                contentType='application/x-gtar')
         except UploadFailed, e:
             logger.error('Uploading to the Librarian failed: %s', e)
-            return False
+            return None
         except:
             # Bare except statements are used in order to prevent premature
             # termination of the script.
             logger.exception('Uncaught exception while uploading to the Librarian')
-            return False
+            return None
 
-        logger.info('Upload complete, file alias: %d' % file_alias)
+        logger.debug('Upload complete, file alias: %d' % file_alias)
 
-        if email_addresses:
-            # Send a notification email.
+        # Let's register this new language pack.
+        language_pack_set = getUtility(ILanguagePackSet)
+        if update:
+            lang_pack_type = LanguagePackType.DELTA
+        else:
+            lang_pack_type = LanguagePackType.FULL
 
-            try:
-                send_upload_notification(email_addresses,
-                    distribution_name, release_name, component, file_alias)
-            except:
-                # Bare except statements are used in order to prevent
-                # premature termination of the script.
-                logger.exception("Sending notifications failed.")
-                return False
+        language_pack = language_pack_set.addLanguagePack(
+            distroseries, file_alias, lang_pack_type)
 
-    # Return a success code.
+        logger.info('Registered the language pack.')
 
-    return True
-
+        return language_pack

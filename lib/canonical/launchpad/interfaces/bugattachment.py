@@ -45,6 +45,9 @@ class IBugAttachment(IHasBug):
     message = Attribute(
         "The message that was created when we added this attachment.")
 
+    def removeFromBug():
+        """Remove the attachment from the bug."""
+
 
 class IBugAttachmentSet(Interface):
     """A set for IBugAttachment objects."""

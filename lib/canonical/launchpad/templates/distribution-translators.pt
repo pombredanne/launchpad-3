@@ -1,35 +1,53 @@
-<tal:tag condition="view/update"/>
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
+  <tal:tag condition="view/update"/>
+  <metal:heading fill-slot="pageheading">
+    <h1>Select a new translation group</h1>
+  </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
+  <div metal:fill-slot="main">
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+    <div metal:use-macro="context/@@launchpad_editform/editform">
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
-  <h1>Select a new translation group</h1>
-</metal:heading>
-
-<div metal:fill-slot="main">
-
-      <div metal:use-macro="context/@@launchpad_editform/editform">
-
-        <p metal:fill-slot="extra_info">
-          Select the translation group that will be responsible for translations in
-          <tal:distro replace="context/title">Ubuntu Linux</tal:distro>,
-          and the translation permissions used by the distribution.
-        </p>
-      </div>
+      <p metal:fill-slot="extra_info">
+        Select the translation group that will be responsible for translations
+        in <tal:distro replace="context/title">Ubuntu Linux</tal:distro>,
+        and the translation permissions used by the distribution.
+      </p>
     </div>
-  </body>
+  </div>
+
+  <div metal:fill-slot="help">
+    <p>
+      Here you can assign a translation group to work on translating the
+      <tal:distro replace="context/displayname">Ubuntu</tal:distro>
+      distribution.  Once a translation group is assigned to the distribution,
+      you can also select how open the translation work should be to
+      contributions from others.
+    </p>
+    <p>
+      A translation group is a collection of translators that works together on
+      projects, translating into one or more languages.  Go to the
+      <a href="/translations/groups/">translation groups overview</a> page to
+      create and manage translation groups.
+    </p>
+    <ul class="info">
+      <li>
+        <a href="https://help.launchpad.net/RosettaFAQ"
+        >Frequently asked questions</a>
+      </li>
+    </ul>
+  </div>
+
+</body>
 </html>

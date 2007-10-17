@@ -1,7 +1,15 @@
-  <ul class="facets">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:condition="not:exists:body"
+  id="actions"
+  class="portlet"
+>
+  <h2>Actions</h2>
+  <ul>
     <tal:block repeat="link view/contextmenuitems">
-      <li metal:define-macro="renderlink"
-          tal:attributes="class link/icon">
+      <li metal:define-macro="renderlink">
         <a
           tal:attributes="href link/url; title link/summary"
           tal:content="structure link/escapedtext"
@@ -12,3 +20,4 @@
       <metal:use metal:use-macro="template/macros/renderlink" />
     </tal:block>
   </ul>
+</div>

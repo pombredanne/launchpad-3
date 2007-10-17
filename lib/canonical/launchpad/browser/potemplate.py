@@ -1,32 +1,48 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser code for PO templates."""
 
 __metaclass__ = type
 
 __all__ = [
-    'POTemplateSubsetView', 'POTemplateView', 'POTemplateViewPreferred',
-    'POTemplateEditView', 'POTemplateAdminView', 'POTemplateExportView', 
-    'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
-    'POTemplateSubsetNavigation', 'POTemplateNavigation'
+    'POTemplateAdminView',
+    'POTemplateEditView',
+    'POTemplateFacets',
+    'POTemplateExportView',
+    'POTemplateNavigation',
+    'POTemplateSetNavigation',
+    'POTemplateSOP',
+    'POTemplateSubsetNavigation',
+    'POTemplateSubsetURL',
+    'POTemplateSubsetView',
+    'POTemplateURL',
+    'POTemplateView',
+    'POTemplateViewPreferred',
     ]
 
 import operator
-
+import os.path
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ICanonicalUrlData, ILaunchBag, IPOFileSet, 
-    IPOTemplateSubset, ITranslationImportQueue)
-from canonical.launchpad.browser.pofile import (
-    POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.poexportrequest import BaseExportView
+from canonical.launchpad.browser.productseries import (
+    ProductSeriesSOP, ProductSeriesFacets)
+from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.browser.sourcepackage import (
+    SourcePackageSOP, SourcePackageFacets)
+from canonical.launchpad.interfaces import (
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
+    ITranslationImporter, ITranslationImportQueue, IProductSeries,
+    ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation, LaunchpadView)
+    GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 class POTemplateNavigation(Navigation):
@@ -40,6 +56,11 @@ class POTemplateNavigation(Navigation):
             'We only know about GET, HEAD, and POST')
 
         user = getUtility(ILaunchBag).user
+
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if name == 'en':
+            raise NotFoundError(name)
 
         pofile = self.context.getPOFileByLang(name)
 
@@ -60,50 +81,123 @@ class POTemplateNavigation(Navigation):
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
-
     usedfor = IPOTemplate
 
-    defaultlink = 'translations'
-
-    enable_only = ['overview', 'translations']
-
-    def _parent_url(self):
-        """Return the URL of the thing this PO template is attached to."""
-
-        if self.context.distrorelease:
-            source_package = self.context.distrorelease.getSourcePackage(
-                self.context.sourcepackagename)
-            return canonical_url(source_package)
+    def __init__(self, context):
+        StandardLaunchpadFacets.__init__(self, context)
+        target = context.translationtarget
+        if IProductSeries.providedBy(target):
+            self.target_facets = ProductSeriesFacets(target)
+        elif ISourcePackage.providedBy(target):
+            self.target_facets = SourcePackageFacets(target)
         else:
-            return canonical_url(self.context.productseries)
+            # We don't know yet how to handle this target.
+            raise NotImplementedError
+
+        # Enable only the menus that the translation target uses.
+        self.enable_only = self.target_facets.enable_only
+
+        # From an IPOTemplate URL, we reach its translationtarget (either
+        # ISourcePackage or IProductSeries using self.target.
+        self.target = '../../'
 
     def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
+        overview_link = self.target_facets.overview()
+        overview_link.target = self.target
+        return overview_link
 
     def translations(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
+        translations_link = self.target_facets.translations()
+        translations_link.target = self.target
+        return translations_link
+
+    def bugs(self):
+        bugs_link = self.target_facets.bugs()
+        bugs_link.target = self.target
+        return bugs_link
+
+    def answers(self):
+        answers_link = self.target_facets.answers()
+        answers_link.target = self.target
+        return answers_link
+
+    def specifications(self):
+        specifications_link = self.target_facets.specifications()
+        specifications_link.target = self.target
+        return specifications_link
+
+    def bounties(self):
+        bounties_link = self.target_facets.bounties()
+        bounties_link.target = self.target
+        return bounties_link
+
+    def calendar(self):
+        calendar_link = self.target_facets.calendar()
+        calendar_link.target = self.target
+        return calendar_link
+
+    def branches(self):
+        branches_link = self.target_facets.branches()
+        branches_link.target = self.target
+        return branches_link
 
 
-class POTemplateAppMenus(POFileAppMenus):
+class POTemplateSOP(StructuralObjectPresentation):
+
+    def __init__(self, context):
+        StructuralObjectPresentation.__init__(self, context)
+        target = context.translationtarget
+        if IProductSeries.providedBy(target):
+            self.target_sop = ProductSeriesSOP(target)
+        elif ISourcePackage.providedBy(target):
+            self.target_sop = SourcePackageSOP(target)
+        else:
+            # We don't know yet how to handle this target.
+            raise NotImplementedError
+
+    def getIntroHeading(self):
+        return self.target_sop.getIntroHeading()
+
+    def getMainHeading(self):
+        return self.target_sop.getMainHeading()
+
+    def listChildren(self, num):
+        return self.target_sop.listChildren(num)
+
+    def countChildren(self):
+        return self.parent.countChildren()
+
+    def listAltChildren(self, num):
+        return self.parent.listAltChildren(num)
+
+    def countAltChildren(self):
+        return self.parent.countAltChildren()
+
+
+class POTemplateAppMenus(ApplicationMenu):
     usedfor = IPOTemplate
+    facet = 'translations'
+    links = ['status', 'upload', 'download', 'edit', 'administer']
 
-    links = ['overview', 'upload', 'download', 'edit', 'administer']
+    def status(self):
+        text = 'Show translation status'
+        return Link('', text)
+
+    def upload(self):
+        text = 'Upload a file'
+        return Link('+upload', text, icon='edit')
 
     def download(self):
-        text = 'Download Translations'
+        text = 'Download translations'
         return Link('+export', text, icon='download')
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
-        text = 'Admin Edit'
+        text = 'Administer'
         return Link('+admin', text, icon='edit')
 
 
@@ -118,25 +212,19 @@ class POTemplateSubsetView:
         self.request.response.redirect('../+translations')
 
 
-class POTemplateView(LaunchpadView):
+class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
         self.description = self.context.description
         """Get the requested languages and submit the form."""
         self.submitForm()
 
-    @property
-    def request_languages(self):
-        # if this is accessed multiple times in a same request, consider
-        # changing this to a cachedproperty
-        return helpers.request_languages(self.request)
-
     def requestPoFiles(self):
         """Yield a POFile or DummyPOFile for each of the languages in the
         request, which includes country languages from the request IP,
         browser preferences, and/or personal Launchpad language prefs.
         """
-        for language in self._sortLanguages(self.request_languages):
+        for language in self._sortLanguages(self.translatable_languages):
             yield self._getPOFileOrDummy(language)
 
     def num_messages(self):
@@ -156,8 +244,12 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
+        # This inline import is needed to workaround a circular import problem
+        # because canonical.launchpad.browser.pofile imports
+        # canonical.launchpad.browser.potemplate.POTemplateSOP
+        from canonical.launchpad.browser.pofile import POFileView
 
-        languages = self.request_languages
+        languages = self.translatable_languages
         if not preferred_only:
             # Union the languages the template has been translated into with
             # the user's selected languages.
@@ -169,6 +261,12 @@ class POTemplateView(LaunchpadView):
             # Initialize the view.
             pofileview.initialize()
             yield pofileview
+
+    @property
+    def has_pofiles(self):
+        languages = set(
+            self.context.languages()).union(self.translatable_languages)
+        return len(languages) > 0
 
     def _sortLanguages(self, languages):
         return sorted(languages, key=operator.attrgetter('englishname'))
@@ -198,7 +296,7 @@ class POTemplateView(LaunchpadView):
                     "Your upload was ignored because you didn't select a "
                     "file. Please select a file and try again.")
             else:
-                # XXX: Carlos Perello Marin 2004/12/30
+                # XXX: Carlos Perello Marin 2004-12-30
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
@@ -219,45 +317,39 @@ class POTemplateView(LaunchpadView):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
-            if filename.endswith('.po'):
-                # It's a .po file attached to the template at self.context,
-                # we don't override its path.
-                path = filename
-            else:
-                # It's a template, we override it to have exactly the same
-                # path as the entry has in our database.
-                path = self.context.path
             translation_import_queue.addOrUpdateEntry(
-                path, content, True, self.user,
+                filename, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
-                distrorelease=self.context.distrorelease,
+                distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'
-                ' soon into Rosetta. You can track its status from the'
-                ' <a href="%s">Translation Import Queue</a>' %
-                    canonical_url(translation_import_queue))
+                ' soon into Launchpad. You can track its status from the'
+                ' <a href="%s/+imports">Translation Import Queue</a>' %
+                    canonical_url(self.context.translationtarget))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             num = translation_import_queue.addOrUpdateEntriesFromTarball(
                 content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
-                distrorelease=self.context.distrorelease,
+                distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
             if num > 0:
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
-                    ' will be imported soon into Rosetta. You can track its'
-                    ' status from the <a href="%s">Translation Import Queue'
-                    '</a>' % (num, canonical_url(translation_import_queue)
+                    ' will be imported soon into Launchpad. You can track its'
+                    ' status from the <a href="%s/+imports">Translation'
+                    ' Import Queue<a>' % (
+                        num, canonical_url(self.context.translationtarget)
                         )
                     )
             else:
@@ -311,10 +403,6 @@ class POTemplateExportView(BaseExportView):
 
     def processForm(self):
         """Process a form submission requesting a translation export."""
-
-        if self.request.method != 'POST':
-            return
-
         what = self.request.form.get('what')
         if what == 'all':
             export_potemplate = True
@@ -340,22 +428,12 @@ class POTemplateExportView(BaseExportView):
                 'of them.')
             return
 
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
-
         if export_potemplate:
-            self.request_set.addRequest(
-                self.user, self.context, pofiles, format)
-        elif pofiles:
-            self.request_set.addRequest(self.user, None, pofiles, format)
+            requested_templates = [self.context]
         else:
-            self.request.response.addErrorNotification(
-                'Please select at least one pofile or the PO template.')
-            return
+            requested_templates = None
 
-        self.nextURL()
-
+        return (requested_templates, pofiles)
 
     def pofiles(self):
         """Return a list of PO files available for export."""
@@ -380,6 +458,9 @@ class POTemplateExportView(BaseExportView):
 
             yield BrowserPOFile(value, browsername)
 
+    def getDefaultFormat(self):
+        return self.context.source_file_format
+
 
 class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
@@ -392,7 +473,7 @@ class POTemplateSubsetURL:
     @property
     def path(self):
         potemplatesubset = self.context
-        if potemplatesubset.distrorelease is not None:
+        if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
             assert potemplatesubset.sourcepackagename is not None
             return '+source/%s/+pots' % (
@@ -404,9 +485,9 @@ class POTemplateSubsetURL:
     @property
     def inside(self):
         potemplatesubset = self.context
-        if potemplatesubset.distrorelease is not None:
+        if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
-            return potemplatesubset.distrorelease
+            return potemplatesubset.distroseries
         else:
             assert potemplatesubset.productseries is not None
             return potemplatesubset.productseries
@@ -421,10 +502,10 @@ class POTemplateURL:
         self.context = context
         potemplate = self.context
         potemplateset = getUtility(IPOTemplateSet)
-        if potemplate.distrorelease is not None:
+        if potemplate.distroseries is not None:
             assert potemplate.productseries is None
             self.potemplatesubset = potemplateset.getSubset(
-                distrorelease=potemplate.distrorelease,
+                distroseries=potemplate.distroseries,
                 sourcepackagename=potemplate.sourcepackagename)
         else:
             assert potemplate.productseries is not None

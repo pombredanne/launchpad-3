@@ -1,0 +1,14 @@
+This page checks that we can see a list of bugs on the distroseries,
+specifically Hoary.
+
+  >>> browser.open('http://localhost/ubuntu/hoary/+bugs')
+  >>> '<title>Bugs in The Hoary Hedgehog Release</title>' in browser.contents
+  True
+
+This page checks that we can see a list of bugs on the distributions, in
+this case Ubuntu.
+
+  >>> browser.open('http://localhost/ubuntu/+bugs')
+  >>> '<title>Bugs in Ubuntu Linux</title>' in browser.contents
+  True
+

@@ -1,10 +1,9 @@
 = Bazaar Branches =
 
 The Branch table holds information about an Bazaar Branch. It describes the
-Launchpad user model of a branch, and in particular should be able (in the
-future) to support un-committing of revisions.
+Launchpad user model of a branch.
 
-It has a N-N association to the Revision table through the RevisionNumber
+It has a N-N association to the Revision table through the BranchRevision
 table. An association table is required because the sequence of revisions
 listed by "bzr log" is defined by a "revision-history" file which has some
 freedom with respect to the ancestry of revisions.
@@ -25,124 +24,288 @@ It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
 Bazaar model does not forbid users from replacing the history of a branch.
 
-Bazaar does not have a identifiable concept of a Branch below the user
-interface level. Since the conceptual model of Bazaar does not define Branch,
-Launchpad cannot just implement the Bazaar branch model. You should think of a
-Branch, not as "a Bazaar branch in Launchpad", but as a "Launchpad branch based
-on Bazaar". If that makes any sense to you. Otherwise, don't worry.
+
+== Interfaces ==
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
+    >>> from canonical.launchpad.database import (
+    ...     Branch, BranchSet, BranchSubscription,)
+    >>> verifyObject(IBranch, Branch.get(1))
+    True
+    >>> verifyObject(IBranchSet, BranchSet())
+    True
+    >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
+    True
+
+
+== Branch types ==
+
+There are four different types of branches:
+ * Hosted
+ * Mirrored
+ * Imported
+ * Remote
+
+Hosted branches use the Launchpad codehosting as a primary location for
+the branch.  The branch (as far as Launchpad is concerned) can be pushed
+to and pulled from.
+
+Mirrored branches have a main location outside of Launchpad, and Launchpad
+pulls the branch into the codehosting area.  Mirrored branches can be
+pulled from but not pushed to.  Launchpad keeps the branch up to date
+using the `branch_puller` script.
+
+Imported branches are those where a bazaar branch is built from a CVS or
+Subversion repository.  Imported branches have to be requested and go
+through a testing and verification process.
+
+Remote branches are registered in Launchpad, but the branch is not stored in
+the Launchpad codehosting service, and as such are not accessible using the
+anonymous http access, nor through the Launchpad SFTP or smart server.  The
+remote branches can still be linked to bugs and blueprints.
+
 
 == Creating branches ==
 
 Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
 
->>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
->>> from canonical.launchpad.ftests import syncUpdate
->>> branchset = getUtility(IBranchSet)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> branchset = getUtility(IBranchSet)
 
-It must define the IBranchSet interface.
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> gterm_product = productset.get(6)
 
->>> from zope.interface.verify import verifyObject
->>> verifyObject(IBranchSet, branchset)
-True
+    >>> print branchset.get(-1)
+    None
 
->>> from canonical.launchpad.interfaces import IProductSet
->>> productset = getUtility(IProductSet)
->>> gterm_product = productset.get(6)
+A branch is retrievable via BranchSet's __getitem__
 
->>> print branchset.get(-1)
-None
-
-A branch is retrievable via BranchSet's __getitem__ 
-
->>> branchset[24].name
-u'launchpad'
+    >>> branchset[24].name
+    u'launchpad'
 
 If it doesn't exist an exception NotFoundError is raised
 
->>> try:
-...     branchset[-1]
-... except NotFoundError:
-...     pass
+    >>> import sys
+    >>> try:
+    ...     branchset[-1]
+    ...     print 'ERROR: No exception raised'
+    ... except NotFoundError:
+    ...     print 'NotFoundError raised'
+    ... except:
+    ...     print 'A different exception was raised: %r' % sys.exc_info()
+    NotFoundError raised
 
->>> from canonical.launchpad.interfaces import IPersonSet
->>> personset = getUtility(IPersonSet)
->>> ddaa = personset.getByName('ddaa')
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> ddaa = personset.getByName('ddaa')
 
->>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
->>> title = "David Allouche's Main GNOME Terminal Branch"
->>> summary = "Main line of development for David Allouche on GNOME Terminal."
->>> home_page = "http://example.com/~ddaa/"
->>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
-...     title, summary=summary, home_page=home_page)
->>> gterm_dev.name
-u'dev'
->>> gterm_dev.product == gterm_product
-True
->>> gterm_dev.url
-u'http://example.com/~ddaa/gterm.dev'
+    >>> from canonical.launchpad.ftests import time_counter
+    >>> now = time_counter()
+
+The time_counter is used to create nicely ordered 'fake' date_created
+times for the branches.  This avoids using transaction.commit to get the
+date_created values from the database.
+
+    >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
+    >>> title = "David Allouche's Main GNOME Terminal Branch"
+    >>> summary = "Main line of development for David Allouche on GNOME Terminal."
+    >>> home_page = "http://example.com/~ddaa/"
+    >>> gterm_dev = branchset.new(
+    ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
+    ...     title, summary=summary, home_page=home_page, date_created=now.next())
+
+    >>> gterm_dev.name
+    u'dev'
+    >>> gterm_dev.product == gterm_product
+    True
+    >>> gterm_dev.url
+    u'http://example.com/~ddaa/gterm.dev'
 
 Branches must implement the IBranch interface.
 
->>> from zope.interface.verify import verifyObject
->>> from canonical.launchpad.interfaces import IBranch
->>> verifyObject(IBranch, gterm_dev)
-True
+    >>> from canonical.launchpad.interfaces import IBranch
+    >>> verifyObject(IBranch, gterm_dev)
+    True
 
 Branch may or may not be associated to a product, and may have no home_page,
 no title, and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
->>> url = 'http://example.com/~ddaa/junkcode'
->>> junkcode = branchset.new('junkcode', ddaa, None, None)
->>> junkcode.name
-u'junkcode'
->>> print repr(junkcode.product)
-None
->>> print repr(junkcode.home_page)
-None
->>> print repr(junkcode.title)
-None
->>> print repr(junkcode.summary)
-None
->>> print repr(junkcode.url)
-None
+    >>> url = 'http://example.com/~ddaa/junkcode'
+    >>> junkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, ddaa, None, None,
+    ...     date_created=now.next())
+
+    >>> junkcode.name
+    u'junkcode'
+    >>> print repr(junkcode.product)
+    None
+    >>> print repr(junkcode.home_page)
+    None
+    >>> print repr(junkcode.title)
+    None
+    >>> print repr(junkcode.summary)
+    None
+    >>> print repr(junkcode.url)
+    None
+
+A branch that is not associated with a product may not be owned by a
+team, however.
+
+    >>> team = personset.getByName('simple-team')
+    >>> teamjunkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, team, None, None,
+    ...     date_created=now.next())
+    Traceback (most recent call last):
+      ...
+    AssertionError: Cannot create team-owned junk branches.
+
+The ~vcs-imports celebrity team is exempt from this restriction to
+allow the creation of code import branches without an associated
+product.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> vcs_imports_junkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, vcs_imports, None, None,
+    ...     date_created=now.next())
+    >>> print repr(vcs_imports_junkcode.product)
+    None
+    >>> print vcs_imports_junkcode.owner.name
+    vcs-imports
+
+
+== Determining the number of branches ==
+
+The IBranchSet can tell us how many public branches there are registered.
+
+    >>> branchset.count()
+    33
+
+(30 public branches in the sample data, and three added above.)
+
+# XXX thumper 2007-05-28
+# Rework example so it doesn't get stuffed everytime we update sample data.
+
+
+== Determing the number of branches with bugs ==
+
+The count of branches that have bugs associated with them is another
+useful piece of summary information that is supplied on one of the initial
+pages to show that there can be a relationship created between
+branches and bugs.
+
+    >>> branchset.countBranchesWithAssociatedBugs()
+    2
+
+
+== Determining the recently changed, registered and imported branches ==
+
+The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
+and getRecentlyRegisteredBranches are used to give summary information that
+is to be displayed on the code.launchpad.net page to entice the
+user to click through.
+
+Changed branches are branches that are owned by real people or groups (as
+opposed to vcs-imports), and have recently had new revisions detected by
+the branch scanner, either through the branch being pushed to the supermirror
+or the branch puller script mirroring a remote branch.
+
+Imported branches are those branches owned by vcs-imports, and are "imported"
+from other VCS hosted code bases.  Again recently imported branches are
+identified by new revisions detected by the branch scanner.
+
+Branches that have been recently registered have either been created by a user
+using the web UI, or by pushing a new branch directly to the supermirror.
+
+In order to determine changes in the branches the last_scanned timestamp
+is used.  This is set by the branch scanner when it has finished
+scanning the branches and recording the branch data in the launchpad
+database.  Some of the sample data has this value set, but it was introduced
+after this document was written, so we'll fake it here anyway to get some
+interesting results.
+
+    >>> for branch in branchset.getRecentlyChangedBranches(5):
+    ...     print branch.unique_name
+    ~name12/gnome-terminal/scanned
+    >>> list(branchset.getRecentlyImportedBranches(5))
+    []
+
+    >>> login('foo.bar@canonical.com')
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> today = datetime.now(pytz.timezone('UTC'))
+    >>> branch = branchset.getByUniqueName('~ddaa/gnome-terminal/dev')
+    >>> branch.last_scanned = today - timedelta(3)
+    >>> syncUpdate(branch)
+    >>> branch = branchset.getByUniqueName('~ddaa/+junk/junkcode')
+    >>> branch.last_scanned = today - timedelta(2)
+    >>> syncUpdate(branch)
+    >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
+    >>> branch.last_scanned = today - timedelta(1)
+    >>> syncUpdate(branch)
+    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
+    >>> branch.last_scanned = today
+    >>> syncUpdate(branch)
+
+    >>> for branch in branchset.getRecentlyChangedBranches(5):
+    ...   print branch.unique_name
+    ~name12/gnome-terminal/scanned
+    ~ddaa/+junk/junkcode
+    ~ddaa/gnome-terminal/dev
+
+    >>> for branch in branchset.getRecentlyImportedBranches(5):
+    ...   print branch.unique_name
+    ~vcs-imports/evolution/main
+
+    >>> for branch in branchset.getRecentlyRegisteredBranches(3):
+    ...   print branch.unique_name
+    ~vcs-imports/+junk/junkcode
+    ~ddaa/+junk/junkcode
+    ~ddaa/gnome-terminal/dev
+
 
 == Finding a branch by URL ==
 
 It is possible to find a branch by URL. Either using the pull URL:
 
->>> branchset.getByUrl(gterm_dev_url) == gterm_dev
-True
+    >>> branchset.getByUrl(gterm_dev_url) == gterm_dev
+    True
 
 Or using the Supermirror URL of the same branch:
 
->>> gterm_dev_supermirror = \
-...     u'http://bazaar.launchpad.net/~ddaa/gnome-terminal/dev'
->>> branchset.getByUrl(gterm_dev_supermirror) == gterm_dev
-True
->>> junkcode_supermirror = \
-...     u'http://bazaar.launchpad.net/~ddaa/+junk/junkcode'
->>> branchset.getByUrl(junkcode_supermirror) == junkcode or \
-...     ('failed', branchset.getByUrl(junkcode_supermirror))
-True
+    >>> gterm_dev_supermirror = \
+    ...     u'http://bazaar.launchpad.dev/~ddaa/gnome-terminal/dev'
+    >>> branchset.getByUrl(gterm_dev_supermirror) == gterm_dev
+    True
+    >>> junkcode_supermirror = \
+    ...     u'http://bazaar.launchpad.dev/~ddaa/+junk/junkcode'
+    >>> branchset.getByUrl(junkcode_supermirror) == junkcode or \
+    ...     ('failed', branchset.getByUrl(junkcode_supermirror))
+    True
 
 The provided URL must not have any trailing slash:
 
->>> try: branchset.getByUrl(gterm_dev_url + '/')
-... except AssertionError: print 'trailing slash not allowed'
-trailing slash not allowed
+    >>> try: branchset.getByUrl(gterm_dev_url + '/')
+    ... except AssertionError: print 'trailing slash not allowed'
+    trailing slash not allowed
 
 If no branch is found for the specified URL, the specified default value is
 returned.
 
->>> not_there_url = 'http//example.com/not-in-the-sample-data'
->>> print branchset.getByUrl(not_there_url)
-None
->>> print branchset.getByUrl(not_there_url, 123)
-123
+    >>> not_there_url = 'http//example.com/not-in-the-sample-data'
+    >>> print branchset.getByUrl(not_there_url)
+    None
+    >>> print branchset.getByUrl(not_there_url, 123)
+    123
+
 
 == Branches and products ==
 
@@ -150,31 +313,33 @@ Branch not associated to a product are called "junk" branch and treated for
 navigation purposes as if they were associated to a magic product named
 "+junk".
 
->>> junkcode.product_name
-'+junk'
->>> gterm_dev.product_name
-u'gnome-terminal'
+    >>> junkcode.product_name
+    '+junk'
+    >>> gterm_dev.product_name
+    u'gnome-terminal'
+
 
 == Branch names ==
 
 Branches have a unique name, that is based on the names of the owner, product
 and branch.
 
->>> pushed = branchset[25]
->>> pushed.unique_name
-u'~name12/gnome-terminal/pushed'
->>> junkcode.unique_name
-u'~ddaa/+junk/junkcode'
+    >>> pushed = branchset[25]
+    >>> pushed.unique_name
+    u'~name12/gnome-terminal/pushed'
+    >>> junkcode.unique_name
+    u'~ddaa/+junk/junkcode'
 
 Branches have a display name that is the Branch.title if it's provided, and the
 unique_name otherwise.
 
->>> assert gterm_dev.title is not None
->>> gterm_dev.displayname == gterm_dev.title
-True
->>> assert pushed.title is None
->>> pushed.displayname == pushed.unique_name
-True
+    >>> assert gterm_dev.title is not None
+    >>> gterm_dev.displayname == gterm_dev.title
+    True
+    >>> assert pushed.title is None
+    >>> pushed.displayname == pushed.unique_name
+    True
+
 
 == Branches registered and authored ==
 
@@ -182,29 +347,30 @@ You can get the list of branches for a given Launchpad owner. These are called
 the "registered branches", because the owner is initially set to the current
 user by the branch creation forms.
 
->>> def getName(branch):
-...     return branch.name
->>> sorted(ddaa.registered_branches, key=getName) == [gterm_dev, junkcode]
-True
+    >>> def getName(branch):
+    ...     return branch.name
+    >>> sorted(ddaa.registered_branches, key=getName) == [gterm_dev, junkcode]
+    True
 
 Branches are associated to an "author" user, which may be different from the
 registrant. You can get the branch authored by a given person. Junk branches
 should generally have at least an author, but that is not enforced.
 
->>> list(ddaa.authored_branches)
-[]
->>> junkcode.author = ddaa
->>> syncUpdate(junkcode)
+    >>> list(ddaa.authored_branches)
+    []
+    >>> junkcode.author = ddaa
+    >>> syncUpdate(junkcode)
 
->>> list(ddaa.authored_branches) == [junkcode]
-True
+    >>> list(ddaa.authored_branches) == [junkcode]
+    True
 
 The list of registered branches does not include branches whose registrant is
 also the author. That avoids duplicating the same branch in the registered and
 authored branch listings for a person.
 
->>> list(ddaa.registered_branches) == [gterm_dev]
-True
+    >>> list(ddaa.registered_branches) == [gterm_dev]
+    True
+
 
 == Branch sort key ==
 
@@ -223,76 +389,102 @@ The owner's name is usually not displayed in branch listings, but it is used in
 the sort key to guarantee a predictable sort order. This relies on the fact
 that (owner, product, name) is unique for all branches.
 
->>> from canonical.lp.dbschema import BranchLifecycleStatus
->>> gterm_slowness = branchset[19]
->>> gterm_slowness.sort_key
-(u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
->>> gterm_slowness.sort_key[1] == BranchLifecycleStatus.MERGED.sortkey
-True
+    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
+    >>> gterm_slowness = branchset[19]
+    >>> gterm_slowness.sort_key
+    (u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
+    >>> gterm_slowness.sort_key[1] == BranchLifecycleStatus.MERGED.sortkey
+    True
 
 If the product or author of a branch is NULL, the corresponding item in the
 sort key is None.
 
 Let's demonstrate that on a branch with a NULL product.
 
->>> junk_dev = branchset[20]
->>> print junk_dev.product
-None
->>> junk_dev.sort_key
-(None, ..., u'Ubuntu Team', u'junk.dev', u'name12')
->>> junk_dev.sort_key[1] == BranchLifecycleStatus.EXPERIMENTAL.sortkey
-True
+    >>> junk_dev = branchset[20]
+    >>> print junk_dev.product
+    None
+    >>> junk_dev.sort_key
+    (None, ..., u'Ubuntu Team', u'junk.dev', u'name12')
+    >>> junk_dev.sort_key[1] == BranchLifecycleStatus.EXPERIMENTAL.sortkey
+    True
 
 And on a branch with a NULL author.
 
->>> gterm_24 = branchset[17]
->>> print gterm_24.author
-None
->>> gterm_24.sort_key
-(u'gnome-terminal', ..., None, u'2.4', u'name12')
->>> gterm_24.sort_key[1] == BranchLifecycleStatus.ABANDONED.sortkey
-True
+    >>> gterm_24 = branchset[17]
+    >>> print gterm_24.author
+    None
+    >>> gterm_24.sort_key
+    (u'gnome-terminal', ..., None, u'2.4', u'name12')
+    >>> gterm_24.sort_key[1] == BranchLifecycleStatus.ABANDONED.sortkey
+    True
+
 
 == Branch subscriptions ==
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
->>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
->>> sabdfl = personset.getByName('sabdfl')
->>> sabdfl.subscribed_branches.count()
-0
->>> subscription = gterm_dev.subscribe(sabdfl)
->>> verifyObject(IBranchSubscription, subscription)
-True
->>> subscription.branch == gterm_dev and subscription.person == sabdfl
-True
->>> gterm_dev.subscriptions[0] == subscription
-True
->>> list(gterm_dev.subscribers) == [sabdfl]
-True
->>> list(sabdfl.subscribed_branches) == [gterm_dev]
-True
->>> gterm_dev.unsubscribe(sabdfl)
->>> gterm_dev.subscribers.count()
-0
+Branch subscriptions now have extra attributes associated with them.
+The notification_level is used to control what email is sent to the
+subscribed user, and max_diff_lines is used to control the size of
+any generated diffs between revisions that are emailed out.
+
+Both of these attributes are contolled through the UI through the use
+of the enumerated types: BranchSubscriptionDiffSize, and
+BranchSubscriptionNotificationLevel.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    ...     IPerson, IBranchSubscription)
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> sabdfl.subscribed_branches.count()
+    0
+    >>> subscription = gterm_dev.subscribe(
+    ...     sabdfl,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    >>> verifyObject(IBranchSubscription, subscription)
+    True
+    >>> subscription.branch == gterm_dev and subscription.person == sabdfl
+    True
+    >>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
+    True
+    >>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
+    True
+    >>> gterm_dev.subscriptions[0] == subscription
+    True
+    >>> list(gterm_dev.subscribers) == [sabdfl]
+    True
+    >>> list(sabdfl.subscribed_branches) == [gterm_dev]
+    True
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(subscription)
+    http://code.launchpad.dev/~ddaa/gnome-terminal/dev/+subscription/sabdfl
+    >>> gterm_dev.unsubscribe(sabdfl)
+    >>> gterm_dev.subscribers.count()
+    0
+
 
 == Branches related to a person ==
 
 Finally, you can get the list of related branches for a person, that includes
 the branches registered, authored and subscribed to by this person.
 
->>> lifeless = personset.getByName('lifeless')
->>> lifeless.branches.count()
-0
->>> url = 'http://example.com/~lifeless/mesh-merge'
->>> title = "Experimental mesh merging algorithm."
->>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
-...     title, summary=title)
->>> junkcode.author = lifeless
->>> syncUpdate(junkcode)
->>> unused = gterm_dev.subscribe(lifeless)
->>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
-True
+    >>> lifeless = personset.getByName('lifeless')
+    >>> lifeless.branches.count()
+    0
+    >>> url = 'http://example.com/~lifeless/mesh-merge'
+    >>> title = "Experimental mesh merging algorithm."
+    >>> meshmerge = branchset.new(
+    ...     BranchType.MIRRORED, 'mesh-merge', lifeless, lifeless, None, url,
+    ...     title, summary=title, date_created=now.next())
+    >>> junkcode.author = lifeless
+    >>> syncUpdate(junkcode)
+    >>> unused = gterm_dev.subscribe(lifeless,
+    ...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
+    True
+
 
 == Branches and revisions ==
 
@@ -302,46 +494,53 @@ different user, Launchpad code is only concened with using this data.
 
 Let's get a branch with some revisions in it.
 
->>> sample_person = personset.getByName('name12')
->>> junk = sample_person.getBranch('+junk', 'junk.dev')
->>> print junk.unique_name
-~name12/+junk/junk.dev
+    >>> sample_person = personset.getByName('name12')
+    >>> junk = sample_person.getBranch('+junk', 'junk.dev')
+    >>> print junk.unique_name
+    ~name12/+junk/junk.dev
+
 
 == Revision history of Branch ==
 
 Branch.revision_history gives the sequence of revisions in this branch's
 history, latest revisions first. All revision history items must implement the
-IRevisionNumber interface. The Branch.revision_count attribute gives the length
+IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
->>> from canonical.launchpad.interfaces import IRevisionNumber
->>> count = junk.revision_count
->>> count
-6
->>> [verifyObject(IRevisionNumber, a) for a in junk.revision_history]
-[True, True, True, True, True, True]
->>> [revno.sequence for revno in junk.revision_history]
-[6, 5, 4, 3, 2, 1]
+    >>> from canonical.launchpad.interfaces import IBranchRevision
+    >>> junk.revision_count
+    6
+    >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
+    [True, True, True, True, True, True]
+    >>> for branch_revision in junk.revision_history:
+    ...     print branch_revision.sequence, branch_revision.revision.id
+    6 9
+    5 8
+    4 7
+    3 6
+    2 5
+    1 4
 
 There are two methods for getting only the the latest items of the revision
 history.
 
-Branch.latest_revisions give a specific count of RevisionNumbers at the end of
+Branch.latest_revisions give a specific count of BranchRevisions at the end of
 the history.
 
->>> three_latest = list(junk.revision_history)[:3]
->>> list(junk.latest_revisions(3)) == three_latest
-True
+    >>> three_latest = list(junk.revision_history)[:3]
+    >>> list(junk.latest_revisions(3)) == three_latest
+    True
 
-Branch.revisions_since gives all the RevisionNumbers for revisions comitted
+Branch.revisions_since gives all the BranchRevisions for revisions comitted
 since a given timestamp. It may give suprising results if some committers had a
 skewed clock.
 
->>> from datetime import datetime
->>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
->>> two_latest = list(junk.revision_history)[:2]
->>> list(junk.revisions_since(timestamp)) == two_latest
-True
+    >>> from datetime import datetime
+    >>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
+    >>> two_latest = list(junk.revision_history)[:2]
+    >>> list(junk.revisions_since(timestamp)) == two_latest
+    True
+
 
 == Ancestry of Revision ==
 
@@ -353,24 +552,24 @@ no data is available. Such revisions are called "ghosts".
 
 Initial commits (after a "bzr init") revisions have no parent.
 
->>> history = list(junk.revision_history)
->>> initial = history[-1].revision
->>> initial.parent_ids
-[]
+    >>> history = list(junk.revision_history)
+    >>> initial = history[-1].revision
+    >>> initial.parent_ids
+    []
 
 Normal commits (as opposed to merges) have exactly one parent. The first parent
 of a revision is always the revision that was current when committing.
 
->>> commit = history[-2].revision
->>> [type(a) for a in commit.parent_ids] == [unicode]
-True
+    >>> commit = history[-2].revision
+    >>> [type(a) for a in commit.parent_ids] == [unicode]
+    True
 
 Merges usually have two parents, but they may have more. Though the bzr user
 interface discourage such complex merges.
 
->>> merge = history[-4].revision
->>> len(merge.parent_ids)
-2
+    >>> merge = history[-4].revision
+    >>> len(merge.parent_ids)
+    2
 
 Parent revisions are identified by their globally unique id, and not by a
 foreign key, so existing parents and ghosts can be modelled in the same way.
@@ -378,18 +577,121 @@ foreign key, so existing parents and ghosts can be modelled in the same way.
 To try and retrieve a Revision given its globally unique id, you can use the
 RevisionSet utility.
 
->>> from canonical.launchpad.interfaces import IRevisionSet
->>> revisionset = getUtility(IRevisionSet)
->>> [parent_id] = commit.parent_ids
->>> parent = revisionset.getByRevisionId(parent_id)
->>> parent == initial
-True
+    >>> from canonical.launchpad.interfaces import IRevisionSet
+    >>> revisionset = getUtility(IRevisionSet)
+    >>> [parent_id] = commit.parent_ids
+    >>> parent = revisionset.getByRevisionId(parent_id)
+    >>> parent == initial
+    True
 
 If the parent was a ghost at import time and is not currently available in the
 database. getByRevisionId returns None.
 
->>> revisionset.getByRevisionId('missing-revision-id') is None
-True
+    >>> revisionset.getByRevisionId('missing-revision-id') is None
+    True
+
+
+== Getting the tip revision for a Branch ==
+
+The last revision that we have stored in the database for any given branch
+is identified by the branch attribute "last_scanned_id".  This is the textual
+revision_id for the bzr revision.  The reason that it is a text id rather than
+an integer foreign key is so it can easily be compared to the
+"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and is
+used to identify when a scan is needed for a branch.
+
+    >>> branch = branchset.get(1)
+    >>> branch.last_scanned_id
+    >>> branch.getTipRevision() is None
+    True
+
+    >>> branch.last_scanned_id = 'null:'
+    >>> branch.getTipRevision() is None
+    True
+
+    >>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
+    >>> rev = branch.getTipRevision()
+    >>> print rev.owner.name
+    admins
+    >>> print rev.date_created
+    2005-10-31 17:21:47.381770+00:00
+    >>> print rev.log_body
+    initial import (empty)
+
+
+== Codebrowse and branches ==
+
+Most branches are able to be browsed using the loggerhead codebrowse
+instance at http://codebrowse.launchpad.net.  Branches that have no
+revisions or private branches are not able to be viewed using code
+browse.
+
+The link to codebrowse is shown on the action context menu for branches.
+The enabling of this link is controlled using the branch property
+`code_is_browseable`.
+
+For a public branch with revisions, the link is enabled.
+
+    >>> branch = branchset.getByUniqueName('~name12/+junk/junk.dev')
+    >>> print branch.private
+    False
+    >>> print branch.revision_count
+    6
+    >>> print branch.code_is_browseable
+    True
+
+For a public branch without revisions, the link is disabled.
+
+    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/main')
+    >>> print branch.private
+    False
+    >>> print branch.revision_count
+    0
+    >>> print branch.code_is_browseable
+    False
+
+Private branches are not browseable at all.
+
+    >>> branch = branchset.getByUniqueName(
+    ...     '~landscape-developers/landscape/trunk')
+    >>> print branch.private
+    True
+    >>> print branch.code_is_browseable
+    False
+
+
+== Branch push and branch URLs ==
+
+URLs are shown for a branch to show a user where they can push to and
+pull or branch from.  These methods don't check any visibility constraints
+for the person passed into the methods, that job is left to the views.
+
+    >>> print branch.unique_name
+    ~landscape-developers/landscape/trunk
+    >>> branch.private
+    True
+    >>> print branch.getBzrUploadURL()
+    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    >>> print branch.getBzrDownloadURL()
+    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    >>> print branch.getBzrUploadURL(ddaa)
+    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    >>> print branch.getBzrDownloadURL(ddaa)
+    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+
+Public branches use anonymous http for the bzr branch location.
+
+    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/main')
+    >>> print branch.private
+    False
+    >>> print branch.getBzrUploadURL()
+    bzr+ssh://<name>@bazaar.launchpad.dev/~name12/gnome-terminal/main
+    >>> print branch.getBzrDownloadURL()
+    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
+    >>> print branch.getBzrUploadURL(ddaa)
+    bzr+ssh://ddaa@bazaar.launchpad.dev/~name12/gnome-terminal/main
+    >>> print branch.getBzrDownloadURL(ddaa)
+    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
 
 
 == Branch Scan List ==
@@ -403,40 +705,390 @@ record the last revision IDs in the branch that they saw.
 If the last mirrored and last scanned revision IDs differ for a
 branch, then they will be included in the scan list:
 
-  >>> branch = branchset.get(1)
-  >>> branch.last_mirrored_id = 'rev-2'
-  >>> branch.last_scanned_id = 'rev-1'
-  >>> syncUpdate(branch)
-  >>> branch in branchset.getBranchesToScan()
-  True
+    >>> branch = branchset.get(1)
+    >>> branch.last_mirrored_id = 'rev-2'
+    >>> branch.last_scanned_id = 'rev-1'
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    True
 
 When the branch is scanned, the scanned ID will be updated, and the
 branch will no longer appear in the list:
 
-  >>> branch.last_scanned_id = 'rev-2'
-  >>> syncUpdate(branch)
-  >>> branch in branchset.getBranchesToScan()
-  False
+    >>> branch.last_scanned_id = 'rev-2'
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    False
 
 If a branch has not been scanned yet, it will have a null scanned ID,
 so is included in the branch pull list:
 
-  >>> branch.last_scanned_id = None
-  >>> syncUpdate(branch)
-  >>> branch in branchset.getBranchesToScan()
-  True
+    >>> branch.last_scanned_id = None
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    True
+
+Remote branches are not scanned.
+
+    >>> old_type = branch.branch_type
+    >>> branch.branch_type = BranchType.REMOTE
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    False
+    >>> branch.branch_type = old_type
+    >>> syncUpdate(branch)
 
 If a branch has not been mirrored, it will have a null mirrored ID.
 There is no point in mirroring such branches, whatever the last
 scanned ID is.
 
-  >>> branch.last_mirrored_id = None
-  >>> branch.last_scanned_id = None
-  >>> syncUpdate(branch)
-  >>> branch in branchset.getBranchesToScan()
-  False
+    >>> branch.last_mirrored_id = None
+    >>> branch.last_scanned_id = None
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    False
 
-  >>> branch.last_scanned_id = 'rev-1'
-  >>> syncUpdate(branch)
-  >>> branch in branchset.getBranchesToScan()
-  False
+    >>> branch.last_scanned_id = 'rev-1'
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    False
+
+
+== Getting last commit time for branches ==
+
+There is not sufficient correct data in the sample code to make this
+right, but we still want to test the corner cases.
+
+    >>> branchset.getLastCommitForBranches([])
+    {}
+    >>> branch = branchset.get(1)
+    >>> branchset.getLastCommitForBranches([branch])
+    {<Branch ...>: None}
+    >>> another = branchset.get(2)
+    >>> branchset.getLastCommitForBranches([branch, another])
+    {<Branch ...>: None, <Branch ...>: None}
+
+
+== Getting the development focus branches for products ==
+
+One of the primary initial code pages will be the "products with code" page.
+In order to entice the user to click through, one of the links for each
+product will be the development focus branch if there is one.
+
+Lets make gnome terminal have a user branch as the dev focus.
+
+    >>> login('test@canonical.com')
+    >>> gterm_main = branchset.getByUniqueName('~name12/gnome-terminal/main')
+    >>> gterm_product.development_focus.user_branch = gterm_main
+    >>> syncUpdate(gterm_product.development_focus)
+
+    >>> products = productset.getProductsWithBranches()
+    >>> branches = branchset.getProductDevelopmentBranches(products)
+    >>> import operator
+    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+    ...     print branch.unique_name
+    ~name12/gnome-terminal/main
+    ~vcs-imports/evolution/main
+
+
+== Getting the branch count and last commit for products ==
+
+    >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
+    >>> for product in products:
+    ...     print "%s %s %s" % (
+    ...         product.name,
+    ...         summary[product]['branch_count'],
+    ...         summary[product]['last_commit'])
+    evolution      1 None
+    firefox        5 2005-03-09 15:50:00
+    gnome-terminal 8 None
+    iso-codes      1 None
+    landscape      2 None
+    thunderbird    1 None
+
+
+== Getting branches by owner ==
+
+In order to facilitate getting the branches for all the teams that a
+person is a member of, we need to be able to get branches owned by
+arbitrary people.
+
+    >>> branchset.getBranchesForOwners([])
+    []
+    >>> owners = [personset.getByName('launchpad')]
+    >>> branches = branchset.getBranchesForOwners(owners)
+    >>> import operator
+    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+    ...     print branch.unique_name
+    ~launchpad/gnome-terminal/launchpad
+
+    >>> owners.append(personset.getByName('ddaa'))
+    >>> branches = branchset.getBranchesForOwners(owners)
+    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
+    ...     print branch.unique_name
+    ~ddaa/+junk/junkcode
+    ~ddaa/gnome-terminal/dev
+    ~launchpad/gnome-terminal/launchpad
+
+
+== Getting all branches for a person ==
+
+Batching of the branch pages relies (ideally) on a quick simple query
+that can have the result set limited in order to only return a partial
+result set.  The getBranchesForPerson method on IBranchSet will
+return all branches associated with that person:
+  - subscribed branches by person
+  - person is author or owner of the branch
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
+    >>> branches = branchset.getBranchesForPerson(
+    ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
+    >>> for branch in branches:
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    New ~ddaa/gnome-terminal/dev
+    New ~ddaa/+junk/junkcode
+
+    >>> sample_person = personset.getByName('name12')
+    >>> branches = branchset.getBranchesForPerson(
+    ...     sample_person, visible_by_user=sample_person)
+    >>> for branch in branches:
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    New ~name12/firefox/main
+    Abandoned ~name12/gnome-terminal/2.4
+    Merged ~name12/gnome-terminal/slowness
+    Mature ~name12/gnome-terminal/2.6
+    Development ~name12/gnome-terminal/main
+    Experimental ~name12/gnome-terminal/klingon
+    New ~launchpad/gnome-terminal/launchpad
+    New ~name12/gnome-terminal/mirrored
+    New ~name12/gnome-terminal/pushed
+    New ~name12/gnome-terminal/scanned
+    New ~name12/landscape/feature-x
+    New ~landscape-developers/landscape/trunk
+    Experimental ~name12/+junk/junk.dev
+    New ~name12/+junk/junk.contrib
+
+    >>> branches = branchset.getBranchesAuthoredByPerson(
+    ...     sample_person, visible_by_user=sample_person)
+    >>> for branch in branches:
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    New ~name12/firefox/main
+    Merged ~name12/gnome-terminal/slowness
+    Experimental ~name12/gnome-terminal/klingon
+    New ~name12/landscape/feature-x
+    New ~landscape-developers/landscape/trunk
+    New ~name12/+junk/junk.contrib
+
+    >>> for branch in branchset.getBranchesRegisteredByPerson(sample_person):
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    Abandoned ~name12/gnome-terminal/2.4
+    Mature ~name12/gnome-terminal/2.6
+    Development ~name12/gnome-terminal/main
+    New ~name12/gnome-terminal/mirrored
+    New ~name12/gnome-terminal/pushed
+    New ~name12/gnome-terminal/scanned
+    Experimental ~name12/+junk/junk.dev
+
+    >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    New ~launchpad/gnome-terminal/launchpad
+    Experimental ~name12/+junk/junk.dev
+
+
+== Getting branches for a product ==
+
+In order to have batched branch listings the database needs to do as much
+of the work as possible.  This way there are optimal database queries for
+extra display information.
+
+    >>> gnome_terminal = productset.getByName('gnome-terminal')
+    >>> branches = branchset.getBranchesForProduct(
+    ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    >>> for branch in branches:
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    Mature ~name12/gnome-terminal/2.6
+    Development ~name12/gnome-terminal/main
+    Experimental ~name12/gnome-terminal/klingon
+    New ~launchpad/gnome-terminal/launchpad
+    New ~ddaa/gnome-terminal/dev
+    New ~vcs-imports/gnome-terminal/import
+    New ~name12/gnome-terminal/mirrored
+    New ~name12/gnome-terminal/pushed
+    New ~name12/gnome-terminal/scanned
+
+    >>> branches = branchset.getBranchesForProduct(gnome_terminal)
+    >>> for branch in branches:
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    Abandoned ~name12/gnome-terminal/2.4
+    Merged ~name12/gnome-terminal/slowness
+    Mature ~name12/gnome-terminal/2.6
+    Development ~name12/gnome-terminal/main
+    Experimental ~name12/gnome-terminal/klingon
+    New ~launchpad/gnome-terminal/launchpad
+    New ~ddaa/gnome-terminal/dev
+    New ~vcs-imports/gnome-terminal/import
+    New ~name12/gnome-terminal/mirrored
+    New ~name12/gnome-terminal/pushed
+    New ~name12/gnome-terminal/scanned
+
+    >>> branches = branchset.getBranchesForProduct(
+    ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
+    >>> for branch in branches:
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    Development ~name12/gnome-terminal/main
+
+== Getting branches for a project ==
+
+Similarly as for a product, we can retrieve the branches associated to all the
+products that belong to a given project.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> def printMozillaBranches(lifecycle_statuses=None):
+    ...     mozilla = getUtility(IProjectSet).getByName('mozilla')
+    ...     branches = branchset.getBranchesForProject(
+    ...         mozilla, lifecycle_statuses)
+    ...     for branch in branches:
+    ...         print branch.lifecycle_status.title, branch.unique_name
+
+    >>> printMozillaBranches()
+    New ~name12/firefox/main
+    New ~sabdfl/firefox/release--0.9.1
+    New ~sabdfl/firefox/release-0.8
+    New ~sabdfl/firefox/release-0.9
+    New ~sabdfl/firefox/release-0.9.2
+    New ~stevea/thunderbird/main
+
+Filtering by status must work here too.
+
+We update the branches for the Mozilla project in the sample data to use a
+variety of different statuses, so that we can demonstrate filtering by status.
+
+    >>> def setMultipleStatus(branch_status_pairs):
+    ...     for unique_name, new_status_name in branch_status_pairs:
+    ...         branch = branchset.getByUniqueName(unique_name)
+    ...         new_status = getattr(BranchLifecycleStatus, new_status_name)
+    ...         branch.lifecycle_status = new_status
+    ...         syncUpdate(branch)
+    >>> login('foo.bar@canonical.com')
+    >>> setMultipleStatus([
+    ...     ('~name12/firefox/main', 'DEVELOPMENT'),
+    ...     ('~sabdfl/firefox/release-0.8', 'ABANDONED'),
+    ...     ('~sabdfl/firefox/release-0.9', 'ABANDONED'),
+    ...     ('~sabdfl/firefox/release--0.9.1', 'ABANDONED'),
+    ...     ('~sabdfl/firefox/release-0.9.2', 'MATURE'),
+    ...     ('~stevea/thunderbird/main', 'DEVELOPMENT')])
+    
+    >>> printMozillaBranches()
+    Abandoned ~sabdfl/firefox/release--0.9.1
+    Abandoned ~sabdfl/firefox/release-0.8
+    Abandoned ~sabdfl/firefox/release-0.9
+    Mature ~sabdfl/firefox/release-0.9.2
+    Development ~name12/firefox/main
+    Development ~stevea/thunderbird/main
+
+    >>> printMozillaBranches(DEFAULT_BRANCH_STATUS_IN_LISTING)
+    Mature ~sabdfl/firefox/release-0.9.2
+    Development ~name12/firefox/main
+    Development ~stevea/thunderbird/main
+
+    >>> printMozillaBranches([BranchLifecycleStatus.DEVELOPMENT])
+    Development ~name12/firefox/main
+    Development ~stevea/thunderbird/main
+
+== Associated product series ==
+
+A branch is able to return a list of product series that the branch is
+associated with through either ProductSeries.user_branch or
+ProductSeries.import_branch.
+
+    >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
+    >>> series = list(branch.associatedProductSeries())
+    >>> len(series)
+    1
+    >>> series = series[0]
+    >>> print series.product.name, series.name
+    evolution trunk
+
+
+== Deleting branches ==
+
+If a user creates a branch in error, they should be able to remove that branch.
+
+A branch can be deleted if it is not associated with any bugs or blueprints,
+has no subscribers, and hasn't been associated with any product series.
+
+Deleting the branch is done through the BranchSet.  If the branch is not
+deletable then an exception is raised.
+
+More details can be found in the file
+canonical/launchpad/database/tests/test_branch.py.
+
+    >>> branch = branchset.new(
+    ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
+    ...     'http://example.com/branches/to-delete', 'A branch to delete',
+    ...     date_created=now.next())
+
+    >>> print branch.unique_name
+    ~ddaa/gnome-terminal/to-delete
+    >>> branch.canBeDeleted()
+    True
+
+Adding a subscriber makes it not deletable.
+
+    >>> ignored = branch.subscribe(
+    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    >>> branch.canBeDeleted()
+    False
+    >>> branchset.delete(branch)
+    Traceback (most recent call last):
+    ...
+    CannotDeleteBranch: Cannot delete branch: ~ddaa/gnome-terminal/to-delete
+
+The process can be rectified though by removing the offending links.
+
+    >>> branch.unsubscribe(ddaa)
+    >>> branch.canBeDeleted()
+    True
+    >>> branchset.delete(branch)
+    >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
+    None
+
+Branches with revisions are deletable.
+
+    >>> branch = branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
+    >>> branch.revision_count
+    1
+    >>> branch.canBeDeleted()
+    True
+    >>> branchset.delete(branch)
+    >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
+    None
+
+
+== Branch references ==
+
+When new references to the branch table are added, these need to be
+taken into consideration with branch deletion.
+
+The current references to the branch table are shown here.
+
+    >>> from canonical.database import postgresql
+    >>> from canonical.database.sqlbase import cursor
+    >>> cur = cursor()
+    >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
+
+    >>> for name in sorted([
+    ...     '%s.%s' % (src_tab, src_col) for
+    ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
+    ...     print name
+    branchmergeproposal.dependent_branch
+    branchmergeproposal.source_branch
+    branchmergeproposal.target_branch
+    branchrevision.branch
+    branchsubscription.branch
+    bugbranch.branch
+    codeimport.branch
+    productseries.import_branch
+    productseries.user_branch
+    specificationbranch.branch

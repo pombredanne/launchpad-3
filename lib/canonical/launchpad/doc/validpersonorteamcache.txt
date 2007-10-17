@@ -19,7 +19,7 @@ cached list of Person.id that are considered 'valid'.
 
 Setup some constants we will use later
 
-    >>> from canonical.lp.dbschema import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> new = EmailAddressStatus.NEW.value
     >>> preferred = EmailAddressStatus.PREFERRED.value
     >>> validated = EmailAddressStatus.VALIDATED.value
@@ -143,8 +143,9 @@ Creating and deleting rows will populate things correctly
     >>> is_valid(888888)
     False
     >>> cur.execute("""
-    ...     INSERT INTO Person (id, name, displayname, password, creation_rationale)
-    ...     VALUES (888888, 'tempy', 'tempy the temp account', 'secret', 1)
+    ...     INSERT INTO Person (id, name, displayname, password,
+    ...                         creation_rationale, renewal_policy)
+    ...     VALUES (888888, 'tempy', 'tempy the temp account', 'secret', 1, 10)
     ...     """)
     >>> is_valid(888888)
     False
@@ -163,8 +164,9 @@ Note that teams don't need a preferred email address to be considered valid
     >>> is_valid(999999)
     False
     >>> cur.execute("""
-    ...     INSERT INTO Person (id, name, displayname, teamowner)
-    ...     VALUES (999999, 'tempyteam', 'tempy the temp team', %(stub_id)s)
+    ...     INSERT INTO Person (id, name, displayname, teamowner,
+    ...                         renewal_policy)
+    ...     VALUES (999999, 'tempyteam', 'tempy the temp team', %(stub_id)s, 10)
     ...     """, vars())
     >>> is_valid(999999)
     True

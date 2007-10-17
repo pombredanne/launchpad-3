@@ -1,0 +1,103 @@
+= Confirming an Answer using the Link in the Notification Email =
+
+When an answer is posted on a question, its owner will usually receive a
+notification by email. That email includes a link that can be used by
+the owner to confirm that the answer solved his problem.
+
+    # We will use one browser objects for the owner, and one for the user
+    # providing support, 'No Privileges Person' here.
+
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> support_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
+
+When the URL is used when the question isn't in the right state, the user
+will be redirected to the question page and a notification will be
+displayed:
+
+    >>> owner_browser.open(
+    ...     'http://launchpad.dev/firefox/+question/2/+confirm?'
+    ...     'answer_id=1')
+    >>> owner_browser.url
+    'http://.../firefox/+question/2'
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> print soup.first('div', 'error message').renderContents()
+    The question is not in a state where you can confirm an
+    answer.
+
+Posting an answer on the question will send an email notification
+containing a link to confirm that answer.
+
+    # First subscribe the owner, so that he receives the notification.
+    >>> owner_browser.open(
+    ...     'http://launchpad.dev/firefox/+question/2/+subscribe')
+    >>> owner_browser.getControl('Subscribe').click()
+
+    # Post the answer...
+    >>> support_browser.open('http://launchpad.dev/firefox/+question/2')
+    >>> support_browser.getControl('Message').value = (
+    ...     'SVG is supported out of the box in recent versions of Firefox. '
+    ...     'I suggest you upgrade your browser.')
+    >>> support_browser.getControl('Add Answer').click()
+
+    # ... and get the confirmation URL from the notification
+    >>> import email
+    >>> import re
+    >>> from canonical.launchpad.mail import stub
+    >>> notification = email.message_from_string(stub.test_emails[-1][2])
+    >>> urls = re.findall('(http:[^\s]+)+', notification.get_payload())
+    >>> confirm_url = urls[-2].decode('quoted-printable')
+    >>> print confirm_url
+    http://answers.launchpad.dev/firefox/+question/2/+confirm?answer_id=...
+
+If a cropped URL or forged URL is used, an UnexpectedFormData error will
+be displayed. In the following example, the answer_id parameter refers
+to an answer not part of that question, it mimics a badly handcrafted
+URL:
+
+    >>> owner_browser.open(
+    ...     'http://launchpad.dev/firefox/+question/2/+confirm?'
+    ...     'answer_id=3')
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData...
+
+    >>> owner_browser.open(
+    ...     'http://launchpad.dev/firefox/+question/2/+confirm')
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData...
+
+The page is only accessible to the question owner:
+
+    >>> support_browser.open(confirm_url)
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+On the confirmation page, the user can see the answer that he is
+confirming.
+
+    >>> owner_browser.open(confirm_url)
+    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> for comment in  soup.fetch('div', 'boardCommentBody'):
+    ...     print comment.renderContents()
+    <p>SVG is supported out of the box in recent versions of Firefox. I
+    suggest you upgrade your browser.</p>
+
+To confirm the answer, he needs to click the 'This Solved My Problem'
+button. He can enter an optional message along his confirmation.
+
+    >>> owner_browser.getControl('Message').value = (
+    ...     "Thanks! This indeed solved the problem.")
+    >>> owner_browser.getControl('This Solved My Problem').click()
+
+This adds his comment to the question and mark it as 'Solved.'
+
+    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> print soup.find('b', text='Status:').next.strip()
+    Solved
+    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    <p>Thanks! This indeed solved the problem.</p>

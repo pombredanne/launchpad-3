@@ -13,12 +13,6 @@
   <include package="canonical.launchpad.xmlrpc" />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProductSet"
-    path_expression="string:products"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -44,7 +38,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IProjectSet"
-    path_expression="string:projects"
+    path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
@@ -58,31 +52,6 @@
     for="canonical.launchpad.interfaces.IPOTemplateNameSet"
     path_expression="string:potemplatenames"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <!-- legal link -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="legal"
-    template="templates/launchpad-legal.pt"
-    permission="zope.Public"
-    />
-
-  <!-- feedback page -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="feedback"
-    template="templates/launchpad-feedback.pt"
-    permission="zope.Public"
-    />
-
-  <!-- FAQ -->
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="faq"
-    template="templates/faq.pt"
-    permission="zope.Public"
     />
 
   <!-- RDF downloadable documents -->
@@ -105,9 +74,8 @@
       />
 
   <browser:resourceDirectory
-      name="MochiKit"
-      directory="../../contrib/MochiKit"
+      name="PlotKit"
+      directory="../../contrib/PlotKit"
       />
-
 
 </configure>

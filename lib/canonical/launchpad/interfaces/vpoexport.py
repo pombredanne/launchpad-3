@@ -11,43 +11,42 @@ from zope.interface import Interface, Attribute
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
 
-    def get_pofile_rows(potemplate, language, variant=None,
-        included_obsolete=True):
-        """Return all rows which belong to a particular PO file."""
+    def get_pofile_rows(pofile):
+        """Return all rows which belong to the given PO file."""
 
     def get_potemplate_rows(potemplate):
         """Return all rows which belong to a particular PO template."""
 
-    def get_distrorelease_pofiles(release, date=None, component=None,
+    def get_distroseries_pofiles(series, date=None, component=None,
         languagepack=None):
         """Get a list of PO files which would be contained in an export of a
-        distribtuion release.
+        distribution series.
 
-        The filtering is done based on the 'release', last modified 'date',
+        The filtering is done based on the 'series', last modified 'date',
         archive 'component' and if it belongs to a 'languagepack'
         """
 
-    def get_distrorelease_pofiles_count(release, date=None, component=None,
+    def get_distroseries_pofiles_count(series, date=None, component=None,
         languagepack=None):
         """Return the number of PO files which would be contained in an export
-        of a distribution release.
+        of a distribution series.
 
-        The filtering is done based on the 'release', last modified 'date',
+        The filtering is done based on the 'series', last modified 'date',
         archive 'component' and if it belongs to a 'languagepack'
         """
 
-    def get_distrorelease_potemplates(release, component=None,
+    def get_distroseries_potemplates(series, component=None,
         languagepack=None):
         """Get a list of PO files which would be contained in an export of a
-        distribtuion release.
+        distribution series.
 
-        The filtering is done based on the 'release', last modified 'date',
+        The filtering is done based on the 'series', last modified 'date',
         archive 'component' and if it belongs to a 'languagepack'
         """
 
-    def get_distrorelease_rows(release, date=None):
+    def get_distroseries_rows(series, date=None):
         """Return all rows which belong to a particular distribution
-        release.
+        series.
         """
 
 
@@ -58,9 +57,9 @@ class IVPOExport(Interface):
     translationdomain = Attribute("See IPOTemplateName.translationdomain")
 
     potemplate = Attribute("See IPOTemplate")
-    distrorelease = Attribute("See IPOTemplate.distrorelease")
+    distroseries = Attribute("See IPOTemplate.distroseries")
     sourcepackagename = Attribute("See IPOTemplate.sourcepackagename")
-    productrelease = Attribute("See IPOTemplate.productrelease")
+    productseries = Attribute("See IPOTemplate.productseries")
     potheader = Attribute("See IPOTemplate.header")
     languagepack = Attribute("See IPOTemplate.languagepack")
 
@@ -88,9 +87,11 @@ class IVPOExport(Interface):
 
     msgidpluralform = Attribute("See IPOMsgIDSighting.pluralform")
 
-    translationpluralform = Attribute("See IPOSelection.pluralform")
-    activesubmission = Attribute("See IPOSelection.activesubmission")
+    translationpluralform = Attribute("See IPOSubmission.pluralform")
+    activesubmission = Attribute(
+        "See IPOSubmission.id and IPOSubmission.active")
 
+    context = Attribute("See IPOTMsgSet.context")
     msgid = Attribute("See IPOMsgID.pomsgid")
 
     translation = Attribute("See IPOTranslation.translation")
