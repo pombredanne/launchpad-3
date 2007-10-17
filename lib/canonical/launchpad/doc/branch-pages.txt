@@ -168,8 +168,9 @@ The view batches the results.  The method that returns the batch is 'branches'.
 
     >>> for branch in branches.branches():
     ...     bugs = []
-    ...     if branch.bugbranches:
-    ...         bugs = [bugbranch.bug.id for bugbranch in branch.bugbranches]
+    ...     if branch.bug_branches:
+    ...         bugs = sorted([
+    ...             bugbranch.bug.id for bugbranch in branch.bug_branches])
     ...     print branch.unique_name, bugs
     ...
     ~name12/firefox/main [4, 5]

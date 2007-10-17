@@ -18,7 +18,8 @@ import bzrlib.branch
 import transaction
 from zope.component import getUtility
 
-from canonical.codehosting.tests.helpers import create_branch
+from canonical.codehosting.tests.helpers import (
+    create_branch_with_one_revision)
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.testing import LaunchpadZopelessLayer
@@ -61,7 +62,7 @@ class BranchScannerTest(TestCase):
         """Create a test data in the warehouse for the given branch object."""
         destination = join(self.warehouse, '%08x' % db_branch.id)
         assert not exists(destination)
-        create_branch(destination)
+        create_branch_with_one_revision(destination)
         # record the last mirrored revision
         bzr_branch = bzrlib.branch.Branch.open(destination)
         db_branch.last_mirrored_id = bzr_branch.last_revision()

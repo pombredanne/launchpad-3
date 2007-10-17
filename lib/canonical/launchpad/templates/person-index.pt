@@ -34,13 +34,10 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-emails" />
   <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:rightportlets>
+</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -58,8 +55,6 @@
     class="description"
     tal:content="structure context/teamdescription/fmt:text-to-html"
   />
-  <div id="subscription_policy" tal:condition="context/isTeam"
-       tal:content="view/subscription_policy_description" />
   <ul class="buttons" tal:define="mentorships context/team_mentorships"
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">
@@ -215,7 +210,7 @@
     <div class="portlet" id="membership-summary">
       <h2 tal:condition="not: context/isTeam">Contact details</h2>
       <h2 tal:condition="context/isTeam">Team and membership summary</h2>
-      <table class="summary">
+      <table>
         <tbody>
           <tr tal:condition="context/teamowner">
             <th>Team owner:</th>
@@ -226,14 +221,33 @@
               >sabdfl</a>
             </td>
           </tr>
-          <tr tal:condition="context/teamowner">
-            <th>Membership:</th>
-            <td>
-              <span tal:replace="context/all_member_count">12</span>
-              (<span
-                tal:replace="context/subscriptionpolicy/title">Moderated</span>)
-            </td>
-          </tr>
+          <tal:is_team condition="context/teamowner">
+            <tr>
+              <th>Membership:</th>
+              <td>
+                <span tal:replace="context/all_member_count">12</span>
+                active members
+              </td>
+            </tr>
+            <tr tal:define="count context/proposed_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> proposed members
+              </td>
+            </tr>
+            <tr tal:define="count context/invited_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> invited members
+              </td>
+            </tr>
+            <tr tal:define="count context/inactive_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> inactive members
+              </td>
+            </tr>
+          </tal:is_team>
           <tr tal:condition="context/icon">
             <th>Icon:</th>
             <td><tal:icon replace="structure context/image:icon" /></td>
@@ -292,6 +306,14 @@
                 ><img tal:attributes="src team/icon/getURL;
                                       title string:Icon of ${team/name}"
               /></a>
+            </td>
+          </tr>
+          <tr tal:condition="context/isTeam">
+            <td colspan="2" id="subscription_policy">
+              <strong tal:content="context/subscriptionpolicy/title">
+                Moderated
+              </strong>:
+              <span tal:replace="context/subscriptionpolicy/description" />
             </td>
           </tr>
         </tbody>
