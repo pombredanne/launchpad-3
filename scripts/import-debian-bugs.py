@@ -35,7 +35,7 @@ class DebianBugImportScript(LaunchpadScript):
         import_debian_bugs(self.args)
 
         if self.options.dry_run:
-            self.logger.info("Rolling back the transaction.")
+            self.logger.info("Dry run - rolling back the transaction.")
             self.txn.abort()
         else:
             self.logger.info("Committing the transaction.")
