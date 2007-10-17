@@ -445,7 +445,7 @@ the script gets notified about it.
     ...     import_debian_bugs)
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
-    >>> import_debian_bugs('304014')
+    >>> import_debian_bugs(['304014'])
     WARNING:root:Not importing debbugs #304014, since it's already
                  linked from LP bug(s) #1.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]

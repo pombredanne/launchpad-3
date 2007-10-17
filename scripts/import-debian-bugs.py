@@ -32,7 +32,7 @@ class DebianBugImportScript(LaunchpadScript):
             self.parser.print_help()
             return
 
-        import_debian_bugs(*self.args)
+        import_debian_bugs(self.args)
 
         if self.options.dry_run:
             self.logger.info("Rolling back the transaction.")

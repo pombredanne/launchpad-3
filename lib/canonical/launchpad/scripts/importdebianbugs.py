@@ -12,7 +12,7 @@ from canonical.launchpad.components.externalbugtracker import (
     get_external_bugtracker)
 
 
-def import_debian_bugs(*bugs_to_import):
+def import_debian_bugs(bugs_to_import):
     """Import the specified Debian bugs into Launchpad."""
     debbugs = getUtility(ILaunchpadCelebrities).debbugs
     external_debbugs = get_external_bugtracker(debbugs)
