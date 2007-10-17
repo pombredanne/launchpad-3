@@ -6,7 +6,8 @@ Projects link their branch listing page.
    >>> browser.getLink('Code').click()
    >>> print browser.title
    The Mozilla Project's Bazaar branches registered in Launchpad
-  
+
+
 == Default page for code site ==
 
 When going directly to a project on the code rootsite for launchpad,
@@ -32,19 +33,10 @@ If there are not any branches, a relevant message is shown.
    >>> browser.open('http://code.launchpad.dev/aaa')
    >>> print browser.title
    The Test Project's Bazaar branches registered in Launchpad
-   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-   There may be branches registered for the Test Project but none of
-   them match the current filter criteria for this page.
-   Try filtering on "Any Status".
-
-OK, lets follow the advice.
-
-   >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
-   >>> browser.getControl('Filter').click()
-   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+   >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+   >>> print extract_text(message)
    There are no branches registered for the Test Project in Launchpad today.
-   We recommend you visit
-   <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>
+   We recommend you visit www.bazaar-vcs.org
    for more information about how you can use
    the Bazaar revision control system to improve community
    participation in this project group.

@@ -16,35 +16,21 @@ First, check that the condensed branch listing page works:
   ...Sample Person...
   ...Bazaar branches...
 
+
+== Default view for a person on code root site ==
+
+The default view for a person on the code root site is the normal branch
+listing view for that person.
+
 If a person does not have any related branches, we print an informative
 message.
 
   >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There may be branches related to Daniel Silverstone but none
-  of them match the current filter criteria for this page. Try
-  filtering on "Any Status".
-
-OK, lets follow the advice.
-
-  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
-  >>> browser.getControl('Filter').click()
-  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
   There are no branches related to Daniel Silverstone in Launchpad today.
   You can use Launchpad as a registry for Bazaar branches, and encourage
   broader community participation in your project using
   distributed version control.
-
-== Default view for a person on code root site ==
-
-The default view for a person on the code root site is the 
-normal branch listing view for that person.
-
-  >>> browser.open('http://code.launchpad.dev/~kinnison')
-  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There may be branches related to Daniel Silverstone but none 
-  of them match the current filter criteria for this page. Try
-  filtering on "Any Status".
 
 
 == Authored Branches ==
@@ -74,7 +60,7 @@ There is also a link which points to the registered branches page.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show registered branches').click()
    >>> print browser.title
-   Registered branches for Sample Person 
+   Registered branches for Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)

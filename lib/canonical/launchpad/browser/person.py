@@ -3216,9 +3216,9 @@ class PersonBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product', 'role')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, lifecycle_status, self.user)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3243,9 +3243,9 @@ class PersonAuthoredBranchesView(BranchListingView):
     extra_columns = ('product',)
     title_prefix = 'Authored'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, lifecycle_status, self.user)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3254,9 +3254,9 @@ class PersonRegisteredBranchesView(BranchListingView):
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, lifecycle_status, self.user)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3265,9 +3265,9 @@ class PersonSubscribedBranchesView(BranchListingView):
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, lifecycle_status, self.user)
 
 
 class PersonTeamBranchesView(LaunchpadView):
