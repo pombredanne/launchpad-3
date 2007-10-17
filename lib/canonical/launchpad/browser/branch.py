@@ -42,7 +42,8 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
     IBranchMergeProposal, InvalidBranchMergeProposal,
     IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, UICreatableBranchType)
+    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, MIRROR_TIME_INCREMENT,
+    UICreatableBranchType)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -320,6 +321,12 @@ class BranchView(LaunchpadView):
         else:
             return self.context.mirror_failures
 
+    def show_detailed_mirror_failure(self):
+        """True if the user is allowed to view the detailed mirror failure
+        message.
+        """
+        return self.user is not None and self.user.inTeam(self.context.owner)
+
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
         return (self.user is not None and
@@ -348,10 +355,15 @@ class BranchView(LaunchpadView):
         """Has mirroring this branch been disabled?"""
         return self.context.mirror_request_time is None
 
-    def mirror_in_future(self):
-        """Is the branch going to be mirrored in the future?"""
-        return (not self.mirror_disabled()
-                and self.context.mirror_request_time > datetime.now(pytz.UTC))
+    def mirror_failed_once(self):
+        """Has there been exactly one failed attempt to mirror this branch?"""
+        return self.context.mirror_failures == 1
+
+    def in_mirror_queue(self):
+        """Is it likely that the branch is being mirrored in the next run of
+        the puller?
+        """
+        return self.context.mirror_request_time < datetime.now(pytz.UTC)
 
     @cachedproperty
     def landing_targets(self):
