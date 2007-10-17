@@ -25,8 +25,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchListingFilter,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    IBranchBatchNavigator, IBranchListingFilter, IBugBranchSet,
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -143,6 +143,8 @@ class BranchListingView(LaunchpadFormView):
     custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
     title_prefix = 'Bazaar'
+    # no_sort_by is a sequence of items from the BranchListingSort
+    # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
 
     @property
@@ -210,11 +212,9 @@ class BranchListingView(LaunchpadFormView):
         much sense to sort by lifecycle.
         """
         # This is pretty painful.
-        # First we copy all the items.
-        vocab_items = BranchListingSort.items.items[:]
-        # Then we remove any that aren't appropriate for this view.
-        for item in self.no_sort_by:
-            vocab_items.remove(item)
+        # First we find the items which are not excluded for this view.
+        vocab_items = [item for item in BranchListingSort.items.items
+                       if item not in self.no_sort_by]
         # Finding the value of the lifecycle_filter widget is awkward as we do
         # this when the widgets are being set up.  We go digging in the
         # request.
@@ -226,7 +226,7 @@ class BranchListingView(LaunchpadFormView):
                 status_filter = BranchLifecycleStatusFilter.getTermByToken(
                     form_value).value
             except LookupError:
-                # We explicitly support bogues values in field.lifecycle --
+                # We explicitly support bogus values in field.lifecycle --
                 # they are treated the same as "CURRENT", which includes more
                 # than one lifecycle.
                 pass
@@ -247,7 +247,7 @@ class BranchListingView(LaunchpadFormView):
 
     @property
     def sort_by(self):
-        """The value of the 'sort_by' widget, or None if none was present."""
+        """The value of the `sort_by` widget, or None if none was present."""
         widget = self.widgets['sort_by']
         if widget.hasValidInput():
             return widget.getInputValue()

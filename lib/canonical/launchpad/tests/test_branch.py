@@ -8,6 +8,7 @@ from canonical.launchpad.database.branch import (
     BranchSet, DEFAULT_BRANCH_LISTING_SORT)
 from canonical.launchpad.interfaces import BranchListingSort
 
+
 class TestListingToSortOrder(unittest.TestCase):
     """Tests for the BranchSet._listingSortToOrderBy static method.
 
@@ -18,7 +19,8 @@ class TestListingToSortOrder(unittest.TestCase):
     def assertColumnNotReferenced(self, column, order_by_list):
         """Ensure that column is not referenced in any way in order_by_list.
         """
-        self.failIf(column in order_by_list or '-'+column in order_by_list)
+        self.failIf(column in order_by_list or
+                    ('-' + column) in order_by_list)
 
     def test_default(self):
         """Test that passing None results in the default list."""

@@ -5,6 +5,7 @@ __all__ = [
     'Branch',
     'BranchSet',
     'BranchWithSortKeys',
+    'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
 from datetime import datetime
@@ -30,12 +31,12 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchListingSort, BranchType, BranchTypeError,
-    BranchVisibilityRule, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, CannotDeleteBranch,
+    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
+    BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, ILaunchpadCelebrities,
-    InvalidBranchMergeProposal, NotFoundError)
+    ILaunchpadCelebrities, InvalidBranchMergeProposal,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -492,12 +493,12 @@ class BranchWithSortKeys(Branch):
         branches returned by the generated query.
         """
         query = """BranchWithSortKeys.id IN
-                   (SELECT Branch.id FROM BRANCH WHERE %s)"""%(query,)
+                   (SELECT Branch.id FROM Branch WHERE %s)""" % (query,)
         return super(BranchWithSortKeys, cls).select(
             query, clauseTables=clauseTables, orderBy=orderBy)
 
 
-LISTINGSORT_TO_COLUMN = {
+LISTING_SORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product_name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
     BranchListingSort.AUTHOR: 'author_name',
@@ -508,6 +509,8 @@ LISTINGSORT_TO_COLUMN = {
     BranchListingSort.NEWEST_FIRST: 'date_created',
     BranchListingSort.OLDEST_FIRST: '-date_created',
     }
+
+
 DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
 
@@ -944,7 +947,7 @@ class BranchSet:
         if sort_by is None:
             return order_by
         else:
-            column = LISTINGSORT_TO_COLUMN[sort_by]
+            column = LISTING_SORT_TO_COLUMN[sort_by]
             if column.startswith('-'):
                 variant_column = column[1:]
             else:

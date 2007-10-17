@@ -15,16 +15,18 @@
   </form>
 
 <script type="text/javascript">
-function submit_filter()
-{
-  var f = document.getElementById('filter_form');
-  f.submit()
+function submit_filter() {
+  getElement('filter_form').submit();
 }
 
-var field = document.getElementById('field.lifecycle');
-field.onchange = submit_filter;
-field = document.getElementById('field.sort_by')
-if (field) field.onchange = submit_filter;
+function hookUpFilterSubmission () {
+  connect('field.lifecycle', 'onchange', submit_filter);
+  if (getElement('field.sort_by')) {
+    connect('field.sort_by', 'onchange', submit_filter);
+  }
+}
+
+registerLaunchpadFunction(hookUpFilterSubmission);
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">

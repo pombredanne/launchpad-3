@@ -947,7 +947,7 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
 
 class BranchListingSort(EnumeratedType):
-    """XXX."""
+    """Choices for how to sort branch listings."""
 
     PRODUCT = Item("""
         by project name
@@ -968,7 +968,7 @@ class BranchListingSort(EnumeratedType):
         """)
 
     NAME = Item("""
-        branch name
+        by branch name
 
         Sort branches by the display name of the registrant.
         """)
@@ -1011,7 +1011,7 @@ class IBranchListingFilter(Interface):
 
     # Stats and status attributes
     lifecycle = Choice(
-        title=_('Show branches with status of'), vocabulary=BranchLifecycleStatusFilter,
+        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
         default=BranchLifecycleStatusFilter.CURRENT,
         description=_(
         "The author's assessment of the branch's maturity. "

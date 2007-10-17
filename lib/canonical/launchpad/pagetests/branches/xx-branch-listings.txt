@@ -3,7 +3,7 @@
 Pages that want to display lists of branches use the branch-listing
 page template, and views derived from BranchListingView.
 
-The branch listing page template and associated view provides batching
+The branch listing page template and associated view provide batching
 of the branches, filtering of the lifecycle statuses, ordering of
 various kinds and badge decoration.
 
@@ -239,7 +239,7 @@ Now the badge is still shown for Sample Person...
 
 Aside from the implicitly sorted listings of recently registered,
 imported and changed branches, all branch listings have a widget that
-allows sorting.
+allows changing the sort order.
 
 On a listing that can have branches from more than one product (such
 as the listing of branches owned by a person), the default ordering is
@@ -248,13 +248,19 @@ by product name (which is of course called "project name" in the UI).
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getControl(name='field.sort_by').value
     ['by project name']
+    >>> browser.getControl(name='field.sort_by').value = ['by project name']
 
 On a listing that can only have branches from one product, the default
-is to sort by lifecycle status.
+is to sort by lifecycle status, and product name is not one of the
+options that can be selected.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> browser.getControl(name='field.sort_by').value
     ['by lifecycle status']
+    >>> browser.getControl(name='field.sort_by').value = ['by project name']
+    Traceback (most recent call last):
+      ...
+    ItemNotFoundError: insufficient items with name 'by project name'
 
 If you filter by a specific lifecycle status then ordering by
 lifecycle ceases to be relevant, and the default is to sort by author.

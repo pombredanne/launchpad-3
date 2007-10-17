@@ -115,19 +115,19 @@ from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, ICountry,
-    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
-    ITeamMembershipSet, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminRequestPeopleMerge,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
-    GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
-    IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
-    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
-    PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation, BranchListingSort)
+    BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    GPGKeyNotFoundError, IAdminRequestPeopleMerge, IBranchSet, ICalendarOwner,
+    ICountry, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, INewPerson,
+    IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
+    IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
+    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    QuestionParticipation, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -3266,7 +3266,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
 
 class PersonSubscribedBranchesView(BranchListingView):
-    """View for branch listing for a person's subscribed  branches."""
+    """View for branch listing for a person's subscribed branches."""
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
