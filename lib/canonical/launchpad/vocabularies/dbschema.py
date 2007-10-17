@@ -12,7 +12,6 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
-    'BugBranchStatusVocabulary',
     'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTrackerTypeVocabulary',
@@ -42,7 +41,6 @@ from canonical.launchpad.interfaces import (
 
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
-BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])

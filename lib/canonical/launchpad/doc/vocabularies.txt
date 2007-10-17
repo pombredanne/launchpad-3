@@ -1324,6 +1324,7 @@ returned.
      (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
      (u'Launchpad Buildd Admins', u'Foo Bar'),
      (u'Launchpad Developers', u'Foo Bar'),
+     (u'Mailing List Experts', u'Launchpad Administrators'),
      (u'Mirror Administrators', u'Mark Shuttleworth'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),

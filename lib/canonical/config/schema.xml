@@ -1063,14 +1063,19 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="mailman" prefix="canonical.mailman.config">
-        <section name="*" type="mailman-build"
-                 attribute="build" required="yes" />
+        <section name="*" type="mailman-build" attribute="build" />
 
         <key name="launch" datatype="boolean"       default="false" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
         <key name="xmlrpc_url" datatype="string"
              default="http://xmlrpc.launchpad.dev/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
+        <!-- XXX: A temporary key to control whether or not the functionality
+        related to hosted mailing lists is exposed in the UI.
+        https://launchpad.net/launchpad/+spec/team-mailing-list-beta-program
+        - Guilherme Salgado 2007-09-14 -->
+        <key name="expose_hosted_mailing_lists" datatype="boolean"
+             default="false" />
     </sectiontype>
 
     <sectiontype name="checkwatches">
