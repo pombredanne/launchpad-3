@@ -250,7 +250,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/base' source overridden")
+            "INFO: 'mozilla-firefox - 0.9/main/base' source overridden")
 
     def test_processSourceChange_with_changed_archive(self):
         """Check processSourceChange method call with an archive change.
@@ -303,9 +303,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
-            "INFO: 'pmount/universe/editors/IMPORTANT' binary "
-                "overridden in hoary/i386")
+            "INFO: 'pmount-2:1.9-1/main/base/EXTRA' binary "
+                "overridden in hoary hppa\n"
+            "INFO: 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
+                "overridden in hoary i386")
 
     def test_processBinaryChange_with_changed_archive(self):
         """Check processBinaryChange method call with an archive change.
@@ -358,14 +359,14 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
-                "binary overridden in warty/i386\n"
-            "INFO: 'mozilla-firefox/main/base/EXTRA' "
-                "binary overridden in warty/hppa\n"
-            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
-                "binary overridden in warty/hppa\n"
-            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
-                "binary overridden in warty/i386")
+            "INFO: 'mozilla-firefox-1.0/main/base/IMPORTANT' "
+                "binary overridden in warty i386\n"
+            "INFO: 'mozilla-firefox-0.9/main/base/EXTRA' "
+                "binary overridden in warty hppa\n"
+            "INFO: 'mozilla-firefox-data-0.9/main/base/EXTRA' "
+                "binary overridden in warty hppa\n"
+            "INFO: 'mozilla-firefox-data-0.9/main/base/EXTRA' "
+                "binary overridden in warty i386")
 
     def test_processChildrenChange_error(self):
         """processChildrenChange warns the user about an unpublished source.

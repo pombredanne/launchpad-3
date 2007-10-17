@@ -156,7 +156,8 @@ class ArchiveOverrider:
         sp.currentrelease.changeOverride(new_component=self.component,
                                          new_section=self.section)
         self.log.info("'%s/%s/%s' source overridden"
-                      % (package_name, sp.currentrelease.component.name,
+                      % (sp.currentrelease.sourcepackagerelease.title,
+                         sp.currentrelease.component.name,
                          sp.currentrelease.section.name))
 
     def processBinaryChange(self, package_name):
@@ -197,7 +198,9 @@ class ArchiveOverrider:
             # iterations (on distroarchseries that obviously do not contain
             # any publication).
             if bpr.architecturespecific:
-                considered_archs = [bpr.build.distroarchseries]
+                archtag = bpr.build.distroarchseries.architecturetag
+                architecture = self.distroseries[archtag]
+                considered_archs = [architecture]
             else:
                 considered_archs = self.distroseries.architectures
             # Perform overrides.
@@ -224,11 +227,10 @@ class ArchiveOverrider:
             new_priority=self.priority,
             new_section=self.section)
         self.log.info(
-            "'%s/%s/%s/%s' binary overridden in %s/%s"
-            % (binaryname, current.component.name,
+            "'%s/%s/%s/%s' binary overridden in %s"
+            % (current.binarypackagerelease.title, current.component.name,
                current.section.name, current.priority.name,
-               self.distroseries.name,
-               distroarchseries.architecturetag))
+               current.distroarchseries.displayname))
 
 
 class ArchiveCruftCheckerError(Exception):
