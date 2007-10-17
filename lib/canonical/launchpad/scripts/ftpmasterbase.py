@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
+from canonical.lp.dbschema import (
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 
 class PackageLocationError(Exception):
@@ -196,24 +197,25 @@ class SoyuzScript(LaunchpadScript):
         """
         assert self.location is not None, 'Undefined location.'
 
-        sourcepackage = self.location.distroseries.getSourcePackage(name)
-        if sourcepackage is None:
-            raise SoyuzScriptError(
-                "Could not find any source version of '%s' in %s" % (
-                name, self.location))
-        if self.options.version is None:
-            target_source = sourcepackage.currentrelease
-        else:
-            target_source = sourcepackage[self.options.version]
+        target_source_publication = None
+        for archive in self.location.archives:
+            published_sources = archive.getPublishedSources(
+                name=name, version=self.options.version,
+                status=PackagePublishingStatus.PUBLISHED,
+                distroseries=self.location.distroseries,
+                exact_match=True)
+            if published_sources.count() > 0:
+                target_source_publication = published_sources[0]
+                break
 
-        if target_source is None:
+        if target_source_publication is None:
             raise SoyuzScriptError(
                 "Could not find source '%s/%s' in %s" % (
                 name, self.options.version, self.location))
 
-        self._probePublishing(target_source.current_published)
+        self._probePublishing(target_source_publication)
 
-        return target_source
+        return target_source_publication
 
     def findBinaries(self, name):
         """Build a list of `DistroArchSeriesBinaryPackageRelease`.
@@ -250,7 +252,7 @@ class SoyuzScript(LaunchpadScript):
             except SoyuzScriptError, err:
                 self.logger.warn(err)
             else:
-                target_binaries.append(target_binary)
+                target_binaries.append(target_binary.current_publishing_record)
 
         if not target_binaries:
             raise SoyuzScriptError(

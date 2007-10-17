@@ -1601,18 +1601,16 @@ class PackageRemover(SoyuzScript):
 
         removables = []
         if self.options.binaryonly:
-            binaries = self.findBinaries(packagename)
-            for binary in binaries:
-                removables.append(binary.current_publishing_record)
+            binary_pubs = self.findBinaries(packagename)
+            removables.extend([b for b in binary_pubs])
         elif self.options.sourceonly:
-            source = self.findSource(packagename)
-            removables.append(source.current_published)
+            source_pub = self.findSource(packagename)
+            removables.append(source_pub)
         else:
-            source = self.findSource(packagename)
-            binaries = source.published_binaries
-            removables.append(source.current_published)
-            removables.extend([binary.current_publishing_record
-                               for binary in binaries])
+            source_pub = self.findSource(packagename)
+            binary_pubs = source_pub.publishedBinaries()
+            removables.append(source_pub)
+            removables.extend([b for b in binary_pubs])
 
         self.logger.info("Removing candidates:")
         for removable in removables:
