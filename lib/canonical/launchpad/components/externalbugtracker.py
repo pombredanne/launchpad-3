@@ -627,12 +627,10 @@ class DebBugs(ExternalBugTracker):
             bugtracker=self.bugtracker, remotebug=remote_bug)
 
         debian_task.bugwatch = bug_watch
-        debian_status = self.getRemoteStatus(remote_bug)
-        launchpad_status = self.convertRemoteStatus(debian_status)
         # Need to flush databse updates, so that the bug watch knows it
         # is linked from a bug task.
         flush_database_updates()
-        bug_watch.updateStatus(debian_status, launchpad_status)
+        self.updateBugWatches([bug_watch])
 
         return bug
 
