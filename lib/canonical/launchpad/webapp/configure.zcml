@@ -167,6 +167,15 @@
         name="image"
         />
 
+    <!-- TALES badges: namespace -->
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BadgeDisplayAPI"
+        name="badges"
+        />
+
     <!-- TALES fmt: namespace -->
 
     <!-- The next directive is registered for all dicts, but we really only
@@ -246,6 +255,13 @@
         for="canonical.launchpad.interfaces.IPerson"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
         name="fmt"
         />
 
