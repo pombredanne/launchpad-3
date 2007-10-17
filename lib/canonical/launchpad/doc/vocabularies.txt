@@ -1737,7 +1737,7 @@ or fallbacks to a full text search.
 
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
-    >>> list(vocab.search('ec-b')) == [spec_b]
+    >>> list(vocab.search('spec-b')) == [spec_b]
     True
     >>> list(vocab.search('third')) == [spec_c]
     True
