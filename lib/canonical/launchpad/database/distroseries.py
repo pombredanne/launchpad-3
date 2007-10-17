@@ -81,7 +81,6 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
