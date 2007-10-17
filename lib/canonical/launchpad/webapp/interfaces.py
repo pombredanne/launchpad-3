@@ -10,7 +10,6 @@ from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
-from zope.security.interfaces import Forbidden
 
 from canonical.launchpad import _
 
@@ -643,14 +642,21 @@ class INotificationResponse(Interface):
 
 
 class IErrorReport(Interface):
-    id = TextLine(description=u"the name of this error report")
-    type = TextLine(description=u"the type of the exception that occurred")
-    value = TextLine(description=u"the value of the exception that occurred")
-    time = Datetime(description=u"the time at which the exception occurred")
-    tb_text = Text(description=u"a text version of the traceback")
-    username = TextLine(description=u"the user associated with the request")
-    url = TextLine(description=u"the URL for the failed request")
-    req_vars = Attribute('the request variables')
+    id = TextLine(description=u"The name of this error report.")
+    type = TextLine(description=u"The type of the exception that occurred.")
+    value = TextLine(description=u"The value of the exception that occurred.")
+    time = Datetime(description=u"The time at which the exception occurred.")
+    pageid = TextLine(
+        description=u"""
+            The context class plus the page template where the exception
+            occurred.
+            """)
+    branch_nick = TextLine(description=u"The branch nickname.")
+    revno = TextLine(description=u"The revision number of the branch.")
+    tb_text = Text(description=u"A text version of the traceback.")
+    username = TextLine(description=u"The user associated with the request.")
+    url = TextLine(description=u"The URL for the failed request.")
+    req_vars = Attribute("The request variables.")
 
 
 class IErrorReportRequest(Interface):

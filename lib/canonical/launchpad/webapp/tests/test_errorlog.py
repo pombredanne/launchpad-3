@@ -128,7 +128,8 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
         self.assertEqual(entry.duration, 42)
         self.assertEqual(len(entry.req_vars), 3)
-        self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT', 'Mozilla/5.0'))
+        self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT',
+                                             'Mozilla/5.0'))
         self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
                                              'http://localhost:9000/'))
         self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
@@ -269,7 +270,7 @@ class TestErrorReportingUtility(unittest.TestCase):
                     'name2': 'value2',
                     u'\N{BLACK SQUARE}': u'value4',
                     }
-                ) 
+                )
         request.setInWSGIEnvironment('launchpad.pageid', 'IFoo:+foo-template')
 
         try:
@@ -287,9 +288,11 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines.pop(0), 'Exception-Value: xyz abc\n')
         self.assertEqual(lines.pop(0), 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines.pop(0), 'Page-Id: IFoo:+foo-template\n')
-        self.assertEqual(lines.pop(0), 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(
+            lines.pop(0), 'Branch: %s\n' % versioninfo.branch_nick)
         self.assertEqual(lines.pop(0), 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(lines.pop(0), 'User: Login, 42, title, description |\\u25a0|\n')
+        self.assertEqual(
+            lines.pop(0), 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines.pop(0), 'URL: http://localhost:9000/foo\n')
         self.assertEqual(lines.pop(0), 'Duration: -1\n')
         self.assertEqual(lines.pop(0), '\n')
@@ -297,11 +300,11 @@ class TestErrorReportingUtility(unittest.TestCase):
         # request vars
         self.assertEqual(lines.pop(0), 'CONTENT_LENGTH=0\n')
         self.assertEqual(
-                lines.pop(0), 'GATEWAY_INTERFACE=TestFooInterface/1.0\n'
-                )
+            lines.pop(0), 'GATEWAY_INTERFACE=TestFooInterface/1.0\n')
         self.assertEqual(lines.pop(0), 'HTTP_COOKIE=%3Chidden%3E\n')
         self.assertEqual(lines.pop(0), 'HTTP_HOST=127.0.0.1\n')
-        self.assertEqual(lines.pop(0), 'SERVER_URL=http://localhost:9000/foo\n')
+        self.assertEqual(
+            lines.pop(0), 'SERVER_URL=http://localhost:9000/foo\n')
 
         # non-ASCII request var
         self.assertEqual(lines.pop(0), '\\u25a0=value4\n')
@@ -337,8 +340,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             # Do not test escaping of request vars here, it is already tested
             # in test_raising_with_request.
             request = ScriptRequest([
-                ('name2', 'value2'), ('name1', 'value1'), ('name1', 'value3')],
-                URL='https://launchpad.net/example')
+                ('name2', 'value2'), ('name1', 'value1'),
+                ('name1', 'value3')], URL='https://launchpad.net/example')
             utility.raising(sys.exc_info(), request, now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
@@ -401,7 +404,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         # the header
         self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
-        self.assertEqual(lines[2], 'Exception-Value: <unprintable instance object>\n')
+        self.assertEqual(
+            lines[2], 'Exception-Value: <unprintable instance object>\n')
         self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
@@ -421,10 +425,13 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[13], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
-        self.assertEqual(lines[16], 'UnprintableException: <unprintable instance object>\n')
+        self.assertEqual(
+            lines[16], 'UnprintableException: <unprintable instance object>\n'
+            )
 
     def test_raising_unauthorized(self):
-        """Test ErrorReportingUtility.raising() with an Unauthorized exception.
+        """Test ErrorReportingUtility.raising() with an Unauthorized
+        exception.
 
         An OOPS is not recorded when a Unauthorized exceptions is raised.
         """
