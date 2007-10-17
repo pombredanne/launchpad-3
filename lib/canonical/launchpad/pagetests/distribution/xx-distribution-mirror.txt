@@ -38,8 +38,8 @@ another mirror.
     >>> message = "is already in use by another distribution mirror."
     >>> message in browser.contents
     True
- 
-Like the name, we can also change the URLs of a mirror:
+
+Starting again from the mirror's page, we can also change the mirror's URLs:
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
@@ -62,7 +62,7 @@ Like the name, we can also change the URLs of a mirror:
 
 The mirror can't be probed before it's marked as official by one of the
 distribution owners.
- 
+
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/')
     >>> print extract_text(find_tag_by_id(browser.contents, 'last-probe'))
@@ -73,42 +73,42 @@ distribution owners.
 To make a mirror official, one has to go to the +mark-official page, which
 is accessible only to mirror admins of that distribution and the
 distribution owner.
- 
+
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/'
     ...     '+mark-official')
     Traceback (most recent call last):
     ...
     Unauthorized...
- 
+
 Now one of the mirror administrators goes and make this an official mirror,
 leaving a comment on the whiteboard (which is visible to mirror admins and to
 the mirror owner, but can only be edited by mirror admins).
- 
+
     # XXX: matsubara 2006-05-18 bug=45226:
     # We need to reset the Browser object to reset the headers.
     >>> from zope.testbrowser.testing import Browser
     >>> karl_browser = Browser()
     >>> karl_browser.handleErrors = False
- 
+    
     >>> karl_browser.addHeader(
     ...     'Authorization', 'Basic karl@canonical.com:test')
     >>> karl_browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> karl_browser.getLink('Mark as official').click()
- 
+    
     >>> official_approved = karl_browser.getControl(
     ...     'This is one of the official mirrors of this distribution')
     >>> official_approved.selected = True
     >>> karl_browser.getControl('Whiteboard').value = 'This is a good mirror'
     >>> karl_browser.getControl('Save').click()
- 
+    
     >>> karl_browser.url
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
     >>> print extract_text(find_tag_by_id(karl_browser.contents, 'whiteboard'))
-    This is a good mirror 
+    This is a good mirror
     >>> print extract_text(find_tag_by_id(karl_browser.contents, 'status'))
-    Official Ubuntu Linux Mirror registered by Sample Person ... 
+    Official Ubuntu Linux Mirror registered by Sample Person ...
 
 The whiteboard can also be seen by the mirror owner, but not by anybody
 else.
@@ -118,7 +118,7 @@ else.
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> print extract_text(find_tag_by_id(browser.contents, 'whiteboard'))
-    This is a good mirror 
+    This is a good mirror
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
@@ -176,7 +176,7 @@ admins --not even the mirror owner can see it.
 
 When creating a new mirror, at least an HTTP or FTP URL must be given.
 
-    # XXX: matsubara 2006-05-18 bug=45226: 
+    # XXX: matsubara 2006-05-18 bug=45226:
     # We need to reset the Browser object to reset the headers.
     >>> browser = Browser()
     >>> browser.handleErrors = False
@@ -187,28 +187,28 @@ When creating a new mirror, at least an HTTP or FTP URL must be given.
     >>> browser.getControl('Location').displayValue =  ['Antarctica']
     >>> browser.getControl('Content').displayValue = ['Archive']
     >>> browser.getControl('Create Mirror').click()
- 
+    
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     There is 1 error.
     A mirror must have at least an HTTP or FTP URL.
- 
+
 If we try to register the mirror using the same HTTP URL of a existing one,
 we should also get a nice error message. (Even if we forget to add the
 trailing slash in the new URL by mistake)
- 
+
     >>> http_url = 'http://localhost:11375/invalid-mirror'
     >>> browser.getControl('HTTP URL').value = http_url
     >>> browser.getControl('Create Mirror').click()
- 
+    
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
     The distribution mirror ... is already registered with this URL.
- 
+
 We'll have to add some URLs to sample data to test the validator for FTP and
 Rsync URLs.
- 
+
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IDistributionMirrorSet
@@ -222,36 +222,36 @@ Rsync URLs.
     >>> example_mirror.rsync_base_url = rsync_url
     >>> flush_database_updates()
     >>> logout()
- 
+
 And now we test the validator for the FTP URL
- 
+
     >>> browser.getControl('FTP URL').value = ftp_url
     >>> browser.getControl('Create Mirror').click()
- 
+    
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
     The distribution mirror ... is already registered with this URL.
- 
+
 And for the Rsync URL
- 
+
     >>> browser.getControl('Rsync URL').value = rsync_url
     >>> browser.getControl('Create Mirror').click()
- 
+    
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
     The distribution mirror ... is already registered with this URL.
- 
+
 Note also that neither query strings nor fragments are allowed in the URLs.
- 
+
     >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz#someid'
     >>> browser.getControl('Create Mirror').click()
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
     URIs with fragment identifiers are not allowed.
- 
+    
     >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz?q=string'
     >>> browser.getControl('Create Mirror').click()
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
