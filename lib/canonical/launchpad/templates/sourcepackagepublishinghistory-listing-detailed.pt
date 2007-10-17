@@ -12,7 +12,7 @@
          <td>
            <strong tal:content="context/status/name">PUBLISHED</strong>:
            <a tal:attributes="href context/distroseries/fmt:url"
-              tal:content="context/distroseries/displayname">warty i386</a>
+              tal:content="context/distroseries/displayname">warty</a>
            pocket <strong tal:content="context/pocket/title">Release</strong>
            in component <strong tal:content="context/component/name">main</strong>
            and section <strong tal:content="context/section/name">x11</strong>
