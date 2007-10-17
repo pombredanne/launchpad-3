@@ -22,6 +22,12 @@
       factory="canonical.launchpad.browser.BranchSOP"
       />
 
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.BranchBadges"
+      />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BranchContextMenu" />
