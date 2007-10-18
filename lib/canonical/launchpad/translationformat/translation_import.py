@@ -82,9 +82,9 @@ class ExistingPOFileInDatabase:
             date_reviewed,
             isfuzzy,
             publishedfuzzy,
-            posubmission.active,
-            posubmission.published,
-            posubmission.pluralform
+            POSubmission.active,
+            POSubmission.published,
+            POSubmission.pluralform
           FROM POFile
             JOIN POMsgSet ON
               POMsgSet.pofile=POFile.id
@@ -133,6 +133,10 @@ class ExistingPOFileInDatabase:
                 message.fuzzy = publishedfuzzy
             else:
                 message.fuzzy = False
+
+    def markMessageAsSeen(self, message):
+        """Marks a message as seen in the import, to avoid expiring it."""
+        self.seen.add((message.msgid, message.context))
 
     def getUnseenMessages(self):
         """Return a set of messages present in the database but not seen
@@ -357,7 +361,7 @@ class TranslationImporter:
                 continue
             if self.pofile is not None:
                 # Mark this message as seen in the import
-                pofile_in_db.seen.add((message.msgid, message.context))
+                pofile_in_db.markMessageAsSeen(message)
                 if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
                     pofile_in_db.isAlreadyPublishedTheSame(message)):
                     count += 1
