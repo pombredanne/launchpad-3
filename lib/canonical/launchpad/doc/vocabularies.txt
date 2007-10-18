@@ -1738,10 +1738,20 @@ or fallbacks to a full text search.
 
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
-    >>> list(vocab.search('ec-b')) == [spec_b]
+    >>> list(vocab.search('spec-b')) == [spec_b]
     True
     >>> list(vocab.search('third')) == [spec_c]
     True
+
+The search method uses the SQL `LIKE` operator, with the values quoted
+appropriately. Queries conataining regual expression operators, for
+example, will simply look for the respective characters within the
+vocabulary's item (this used to be the cause of an OOPS, see
+https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
+
+    >>> list(vocab.search('*'))
+    []
+
 
 # XXX Tom Berger 2007-07-05: document more vocabularies here, particularly
 # when they break!

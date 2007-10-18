@@ -38,7 +38,6 @@
     <include file="bug.zcml" />
     <include file="build.zcml" />
     <include file="builder.zcml" />
-    <include file="calendar.zcml" />
     <include file="codeimport.zcml" />
     <include file="codeimportevent.zcml" />
     <include file="codeimportjob.zcml" />

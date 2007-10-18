@@ -12,8 +12,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, BugTrackerConnectError, ExternalBugTracker, Mantis, Trac,
-    Roundup, SourceForge)
+    Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
+    DebBugs, Mantis, Trac, Roundup, SourceForge)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_STATUS)
@@ -164,7 +164,10 @@ class TestBugzilla(Bugzilla):
     It overrides _getPage and _postPage, so that access to a real Bugzilla
     instance isn't needed.
     """
-
+    # We set the batch_query_threshold to zero so that only
+    # getRemoteBugBatch() is used to retrieve bugs, since getRemoteBug()
+    # calls getRemoteBugBatch() anyway.
+    batch_query_threshold = 0
     trace_calls = False
 
     version_file = 'gnome_bugzilla_version.xml'
@@ -314,6 +317,10 @@ class TestMantis(Mantis):
             print "CALLED _postPage(%r, ...)" % (page,)
         return ''
 
+    def cleanCache(self):
+        """Clean the csv_data cache."""
+        if self.__dict__.has_key('_csv_data_cached_value'):
+            del(self._csv_data_cached_value)
 
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
@@ -385,3 +392,36 @@ class TestSourceForge(SourceForge):
             'sourceforge-sample-bug-%s.html' % bug_id)
         return open(file_path, 'r')
 
+
+class TestDebianBug:
+    """A debbugs bug that doesn't require the debbugs db."""
+
+    def __init__(self, reporter_email='foo@example.com', package='evolution',
+                 summary='Test Summary', description='Test description.',
+                 status='open', severity=None, tags =None):
+        if tags is None:
+            tags = []
+        self.originator = reporter_email
+        self.package = package
+        self.subject = summary
+        self.description = description
+        self.status = status
+        self.severity = severity
+        self.tags = tags
+
+
+class TestDebBugs(DebBugs):
+    """A Test-oriented Debbugs ExternalBugTracker.
+
+    It allows you to pass in bugs to be used, instead of relying on an
+    existing debbugs db.
+    """
+
+    def __init__(self, bugtracker, bugs):
+        DebBugs.__init__(self, bugtracker)
+        self.bugs = bugs
+
+    def _findBug(self, bug_id):
+        if bug_id not in self.bugs:
+            raise BugNotFound(bug_id)
+        return self.bugs[bug_id]
