@@ -479,8 +479,8 @@ class BranchWithSortKeys(Branch):
     If we could get SQLObject to generate LEFT OUTER JOINs nicely, all this
     wouldn't be necessary.
 
-    XXX MichaelHudson, 2007-10-12: Get rid of this hack when we've converted
-    over to using Storm.
+    XXX: MichaelHudson 2007-10-12 bug=154016: Get rid of this hack
+    when we've converted over to using Storm.
     """
 
     @classmethod
