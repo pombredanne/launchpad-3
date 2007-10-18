@@ -109,7 +109,6 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -117,17 +116,17 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BranchListingSort, BugTaskSearchParams, BugTaskStatus,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IAdminRequestPeopleMerge, IBranchSet, ICalendarOwner,
-    ICountry, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
-    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, INewPerson,
-    IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset,
-    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
-    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
-    QuestionParticipation, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    GPGKeyNotFoundError, IAdminRequestPeopleMerge, IBranchSet, ICountry,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
+    ILanguageSet, ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -137,7 +136,6 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
@@ -198,9 +196,7 @@ class BranchTraversalMixin:
             return super(BranchTraversalMixin, self).traverse(product_name)
 
 
-class PersonNavigation(CalendarTraversalMixin,
-                       BranchTraversalMixin,
-                       Navigation):
+class PersonNavigation(BranchTraversalMixin, Navigation):
 
     usedfor = IPerson
 
@@ -571,15 +567,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Software that %s is involved in translating' %
             self.context.browsername)
         return Link('', text, summary)
-
-    def calendar(self):
-        text = 'Calendar'
-        summary = (
-            u'%s\N{right single quotation mark}s scheduled events' %
-            self.context.browsername)
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link('+calendar', text, summary, enabled=enabled)
 
 
 class PersonBranchesMenu(ApplicationMenu):

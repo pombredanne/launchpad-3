@@ -21,11 +21,6 @@ __all__ = [
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'SpecificationImplementationStatusVocabulary',
-    'SpecificationPriorityVocabulary',
-    'SpecificationDefinitionStatusVocabulary',
-    'SpecificationGoalStatusVocabulary',
-    'SprintSpecificationStatusVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
     ]
@@ -35,7 +30,6 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 from canonical.launchpad.interfaces import (
     TranslationFileFormat, TranslationPermission)
-
 
 # DB Schema Vocabularies
 
@@ -56,10 +50,5 @@ InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
-SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
-SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
-SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
-SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TranslationFileFormatVocabulary = vocab_factory(TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(TranslationPermission)
