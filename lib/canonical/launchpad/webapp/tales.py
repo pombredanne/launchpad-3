@@ -453,7 +453,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
-    def icon(self, rootsite = None):
+    def icon(self, rootsite=None):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
         if context is None:
@@ -462,10 +462,10 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
-            if rootsite is not None:
-                root_url = allvhosts.configs[rootsite].rooturl[:-1]
-            else:
+            if rootsite is None:
                 root_url = ''
+            else:
+                root_url = allvhosts.configs[rootsite].rooturl[:-1]
             url = root_url + self.default_icon_resource(context)
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
@@ -527,17 +527,17 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
     def traverse(self, name, furtherPath):
-        if name == 'icon' or name[:5] == 'icon:':
-            if name == 'icon':
-                rootsite = None
-            else:
-                rootsite = name.split(':')[1]
+        """Special-case traversal for icons with an optional rootsite."""
+        if name == 'icon':
+            return self.icon()
+        elif name.startwith('icon:'):
+            rootsite = name.split(':', 1)[1]
             return self.icon(rootsite=rootsite)
         else:
             return None
 
     def icon(self, rootsite=None):
-        # The icon displayed is dependent on the IBugTask.importance.
+        """Display the icon dependent on the IBugTask.importance."""
         if rootsite is not None:
             root_url = allvhosts.configs[rootsite].rooturl[:-1]
         else:
@@ -721,6 +721,7 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
         ])
 
     def traverse(self, name, furtherPath):
+        """Special-case traversal for links with an optional rootsite."""
         if name == 'link' or name[:5] == 'link:':
             if name == 'link':
                 rootsite = None
