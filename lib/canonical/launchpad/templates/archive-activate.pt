@@ -1,28 +1,46 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
   >
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
 
+  <h1>Personal Package Archive Activation</h1>
+
+  <p>
+    A PPA is a place where you can build and publish your own packages.
+    These can be custom versions of Ubuntu packages, or completely new
+    packages, and can be built for any <a href="/ubuntu/">supported
+    version of Ubuntu</a>. For more information, please see the
+    <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick Start
+    Guide</a>.
+  </p>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
-       <tal:block replace="structure context/@@+ppa-tos" />
+       <p>
+         Read the current version of
+         <a href="https://help.launchpad.net/PPATermsofUse">PPA Terms of
+         Use</a> before activating your PPA.
+       </p>
     </div>
 
     <div class="form" metal:fill-slot="widgets">
 
       <div tal:define="widget nocall:view/widgets/accepted|nothing"
-           tal:condition="widget" style="padding: 1em">
+           tal:condition="widget" style="padding-bottom: 1em">
         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
       </div>
 
@@ -34,6 +52,7 @@
    </div>
 
   <div class="actions" metal:fill-slot="buttons">
+    <input tal:replace="structure view/actions/field.actions.cancel/render" />
     <input tal:replace="structure view/actions/field.actions.activate/render" />
   </div>
 
@@ -42,7 +61,7 @@
 </div>
 
     <p metal:fill-slot="help">
-       Once you activate you PPA you will be able to upload source
+       Once you activate your PPA you will be able to upload source
        packages to it and Launchpad will build and publish their
        binaries for you. Check the procedure details in the
        quick-start <a href="https://help.launchpad.net/PPAQuickStart"

@@ -6,16 +6,6 @@
     />
 
   <vocabulary
-    name="BountyDifficulty"
-    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyStatus"
-    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-    />
-
-  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
     />
@@ -28,11 +18,6 @@
   <vocabulary
     name="BugAttachmentType"
     factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
-    />
-
-  <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
     />
 
   <vocabulary
@@ -115,6 +100,11 @@
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
 
+  <vocabulary
+    name="FilteredDeltaLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    />
+
    <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
@@ -123,6 +113,16 @@
   <vocabulary
     name="FilteredDistroSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredFullLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
     />
 
   <vocabulary
@@ -176,11 +176,6 @@
     />
 
   <vocabulary
-    name="PackagingType"
-    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-    />
-
-  <vocabulary
     name="PersonAccountToMerge"
     factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
     />
@@ -193,16 +188,6 @@
   <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
-    />
-
-  <vocabulary
-    name="PollAlgorithm"
-    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-    />
-
-  <vocabulary
-    name="PollSecrecy"
-    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
     />
 
   <vocabulary
@@ -251,23 +236,8 @@
     />
 
   <vocabulary
-    name="RevisionControlSystems"
-    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
-    name="Specification"
-    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
-    />
-
-  <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationImplementationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -276,33 +246,8 @@
     />
 
   <vocabulary
-    name="SpecificationPriority"
-    factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationDefinitionStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationGoalStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
-    />
-
-  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
-    />
-
-  <vocabulary
-    name="SprintSpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="TextDirection"
-    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
@@ -321,18 +266,18 @@
     />
 
   <vocabulary
-    name="TranslationPermission"
-    factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-    />
-
-  <vocabulary
-    name="UpstreamFileType"
-    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
-    />
+   name="TranslationPermission"
+   factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+   />
 
   <vocabulary
     name="UserTeamsParticipation"
     factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
+    name="ActiveMailingList"
+    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
     />
 
   <vocabulary

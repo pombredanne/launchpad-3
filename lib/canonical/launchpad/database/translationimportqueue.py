@@ -25,11 +25,12 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
     ISourcePackage, ITranslationImporter, ITranslationImportQueue,
-    ITranslationImportQueueEntry, NotFoundError)
+    ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
+    TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
 
 from canonical.launchpad.database.pillar import pillar_sort_key
+
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
@@ -560,12 +561,12 @@ class TranslationImportQueue:
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
         if format is None:
-            # Get it based on the file extension.
-            format = (
-                translation_importer.getTranslationFileFormatByFileExtension(
-                    ext))
+            # Get it based on the file extension and file content.
+            format = translation_importer.getTranslationFileFormat(
+                ext, content)
         format_importer = translation_importer.getTranslationFormatImporter(
             format)
+
         # Upload the file into librarian.
         size = len(content)
         file = StringIO(content)
@@ -632,8 +633,8 @@ class TranslationImportQueue:
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
 
             entry.date_status_changed = UTC_NOW
+            entry.format = format
             entry.sync()
-            return entry
         else:
             # It's a new row.
             entry = TranslationImportQueueEntry(path=path, content=alias,
@@ -641,7 +642,8 @@ class TranslationImportQueue:
                 distroseries=distroseries, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
                 pofile=pofile, format=format)
-            return entry
+
+        return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,

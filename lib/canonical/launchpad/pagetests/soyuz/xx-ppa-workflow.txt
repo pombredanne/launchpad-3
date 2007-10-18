@@ -5,11 +5,8 @@
 
 Setup a browser for 'cprov' :
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> cprov_browser = Browser()
-    >>> cprov_browser.handleErrors = False
-    >>> cprov_browser.addHeader(
-    ...     "Authorization", "Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
 
 Since cprov's Personal Package Archive is already activated in
 sampledata, 'Activate Personal Package Archive' action is not
@@ -38,20 +35,6 @@ URLs) it will get redirected to the PPA page automatically:
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
-Every user, including annoymous ones,  will be able to click on the
-'View Terms of Service' menu link on PPA pages and read the current
-version of the document.
-
-    >>> cprov_browser.getLink("View Terms of Service").click()
-    >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+archive/+view-tos'
-
-    >>> print cprov_browser.contents
-    <BLANKLINE>
-    ...
-    ...<h2>Personal Package Archive Terms of Service</h2>
-    ...
-
 
 == Activating Personal Package Archives for Users ==
 
@@ -59,14 +42,10 @@ Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
 an user-PPA by its own user:
 
-    >>> sample_browser = Browser()
-    >>> sample_browser.handleErrors = False
-    >>> sample_browser.addHeader(
-    ...     "Authorization", "Basic test@canonical.com:test")
-
 Checking if the Person action-menu is sane, by not presenting links to
 a Personal Package Archive that doesn't exist yet:
 
+    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open("http://launchpad.dev/~name12")
     >>> sample_browser.getLink("Show Personal Package Archive")
     Traceback (most recent call last):
@@ -111,7 +90,7 @@ error with a proper message:
     >>> for error in [extract_text(e) for e in errors]:
     ...     print error
     There is 1 error.
-    PPA ToS has to be accepted to complete the activation.
+    PPA Terms of Service must be accepted to activate your PPA.
 
 So, in order to 'activate' a Personal Package Archive the 'accepted'
 checkbox must be checked:
@@ -130,7 +109,6 @@ Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
-    PPA description:
     Hoohay for PPA.
 
 ... and an empty 'whiteboard' section that when filled, includes
@@ -157,7 +135,6 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
-    PPA description:
     Howdy, cowboys !
 
     >>> print extract_text(
@@ -202,7 +179,6 @@ Let's proceed with the required permissions:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
-    PPA description:
     Hoohay for Team PPA.
 
 Any team administrator can 'edit' description & whiteboard contents,
@@ -236,7 +212,6 @@ name of other users or teams:
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
-    PPA description:
     Go for it, you lazy !
 
     >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
@@ -275,11 +250,7 @@ The administration procedure allow us to:
 
 The whiteboard section can be viewed by the PPA owner:
 
-    >>> carlos_browser = Browser()
-    >>> carlos_browser.handleErrors = False
-    >>> carlos_browser.addHeader(
-    ...     "Authorization", "Basic carlos@canonical.com:test")
-
+    >>> carlos_browser = setupBrowser(auth="Basic carlos@canonical.com:test")
     >>> carlos_browser.open("http://launchpad.dev/~carlos/+archive")
     >>> print extract_text(
     ...     find_tag_by_id(carlos_browser.contents, 'whiteboard'))
@@ -293,20 +264,11 @@ If two browser windows are open at the same time on the activation page
 then when the second activation is clicked after already
 activating on the first, then it will just go to the archive page.
 
-Set up two browsers:
+Set up two browsers (waiting for bug #68655):
 
-    >>> browser1 = Browser()
-    >>> browser1.handleErrors = False
-    >>> browser1.addHeader(
-    ...     "Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser2 = Browser()
-    >>> browser2.handleErrors = False
-    >>> browser2.addHeader(
-    ...     "Authorization", "Basic foo.bar@canonical.com:test")
-
-Navigate to the activation page:
-
+    >>> browser1 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser1.open("http://launchpad.dev/~name16/+activate-ppa")
+    >>> browser2 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser2.open("http://launchpad.dev/~name16/+activate-ppa")
 
 The 'accepted' checkbox must be checked:
@@ -331,7 +293,6 @@ Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
-    PPA description:
     PPA rocks!
 
 Activate the second browser:
@@ -347,6 +308,5 @@ And the description matches the first submission's:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
-    PPA description:
     PPA rocks!
 

@@ -34,7 +34,8 @@
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
-                        canBeNominatedFor getNominationFor getNominations"
+                        canBeNominatedFor getNominationFor getNominations
+                        date_last_message"
             />
         <require
             permission="launchpad.Edit"
@@ -80,14 +81,12 @@
         permission="zope.Public"
         attribute="redirectToNewBugPage" />
 
-    <browser:pages
+    <browser:page
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugTasksAndNominationsView"
-      permission="launchpad.View">
-      <browser:page
-          name="+bugtasks-and-nominations-table"
-          template="../templates/bugtasks-and-nominations-table.pt" />
-    </browser:pages>
+      permission="launchpad.View"
+      name="+bugtasks-and-nominations-table"
+      template="../templates/bugtasks-and-nominations-table.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"

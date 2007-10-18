@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     ISpecificationSet,
     NotFoundError,
+    SpecificationDefinitionStatus,
     )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -72,8 +73,6 @@ from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-
-from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -542,7 +541,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
 
     schema = ISpecification
     field_names = ['target']
-    label =_('Move this blueprint to a different project')
+    label = _('Move this blueprint to a different project')
 
     def validate(self, data):
         """Ensure that the target is valid and that there is not
@@ -1058,12 +1057,18 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        search_text = data['search_text']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
+            # Use 'All projects' scope.
             url = '/'
         else:
-            url = canonical_url(scope)
+            url = canonical_url(
+                self.widgets['scope'].getInputValue())
+        search_text = data['search_text']
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url

@@ -212,7 +212,7 @@ other things) the uploader for validating incoming uploads.
    python
    translations
 
-Breezy-autotest has got a commercial component, which is not reported:
+Breezy-autotest has got a partner component, which is not reported:
 
     >>> breezyautotest = distroseriesset.queryByName(ubuntu, "breezy-autotest")
     >>> for c in breezyautotest.components:
@@ -223,7 +223,7 @@ Breezy-autotest has got a commercial component, which is not reported:
     multiverse
 
 The upload_components property, however, reports all the available
-components since commercial is allowed for upload:
+components since partner is allowed for upload:
 
     >>> for c in breezyautotest.upload_components:
     ...     print c.name
@@ -231,7 +231,7 @@ components since commercial is allowed for upload:
     restricted
     universe
     multiverse
-    commercial
+    partner
 
 
 == DistroSeries can be initialised from their parents ==
@@ -322,7 +322,7 @@ distroseries (bumby.
 the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   5
+   4
 
 == Translatable Packages and Packaging ==
 
@@ -472,13 +472,14 @@ transaction manager (in this case a fake one) to make these work.
     ...         pass
     >>> transaction_stub = FakeTransactionManager()
 
-=== Preconditions to migrate translations between distro series. ===
+=== Preconditions for migrating translations between distro series ===
 
 Before we are able to migrate translations, there are a set of preconditions
-that should be meet:
+that should be met:
 
 First one is that we should keep the new distroseries's translations hidden
-from the public:
+from the public, so the copying procedure is not confused by concurrent
+updates:
 
     >>> humpy.hide_all_translations = False
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
@@ -490,7 +491,8 @@ from the public:
     # tests.
     >>> humpy.hide_all_translations = True
 
-And the other one is that import queue should be stopped while doing this.
+The other one is that, for the same reason, the import queue should not be
+accepting uploads for this distroseries.
 
     >>> humpy.defer_translation_imports = False
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
@@ -522,34 +524,34 @@ Only current PO templates are copied from the distribution parent:
 Define a couple of functions we will need to compare the files from the parent
 and child distro series.
 
+   >>> def get_diffable_lines(file):
+   ...     """Get lines in file worth diffing (but omit date)."""
+   ...     return [
+   ...         line for line in file.splitlines()
+   ...         if not line.startswith('"X-Launchpad-Export-Date:')]
+
    >>> def get_diff(old_file, new_file):
    ...     from canonical.launchpad.helpers import test_diff
    ...     # Get content as list of lines, removing X-Launchpad-Export-Date
    ...     # lines to prevent time bombs in tests.
-   ...     old_file_lines = [
-   ...         line for line in old_file.splitlines()
-   ...         if not line.startswith('"X-Launchpad-Export-Date:')
-   ...         ]
-   ...     new_file_lines = [
-   ...         line for line in new_file.splitlines()
-   ...         if not line.startswith('"X-Launchpad-Export-Date:')
-   ...         ]
+   ...     old_file_lines = get_diffable_lines(old_file)
+   ...     new_file_lines = get_diffable_lines(new_file)
    ...
-   ...     for i in range(len(old_file_lines)):
-   ...         if old_file_lines[i] != new_file_lines[i]:
-   ...             # The output is different.
-   ...             return "Output doesn't match:\n\n %s\n" % test_diff(
-   ...                 old_file_lines, new_file_lines)
+   ...     if old_file_lines != new_file_lines:
+   ...         # The old and new files differ.
+   ...         return u"Output doesn't match:\n\n %s\n" % test_diff(
+   ...             old_file_lines, new_file_lines)
    ...     return ''
 
    >>> def compare_translations(orig_distroseries, dest_distroseries):
    ...
+   ...     sortkey = lambda template: (
+   ...         template.potemplatename.name, template.sourcepackagename.name)
+   ...
    ...     orig_templates = sorted(
    ...         orig_distroseries.currentpotemplates,
-   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
-   ...     dest_templates = sorted(
-   ...         dest_distroseries.potemplates,
-   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
+   ...         key=sortkey)
+   ...     dest_templates = sorted(dest_distroseries.potemplates, key=sortkey)
    ...
    ...     output_text = ''
    ...     for i in range(len(orig_templates)):
@@ -573,15 +575,26 @@ and child distro series.
    ...                 output_text += output
    ...     return output_text
 
-Let's compare what we have in our parent distro series and the new one just
-created. We should get no differences at all.
+Comparing the current translations for the parent distro series to those of the
+distro series we just created, we see that there are no differences at all.
+Translation-wise, humpy is a perfect copy of hoary.
 
    >>> print compare_translations(hoary, humpy)
    <BLANKLINE>
 
-Now, we are going to test how to migrate updates from Hoary to Humpy. To do
-this test, we will add some new translations to Hoary, migrate them to Humpy
-and check that the changes are migrated when needed.
+Since people may continue to translate Hoary (and in fact we usually encourage
+them to do so as a matter of policy), we will also periodically update Humpy's
+translations based on changes made in Hoary.
+
+To illustrate this, we will add some new translations to Hoary, migrate them
+to Humpy, and check that the changes are copied where appropriate.
+
+In practice the updates need not be entirely complete.  The database and the
+Translations application remain "live" during the process, so there may be some
+interference from changes made through the UI.  In those cases the copying
+mechanism will drop a few updates rather than risk overwriting newer changes.
+Any dropped updates from Hoary will still appear as suggestions to translators
+working on Humpy, as long as they're still translating the same messages.
 
 Get the needed objects to prepare this test.
 
@@ -593,59 +606,125 @@ Get the needed objects to prepare this test.
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset_hoary = potemplateset.getSubset(distroseries=hoary,
     ...     sourcepackagename=evolution)
-    >>> potemplate_hoary = potemplatesubset_hoary.getPOTemplateByName('evolution-2.2')
+    >>> potemplate_hoary = potemplatesubset_hoary.getPOTemplateByName(
+    ...     'evolution-2.2')
     >>> pofile_es_hoary = potemplate_hoary.getPOFileByLang('es')
     >>> potemplatesubset_humpy = potemplateset.getSubset(distroseries=humpy,
     ...     sourcepackagename=evolution)
-    >>> potemplate_humpy = potemplatesubset_humpy.getPOTemplateByName('evolution-2.2')
+    >>> potemplate_humpy = potemplatesubset_humpy.getPOTemplateByName(
+    ...     'evolution-2.2')
     >>> pofile_es_humpy = potemplate_humpy.getPOFileByLang('es')
-    >>> UTC = pytz.timezone('UTC')
 
-The one submitting the string will be Carlos. He's an editor for this POFile.
+The one submitting the string will be Carlos.  He's an editor for this POFile.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-Update a string in the parent release.
+    >>> from canonical.launchpad.ftests import time_counter
+    >>> # "Clock" that's guaranteed always to progress between calls.
+    >>> now = time_counter(delta=datetime.datetime.resolution).next
+
+As it happens, our templates have some messages with the same msgids but
+different contexts.  These exist in both Hoary and Humpy, but one is
+translated only in Hoary; another only in Humpy; another in both, with the one
+in Humpy the most recent; and yet another in both but with the one in Hoary
+the most recent.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> def add_messageset_to_template(potemplate, sequence, msgid, context):
+    ...     """Add a message set to the given `POTemplate`."""
+    ...     context_msg = potemplate.createMessageSetFromText(
+    ...         msgid, context)
+    ...     context_msg = removeSecurityProxy(context_msg)
+    ...     context_msg.sequence = sequence
+    ...     potemplate.invalidateCache()
+    ...     return context_msg
+
+    >>> def add_translation(pofile, potmsgset, translation):
+    ...     """Set translation for given message set in given `POFile`."""
+    ...     pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
+    ...     pomsgset.updateTranslationSet(
+    ...         carlos, { 0: translation }, fuzzy=False, published=False,
+    ...         lock_timestamp=now())
+
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 100, u"A contexted message", None)
+    >>> add_translation(pofile_es_hoary, context_msg, "Hoary0")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 100, u"A contexted message", None)
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 101, u"A contexted message", u"context1")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 101, u"A contexted message", u"context1")
+    >>> add_translation(pofile_es_humpy, context_msg, "Humpy1")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 102, u"A contexted message", u"context2")
+    >>> add_translation(pofile_es_hoary, context_msg, "Hoary2")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 102, u"A contexted message", u"context2")
+    >>> add_translation(pofile_es_humpy, context_msg, "Humpy2")
+    >>> context_msg_hoary = add_messageset_to_template(
+    ...     potemplate_hoary, 103, u"A contexted message", u"context3")
+    >>> context_msg_humpy = add_messageset_to_template(
+    ...     potemplate_humpy, 103, u"A contexted message", u"context3")
+    >>> add_translation(pofile_es_humpy, context_msg_humpy, "Humpy3")
+    >>> add_translation(pofile_es_hoary, context_msg_hoary, "Hoary3")
+
+Carlos also updates a regular string in the parent release.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=False, lock_timestamp=now())
 
-And another update in a string that is untranslated.
+And another update in a string that was previously untranslated.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'empty string translated' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=False, lock_timestamp=now())
 
-Update a string in the children release.
+Update a string in the child release.
 
-    >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(u'current addressbook folder')
+    >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(
+    ...     u'current addressbook folder')
     >>> pomsgset_humpy.updateTranslationSet(
     ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=False, lock_timestamp=now())
 
-Let's update the statistics, and print out the values for the number
-of translated, changed in Launchpad, newly translated in Launchpad,
-and with unreviewed suggestions.
+These are the respective expected numbers of translated messages, messages
+whose translations have changed in Launchpad, ones that are newly translated
+in Launchpad, and ones with unreviewed suggestions.
+
+We update these statistics first, since we have not gone through the regular
+UI for updating translations, and receive the current numbers as a byproduct.
 
     >>> pofile_es_hoary.updateStatistics()
-    (7, 2, 1, 1)
+    (7, 2, 4, 1)
     >>> pofile_es_humpy.updateStatistics()
-    (7, 2, 0, 0)
+    (7, 2, 3, 0)
 
-We can also see that the statistics show differences between each distribution
-release for the rosetta count of translations:
+The statistics for messages translated in Launchpad reflect the fact that we
+translated one previously untranslated string in Hoary.  The number for this
+category of message is called rosettaCount.
 
-    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
-    True
-    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
-    True
-    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
-    False
+    >>> pofile_es_hoary.currentCount()
+    7
+    >>> pofile_es_humpy.currentCount()
+    7
 
-We can see now that the changes are detected.
+    >>> pofile_es_hoary.updatesCount()
+    2
+    >>> pofile_es_humpy.updatesCount()
+    2
+
+    >>> pofile_es_hoary.rosettaCount()
+    4
+    >>> pofile_es_humpy.rosettaCount()
+    3
+
+When we compare the full translations for hoary and humpy, we see the changes
+we just made, as well as the differences between the messages-with-context.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -678,12 +757,35 @@ We can see now that the changes are detected.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:104
      msgid " cards"
+    @@ -277,16 +277,16 @@
+     msgstr ""
+    <BLANKLINE>
+     msgid "A contexted message"
+    -msgstr "Hoary0"
+    +msgstr ""
+    <BLANKLINE>
+     msgctxt "context1"
+     msgid "A contexted message"
+    -msgstr ""
+    +msgstr "Humpy1"
+    <BLANKLINE>
+     msgctxt "context2"
+     msgid "A contexted message"
+    -msgstr "Hoary2"
+    +msgstr "Humpy2"
+    <BLANKLINE>
+     msgctxt "context3"
+     msgid "A contexted message"
+    -msgstr "Hoary3"
+    +msgstr "Humpy3"
 
-Let's migrate the updates.
+Now we migrate the updates from Hoary to Humpy.
 
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
-Now, we should have only the update from Humpy as a difference
+Our updates are copied to Humpy.  The remaining differences between Hoary and
+Humpy are the messages that were translated in Humpy more recently than they
+were in Hoary, or were translated in Humpy but not at all in Hoary.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -700,21 +802,34 @@ Now, we should have only the update from Humpy as a difference
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
+    @@ -281,12 +281,12 @@
+    <BLANKLINE>
+     msgctxt "context1"
+     msgid "A contexted message"
+    -msgstr ""
+    +msgstr "Humpy1"
+    <BLANKLINE>
+     msgctxt "context2"
+     msgid "A contexted message"
+    -msgstr "Hoary2"
+    +msgstr "Humpy2"
+    <BLANKLINE>
+     msgctxt "context3"
+     msgid "A contexted message"
+    -msgstr "Hoary3"
+    +msgstr "Humpy3"
 
-What would happen now, if the same string that is changed in Humpy is also
-changed in Hoary?
+Changes in Humpy supersede any translation changes that may be made in its
+parent distroseries for that same message.  So even if someone now translates
+the same messages in Hoary as well, Humpy will retain its own translations
+of those string when we next migrate updates.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'current addressbook folder')
+    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(
+    ...     u'current addressbook folder')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-
-We copy missing translations...
-
+    ...     published=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-
-And we can see that the change is not migrated to Humpy because we already got
-a change directly there that we should not overwrite.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -731,15 +846,24 @@ a change directly there that we should not overwrite.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
+    @@ -281,12 +281,12 @@
+    ...
 
-We can also see that the statistics are updated and both distributions have
-the same values:
+The Hoary message is updated, but even though the Humpy version is older, it
+is not overwritten by the copy.  (The differences in the part where we had
+messages with contexts remain as they were.)
+
+We can also see that the statistics are updated and both distributions show
+mostly the same numbers (though some messages in the rosettaCount actually
+differ between the two distro series).  The only difference is that 1 message
+that was untranslated in Humpy got copied from Hoary, whereas another that was
+translated in Humpy but not in Hoary, wasn't.
 
     >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
     True
     >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
     True
-    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
+    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount() - 1
     True
 
 Finally, prepare a new distro series to do the copy using an external script
@@ -751,12 +875,12 @@ to do the translation migration to this new distro series.
     >>> len(testing_series.potemplates)
     0
 
-The script is executed in its own transaction, so we need to commit here
-to be sure the new series will be available in the script.
+The script starts its own transactions, so we need to commit here to be sure
+the new series will be available in the script.
 
-    >>> import transaction
     >>> import subprocess
     >>> import sys
+    >>> import transaction
     >>> transaction.commit()
 
 Now, we execute the script that will migrate/copy all current templates and
@@ -792,7 +916,6 @@ records for a given status in a given pocket. It makes easy to
 generate a list of currently published sources for override-check, for
 instance. it can also be used to generate the archive packages list in
 the future.
-
 
    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
    >>> hoary = ubuntu['hoary']
@@ -854,7 +977,7 @@ restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
    >>> print debian_archive.purpose.title
-   Primary Archive.
+   Primary Archive
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,
@@ -862,8 +985,7 @@ restricted to it.
    ...     component=component_main, archive=debian_archive).count()
    0
 
-
-ISPP.publishedBinaries return all the binaries generated by the
+ISPP.publishedBinaries returns all the binaries generated by the
 publication in question:
 
    >>> warty = ubuntu['warty']
@@ -976,85 +1098,85 @@ related to a distroseries.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> distroset = getUtility(IDistributionSet)
- >>> kubuntu = distroset.getByName("kubuntu")
- >>> krunch = kubuntu.getSeries("krunch")
- >>> from canonical.lp.dbschema import SpecificationFilter
+    >>> distroset = getUtility(IDistributionSet)
+    >>> kubuntu = distroset.getByName("kubuntu")
+    >>> krunch = kubuntu.getSeries("krunch")
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be one informational specs for krunch:
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> krunch.specifications(filter=filter).count()
- 1
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> krunch.specifications(filter=filter).count()
+    1
 
 
 There are 2 completed specs for Krunch:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- thinclient-local-devices True
- usplash-on-hibernation True
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete
+    thinclient-local-devices True
+    usplash-on-hibernation True
 
 
 And there are 2 incomplete specs:
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.is_complete
+    cluster-installation False
+    revu False
 
 
 If we ask for all specs, we get them in the order of priority.
 
- >>> filter = [SpecificationFilter.ALL]
- >>> for spec in krunch.specifications(filter=filter):
- ...    print spec.priority.title, spec.name
- Essential cluster-installation
- High revu
- Medium thinclient-local-devices
- Low usplash-on-hibernation
- Undefined kde-desktopfile-langpacks
- Not krunch-desktop-plan
+    >>> filter = [SpecificationFilter.ALL]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...    print spec.priority.title, spec.name
+    Essential cluster-installation
+    High revu
+    Medium thinclient-local-devices
+    Low usplash-on-hibernation
+    Undefined kde-desktopfile-langpacks
+    Not krunch-desktop-plan
 
 
 With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
- >>> filter=[SpecificationFilter.ACCEPTED]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- cluster-installation Accepted
- revu Accepted
- thinclient-local-devices Accepted
- usplash-on-hibernation Accepted
+    >>> filter=[SpecificationFilter.ACCEPTED]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    cluster-installation Accepted
+    revu Accepted
+    thinclient-local-devices Accepted
+    usplash-on-hibernation Accepted
 
- >>> filter=[SpecificationFilter.PROPOSED]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- kde-desktopfile-langpacks Proposed
+    >>> filter=[SpecificationFilter.PROPOSED]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    kde-desktopfile-langpacks Proposed
 
- >>> filter=[SpecificationFilter.DECLINED]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- krunch-desktop-plan Declined
+    >>> filter=[SpecificationFilter.DECLINED]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    krunch-desktop-plan Declined
 
 
 And if we ask just for specs, we get BOTH the incomplete and the complete
 ones that have been accepted.
 
- >>> for spec in krunch.specifications():
- ...     print spec.name, spec.is_complete, spec.goalstatus.title
- cluster-installation False Accepted
- revu False Accepted
- thinclient-local-devices True Accepted
- usplash-on-hibernation True Accepted
+    >>> for spec in krunch.specifications():
+    ...     print spec.name, spec.is_complete, spec.goalstatus.title
+    cluster-installation False Accepted
+    revu False Accepted
+    thinclient-local-devices True Accepted
+    usplash-on-hibernation True Accepted
 
 We can filter for specifications that contain specific text:
 
- >>> for spec in krunch.specifications(filter=['usb']):
- ...     print spec.name
- thinclient-local-devices
+    >>> for spec in krunch.specifications(filter=['usb']):
+    ...     print spec.name
+    thinclient-local-devices
 
 
 = Drivers =
@@ -1080,64 +1202,64 @@ We test these rules below.
 First, we look at a release where both the distribution and release have
 drivers. Kubuntu should be a good example.
 
- >>> kubuntu.driver.name
- u'jblack'
- >>> krunch.driver.name
- u'edgar'
- >>> for d in krunch.drivers:
- ...     print d.name
- edgar
- jblack
+    >>> kubuntu.driver.name
+    u'jblack'
+    >>> krunch.driver.name
+    u'edgar'
+    >>> for d in krunch.drivers:
+    ...     print d.name
+    edgar
+    jblack
 
 
 Now, we look at a release where there is a driver on the release but not on
 the distribution.
 
- >>> debian = distroset.getByName('debian')
- >>> print debian.driver
- None
- >>> print debian.owner.name
- sabdfl
- >>> sarge = debian.getSeries('sarge')
- >>> print sarge.driver.name
- jdub
- >>> for d in sarge.drivers:
- ...     print d.name
- jdub
- sabdfl
+    >>> debian = distroset.getByName('debian')
+    >>> print debian.driver
+    None
+    >>> print debian.owner.name
+    sabdfl
+    >>> sarge = debian.getSeries('sarge')
+    >>> print sarge.driver.name
+    jdub
+    >>> for d in sarge.drivers:
+    ...     print d.name
+    jdub
+    sabdfl
 
 
 Now, a release where there is no driver on the release but there is a driver
 on the distribution.
 
- >>> redhat = distroset.getByName('redhat')
- >>> print redhat.driver.name
- jblack
- >>> six = redhat.getSeries('six')
- >>> print six.driver
- None
- >>> for d in six.drivers:
- ...     print d.name
- jblack
+    >>> redhat = distroset.getByName('redhat')
+    >>> print redhat.driver.name
+    jblack
+    >>> six = redhat.getSeries('six')
+    >>> print six.driver
+    None
+    >>> for d in six.drivers:
+    ...     print d.name
+    jblack
 
 
 Finally, on a release where neither the distribution nor the release have a
 driver. Here, we expect the driver to be the owner of the distribution
 (because this is the "commonest fallback").
 
- >>> sid = debian.getSeries('sid')
- >>> print debian.driver
- None
- >>> print debian.owner.name
- sabdfl
- >>> print sid.driver
- None
- >>> print sid.owner.name
- jdub
+    >>> sid = debian.getSeries('sid')
+    >>> print debian.driver
+    None
+    >>> print debian.owner.name
+    sabdfl
+    >>> print sid.driver
+    None
+    >>> print sid.owner.name
+    jdub
 
- >>> for d in sid.drivers:
- ...     print d.name
- sabdfl
+    >>> for d in sid.drivers:
+    ...     print d.name
+    sabdfl
 
 == Lastest Uploads ==
 
@@ -1145,21 +1267,21 @@ IDistroSeries provides the 'getLatestUpload' method which returns a
 list of the last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
-  >>> warty = ubuntu['warty']
-  >>> latest_uploads = warty.getLatestUploads()
+    >>> warty = ubuntu['warty']
+    >>> latest_uploads = warty.getLatestUploads()
 
 Each element is an IDistroSeriesSourcePackageRelease instance:
 
-  >>> for upload in latest_uploads:
-  ...     print upload.name, upload.version
-  mozilla-firefox 0.9
+    >>> for upload in latest_uploads:
+    ...     print upload.name, upload.version
+    mozilla-firefox 0.9
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> breezy_autotest = ubuntutest['breezy-autotest']
-  >>> latest_uploads = breezy_autotest.getLatestUploads()
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
+    >>> latest_uploads = breezy_autotest.getLatestUploads()
 
-  >>> len(latest_uploads)
-  0
+    >>> len(latest_uploads)
+    0

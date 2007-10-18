@@ -60,6 +60,7 @@ from canonical.launchpad.interfaces import (
     ICodeOfConductSet,
     ICveSet,
     IDistributionSet,
+    IHWDBApplication,
     IKarmaActionSet,
     ILanguageSet,
     ILaunchBag,
@@ -67,7 +68,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
-    IMailingListApplication,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -90,7 +90,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+    LaunchpadFormView, Navigation, stepto, canonical_name, canonical_url,
+    custom_widget)
+from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -404,6 +406,24 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
+    @stepto('legal')
+    def redirect_legal(self):
+        """Redirect /legal to help.launchpad.net/Legal site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Legal', status=301)
+
+    @stepto('faq')
+    def redirect_faq(self):
+        """Redirect /faq to help.launchpad.net/FAQ site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/FAQ', status=301)
+
+    @stepto('feedback')
+    def redirect_feedback(self):
+        """Redirect /feedback to help.launchpad.net/Feedback site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Feedback', status=301)
+
     stepto_utilities = {
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
@@ -413,10 +433,10 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
+        '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -449,8 +469,16 @@ class LaunchpadRootNavigation(Navigation):
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
-            person = getUtility(IPersonSet).getByName(name[1:].lower())
-            return person
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
+                return self.redirectSubTree(
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
+            else:
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -462,7 +490,15 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(IBazaarApplication)
 
         try:
-            return getUtility(IPillarNameSet)[name.lower()]
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
+                return self.redirectSubTree(
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
+            else:
+                return getUtility(IPillarNameSet)[name]
         except NotFoundError:
             return None
 
@@ -963,4 +999,3 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
-

@@ -66,7 +66,8 @@ class ISourcePackageRelease(Interface):
     copyright = Attribute(
         "Copyright information for this SourcePackageRelease, if available.")
     section = Attribute("Section this Source Package Release belongs to")
-    builds = Attribute("Builds for this sourcepackagerelease")
+    builds = Attribute("Builds for this sourcepackagerelease excluding PPA "
+        "archives.")
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
@@ -128,15 +129,10 @@ class ISourcePackageRelease(Interface):
     def getBuildByArch(distroarchseries, archive):
         """Return build for the given distroarchseries/archive.
 
-        This will look first for published builds in the given
-        distroarchseries. It uses the publishing tables to return a build,
-        even if the build is from another distroarchseries, so long as the
-        binaries are published in the distroarchseries given.
+        It looks for a build in any state registered *directly* for the
+        given distroarchseries and archive.
 
-        If no published build is located, it will then look for a build in
-        any state registered directly against this distroarchseries.
-
-        Return None if not found.
+        Returns None if a suitable build could not be found.
         """
 
     def override(component=None, section=None, urgency=None):

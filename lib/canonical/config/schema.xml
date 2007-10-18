@@ -92,6 +92,7 @@
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
     <sectiontype name="xmlrpc" extends="virtual_host" />
+    <sectiontype name="xmlrpc-private" extends="virtual_host" />
 
     <sectiontype name="virtual_hosts">
         <key name="use_https" datatype="boolean" required="yes">
@@ -111,6 +112,8 @@
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
         <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
+        <section name="*" type="xmlrpc-private" attribute="xmlrpc_private"
+                          required="yes" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
@@ -566,6 +569,8 @@ k            </description>
             Shipit-specific configuration options.
         </description>
         <key name="dbuser" datatype="string" default="shipit" />
+        <key name="max_cds_for_auto_approval" datatype="integer"
+             required="no" default="39" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
         <key name="ubuntu_from_email_address" datatype="string"
@@ -574,6 +579,9 @@ k            </description>
              default="noreply@shipit.edubuntu.com" />
         <key name="kubuntu_from_email_address" datatype="string"
              default="noreply@shipit.kubuntu.com" />
+        <key name="prerelease_mode" datatype="boolean" default="false" />
+        <key name="beta_download_link" datatype="string"
+             default="http://www.ubuntu.com/testing/gutsybeta" />
     </sectiontype>
 
     <sectiontype name="rosettaadmin" extends="database_options">
@@ -893,7 +901,9 @@ k            </description>
     <sectiontype name="supermirror" extends="database_options">
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
-        <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
+        <key name="masterlock" datatype="string"
+        default="/var/tmp/sm-ng/masterlock" />
+        <key name="maximum_workers" datatype="integer" />
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
@@ -933,6 +943,7 @@ k            </description>
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
+        <key name="debug_logfile" datatype="string" required="no" />
         <key name="smartserver_root" datatype="canonical.config.urlbase"
             default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
             <description>
@@ -993,6 +1004,23 @@ k            </description>
             attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
+    <sectiontype name="codeimport">
+        <key name="default_interval_cvs" datatype="integer"
+             required="no" default="43200">
+          <description>
+              The default value of the update interval of a code import from
+              CVS, in seconds.
+          </description>
+        </key>
+        <key name="default_interval_subversion" datatype="integer"
+             required="no" default="21600">
+          <description>
+              The default value of the update interval of a code import from
+              Subversion, in seconds.
+          </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="personalpackagearchive">
         <key name="root" datatype="string" required="no"
              default="/var/tmp/ppa">
@@ -1035,17 +1063,23 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="mailman" prefix="canonical.mailman.config">
-        <section name="*" type="mailman-build"
-                 attribute="build" required="yes" />
+        <section name="*" type="mailman-build" attribute="build" />
 
         <key name="launch" datatype="boolean"       default="false" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
         <key name="xmlrpc_url" datatype="string"
              default="http://xmlrpc.launchpad.dev/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
+        <!-- XXX: A temporary key to control whether or not the functionality
+        related to hosted mailing lists is exposed in the UI.
+        https://launchpad.net/launchpad/+spec/team-mailing-list-beta-program
+        - Guilherme Salgado 2007-09-14 -->
+        <key name="expose_hosted_mailing_lists" datatype="boolean"
+             default="false" />
     </sectiontype>
 
     <sectiontype name="checkwatches">
+        <key name="dbuser" datatype="string" default="checkwatches" />
         <key name="batch_query_threshold" datatype="integer" default="10" />
         <key name="default_socket_timeout" datatype="integer" default="30" />
     </sectiontype>
@@ -1094,6 +1128,7 @@ k            </description>
         <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="codeimport" attribute="codeimport" />
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />

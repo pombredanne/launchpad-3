@@ -23,16 +23,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, PackagePublishingStatus)
-
+    ArchivePurpose, BuildStatus, PackagePublishingStatus,
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
-    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES
+    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES, NotFoundError
     )
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
@@ -82,12 +81,25 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
-                             orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+
+    @property
+    def builds(self):
+        """See `ISourcePackageRelease`."""
+        # Excluding PPA builds may seem like a strange thing to do but
+        # when copy-package works for copying packages across archives,
+        # a build may well have a different archive to the corresponding
+        # sourcepackagerelease.
+        return Build.select("""
+            sourcepackagerelease = %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(self.id, ArchivePurpose.PPA),
+            orderBy=['-datecreated', 'id'],
+            clauseTables=['Archive'])
 
     @property
     def age(self):
@@ -278,34 +290,61 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-        # Look for a published build
-        query = """
-        Build.id = BinaryPackageRelease.build AND
-        BinaryPackageRelease.id =
-            BinaryPackagePublishingHistory.binarypackagerelease AND
-        BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.archive = %s AND
-        Build.sourcepackagerelease = %s
-        """  % sqlvalues(distroarchseries, archive, self)
+        # XXX cprov 20070720: this code belongs to IDistroSeries content
+        # class as 'parent_series' property. Other parts of the system
+        # can benefit of this, like SP.packagings, for instance.
+        parent_series = []
+        candidate = distroarchseries.distroseries
+        while candidate is not None:
+            parent_series.append(candidate)
+            candidate = candidate.parentseries
 
-        tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
+        queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
 
-        # We are using selectFirst() to eliminate the multiple results of
-        # the same build record originated by the multiple binary join paths
-        # ( a build which produces multiple binaries). The use of:
-        #  select(..., distinct=True)
-        # would be clearer, however the SelectResult returned would require
-        # nasty code.
-        build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
+        # Find out all the possible parent DistroArchSeries
+        # a build could be issued (then inherited).
+        parent_architectures = []
+        archtag = distroarchseries.architecturetag
+        for series in parent_series:
+            try:
+                candidate = series[archtag]
+            except NotFoundError:
+                pass
+            else:
+                parent_architectures.append(candidate)
 
-        # If not, look for a build directly in this distroarchseries.
-        if build is None:
-            build = Build.selectOneBy(
-                distroarchseries=distroarchseries,
-                archive=archive,
-                sourcepackagerelease=self)
+        architectures = [
+            architecture.id for architecture in parent_architectures]
+        queries.append(
+            "Build.distroarchrelease IN %s" % sqlvalues(architectures))
 
-        return build
+        # Follow archive inheritance across PRIMARY archives, for example:
+        # guadalinex/foobar was initialised from ubuntu/dapper
+        if archive.purpose != ArchivePurpose.PPA:
+            parent_archives = set()
+            for series in parent_series:
+                parent_archives.add(series.main_archive)
+            archives = [archive.id for archive in parent_archives]
+        else:
+            archives = [archive.id, ]
+
+        queries.append(
+            "Build.archive IN %s" % sqlvalues(archives))
+
+        # Query ONE only allowed build record for this sourcerelease
+        # across all possible locations.
+        query = " AND ".join(queries)
+
+        # XXX cprov 20070924: the SelectFirst hack is only required because
+        # sampledata has duplicated (broken) build records. Once we are in
+        # position to clean up the sampledata and install a proper constraint
+        # on Build table:
+        # UNIQUE(distribution, architecturetag, sourcepackagerelease, archive)
+        # we should use SelectOne (and, obviously, remove the orderBy).
+        # One detail that might influence in this strategy is automatic-rebuild
+        # when we may have to consider rebuild_index in the constraint.
+        # See more information on bug #148195.
+        return Build.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""

@@ -17,7 +17,7 @@ instance here:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestIssuezilla
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
-    >>> issuezilla = TestIssuezilla(mozilla_bugzilla.baseurl)
+    >>> issuezilla = TestIssuezilla(mozilla_bugzilla)
     >>> issuezilla._probe_version()
     u'2.11-ooo'
     >>> for bug_watch in mozilla_bugzilla.watches:
@@ -28,7 +28,7 @@ instance here:
     42: FUBAR
     >>> issuezilla.updateBugWatches(mozilla_bugzilla.watches)
     WARNING:root:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2)
+    (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: RESOLVED FIXED
@@ -44,7 +44,7 @@ Old-style Bugzillas are quite similar to Issuezilla. Again we pretend
 Mozilla.org's using this old version. Here's the scoop:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestOldBugzilla
-    >>> old_bugzilla = TestOldBugzilla(mozilla_bugzilla.baseurl)
+    >>> old_bugzilla = TestOldBugzilla(mozilla_bugzilla)
 
   a) The version is way old:
 
@@ -63,7 +63,7 @@ We support them just fine:
 
     >>> old_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
     WARNING:root:Didn't find bug u'2000' on https://bugzilla.mozilla.org
-    (local bugs: 1)
+    (local bugs: 1).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: UNKNOWN
@@ -77,8 +77,9 @@ Bugzilla oddities
 
 Some Bugzillas have some weird properties that we need to cater for:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestWeirdBugzilla
-    >>> weird_bugzilla = TestWeirdBugzilla(mozilla_bugzilla.baseurl)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestWeirdBugzilla)
+    >>> weird_bugzilla = TestWeirdBugzilla(mozilla_bugzilla)
     >>> weird_bugzilla._probe_version()
     u'2.20+'
 
@@ -99,7 +100,7 @@ Yet everything still works as expected:
 
     >>> weird_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
     WARNING:root:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2)
+    (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: ASSIGNED
@@ -114,8 +115,9 @@ Broken Bugzillas
 What does /not/ work as expected is parsing Bugzillas which produce
 invalid XML:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestBrokenBugzilla
-    >>> broken_bugzilla = TestBrokenBugzilla(mozilla_bugzilla.baseurl)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestBrokenBugzilla)
+    >>> broken_bugzilla = TestBrokenBugzilla(mozilla_bugzilla)
     >>> broken_bugzilla._probe_version()
     u'2.20+'
     >>> "</foobar>" in broken_bugzilla._readBugItemFile()

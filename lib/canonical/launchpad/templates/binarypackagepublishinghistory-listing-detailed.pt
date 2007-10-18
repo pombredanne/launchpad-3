@@ -1,3 +1,6 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   omit-tag="">
 <b>
   <span tal:replace="context/distroarchseries/distroseries/name">hoary</span>
   <span tal:replace="context/distroarchseries/architecturetag">i386</span>
@@ -27,3 +30,4 @@ and section <span tal:replace="context/section/name">x11</span>
   </tal:has_supersededby>
 </tal:not_removal_requested>
 <hr />
+</tal:root>

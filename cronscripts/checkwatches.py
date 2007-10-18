@@ -25,6 +25,6 @@ class CheckWatches(LaunchpadCronScript):
             run_time)
 
 if __name__ == '__main__':
-    script = CheckWatches("checkwatches")
+    script = CheckWatches("checkwatches", dbuser=config.checkwatches.dbuser)
     script.lock_and_run()
 

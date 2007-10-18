@@ -10,5 +10,8 @@ LPCURRENT=/srv/launchpad.net/codelines/current
 
 
 $LPCURRENT/scripts/publish-distro.py -v --ppa -d ubuntu
+# Removed because this is too slow to run for every pass of this script.
+# It will be put in its own cron job.
+#$LPCURRENT/scripts/process-death-row.py -v --ppa -d ubuntu
 
 

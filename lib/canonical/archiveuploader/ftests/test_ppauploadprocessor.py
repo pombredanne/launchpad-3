@@ -133,7 +133,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted bar 1.0-10 (source)"]
+            "Subject: [PPA name16] Accepted bar 1.0-10 (source)",
+           "You are receiving this email because you are the uploader of "
+                "the above",
+            "PPA package."
+            ]
         self.assertEmail(contents)
 
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
@@ -202,7 +206,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Personal Package Archive for Andrew Bennetts is disabled"]
+            "Personal Package Archive for Andrew Bennetts is disabled",
+            "If you don't understand why your files were rejected please "
+                 "send an email",
+            "to launchpad-users@lists.canonical.com for help."
+            ]
         self.assertEmail(contents)
 
     def testPPADistroSeriesOverrides(self):
@@ -307,14 +315,14 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Signer has no upload rights to this PPA"]
         self.assertEmail(contents)
 
-    def testPPACommercialUploadFails(self):
-        """Upload a commercial package to a PPA and ensure it's rejected."""
+    def testPPAPartnerUploadFails(self):
+        """Upload a partner package to a PPA and ensure it's rejected."""
         upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
             "foocomm_1.0-1_source.changes rejected",
-            "PPA does not support commercial uploads."]
+            "PPA does not support partner uploads."]
         self.assertEmail(contents, [self.name16_recipient])
 
     def testUploadSignedByNonUbuntero(self):
@@ -402,6 +410,20 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEmail(
             contents,
             recipients=[self.name16_recipient, self.kinnison_recipient])
+
+    def testUploadWithBadSection(self):
+        """Uploads with a bad section are rejected."""
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_bad_section", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "bar_1.0-1.dsc: Section 'badsection' is not valid",
+            "bar_1.0.orig.tar.gz: Section 'badsection' is not valid",
+            "bar_1.0-1.diff.gz: Section 'badsection' is not valid"]
+        self.assertEmail(contents)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

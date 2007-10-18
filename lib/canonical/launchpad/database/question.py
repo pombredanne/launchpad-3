@@ -25,12 +25,12 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet,
+    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionSort,
-    QuestionStatus, QuestionParticipation, QuestionPriority)
+    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
+    QuestionPriority, QuestionSort, QuestionStatus)
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -312,7 +312,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         assert self.faq != faq, (
             'cannot call linkFAQ() with already linked FAQ')
         self.faq = faq
-        return self._giveAnswer(user, comment, datecreated)
+        if self.can_give_answer:
+            return self._giveAnswer(user, comment, datecreated)
+        else:
+            # The question's status is Solved or Invalid.
+            return self.addComment(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):
@@ -538,15 +542,28 @@ class QuestionSet:
 
     def findExpiredQuestions(self, days_before_expiration):
         """See `IQuestionSet`."""
-        return Question.select(
-            """status IN (%s, %s)
-                    AND (datelastresponse IS NULL
-                         OR datelastresponse < (
-                            current_timestamp -interval '%s days'))
-                    AND
-                    datelastquery  < (current_timestamp - interval '%s days')
-                    AND assignee IS NULL
+        # This query joins to bugtasks that are not BugTaskStatus.INVALID
+        # because there are many bugtasks to one question. A question is
+        # included when BugTask.status IS NULL.
+        return Question.select("""
+            id in (SELECT Question.id
+                FROM Question
+                    LEFT OUTER JOIN QuestionBug
+                        ON Question.id = QuestionBug.question
+                    LEFT OUTER JOIN BugTask
+                        ON QuestionBug.bug = BugTask.bug
+                            AND BugTask.status != %s
+                WHERE
+                    Question.status IN (%s, %s)
+                    AND (Question.datelastresponse IS NULL
+                         OR Question.datelastresponse < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days'))
+                    AND Question.datelastquery < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days')
+                    AND Question.assignee IS NULL
+                    AND BugTask.status IS NULL)
             """ % sqlvalues(
+                BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
@@ -565,7 +582,7 @@ class QuestionSet:
     def getMostActiveProjects(self, limit=5):
         """See `IQuestionSet`."""
         cur = cursor()
-        cur.execute('''
+        cur.execute("""
             SELECT product, distribution, count(*) AS "question_count"
             FROM (
                 SELECT product, distribution
@@ -583,7 +600,7 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            ''' % sqlvalues(limit))
+            """ % sqlvalues(limit))
 
         projects = []
         product_set = getUtility(IProductSet)

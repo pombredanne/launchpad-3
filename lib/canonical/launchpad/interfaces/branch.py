@@ -19,10 +19,13 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'MAXIMUM_MIRROR_FAILURES',
+    'MIRROR_TIME_INCREMENT',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
 
+from datetime import timedelta
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -146,6 +149,13 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.MATURE)
 
 
+# The maximum number of failures before we disable mirroring.
+MAXIMUM_MIRROR_FAILURES = 5
+
+# How frequently we mirror branches.
+MIRROR_TIME_INCREMENT = timedelta(hours=6)
+
+
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
@@ -204,9 +214,7 @@ class BranchURIField(URIField):
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch cannot "
-                "be on <code>%s</code>. Did you want to "
-                '<a href="https://help.launchpad.net/CreatingAHostedBranch">'
-                "create a hosted branch</a> instead?" % launchpad_domain)
+                "be on <code>%s</code>." % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -379,6 +387,9 @@ class IBranch(IHasOwner):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
+    bug_branches = Attribute(
+        "The bug-branch link objects that link this branch to bugs. ")
+
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
@@ -813,6 +824,24 @@ class IBranchSet(Interface):
         product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Branches associated with product with appropriate lifecycle.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
+        """
+
+    def getBranchesForProject(
+        project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Branches associated with project with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches

@@ -42,45 +42,54 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2>What&#8217;s new</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.9</h2>
           <ul class="news">
+            <li>
+              <a href="https://help.launchpad.net/BazaarSSH"
+                ><strong>Code hosting:</strong> faster code branch uploads 
+                with bzr+ssh.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/KDEPlurals">
+                <strong>KDE translations:</strong> support for KDE credits 
+                and plural strings.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/AddingBugWatches">
+                <strong>Bug watches:</strong> streamlined bug tracker 
+                registration when adding new watches.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/TranslationsFullExport">
+                <strong>Unified translation downloads:</strong> export all 
+                translations for a project to a single tarball.</a>
+            </li>
             <li>
               <a href="https://help.launchpad.net/PPAQuickStart"
                  ><strong>Personal Package Archives:</strong>
-                 beta of Launchpad's new package
+                 ongoing beta of Launchpad's package
                  build and repository hosting service.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/BranchMergeProposals">
-                <strong>Code submissions:</strong> Specify
-                the branch you intend to land your own branch on.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/BugStatuses#trac">
-                <strong>Support for Trac:</strong> Trac bug
-                statuses are now captured in bug watches.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">
-              <strong>File downloads:</strong>
-              make releases and other files
-                available from your project's overview page</a>
-            </li>
-            <li>
-             <a href="https://translations.launchpad.net/people/+me/+imports">
-               <strong>Translation imports:</strong> Individuals
-             now have their own translations import queue page.</a>
+              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters"
+                 ><strong>Launchpad Beta:</strong>
+                 participate in our beta program and get access to pre-release
+                 features.</a>
             </li>
           </ul>
+          <div class="discreet" style="text-align: right">
+            Updated 2007-09-21.
+            <a href="http://news.launchpad.net">More...</a>
+          </div>
         </div>
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
             <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-            <li class="product"><a href="/upstart">Upstart</a></li>
-            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
         </div>
     </div><!--main-->

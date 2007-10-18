@@ -116,14 +116,14 @@
         class="canonical.launchpad.browser.ShipitFrontPageView"
         permission="zope.Public"
         name="+index"
-        template="../templates/shipit-index-new.pt" />
+        template="../templates/shipit-index.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItLoginView"
         permission="zope.Public"
         name="login"
-        template="../templates/shipit-index.pt"
+        template="../templates/shipit-login.pt"
         />
 
     <browser:page
@@ -310,7 +310,7 @@
         facet="overview"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
-        fields="flavour quantityx86 quantityamd64 isdefault"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
         label="Edit standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-edit.pt"
@@ -361,7 +361,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
-        fields="flavour quantityx86 quantityamd64 isdefault"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
         label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"

@@ -6,7 +6,7 @@ __all__ = [
     'BranchSet',
     ]
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import os
 
@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    NotFoundError)
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -439,7 +439,7 @@ class Branch(SQLBase):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.mirror_request_time = (
-                    datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+                    datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
             else:
                 self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
@@ -451,8 +451,13 @@ class Branch(SQLBase):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        self.mirror_request_time = (
-            datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+        if (self.branch_type == BranchType.MIRRORED
+            and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
+            self.mirror_request_time = (
+                datetime.now(pytz.timezone('UTC'))
+                + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
+        else:
+            self.mirror_request_time = None
         self.syncUpdate()
 
 
@@ -952,6 +957,19 @@ class BranchSet:
 
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
+
+    def getBranchesForProject(self, project, lifecycle_statuses=None,
+                              visible_by_user=None):
+        """See `IBranchSet`."""
+        assert project is not None, "Must have a valid project."
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        query = 'Branch.product = Product.id AND Product.project = %s %s' % (
+            project.id, lifecycle_clause)
+
+        return Branch.select(
+            self._generateBranchClause(query, visible_by_user),
+            clauseTables=['Product'])
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""

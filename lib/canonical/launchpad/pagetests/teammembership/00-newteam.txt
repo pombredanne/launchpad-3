@@ -1,6 +1,6 @@
 = Creating a new team =
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/')
     >>> browser.getLink('Register a team').click()
 
@@ -77,3 +77,4 @@ Now we enter a valid email address that's not registered in Launchpad.
     team. (If the message doesn't arrive in a few minutes, your mail provider
     might use 'greylisting', which could delay the message for up to an hour
     or two.)
+

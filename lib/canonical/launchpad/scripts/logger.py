@@ -50,8 +50,15 @@ class FakeLogger:
     def warning(self, *stuff, **kw):
         self.message('WARNING', *stuff, **kw)
 
+    def error(self, *stuff, **kw):
+        self.message('ERROR', *stuff, **kw)
+
     def info(self, *stuff, **kw):
         self.message('INFO', *stuff, **kw)
+
+    def debug(self, *stuff, **kw):
+        self.message('DEBUG', *stuff, **kw)
+
 
 class LibrarianFormatter(logging.Formatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
