@@ -16,6 +16,7 @@ __all__ = [
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
+    'BranchRetryMirrorView',
     'BranchView',
     'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
@@ -27,6 +28,7 @@ import pytz
 
 from zope.event import notify
 from zope.component import getUtility
+from zope.interface import Interface
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -233,8 +235,6 @@ class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
 
-    MAXIMUM_STATUS_MESSAGE_LENGTH = 128
-
     def initialize(self):
         self.notices = []
         self._add_subscription_notice()
@@ -312,15 +312,6 @@ class BranchView(LaunchpadView):
         uri = URI(self.context.url)
         return uri.scheme in ('sftp', 'bzr+ssh')
 
-    def show_mirror_failure(self):
-        """True if mirror_of_ssh is false and branch mirroring failed."""
-        if self.mirror_of_ssh():
-            # SSH branches can't be mirrored, so a general failure message
-            # is shown instead of the reported errors.
-            return False
-        else:
-            return self.context.mirror_failures
-
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
         return (self.user is not None and
@@ -337,21 +328,9 @@ class BranchView(LaunchpadView):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return self.context.url is None and self.context.owner != vcs_imports
 
-    def mirror_status_message(self):
-        """A message from a bad scan or pull, truncated for display."""
-        message = self.context.mirror_status_message
-        if len(message) <= self.MAXIMUM_STATUS_MESSAGE_LENGTH:
-            return message
-        return truncate_text(
-            message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
-
     def mirror_disabled(self):
         """Has mirroring this branch been disabled?"""
         return self.context.mirror_request_time is None
-
-    def mirror_failed_once(self):
-        """Has there been exactly one failed attempt to mirror this branch?"""
-        return self.context.mirror_failures == 1
 
     def in_mirror_queue(self):
         """Is it likely that the branch is being mirrored in the next run of
@@ -493,6 +472,57 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class BranchRetryMirrorView(LaunchpadFormView):
+
+    MAXIMUM_STATUS_MESSAGE_LENGTH = 128
+
+    schema = Interface
+
+    field_names = []
+
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
+
+    def in_mirror_queue(self):
+        """Is it likely that the branch is being mirrored in the next run of
+        the puller?
+        """
+        return self.context.mirror_request_time < datetime.now(pytz.UTC)
+
+    def mirror_disabled(self):
+        """Has mirroring this branch been disabled?"""
+        return self.context.mirror_request_time is None
+
+    def mirror_failed_once(self):
+        """Has there been exactly one failed attempt to mirror this branch?"""
+        return self.context.mirror_failures == 1
+
+    def mirror_status_message(self):
+        """A message from a bad scan or pull, truncated for display."""
+        message = self.context.mirror_status_message
+        if len(message) <= self.MAXIMUM_STATUS_MESSAGE_LENGTH:
+            return message
+        return truncate_text(
+            message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
+
+    def show_mirror_failure(self):
+        """True if mirror_of_ssh is false and branch mirroring failed."""
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
+        else:
+            return self.context.mirror_failures
+
+    @action('Try again', name='try-again')
+    def retry(self, action, data):
+        self.context.requestMirror()
 
 
 class BranchDeletionView(LaunchpadFormView):
