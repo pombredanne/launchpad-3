@@ -150,10 +150,12 @@ class BranchTestCase(TestCaseWithTransport):
         return 'http://%s.example.com/%s' % (
             self.getUniqueString(), self.getUniqueString())
 
-    def makePerson(self):
+    def makePerson(self, email=None, name=None):
         """Create and return a new, arbitrary Person."""
-        email = self.getUniqueString('email')
-        name = self.getUniqueString('person-name')
+        if email is None:
+            email = self.getUniqueString('email')
+        if name is None:
+            name = self.getUniqueString('person-name')
         return getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
 
