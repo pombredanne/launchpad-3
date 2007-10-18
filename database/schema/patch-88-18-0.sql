@@ -10,4 +10,4 @@ CREATE OR REPLACE VIEW BranchWithSortKeys AS
     LEFT OUTER JOIN Product ON Branch.product = Product.id
     LEFT OUTER JOIN Person as Author ON Branch.author = Author.id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 88, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 18, 0);
