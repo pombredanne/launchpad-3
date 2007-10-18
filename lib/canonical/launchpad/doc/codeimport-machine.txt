@@ -41,6 +41,7 @@ table.  The table is represented by an utility that provides the
 ICodeImportMachineSet interface.  Currently we hide all aspects of the
 new system from anonymous and regular users.
 
+    >>> login(ANONYMOUS)
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine_set.getAll()
     Traceback (most recent call last):
@@ -172,8 +173,9 @@ resets the sample CodeImportMachine and delete its associated events.
 
 === setOnline ===
 
-When a code-import-controller daemon starts, it must call the setOnline
-method of its associated CodeImportMachine.
+The setOnline method sets the machine's state to ONLINE and records the
+corresponding event. It is called when a code-import-controller daemon
+goes online.
 
     >>> machine = reset_machine(machine)
     >>> print_machine_state_and_events(machine)
@@ -187,9 +189,10 @@ method of its associated CodeImportMachine.
 
 === setOffline ===
 
-When a code-import-controller daemon stops, or when the watchdog detects
-that it has not updated its heartbeat for some time, they must call the
-setOffline method.
+The setOffline method sets the machine's state to OFFLINE and records
+the corresponding event. It is called when a code-import-controller
+daemon stops, or when the watchdog detects that it has not been updated
+its heartbeat for some time.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
@@ -209,9 +212,8 @@ setOffline method.
 
 === setQuiescing ===
 
-Setting the state of a CodeImportMachine to QUIESCING will stop it from
-starting new jobs, and will cause it to shutdown after completing the
-running jobs.
+The setQuiescing method sets the machine's state to QUIESCING and
+records the corresponding event.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> machine = reset_machine(machine)
@@ -247,6 +249,9 @@ setQuiescing methods must fail.
     Traceback (most recent call last):
     ...
     AssertionError: State of machine frobisher was OFFLINE.
+
+    >>> print machine.state.name
+    OFFLINE
     >>> machine.setQuiescing(ddaa, "No worky!")
     Traceback (most recent call last):
     ...

@@ -161,15 +161,15 @@ Subversion URL.
 When a code import is modified, the ICodeImportEventSet utility should
 be used to create an event describing the changes.
 
-Application code should not modify CodeImport objects directly, instead they
-should call the appropriate mutator methods. This allow CodeImportEvent objects
-to be transparently created by the mutator methods when needed. This is
-enforced by not defining a set_schema for ICodeImport.
+Application code should not modify CodeImport objects directly, instead
+they should call the appropriate mutator methods of CodeImport. This
+allow CodeImportEvent objects to be transparently created when needed.
+This is enforced by not defining a set_schema for ICodeImport.
 
-In this document, we are testing the CodeImportEvent creation infrastructure
-used by those mutator methods, so we need to directly modify the state of
-CodeImport objects. We can do this because we are working on unproxied database
-objects.
+In this document, we are testing the CodeImportEvent creation
+infrastructure used by those mutator methods, so we need to directly
+modify the state of CodeImport objects. We can do this because we are
+working on unproxied database objects.
 
 ICodeImportEventSet defines a protocol so it is able to find changes
 applied to the code import. Before making any change, the beginModify
@@ -283,8 +283,10 @@ on multiple machines.
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('bazaar-importer')
 
-When a controller daemon starts accepting jobs, it should create an
-ONLINE event to record which machine is now online.
+When a controller daemon starts, it calls a mutator method on
+CodeImportMachine that marks this machine as accepting jobs. This method
+logs the change by creating an ONLINE event using the
+ICodeImportEventSet.newOnline method.
 
     >>> assert_raises(AssertionError, event_set.newOnline, None)
     >>> online_event = event_set.newOnline(machine)
@@ -298,9 +300,10 @@ ONLINE event to record which machine is now online.
 
 === OFFLINE ===
 
-When a code import machine goes offline, an OFFLINE event should be
-created to record the affected machine, and the reason why it is going
-offline.
+When a controller daemon goes offline, a mutator method on
+CodeImportMachine is called to mark it as no longer running. This method
+logs the change by creating an OFFLINE event using the
+ICodeImportSet.newOffline method.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportMachineOfflineReason)

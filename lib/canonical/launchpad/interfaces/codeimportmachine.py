@@ -67,7 +67,7 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
         Quiesced
 
         The code-import-controller daemon has shut down after completing
-        running jobs.
+        any running jobs.
         """)
 
     # Crash recovery
