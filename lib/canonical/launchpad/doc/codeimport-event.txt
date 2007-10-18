@@ -181,7 +181,7 @@ state of the the code import.
 
 Then changes can be applied.
 
-    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
 
 After applying changes, the newModify method can create an event that

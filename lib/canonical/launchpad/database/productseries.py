@@ -31,10 +31,10 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError, PackagingType, RevisionControlSystems, SpecificationSort,
-    SpecificationGoalStatus, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus)
-from canonical.lp.dbschema import ImportStatus
+    ImportStatus, NotFoundError, PackagingType, RevisionControlSystems,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationGoalStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 
 
 class NoImportBranchError(Exception):

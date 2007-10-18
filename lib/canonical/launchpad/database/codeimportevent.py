@@ -96,8 +96,8 @@ class CodeImportEventSet:
     def beginModify(self, code_import):
         """See `ICodeImportEventSet`."""
         assert code_import is not None
-        iter_items = self._iterItemsForSnapshot(code_import)
-        return CodeImportEventToken(iter_items)
+        items = list(self._iterItemsForSnapshot(code_import))
+        return CodeImportEventToken(items)
 
     def newModify(self, code_import, person, token):
         """See `ICodeImportEventSet`."""
@@ -204,7 +204,7 @@ class CodeImportEventSet:
 
         :param code_import: CodeImport object that was presumably modified.
 
-        :param token: Object returned by a call to makeModificationToken
+        :param token: Token returned by a call to _makeModificationToken
             before the code import was modified.
         :return: Set of items that can be passed to _recordItems, or None.
         """
@@ -244,5 +244,5 @@ class CodeImportEventToken:
 
     implements(ICodeImportEventToken)
 
-    def __init__(self, iterable):
-        self.items = list(iterable)
+    def __init__(self, items):
+        self.items = items

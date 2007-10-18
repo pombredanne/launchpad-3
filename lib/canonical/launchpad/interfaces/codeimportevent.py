@@ -32,76 +32,89 @@ class CodeImportEventType(DBEnumeratedType):
 
     # Code import life cycle.
 
-    CREATE = DBItem(110, """Import Created
+    CREATE = DBItem(110, """
+        Import Created
 
-    A CodeImport object was created.
-    """)
+        A CodeImport object was created.
+        """)
 
-    MODIFY = DBItem(120, """Import Modified
+    MODIFY = DBItem(120, """
+        Import Modified
 
-    A code import was modified. Either the CodeImport object, or an associated
-    object, was modified.
-    """)
+        A code import was modified. Either the CodeImport object, or an
+        associated object, was modified.
+        """)
 
-    DELETE = DBItem(130, """Import Deleted
+    DELETE = DBItem(130, """
+        Import Deleted
 
-    A CodeImport object was deleted.
-    """)
+        A CodeImport object was deleted.
+        """)
 
     # Code import job events.
 
-    START = DBItem(210, """Job Started
+    START = DBItem(210, """
+        Job Started
 
-    An import job was started.
-    """)
+        An import job was started.
+        """)
 
-    FINISH = DBItem(220, """Job Finished
+    FINISH = DBItem(220, """
+        Job Finished
 
-    An import job finished, either successfully or by a failure.
-    """)
+        An import job finished, either successfully or by a failure.
+        """)
 
-    PUBLISH = DBItem(230, """Import First Published
+    PUBLISH = DBItem(230, """
+        Import First Published
 
-    A code import has completed for the first time and was published.
-    """)
+        A code import has completed for the first time and was published.
+        """)
 
-    RECLAIM = DBItem(240, """Job Reclaimed Automatically
+    RECLAIM = DBItem(240, """
+        Job Reclaimed Automatically
 
-    A code import job has not finished, but has probably crashed and is
-    allowed to run again.
-    """)
+        A code import job has not finished, but has probably crashed and is
+        allowed to run again.
+        """)
 
     # Code import job control events.
 
-    REQUEST = DBItem(310, """Update Requested
+    REQUEST = DBItem(310, """
+        Update Requested
 
-    A user requested that an import job be run immediately.
-    """)
+        A user requested that an import job be run immediately.
+        """)
 
-    KILL = DBItem(320, """Termination Requested
+    KILL = DBItem(320, """
+        Termination Requested
 
-    A user requested that a running import job be aborted.
-    """)
+        A user requested that a running import job be aborted.
+        """)
 
     # Code import machine events.
 
-    ONLINE = DBItem(410, """Machine Online
+    ONLINE = DBItem(410, """
+        Machine Online
 
-    A code-import-controller daemon has started, and is now accepting jobs.
-    """)
+        A code-import-controller daemon has started, and is now accepting
+        jobs.
+        """)
 
-    OFFLINE = DBItem(420, """Machine Offline
+    OFFLINE = DBItem(420, """
+        Machine Offline
 
-    A code-import-controller daemon has finished, or crashed is and no longer
-    running.
-    """)
+        A code-import-controller daemon has finished, or crashed is and no
+        longer running.
+        """)
 
-    QUIESCE = DBItem(430, """Quiescing Requested
+    QUIESCE = DBItem(430, """
+        Quiescing Requested
 
-    A code-import-controller daemon has been requested to shut down. It will
-    no longer accept jobs, and will terminate once the last running job
-    finishes.
-    """)
+        A code-import-controller daemon has been requested to shut down. It
+        will no longer accept jobs, and will terminate once the last running
+        job finishes.
+        """)
 
 
 class CodeImportEventDataType(DBEnumeratedType):
@@ -120,87 +133,104 @@ class CodeImportEventDataType(DBEnumeratedType):
 
     # CodeImport attributes
 
-    CODE_IMPORT = DBItem(110, """Code Import
+    CODE_IMPORT = DBItem(110, """
+        Code Import
 
-    Database id of the CodeImport, useful to collate events associated to
-    deleted CodeImport objects.
-    """)
+        Database id of the CodeImport, useful to collate events associated to
+        deleted CodeImport objects.
+        """)
 
-    OWNER = DBItem(120, """Code Import Owner
+    OWNER = DBItem(120, """
+        Code Import Owner
 
-    Value of CodeImport.owner. Useful to record ownership changes.
-    """)
+        Value of CodeImport.owner. Useful to record ownership changes.
+        """)
 
-    OLD_OWNER = DBItem(121, """Previous Owner
+    OLD_OWNER = DBItem(121, """
+        Previous Owner
 
-    Previous value of CodeImport.owner, when recording an ownership change.
-    """)
+        Previous value of CodeImport.owner, when recording an ownership
+        change.
+        """)
 
-    REVIEW_STATUS = DBItem(130, """Review Status
+    REVIEW_STATUS = DBItem(130, """
+        Review Status
 
-    Value of CodeImport.review_status. Useful to understand the review life
-    cycle of a code import.
-    """)
+        Value of CodeImport.review_status. Useful to understand the review
+        life cycle of a code import.
+        """)
 
-    OLD_REVIEW_STATUS = DBItem(131, """Previous Review Status
+    OLD_REVIEW_STATUS = DBItem(131, """
+        Previous Review Status
 
-    Previous value of CodeImport.review_status, when recording a status
-    change.
-    """)
+        Previous value of CodeImport.review_status, when recording a status
+        change.
+        """)
 
-    ASSIGNEE = DBItem(140, """Code Import Assignee
+    ASSIGNEE = DBItem(140, """
+        Code Import Assignee
 
-    Value of CodeImport.assignee. Useful to understand the review life cycle
-    of a code import.
-    """)
+        Value of CodeImport.assignee. Useful to understand the review life
+        cycle of a code import.
+        """)
 
-    OLD_ASSIGNEE = DBItem(141, """Previous Assignee
+    OLD_ASSIGNEE = DBItem(141, """
+        Previous Assignee
 
-    Previous value of CodeImport.assignee, when recording an assignee change.
-    """)
+        Previous value of CodeImport.assignee, when recording an assignee
+        change.
+        """)
 
     # CodeImport attributes related to the import source
 
-    UPDATE_INTERVAL = DBItem(210, """Update Interval
+    UPDATE_INTERVAL = DBItem(210, """
+        Update Interval
 
-    User-specified interval between updates of the code import.
-    """)
+        User-specified interval between updates of the code import.
+        """)
 
-    OLD_UPDATE_INTERVAL = DBItem(211, """Previous Update Interval
+    OLD_UPDATE_INTERVAL = DBItem(211, """
+        Previous Update Interval
 
-    Previous user-specified update interval, when recording an interval
-    change.
-    """)
+        Previous user-specified update interval, when recording an interval
+        change.
+        """)
 
-    CVS_ROOT = DBItem(220, """CVSROOT
+    CVS_ROOT = DBItem(220, """
+        CVSROOT
 
-    Location and access method of the CVS repository.
-    """)
+        Location and access method of the CVS repository.
+        """)
 
-    CVS_MODULE = DBItem(221, """CVS module
+    CVS_MODULE = DBItem(221, """
+        CVS module
 
-    Path to import within the CVSROOT.
-    """)
+        Path to import within the CVSROOT.
+        """)
 
-    OLD_CVS_ROOT = DBItem(222, """Previous CVSROOT
+    OLD_CVS_ROOT = DBItem(222, """
+        Previous CVSROOT
 
-    Previous CVSROOT, when recording an import source change.
-    """)
+        Previous CVSROOT, when recording an import source change.
+        """)
 
-    OLD_CVS_MODULE = DBItem(223, """Previous CVS module
+    OLD_CVS_MODULE = DBItem(223, """
+        Previous CVS module
 
-    Previous CVS module, when recording an import source change.
-    """)
+        Previous CVS module, when recording an import source change.
+        """)
 
-    SVN_BRANCH_URL = DBItem(230, """Subversion URL
+    SVN_BRANCH_URL = DBItem(230, """
+        Subversion URL
 
-    Location of the Subversion branch to import.
-    """)
+        Location of the Subversion branch to import.
+        """)
 
-    OLD_SVN_BRANCH_URL = DBItem(231, """Previous Subversion URL
+    OLD_SVN_BRANCH_URL = DBItem(231, """
+        Previous Subversion URL
 
-    Previous Subversion URL, when recording an import source change.
-    """)
+        Previous Subversion URL, when recording an import source change.
+        """)
 
     # Data related to machine events
 
@@ -267,7 +297,10 @@ class ICodeImportEventSet(Interface):
     def beginModify(code_import):
         """Create the token to give to `newModify`.
 
-        Should only be called by CodeImport methods.
+        Should only be called by `CodeImport` methods.
+
+        The token records the state of the code import before modification, it
+        lets newModify find what changes were done.
 
         :param code_import: `CodeImport` that will be modified.
         :return: `CodeImportEventToken` to pass to `newModify`.
@@ -276,7 +309,7 @@ class ICodeImportEventSet(Interface):
     def newModify(code_import, person, token):
         """Record a modification to a `CodeImport` object.
 
-        Should only be called by CodeImport methods.
+        Should only be called by `CodeImport` methods.
 
         If no change is found between the code import and the data saved in
         the token, the modification is considered non-significant and no
