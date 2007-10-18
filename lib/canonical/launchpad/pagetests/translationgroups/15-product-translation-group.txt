@@ -4,8 +4,6 @@ permissions on a product. We'll use the Netapplet product for this test.
 First make sure it has no translation group and permissions.
 
     >>> admin_browser.open('http://launchpad.dev/netapplet')
-    >>> print admin_browser.title
-    Network Applet in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
     Status: Active
@@ -15,19 +13,13 @@ Now let's make sure we can see the page to let us change translation group
 and permissions.
 
     >>> admin_browser.getLink('Translations').click()
-    >>> print admin_browser.title
-    Translations of Network Applet in Launchpad
     >>> admin_browser.getLink('Change translators').click()
-    >>> print admin_browser.title
-    Set translation group for Network Applet
+
+Now let's submit to the form. We should be redirected to the product page.
+
     >>> print admin_browser.getControl('Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
-    >>> print admin_browser.getControl('Translation group').displayValue
-    ['(no value)']
-
-Now let's post to the form. We should be redirected to the product page.
-
     >>> admin_browser.getControl('Translation group').displayValue = (
     ...     ['The PolyGlot Translation Group'])
     >>> admin_browser.getControl('Change').click()
@@ -41,8 +33,6 @@ be adjusted to test this properly. Launchpad should also be fixed so that
 you can't set translation group/permissions without using Translations.)
 
     >>> admin_browser.getLink('Overview').click()
-    >>> print admin_browser.title
-    Network Applet in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
     Status: Active

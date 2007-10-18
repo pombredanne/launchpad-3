@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 
+import operator
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -349,21 +350,22 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
     @property
-    def translatable_serieses(self):
+    def translatable_series(self):
         """See `IProduct`."""
-        translatable_product_serieses = set(
+        translatable_product_series = set(
             product_series for product_series in self.serieses
             if len(product_series.getCurrentTranslationTemplates()) > 0)
         return sorted(
-            translatable_product_serieses, key=lambda s: s.datecreated)
+            translatable_product_series,
+            key=operator.attrgetter('datecreated'))
 
     @property
-    def obsolete_translatable_serieses(self):
+    def obsolete_translatable_series(self):
         """See `IProduct`."""
-        obsolete_product_serieses = set(
+        obsolete_product_series = set(
             product_series for product_series in self.serieses
             if len(product_series.getObsoleteTranslationTemplates()) > 0)
-        return sorted(obsolete_product_serieses, key=lambda s: s.datecreated)
+        return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
     @property
     def primary_translatable(self):
@@ -371,7 +373,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetseries = ubuntu.currentseries
-        product_series = self.translatable_serieses
+        product_series = self.translatable_series
 
         # First, go with development focus branch
         if product_series and self.development_focus in product_series:

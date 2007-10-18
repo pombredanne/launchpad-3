@@ -1,12 +1,12 @@
 <div class="portlet" id="portlet-translatable-branches"
-     tal:condition="context/translatable_serieses">
+     tal:condition="context/translatable_series">
   <h2>All translatable branches</h2>
 
   <div class="portletBody portletContent">
 
     <ul>
       <li class="translations"
-          tal:repeat="series context/translatable_serieses">
+          tal:repeat="series context/translatable_series">
         <a tal:content="series/title"
                tal:attributes="href string:${series/fmt:url}/+translations">
           series title</a>

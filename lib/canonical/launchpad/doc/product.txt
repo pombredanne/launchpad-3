@@ -64,7 +64,7 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-    >>> print [series.displayname for series in evo.translatable_serieses]
+    >>> print [series.displayname for series in evo.translatable_series]
     [u'trunk']
 
 But for a52dec, where we have no translatable series or Ubuntu package, the
@@ -370,7 +370,7 @@ POTemplateNameSet:
     >>> potemplate_set = getUtility(IPOTemplateSet)
     >>> from canonical.launchpad.database import POTemplateNameSet
 
-Firefox has two serieses, but no translatable series either:
+Firefox has two series, but no translatable series either:
 
     >>> firefox = productset.getByName('firefox')
     >>> for firefoxseries in firefox.serieses:

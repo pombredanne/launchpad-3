@@ -5,8 +5,10 @@
 __metaclass__ = type
 __all__ = ['BaseExportView']
 
+
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, ITranslationExporter, TranslationFileFormat)
@@ -15,6 +17,10 @@ from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
 
 class BaseExportView(LaunchpadView):
     """Base class for PO export views."""
+
+    @cachedproperty
+    def uses_translations(self):
+        return self.context.getCurrentTranslationTemplates().count() > 0
 
     def getDefaultFormat(self):
         """Overridable: default file format to offer."""

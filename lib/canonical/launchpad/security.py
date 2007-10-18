@@ -216,13 +216,12 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        admins = getUtility(ILaunchpadCelebrities).admin
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-        return user.inTeam(admins) or user.inTeam(rosetta_experts)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_expert))
 
 
-class AdminProductTranslations(OnlyRosettaExpertsAndAdmins,
-                               EditByOwnersOrAdmins):
+class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
 
@@ -232,9 +231,10 @@ class AdminProductTranslations(OnlyRosettaExpertsAndAdmins,
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        return (
-            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditByOwnersOrAdmins.checkAuthenticated(self, user))
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_expert))
 
 
 class AdminSeriesByVCSImports(AuthorizationBase):

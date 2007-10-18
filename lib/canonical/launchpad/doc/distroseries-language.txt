@@ -63,7 +63,7 @@ listing.
     pkgconf-mozilla
     pmount
 
-Which is exactly the one that obsolete.
+Which is exactly the one that is obsolete.
 
     >>> for potemplate in hoary.getObsoleteTranslationTemplates():
     ...     print potemplate.name
