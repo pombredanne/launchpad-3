@@ -136,7 +136,7 @@
   <browser:page
       name="+mirror-failures"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchRetryMirrorView"
+      class="canonical.launchpad.browser.BranchMirrorFailureView"
       facet="branches"
       permission="launchpad.View"
       template="../templates/branch-mirror-failure.pt" />
