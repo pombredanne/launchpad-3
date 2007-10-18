@@ -139,12 +139,12 @@ class BranchListingView(LaunchpadFormView):
     field_names = ['lifecycle']
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     extra_columns = []
-    title_prefix = 'Bazaar'
+    heading_template = 'Bazaar branches for %(displayname)s'
 
     @property
-    def page_title(self):
-        return '%s branches for %s' % (
-            self.title_prefix, self.context.displayname)
+    def heading(self):
+        return self.heading_template % {
+            'displayname': self.context.displayname}
 
     @property
     def initial_values(self):
