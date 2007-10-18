@@ -172,7 +172,7 @@ class BugFeed(BugsFeedBase):
     feedname = "bug"
 
     def initialize(self):
-		"""Initialize the feed."""
+        """Initialize the feed."""
         super(BugFeed, self).initialize()
         if self.context.private:
             raise Unauthorized, "Feeds do not serve private bugs"
