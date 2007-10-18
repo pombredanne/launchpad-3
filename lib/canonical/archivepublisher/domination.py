@@ -238,8 +238,8 @@ class Dominator:
                         pub_record.distroarchseries.architecturetag))
             pub_record.scheduleddeletiondate = (
                 UTC_NOW + timedelta(days=conf.stayofexecution))
-            # XXX cprov 20070820: it is useless, since it's always equals
-            # to scheduleddeletiondate - quarantine.
+            # XXX cprov 20070820: 'datemadepending' is useless, since it's
+            # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
         for pub_record in source_records:
@@ -264,16 +264,6 @@ class Dominator:
 
             # There is at least one non-removed binary to consider
             if considered_binaries.count() > 0:
-                # XXX malcc 2006-10-17 bug=57488:
-                # Want to change to running scripts at info level,
-                # but for now just shut up this particularly noisy
-                # debug statement.
-                #self.debug("%s/%s (source) has at least %d non-removed "
-                #           "binaries as yet" % (
-                #    srcpkg_release.sourcepackagename.name,
-                #    srcpkg_release.version,
-                #    considered_binaries.count()))
-
                 # However we can still remove *this* record if there's
                 # at least one other PUBLISHED for the spr. This happens
                 # when a package is moved between components.
@@ -295,8 +285,8 @@ class Dominator:
                  srcpkg_release.version, pub_record.id))
             pub_record.scheduleddeletiondate = (
                 UTC_NOW + timedelta(days=conf.stayofexecution))
-            # XXX cprov 20070820: it is useless, since it's always equals
-            # to scheduleddeletiondate - quarantine.
+            # XXX cprov 20070820: 'datemadepending' is pointless, since it's
+            # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
     def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):

@@ -20,7 +20,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import QuietLogger
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
 from canonical.lp.dbschema import PackagePublishingStatus
@@ -139,8 +139,13 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         test_args.append(name)
 
-        remover = PackageRemover(name='lp-remove-package', test_args=test_args)
-        remover.logger = QuietLogger()
+        remover = PackageRemover(
+            name='lp-remove-package', test_args=test_args)
+        # Swallowing all log messages.
+        remover.logger = FakeLogger()
+        def message(self, prefix, *stuff, **kw):
+            pass
+        remover.logger.message = message
         remover.setupLocation()
         return remover
 
@@ -324,12 +329,11 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertDeleted(mozilla_firefox_bin_pub_ids, source=False)
 
     def testRemoveComponentFilter(self):
-        """Check the component filter.
+        """Check the component filter behaviour.
 
-        `lp-remove-package.py mozilla-firefox` -> 5 removals
-        `lp-remove-package.py mozilla-firefox -c main` -> 5 removals
-        `lp-remove-package.py mozilla-firefox -c multiverse` -> raises
-            SoyuzScriptError.
+        Filtering by component main ('-c main') will produce exactly
+        the same result than not passing any component filter, because
+        all test publications are in main component.
         """
         remover = self.getRemover()
         removals_without_component = remover.mainTask()
@@ -341,8 +345,13 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual(
             len(removals_without_component), len(removals_with_main_component))
 
-        self.layer.abort()
+    def testRemoveComponentFilterError(self):
+        """Check a component filter error.
 
+        Filtering by component multiverse ('-c multiverse') will raise
+        `SoyuzScriptError` because the selected publications are in main
+        component.
+        """
         remover = self.getRemover(component='multiverse')
         self.assertRaises(SoyuzScriptError, remover.mainTask)
 

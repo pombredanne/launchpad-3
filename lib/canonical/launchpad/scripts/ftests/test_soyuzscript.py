@@ -7,7 +7,7 @@ Checking if the base source and binary lookup methods are working properly.
 import unittest
 
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.scripts import QuietLogger
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
 
@@ -40,7 +40,11 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
             test_args.extend(['-c', component])
 
         soyuz = SoyuzScript(name='soyuz-script', test_args=test_args)
-        soyuz.logger = QuietLogger()
+        # Swallowing all log messages.
+        soyuz.logger = FakeLogger()
+        def message(self, prefix, *stuff, **kw):
+            pass
+        soyuz.logger.message = message
         return soyuz
 
     def getSoyuz(self, *args, **kwargs):
