@@ -244,23 +244,54 @@ class PrivateEmailCommand(EmailCommand):
         return context, current_event
 
 
-class SecurityEmailCommand(EditEmailCommand):
+class SecurityEmailCommand(EmailCommand):
     """Marks a bug as security related."""
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`. Much of this method has been lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         [security_flag] = self.string_args
         if security_flag == 'yes':
-            return {'security_related': True, 'private': True}
+            security_related = True
         elif security_flag == 'no':
-            return {'security_related': False}
+            security_related = False
         else:
             raise EmailProcessingError(
                 get_error_message('security-parameter-mismatch.txt'))
+
+        # Snapshot.
+        edited = False
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(context, providing=providedBy(context))
+
+        # Apply requested changes.
+        if security_related:
+            user = getUtility(ILaunchBag).user
+            if context.setPrivate(True, user):
+                edited = True
+                edited_fields.add('private')
+        if context.security_related != security_related:
+            context.security_related = security_related
+            edited = True
+            edited_fields.add('security_related')
+
+        # Update the current event.
+        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
 class SubscribeEmailCommand(EmailCommand):
