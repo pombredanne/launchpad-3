@@ -2,14 +2,18 @@
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
 registered on the Feeds layer should not be served from the feeds.lp.n
-subdomain. When bug 150941 is fixed, this test should be changed to show 
-that the navigation is fixed and we get a 404 here.
+subdomain. 
+XXX: statik bug=150941: When this bug is fixed (in 1.1.11) this test
+should be changed to show that trying to view a page which is not
+registered on the Feeds layer returns a 404.
+
 
 == Index of a product ==
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher')
     >>> browser.url
     'http://feeds.launchpad.dev/jokosher'
+
 
 == Redirection ==
 
@@ -22,17 +26,21 @@ before serving the page.
    >>> browser.url
    'http://feeds.launchpad.dev/jokosher'
 
+
 == Query String Normalization ==
 
 If multiple urls contain the same query string with the same arguments
 in a different order, we want to redirect the user to the url with
 the normalized query string, so that there is only one cached copy that
 has to be refreshed.
+XXX: statik 2007-10-18 bug=154114: We don't yet normalize case in
+query strings.
 
     >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...     'field.scope=all&search=Search+Bug+Reports&aaa=foo')
     >>> browser.url
     '...+bugs.atom?aaa=foo&field.scope=all&search=Search+Bug+Reports'
+
 
 == Feeds only available on feeds.launchpad.net ==
 
