@@ -13,22 +13,27 @@ import urllib2
 import urlparse
 import ClientCookie
 import xml.parsers.expat
+from email.Utils import parseaddr
 from xml.dom import minidom
 
 from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, CreateBugParams, IBugWatchSet, IDistribution,
+    IExternalBugtracker, ILaunchpadCelebrities, IPersonSet,
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
-LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
+LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
 
 #
@@ -595,6 +600,43 @@ class DebBugs(ExternalBugTracker):
         new_remote_status = ' '.join(
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
+
+    def importBug(self, bug_target, remote_bug):
+        """Import a remote bug into Launchpad."""
+        assert IDistribution.providedBy(bug_target), (
+            'We assume debbugs is used only by a distribution (Debian).')
+        debian_bug = self._findBug(remote_bug)
+        reporter_name, reporter_email = parseaddr(debian_bug.originator)
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing debbugs bug #%s' % remote_bug)
+        package = bug_target.getSourcePackage(debian_bug.package)
+        if package is not None:
+            bug_target = package
+        else:
+            # Debbugs requires all bugs to be targeted to a package, so
+            # it shouldn't be empty.
+            log.warning(
+                'Unknown Debian package (debbugs #%s): %s' % (
+                    remote_bug, debian_bug.package))
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, debian_bug.subject, debian_bug.description,
+                subscribe_reporter=False))
+
+        [debian_task] = bug.bugtasks
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=self.bugtracker, remotebug=remote_bug)
+
+        debian_task.bugwatch = bug_watch
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+        self.updateBugWatches([bug_watch])
+
+        return bug
 
 #
 # Mantis
