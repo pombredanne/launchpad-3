@@ -188,6 +188,7 @@ when the branch was last mirrored and when it will be mirrored again.
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal
     Location: http://trekkies.example.com/gnome-terminal/klingon
+    Last mirrored: 2007-10-01
     Next mirror: As soon as possible
 
 
@@ -198,6 +199,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal
     Location: http://example.com/gnome-terminal/main
+    Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
 
 If mirror_request_time is NULL, then mirroring of the branch is disabled.
@@ -222,6 +224,7 @@ If mirror_request_time is NULL, then mirroring of the branch is disabled.
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
     Location: http://example.com/disabled
+    Last mirrored: Not mirrored yet
     Next mirror: Disabled
 
 
