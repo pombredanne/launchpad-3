@@ -321,12 +321,6 @@ class BranchView(LaunchpadView):
         else:
             return self.context.mirror_failures
 
-    def show_detailed_mirror_failure(self):
-        """True if the user is allowed to view the detailed mirror failure
-        message.
-        """
-        return self.user is not None and self.user.inTeam(self.context.owner)
-
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
         return (self.user is not None and

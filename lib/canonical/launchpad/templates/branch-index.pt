@@ -86,7 +86,7 @@ div.revision p {
           <tr>
             <td colspan="2" id="mirror-failure"
                 class="warning message" style="font-weight: normal">
-              <tal:owner condition="view/show_detailed_mirror_failure">
+              <tal:owner condition="context/required:launchpad.Edit">
                 <tal:mirror-disabled tal:condition="view/mirror_disabled">
                   Launchpad no longer mirrors this branch, because
                   <span tal:replace="context/mirror_failures">3</span> attempts failed
@@ -152,7 +152,7 @@ div.revision p {
 
               </tal:owner>
 
-              <tal:not-owner condition="not:view/show_detailed_mirror_failure">
+              <tal:not-owner condition="not:context/required:launchpad.Edit">
                 <tal:mirrored-yet tal:condition="context/last_mirrored">
                   This branch may be out of date, because Launchpad has not been
                   able to access it since
