@@ -22,6 +22,7 @@ __all__ = [
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
+    'NoSuchPersonWithUsername',
     'NoSuchProduct',
     'NoSuchSeries',
     'NoSuchTeamMailingList',
@@ -232,7 +233,7 @@ class NoBranchForSeries(LaunchpadFault):
     error_code = 170
     msg_template = (
         'Series %(series_name)s on %(product_name)s has no branch associated '
-        'with it.')
+        'with it')
 
     def __init__(self, series):
         LaunchpadFault.__init__(
@@ -260,3 +261,14 @@ class InvalidBranchIdentifier(LaunchpadFault):
 
     def __init__(self, branch_path):
         LaunchpadFault.__init__(self, branch_path=branch_path)
+
+
+class NoSuchPersonWithUsername(LaunchpadFault):
+    """There's no Person with the specified login registered in Launchpad."""
+
+    error_code = 200
+    msg_template = 'No such person: %(username)s'
+
+    def __init__(self, username):
+        LaunchpadFault.__init__(self, username=username)
+
