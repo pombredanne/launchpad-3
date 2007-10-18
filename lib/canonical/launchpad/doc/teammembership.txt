@@ -722,9 +722,11 @@ teams_participated_in attribute works recursively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
-    landscape-developers
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
+    landscape-developers
+    mailing-list-experts
     t4
 
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
@@ -732,9 +734,11 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
     >>> admins = getUtility(IPersonSet).getByName('admins')
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
-    landscape-developers
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
+    landscape-developers
+    mailing-list-experts
     t1
     t4
 
@@ -743,9 +747,11 @@ for Salgado.
 
     >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
     >>> flush_database_updates()
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
-    landscape-developers
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
+    landscape-developers
+    mailing-list-experts
     t1
     t4
 

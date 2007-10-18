@@ -131,7 +131,8 @@ updateBugWatches() issues only one request to update all watches:
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
-    WARNING:root:Didn't find bug u'1798' on http://...  (local bugs: 10).
+    WARNING:root:Didn't find bug u'1798' on http://bugs.some.where
+    (local bugs: 10).
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)

@@ -312,7 +312,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         assert self.faq != faq, (
             'cannot call linkFAQ() with already linked FAQ')
         self.faq = faq
-        return self._giveAnswer(user, comment, datecreated)
+        if self.can_give_answer:
+            return self._giveAnswer(user, comment, datecreated)
+        else:
+            # The question's status is Solved or Invalid.
+            return self.addComment(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):

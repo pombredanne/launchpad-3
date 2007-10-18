@@ -6,10 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.codehosting.puller import branchtomirror
-from canonical.launchpad.database import Branch
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.codehosting.puller import worker
 
 
 # Define a bunch of different fake format classes to pass to identical_formats
@@ -54,7 +51,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return True when both branches have the same
         # bzrdir, repository, and branch formats.
         self.failUnless(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA())))
 
@@ -62,7 +59,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different bzrdir formats.
         self.failIf(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatB(), RepoFormatA(), BranchFormatA())))
 
@@ -70,7 +67,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different repository formats.
         self.failIf(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatB(), BranchFormatA())))
 
@@ -78,7 +75,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different branch formats.
         self.failIf(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
 
