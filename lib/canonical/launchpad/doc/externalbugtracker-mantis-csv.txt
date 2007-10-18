@@ -16,9 +16,11 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
     >>> alsa_mantis = Mantis(
-    ...     "https://bugtrack.alsa-project.org/alsa-bug/",
-    ...     use_csv_export=True)
+    ...     new_bugtracker(BugTrackerType.MANTIS))
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -56,35 +58,23 @@ but didn't succeed. For example, if the bug number was invalid.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestMantis
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestMantis)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Bug Tracker",
-    ...     bugtrackertype=BugTrackerType.MANTIS,
-    ...     baseurl="http://bugs.example.com/",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> login('foo.bar@canonical.com')
-
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 3224, sample_person)
 
-    >>> login('no-priv@canonical.com')
-
 We use a specially hacked Mantis instance that doesn't do network
-calls to verify here:
+calls to verify here. We set its batch_query_threshold to 0 so as to
+force it to use the CSV import code:
 
-    >>> example_ext_bug_tracker = TestMantis(
-    ...     example_bug_tracker.baseurl, use_csv_export=True)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker)
+    >>> example_ext_bug_tracker.batch_query_threshold = 0
 
 Collect the Example.com watches:
 
@@ -132,6 +122,7 @@ Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
     >>> example_ext_bug_tracker.trace_calls = True
+    >>> example_ext_bug_tracker.cleanCache()
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
     CALLED _postPage('view_all_set.php?f=3', ...)
     CALLED _getPage('csv_export.php')

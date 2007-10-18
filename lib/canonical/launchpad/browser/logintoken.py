@@ -254,7 +254,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
         if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
-            self.field_names = ['signed_text']
+            self.field_names = ['text_signature']
         super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
@@ -277,7 +277,10 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
     def _validateSignOnlyGPGKey(self, data):
         # Verify the signed content.
-        signedcontent = data['signed_text']
+        signedcontent = data.get('text_signature')
+        if signedcontent is None:
+            return
+
         try:
             signature = getUtility(IGPGHandler).getVerifiedSignature(
                 signedcontent.encode('ASCII'))
@@ -508,7 +511,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             if requester.preferredemail is not None:
                 requester.preferredemail.destroySelf()
-            requester.setPreferredEmail(email)
+            requester.setContactAddress(email)
         elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             requester.validateAndEnsurePreferredEmail(email)
         else:

@@ -62,25 +62,6 @@ an actual launchpad user.
     >>> test_tales("person/image:mugshot", person=spiv)
     '...<img...src="/@@/person-inactive-mugshot" />...'
 
-One other thing we have for people is fmt:link, which gives us a link to that
-person's page, containing the person name and an icon.
-
-    >>> test_tales("person/fmt:link", person=person)
-    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
-
-    >>> test_tales("person/fmt:link", person=spiv)
-    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
-
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
-
-The fmt:link formatter uses additional path components to extend the
-link:
-
-    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
-    u'<a href=".../~spiv/foo/bar">...'
-
 We also have image:icon for KarmaCategory:
 
     >>> from canonical.launchpad.database import KarmaCategory
@@ -133,6 +114,56 @@ Add manual word breaks to long words in a string:
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
+
+
+== The fmt: namespace to get strings (links) ==
+
+The `fmt:link` tales expression provides a way to define a standard link
+to a content object.  There are currently links defined for:
+  * people / teams
+  * branches
+  * bugs
+  * bug tasks
+
+For a person or team, fmt:link gives us a link to that person's page,
+containing the person name and an icon.
+
+    >>> test_tales("person/fmt:link", person=person)
+    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
+
+    >>> test_tales("person/fmt:link", person=spiv)
+    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> test_tales("person/fmt:link", person=ubuntu_team)
+    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
+
+The fmt:link formatter uses additional path components to extend the
+link:
+
+    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
+    u'<a href=".../~spiv/foo/bar">...'
+
+For branches, fmt:link links to the branch page.
+
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/main')
+    >>> test_tales("branch/fmt:link", branch=branch)
+    u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
+
+For bugs, fmt:link takes to the bug redirect page.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
+    u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1: Firefox does not support SVG</a>'
+
+For bugtasks, fmt:link shows the severity bug icon, and links to the
+appropriate project's bug.
+
+    >>> bugtask = getUtility(IBugSet).get(1).bugtasks[0]
+    >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==
@@ -319,6 +350,8 @@ is replaced with the message '<email address hidden>'.
     ...     foo='long-name@building.museum')
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='foo@staticmethod.com')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='<foo@bar.com>')
     '<email address hidden>'
 
     >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',

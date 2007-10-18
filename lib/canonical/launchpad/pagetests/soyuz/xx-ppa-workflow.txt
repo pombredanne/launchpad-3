@@ -90,7 +90,7 @@ error with a proper message:
     >>> for error in [extract_text(e) for e in errors]:
     ...     print error
     There is 1 error.
-    PPA ToS has to be accepted to complete the activation.
+    PPA Terms of Service must be accepted to activate your PPA.
 
 So, in order to 'activate' a Personal Package Archive the 'accepted'
 checkbox must be checked:
@@ -109,7 +109,6 @@ Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
-    PPA description:
     Hoohay for PPA.
 
 ... and an empty 'whiteboard' section that when filled, includes
@@ -136,7 +135,6 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
-    PPA description:
     Howdy, cowboys !
 
     >>> print extract_text(
@@ -181,7 +179,6 @@ Let's proceed with the required permissions:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
-    PPA description:
     Hoohay for Team PPA.
 
 Any team administrator can 'edit' description & whiteboard contents,
@@ -215,7 +212,6 @@ name of other users or teams:
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
-    PPA description:
     Go for it, you lazy !
 
     >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
@@ -297,7 +293,6 @@ Where we can check for the submitted description:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
-    PPA description:
     PPA rocks!
 
 Activate the second browser:
@@ -313,6 +308,5 @@ And the description matches the first submission's:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
-    PPA description:
     PPA rocks!
 
