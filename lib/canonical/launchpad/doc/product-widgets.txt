@@ -251,7 +251,7 @@ output should have one checked input.
     ...     form={'field.licenses': ['LGPL', 'GPL']})
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
     >>> license_widget.getInputValue()
-    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (140) LGPL>])
+    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>])
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')

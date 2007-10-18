@@ -745,8 +745,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     def setUpWidgets(self):
         super(ProductEditView, self).setUpWidgets()
         # Licenses are optional on +edit page if they have not already 
-        # been set.
-        if len(self.context.licenses) == 0:
+        # been set. Subclasses may not have 'licenses' widget.
+        if len(self.context.licenses) == 0 and 'licenses' in self.widgets:
             self.widgets['licenses'].allow_pending_license = True
 
     @action("Change", name='change')
