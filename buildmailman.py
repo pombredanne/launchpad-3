@@ -7,6 +7,7 @@ import grp
 import pwd
 import sys
 import errno
+import tempfile
 import subprocess
 
 from canonical.config import config
@@ -116,6 +117,24 @@ def build_mailman():
         if retcode:
             print >> sys.stderr, 'Could not create site list'
             return retcode
+
+    # Configure the site list.
+    fd, config_file_name = tempfile.mkstemp()
+    try:
+        os.close(fd)
+        config_file = open(config_file_name, 'w')
+        try:
+            print >> config_file, 'advertised = False'
+        finally:
+            config_file.close()
+        retcode = subprocess.call(('./config_list', '-i', config_file_name,
+                                   Mailman.mm_cfg.MAILMAN_SITE_LIST),
+                                  cwd=mailman_bin)
+        if retcode:
+            print >> sys.stderr, 'Could not configure site list'
+            return retcode
+    finally:
+        os.remove(config_file_name)
 
     # Create a directory to hold the gzip'd tarballs for the directories of
     # deactivated lists.

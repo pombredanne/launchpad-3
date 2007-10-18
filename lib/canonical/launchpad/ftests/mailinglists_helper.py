@@ -2,7 +2,21 @@
 
 """Helper functions for testing XML-RPC services."""
 
+__all__ = [
+    'fault_catcher',
+    'get_alternative_email',
+    'new_person',
+    'new_team',
+    'print_actions',
+    'print_info',
+    ]
+
 import xmlrpclib
+
+from canonical.launchpad.interfaces import (
+    EmailAddressStatus, IEmailAddressSet, IMailingListSet, IPersonSet,
+    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
+from zope.component import getUtility
 
 
 def fault_catcher(func):
@@ -30,7 +44,7 @@ def fault_catcher(func):
     return caller
 
 
-def mailingListPrintActions(pending_actions):
+def print_actions(pending_actions):
     """A helper function for the mailinglist-xmlrpc.txt doctest.
 
     This helps print the data structure returned from .getPendingActions() in
@@ -63,7 +77,7 @@ def mailingListPrintActions(pending_actions):
                 print team, '-->', action
 
 
-def mailingListPrintInfo(info):
+def print_info(info):
     """A helper function for the mailinglist-subscription-xmlrpc.txt doctest.
     """
     for team_name in sorted(info):
@@ -71,3 +85,63 @@ def mailingListPrintInfo(info):
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
             print '   ', address, realname, flags, status
+
+
+def new_team(team_name, with_list=False):
+    """A helper function for the mailinglist doctests.
+
+    This just provides a convenience function for creating the kinds of teams
+    we need to use in the doctest.
+    """
+    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
+    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
+    # bug 125505.
+    policy = TeamSubscriptionPolicy.OPEN
+    personset = getUtility(IPersonSet)
+    ddaa = personset.getByName('ddaa')
+    team = personset.newTeam(ddaa, team_name, displayname,
+                             subscriptionpolicy=policy)
+    if not with_list:
+        return team
+    carlos = personset.getByName('carlos')
+    list_set = getUtility(IMailingListSet)
+    team_list = list_set.new(team)
+    team_list.review(carlos, MailingListStatus.APPROVED)
+    team_list.startConstructing()
+    team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    return team, team_list
+
+
+def new_person(first_name):
+    """Create a new person with the given first name.
+
+    The person will be given two email addresses, with the 'long form'
+    (e.g. anne.person@example.com) as the preferred address.  Return the new
+    person object.
+    """
+    variable_name = first_name.lower()
+    full_name = first_name + ' Person'
+    # E.g. firstname.person@example.com will be an alternative address.
+    preferred_address = variable_name + '.person@example.com'
+    # E.g. aperson@example.org will be the preferred address.
+    alternative_address = variable_name[0] + 'person@example.org'
+    person, email = getUtility(IPersonSet).createPersonAndEmail(
+        preferred_address,
+        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+        name=variable_name, displayname=full_name)
+    person.setPreferredEmail(email)
+    getUtility(IEmailAddressSet).new(alternative_address, person,
+                                     EmailAddressStatus.VALIDATED)
+    return person
+
+
+def get_alternative_email(person):
+    """Return a non-preferred IEmailAddress for a person.
+
+    This assumes and asserts that there is exactly one non-preferred email
+    address for the person.
+    """
+    alternatives = list(person.validatedemails)
+    assert len(alternatives) == 1, (
+        'Unexpected email count: %d' % len(alternatives))
+    return alternatives[0]
