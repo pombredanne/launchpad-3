@@ -176,6 +176,14 @@ class TestExpandURL(BranchTestCase):
         trunk = self.product.development_focus.user_branch
         self.assertResolves(trunk.unique_name, trunk.unique_name)
 
+    def test_mirroredBranch(self):
+        """The unique name of a mirrored branch resolves to the unique name of
+        the branch.
+        """
+        arbitrary_branch = self.makeBranch(BranchType.MIRRORED)
+        self.assertResolves(
+            arbitrary_branch.unique_name, arbitrary_branch.unique_name)
+
     def test_noSuchBranch(self):
         """Resolve paths to branches even if there is no branch of that name.
 
@@ -184,6 +192,14 @@ class TestExpandURL(BranchTestCase):
         owner = self.makePerson()
         nonexistent_branch = '~%s/%s/doesntexist' % (
             owner.name, self.product.name)
+        self.assertResolves(nonexistent_branch, nonexistent_branch)
+
+    def test_noSuchJunkBranch(self):
+        """Resolve paths to junk branches."""
+        # This test added to make sure we don't raise a fault when looking for
+        # the '+junk' project, which doesn't actually exist.
+        owner = self.makePerson()
+        nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
     def test_resolveBranchWithNoSuchProduct(self):
@@ -203,7 +219,8 @@ class TestExpandURL(BranchTestCase):
         nonexistent_owner_branch = "~doesntexist/%s/%s" % (
             self.getUniqueString(), self.getUniqueString())
         self.assertFault(
-            nonexistent_owner_branch, faults.NoSuchPerson('doesntexist'))
+            nonexistent_owner_branch,
+            faults.NoSuchPersonWithUsername('doesntexist'))
 
     def test_tooManySegments(self):
         """If we have more segments than are necessary to refer to a branch,
@@ -296,6 +313,26 @@ class TestExpandURL(BranchTestCase):
         self.assertFault(
             self.product.name,
             faults.NoBranchForSeries(self.product.development_focus))
+
+    def test_privateBranchAsUser(self):
+        """We resolve invisible branches as if they don't exist.
+
+        References to a product resolve to the branch associated with the
+        development focus. If that branch is private, other views will
+        indicate that there is no branch on the development focus. We do the
+        same.
+        """
+        # Create the owner explicitly so that we can get its email without
+        # resorting to removeSecurityProxy.
+        email = self.getUniqueString('email')
+        arbitrary_branch = self.makePrivateBranch(
+            owner=self.makePerson(email=email))
+        login(email)
+        try:
+            self.assertResolves(
+                arbitrary_branch.unique_name, arbitrary_branch.unique_name)
+        finally:
+            logout()
 
     def test_remoteBranch(self):
         """For remote branches, return results that link to the actual remote

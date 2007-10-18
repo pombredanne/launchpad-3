@@ -208,10 +208,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if unique_name[0] != '~':
             return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
-        if branch is not None:
+        if check_permission('launchpad.View', branch):
             return branch
         else:
-            return self._getNonexistentBranch(unique_name)
+            return None
 
     def _getNonexistentBranch(self, unique_name):
         """Return an appropriate response for a non-existent branch.
@@ -223,10 +223,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         owner_name, project_name, branch_name = unique_name[1:].split('/')
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
-            return faults.NoSuchPerson(owner_name)
-        project = getUtility(IProductSet).getByName(project_name)
-        if project is None:
-            return faults.NoSuchProduct(project_name)
+            return faults.NoSuchPersonWithUsername(owner_name)
+        if project_name != '+junk':
+            project = getUtility(IProductSet).getByName(project_name)
+            if project is None:
+                return faults.NoSuchProduct(project_name)
         return _NonexistentBranch(unique_name)
 
     def _getResultDict(self, branch, suffix=None):
@@ -269,11 +270,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             suffix = path_segments.pop()
             result = self._getBranch('/'.join(path_segments))
 
+        if result is None:
+            result = self._getNonexistentBranch(strip_path)
+
         if isinstance(result, faults.LaunchpadFault):
             return result
         else:
-            try:
-                return self._getResultDict(result, suffix)
-            except Unauthorized:
-                return self._getResultDict(
-                    _NonexistentBranch(strip_path), suffix)
+            return self._getResultDict(result, suffix)
