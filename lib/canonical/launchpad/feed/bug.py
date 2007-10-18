@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.launchpad.webapp import canonical_url
