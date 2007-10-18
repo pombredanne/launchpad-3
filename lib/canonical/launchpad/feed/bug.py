@@ -22,15 +22,19 @@ from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug,
-    IBugTarget,
-    IBugTaskSet,
-    IMaloneApplication,
-    IPerson,
-    )
+    IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
+
+
+# XXX - bac 2-Oct-2007 - Bug 153785 - this value should be in a config file.
+BUG_MAX_AGE = 30 * MINUTES
 
 
 def get_unique_bug_tasks(items):
+    """Given a list of BugTasks return a list with one BugTask per Bug.
+
+    A Bug can have many BugTasks.  In order to avoid duplicate data, the list
+    is trimmed to have only one representative BugTask per Bug.
+    """
     ids = set()
     unique_items = []
     for item in items:
@@ -46,67 +50,88 @@ class BugFeedContentView(LaunchpadView):
 
     def __init__(self, context, request, feed):
         super(BugFeedContentView, self).__init__(context, request)
-        self.format = None
         self.feed = feed
 
     def getBugCommentsForDisplay(self):
+        """Get the rendered bug comments.
+
+        Using the existing templates and views, transform the comments for the
+        bug into a representation to be used as the 'content' in the bug feed.
+        """
         bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
         return bug_task_view.getBugCommentsForDisplay()
 
     def render(self):
+        """Render the view."""
         return ViewPageTemplateFile('templates/bug.pt')(self)
 
 
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
-    max_age = 30 * MINUTES
+    max_age = BUG_MAX_AGE
     rootsite = "bugs"
 
     def initialize(self):
+        """Initialize the feed."""
         super(BugsFeedBase, self).initialize()
-        self.__show_column = None
+        self._show_column = None
 
     @property
     def show_column(self):
-        if self.__show_column is not None:
-            return self.__show_column
-        self.__show_column = dict(
+        """Return a dictionary of columns to be displayed.
+
+        The columns to be shown can be selected via the query string for
+        customization.
+        """
+        if self._show_column is not None:
+            return self._show_column
+        self._show_column = dict(
             id = True,
             title = True,
             bugtargetdisplayname = True,
             importance = True,
             status = True)
+
+        # If the feed is for an IBugTarget it doesn't make sense to display
+        # the selected bug target name so it is unselected.
         if IBugTarget.providedBy(self.context):
-            self.__show_column['bugtargetdisplayname'] = False
+            self._show_column['bugtargetdisplayname'] = False
+
+        # The defaults can be overridden via the query.
         override = self.request.get('show_column')
         if override:
             for column in override.split(','):
-                if len(column) == 0:
+                if column == '' or column == '-':
+                    # No column name is specified so it is ignored.
                     continue
-                elif column[0] == '-':
+                elif column.startswith('-'):
+                    # The column is turned off.
                     value = False
                     column = column[1:]
-                    if len(column) == 0:
-                        continue
                 else:
+                    # The column is turned on.
                     value = True
-                self.__show_column[column] = value
-        return self.__show_column
+                self._show_column[column] = value
+        return self._show_column
 
     def getURL(self):
         """Get the identifying URL for the feed."""
         return "%s/%s.%s" % (
-          canonical_url(self.context), self.feedname, self.format)
+            canonical_url(self.context), self.feedname, self.format)
 
     def getLogo(self):
         """Get the application-specific logo."""
         return "%s/@@/bug" % self.getSiteURL()
 
     def getPublicRawItems(self):
-        return [ bugtask
-                 for bugtask in self.getRawItems()
-                 if not bugtask.bug.private ]
+        """Private bugs are not to be shown in feeds.
+
+        The list of bugs is screened to ensure no private bugs are returned.
+        """
+        return [bugtask
+                for bugtask in self.getRawItems()
+                if not bugtask.bug.private]
 
     def getItems(self):
         """Get the items for the feed.
@@ -115,12 +140,12 @@ class BugsFeedBase(FeedBase):
         """
         if self.items is None:
             items = self.getPublicRawItems()
+            # Convert the items into their feed entry representation.
             self.items = [self.itemToFeedEntry(item) for item in items]
         return self.items
 
-    def itemToFeedEntry(self, item):
-        """Given a set of items, format them for rendering."""
-        bugtask = item
+    def itemToFeedEntry(self, bugtask):
+        """Given a bugtask, format it for rendering."""
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
@@ -136,6 +161,7 @@ class BugsFeedBase(FeedBase):
         return entry
 
     def renderHTML(self):
+        """Render the bug as HTML."""
         return ViewPageTemplateFile('templates/bug-html.pt')(self)
 
 
@@ -145,9 +171,6 @@ class BugFeed(BugsFeedBase):
     usedfor = IBug
     feedname = "bug"
 
-    def initialize(self):
-        super(BugFeed, self).initialize()
-
     def getTitle(self):
         """Title for the feed."""
         return "Bug %s" % self.context.id
@@ -155,7 +178,7 @@ class BugFeed(BugsFeedBase):
     def getRawItems(self):
         """Get the raw set of items for the feed."""
         bugtasks = list(self.context.bugtasks)
-        # All of the bug tasks are for the same bug
+        # All of the bug tasks are for the same bug.
         return bugtasks[:1]
 
 
@@ -166,6 +189,7 @@ class BugTargetBugsFeed(BugsFeedBase):
     feedname = "latest-bugs"
 
     def initialize(self):
+        """Initialize the feed."""
         super(BugTargetBugsFeed, self).initialize()
         self.delegate_view = BugTargetView(self.context, self.request)
         self.delegate_view.initialize()
@@ -186,6 +210,7 @@ class PersonBugsFeed(BugsFeedBase):
     feedname = "latest-bugs"
 
     def initialize(self):
+        """Initialize the feed."""
         super(PersonBugsFeed, self).initialize()
         self.delegate_view = PersonRelatedBugsView(self.context, self.request)
         self.delegate_view.initialize()
@@ -213,13 +238,14 @@ class SearchBugsFeed(BugsFeedBase):
     feedname = "+bugs"
 
     def initialize(self):
+        """Initialize the feed."""
         super(SearchBugsFeed, self).initialize()
-        self.delegate_view = BugsBugTaskSearchListingView(self.context, self.request)
+        self.delegate_view = BugsBugTaskSearchListingView(self.context,
+                                                          self.request)
         self.delegate_view.initialize()
 
     def getRawItems(self):
         """Perform the search."""
-
         search_context = getUtility(IMaloneApplication)
         results =  self.delegate_view.search(searchtext=None,
             context=search_context, extra_params=None)
@@ -232,4 +258,5 @@ class SearchBugsFeed(BugsFeedBase):
 
     def getURL(self):
         """Get the identifying URL for the feed."""
-        return "%s?%s" % (self.request.getURL(), self.request.get('QUERY_STRING'))
+        return "%s?%s" % (self.request.getURL(),
+                          self.request.get('QUERY_STRING'))
