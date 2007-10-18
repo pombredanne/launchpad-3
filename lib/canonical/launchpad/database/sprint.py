@@ -16,7 +16,9 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IHasLogo, IHasMugshot, IHasIcon, ILaunchpadCelebrities,
-    ISprint, ISprintSet)
+    ISprint, ISprintSet, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
@@ -26,10 +28,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
-
-from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationSort,
-    SpecificationImplementationStatus)
 
 
 class Sprint(SQLBase):

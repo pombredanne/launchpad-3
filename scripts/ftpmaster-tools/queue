@@ -17,12 +17,14 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
+from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 
 
 def main():
     parser = OptionParser()
+    logger_options(parser)
 
     parser.add_option("-Q", "--queue",
                       dest="queue_name", metavar="QUEUE", default="new",
@@ -78,6 +80,7 @@ def main():
                       help="When overriding, move package to PRIORITY")
 
     options, args = parser.parse_args()
+    log = logger(options, "ftpmaster.queue")
 
     if options.queue_name not in name_queue_map:
         print 'Unable to map queue name "%s"' % options.queue_name
@@ -95,7 +98,7 @@ def main():
     cmd_runner = CommandRunner(
         queue, options.distribution_name, options.suite_name,
         options.announcelist, no_mail, options.component_name,
-        options.section_name, options.priority_name)
+        options.section_name, options.priority_name, log=log)
 
     print ("Initialising connection to queue %s" % options.queue_name)
 

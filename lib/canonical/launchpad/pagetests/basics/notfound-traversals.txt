@@ -385,14 +385,12 @@ This is for a team:
 
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
->>> check("/~name18/+editemail", auth=True)
 >>> check("/~name18/+members")
 >>> check("/~name18/+packages")
 >>> check("/~name18/+leave", auth=True)
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
@@ -428,8 +426,6 @@ And this is for a person:
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
->>> check("/~name16/+calendar")
->>> check("/~name16/+calendar/+subscribe", auth=True)
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
@@ -439,7 +435,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+packages")
 
 >>> check("/+code")
->>> check("/+code/+portlet-importstats")
 >>> check("/+code/series", auth=True)
 >>> check("/+code/series/+bazaar-index", auth=True)
 

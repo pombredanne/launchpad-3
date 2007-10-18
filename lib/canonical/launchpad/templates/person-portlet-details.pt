@@ -1,5 +1,5 @@
 <div class="portlet" id="portlet-details"
-     tal:condition="context/is_valid_person_or_team">
+     tal:condition="context/is_valid_person">
   <h2 tal:content="context/browsername" />
 
   <div class="portletBody portletContent">

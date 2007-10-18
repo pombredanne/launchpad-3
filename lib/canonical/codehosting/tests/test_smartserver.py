@@ -294,6 +294,9 @@ class TestSessionIntegration(AvatarTestCase):
         self.assertEqual(
             os.path.abspath(os.path.dirname(plugins.__file__)),
             session.environment['BZR_PLUGIN_PATH'])
+        self.assertEqual(
+            '%s@bazaar.launchpad.dev' % self.avatar.lpname,
+            session.environment['BZR_EMAIL'])
 
         executable, arguments = session.getCommandToRun(
             'bzr serve --inet --directory=/ --allow-writes')

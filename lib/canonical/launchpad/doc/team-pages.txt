@@ -1,5 +1,7 @@
 = Team pages =
 
+== Home page ==
+
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getView

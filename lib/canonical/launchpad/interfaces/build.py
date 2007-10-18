@@ -29,6 +29,9 @@ class IBuild(Interface):
     archive = Attribute("The archive")
 
     # Properties
+    current_component = Attribute(
+        "Component where the ISourcePackageRelease related to "
+        "this build was published.")
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
