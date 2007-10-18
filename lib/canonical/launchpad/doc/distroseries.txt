@@ -1106,85 +1106,85 @@ related to a distroseries.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> distroset = getUtility(IDistributionSet)
- >>> kubuntu = distroset.getByName("kubuntu")
- >>> krunch = kubuntu.getSeries("krunch")
- >>> from canonical.lp.dbschema import SpecificationFilter
+    >>> distroset = getUtility(IDistributionSet)
+    >>> kubuntu = distroset.getByName("kubuntu")
+    >>> krunch = kubuntu.getSeries("krunch")
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be one informational specs for krunch:
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> krunch.specifications(filter=filter).count()
- 1
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> krunch.specifications(filter=filter).count()
+    1
 
 
 There are 2 completed specs for Krunch:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- thinclient-local-devices True
- usplash-on-hibernation True
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete
+    thinclient-local-devices True
+    usplash-on-hibernation True
 
 
 And there are 2 incomplete specs:
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.is_complete
+    cluster-installation False
+    revu False
 
 
 If we ask for all specs, we get them in the order of priority.
 
- >>> filter = [SpecificationFilter.ALL]
- >>> for spec in krunch.specifications(filter=filter):
- ...    print spec.priority.title, spec.name
- Essential cluster-installation
- High revu
- Medium thinclient-local-devices
- Low usplash-on-hibernation
- Undefined kde-desktopfile-langpacks
- Not krunch-desktop-plan
+    >>> filter = [SpecificationFilter.ALL]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...    print spec.priority.title, spec.name
+    Essential cluster-installation
+    High revu
+    Medium thinclient-local-devices
+    Low usplash-on-hibernation
+    Undefined kde-desktopfile-langpacks
+    Not krunch-desktop-plan
 
 
 With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
- >>> filter=[SpecificationFilter.ACCEPTED]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- cluster-installation Accepted
- revu Accepted
- thinclient-local-devices Accepted
- usplash-on-hibernation Accepted
+    >>> filter=[SpecificationFilter.ACCEPTED]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    cluster-installation Accepted
+    revu Accepted
+    thinclient-local-devices Accepted
+    usplash-on-hibernation Accepted
 
- >>> filter=[SpecificationFilter.PROPOSED]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- kde-desktopfile-langpacks Proposed
+    >>> filter=[SpecificationFilter.PROPOSED]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    kde-desktopfile-langpacks Proposed
 
- >>> filter=[SpecificationFilter.DECLINED]
- >>> for spec in krunch.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- krunch-desktop-plan Declined
+    >>> filter=[SpecificationFilter.DECLINED]
+    >>> for spec in krunch.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    krunch-desktop-plan Declined
 
 
 And if we ask just for specs, we get BOTH the incomplete and the complete
 ones that have been accepted.
 
- >>> for spec in krunch.specifications():
- ...     print spec.name, spec.is_complete, spec.goalstatus.title
- cluster-installation False Accepted
- revu False Accepted
- thinclient-local-devices True Accepted
- usplash-on-hibernation True Accepted
+    >>> for spec in krunch.specifications():
+    ...     print spec.name, spec.is_complete, spec.goalstatus.title
+    cluster-installation False Accepted
+    revu False Accepted
+    thinclient-local-devices True Accepted
+    usplash-on-hibernation True Accepted
 
 We can filter for specifications that contain specific text:
 
- >>> for spec in krunch.specifications(filter=['usb']):
- ...     print spec.name
- thinclient-local-devices
+    >>> for spec in krunch.specifications(filter=['usb']):
+    ...     print spec.name
+    thinclient-local-devices
 
 
 = Drivers =
@@ -1210,64 +1210,64 @@ We test these rules below.
 First, we look at a release where both the distribution and release have
 drivers. Kubuntu should be a good example.
 
- >>> kubuntu.driver.name
- u'jblack'
- >>> krunch.driver.name
- u'edgar'
- >>> for d in krunch.drivers:
- ...     print d.name
- edgar
- jblack
+    >>> kubuntu.driver.name
+    u'jblack'
+    >>> krunch.driver.name
+    u'edgar'
+    >>> for d in krunch.drivers:
+    ...     print d.name
+    edgar
+    jblack
 
 
 Now, we look at a release where there is a driver on the release but not on
 the distribution.
 
- >>> debian = distroset.getByName('debian')
- >>> print debian.driver
- None
- >>> print debian.owner.name
- sabdfl
- >>> sarge = debian.getSeries('sarge')
- >>> print sarge.driver.name
- jdub
- >>> for d in sarge.drivers:
- ...     print d.name
- jdub
- sabdfl
+    >>> debian = distroset.getByName('debian')
+    >>> print debian.driver
+    None
+    >>> print debian.owner.name
+    sabdfl
+    >>> sarge = debian.getSeries('sarge')
+    >>> print sarge.driver.name
+    jdub
+    >>> for d in sarge.drivers:
+    ...     print d.name
+    jdub
+    sabdfl
 
 
 Now, a release where there is no driver on the release but there is a driver
 on the distribution.
 
- >>> redhat = distroset.getByName('redhat')
- >>> print redhat.driver.name
- jblack
- >>> six = redhat.getSeries('six')
- >>> print six.driver
- None
- >>> for d in six.drivers:
- ...     print d.name
- jblack
+    >>> redhat = distroset.getByName('redhat')
+    >>> print redhat.driver.name
+    jblack
+    >>> six = redhat.getSeries('six')
+    >>> print six.driver
+    None
+    >>> for d in six.drivers:
+    ...     print d.name
+    jblack
 
 
 Finally, on a release where neither the distribution nor the release have a
 driver. Here, we expect the driver to be the owner of the distribution
 (because this is the "commonest fallback").
 
- >>> sid = debian.getSeries('sid')
- >>> print debian.driver
- None
- >>> print debian.owner.name
- sabdfl
- >>> print sid.driver
- None
- >>> print sid.owner.name
- jdub
+    >>> sid = debian.getSeries('sid')
+    >>> print debian.driver
+    None
+    >>> print debian.owner.name
+    sabdfl
+    >>> print sid.driver
+    None
+    >>> print sid.owner.name
+    jdub
 
- >>> for d in sid.drivers:
- ...     print d.name
- sabdfl
+    >>> for d in sid.drivers:
+    ...     print d.name
+    sabdfl
 
 == Lastest Uploads ==
 
@@ -1275,21 +1275,21 @@ IDistroSeries provides the 'getLatestUpload' method which returns a
 list of the last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
-  >>> warty = ubuntu['warty']
-  >>> latest_uploads = warty.getLatestUploads()
+    >>> warty = ubuntu['warty']
+    >>> latest_uploads = warty.getLatestUploads()
 
 Each element is an IDistroSeriesSourcePackageRelease instance:
 
-  >>> for upload in latest_uploads:
-  ...     print upload.name, upload.version
-  mozilla-firefox 0.9
+    >>> for upload in latest_uploads:
+    ...     print upload.name, upload.version
+    mozilla-firefox 0.9
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> breezy_autotest = ubuntutest['breezy-autotest']
-  >>> latest_uploads = breezy_autotest.getLatestUploads()
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
+    >>> latest_uploads = breezy_autotest.getLatestUploads()
 
-  >>> len(latest_uploads)
-  0
+    >>> len(latest_uploads)
+    0

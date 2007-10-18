@@ -357,7 +357,7 @@ informational.
 
  >>> kubuntu = distroset.getByName("kubuntu")
 
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
@@ -421,7 +421,7 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+ >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():

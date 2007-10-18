@@ -262,6 +262,10 @@ class TestMantis(Mantis):
             print "CALLED _postPage(%r, ...)" % (page,)
         return ''
 
+    def cleanCache(self):
+        """Clean the csv_data cache."""
+        if self.__dict__.has_key('_csv_data_cached_value'):
+            del(self._csv_data_cached_value)
 
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.

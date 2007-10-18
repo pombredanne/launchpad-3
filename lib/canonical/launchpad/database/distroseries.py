@@ -70,14 +70,14 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesSet, IHasBuildRecords, IHasQueueItems,
     IHasTranslationTemplates, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, LanguagePackType, NotFoundError)
+    ISourcePackageNameSet, LanguagePackType, NotFoundError,
+    SpecificationFilter, SpecificationSort, SpecificationImplementationStatus,
+    SpecificationGoalStatus)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.lp.dbschema import (
     ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    PackagePublishingStatus, PackageUploadStatus)
 
 
 def copy_active_translations_to_new_series(child, transaction, copier, logger):
@@ -1652,9 +1652,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self, owner=owner)
         return dar
 
-    def newMilestone(self, name, dateexpected=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IDistroSeries."""
-        return Milestone(name=name, dateexpected=dateexpected,
+        return Milestone(
+            name=name, dateexpected=dateexpected, description=description,
             distribution=self.distribution, distroseries=self)
 
     def getLatestUploads(self):

@@ -318,8 +318,8 @@
     schema="canonical.launchpad.interfaces.IMilestone"
     class="canonical.launchpad.browser.milestone.MilestoneAddView"
     facet="overview"
-    fields="name dateexpected"
-    keyword_arguments="name dateexpected"
+    fields="name dateexpected description"
+    keyword_arguments="name dateexpected description"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
     >
