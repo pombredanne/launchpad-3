@@ -30,7 +30,6 @@ __all__ = (
 'BugRelationship',
 'BugTaskImportance',
 'BuildStatus',
-'CodereleaseRelationships',
 'CveStatus',
 'DistroSeriesStatus',
 'MirrorContent',
@@ -683,41 +682,6 @@ class BinaryPackageFileType(DBSchema):
 
         This format is used on mandrake, Red Hat, Suse and other similar
         distributions.
-        """)
-
-
-class CodereleaseRelationships(DBSchema):
-    """Coderelease Relationships
-
-    Code releases are both upstream releases and distribution source package
-    releases, and in this schema we document the relationships that Launchpad
-    understands between these two.
-    """
-
-    PACKAGES = Item(1, """
-        Packages
-
-        The subject is a distribution packing of the object. For example,
-        apache2-2.0.48-1 "packages" the upstream apache2.0.48.tar.gz.
-        """)
-
-    REPLACES = Item(2, """
-        Replaces
-
-        A subsequent release in the same product series typically
-        "replaces" the prior release. For example, apache2.0.48
-        "replaces" apache2.0.47. Similarly, within the distribution
-        world, apache-2.0.48-3ubuntu2 "replaces" apache2-2.0.48-3ubuntu2.
-        """)
-
-    DERIVESFROM = Item(3, """
-        Derives From
-
-        The subject package derives from the object package. It is common
-        for distributions to build on top of one another's work, creating
-        source packages that are modified versions of the source package
-        in a different distribution, and this relationship captures that
-        concept.
         """)
 
 
