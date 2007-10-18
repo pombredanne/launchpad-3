@@ -101,6 +101,11 @@ modify private bugs.
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
 
+    >>> firefox_crashes.private = True
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'private', 'launchpad.Edit')
+
     >>> firefox_crashes.setPrivate(True, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
       ...
