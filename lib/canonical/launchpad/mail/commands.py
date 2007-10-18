@@ -676,11 +676,11 @@ class MilestoneEmailCommand(EditEmailCommand):
         """Can the user edit the Milestone field?"""
         # Adapted from BugTaskEditView.userCanEditMilestone.
 
-        # XXX: Consider refactoring this method and the
-        # userCanEditMilestone method on BugTaskEditView into a new
-        # method on IBugTask. This is non-trivial because
-        # check_permission cannot be used in a database class.
-        #   -- Gavin Panella, 2007-10-18.
+        # XXX: GavinPanella 2007-10-18 bug=154088: Consider
+        # refactoring this method and the userCanEditMilestone method
+        # on BugTaskEditView into a new method on IBugTask. This is
+        # non-trivial because check_permission cannot be used in a
+        # database class.
 
         pillar = bugtask.pillar
         bugcontact = pillar.bugcontact

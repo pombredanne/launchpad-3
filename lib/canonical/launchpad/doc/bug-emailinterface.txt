@@ -947,12 +947,13 @@ affects $path [assignee $name|$email|nobody]
               [importance $importance]
               [milestone $milestone]
 
-XXX: This section should be split into four different sections, one for
-     each command. It used to be possible to write
-     'affects /foo status confirmed', but it's not anymore.  'affects',
-     'status', 'importance' and 'assignee' are different commands, and
-     they need to be on separate lines. There's no such thing as a sub
-     command anymore.  -- Bjorn Tillenius, 2006-04-06
+XXX: BjornTillenius 2006-04-06 GavinPanella 2007-10-18 bug=153343:
+     This section should be split into four different sections, one
+     for each command. It used to be possible to write 'affects /foo
+     status confirmed', but it's not anymore.  'affects', 'status',
+     'importance' and 'assignee' are different commands, and they need
+     to be on separate lines. There's no such thing as a sub command
+     anymore.
 
 Change the state of a bug in a specific context. $path can be of
 the following form:
