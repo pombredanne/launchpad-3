@@ -28,7 +28,6 @@ from zope.app.datetimeutils import rfc1123_date
 # working prototype.
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp import LaunchpadFormView
-from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 MINUTES = 60
@@ -90,8 +89,8 @@ class FeedBase(LaunchpadFormView):
         elif path.endswith('.html'):
             return 'html'
         else:
-            raise ValueError, ('%s in %s is not atom or html'
-                % (extension, self.request['PATH_INFO']))
+            raise ValueError, ('%s is not supported'
+                % (self.request['PATH_INFO']))
 
     def getLogo(self):
         """Get the URL for the feed logo."""

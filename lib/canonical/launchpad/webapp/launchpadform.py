@@ -25,8 +25,8 @@ from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
 from canonical.launchpad.webapp.interfaces import (
-    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
-    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
+    IAlwaysSubmittedWidget, ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import (

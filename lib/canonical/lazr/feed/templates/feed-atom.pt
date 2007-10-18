@@ -2,15 +2,19 @@
 <!DOCTYPE feed [
 <!ENTITY nbsp "&#160;">
 ]>
-<tal:comment condition="nothing">
+
+<!--
 XXX: Edwin 2007-10-15 bug=153406 Doctype not working for some reason.
+XXX: bac   2007-10-17 Since the 'xmlns:tal' has not been declared yet this
+     comment defies the standard by using the unrecommended comment
+     delimiter.
 <!DOCTYPE feed [
 <!ENTITY % HTMLlat1 PUBLIC
     "-//W3C//ENTITIES Latin 1 for XHTML//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
 %HTMLlat1;
 ]>
-</tal:comment>
+-->
 
 <feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:tal="http://xml.zope.org/namespaces/tal"

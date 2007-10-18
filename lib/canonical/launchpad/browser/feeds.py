@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IPillarNameSet,
     NotFoundError,
     )
-from canonical.launchpad.layers import FeedsLayer, BugsLayer
+from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     canonical_name, canonical_url, Navigation, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView

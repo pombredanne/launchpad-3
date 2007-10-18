@@ -8,7 +8,6 @@ import inspect
 from zope.interface import Interface, implements
 from zope.component import getUtility
 import zope.component.servicenames
-from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
@@ -22,7 +21,6 @@ from zope.app.component.metaconfigure import (
     handler, adapter, utility, view, PublicPermission)
 
 from zope.app.component.contentdirective import ContentDirective
-from zope.app.component.interface import provideInterface
 from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
@@ -35,16 +33,12 @@ from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
 
-from zope.app.publisher.browser.metaconfigure import (
-    defaultView as original_defaultView)
-
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb, IAuthorization,
-    IBreadcrumbProvider)
+    IContextMenu, IAuthorization, IBreadcrumbProvider)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
 from canonical.launchpad.layers import FeedsLayer
