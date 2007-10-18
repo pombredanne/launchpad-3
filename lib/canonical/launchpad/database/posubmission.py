@@ -104,7 +104,7 @@ class POSubmissionSet:
                 JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
                 JOIN POTemplate ON
                     POTMsgSet.potemplate = POTemplate.id AND
-                    POTemplate.iscurrent IS TRUE
+                    POTemplate.iscurrent
                 LEFT JOIN ProductSeries ON
                     POTemplate.productseries = ProductSeries.id
                 LEFT JOIN Product ON
@@ -115,8 +115,8 @@ class POSubmissionSet:
                     DistroRelease.distribution = Distribution.id
                 WHERE
                     %(one_of_ours)s AND
-                    (Product.official_rosetta IS TRUE OR
-                     Distribution.official_rosetta IS TRUE)
+                    (Product.official_rosetta OR
+                     Distribution.official_rosetta)
                 """ % parameters
 
             cur.execute(query)
@@ -152,7 +152,7 @@ class POSubmissionSet:
             JOIN POFile ON POMsgSet.pofile = POFile.id
             JOIN POTemplate ON
                     POFile.potemplate = POTemplate.id AND
-                    POTemplate.iscurrent IS TRUE
+                    POTemplate.iscurrent
             LEFT JOIN ProductSeries ON
                 POTemplate.productseries = ProductSeries.id
             LEFT JOIN Product ON
@@ -166,8 +166,8 @@ class POSubmissionSet:
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
                 NOT POMsgSet.isfuzzy AND
                 NOT %(one_of_ours)s AND
-                (Product.official_rosetta IS TRUE OR
-                 Distribution.official_rosetta IS TRUE)
+                (Product.official_rosetta OR
+                 Distribution.official_rosetta)
             """ % parameters)
         cur.execute(
             "CREATE INDEX %(temp_table)s_idx ON %(temp_table)s(id)"
