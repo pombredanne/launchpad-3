@@ -229,6 +229,8 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
 
 If mirror_request_time is NULL, then mirroring of the branch is disabled.
 
+(First we make a branch which has a NULL mirror_request_time)
+
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> branch = getUtility(IBranchSet).new(
