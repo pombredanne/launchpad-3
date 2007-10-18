@@ -360,6 +360,8 @@ is replaced with the message '<email address hidden>'.
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='foo@staticmethod.com')
     '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='<foo@bar.com>')
+    '<email address hidden>'
 
     >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',
     ...     foo=signature)

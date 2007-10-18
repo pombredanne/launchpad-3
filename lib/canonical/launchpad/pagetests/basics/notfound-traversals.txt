@@ -393,7 +393,6 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
@@ -429,8 +428,6 @@ And this is for a person:
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
->>> check("/~name16/+calendar")
->>> check("/~name16/+calendar/+subscribe", auth=True)
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 

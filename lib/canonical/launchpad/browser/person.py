@@ -118,7 +118,7 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminRequestPeopleMerge,
+    IPerson, ITeam, IPollSet, IAdminRequestPeopleMerge,
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
@@ -136,7 +136,6 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
@@ -197,9 +196,7 @@ class BranchTraversalMixin:
             return super(BranchTraversalMixin, self).traverse(product_name)
 
 
-class PersonNavigation(CalendarTraversalMixin,
-                       BranchTraversalMixin,
-                       Navigation):
+class PersonNavigation(BranchTraversalMixin, Navigation):
 
     usedfor = IPerson
 
@@ -570,15 +567,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Software that %s is involved in translating' %
             self.context.browsername)
         return Link('', text, summary)
-
-    def calendar(self):
-        text = 'Calendar'
-        summary = (
-            u'%s\N{right single quotation mark}s scheduled events' %
-            self.context.browsername)
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link('+calendar', text, summary, enabled=enabled)
 
 
 class PersonBranchesMenu(ApplicationMenu):

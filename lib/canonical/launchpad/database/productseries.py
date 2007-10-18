@@ -526,10 +526,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
-    def newMilestone(self, name, dateexpected=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
-        return Milestone(name=name, dateexpected=dateexpected,
-                         product=self.product, productseries=self)
+        return Milestone(
+            name=name, dateexpected=dateexpected, description=description,
+            product=self.product, productseries=self)
 
 
 class ProductSeriesSet:

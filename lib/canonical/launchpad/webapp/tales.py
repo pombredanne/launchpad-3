@@ -1676,6 +1676,8 @@ class FormattersAPI:
         """
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
+        text = text.replace(
+            "<<email address hidden>>", "<email address hidden>")
         return text
 
     def lower(self):
