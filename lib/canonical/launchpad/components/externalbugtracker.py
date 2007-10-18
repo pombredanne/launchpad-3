@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """External bugtrackers."""
 
@@ -264,7 +264,7 @@ class Bugzilla(ExternalBugTracker):
 
     def __init__(self, bugtracker, version=None):
         ExternalBugTracker.__init__(self, bugtracker)
-        self.version = version
+        self.version = self._parseVersion(version)
         self.is_issuezilla = False
 
     def _parseDOMString(self, contents):
@@ -277,6 +277,13 @@ class Bugzilla(ExternalBugTracker):
         return minidom.parseString(contents)
 
     def _probe_version(self):
+        """Retrieve and return a remote bugzilla version.
+
+        If the version cannot be parsed from the remote server
+        `UnparseableBugTrackerVersion` will be raised. If the remote
+        server cannot be reached `BugTrackerConnectError` will be
+        raised.
+        """
         version_xml = self._getPage('xml.cgi?id=1')
         try:
             document = self._parseDOMString(version_xml)
@@ -296,10 +303,39 @@ class Bugzilla(ExternalBugTracker):
                     'not find top-level bugzilla element'
                     % self.baseurl)
         version = bugzilla[0].getAttribute("version")
+        return self._parseVersion(version)
+
+    def _parseVersion(self, version):
+        """Return a Bugzilla version parsed into a tuple.
+
+        A typical tuple will be in the form (major_version,
+        minor_version), so the version string '2.15' would be returned
+        as (2, 15).
+
+        If the passed version is None, None will be returned.
+        If the version cannot be parsed `UnparseableBugTrackerVersion`
+        will be raised.
+        """
+        if version is None:
+            return None
+
+        try:
+            # Get rid of trailing -rh, -debian, etc.
+            version = version.split("-")[0]
+            # Ignore plusses in the version.
+            version = version.replace("+", "")
+            # We need to convert the version to a tuple of integers if
+            # we are to compare it correctly.
+            version = tuple(int(x) for x in version.split("."))
+        except ValueError:
+            raise UnparseableBugTrackerVersion(
+                'Failed to parse version %r for %s' %
+                (version, self.baseurl))
+
         return version
 
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugtracker.
+        """See `IExternalBugtracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
@@ -361,22 +397,22 @@ class Bugzilla(ExternalBugTracker):
         return malone_status
 
     def initializeRemoteBugDB(self, bug_ids):
-        """See ExternalBugTracker."""
+        """See `ExternalBugTracker`.
+
+        This method is overriden so that Bugzilla version issues can be
+        accounted for.
+        """
         if self.version is None:
             self.version = self._probe_version()
 
-        try:
-            # Get rid of trailing -rh, -debian, etc.
-            version = self.version.split("-")[0]
-            # Ignore plusses in the version.
-            version = version.replace("+", "")
-            # We need to convert the version to a tuple of integers if
-            # we are to compare it correctly.
-            version = tuple(int(x) for x in version.split("."))
-        except ValueError:
-            raise UnparseableBugTrackerVersion(
-                'Failed to parse version %r for %s' % (self.version, self.baseurl))
+        super(Bugzilla, self).initializeRemoteBugDB(bug_ids)
 
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        return (bug_id, self.getRemoteBugBatch([bug_id]))
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
             data = {'download_type' : 'browser',
@@ -389,7 +425,7 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'issue_id'
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
-        elif version < (2, 16):
+        elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
             bug_tag = 'bug'
@@ -402,7 +438,7 @@ class Bugzilla(ExternalBugTracker):
                     'bug_id_type' : 'include',
                     'bug_id'      : ','.join(bug_ids),
                     }
-            if version < (2, 17, 1):
+            if self.version < (2, 17, 1):
                 data.update({'format' : 'rdf'})
             else:
                 data.update({'ctype'  : 'rdf'})
@@ -1229,7 +1265,7 @@ class Trac(ExternalBugTracker):
                 return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugTracker"""
+        """See `IExternalBugtracker`"""
         status_map = {
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
@@ -1437,7 +1473,7 @@ class Roundup(ExternalBugTracker):
                     "Remote bug %s does not define a status.")
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugTracker`."""
+        """See `IExternalBugtracker`."""
         # XXX: 2007-09-04 Graham Binns
         #      We really shouldn't have to do this here because we
         #      should logically never be passed UNKNOWN_REMOTE_STATUS as
@@ -1576,7 +1612,7 @@ class SourceForge(ExternalBugTracker):
 
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugTracker`."""
+        """See `IExternalBugtracker`."""
         # XXX: 2007-09-06 Graham Binns
         #      We shouldn't have to do this, but
         #      ExternalBugTracker.updateBugWatches() will pass us
