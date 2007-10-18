@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
@@ -16,7 +17,8 @@ import unittest
 
 import transaction
 
-from bzrlib import bzrdir
+from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import FileExists
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
@@ -24,6 +26,8 @@ from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
+from canonical.codehosting.transport import branch_id_to_path
+from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
@@ -396,6 +400,16 @@ class CodeHostingTestProviderAdapter:
         return result
 
 
+def make_bazaar_branch_and_tree(db_branch):
+    """Make a dummy Bazaar branch and working tree from a database Branch."""
+    assert db_branch.branch_type == BranchType.HOSTED, (
+        "Can only create branches for HOSTED branches: %r"
+        % db_branch)
+    branch_dir = os.path.join(
+        config.codehosting.branches_root, branch_id_to_path(db_branch.id))
+    return create_branch_with_one_revision(branch_dir)
+
+
 def adapt_suite(adapter, base_suite):
     from bzrlib.tests import iter_suite_tests
     suite = unittest.TestSuite()
@@ -404,9 +418,14 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch(branch_dir):
-    os.makedirs(branch_dir)
-    tree = bzrdir.BzrDir.create_standalone_workingtree(branch_dir)
+def create_branch_with_one_revision(branch_dir):
+    """Create a dummy Bazaar branch at the given directory."""
+    if not os.path.exists(branch_dir):
+        os.makedirs(branch_dir)
+    try:
+        tree = BzrDir.create_standalone_workingtree(branch_dir)
+    except FileExists:
+        return
     f = open(branch_dir + 'hello', 'w')
     f.write('foo')
     f.close()

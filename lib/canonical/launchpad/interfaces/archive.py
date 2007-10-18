@@ -98,13 +98,11 @@ class IPPAActivateForm(Interface):
     description = Text(
         title=_("PPA contents description"), required=False,
         description=_(
-        "A short description of contents and goals of this PPA. This text "
-        "will be presented in the PPA page and will also allow other users "
-        "to find your PPA in their searches. URLs are allowed and will "
+        "A short description of this PPA. This text URLs are allowed and will "
         "be rendered as links."))
 
     accepted = Bool(
-        title=_("I have read and accepted the PPA Terms of Use."),
+        title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
 
 
