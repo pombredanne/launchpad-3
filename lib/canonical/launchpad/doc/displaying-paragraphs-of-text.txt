@@ -238,8 +238,15 @@ To check a private bug, we need to log in and set a bug to be private.
     >>> bugset = getUtility(IBugSet)
     >>> firefox_crashes = bugset.get(6)
     >>> login("test@canonical.com")
-    >>> firefox_crashes.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> current_user = getUtility(ILaunchBag).user
+    >>> firefox_crashes.setPrivate(True, current_user)
     True
+
+Bug.setPrivate adds all indirect subscribers to the bug as direct
+subscribers, but we want to see what the bug looks like if we're not a
+subscriber.
+
+    >>> firefox_crashes.unsubscribe(current_user)
 
 A private bug has a title "private bug".
 
