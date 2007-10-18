@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<metal:bug_entry metal:define-macro="feed_entry"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:lp="http://api.launchpad.net/schema"
+    xmlns:metal="http://xml.zope.org/namespaces/metal">
+
+<title tal:content="context/bug/title"></title>
+    <id tal:content="view/getId">http://api.launchpad.net/bugs/NNN#description</id>
+    <updated tal:content="context/bug/date_last_updated/isoformat">dateconstruct</updated>
+    <published tal:content="context/bug/datecreated/isoformat">{created}</published>
+    <link rel="self" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}" />
+
+    <author tal:define="person context/bug/owner"> {this is the owner}
+        <name tal:content="person/displayname"></name>
+        <uri tal:content="person/fmt:url"></uri>
+        <email tal:content="person/preferredemail/email"></email>
+    </author>
+
+    <lp:private tal:content="context/bug/private">False</lp:private>
+    <lp:security_related tal:content="context/bug/security_related">False</lp:security_related>
+
+    <category tal:repeat="tag context/bug/tags"
+              tal:attributes="term tag"/>
+
+    <content type="text" tal:content="context/bug/description"></content>
+
+    <link rel="duplicate"
+        tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/duplicateof/id}"
+        tal:condition="context/bug/duplicateof" />
+    <link rel="tasks" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}/tasks" />
+    <link rel="attachments" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}/attachments" />
+    <link rel="nominations" tal:attributes="href string:http://api.launchpad.net/bugs/${context/bug/id}/nominations" />
+    <link rel="watches" href="http://api.launchpad.net/bugs/NNN/watches" />
+    <link rel="CVEs" href="http://api.launchpad.net/bugs/NNN/CVEs" />
+    <link rel="branches" href="http://api.launchpad.net/bugs/NNN/branches" />
+    <link rel="history" href="http://api.launchpad.net/bugs/NNN/history" />
+    <link rel="blueprints" href="http://api.launchpad.net/bugs/NNN/blueprints"/>
+    <link rel="questions" href="http://api.launchpad.net/bugs/NNN/questions" />
+    <link rel="subscribers" href="http://api.launchpad.net/bugs/NNN/subscribers" />
+
+
+<link rel="comments" href="http://api.launchpad.net/bugs/NNN/comments" />
+<tal:comment condition="nothing">
+These should be served from the document at the other end of the link.
+<entry tal:repeat="comment view/getBugCommentsForDisplay">
+    <published tal:content="comment/datecreated/isoformat">{comment date}</published>
+    <title tal:content="comment/title"></title>
+    <author tal:define="person comment/owner">
+        <name tal:content="person/displayname"></name>
+        <uri tal:content="person/fmt:url"></uri>
+        <email tal:content="person/preferredemail/email"></email>
+    </author>
+    <content tal:content="comment/text_for_display"></content>
+    <id>http://api.launchpad.net/bugs/NNN/comments/NN</id>
+    <link rel="self" href="http://api.launchpad.net/bugs/NNN/comments/NN"/>
+    <updated tal:content="comment/datecreated/isoformat">{same as created}</updated>
+</entry>
+</tal:comment>
+</metal:bug_entry>

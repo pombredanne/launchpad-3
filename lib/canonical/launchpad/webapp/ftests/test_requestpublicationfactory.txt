@@ -39,6 +39,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://code.launchpad.dev/
     althosts:
     ----
+    feeds @ feeds.launchpad.dev
+    rooturl: http://feeds.launchpad.dev/
+    althosts:
+    ----
     mainsite @ launchpad.dev
     rooturl: http://launchpad.dev/
     althosts: localhost
@@ -83,6 +87,7 @@ hostname is handled by this Launchpad instance:
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
+    feeds.launchpad.dev
     launchpad.dev
     localhost
     openid.launchpad.dev
@@ -157,6 +162,24 @@ chosen.
     >>> publicationfactory is PublicXMLRPCPublication
     True
     >>> requestfactory.requestfactory is PublicXMLRPCRequest
+    True
+
+If we pass the Feeds host name, FeedsPublication will be chosen.
+
+    >>> environment = {'HTTP_HOST': 'feeds.launchpad.dev'}
+    >>> factory = LaunchpadRequestPublicationFactory()
+    >>> factory.canHandle(environment)
+    True
+
+    >>> from canonical.launchpad.webapp.servers import FeedsPublication
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     FeedsBrowserRequest, ApplicationServerSettingRequestFactory)
+    >>> requestfactory, publicationfactory = factory()
+    >>> type(requestfactory) is ApplicationServerSettingRequestFactory
+    True
+    >>> requestfactory.requestfactory is FeedsBrowserRequest
+    True
+    >>> publicationfactory is FeedsPublication
     True
 
 If the given host name isn't one of the configured host names,
