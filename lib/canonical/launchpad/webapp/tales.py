@@ -533,6 +533,8 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             else:
                 rootsite = name.split(':')[1]
             return self.icon(rootsite=rootsite)
+        elif name == 'badges':
+            return self.badges()
         else:
             return None
 
