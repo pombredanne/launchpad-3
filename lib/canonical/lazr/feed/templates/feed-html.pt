@@ -28,8 +28,8 @@
             </tr>
         </table>
         <tal:comment condition="nothing">
-        FeedEntry.content is a FeedTypedData object
-             which has a content attribute
+            FeedEntry.content is a FeedTypedData object
+            which has a content attribute
         </tal:comment>
         <div tal:replace="structure item/content/content">
             Bug Content from Atom Feed
