@@ -1037,6 +1037,8 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="archivepublisher">
+        <key name="dbuser" datatype="string" required="no"
+            default="lucille" />
         <key name="root" datatype="string" required="no"
             default="/var/tmp/archive/">
             <description>
