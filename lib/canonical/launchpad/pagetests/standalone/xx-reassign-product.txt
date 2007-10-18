@@ -104,8 +104,8 @@
 
   >>> firefox_productseries = firefox.serieses[0]
   >>> translationimportqueue = getUtility(ITranslationImportQueue)
-  >>> entry = translationimportqueue.getEntryByProductSeries(
-  ...     firefox_productseries)
+  >>> entry = translationimportqueue.getAllEntries(
+  ...     target=firefox_productseries)
   >>> entry[0].importer.name
   u'no-priv'
 

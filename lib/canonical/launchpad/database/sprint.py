@@ -16,20 +16,18 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IHasLogo, IHasMugshot, IHasIcon, ILaunchpadCelebrities,
-    ISprint, ISprintSet)
+    ISprint, ISprintSet, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
-from canonical.database.constants import DEFAULT 
+from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
-
-from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationSort,
-    SpecificationImplementationStatus)
 
 
 class Sprint(SQLBase):
@@ -103,7 +101,7 @@ class Sprint(SQLBase):
         #  - informational.
         #
         base = """SprintSpecification.sprint = %s AND
-                  SprintSpecification.specification = Specification.id AND 
+                  SprintSpecification.specification = Specification.id AND
                   (Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
@@ -115,7 +113,7 @@ class Sprint(SQLBase):
         if SpecificationFilter.INFORMATIONAL in filter:
             query += (' AND Specification.implementation_status = %s' %
               quote(SpecificationImplementationStatus.INFORMATIONAL))
-        
+
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
 
@@ -139,11 +137,11 @@ class Sprint(SQLBase):
         elif SpecificationFilter.DECLINED in filter:
             query += ' AND SprintSpecification.status = %s' % (
                 quote(SprintSpecificationStatus.DECLINED))
-        
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # Filter for specification text
         for constraint in filter:
             if isinstance(constraint, basestring):
@@ -217,7 +215,7 @@ class Sprint(SQLBase):
 
     def getSpecificationLink(self, speclink_id):
         """See `ISprint`.
-        
+
         NB: we expose the horrible speclink.id because there is no unique
         way to refer to a specification outside of a product or distro
         context. Here we are a sprint that could cover many products and/or

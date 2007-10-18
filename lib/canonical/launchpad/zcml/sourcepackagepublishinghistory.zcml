@@ -16,6 +16,10 @@
     for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
     permission="zope.Public">
     <browser:page
+      name="+listing-compact"
+      template="../templates/sourcepackagepublishinghistory-listing-compact.pt"
+      />
+    <browser:page
       name="+listing-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"
       />

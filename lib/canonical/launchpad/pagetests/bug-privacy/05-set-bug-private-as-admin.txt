@@ -1,0 +1,40 @@
+Foo Bar, an LP admin, is about to make bug #2 private.
+
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+
+When he does so, all currently implicit subscribers will be made
+explicit. There are two implicit subscribers.
+
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     print_direct_subscribers, print_indirect_subscribers)
+
+    >>> print_direct_subscribers(browser.contents)
+    Steve Alexander
+
+    >>> print_indirect_subscribers(browser.contents)
+    Sample Person
+    Ubuntu Team
+
+Foo Bar is not Cc'd on this bug, but is able to set the bug private
+anyway, because he is an admin.
+
+  >>> browser.open(
+  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+  ...     "+bug/2/+secrecy")
+  >>> browser.getControl("This bug report should be private").selected = True
+  >>> browser.getControl("Change").click()
+  >>> print browser.url
+  http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
+
+
+All the implicit subscribers have been made explicit.
+
+  >>> print_direct_subscribers(browser.contents)
+  Sample Person
+  Steve Alexander
+  Ubuntu Team
+
+  >>> print_indirect_subscribers(browser.contents)

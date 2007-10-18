@@ -1,0 +1,99 @@
+= ExternalBugTracker: Python =
+
+This covers the implementation of the ExternalBugTracker class for
+Python bugwatches.
+
+The Python bug tracker is a slight modification of the Roundup
+bugtracker and the functionality for importing bugs from it is housed
+within the Roundup ExternalBugTracker. As such, we only test the ways in
+which it differs from standard Roundup status imports. For the tests
+common to Roundup and Python instances, see
+externalbugtracker-roundup.txt
+
+
+== Status Conversion ==
+
+The basic Python bug statuses map to Launchpad bug statuses.
+Roundup.convertRemoteStatus() handles the conversion.
+
+Because Python bugtracker statuses are entirely numeric, we use the
+convert_python_status() helper function, which accepts parameters for
+status and resolution, to make the test more readable.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     Roundup)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     convert_python_status, new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> python = Roundup(new_bugtracker(
+    ...     BugTrackerType.ROUNDUP, base_url='http://bugs.python.org'))
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'None')).title
+    'New'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'accepted')).title
+    'Confirmed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'duplicate')).title
+    'Confirmed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'fixed')).title
+    'Fix Committed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'invalid')).title
+    'Invalid'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'later')).title
+    'Confirmed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'out-of-date')).title
+    'Invalid'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'postponed')).title
+    'Confirmed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'rejected')).title
+    "Won't Fix"
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'remind')).title
+    'Confirmed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'wontfix')).title
+    "Won't Fix"
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'worksforme')).title
+    'Invalid'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'None')).title
+    "Won't Fix"
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'accepted')).title
+    'Fix Committed'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'fixed')).title
+    'Fix Released'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'postponed')).title
+    "Won't Fix"
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('pending', 'None')).title
+    'Incomplete'
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('pending', 'postponed')).title
+    "Won't Fix"
+
+If the status isn't something that our Python ExternalBugTracker can
+understand, Unknown will be returned and a warning logged.
+
+    >>> python.convertRemoteStatus('7:13').title
+    WARNING:...:Unknown remote status '7:13'.
+    'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
+handles the case where we've tried to probe for a bug but didn't
+succeed. For example, if the bug number was invalid.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> python.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+

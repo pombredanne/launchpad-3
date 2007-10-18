@@ -17,30 +17,24 @@ framework.
 get_external_bugtracker is used to get an ExternalBugTracker suitable
 for a particular bugtracker.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> owner = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     get_external_bugtracker, UnknownBugTrackerTypeError)
-    >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.scripts import log
     >>> from canonical.lp.dbschema import BugTrackerType
 
-get_external_bugtracker supports three external bug tracker types:
+get_external_bugtracker supports four external bug tracker types:
 
     >>> bugtracker_types = [
     ...     BugTrackerType.BUGZILLA,
     ...     BugTrackerType.DEBBUGS,
-    ...     BugTrackerType.MANTIS]
+    ...     BugTrackerType.MANTIS,
+    ...     BugTrackerType.ROUNDUP,
+    ...     BugTrackerType.TRAC]
 
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> for bugtracker_type in bugtracker_types:
-    ...     bugtracker = BugTracker(
-    ...         name='%s-checkwatches' % (bugtracker_type.name.lower(),),
-    ...         title='%s *TESTING*' % (bugtracker_type.title,),
-    ...         bugtrackertype=bugtracker_type,
-    ...         baseurl='http://bugs.some.where/',
-    ...         summary='-', contactdetails='-',
-    ...         owner=owner)
+    ...     bugtracker = new_bugtracker(bugtracker_type)
     ...     try:
     ...         # Suppress log messages in DebBugs
     ...         log.setLevel(log.level + 100)
@@ -53,3 +47,5 @@ get_external_bugtracker supports three external bug tracker types:
     Bugzilla --> <...externalbugtracker.Bugzilla object at ...>
     Debbugs --> <...externalbugtracker.DebBugs object at ...>
     Mantis --> <...externalbugtracker.Mantis object at ...>
+    Roundup --> <...externalbugtracker.Roundup object at ...>
+    Trac --> <...externalbugtracker.Trac object at ...>

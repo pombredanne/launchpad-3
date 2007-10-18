@@ -23,13 +23,12 @@
         for="canonical.launchpad.interfaces.IBugExternalRef"
         name="+edit" />
 
-    <browser:editform
+    <browser:page
         name="+edit"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
+        for="canonical.launchpad.interfaces.IBugExternalRef"
         class="canonical.launchpad.browser.BugRelatedObjectEditView"
         permission="launchpad.AnyPerson"
         template="../templates/bug-extref-edit.pt"
-        fields="url title"
         />
 
     <!-- BugExternalRefSet -->

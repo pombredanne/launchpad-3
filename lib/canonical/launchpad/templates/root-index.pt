@@ -4,21 +4,17 @@
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getEnableRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
       pages.  However, you currently have this disabled.</p>
-      <p><button onclick="enable_beta_redirect()">Enable beta site
+      <p><button onclick="setBetaRedirect(true)">Enable beta site
       redirection</button></p>
     </tal:redirect_inhibited>
     <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getInhibitRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you will be
       redirected to the beta site when viewing Launchpad pages other
       than the front page.</p>
-      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      <p><button onclick="setBetaRedirect(false)">Disable redirection
       for 2 hours</button></p>
     </tal:redirect_enabled>
   </div>
@@ -46,36 +42,54 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2>What&#8217;s new</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.9</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 >Frequently Asked Questions: create standard answers to FAQs
-                in the Answer Tracker</a>
+              <a href="https://help.launchpad.net/BazaarSSH"
+                ><strong>Code hosting:</strong> faster code branch uploads 
+                with bzr+ssh.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/Mantis">Watch remote bugs
-                in Mantis bug trackers</a>
+              <a href="https://help.launchpad.net/KDEPlurals">
+                <strong>KDE translations:</strong> support for KDE credits 
+                and plural strings.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">File
-                downloads: make installers, documentation and other files
-                available from your project's overview page</a>
+              <a href="https://help.launchpad.net/AddingBugWatches">
+                <strong>Bug watches:</strong> streamlined bug tracker 
+                registration when adding new watches.</a>
             </li>
             <li>
-             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
-                status names</a>
+              <a href="https://help.launchpad.net/TranslationsFullExport">
+                <strong>Unified translation downloads:</strong> export all 
+                translations for a project to a single tarball.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/PPAQuickStart"
+                 ><strong>Personal Package Archives:</strong>
+                 ongoing beta of Launchpad's package
+                 build and repository hosting service.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters"
+                 ><strong>Launchpad Beta:</strong>
+                 participate in our beta program and get access to pre-release
+                 features.</a>
             </li>
           </ul>
+          <div class="discreet" style="text-align: right">
+            Updated 2007-09-21.
+            <a href="http://news.launchpad.net">More...</a>
+          </div>
         </div>
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
             <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-            <li class="product"><a href="/upstart">Upstart</a></li>
-            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
         </div>
     </div><!--main-->

@@ -1,92 +1,101 @@
-  Let's search for some requests.
+= Searching for requests = 
 
-  First of all, let's see the requests that are still pending approval:
+Let's have a look at the requests that are still pending approval.
 
-  >>> print http(r"""
-  ... GET /requests?statusfilter=PENDING&seriesfilter=any&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
-  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
-  ... Host: shipit.ubuntu.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...2...
-  ...of...
-  ...2 results...
-  ...Jeff Waugh...
-  ...Marilize Coetzee...
+    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
+    >>> browser.open('http://shipit.ubuntu.dev/requests')
+    >>> browser.getControl(name='statusfilter').value = ['PENDING']
+    >>> browser.getControl(name='seriesfilter').value = ['FEISTY']
+    >>> browser.getControl('Show').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
+    1 ... of 2 results...
+    id  Recipient...        Status
+    12  Jeff Waugh...       pending
+    13  Marilize...         pending    
 
+Now search for approved requests containing Ubuntu CDs.
 
-  Now we search for approved requests containing Ubuntu CDs.
+    >>> browser.getControl(name='statusfilter').value = ['APPROVED']
+    >>> browser.getControl(name='flavourfilter').value = ['UBUNTU']
+    >>> browser.getControl(name='seriesfilter').value = ['any']
+    >>> browser.getControl('Show').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
+    1 ... of 6 results...
+    id  Recipient...            Status
+    5   David Allouche...       approved (unshipped)
+    3   Helge Kreutzmann...     approved (unshipped)
+    19  Marilize Coetzee...     approved (unshipped)
+    1   No Privileges Person... approved (unshipped)
+    4   Robert Collins...       approved (unshipped)
+    1 ... of 6 results...
 
-  >>> print http(r"""
-  ... GET /requests?statusfilter=APPROVED&seriesfilter=any&flavourfilter=UBUNTU&orderby=daterequested&show=Show HTTP/1.1
-  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
-  ... Host: shipit.ubuntu.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...6...
-  ...of...
-  ...6 results...
-  ...Robert Collins...
-  ...approved...(unshipped)...
-  ...No Privileges Person...
-  ...approved...(unshipped)...
-  ...
+Now check the approved ones containing Kubuntu CDs.
 
+    >>> browser.getControl(name='flavourfilter').value = ['KUBUNTU']
+    >>> browser.getControl('Show').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
+    1 ... of 4 results...
+    id  Recipient...            Status
+    7   Daniel Debonzi...       approved (unshipped)
+    5   David Allouche...       approved (unshipped)
+    16  Jordi Mallach...        approved (unshipped)
+    19  Marilize Coetzee...     approved (unshipped)
 
-  Now check the approved ones containing Kubuntu CDs.
+We can also narrow our search based on someone's name or email address.
 
-  >>> print http(r"""
-  ... GET /requests?statusfilter=APPROVED&seriesfilter=any&flavourfilter=KUBUNTU&orderby=daterequested&show=Show HTTP/1.1
-  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
-  ... Host: shipit.ubuntu.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...4...
-  ...of...
-  ...4 results...
-  ...David Allouche...
-  ...approved...(unshipped)...
-  ...Jordi Mallach...
-  ...approved...(unshipped)...
-  ...
+Here we search for approved orders placed by someone whose name contains
+Kreutzmann.
 
+    >>> browser.getControl(name='flavourfilter').value = ['any']
+    >>> browser.getControl(name='statusfilter').value = ['APPROVED']
+    >>> browser.getControl(name='recipient_text').value = 'Kreutzmann'
+    >>> browser.getControl('Show').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
+    1 ... of 1 result...
+    id  Recipient...            Status
+    3   Helge Kreutzmann...     approved (unshipped)
 
-  We can also narrow our search based on someone's name or email address.
+And here we look for pending orders placed by Jeff Waugh.
 
-  Here we search for approved orders placed by someone whose name contains
-  Kreutzmann.
+    >>> browser.getControl(name='flavourfilter').value = ['any']
+    >>> browser.getControl(name='statusfilter').value = ['PENDING']
+    >>> browser.getControl(name='recipient_text').value = 'waugh'
+    >>> browser.getControl('Show').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
+    1 ... of 1 result...
+    id  Recipient...            Status
+    12  Jeff Waugh...           pending
 
-  >>> print http(r"""
-  ... GET /requests?recipient_text=Kreutzmann&statusfilter=APPROVED&seriesfilter=any&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
-  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
-  ... Host: shipit.ubuntu.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...1...
-  ...of...
-  ...1 result...
-  ...Helge Kreutzmann...
-  ...approved...
-  ...
+We can also search for requests in multiple status and order them by priority,
+recipient and the date of request.
 
+    >>> browser.getControl(name='statusfilter').value = ['all']
+    >>> browser.getControl(name='recipient_text').value = ''
+    >>> browser.getControl(name='orderby').value = ['-highpriority']
+    >>> browser.getControl('Show').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
+    1 ... of ...
+    id  Recipient...            Status
+    16  Jordi Mallach...        approved (unshipped)
+    17  James Blackwell...      approved (sent for shipping on 2006-04-01)
+    ...
+    1 ... of ...
 
-  And here we look for pending orders placed by Jeff Waugh.
+The values we specified are preserved, in case we want to do another search
+or review the values we used.
 
-  >>> print http(r"""
-  ... GET /requests?recipient_text=waugh&statusfilter=PENDING&seriesfilter=any&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
-  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
-  ... Host: shipit.ubuntu.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...1...
-  ...of...
-  ...1 result...
-  ...Jeff Waugh...
-  ...pending...
-  ...
+    >>> browser.getControl(name='statusfilter').value
+    ['all']
+    >>> browser.getControl(name='recipient_text').value
+    ''
+    >>> browser.getControl(name='orderby').value
+    ['-highpriority']
+
+Are those at the top really high priority requests? Let's check.
+
+    >>> browser.getLink('16').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/requests/16'
+    >>> browser.getControl(name='field.highpriority').value
+    True
 

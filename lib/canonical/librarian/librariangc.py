@@ -71,7 +71,7 @@ def delete_expired_blobs(con):
 
 def merge_duplicates(con):
     """Merge duplicate LibraryFileContent rows
-    
+
     This is the first step in a full garbage collection run. We assume files
     are identical if their sha1 hashes and filesizes are identical. For every
     duplicate detected, we make all LibraryFileAlias entries point to one of
@@ -351,7 +351,7 @@ def delete_unwanted_files(con):
         if content_id in all_ids:
             continue # Linked in the db - do nothing
         path = get_file_path(content_id)
-        
+
         if not os.path.exists(path):
             continue # Exists neither on disk nor in the database - do nothing
 

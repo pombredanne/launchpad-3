@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -21,13 +22,12 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugWatchSet, ICveSet, ILaunchpadCelebrities,
-    IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
-    IProductSeries, IProductSeriesBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES,
-    ISourcePackage)
+    IBug, IBugAttachmentSet, IBugBranch, IBugSet, IBugWatchSet, ICveSet,
+    IDistribution, IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IProductSeriesBugTask, ISourcePackage,
+    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -185,6 +185,7 @@ class Bug(SQLBase):
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
+    date_last_message = UtcDateTimeCol(default=None)
 
     @property
     def displayname(self):
@@ -513,14 +514,16 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, whiteboard=None):
+    def addBranch(self, branch, whiteboard=None, status=None):
         """See `IBug`."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
                 return bug_branch
+        if status is None:
+            status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard)
+            branch=branch, bug=self, whiteboard=whiteboard, status=status)
 
         notify(SQLObjectCreatedEvent(bug_branch))
 
@@ -605,6 +608,17 @@ class Bug(SQLBase):
             # production is never the same, it can be in the test suite.
             orderBy=["Message.datecreated", "Message.id",
                      "MessageChunk.sequence"])
+        chunks = list(chunks)
+
+        # Since we can't prejoin, cache all people at once so we don't
+        # have to do it while rendering, which is a big deal for bugs
+        # with a million comments.
+        owner_ids = set()
+        for chunk in chunks:
+            if chunk.message.ownerID:
+                owner_ids.add(str(chunk.message.ownerID))
+        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
+
         return chunks
 
     def getNullBugTask(self, product=None, productseries=None,
@@ -612,7 +626,7 @@ class Bug(SQLBase):
                     distroseries=None):
         """See `IBug`."""
         return NullBugTask(bug=self, product=product,
-                           productseries=productseries, 
+                           productseries=productseries,
                            sourcepackagename=sourcepackagename,
                            distribution=distribution,
                            distroseries=distroseries)

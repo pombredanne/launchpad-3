@@ -3,15 +3,14 @@
 First, we need to ensure that we can see the distroseries translations
 page, and that it has all the data we are expecting, in terms of languages.
 
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+translations')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+translations'
+  >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
+  ...     '+translations')
   >>> 'Translation status by language' in browser.contents
   True
-  >>> browser.getLink('Catalan')
-  <Link text='Catalan' url='http://launchpad.dev/ubuntu/hoary/+lang/ca'>
-  >>> browser.getLink('Xhosa')
-  <Link text='Xhosa' url='http://launchpad.dev/ubuntu/hoary/+lang/xh'>
+  >>> print browser.getLink('Catalan').url
+  http://translations.launchpad.dev/ubuntu/hoary/+lang/ca
+  >>> print browser.getLink('Xhosa').url
+  http://translations.launchpad.dev/ubuntu/hoary/+lang/xh
   >>> browser.getLink('Afrihili')
   Traceback (most recent call last):
   ...
@@ -23,34 +22,32 @@ our browser speaks Afrihili, and since the user is anonymous the system will
 put Afrihili into the list of "preferred languages".
 
   >>> browser.addHeader('Accept-Language', 'en-us,en;q=0.7,afh;q=0.3')
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+translations')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+translations'
+  >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
+  ...     '+translations')
   >>> 'Translation status by language' in browser.contents
   True
-  >>> browser.getLink('Catalan')
-  <Link text='Catalan' url='http://launchpad.dev/ubuntu/hoary/+lang/ca'>
-  >>> browser.getLink('Xhosa')
-  <Link text='Xhosa' url='http://launchpad.dev/ubuntu/hoary/+lang/xh'>
-  >>> browser.getLink('Afrihili')
-  <Link text='Afrihili' url='http://launchpad.dev/ubuntu/hoary/+lang/afh'>
+  >>> print browser.getLink('Catalan').url
+  http://translations.launchpad.dev/ubuntu/hoary/+lang/ca
+  >>> print browser.getLink('Xhosa').url
+  http://translations.launchpad.dev/ubuntu/hoary/+lang/xh
+  >>> print browser.getLink('Afrihili').url
+  http://translations.launchpad.dev/ubuntu/hoary/+lang/afh
 
 If we select Croatian, we would expect to see the list of source package
 templates, and in the sample data we should have a croatian pofile for
 pmount. Note that we should also have an empty pofile (really a dummy
 pofile) for evolution-2.2
 
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+lang/hr?batch=2')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+lang/hr?batch=2'
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/hr?batch=2')
   >>> 'Croatian' in browser.contents
   True
   >>> 'Programs you can translate' in browser.contents
   True
-  >>> browser.getLink('evolution-2.2')
-  <Link text='evolution-2.2' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/hr/+translate'>
-  >>> browser.getLink('man')
-  <Link text='man' url='http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man/hr/+translate'>
+  >>> print browser.getLink('evolution-2.2').url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/hr/+translate
+  >>> print browser.getLink('man').url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man/hr/+translate
 
 pmount and pkgconf-mozilla are not in this page, because it belongs to the next batch.
 
@@ -66,26 +63,22 @@ pmount and pkgconf-mozilla are not in this page, because it belongs to the next 
 Let's go to next page.
 
   >>> browser.getLink('Next').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+lang/hr/+index?start=2&batch=2'
 
 Now, we have the other man and pkgconf-mozilla:
 
-  >>> browser.getLink('man')
-  <Link text='man' url='http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/man/hr/+translate'>
-  >>> browser.getLink('pkgconf-mozilla')
-  <Link text='pkgconf-mozilla' url='http://launchpad.dev/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate'>
+  >>> print browser.getLink('man').url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/man/hr/+translate
+  >>> print browser.getLink('pkgconf-mozilla').url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate
 
 Let's go to next page.
 
   >>> browser.getLink('Next').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+lang/hr/+index?start=4&batch=2'
 
 And finally, we will get pmount.
 
-  >>> browser.getLink('pmount')
-  <Link text='pmount' url='http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate'>
+  >>> print browser.getLink('pmount').url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate
 
 With its latest translator.
 
@@ -112,10 +105,10 @@ last translator is displayed.
 There are no translations yet for pmount into Portuguese. Carlos has
 decided to start contributing translations to that package.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate'
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/'
+  ...     '+pots/pmount/pt_BR/+translate')
 
 Then he decides that he only wants to filter on untranslated entries (he's
 not aware that this translation is actually empty, i.e. there is no such PO
@@ -123,8 +116,8 @@ file):
 
   >>> browser.getControl(name='show', index=1).value = ['untranslated']
   >>> browser.getControl('Filter').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=untranslated'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=untranslated
   >>> '10.' in browser.contents
   True
 
@@ -135,8 +128,8 @@ Now, lets also check that fuzzy entries show up as well.
 
   >>> browser.getControl(name='show', index=1).value = ['need_review']
   >>> browser.getControl('Filter').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=need_review'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=need_review
   >>> "There are no messages that match this filtering." in browser.contents
   True
 
@@ -144,8 +137,7 @@ Finally, lets also check that translated entries show up as well.
 
   >>> browser.getControl(name='show', index=1).value = ['translated']
   >>> browser.getControl('Filter').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated
   >>> "There are no messages that match this filtering." in browser.contents
   True
-

@@ -67,6 +67,18 @@ status in that context. The forms are hidden initially using CSS.
   ...Woody...
   ...Save Changes...
 
+Alongside the form is a table displaying details about the context, including
+the latest release if it is a distribution package.
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1")
+  >>> print extract_text(find_tag_by_id(user_browser.contents, 'task17'))
+  Affecting: mozilla-firefox (Ubuntu)
+  Filed here by: Foo Bar
+  When: 2004-01-17
+  Assigned: 2005-01-17
+  ...
+
 The bug page ends with links to report another bug, and to list open bugs.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')

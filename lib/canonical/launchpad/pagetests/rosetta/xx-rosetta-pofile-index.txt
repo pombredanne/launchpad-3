@@ -2,6 +2,7 @@ Test to check the POFile index page list all contributors as it should.
 
   >>> print http(r"""
   ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -20,6 +21,7 @@ And it should work also even when we don't have that POFile created in our datab
 
   >>> print http(r"""
   ... GET /netapplet/trunk/+pots/netapplet/af HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...

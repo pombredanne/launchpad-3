@@ -1,14 +1,29 @@
 <form
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
   method="post"
   enctype="multipart/form-data">
   <p
-    tal:condition="view/getErrorMessage"
+    tal:condition="view/errors"
     class="error message"
     i18n:translate=""
-    tal:content = "view/getErrorMessage"
-  />
+  >
+    <tal:block condition="python:len(view.errors) > 1">
+      There are <tal:count content="view/errors/count:len" /> errors in the
+      data you entered. Please fix them and try again.
+    </tal:block>
+    <tal:block condition="python:len(view.errors) == 1">
+      There is 1 error in the data you entered. Please fix it and try again.
+    </tal:block>
+
+    <tal:block
+      condition="view/form_wide_errors"
+      repeat="error view/form_wide_errors">
+      <tal content="error" /><br />
+    </tal:block>
+  </p>
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
@@ -80,37 +95,46 @@
     <table>
       <tal:distrotask
         condition="python:context.distribution or context.distroseries"
+        define="error python:view.getWidgetError('sourcepackagename')"
       >
         <tr>
           <td>
             <label
-              tal:attributes="for view/sourcepackagename_widget/name"
-              tal:content="view/sourcepackagename_widget/label"
+              tal:attributes="for view/widgets/sourcepackagename/name"
+              tal:content="view/widgets/sourcepackagename/label"
             >Source package name</label>
           </td>
         </tr>
-        <tr>
-          <td tal:define="widget nocall:view/sourcepackagename_widget">
-            <metal:content
-              use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
+        <tr tal:attributes="class python:error and 'error' or None">
+          <td>
+            <tal:widget content="structure view/widgets/sourcepackagename" />
+            <div tal:condition="error"
+                class="message"
+                tal:content="error">An error in sourcepackagename widget.
+            </div>
           </td>
         </tr>
       </tal:distrotask>
-      <tal:upstreamtask condition="python:context.product"
-                        define="omit_required default;
-                                widget nocall:view/product_widget|nothing">
+
+      <tal:upstreamtask
+          condition="python:context.product"
+          define="omit_required default;
+                  error python:view.getWidgetError('product')">
         <tr>
           <td colspan="2">
             <label style="font-weight: bold"
-              tal:attributes="for widget/name"
-              tal:content="widget/label"
+              tal:attributes="for view/widgets/product/name"
+              tal:content="view/widgets/product/label"
             >Upstream project</label>
           </td>
         </tr>
-        <tr>
+        <tr tal:attributes="class python:error and 'error' or None">
           <td colspan="2" style="white-space: nowrap">
-            <metal:content
-              use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
+            <tal:widget content="structure view/widgets/product" />
+            <div tal:condition="error"
+                class="message"
+                tal:content="error">An error in product widget.
+            </div>
           </td>
         </tr>
       </tal:upstreamtask>
@@ -119,33 +143,41 @@
       <tr>
         <td>
           <label style="font-weight: bold"
-            tal:attributes="for view/status_widget/name"
-            tal:content="view/status_widget/label"
+            tal:attributes="for view/widgets/status/name"
+            tal:content="view/widgets/status/label"
           >Status</label>
         </td>
         <td>
           <label style="font-weight: bold"
-            tal:attributes="for view/importance_widget/name"
-            tal:content="view/importance_widget/label"
+            tal:attributes="for view/widgets/importance/name"
+            tal:content="view/widgets/importance/label"
           >Importance</label>
         </td>
-        <td tal:condition="view/milestone_widget">
+        <td tal:condition="view/widgets/milestone">
           <label style="font-weight: bold"
-            tal:attributes="for view/milestone_widget/name"
-            tal:content="view/milestone_widget/label"
+            tal:attributes="for view/widgets/milestone/name"
+            tal:content="view/widgets/milestone/label"
           >Target</label>
         </td>
       </tr>
       <tr>
-        <td tal:content="structure view/status_widget" />
-        <td title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
-          <span tal:content="structure view/importance_widget" />
+        <td tal:content="structure view/widgets/status" />
+        <td title="Changeable only by a project maintainer or bug contact">
+          <img
+            tal:condition="not:view/userCanEditImportance"
+            alt=""
+            src="/@@/read-only"
+          />
+          <tal:widget content="structure view/widgets/importance" />
         </td>
-        <td tal:condition="view/milestone_widget"
-            title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
-          <span tal:content="structure view/milestone_widget" />
+        <td tal:condition="view/widgets/milestone"
+            title="Changeable only by a project maintainer or bug contact">
+          <img
+            tal:condition="not:view/userCanEditMilestone"
+            alt=""
+            src="/@@/read-only"
+          />
+          <tal:widget content="structure view/widgets/milestone" />
         </td>
       </tr>
     </table>
@@ -153,26 +185,28 @@
       <tr>
         <td>
           <label style="font-weight: bold"
-            tal:attributes="for view/assignee_widget/name"
-            tal:content="view/assignee_widget/label"
+            tal:attributes="for view/widgets/assignee/name"
+            tal:content="view/widgets/assignee/label"
           />
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/assignee_widget" colspan="2" />
+        <td tal:content="structure view/widgets/assignee"
+          colspan="2" style="white-space: nowrap" />
       </tr>
     </table>
     <table tal:condition="not:context/target_uses_malone">
       <tr>
         <td>
           <label
-            tal:attributes="for view/bugwatch_widget/name"
+            tal:attributes="for view/widgets/bugwatch/name"
             style="white-space: nowrap"
           >Remote Watch</label>
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/bugwatch_widget" colspan="2" />
+        <td tal:content="structure view/widgets/bugwatch"
+          colspan="2" style="white-space: nowrap" />
       </tr>
       <tr>
         <td class="formHelp" colspan="2">
@@ -225,9 +259,9 @@
   <div class="actions" tal:condition="context/required:launchpad.Edit">
     <input
       type="submit"
-      name="FORM_SUBMIT"
       value="Save Changes"
       i18n:attributes="value submit-button"
+      tal:attributes="name string:${view/prefix}.actions.save"
     />
   </div>
 </form>

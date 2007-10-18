@@ -19,11 +19,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingPocket)
+    ArchivePurpose, BuildStatus, PackagePublishingPocket,
+    PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
@@ -66,6 +69,31 @@ class Build(SQLBase):
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead.
         return BuildQueue.selectOneBy(build=self)
+
+    @property
+    def current_component(self):
+        """See `IBuild`."""
+        pub = self._currentPublication()
+        if pub is not None:
+            return pub.component
+        return self.sourcepackagerelease.component
+
+    def _currentPublication(self):
+        """See `IBuild`."""
+        allowed_status = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        query = """
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.status IN %s
+        """ % sqlvalues(
+            self.distroseries, self.sourcepackagerelease,
+            self.archive, allowed_status)
+
+        return SourcePackagePublishingHistory.selectFirst(
+            query, orderBy='-datecreated')
 
     @property
     def changesfile(self):
@@ -130,16 +158,19 @@ class Build(SQLBase):
         from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
             import (DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp) 
+            self.distroarchseries, bp)
             for bp in self.binarypackages]
 
     @property
     def can_be_retried(self):
         """See `IBuild`."""
-        # check if the build would be properly collected if it was
-        # reset. Do not reset denied builds.
-        if (self.is_trusted and not
-            self.distroseries.canUploadToPocket(self.pocket)):
+        # First check that the slave scanner would pick up the build record
+        # if we reset it.  Untrusted and Partner builds are always ok.
+        if (self.is_trusted and
+            self.archive.purpose != ArchivePurpose.PARTNER and
+            not self.distroseries.canUploadToPocket(self.pocket)):
+            # The slave scanner would not pick this up, so it cannot be
+            # re-tried.
             return False
 
         failed_buildstates = [
@@ -149,6 +180,8 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOUPLOAD,
             ]
 
+        # If the build is currently in any of the failed states,
+        # it may be retried.
         return self.buildstate in failed_buildstates
 
     @property
@@ -163,6 +196,15 @@ class Build(SQLBase):
             "value is not suitable for this build record (%d)"
             % self.id)
         return self.datebuilt - self.buildduration
+
+    @property
+    def package_upload(self):
+        """See `IBuild`."""
+        packageuploadbuild = PackageUploadBuild.selectOneBy(build=self.id)
+        if packageuploadbuild is None:
+            return None
+        else:
+            return packageuploadbuild.packageupload
 
     def retry(self):
         """See `IBuild`."""
@@ -186,37 +228,21 @@ class Build(SQLBase):
                 return binpkg
         raise NotFoundError, 'No binary package "%s" in build' % name
 
-    def createBinaryPackageRelease(self, binarypackagename, version,
-                                   summary, description,
-                                   binpackageformat, component,
-                                   section, priority, shlibdeps,
-                                   depends, recommends, suggests,
-                                   conflicts, replaces, provides,
-                                   essential, installedsize,
-                                   copyright, licence,
-                                   architecturespecific):
-        """See `IBuild`."""
-        return BinaryPackageRelease(build=self,
-                                    binarypackagename=binarypackagename,
-                                    version=version,
-                                    summary=summary,
-                                    description=description,
-                                    binpackageformat=binpackageformat,
-                                    component=component,
-                                    section=section,
-                                    priority=priority,
-                                    shlibdeps=shlibdeps,
-                                    depends=depends,
-                                    recommends=recommends,
-                                    suggests=suggests,
-                                    conflicts=conflicts,
-                                    replaces=replaces,
-                                    provides=provides,
-                                    essential=essential,
-                                    installedsize=installedsize,
-                                    copyright=copyright,
-                                    licence=licence,
-                                    architecturespecific=architecturespecific)
+    def createBinaryPackageRelease(
+        self, binarypackagename, version, summary, description,
+        binpackageformat, component,section, priority, shlibdeps,
+        depends, recommends, suggests, conflicts, replaces, provides,
+        essential, installedsize, architecturespecific):
+        """See IBuild."""
+        return BinaryPackageRelease(
+            build=self, binarypackagename=binarypackagename, version=version,
+            summary=summary, description=description,
+            binpackageformat=binpackageformat,
+            component=component, section=section, priority=priority,
+            shlibdeps=shlibdeps, depends=depends, recommends=recommends,
+            suggests=suggests, conflicts=conflicts, replaces=replaces,
+            provides=provides, essential=essential, installedsize=installedsize,
+            architecturespecific=architecturespecific)
 
     def createBuildQueueEntry(self):
         """See `IBuild`"""
@@ -235,6 +261,8 @@ class Build(SQLBase):
 
         extra_headers = {
             'X-Launchpad-Build-State': self.buildstate.name,
+            'X-Launchpad-Build-Component' : self.current_component.name,
+            'X-Launchpad-Build-Arch' : self.distroarchseries.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
@@ -261,7 +289,7 @@ class Build(SQLBase):
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))
-            archive_tag = '%s main archive' % self.distribution.name
+            archive_tag = '%s primary archive' % self.distribution.name
             subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
@@ -323,6 +351,7 @@ class Build(SQLBase):
             'source_url': source_url,
             'extra_info': extra_info,
             'archive_tag': archive_tag,
+            'component_tag' : self.current_component.name,
             }
         message = template % replacements
 
@@ -519,9 +548,9 @@ class BuildSet:
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose = %s AND
+            Archive.purpose != %s AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PRIMARY))
+            """ % quote(ArchivePurpose.PPA))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

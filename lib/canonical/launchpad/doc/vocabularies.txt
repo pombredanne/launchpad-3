@@ -49,24 +49,178 @@ vocabulary registry.
 
 == Enumerable Vocabularies ==
 
-Creating a new Enumeratable Vocabulary based on an existent dbschema
-constant:
+== ActiveMailingList ==
 
-    >>> from canonical.lp import dbschema
-    >>> from canonical.launchpad.webapp.vocabulary import vocab_factory
-    >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
+The active mailing lists vocabulary matches and returns only those mailing
+lists which are active.
 
-The right place to do it is in the file vocabularies/dbschema.py.
-Note: don't forget to registry your brand new instance for zope lookup
-in configure.zcml.
+    >>> list_vocabulary = vocabulary_registry.get(None, 'ActiveMailingList')
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, list_vocabulary)
+    True
+    >>> list_vocabulary.displayname
+    'Select an active mailing list.'
 
+At first, there are no active mailing lists.
 
-=== PackagingVocabulary ===
+    >>> list(list_vocabulary)
+    []
+    >>> len(list_vocabulary)
+    0
+    >>> list(list_vocabulary.search())
+    []
 
-Reflects the available constants for Packaging.packaging field.
+Mailing lists are not active when they are first registered.
 
-In cases where we won't have many rows, some of the database
-vocabularies can be enumerated over.
+    >>> # These are the convoluted steps to create some mailing lists.  We
+    >>> # can't use the shortcuts that other related tests use because those
+    >>> # leave the list in the ACTIVE state and we want to check things
+    >>> # before they get to that state.
+    >>> personset = getUtility(IPersonSet)
+    >>> ddaa = personset.getByName('ddaa')
+    >>> carlos = personset.getByName('carlos')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
+    >>> team_one = personset.newTeam(
+    ...     ddaa, 'bass-players', 'Bass Players',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> team_two = personset.newTeam(
+    ...     ddaa, 'guitar-players', 'Guitar Players',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> team_three = personset.newTeam(
+    ...     ddaa, 'drummers', 'Drummers',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> listset = getUtility(IMailingListSet)
+    >>> list_one = listset.new(team_one)
+    >>> list_two = listset.new(team_two)
+    >>> list_three = listset.new(team_three)
+    >>> list(list_vocabulary)
+    []
+    >>> len(list_vocabulary)
+    0
+    >>> list(list_vocabulary.search())
+    []
+
+Even when the mailing lists are approved, they are not yet active.
+
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> list_two.review(carlos, MailingListStatus.APPROVED)
+    >>> list_three.review(carlos, MailingListStatus.APPROVED)
+    >>> list(list_vocabulary)
+    []
+    >>> len(list_vocabulary)
+    0
+    >>> list(list_vocabulary.search())
+    []
+
+Mailing lists become active once they have been constructed by Mailman (which
+indicates so by transitioning the state to ACTIVE).
+
+    >>> list_one.startConstructing()
+    >>> list_two.startConstructing()
+    >>> list_three.startConstructing()
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_two.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> flush_database_updates()
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary)
+    [u'Bass Players', u'Drummers', u'Guitar Players']
+    >>> len(list_vocabulary)
+    3
+
+Searching for active lists is done through the vocabulary as well.  With a
+search term of None, all active lists are returned.
+
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary.search(None))
+    [u'Bass Players', u'Drummers', u'Guitar Players']
+
+If given, the search term matches the team name.
+
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary.search('player'))
+    [u'Bass Players', u'Guitar Players']
+
+The IHugeVocabulary interface also requires a search method that returns a
+CountableIterator.
+
+    >>> iter = list_vocabulary.searchForTerms('player')
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> isinstance(iter, CountableIterator)
+    True
+    >>> sorted((term.value.team.name, term.token, term.title)
+    ...         for term in iter)
+    [(u'bass-players', 'bass-players', u'Bass Players'),
+     (u'guitar-players', 'guitar-players', u'Guitar Players')]
+
+The vocabulary supports accessing mailing lists by 'term', where the term must
+be a mailing list.  The returned term's value is the mailing list object, the
+token is the team name and the title is the team's display name.
+
+    >>> term_1 = list_vocabulary.getTerm(list_two)
+    >>> term_1.value.team.displayname
+    u'Guitar Players'
+    >>> term_1.token
+    'guitar-players'
+    >>> term_1.title
+    u'Guitar Players'
+
+You cannot get a term by an other object, such as a team.
+
+    >>> list_vocabulary.getTerm(team_one)
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+Given a token, we can get back the term.
+
+    >>> term_2 = list_vocabulary.getTermByToken(term_1.token)
+    >>> term_2.value.team.displayname
+    u'Guitar Players'
+    >>> term_3 = list_vocabulary.getTerm(list_one)
+    >>> term_4 = list_vocabulary.getTermByToken(term_3.token)
+    >>> term_4.value.team.displayname
+    u'Bass Players'
+
+If you try to get the term by a token not represented in the vocabulary, you
+get an exception.
+
+    >>> list_vocabulary.getTermByToken('turntablists')
+    Traceback (most recent call last):
+    ...
+    LookupError: turntablists
+
+You can also ask whether a mailing list is contained in the vocabulary.
+
+    >>> list_three in list_vocabulary
+    True
+
+You are not allowed to ask whether a non-mailing list object is contained in
+this vocabulary.
+
+    >>> team_three in list_vocabulary
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+Non-ACTIVE mailing lists are also not contained in the vocabulary.
+
+    >>> team_four = personset.newTeam(
+    ...     ddaa, 'flautists', 'Flautists',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> list_four = listset.new(team_four)
+    >>> list_four in list_vocabulary
+    False
+
+Sometimes, the vocabulary search doesn't return any active lists.
+
+    >>> list(list_vocabulary.search('flautists'))
+    []
+    >>> list(list_vocabulary.search('cellists'))
+    []
+
 
 === DistroSeriesVocabulary ===
 
@@ -531,18 +685,21 @@ both a source and binary package of that name.
 
     >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla-firefox")
     >>> package_name_terms.count()
-    1
+    2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla-firefox', u'iceweasel huh ?')]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
 
     >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla")
     >>> package_name_terms.count()
-    2
+    3
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla', 'Not uploaded'), ('mozilla-firefox', u'iceweasel huh ?')]
+    [('mozilla', 'Not uploaded'),
+     ('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 The search does a case-insensitive, substring match.
 
@@ -560,13 +717,14 @@ All the binary packages in Launchpad.
 
     >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
     >>> len(bpn_vocabulary)
-    6
+    8
 
     >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
     >>> len(bpn_terms)
-    1
+    2
     >>> [(term.token, term.title) for term in bpn_terms]
-    [('mozilla-firefox', u'iceweasel huh ?')]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 
 === SourcePackageNameVocabulary ===
@@ -575,13 +733,14 @@ All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    16
+    17
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'), ('mozilla-firefox', u'Source of: mozilla-firefox')]
+    [('mozilla', 'Not yet built'),
+     ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
@@ -592,7 +751,7 @@ All the source packages in Launchpad.
 
 === LanguageVocabulary ===
 
-All the languages known by Launchpad
+All the languages known by Launchpad.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> language_set = getUtility(ILanguageSet)
@@ -620,7 +779,132 @@ All the languages known by Launchpad
     >>> print term.token, term.value.displayname, term.title
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
 
+A language token/code may not be used with 'in' tests.
+
+    >>> u'es' in language_vocabulary
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'in LanguageVocabulary' requires ILanguage
+    as left operand, got <type 'unicode'> instead.
+
+A LookupError is raised when a term is requested by token that does
+not exist.
+
     >>> language_vocabulary.getTermByToken('foo')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+
+=== TranslatableLanguageVocabulary ===
+
+All the translatable languages known by Launchpad. English is not
+a translatable language, nor are Languages that are not visible.
+
+The vocabulary will behave identically to LanguageVocabulary in tests
+when the language is not English and is visible.
+
+    >>> translatable_language_vocabulary = vocabulary_registry.get(
+    ...     None, 'TranslatableLanguage')
+
+    >>> es = language_set['es']
+    >>> term = translatable_language_vocabulary.getTerm(es)
+    >>> print term.token, term.value.displayname, term.title
+    es Spanish (es) Spanish (es)
+
+    >>> pt_BR = language_set['pt_BR']
+    >>> term = translatable_language_vocabulary.getTerm(pt_BR)
+    >>> print term.token, term.value.displayname, term.title
+    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> term = translatable_language_vocabulary.getTermByToken('es')
+    >>> print term.token, term.value.displayname, term.title
+    es Spanish (es) Spanish (es)
+
+    >>> term = translatable_language_vocabulary.getTermByToken('pt_BR')
+    >>> print term.token, term.value.displayname, term.title
+    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> es in translatable_language_vocabulary
+    True
+
+A language token/code may not be used with 'in' tests.
+
+    >>> u'es' in translatable_language_vocabulary
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'in TranslatableLanguageVocabulary' requires
+    ILanguage as left operand, got <type 'unicode'> instead.
+
+A LookupError is raised when a term is requested by token that does
+not exist.
+
+    >>> translatable_language_vocabulary.getTermByToken('foo')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+English and non-visible languages are not in the
+TranslatableLanguageVocabulary. English is the only visible language
+excluded from the vocabulary.
+
+    >>> translatable_languages = set(
+    ...     t.value for t in translatable_language_vocabulary)
+    >>> all_languages = set(l.value for l in language_vocabulary)
+    >>> difference = list(all_languages - translatable_languages)
+    >>> len(difference)
+    89
+
+    >>> hidden_languages = [lang for lang in difference if not lang.visible]
+    >>> len(hidden_languages)
+    88
+
+    >>> [lang.displayname for lang in difference if lang.visible]
+    [u'English (en)']
+
+The vocabulary will raise a LookupError if asked to return English.
+
+    >>> english = language_set['en']
+    >>> english in difference
+    True
+    >>> english in hidden_languages
+    False
+    >>> english.visible
+    True
+
+    >>> english in translatable_language_vocabulary
+    False
+
+    >>> translatable_language_vocabulary.getTerm(english)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> translatable_language_vocabulary.getTermByToken('en')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+The vocabulary will raise a LookupError if asked to return a
+non-visible language. Chinese (zh) is one such language.
+
+    >>> chinese = language_set['zh']
+    >>> chinese in difference
+    True
+    >>> chinese in hidden_languages
+    True
+    >>> chinese.visible
+    False
+
+    >>> chinese in translatable_language_vocabulary
+    False
+
+    >>> translatable_language_vocabulary.getTerm(chinese)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> translatable_language_vocabulary.getTermByToken('zh')
     Traceback (most recent call last):
     ...
     LookupError:...
@@ -708,7 +992,7 @@ The BranchVocabulary recognises both unique names and URLs as tokens:
     >>> term.value == branch
     True
     >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://bazaar.launchpad.net/~name12/gnome-terminal/main/')
+    ...     'http://bazaar.launchpad.dev/~name12/gnome-terminal/main/')
     >>> term.value == branch
     True
     >>> term = branch_vocabulary.getTermByToken(
@@ -892,15 +1176,31 @@ But any person without a single email address can't.
     False
 
 Any person that's already merged is not part of this vocabulary:
-# XXX kiko 2007-01-18: Here we cheat because IPerson.merged is a
-# readonly attribute.
 
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov in vocab
+    True
+
+    # Here we cheat because IPerson.merged is a readonly attribute.
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(fooperson).merged = 1
-    >>> flush_database_updates()
-    >>> fooperson in vocab
+    >>> naked_cprov = removeSecurityProxy(cprov)
+    >>> naked_cprov.merged = 1
+    >>> naked_cprov.syncUpdate()
+    >>> cprov in vocab
     False
 
+A person whose account_status is any of the statuses of
+INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
+
+    >>> from canonical.launchpad.interfaces import INACTIVE_ACCOUNT_STATUSES
+    >>> naked_cprov.merged = None
+    >>> checked_count = 0
+    >>> for status in INACTIVE_ACCOUNT_STATUSES:
+    ...     naked_cprov.account_status = status
+    ...     naked_cprov.syncUpdate()
+    ...     checked_count += int(cprov in vocab)
+    >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
+    True
 
 === NonMergedPeopleAndTeams ===
 
@@ -1013,13 +1313,18 @@ returned.
     'Select a Team'
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search(None))
-    [(u'GuadaMen', u'Foo Bar'),
+    [(u'Bass Players', u'David Allouche'),
+     (u'Drummers', u'David Allouche'),
+     (u'Flautists', u'David Allouche'),
+     (u'GuadaMen', u'Foo Bar'),
+     (u'Guitar Players', u'David Allouche'),
      (u'Hoary Gnome Team', u'Mark Shuttleworth'),
      (u'Landscape Developers', u'Sample Person'),
      (u'Launchpad Administrators', u'Mark Shuttleworth'),
      (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
      (u'Launchpad Buildd Admins', u'Foo Bar'),
      (u'Launchpad Developers', u'Foo Bar'),
+     (u'Mailing List Experts', u'Launchpad Administrators'),
      (u'Mirror Administrators', u'Mark Shuttleworth'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),
@@ -1269,7 +1574,7 @@ Inactive projects and project groups are not available.
 The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
     >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
@@ -1350,7 +1655,8 @@ context blueprint.
 
 First, we set up a product with three blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     SpecificationDefinitionStatus)
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> foobar_person = getUtility(IPersonSet).getByName('name16')
     >>> foobar_person.displayname
@@ -1407,8 +1713,8 @@ of spec_b.
     >>> [spec.name for spec in spec_b.dependencies]
     [u'spec-c']
 
-No circular dependencies - the vocabulary excludes specifications that 
-are a dependency of the context spec. 
+No circular dependencies - the vocabulary excludes specifications that
+are a dependency of the context spec.
 
     >>> spec_a in spec_b.all_blocked
     True
@@ -1421,7 +1727,7 @@ are a dependency of the context spec.
 
 This vocabulary provides the IHugeVocabulary interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, vocab)
     True
@@ -1432,10 +1738,20 @@ or fallbacks to a full text search.
 
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
-    >>> list(vocab.search('ec-b')) == [spec_b]
+    >>> list(vocab.search('spec-b')) == [spec_b]
     True
     >>> list(vocab.search('third')) == [spec_c]
     True
+
+The search method uses the SQL `LIKE` operator, with the values quoted
+appropriately. Queries conataining regual expression operators, for
+example, will simply look for the respective characters within the
+vocabulary's item (this used to be the cause of an OOPS, see
+https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
+
+    >>> list(vocab.search('*'))
+    []
+
 
 # XXX Tom Berger 2007-07-05: document more vocabularies here, particularly
 # when they break!

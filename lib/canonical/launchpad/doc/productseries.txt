@@ -8,9 +8,10 @@ translations, version control, etc. We call these entities
 ProductSeries.
 
 >>> from zope.component import getUtility
->>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.webapp.testing import verifyObject
 >>> from canonical.launchpad.interfaces import (
-...     IPersonSet, IProductSeries, IProductSet, NotFoundError, IProjectSet)
+...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet,
+...     IProjectSet, NotFoundError)
 >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
@@ -29,6 +30,13 @@ interface.
 >>> verifyObject(IProductSeries, trunk)
 True
 >>> IProductSeries.providedBy(trunk)
+True
+
+and IHasTranslationImports.
+
+>>> verifyObject(IHasTranslationImports, trunk)
+True
+>>> IHasTranslationImports.providedBy(trunk)
 True
 
 And verify that it looks like the series we think it should be.
@@ -96,7 +104,7 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
  >>> onezero = firefox.getSeries("1.0")
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
@@ -116,9 +124,9 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
- >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
- >>> from canonical.lp.dbschema import SpecificationGoalStatus
- >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+ >>> from canonical.launchpad.interfaces import (
+ ...     SpecificationDefinitionStatus, SpecificationGoalStatus,
+ ...     SpecificationImplementationStatus)
  >>> a.definition_status = b.definition_status = SpecificationDefinitionStatus.APPROVED
  >>> a.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
  >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL

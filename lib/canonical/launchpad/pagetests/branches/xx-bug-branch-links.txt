@@ -1,0 +1,178 @@
+= Bug branch links =
+
+It is possible to link bugs and branches from both the bug page and the branch
+page.
+
+
+== From the branch page ==
+
+There is a "Link to bug report" item in the actions menu that is visible
+to everybody but which links to a page restricted with the
+launchpad.AnyPerson permission.
+
+There is an action link to "Link to bug report" that is visible to all bug
+if the user is not logged in, they will be asked to log in.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> anon_browser.getLink('Link to bug report').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (...launchpad.AnyPerson')
+
+    >>> def printBugBranchLinks(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     if len(tags) == 0:
+    ...         print 'No bug branch links'
+    ...     else:
+    ...         for tag in tags:
+    ...             print extract_text(tag)
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> printBugBranchLinks(browser)
+    No bug branch links
+
+    >>> browser.getLink('Link to bug report').click()
+    >>> browser.title
+    'Link branch ...Klingon support in GNOME Terminal... to a bug report'
+
+When linking from a branch to a bug, the bug widget is used.  This
+requires the user to enter a bug number.
+
+    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Link').click()
+    >>> printBugBranchLinks(browser)
+    Bug #9: Thunderbird crashes (Unknown &ndash; Unknown) - Fix In Progress
+
+Attempting to link to the same bug again gives an error.
+
+    >>> browser.getLink('Link to bug report').click()
+    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Link').click()
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    Bug #9 is already linked to this branch
+
+The bug-branch link is also shown on the bug page.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> browser.getLink('Thunderbird crashes').click()
+
+    >>> printBugBranchLinks(browser)
+    ~name12/gnome-terminal/klingon (Experimental) - Fix In Progress
+
+If the bug is private, then the bug branch link isn't shows on the
+branch page for people that are not able to see it.  Get an admin
+to mark the bug private.
+
+    >>> admin_browser.open('http://launchpad.dev/bugs/9')
+    >>> admin_browser.getLink('Set privacy/security').click()
+    >>> admin_browser.getControl('This bug report should be private').click()
+    >>> admin_browser.getControl('Change').click()
+    >>> find_tag_by_id(admin_browser.contents, 'privatebadge')
+    <img...src="/@@/private-large".../>
+
+Sample person can see it...
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> printBugBranchLinks(browser)
+    Bug #9: Thunderbird crashes (Unknown &ndash; Unknown) - Fix In Progress
+
+... but an anonymous user cannot.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> printBugBranchLinks(anon_browser)
+    No bug branch links
+
+
+== From the bug page ==
+
+The action link on the bug page is "Add branch".  Again this links to a
+page restricted with the launchpad.AnyPerson permission.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/bugs/11')
+    >>> anon_browser.getLink('Add branch').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (...launchpad.AnyPerson')
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/bugs/11')
+    >>> printBugBranchLinks(browser)
+    No bug branch links
+
+    >>> browser.getLink('Add branch').click()
+
+    >>> browser.getControl('Branch').value = (
+    ...     "~name12/gnome-terminal/scanned")
+    >>> browser.getControl('Continue').click()
+
+    >>> printBugBranchLinks(browser)
+    ~name12/gnome-terminal/scanned (New) - Fix In Progress
+
+    >>> browser.getLink('~name12/gnome-terminal/scanned').click()
+    >>> printBugBranchLinks(browser)
+    Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
+        - Fix In Progress
+
+
+== Editing the bug status ==
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/bugs/11')
+    >>> printBugBranchLinks(browser)
+    ~name12/gnome-terminal/scanned (New) - Fix In Progress
+
+    >>> browser.getLink('Fix In Progress').click()
+    >>> print browser.title
+    Edit branch fix status
+
+Bug branch links have two editable fields:
+  * The state of the branch with respect to the bug
+  * A whiteboard
+
+The whiteboard is shown on both the bug and branch page in the
+"Related branches" and "Related bugs" sections respectively.
+
+    >>> browser.getControl('State').value = ['FIXAVAILABLE']
+    >>> browser.getControl('Whiteboard').value = (
+    ...     'This is a fix for the problem and involved:\n'
+    ...     ' * Fixing the doodad\n'
+    ...     ' * Adjusting the lambda probe')
+    >>> browser.getControl('Update').click()
+    >>> printBugBranchLinks(browser)
+    ~name12/gnome-terminal/scanned (New) - Fix Available
+      This is a fix for the problem and involved:
+       * Fixing the doodad
+       * Adjusting the lambda probe
+
+    >>> browser.getLink('~name12/gnome-terminal/scanne').click()
+    >>> printBugBranchLinks(browser)
+    Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
+        - Fix Available
+      This is a fix for the problem and involved:
+       * Fixing the doodad
+       * Adjusting the lambda probe
+
+
+== Deleting bug branch links ==
+
+The edit view for the bug branch also now has a delete button to unlink
+the bug from the branch.
+
+    >>> browser.getLink('Fix Available').click()
+    >>> print browser.getControl('Whiteboard').value
+    This is a fix for the problem and involved:
+     * Fixing the doodad
+     * Adjusting the lambda probe
+
+    >>> browser.getControl('Delete').click()
+    >>> printBugBranchLinks(browser)
+    No bug branch links

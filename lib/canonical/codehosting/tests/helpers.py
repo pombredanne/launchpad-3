@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
@@ -14,7 +15,25 @@ import signal
 import threading
 import unittest
 
-from canonical.testing import TwistedLayer, BzrlibLayer
+import transaction
+
+from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import FileExists
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.errors import SmartProtocolError
+
+from zope.component import getUtility
+from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
+
+from canonical.codehosting.transport import branch_id_to_path
+from canonical.config import config
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.interfaces import (
+    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
+    UnknownBranchTypeError)
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
@@ -58,6 +77,17 @@ class AvatarTestCase(TwistedTestCase):
         shutil.rmtree(tmpdir_root)
 
 
+def exception_names(exceptions):
+    """Return a list of exception names for the given exception list."""
+    if isinstance(exceptions, tuple):
+        names = []
+        for exc in exceptions:
+            names.extend(exception_names(exc))
+    else:
+        names = [exceptions.__name__]
+    return names
+
+
 class ServerTestCase(TrialTestCase):
 
     server = None
@@ -93,12 +123,126 @@ class ServerTestCase(TrialTestCase):
     def __str__(self):
         return self.id()
 
+    def assertTransportRaises(self, exception, f, *args, **kwargs):
+        """A version of assertRaises() that also catches SmartProtocolError.
+
+        If SmartProtocolError is raised, the error message must
+        contain the exception name.  This is to cover Bazaar's
+        handling of unexpected errors in the smart server.
+        """
+        # XXX: JamesHenstridge 2007-10-08 bug=118736
+        # This helper should not be needed, but some of the exceptions
+        # we raise (such as PermissionDenied) are not yet handled by
+        # the smart server protocol as of bzr-0.91.
+        names = exception_names(exception)
+        try:
+            f(*args, **kwargs)
+        except SmartProtocolError, inst:
+            for name in names:
+                if name in str(inst):
+                    break
+            else:
+                raise self.failureException("%s not raised" % names)
+            return inst
+        except exception, inst:
+            return inst
+        else:
+            raise self.failureException("%s not raised" % names)
+
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
 
 
-class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):
-    """Use the Twisted reactor and Bazaar's temporary directory logic."""
+class BranchTestCase(TestCaseWithTransport):
+    """Base class for tests that do a lot of things with branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self._integer = 0
+        self.cursor = cursor()
+        self.branch_set = getUtility(IBranchSet)
+
+    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
+        """Create a local branch with one revision, return the working tree."""
+        tree = self.make_branch_and_tree(base_directory)
+        self.local_branch = tree.branch
+        self.build_tree([os.path.join(base_directory, 'foo')])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        return tree
+
+    def emptyPullQueues(self):
+        transaction.begin()
+        self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
+        transaction.commit()
+
+    def getUniqueInteger(self):
+        """Return an integer unique to this run of the test case."""
+        self._integer += 1
+        return self._integer
+
+    def getUniqueString(self, prefix=None):
+        """Return a string to this run of the test case.
+
+        :param prefix: Used as a prefix for the unique string. If unspecified,
+            defaults to the name of the test.
+        """
+        if prefix is None:
+            prefix = self.id().split('.')[-1]
+        return "%s%s" % (prefix, self.getUniqueInteger())
+
+    def getUniqueURL(self):
+        """Return a URL unique to this run of the test case."""
+        return 'http://%s.example.com/%s' % (
+            self.getUniqueString(), self.getUniqueString())
+
+    def makePerson(self):
+        """Create and return a new, arbitrary Person."""
+        email = self.getUniqueString('email')
+        name = self.getUniqueString('person-name')
+        return getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+
+    def makeProduct(self):
+        """Create and return a new, arbitrary Product."""
+        owner = self.makePerson()
+        return getUtility(IProductSet).createProduct(
+            owner, self.getUniqueString('product-name'),
+            self.getUniqueString('displayname'),
+            self.getUniqueString('title'),
+            self.getUniqueString('summary'),
+            self.getUniqueString('description'))
+
+    def makeBranch(self, branch_type=None):
+        """Create and return a new, arbitrary Branch of the given type."""
+        if branch_type is None:
+            branch_type = BranchType.HOSTED
+        owner = self.makePerson()
+        branch_name = self.getUniqueString('branch')
+        product = self.makeProduct()
+        if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
+            url = None
+        elif branch_type == BranchType.MIRRORED:
+            url = self.getUniqueURL()
+        else:
+            raise UnknownBranchTypeError(
+                'Unrecognized branch type: %r' % (branch_type,))
+        return self.branch_set.new(
+            branch_type, branch_name, owner, owner, product, url)
+
+    def relaxSecurityPolicy(self):
+        """Switch to using 'PermissiveSecurityPolicy'."""
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(PermissiveSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+
+    def restrictSecurityPolicy(self):
+        """Switch to using 'LaunchpadSecurityPolicy'."""
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
 
 def deferToThread(f):
@@ -256,24 +400,14 @@ class CodeHostingTestProviderAdapter:
         return result
 
 
-class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
-    """Test adapter to run a single RepositoryTest against many codehosting
-    servers.
-    """
-
-    def __init__(self, format, servers):
-        self._repository_format = format
-        CodeHostingTestProviderAdapter.__init__(self, servers)
-
-    def adaptForServer(self, test, server):
-        from bzrlib.tests import default_transport
-        new_test = CodeHostingTestProviderAdapter.adaptForServer(
-            self, test, server)
-        new_test.transport_server = default_transport
-        new_test.transport_readonly_server = None
-        new_test.bzrdir_format = self._repository_format._matchingbzrdir
-        new_test.repository_format = self._repository_format
-        return new_test
+def make_bazaar_branch_and_tree(db_branch):
+    """Make a dummy Bazaar branch and working tree from a database Branch."""
+    assert db_branch.branch_type == BranchType.HOSTED, (
+        "Can only create branches for HOSTED branches: %r"
+        % db_branch)
+    branch_dir = os.path.join(
+        config.codehosting.branches_root, branch_id_to_path(db_branch.id))
+    return create_branch_with_one_revision(branch_dir)
 
 
 def adapt_suite(adapter, base_suite):
@@ -282,3 +416,18 @@ def adapt_suite(adapter, base_suite):
     for test in iter_suite_tests(base_suite):
         suite.addTests(adapter.adapt(test))
     return suite
+
+
+def create_branch_with_one_revision(branch_dir):
+    """Create a dummy Bazaar branch at the given directory."""
+    if not os.path.exists(branch_dir):
+        os.makedirs(branch_dir)
+    try:
+        tree = BzrDir.create_standalone_workingtree(branch_dir)
+    except FileExists:
+        return
+    f = open(branch_dir + 'hello', 'w')
+    f.write('foo')
+    f.close()
+    tree.commit('message')
+    return tree

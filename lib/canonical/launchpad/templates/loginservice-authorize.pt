@@ -1,6 +1,16 @@
-<html metal:use-macro="context/@@main_template/master" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
   <body>
-    <metal:block fill-slot="auth" tal:define="rp_info view/rp_info">
+    <metal:block fill-slot="auth">
       <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
 
       <form action="/+decide" method="post" accept-charset="UTF-8">
@@ -15,7 +25,8 @@
         <div>
             <p>
               These details will be sent to
-              <tal:title replace="rp_info/title" />:
+              <tal:title replace="view/rpconfig/displayname |
+                                  view/openid_request/trust_root" />:
             </p>
 
           <ul tal:define="fields view/sreg_fields">

@@ -31,7 +31,7 @@ echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-*
+rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* GOBUNTU-*
 rm -f all_* all.sources_*
 
 # Grab a local copy of Sources files
@@ -40,12 +40,17 @@ for component in main universe restricted; do
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu; do
+for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
+  if [ "$distro" = gobuntu ]; then
+    germinate_components=main,universe
+  else
+    germinate_components=main,universe,restricted
+  fi
   # We use the STRUCTURE file to figure out which tasks to generate.
   wget -q -O "$DISTRO-STRUCTURE" "$SEEDS/$germinate_suite/STRUCTURE"
-  for arch in i386 amd64 powerpc sparc ia64; do
+  for arch in i386 amd64 lpia powerpc sparc ia64 hppa; do
     # Grab local copy of Packages and InstallerPackages files
     for component in main universe restricted; do
       zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > "$suite"_"$component"_Packages
@@ -54,7 +59,7 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
 
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate --no-rdepends -s "$germinate_suite" -d "$suite" -c main,universe,restricted -a $arch >> germinate.output 2>&1
+    germinate --no-rdepends -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
 
     # Keep per distro/suite/arch copies of 'all' and 'all.sources' for anastacia
     cp all all_"$distro"_"$suite"_"$arch"

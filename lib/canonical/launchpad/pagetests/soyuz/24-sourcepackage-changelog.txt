@@ -22,6 +22,9 @@ Each entry in the changelog is linkified.
   Change logs for this package:
   alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
   * Placeholder
+  LP: #10
+  LP: #999
+  LP: #badid
   -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
   alsa-utils (1.0.9a-4) warty; urgency=low
   * Placeholder
@@ -41,6 +44,19 @@ Each entry in the changelog is linkified.
   >>> browser.getLink('1.0.8-1ubuntu1').url
   'http://launchpad.dev/ubuntu/warty/+source/alsa-utils/1.0.8-1ubuntu1'
 
+The LP: #<number> entries are also linkified:
+
+  >>> browser.getLink('LP: #10').url
+  'http://launchpad.dev/bugs/10'
+
+  >>> browser.getLink('LP: #999').url
+  'http://launchpad.dev/bugs/999'
+
+  >>> browser.getLink('LP: #badid').url
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
 Browsing the individual sourcepackage changelog.
 
   >>> browser.getLink('1.0.8-1ubuntu1').click()
@@ -53,3 +69,10 @@ The changelog is not linkified because it'd point to the same page.
    * Placeholder
   <BLANKLINE>
        -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300</pre>
+
+We should see some changelog information on the main package page.
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+source/pmount/")
+  >>> browser.title
+  'Source Package "pmount" in The Test Distribution'
+

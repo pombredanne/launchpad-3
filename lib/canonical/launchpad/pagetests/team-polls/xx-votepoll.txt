@@ -4,7 +4,7 @@ Foo Bar (a member of the ubuntu-team) wants to vote on the 'never-closes'
 poll, which is a poll with secret votes, which means he'll get a token that he
 must use to see/change his vote afterwards.
 
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+polls')
     >>> browser.getLink('A random poll that never closes').click()
     >>> browser.url
@@ -75,11 +75,8 @@ Foo Bar will now vote on a poll with public votes.
 For convenience we provide an option for when the user doesn't want to vote
 yet.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> team_admin_browser = Browser()
-    >>> team_admin_browser.handleErrors = False
-    >>> team_admin_browser.addHeader(
-    ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> team_admin_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> team_admin_browser.open(
     ...   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple')
     >>> not_yet_voted_message = 'You have not yet voted in this poll.'
@@ -107,10 +104,8 @@ yet.
 Only members of a given team can vote on that team's polls. Other users can't,
 even if they guess the URL for the voting page.
 
-    >>> non_member_browser = Browser()
-    >>> non_member_browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
-    >>> non_member_browser.handleErrors = False
+    >>> non_member_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
     >>> non_member_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple')
     >>> for tag in find_tags_by_class(

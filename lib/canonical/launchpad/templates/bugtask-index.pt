@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="malone">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
+>
   <body>
     <metal:portlets fill-slot="portlets">
 
@@ -12,6 +22,10 @@
     <div tal:replace="structure context/bug/@@+portlet-watch" />
     <div tal:replace="structure context/@@+portlet-search" />
     
+      <div
+        tal:condition="context/target/sourcepackagename|nothing"
+        tal:replace="structure context/target/@@+portlet-details"
+      />
     </metal:portlets>
 
 <div metal:fill-slot="main">
@@ -26,21 +40,25 @@
           tal:attributes="title context/bug/datecreated/fmt:datetime"
           tal:content="context/bug/datecreated/fmt:displaydate" />
         by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-        <strong tal:condition="context/bug/security_related"
-        >- security vulnerability</strong>
       </div>
       <div id="bug-properties" style="float: right;">
         <img
           tal:condition="context/bug/security_related"
-          alt=""
-          src="/@@/warning-large"
+          alt="(Security vulnerability)"
+          src="/@@/security-large"
+          title="This bug report is about a security vulnerability"
         />
-        <img src="/@@/locked-large" title="Private"
-             tal:condition="context/bug/private" />
-        <img src="/@@/mentoring-large" title="Mentoring available"
+        <img src="/@@/mentoring-large" title="(Mentoring available)"
              tal:condition="context/bug/mentoring_offers/count" />
-        <img src="/@@/branch-large" title="Branch available"
+        <img src="/@@/branch-large" title="(Branch available)"
              tal:condition="context/bug/bug_branches/count" />
+        <img
+          tal:condition="context/bug/private"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          title="This bug report is private"
+        />
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 
@@ -63,12 +81,17 @@
        >2 duplicates</tal:num-dupes>
     </p>
 
-  <p tal:condition="context/bug/duplicateof" class="informational message">
-    This report is a duplicate of
-    <a tal:attributes="href context/bug/duplicateof/fmt:url;
-                       title context/bug/duplicateof/title"
-       tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
-  </p>
+  <tal:duplicate-of define="duplicateof context/bug/duplicateof"
+                    condition="duplicateof">
+    <p class="informational message">
+      This report is a duplicate of
+      <a tal:condition="duplicateof/required:launchpad.View"
+         tal:attributes="href duplicateof/fmt:url; title duplicateof/title"
+         tal:content="string:bug #${duplicateof/id}">bug #42</a>
+      <span tal:condition="not:duplicateof/required:launchpad.View"
+            tal:replace="string:bug #${duplicateof/id}" />
+    </p>
+  </tal:duplicate-of>
 
       <form
         tal:condition="not:view/isReportedInContext"
@@ -90,7 +113,8 @@
         />
     </tal:loggedin>
     <tal:notloggedin condition="not:request/lp:person">
-      If you wish report it in <tal:block content="context/targetname" />,
+      If you wish report it in <tal:block
+      content="context/bugtargetdisplayname" />,
       you must <a href="+login">log in</a> first.
     </tal:notloggedin>
 
@@ -98,29 +122,46 @@
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-      <tal:branches define="bug_branches view/bug_branches"
-                  condition="bug_branches">
-        <p tal:condition="context/bug/private" class="warning message"
-        >This bug is private, so avoid adding public branches here.</p>
-        <table class="listing" id="bug_branch_details">
-          <thead>
-            <tr>
-              <th>Related Branch</th> <th>Developer</th> <th>Revision Hint</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug_branch bug_branches">
-              <td>
-                <a
-                  tal:attributes="href string:${bug_branch/fmt:url}/+status"
-                  tal:content="bug_branch/status/title"
-                >Under Development</a>
-              </td>
-              <td tal:content="bug_branch/branch/owner/displayname"></td>
-              <td tal:content="bug_branch/revision_hint"></td>
-              </tr>
-          </tbody>
-        </table>
+  <tal:branches define="bug_branches view/bug_branches"
+                condition="bug_branches">
+    <h2>Related branches</h2>
+
+<tal:bug-branches repeat="bug_branch bug_branches">
+  <div tal:define="show_edit bug_branch/required:launchpad.Edit"
+       tal:condition="bug_branch/branch/required:launchpad.View">
+    <div class="bug-branch-summary">
+      <tal:branch-ref replace="structure bug_branch/branch/fmt:link"/>
+      (<span tal:content="bug_branch/branch/lifecycle_status/title"
+      tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
+      >Experimental</span>) -
+      <tal:bug_branch_status condition="not: show_edit|nothing"
+                             replace="bug_branch/status/title"/>
+      <a tal:condition="show_edit"
+         tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
+                         onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
+        <tal:bug_branch_status replace="bug_branch/status/title"/>
+        <img src="/@@/expand"/>
+      </a>
+      <dl tal:condition="bug_branch/whiteboard"
+          tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+        <dd>
+          <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+            The whiteboard.
+          </tal:whiteboard>
+        </dd>
+      </dl>
+    </div>
+    <div tal:condition="show_edit|nothing"
+         tal:attributes="id string:bugbranch${bug_branch/id}"
+         style="display: none"
+         >
+      <dl><dd>
+        <tal:edit-form replace="structure bug_branch/@@+bug-edit"/>
+      </dd></dl>
+    </div>
+  </div>
+</tal:bug-branches>
+
       </tal:branches>
       <div class="report">
         <h2>Bug description

@@ -2,7 +2,7 @@
 
 First of all we'll create a new mirror for the Ubuntu distribution...
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> http_url = 'http://my.mirror.com/pub'
     >>> browser.getControl('Description').value = 'My own mirror'
@@ -84,15 +84,9 @@ distribution owner.
 Now one of the mirror administrators goes and make this an official mirror,
 leaving a comment on the whiteboard (which is visible to mirror admins and to
 the mirror owner, but can only be edited by mirror admins).
-
-    # XXX: matsubara 2006-05-18 bug=45226:
-    # We need to reset the Browser object to reset the headers.
-    >>> from zope.testbrowser.testing import Browser
-    >>> karl_browser = Browser()
-    >>> karl_browser.handleErrors = False
-    
-    >>> karl_browser.addHeader(
-    ...     'Authorization', 'Basic karl@canonical.com:test')
+ 
+    >>> karl_browser = setupBrowser(
+    ...     auth='Basic karl@canonical.com:test')
     >>> karl_browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> karl_browser.getLink('Mark as official').click()
@@ -113,8 +107,7 @@ the mirror owner, but can only be edited by mirror admins).
 The whiteboard can also be seen by the mirror owner, but not by anybody
 else.
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> print extract_text(find_tag_by_id(browser.contents, 'whiteboard'))
@@ -164,24 +157,18 @@ it and the +delete page will only explain why it can't be deleted.
 Also, the page in which a mirror can be deleted is only accessible to mirror
 admins --not even the mirror owner can see it.
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/archive-mirror2/+delete')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
 == Error checking ==
 
 When creating a new mirror, at least an HTTP or FTP URL must be given.
 
-    # XXX: matsubara 2006-05-18 bug=45226:
-    # We need to reset the Browser object to reset the headers.
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
     >>> browser.getControl('Location').displayValue =  ['Antarctica']

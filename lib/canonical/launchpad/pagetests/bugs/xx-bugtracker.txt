@@ -1,0 +1,178 @@
+= External bug trackers =
+
+Launchpad can link to bugs in external bug trackers. The list of bug
+trackers Launchpad knows about is accessible from the Bugs front page.
+
+  >>> user_browser.open('http://bugs.launchpad.dev/')
+  >>> user_browser.getLink('bug trackers').click()
+  >>> user_browser.title
+  'Bug trackers registered in Launchpad'
+
+Anyone logged in is able to register a new bug tracker.
+
+  >>> user_browser.getLink('Register bug tracker').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
+
+  >>> user_browser.title
+  'Register an external bug tracker'
+
+
+Supported external bug tracker types include Bugzilla, Debbugs,
+Roundup, SourceForge and Trac.  We don't provide all of these as
+options to the user.  We don't provide Debbugs because the status
+synchronisation script requires manual set up of a bug archive mirror,
+and SourceForge because there is only one instance (SourceForge.net).
+
+  >>> for control in user_browser.getControl('Bug Tracker Type').controls:
+  ...     print control.optionValue
+  Bugzilla
+  Roundup
+  Trac
+  Mantis
+
+The bug tracker name is used in URLs and certain characters (like '!')
+aren't allowed.
+
+  >>> user_browser.getControl('Name').value = 'testttrac!'
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
+  >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
+  >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
+  >>> url = 'http://trac.testing.org/tickets'
+  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Contact details').value = 'blah blah'
+  >>> user_browser.getControl('Add').click()
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...     print extract_text(message)
+  An error occurred.
+  Invalid name 'testttrac!'. Names must start with a letter or number
+  and be lowercase. The characters +, - and . are also allowed after the
+  first character.
+
+If a bug tracker is already registered with the same URL, the user is
+informed about it.
+
+  >>> user_browser.getControl('Name').value = 'testtrac'
+  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
+  >>> user_browser.getControl('Add').click()
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...     print extract_text(message)
+  An error occurred.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+
+After successfully registering the bug tracker, the user is redirect to
+the bug tracker page.
+
+  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Add').click()
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testtrac'
+
+  >>> user_browser.title
+  'Bug tracker \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d'
+
+  >>> 'Test Trac Tracker' in user_browser.contents
+  True
+  >>> 'This is a test TRAC tracker.' in user_browser.contents
+  True
+
+The `Summary` and `Contact Details` fields are optional - creating a
+bugtracker without them is acceptable.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
+  >>> user_browser.getControl('Name').value = 'test-bugzilla'
+  >>> user_browser.getControl('Title').value = 'Test Bugzilla'
+  >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
+  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.example.org/'
+  >>> user_browser.getControl('Add').click()
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
+
+  >>> from zope.component import getUtility
+  >>> from canonical.lp.dbschema import BugTrackerType
+  >>> from canonical.launchpad.interfaces import IBugTrackerSet
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> login('test@canonical.com')
+  >>> bugtrackerset = getUtility(IBugTrackerSet)
+  >>> test_tracker = bugtrackerset.getByName('testtrac')
+  >>> test_tracker.bugtrackertype == BugTrackerType.TRAC
+  True
+
+  >>> logout()
+
+If we try to add a bugtracker with the same name of a existing one, we'll get
+a nice error message.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
+
+  >>> user_browser.getControl('Name').value = 'testtrac'
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
+  >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
+  >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
+  >>> url = 'http://trac.example.org/tickets'
+  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Contact details').value = 'blah blah'
+  >>> user_browser.getControl('Add').click()
+
+  >>> message = 'testtrac is already in use by another bugtracker.'
+  >>> message in user_browser.contents
+  True
+
+And lets see if we can edit the newly added bugtracker.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
+  >>> user_browser.getLink('Change details').click()
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
+
+  >>> user_browser.title
+  'Change details for \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d bug tracker'
+
+  >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Bugzilla').click()
+  >>> user_browser.getControl(
+  ...     'Summary').value = 'This is used to be a test TRAC bug tracker.'
+
+It's not possible to change the base URL to something that another bug
+tracker uses.
+
+  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
+  >>> user_browser.getControl('Change').click()
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
+  >>> for message in get_feedback_messages(user_browser):
+  ...     print message
+  There is 1 error.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+
+After successfully editing the bug tracker information, the user is
+redirect to the bug tracker page.
+
+  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Change').click()
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/testtrac'
+
+And now the test tracker should have been updated:
+
+  >>> 'A test Bugzilla Tracker' in user_browser.contents
+  True
+  >>> 'This is used to be a test TRAC bug tracker.' in user_browser.contents
+  True
+
+  >>> login('test@canonical.com')
+  >>> test_tracker = bugtrackerset.getByName('testtrac')
+  >>> test_tracker.bugtrackertype == BugTrackerType.BUGZILLA
+  True
+
+  >>> logout()

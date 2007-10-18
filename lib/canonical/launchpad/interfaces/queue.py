@@ -162,7 +162,7 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(announce_list=None, summary_text=None, 
+    def notify(announce_list=None, summary_text=None,
         changes_file_object=None, logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 

@@ -1,11 +1,10 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser code for PO templates."""
 
 __metaclass__ = type
 
 __all__ = [
-    'BaseExportView',
     'POTemplateAdminView',
     'POTemplateEditView',
     'POTemplateFacets',
@@ -27,24 +26,23 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSOP, ProductSeriesFacets)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFile, IPOFileSet,
-    IPOExportRequestSet, IPOTemplateSubset, ITranslationImporter,
-    ITranslationImportQueue, IProductSeries, ISourcePackage, NotFoundError)
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
+    ITranslationImporter, ITranslationImportQueue, IProductSeries,
+    ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POTemplateNavigation(Navigation):
@@ -321,7 +319,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.file_extensions_with_importer):
+        if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
             translation_import_queue.addOrUpdateEntry(
                 filename, content, True, self.user,
@@ -333,8 +331,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'
                 ' soon into Launchpad. You can track its status from the'
-                ' <a href="%s">Translation Import Queue</a>' %
-                    canonical_url(translation_import_queue))
+                ' <a href="%s/+imports">Translation Import Queue</a>' %
+                    canonical_url(self.context.translationtarget))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -349,8 +347,9 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be imported soon into Launchpad. You can track its'
-                    ' status from the <a href="%s">Translation Import Queue'
-                    '</a>' % (num, canonical_url(translation_import_queue)
+                    ' status from the <a href="%s/+imports">Translation'
+                    ' Import Queue<a>' % (
+                        num, canonical_url(self.context.translationtarget)
                         )
                     )
             else:
@@ -400,65 +399,10 @@ class POTemplateAdminView(POTemplateEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class BaseExportView(LaunchpadView):
-    """Base class for PO export views."""
-
-    def initialize(self):
-        self.request_set = getUtility(IPOExportRequestSet)
-        self.processForm()
-
-    def processForm(self):
-        """Override in subclass."""
-        raise NotImplementedError
-
-    def nextURL(self):
-        self.request.response.addInfoNotification(_(
-            "Your request has been received. Expect to receive an email "
-            "shortly."))
-        self.request.response.redirect(canonical_url(self.context))
-
-    def validateFileFormat(self, format_name):
-        try:
-            return TranslationFileFormat.items[format_name]
-        except KeyError:
-            self.request.response.addErrorNotification(_(
-                'Please select a valid format for download.'))
-            return
-
-    def formats(self):
-        """Return a list of formats available for translation exports."""
-
-        class BrowserFormat:
-            def __init__(self, title, value, is_default=False):
-                self.title = title
-                self.value = value
-                self.is_default = is_default
-
-        formats = [
-            TranslationFileFormat.PO,
-            TranslationFileFormat.MO,
-        ]
-
-        for format in formats:
-            if IPOTemplate.providedBy(self.context):
-                source_file_format = self.context.source_file_format
-            elif IPOFile.providedBy(self.context):
-                source_file_format = (
-                    self.context.potemplate.source_file_format)
-            else:
-                raise AssertionError('Got an unknown object')
-            is_default = (source_file_format == format)
-            yield BrowserFormat(format.title, format.name, is_default)
-
-
 class POTemplateExportView(BaseExportView):
 
     def processForm(self):
         """Process a form submission requesting a translation export."""
-
-        if self.request.method != 'POST':
-            return
-
         what = self.request.form.get('what')
         if what == 'all':
             export_potemplate = True
@@ -484,22 +428,12 @@ class POTemplateExportView(BaseExportView):
                 'of them.')
             return
 
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
-
         if export_potemplate:
-            self.request_set.addRequest(
-                self.user, self.context, pofiles, format)
-        elif pofiles:
-            self.request_set.addRequest(self.user, None, pofiles, format)
+            requested_templates = [self.context]
         else:
-            self.request.response.addErrorNotification(
-                'Please select at least one pofile or the PO template.')
-            return
+            requested_templates = None
 
-        self.nextURL()
-
+        return (requested_templates, pofiles)
 
     def pofiles(self):
         """Return a list of PO files available for export."""
@@ -523,6 +457,9 @@ class POTemplateExportView(BaseExportView):
                 browsername = pofile.language.englishname
 
             yield BrowserPOFile(value, browsername)
+
+    def getDefaultFormat(self):
+        return self.context.source_file_format
 
 
 class POTemplateSubsetURL:

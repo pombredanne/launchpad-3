@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:portlets fill-slot="portlets">
@@ -23,12 +29,8 @@
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
-          </a>
-        </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
+        <li tal:content="structure context/@@+help-translate-button" />
       </ul>
       <tal:packages condition="context/binarycount">
 
@@ -51,8 +53,8 @@
       <div class="left">
         <div
           class="section"
-          tal:condition="context/getLastUploads"
-          tal:content="structure context/@@+latest-uploads"
+          tal:condition="context/getLatestUploads"
+          tal:content="structure context/@@+portlet-latestuploads"
         />
         <div class="section" tal:condition="context/architectures">
           <h2>Architectures</h2>

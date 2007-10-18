@@ -12,7 +12,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
@@ -20,12 +20,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
     IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus, TranslationPermission)
 
-from canonical.lp.dbschema import (
-    TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter, SprintSpecificationStatus,
-    SpecificationImplementationStatus)
+from canonical.lp.dbschema import ImportStatus
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -38,13 +37,14 @@ from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import ProjectMilestoneSet
+from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.question import QuestionTargetSearch
+from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -341,24 +341,52 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def _getMilestones(self, only_visible):
+        """Return a list of milestones for this project.
+
+        If only_visible is True, only visible milestones are returned,
+        else all milestones.
+
+        A project has a milestone named 'A', if at least one of its
+        products has a milestone named 'A'.
+        """
+        if only_visible:
+            having_clause = 'HAVING bool_or(Milestone.visible)=True'
+        else:
+            having_clause = ''
+        query = """
+            SELECT Milestone.name, min(Milestone.dateexpected),
+                bool_or(Milestone.visible)
+                FROM Milestone, Product
+                WHERE Product.project = %s
+                    AND Milestone.product = product.id
+                GROUP BY Milestone.name
+                %s
+                ORDER BY min(Milestone.dateexpected), Milestone.name
+            """ % (self.id, having_clause)
+        cur = cursor()
+        cur.execute(query)
+        result = cur.fetchall()
+        # bool_or returns an integer, but we want visible to be a boolean
+        return shortlist(
+            [ProjectMilestone(self, name, dateexpected, bool(visible))
+             for name, dateexpected, visible in result])
+
     @property
     def milestones(self):
         """See `IProject`."""
-        return ProjectMilestoneSet().getMilestonesForProject(
-            self, only_visible=True)
+        return self._getMilestones(True)
 
     @property
     def all_milestones(self):
         """See `IProject`."""
-        return ProjectMilestoneSet().getMilestonesForProject(
-            self, only_visible=False)
+        return self._getMilestones(False)
 
     def getMilestone(self, name):
         """See `IProject`."""
-        result = ProjectMilestoneSet().getMilestonesForProject(
-            self, only_visible=False, milestone_name=name)
-        if result:
-            return result[0]
+        for milestone in self.all_milestones:
+            if milestone.name == name:
+                return milestone
         return None
 
 class ProjectSet:

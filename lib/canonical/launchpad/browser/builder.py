@@ -157,7 +157,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # BuilderSlave class added by dsilvers, but I won't release it
         # until we can test it properly, since we can only 'abort' slaves
         # in BUILDING state it does depends of the major issue for testing
-        # Auto Build System, getting slave building something sane. 
+        # Auto Build System, getting slave building something sane.
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
     def defaultBuildState(self):

@@ -267,7 +267,7 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
     """A subclass of ReconnectionDatabaseAdapter that stores its
     connection information in the central launchpad configuration.
     """
-    
+
     def __init__(self, dsn=None):
         """Ignore dsn"""
         super(SessionDatabaseAdapter, self).__init__(
@@ -433,7 +433,7 @@ class LaunchpadConnection(ReconnectingConnection):
 
     Overrides the cursor() method to return LaunchpadCursor objects.
     """
-    
+
     def cursor(self):
         return LaunchpadCursor(self)
 
@@ -483,12 +483,12 @@ class LaunchpadCursor(ReconnectingCursor):
         try:
             starttime = time()
             if os.environ.get("LP_DEBUG_SQL_EXTRA"):
-                sys.stderr.write("-" * 70 + "\n")
                 traceback.print_stack()
                 sys.stderr.write("." * 70 + "\n")
-            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
+            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
+                sys.stderr.write("-" * 70 + "\n")
             try:
                 return super(LaunchpadCursor, self).execute(
                         statement, *args, **kwargs)
@@ -591,7 +591,7 @@ def break_main_thread_db_access(*ignored):
     class BrokenConnection:
         def __getattr__(self, key):
             raise SQLOSAccessFromMainThread()
-        
+
     sqlos.connection.connCache[key] = BrokenConnection()
 
     # And prove it

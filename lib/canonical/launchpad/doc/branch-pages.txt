@@ -4,20 +4,30 @@
 
 BranchView is the general class for displaying Branches.
 
->>> from zope.component import getMultiAdapter
->>> from zope.publisher.browser import TestRequest
->>> from canonical.launchpad.interfaces import IBranchSet
->>> branchset = getUtility(IBranchSet)
->>> gterm_dev = branchset[15]
->>> pushed = branchset[25]
->>> gterm_dev_view = getMultiAdapter((gterm_dev, TestRequest()), name='+index')
->>> pushed_view = getMultiAdapter((pushed, TestRequest()), name='+index')
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branchset = getUtility(IBranchSet)
+    >>> gterm_dev = branchset[15]
+    >>> pushed = branchset[25]
+    >>> gterm_dev_view = getMultiAdapter((gterm_dev, TestRequest()), name='+index')
+    >>> pushed_view = getMultiAdapter((pushed, TestRequest()), name='+index')
 
 Each branch is associated to an URL on the Supermirror, that includes the name
 of the owner and product of the branch.
 
->>> gterm_dev_view.supermirror_url()
-u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
+If the branch does not have any revisions, then a download URL is not shown.
+
+    >>> print gterm_dev_view.bzr_download_url()
+    None
+
+Mark the branch as having revisions to see the URL.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(gterm_dev_view.context).revision_count = 5
+    >>> print gterm_dev_view.bzr_download_url()
+    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
+
 
 == Contextual branch views ==
 
@@ -29,61 +39,61 @@ associated to the branch.
 When viewing a branch listing in product context, we should display the link to
 a corresponding person.
 
->>> gterm_dev_product_view = getMultiAdapter(
-...     (gterm_dev, TestRequest()), name='+product-summary-listing')
->>> gterm_dev_product_view.show_person_link
-True
->>> gterm_dev_product_view.show_product_link
-False
+    >>> gterm_dev_product_view = getMultiAdapter(
+    ...     (gterm_dev, TestRequest()), name='+product-summary-listing')
+    >>> gterm_dev_product_view.show_person_link
+    True
+    >>> gterm_dev_product_view.show_product_link
+    False
 
 And when in a person context, we should link to the branch's product.
 
->>> gterm_dev_product_view = getMultiAdapter(
-...     (gterm_dev, TestRequest()), name='+person-summary-listing')
->>> gterm_dev_product_view.show_person_link
-False
->>> gterm_dev_product_view.show_product_link
-True
+    >>> gterm_dev_product_view = getMultiAdapter(
+    ...     (gterm_dev, TestRequest()), name='+person-summary-listing')
+    >>> gterm_dev_product_view.show_person_link
+    False
+    >>> gterm_dev_product_view.show_product_link
+    True
 
 When in a person context and the branch does not have an associated product, we
 should display none of those links.
 
->>> junk_dev = branchset[20]
->>> print junk_dev.product
-None
->>> junk_dev_person_view = getMultiAdapter(
-...     (junk_dev, TestRequest()), name='+person-summary-listing')
->>> junk_dev_person_view.show_person_link
-False
->>> junk_dev_person_view.show_product_link
-False
+    >>> junk_dev = branchset[20]
+    >>> print junk_dev.product
+    None
+    >>> junk_dev_person_view = getMultiAdapter(
+    ...     (junk_dev, TestRequest()), name='+person-summary-listing')
+    >>> junk_dev_person_view.show_person_link
+    False
+    >>> junk_dev_person_view.show_product_link
+    False
 
 == BranchEditView ==
 
 When a branch has a URL, the user is allowed to modify it. Check that the
 'url' field is present in the edit form.
 
->>> gterm_dev.url is not None
-True
->>> view = getMultiAdapter((gterm_dev, TestRequest()), name='+edit')
->>> view.setUpFields()
->>> 'url' in [field.__name__ for field in view.form_fields]
-True
+    >>> gterm_dev.url is not None
+    True
+    >>> view = getMultiAdapter((gterm_dev, TestRequest()), name='+edit')
+    >>> view.setUpFields()
+    >>> 'url' in [field.__name__ for field in view.form_fields]
+    True
 
 When a branch's URL is null, the user is not allowed to set it.
 
->>> from canonical.launchpad.interfaces import BranchType, IProductSet
->>> gterm_product = getUtility(IProductSet).getByName('gnome-terminal')
->>> from canonical.launchpad.interfaces import IPersonSet
->>> ddaa = getUtility(IPersonSet).getByName('ddaa')
->>> no_url = branchset.new(
-...     BranchType.HOSTED, 'no_url', ddaa, ddaa, gterm_product, None)
->>> no_url.url is None
-True
->>> view = getMultiAdapter((no_url, TestRequest()), name='+edit')
->>> view.setUpFields()
->>> 'url' in [field.__name__ for field in view.form_fields]
-False
+    >>> from canonical.launchpad.interfaces import BranchType, IProductSet
+    >>> gterm_product = getUtility(IProductSet).getByName('gnome-terminal')
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> no_url = branchset.new(
+    ...     BranchType.HOSTED, 'no_url', ddaa, ddaa, gterm_product, None)
+    >>> no_url.url is None
+    True
+    >>> view = getMultiAdapter((no_url, TestRequest()), name='+edit')
+    >>> view.setUpFields()
+    >>> 'url' in [field.__name__ for field in view.form_fields]
+    False
 
 Thus, a branch cannot change between being a pull branch and a push branch
 through the web interface.
@@ -95,42 +105,42 @@ PersonBranchesView is the view used to produce the branch table for a person.
 Its distinguishing feature is the roleForBranch method, which explains why the
 branch appears in the table.
 
->>> from canonical.launchpad.interfaces import IPersonSet
->>> sampleperson = getUtility(IPersonSet).getByName('name12')
->>> sampleperson_branches_view = getMultiAdapter(
-...     (sampleperson, TestRequest()), name='+branches')
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> sampleperson = getUtility(IPersonSet).getByName('name12')
+    >>> sampleperson_branches_view = getMultiAdapter(
+    ...     (sampleperson, TestRequest()), name='+branches')
 
 The role can be "Author", if the person is pointed to by the 'author' attribute
 of the branch.
 
->>> gterm_klingon = branchset[18]
->>> gterm_klingon.author == sampleperson
-True
->>> sampleperson_branches_view.roleForBranch(gterm_klingon)
-'Author'
+    >>> gterm_klingon = branchset[18]
+    >>> gterm_klingon.author == sampleperson
+    True
+    >>> sampleperson_branches_view.roleForBranch(gterm_klingon)
+    'Author'
 
 If the person is not the branch's author, the role is "Registrant" if the
 person is pointed to by the 'owner' attribute of the branch.
 
->>> gterm_dev.author == sampleperson
-False
->>> gterm_dev.owner == sampleperson
-True
->>> sampleperson_branches_view.roleForBranch(gterm_dev)
-'Registrant'
+    >>> gterm_dev.author == sampleperson
+    False
+    >>> gterm_dev.owner == sampleperson
+    True
+    >>> sampleperson_branches_view.roleForBranch(gterm_dev)
+    'Registrant'
 
 If the person is neither author nor registrant of a branch, role is
 "Subscriber" if the person is indeed subscribed to the branch.
 
->>> gterm_launchpad = branchset[24]
->>> gterm_launchpad.author == sampleperson
-False
->>> gterm_launchpad.owner == sampleperson
-False
->>> sampleperson in gterm_launchpad.subscribers
-True
->>> sampleperson_branches_view.roleForBranch(gterm_launchpad)
-'Subscriber'
+    >>> gterm_launchpad = branchset[24]
+    >>> gterm_launchpad.author == sampleperson
+    False
+    >>> gterm_launchpad.owner == sampleperson
+    False
+    >>> sampleperson in gterm_launchpad.subscribers
+    True
+    >>> sampleperson_branches_view.roleForBranch(gterm_launchpad)
+    'Subscriber'
 
 
 == BranchListingView ==
@@ -138,31 +148,33 @@ True
 When listing the branches for a product we use a subclass of the
 BranchListingView.
 
-Now we are showing bug badges for branches that have associated bugs 
+Now we are showing bug badges for branches that have associated bugs
 (through BugBranch), and we want to check that when constructing
 the view we get all the associated bugs for all the branches so we
 don't issue many queries to the database.
 
->>> firefox_product = getUtility(IProductSet).getByName('firefox')
->>> view = getMultiAdapter((firefox_product, TestRequest()), name='+branches')
->>> view.initialize()
+    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
+    >>> view = getMultiAdapter(
+    ...     (firefox_product, TestRequest()), name='+branches')
+    >>> view.initialize()
 
 The view batches the results.  The method that returns the batch is 'branches'.
 
->>> from zope.interface.verify import verifyObject
->>> from canonical.launchpad.interfaces import IBranchBatchNavigator
->>> branches = view.branches()
->>> verifyObject(IBranchBatchNavigator, branches)
-True
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IBranchBatchNavigator
+    >>> branches = view.branches()
+    >>> verifyObject(IBranchBatchNavigator, branches)
+    True
 
->>> for branch in branches.branches():
-...     bugs = []
-...     if branch.bugbranches:
-...         bugs = [bugbranch.bug.id for bugbranch in branch.bugbranches]
-...     print branch.unique_name, bugs
-...                              
-~name12/firefox/main [4, 5]
-~sabdfl/firefox/release--0.9.1 []
-~sabdfl/firefox/release-0.8 []
-~sabdfl/firefox/release-0.9 []
-~sabdfl/firefox/release-0.9.2 [4]
+    >>> for branch in branches.branches():
+    ...     bugs = []
+    ...     if branch.bug_branches:
+    ...         bugs = sorted([
+    ...             bugbranch.bug.id for bugbranch in branch.bug_branches])
+    ...     print branch.unique_name, bugs
+    ...
+    ~name12/firefox/main [4, 5]
+    ~sabdfl/firefox/release--0.9.1 []
+    ~sabdfl/firefox/release-0.8 []
+    ~sabdfl/firefox/release-0.9 []
+    ~sabdfl/firefox/release-0.9.2 [4]

@@ -39,9 +39,6 @@ class ISourcePackage(IBugTarget):
     distinctreleases = Attribute("Return a distinct list "
         "of sourcepackagepublishinghistory for this source package.")
 
-    manifest = Attribute("The Manifest of the current SourcePackageRelease "
-                    "published in this distribution / distroseries.")
-
     distribution = Attribute("Distribution")
 
     distroseries = Attribute("The DistroSeries for this SourcePackage")

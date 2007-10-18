@@ -19,19 +19,19 @@ from canonical.launchpad.interfaces import (
     IProductSeries,
     ISpecification,
     ISpecificationSet,
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority,
+    SpecificationSort,
     )
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import (
-    SpecificationImplementationStatus, SpecificationSort,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationDefinitionStatus,
-    )
 
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
@@ -443,7 +443,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
-        
+
         if delta.changes:
             changes = delta.changes
             changes["specification"] = self
@@ -623,7 +623,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def getBranchLink(self, branch):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
-        
+
     def linkBranch(self, branch, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:

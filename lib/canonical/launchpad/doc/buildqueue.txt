@@ -12,7 +12,7 @@ and collecting build results.
 As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from canonical.launchpad.interfaces import IBuildQueue
  >>> from canonical.launchpad.interfaces import IBuildQueueSet
 
@@ -82,20 +82,6 @@ of the build procedure (NOW - buildstart), it's mainly used in the UI.
 
  >>> bq.buildduration
  datetime.timedelta(...)
-
-Published component name, it looks over the publishing records and
-find the current publication of the source in question.
-
- >>> bq.component_name
- u'main'
-
-it is not necessary the same than the:
-
- >>> bq.build.sourcepackagerelease.component.name
- u'main'
-
-which is the component the source was originally uploaded to, before
-any overriding action.
 
 Some local properties inherited from related content classes:
 

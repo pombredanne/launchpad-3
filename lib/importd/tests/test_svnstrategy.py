@@ -33,6 +33,7 @@ class SvnJobHelper(SimpleJobHelper):
         """
         job = SimpleJobHelper.makeJob(self)
         job.repository = 'file://' + self.svn_repo_path + '/trunk'
+        job.autotest = False
         return job
 
 
@@ -83,21 +84,24 @@ class SvnRepositoryHelper:
         svn_repo_path = self.job_helper.svn_repo_path
         logger = testutil.makeSilentLogger()
 
-        # XXX: Scoped import of svn_oo to work around segfault on importing svn
-        # on ia64. -- DavidAllouche 2007-05-07
+        # XXX DavidAllouche 2007-05-07: 
+        # Scoped import of svn_oo to work around segfault
+        # on importing svn on ia64.
         import svn_oo
 
         self.svn_repo = svn_oo.Repository.Create(svn_repo_path, logger)
 
     def _checkoutWholeRepository(self):
         """Check out the root of self.svn_repo at self.svn_tree_path."""
-        # XXX: Scoped import of svn_oo to work around segfault
-        # on importing svn on ia64. -- DavidAllouche 2007-05-07
+        # XXX DavidAllouche 2007-05-07: 
+        # Scoped import of svn_oo to work around segfault
+        # on importing svn on ia64.
         import svn_oo
         from svn_oo.util import pysvnClient
 
-        # XXX: svn_oo does not allow to checkout the whole repository, so we
-        # need to use lower-level bindings here. -- David Allouche 2006-11-03
+        # XXX David Allouche 2006-11-03:
+        # svn_oo does not allow to checkout the whole repository, so we
+        # need to use lower-level bindings here.
         client = pysvnClient()
         svn_repo_path = self.job_helper.svn_repo_path
         client.checkout('file://' + svn_repo_path, self.svn_tree_path)
@@ -114,12 +118,14 @@ class SvnRepositoryHelper:
 
     def _makeRevisionTwo(self):
         """Make the second revision. It creates the branch we will import."""
-        # XXX: Scoped import of svn_oo to work around segfault
-        # on importing svn on ia64. -- DavidAllouche 2007-05-07
+        # XXX DavidAllouche 2007-05-07:
+        # Scoped import of svn_oo to work around segfault
+        # on importing svn on ia64.
         from svn_oo.util import pysvnClient
 
-        # XXX: svn_oo does not support copy. We need to use lower-level
-        # bindings -- David Allouche 2006-11-03
+        # XXX David Allouche 2006-11-03:
+        # svn_oo does not support copy. We need to use lower-level
+        # bindings.
         client = pysvnClient()
         client.copy(self._abspath('branch'), self._abspath('trunk'))
         self.svn_tree.commit('create trunk')

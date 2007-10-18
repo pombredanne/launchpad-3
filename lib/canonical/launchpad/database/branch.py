@@ -1,9 +1,16 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
+__all__ = [
+    'Branch',
+    'BranchSet',
+    ]
 
+from datetime import datetime
 import re
+import os
+
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -11,7 +18,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -22,15 +29,19 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    BranchLifecycleStatus, BranchType, BranchTypeError, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, ILaunchpadCelebrities, NotFoundError)
+    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.lp.dbschema import BranchRelationships
+from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 
 class Branch(SQLBase):
@@ -73,6 +84,9 @@ class Branch(SQLBase):
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
 
+    def __repr__(self):
+        return '<Branch %r (%d)>' % (self.unique_name, self.id)
+
     @property
     def revision_history(self):
         return BranchRevision.select('''
@@ -80,11 +94,6 @@ class Branch(SQLBase):
             BranchRevision.sequence IS NOT NULL
             ''' % sqlvalues(self),
             prejoins=['revision'], orderBy='-sequence')
-
-    subjectRelations = SQLMultipleJoin(
-        'BranchRelationship', joinColumn='subject')
-    objectRelations = SQLMultipleJoin(
-        'BranchRelationship', joinColumn='object')
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -101,34 +110,135 @@ class Branch(SQLBase):
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
+    landing_targets = SQLMultipleJoin(
+        'BranchMergeProposal', joinColumn='source_branch')
+
+    @property
+    def landing_candidates(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            target_branch=self, date_merged=None)
+
+    @property
+    def dependent_branches(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            dependent_branch=self, date_merged=None)
+
+    def addLandingTarget(self, registrant, target_branch,
+                         dependent_branch=None, whiteboard=None,
+                         date_created=None):
+        """See `IBranch`."""
+        if self.product is None:
+            raise InvalidBranchMergeProposal(
+                'Junk branches cannot be used as source branches.')
+        if not IBranch.providedBy(target_branch):
+            raise InvalidBranchMergeProposal(
+                'Target branch must implement IBranch.')
+        if self == target_branch:
+            raise InvalidBranchMergeProposal(
+                'Source and target branches must be different.')
+        if self.product != target_branch.product:
+            raise InvalidBranchMergeProposal(
+                'The source branch and target branch must be branches of the '
+                'same project.')
+        if dependent_branch is not None:
+            if not IBranch.providedBy(dependent_branch):
+                raise InvalidBranchMergeProposal(
+                    'Dependent branch must implement IBranch.')
+            if self.product != dependent_branch.product:
+                raise InvalidBranchMergeProposal(
+                    'The source branch and dependent branch must be branches '
+                    'of the same project.')
+            if self == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Source and dependent branches must be different.')
+            if target_branch == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Target and dependent branches must be different.')
+
+        target = BranchMergeProposal.selectOneBy(
+            source_branch=self, target_branch=target_branch, date_merged=None)
+        if target is not None:
+            raise InvalidBranchMergeProposal(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s'
+                % (self.unique_name, target_branch.unique_name))
+
+        if date_created is None:
+            date_created = UTC_NOW
+        return BranchMergeProposal(
+            registrant=registrant, source_branch=self,
+            target_branch=target_branch, dependent_branch=dependent_branch,
+            whiteboard=whiteboard, date_created=date_created)
+
     mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
+    def code_is_browseable(self):
+        """See `IBranch`."""
+        return self.revision_count > 0 and not self.private
+
+    def _getNameDict(self, person):
+        """Return a simple dict with the person name or placeholder."""
+        if person is not None:
+            name = person.name
+        else:
+            name = "<name>"
+        return {'user': name}
+
+    def getBzrUploadURL(self, person=None):
+        """See `IBranch`."""
+        root = config.codehosting.smartserver_root % self._getNameDict(person)
+        return root + self.unique_name
+
+    def getBzrDownloadURL(self, person=None):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.smartserver_root
+        else:
+            root = config.codehosting.supermirror_root
+        root = root % self._getNameDict(person)
+        return root + self.unique_name
+
+    @property
     def related_bugs(self):
-        """See IBranch."""
+        """See `IBranch`."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def related_bug_tasks(self):
+        """See `IBranch`."""
+        tasks = []
+        for bug in self.related_bugs:
+            task = bug.getBugTask(self.product)
+            if task is None:
+                # Just choose the first task for the bug.
+                task = bug.bugtasks[0]
+            tasks.append(task)
+        return tasks
+
+    @property
     def warehouse_url(self):
-        """See IBranch."""
+        """See `IBranch`."""
         root = config.supermirror.warehouse_root_url
         return "%s%08x" % (root, self.id)
 
     @property
     def product_name(self):
-        """See IBranch."""
+        """See `IBranch`."""
         if self.product is None:
             return '+junk'
         return self.product.name
 
     @property
     def unique_name(self):
-        """See IBranch."""
+        """See `IBranch`."""
         return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
 
     @property
     def displayname(self):
-        """See IBranch."""
+        """See `IBranch`."""
         if self.title:
             return self.title
         else:
@@ -136,7 +246,7 @@ class Branch(SQLBase):
 
     @property
     def sort_key(self):
-        """See IBranch."""
+        """See `IBranch`."""
         if self.product is None:
             product = None
         else:
@@ -151,11 +261,11 @@ class Branch(SQLBase):
         return (product, status, author, name, owner)
 
     def latest_revisions(self, quantity=10):
-        """See IBranch."""
+        """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
-        """See IBranch."""
+        """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
             'BranchRevision.branch = %d AND '
@@ -165,23 +275,51 @@ class Branch(SQLBase):
             orderBy='-sequence',
             clauseTables=['Revision'])
 
-    def createRelationship(self, branch, relationship):
-        BranchRelationship(subject=self, object=branch, label=relationship)
+    def canBeDeleted(self):
+        """See `IBranch`."""
+        # CodeImportSet imported here to avoid circular imports.
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        code_import = CodeImportSet().getByBranch(self)
+        if (code_import is not None or
+            self.subscriptions.count() > 0 or
+            self.bug_branches.count() > 0 or
+            self.spec_links.count() > 0 or
+            self.landing_targets.count() > 0 or
+            self.landing_candidates.count() > 0 or
+            self.dependent_branches.count() > 0 or
+            self.associatedProductSeries().count() > 0):
+            # Can't delete if the branch is associated with anything.
+            return False
+        else:
+            return True
 
-    def getRelations(self):
-        return tuple(self.subjectRelations) + tuple(self.objectRelations)
+    def associatedProductSeries(self):
+        """See `IBranch`."""
+        # Imported here to avoid circular import.
+        from canonical.launchpad.database.productseries import ProductSeries
+        return ProductSeries.select("""
+            ProductSeries.user_branch = %s OR
+            ProductSeries.import_branch = %s
+            """ % sqlvalues(self, self))
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines):
-        """See IBranch."""
-        # can't subscribe twice
-        assert not self.hasSubscription(person), "User is already subscribed."
-        return BranchSubscription(branch=self, person=person,
-                                  notification_level=notification_level,
-                                  max_diff_lines=max_diff_lines)
+        """See `IBranch`."""
+        # If the person is already subscribed, update the subscription with
+        # the specified notification details.
+        subscription = self.getSubscription(person)
+        if subscription is None:
+            subscription = BranchSubscription(
+                branch=self, person=person,
+                notification_level=notification_level,
+                max_diff_lines=max_diff_lines)
+        else:
+            subscription.notification_level = notification_level
+            subscription.max_diff_lines = max_diff_lines
+        return subscription
 
     def getSubscription(self, person):
-        """See IBranch."""
+        """See `IBranch`."""
         if person is None:
             return None
         subscription = BranchSubscription.selectOneBy(
@@ -189,41 +327,41 @@ class Branch(SQLBase):
         return subscription
 
     def hasSubscription(self, person):
-        """See IBranch."""
+        """See `IBranch`."""
         return self.getSubscription(person) is not None
 
     def unsubscribe(self, person):
-        """See IBranch."""
+        """See `IBranch`."""
         subscription = self.getSubscription(person)
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
 
     def getBranchRevision(self, sequence):
-        """See IBranch.getBranchRevision()"""
+        """See `IBranch`."""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
-        """See IBranch.createBranchRevision()"""
+        """See `IBranch`."""
         return BranchRevision(
             branch=self, sequence=sequence, revision=revision)
 
     def getTipRevision(self):
-        """See IBranch"""
+        """See `IBranch`."""
         tip_revision_id = self.last_scanned_id
         if tip_revision_id is None:
             return None
         return Revision.selectOneBy(revision_id=tip_revision_id)
 
     def updateScannedDetails(self, revision_id, revision_count):
-        """See IBranch."""
+        """See `IBranch`."""
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
 
     def getNotificationRecipients(self):
-        """See IBranch."""
+        """See `IBranch`."""
         recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
             if subscription.person.isTeam():
@@ -234,7 +372,7 @@ class Branch(SQLBase):
         return recipients
 
     def getScannerData(self):
-        """See IBranch."""
+        """See `IBranch`."""
         cur = cursor()
         cur.execute("""
             SELECT BranchRevision.id, BranchRevision.sequence,
@@ -254,31 +392,72 @@ class Branch(SQLBase):
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
 
+    def getPullURL(self):
+        """See `IBranch`."""
+        if self.branch_type == BranchType.MIRRORED:
+            # This is a pull branch, hosted externally.
+            return self.url
+        elif self.branch_type == BranchType.IMPORTED:
+            # This is an import branch, imported into bzr from
+            # another RCS system such as CVS.
+            prefix = config.launchpad.bzr_imports_root_url
+            return urlappend(prefix, '%08x' % self.id)
+        elif self.branch_type == BranchType.HOSTED:
+            # This is a push branch, hosted on the supermirror
+            # (pushed there by users via SFTP).
+            prefix = config.codehosting.branches_root
+            return os.path.join(prefix, split_branch_id(self.id))
+        else:
+            raise AssertionError("No pull URL for %r" % (self,))
+
     def requestMirror(self):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError(self.unique_name)
         self.mirror_request_time = UTC_NOW
         self.syncUpdate()
         return self.mirror_request_time
 
     def startMirroring(self):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.syncUpdate()
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError(self.unique_name)
+        assert self.last_mirror_attempt != None, (
+            "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        self.mirror_request_time = None
+        if (self.mirror_request_time != None
+            and self.last_mirror_attempt > self.mirror_request_time):
+            # No mirror was requested since we started mirroring.
+            if self.branch_type == BranchType.MIRRORED:
+                self.mirror_request_time = (
+                    datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
+            else:
+                self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        self.mirror_request_time = None
+        if (self.branch_type == BranchType.MIRRORED
+            and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
+            self.mirror_request_time = (
+                datetime.now(pytz.timezone('UTC'))
+                + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
+        else:
+            self.mirror_request_time = None
         self.syncUpdate()
 
 
@@ -433,6 +612,14 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
+
+        if product is None and owner.isTeam():
+            # We disallow team-owned junk branches -- with the exception of
+            # ~vcs-imports, to allow the eventual creation of code imports not
+            # yet associated with a product.
+            assert owner == getUtility(ILaunchpadCelebrities).vcs_imports, (
+                "Cannot create team-owned junk branches.")
+
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
@@ -454,10 +641,23 @@ class BranchSet:
 
         return branch
 
+    def delete(self, branch):
+        """See `IBranchSet`."""
+        if branch.canBeDeleted():
+            # Delete any branch revisions.
+            branch_ancestry = BranchRevision.selectBy(branch=branch)
+            for branch_revision in branch_ancestry:
+                BranchRevision.delete(branch_revision.id)
+            # Now delete the branch itself.
+            Branch.delete(branch.id)
+        else:
+            raise CannotDeleteBranch(
+                "Cannot delete branch: %s" % branch.unique_name)
+
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        prefix = config.launchpad.supermirror_root
+        prefix = config.codehosting.supermirror_root
         if url.startswith(prefix):
             branch = self.getByUniqueName(url[len(prefix):])
         else:
@@ -494,7 +694,7 @@ class BranchSet:
             return branch
 
     def getBranchesToScan(self):
-        """See IBranchSet.getBranchesToScan()"""
+        """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
         # Branches with a NULL last_mirrored_id have never been
         # successfully mirrored so there is no point scanning them.
@@ -502,10 +702,11 @@ class BranchSet:
         # so are included.
 
         return Branch.select('''
+            Branch.branch_type <> %s AND
             Branch.last_mirrored_id IS NOT NULL AND
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''')
+            ''' % quote(BranchType.REMOTE))
 
     def getProductDevelopmentBranches(self, products):
         """See `IBranchSet`."""
@@ -545,41 +746,61 @@ class BranchSet:
                                'last_commit' : last_commit}
         return result
 
-    def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyChangedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner <> %d
+            Branch.branch_type <> %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyImportedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner = %d
+            Branch.branch_type = %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyRegisteredBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        return Branch.select(
-            self._generateBranchClause('', visible_by_user),
-            limit=branch_count,
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        # Since the lifecycle_clause may or may not contain anything,
+        # we need something that is valid if the lifecycle clause starts
+        # with 'AND', so we choose true.
+        query = 'true %s' % lifecycle_clause
+        results = Branch.select(
+            self._generateBranchClause(query, visible_by_user),
             orderBy=['-date_created', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
@@ -737,15 +958,28 @@ class BranchSet:
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
 
+    def getBranchesForProject(self, project, lifecycle_statuses=None,
+                              visible_by_user=None):
+        """See `IBranchSet`."""
+        assert project is not None, "Must have a valid project."
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        query = 'Branch.product = Product.id AND Product.project = %s %s' % (
+            project.id, lifecycle_clause)
+
+        return Branch.select(
+            self._generateBranchClause(query, visible_by_user),
+            clauseTables=['Product'])
+
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
         branches = Branch.select("""
-            Branch.url IS NULL
+            Branch.branch_type = %s
             AND Branch.owner IN (
             SELECT TeamParticipation.team
             FROM TeamParticipation
             WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(person))
+            """ % sqlvalues(BranchType.HOSTED, person))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
@@ -760,118 +994,9 @@ class BranchSet:
             limit=quantity,
             orderBy=['-date_created', '-id'])
 
-    def getHostedPullQueue(self):
+    def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
-
-        # XXX: JonathanLange 2007-07-27: Hosted branches (see Andrew's comment
-        # dated 2006-06-15) are mirrored if their mirror_request_time is not
-        # NULL or if they haven't been mirrored in the last 6 hours. The latter
-        # behaviour is a fail-safe and should probably be removed once we trust
-        # the mirror_request_time behavior. See
-        # test_mirror_stale_hosted_branches.
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
         return Branch.select(
-            AND(Branch.q.branch_type == BranchType.HOSTED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours',
-                   Branch.q.mirror_request_time != None)),
-            prejoins=['owner', 'product'])
-
-    def getMirroredPullQueue(self):
-        """See `IBranchSet`."""
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
-        return Branch.select(
-            AND(Branch.q.branch_type == BranchType.MIRRORED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours')),
-            prejoins=['owner', 'product'])
-
-    def getImportedPullQueue(self):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2007-07-19: Circular import.
-        from canonical.launchpad.database.productseries import ProductSeries
-        return Branch.select(
-            AND(Branch.q.branch_type == BranchType.IMPORTED,
-                ProductSeries.q.import_branchID == Branch.q.id,
-                OR(AND(ProductSeries.q.datelastsynced != None,
-                       Branch.q.last_mirror_attempt == None),
-                   ProductSeries.q.datelastsynced > Branch.q.last_mirror_attempt,
-                   AND(ProductSeries.q.datelastsynced == None,
-                       UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
-            clauseTables=['ProductSeries'],
-            prejoins=['owner', 'product'])
-
-    def getPullQueue(self):
-        """See `IBranchSet`."""
-        # The following types of branches are included in the queue:
-        # - any branches which have not yet been mirrored
-        # - any branches that were last mirrored over 6 hours ago
-        # - any hosted branches which have requested that they be mirrored
-        # - any import branches which have been synced since their last mirror
-        return self.getHostedPullQueue().union(
-            self.getMirroredPullQueue()).union(
-            self.getImportedPullQueue()).orderBy('last_mirror_attempt')
-
-
-class BranchRelationship(SQLBase):
-    """A relationship between branches.
-
-    e.g. "subject is a debianization-branch-of object"
-    """
-
-    _table = 'BranchRelationship'
-    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
-    label = IntCol(dbName='label', notNull=True),
-    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
-
-    def _get_src(self):
-        return self.subject
-    def _set_src(self, value):
-        self.subject = value
-
-    def _get_dst(self):
-        return self.object
-    def _set_dst(self, value):
-        self.object = value
-
-    def _get_labelText(self):
-        return BranchRelationships.items[self.label]
-
-    def nameSelector(self, sourcepackage=None, selected=None):
-        # XXX SteveAlexander 2005-04-22: 
-        # Let's get HTML out of the database code.
-        html = '<select name="binarypackagename">\n'
-        if not sourcepackage:
-            # Return nothing for an empty query.
-            binpkgs = []
-        else:
-            binpkgs = self._table.select("""
-                binarypackagename.id = binarypackage.binarypackagename AND
-                binarypackage.build = build.id AND
-                build.sourcepackagerelease = sourcepackagerelease.id AND
-                sourcepackagerelease.sourcepackage = %s"""
-                % sqlvalues(sourcepackage),
-                clauseTables = ['binarypackagename', 'binarypackage',
-                                'build', 'sourcepackagerelease']
-                )
-        for pkg in binpkgs:
-            html = html + '<option value="' + pkg.name + '"'
-            if pkg.name==selected: html = html + ' selected'
-            html = html + '>' + pkg.name + '</option>\n'
-        html = html + '</select>\n'
-        return html
-
-
-class BranchLabel(SQLBase):
-    _table = 'BranchLabel'
-
-    label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
+            AND(Branch.q.branch_type == branch_type,
+                Branch.q.mirror_request_time < UTC_NOW),
+            prejoins=['owner', 'product'], orderBy='mirror_request_time')

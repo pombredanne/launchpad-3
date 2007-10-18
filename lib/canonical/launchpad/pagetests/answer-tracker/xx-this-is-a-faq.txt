@@ -157,6 +157,7 @@ with an error message.
     http://answers.launchpad.dev/firefox/+question/2/+linkfaq
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
+    There is 1 error.
     You didn't modify the linked FAQ.
 
 To remove the FAQ, the user selects the 'No existing...' option and 
@@ -222,7 +223,7 @@ edits them to be more appropriate:
     >>> print owner_browser.getControl('Content').value
     Hi! I'm trying to learn about SVG but I can't get it to work at all in
     firefox. Maybe there is a plugin? Help! Thanks.
-    
+
     >>> owner_browser.getControl('Content').value = (
     ...     'Upgrade your browser to Firefox 2.0.')
 
@@ -332,10 +333,14 @@ can also be linked to FAQs.
     Is question #8 a FAQ?
 
 
-== Solved questions cannot be linked to a FAQ ==
+== Solved questions can be linked to a FAQ ==
 
-Since linking a question to a FAQ is like giving an answer, it cannot
-be used on solved questions:
+When linking a solved question to a FAQ the action is treated as a
+comment.
+
+No Privileges Person sees a recently solved question that relates to a
+FAQ. He decided to add it to the question to provide additional
+information.
 
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox/'
@@ -344,8 +349,32 @@ be used on solved questions:
     ...     user_browser.contents, 'mozilla-firefox in ubuntu question #9')
     >>> print details_portlet.find('b', text='Status:').next.strip()
     Solved
-    >>> user_browser.getLink('This is a FAQ')
-    Traceback (most recent call last):
-      ...
-    LinkNotFoundError
+    >>> user_browser.getLink('This is a FAQ').click()
 
+    >>> print user_browser.title
+    Is question #9 a FAQ?
+    >>> user_browser.getControl(name='field.faq-query').value = 'flash'
+    >>> user_browser.getControl('Search').click()
+    >>> user_browser.getControl('6').selected = True
+    >>> user_browser.getControl('Message').value = "The FAQ mentions this:"
+    >>> user_browser.getControl('Link FAQ').click()
+
+The question is still solved. No Privileges Person sees the FAQ was
+added to the question, and his message was added to the question's
+discussion.
+
+    >>> user_browser.title
+    'mozilla-firefox in ubuntu question #9:...'
+    >>> print details_portlet.find('b', text='Status:').next.strip()
+    Solved
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'related-faq'))
+    Related FAQ:
+    How can I play MP3/Divx/DVDs/Quicktime/Realmedia files ...
+
+    >>> print extract_text(find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     'ascii', 'backslashreplace')
+    The FAQ mentions this:
+    FAQ #6: ...How can I play MP3/Divx/DVDs/Quicktime/Realmedia files...

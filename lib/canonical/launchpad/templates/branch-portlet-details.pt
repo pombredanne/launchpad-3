@@ -1,57 +1,49 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
   <h2>Current details</h2>
   <div class="portletBody portletContent">
     <table>
       <tbody>
+        <tr>
+          <th>Type:</th>
+          <td><tal:branch-type replace="context/branch_type/title" /></td>
+        </tr>
         <tr tal:condition="context/home_page">
           <th>External links:</th>
           <td>
-
-          <a tal:attributes="href context/home_page"
-             class="link">Home page</a>
-             
+            <a tal:attributes="href context/home_page"
+               class="link">Home page</a>
           </td>
         </tr>
         <tr tal:condition="context/author">
           <th>Author:</th>
           <td>
-
-          <a tal:attributes="href context/author/fmt:url"
-             tal:content="context/author/browsername"
-             class="link">Author Name</a>
-
+            <tal:author replace="structure context/author/fmt:link"/>
           </td>
         </tr>
-
         <tr tal:condition="not:view/author_is_owner">
           <th>Registrant:</th>
           <td>
-
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/browsername"
-             class="link">Owner Name</a>
-          
+            <tal:registrant replace="structure context/owner/fmt:link"/>
           </td>
         </tr>
         <tr tal:condition="context/product">
           <th>Project:</th>
           <td>
-
-          <a tal:attributes="href context/product/fmt:url"
-             tal:content="context/product/displayname">Mozilla Firefox</a>
-          
+            <a tal:attributes="href context/product/fmt:url"
+               tal:content="context/product/displayname">Mozilla Firefox</a>
           </td>
         </tr>
         <tr>
           <th>Status:</th>
           <td>
-
-        <span id="branch-details-status-value"
-              tal:content="context/lifecycle_status/title"
-              tal:attributes="
-                class string:branchstatus${context/lifecycle_status/name}"
+            <span id="branch-details-status-value"
+                  tal:content="context/lifecycle_status/title"
+                  tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
                 >Experimental</span>
-
           </td>
         </tr>
       </tbody>

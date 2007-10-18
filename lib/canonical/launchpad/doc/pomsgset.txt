@@ -39,8 +39,10 @@ We need the right POMsgSet. We'll get the PO File, then, create the needed
 po msgset there.
 
   >>> upstream_pofile = upstream_evo.newPOFile('ca')
-  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromText(
+  >>> upstream_potmsgset = upstream_evo.getPOTMsgSetByMsgIDText(
   ...     u'evolution addressbook')
+  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromMessageSet(
+  ...     upstream_potmsgset)
   >>> print upstream_pomsgset.language.code
   ca
 
@@ -307,17 +309,17 @@ space is for any submission done outside that IPOMsgSet.
   [None]
 
 This other IPOMsgSet though, will get all submissions done in
-pomsgset_translated as it's another context.
+pomsgset_translated (except ones with the same translation that is already
+active) as it's another context.
 
   # And we get as a suggestions submissions for previous message.
   >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
   >>> len(wiki_submissions)
-  3
+  2
   >>> for submission in wiki_submissions:
   ...     assert submission.pomsgset == pomsgset_translated, (
   ...         "This wiki suggestion doesn't come from the expected IPOMsgSet")
   ...     print submission.potranslation.translation
   blah, blah, blah
   lalalala
-  just a translation
 

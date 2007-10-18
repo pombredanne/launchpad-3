@@ -6,6 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'BranchListingView',
+    'RecentlyChangedBranchesView',
+    'RecentlyImportedBranchesView',
+    'RecentlyRegisteredBranchesView',
     ]
 
 from datetime import datetime
@@ -17,16 +20,18 @@ from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter,
+    ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 
-class BranchListingItem:
+class BranchListingItem(BranchBadges):
     """A decorated branch.
 
     Some attributes that we want to display are too convoluted or expensive
@@ -35,12 +40,32 @@ class BranchListingItem:
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, elapsed, bugbranches, role=None):
-        self.branch = branch
+    def __init__(self, branch, last_commit, now, role, show_bug_badge,
+                 show_blueprint_badge):
+        BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
-        self.elapsed_time = elapsed
-        self.bugbranches = bugbranches
+        self.show_bug_badge = show_bug_badge
+        self.show_blueprint_badge = show_blueprint_badge
         self.role = role
+        self._now = now
+
+    @property
+    def elapsed_time(self):
+        """How long since the branch's last commit."""
+        return self.last_commit and (self._now - self.last_commit)
+
+    @property
+    def since_created(self):
+        """How long since the branch was created."""
+        # Need to make an TZ unaware date in order to subtract it.
+        unaware_date = self.branch.date_created.replace(tzinfo=None)
+        return self._now - unaware_date
+
+    def isBugBadgeVisible(self):
+        return self.show_bug_badge
+
+    def isBlueprintBadgeVisible(self):
+        return self.show_blueprint_badge
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -54,7 +79,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 4 + len(view.extra_columns)
-        self._now = datetime.now()
+        self._now = datetime.utcnow()
 
     @cachedproperty
     def last_commit(self):
@@ -63,26 +88,37 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             self.currentBatch())
 
     @cachedproperty
-    def branch_bug_links(self):
-        """Get all bugs associated the with current batch."""
-        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self.batch)
-        result = {}
-        for bugbranch in bugbranches:
-            result.setdefault(
-                bugbranch.branch.id, []).append(bugbranch)
+    def has_bug_branch_links(self):
+        """Return a set of branch ids that should show bug badges."""
+        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self.batch, self.view.user)
+        result = set()
+        for bug_branch in bug_branches:
+            result.add(bug_branch.branch.id)
+        return result
+
+    @cachedproperty
+    def has_branch_spec_links(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        spec_branches = getUtility(
+            ISpecificationBranchSet).getSpecificationBranchesForBranches(
+            self.batch, self.view.user)
+        result = set()
+        for spec_branch in spec_branches:
+            result.add(spec_branch.branch.id)
         return result
 
     def _createItem(self, branch):
         last_commit = self.last_commit[branch]
-        elapsed = last_commit and (self._now - last_commit)
-        bug_branches = self.branch_bug_links.get(branch.id)
+        show_bug_badge = branch.id in self.has_bug_branch_links
+        show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
         return BranchListingItem(
-            branch, last_commit, elapsed, bug_branches, role)
+            branch, last_commit, self._now, role, show_bug_badge,
+            show_blueprint_badge)
 
     def branches(self):
-        "Return a list of BranchListingItems"
+        """Return a list of BranchListingItems."""
         return [self._createItem(branch) for branch in self.currentBatch()]
 
     @cachedproperty
@@ -146,7 +182,7 @@ class BranchListingView(LaunchpadFormView):
     def no_branch_message(self):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
-        if self.selected_lifecycle_status:
+        if self.selected_lifecycle_status is not None:
             message = (
                 'There may be branches related to %s '
                 'but none of them match the current filter criteria '
@@ -161,3 +197,46 @@ class BranchListingView(LaunchpadFormView):
         return message % self.context.displayname
 
 
+class NoContextBranchListingView(BranchListingView):
+    """A branch listing that has no associated product or person."""
+
+    no_branch_message = (
+        'There are no branches that match the current status filter.')
+    extra_columns = ('author', 'product', 'date_created')
+
+
+class RecentlyRegisteredBranchesView(NoContextBranchListingView):
+    """A batched view of branches orded by registration date."""
+
+    page_title = 'Recently registered branches'
+
+    def _branches(self):
+        """Return the branches ordered by date created."""
+        return getUtility(IBranchSet).getRecentlyRegisteredBranches(
+            lifecycle_statuses=self.selected_lifecycle_status,
+            visible_by_user=self.user)
+
+
+class RecentlyImportedBranchesView(NoContextBranchListingView):
+    """A batched view of imported branches ordered by last scanned time."""
+
+    page_title = 'Recently imported branches'
+    extra_columns = ('product', 'date_created')
+
+    def _branches(self):
+        """Return imported branches ordered by last update."""
+        return getUtility(IBranchSet).getRecentlyImportedBranches(
+            lifecycle_statuses=self.selected_lifecycle_status,
+            visible_by_user=self.user)
+
+
+class RecentlyChangedBranchesView(NoContextBranchListingView):
+    """A batched view of non-imported branches ordered by last scanned time."""
+
+    page_title = 'Recently changed branches'
+
+    def _branches(self):
+        """Return non-imported branches orded by last commit."""
+        return getUtility(IBranchSet).getRecentlyChangedBranches(
+            lifecycle_statuses=self.selected_lifecycle_status,
+            visible_by_user=self.user)

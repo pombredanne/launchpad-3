@@ -6,7 +6,7 @@ common external bug tracker.
 
     # Some basic imports
     >>> from canonical.launchpad.interfaces import IProjectSet, IProject
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> projectset = getUtility(IProjectSet)
 
 
@@ -108,7 +108,7 @@ ordered by their names.
 We should be able to generate filtered lists of specs on a project.
 
  >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 
@@ -241,9 +241,46 @@ these milestones are also associated with the project.
 Project.milestones is a list of all visible milestones associated with
 a project.
 
+    >>> from canonical.launchpad.ftests.test_project_milestone import (
+    ...     ProjectMilestoneTest)
+    >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
+    ...     IBugTaskSet, IProjectSet)
+    >>> def product_milestone_info(milestone_name, product_name):
+    ...     product = productset[product_name]
+    ...     milestone = milestoneset.getByNameAndProduct(
+    ...         milestone_name, product)
+    ...     if milestone:
+    ...         print 'product', product_name, 'visible:', milestone.visible,
+    ...         print 'expected:', milestone.dateexpected
+    >>> login('foo.bar@canonical.com')
+    >>> test_helper = ProjectMilestoneTest(helper_only=True)
+    >>> test_helper.setUpProjectMilestoneTests()
+    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> milestones = gnome.milestones
+    >>> for milestone in milestones:
+    ...     print milestone.name, 'visible:', milestone.visible
+    1.1  visible: True
+    1.1. visible: True
+    1.2  visible: True
+
 Project.all_milestones is a list of all milestones associated with a project.
+
+    >>> milestones = gnome.all_milestones
+    >>> for milestone in milestones:
+    ...     print milestone.name, 'visible:', milestone.visible
+    1.1  visible: True
+    1.1. visible: True
+    1.2  visible: True
+    1.3  visible: False
 
 Project.getMilestone(name) returns the project milestone with the name `name'
 or None, if no milestone with this name exists.
+
+    >>> milestone = gnome.getMilestone('1.1')
+    >>> print milestone.name
+    1.1
+    >>> milestone = gnome.getMilestone('invalid')
+    >>> print milestone
+    None
 
 For details see doc/milestone.txt and ftests/test_project_milestone.py.

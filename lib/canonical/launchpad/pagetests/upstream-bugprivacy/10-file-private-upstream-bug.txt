@@ -1,7 +1,7 @@
 When filing a private security bug upstream, with no upstream bug
 contact, the maintainer will be subscribed to the bug instead.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open(
     ...     "http://localhost:9000/firefox/+filebug-advanced")
 
@@ -11,7 +11,7 @@ contact, the maintainer will be subscribed to the bug instead.
     ...
 
     >>> browser.getControl(name="field.title").value = (
-    ...     "this is a private bug")
+    ...     "this is a newly created private bug")
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
     >>> browser.getControl(
@@ -19,8 +19,10 @@ contact, the maintainer will be subscribed to the bug instead.
 
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/13
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
+
 
 Now the reporter and the maintainer are subscribed.
 
@@ -31,7 +33,7 @@ Now the reporter and the maintainer are subscribed.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(13)
+    >>> bug = getUtility(IBugSet).get(bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name12', u'name16']
@@ -42,7 +44,7 @@ Of course, we're able to see the private bug we've just filed in the
 bug listing.
 
     >>> browser.open("http://localhost:9000/firefox/+bugs")
-    >>> print browser.contents
+    >>> print browser.contents.replace(bug_id, "BUG-ID")
     <!DOCTYPE...
     ...
     ...Mozilla Firefox...
@@ -58,7 +60,7 @@ bug listing.
     ...1...
     ...Low...
     ...
-    ...13...
+    ...BUG-ID...
     ...Undecided...
 
 When the upstream has a security contact, the upstream will be
@@ -78,7 +80,7 @@ subscribed instead.
     ...
 
     >>> browser.getControl(name="field.title").value = (
-    ...     "this is a private bug")
+    ...     "this is a newly created private bug")
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
     >>> browser.getControl(
@@ -86,14 +88,58 @@ subscribed instead.
 
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/14
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(14)
+    >>> bug = getUtility(IBugSet).get(other_bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'sabdfl']
 
     >>> logout()
+
+== Checking basic access to the private bug pages ==
+
+Trying to access the task edit page of a task on a private bug
+redirects the anonymous user to the login page.
+
+    >>> browser = setupBrowser()
+    >>> browser.handleErrors = True
+    >>> browser.open(
+    ...     "http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
+
+XXX: Brad Bollenbach, 2005-09-13: This redirect is going to the wrong
+URL. See https://launchpad.net/malone/bugs/2265.
+
+    >>> print browser.url
+    http://launchpad.dev/firefox/+bug/.../+editstatus/+login
+
+The no-privs user cannot access bug #10, because it's filed on a private bug on
+which the no-privs is not an explicit subscriber.
+
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Sample Person accesses the bug page of a private bug. He is allowed to
+view the page because he is an explicit subscriber on the bug.
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/firefox/+bug/%s" % bug_id)
+    >>> print browser.headers["Status"]
+    200 Ok
+
+He now accesses the task page of a task on a private bug; also
+permitted.
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
+    >>> print browser.headers["Status"]
+    200 Ok
+
+

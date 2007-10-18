@@ -32,7 +32,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    ISprint, ISprintSet, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationPriority, SpecificationSort)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -43,9 +45,6 @@ from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
-from canonical.lp.dbschema import (
-    SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationDefinitionStatus)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -110,7 +109,7 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Change branding'
         summary = 'Modify the imagery used to represent this meeting'
         return Link('+branding', text, summary, icon='edit')
-    
+
 
 class SprintSpecificationsMenu(ApplicationMenu):
 
@@ -140,7 +139,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
         return Link('+roadmap', text, summary, icon='info')
 
     def addspec(self):
-        text = 'Register blueprint'
+        text = 'Register a blueprint'
         summary = 'Register a new blueprint for this meeting'
         return Link('+addspec', text, summary, icon='info')
 
@@ -452,7 +451,7 @@ class SprintMeetingExportView(LaunchpadView):
 
             # skip sprints with no priority or less than low:
             if (spec.priority is None or
-                spec.priority < SpecificationPriority.LOW):
+                spec.priority < SpecificationPriority.UNDEFINED):
                 continue
 
             if (spec.definition_status not in

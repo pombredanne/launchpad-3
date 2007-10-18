@@ -14,8 +14,9 @@ import canonical.launchpad
 from canonical.database.sqlbase import commit, flush_database_caches
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
-    ITranslationImportQueue)
-from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
+    ITranslationImportQueue, RosettaImportStatus)
+from canonical.launchpad.translationformat.mozilla_xpi_importer import (
+    MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer
 
 def get_en_US_xpi_file_to_import():
@@ -154,7 +155,7 @@ class XpiTestCase(unittest.TestCase):
         # There is no way to know whether a comment is from a
         # translator or a developer comment, so we have comenttext
         # always as None and store all comments as source comments.
-        self.assertEquals(message.commenttext, None)
+        self.assertEquals(message.commenttext, u'')
 
         # This format doesn't support any functionality like .po flags.
         self.assertEquals(message.flagscomment, u'')
@@ -325,6 +326,18 @@ class XpiTestCase(unittest.TestCase):
         # But for the translation import, we get the key directly.
         self.assertEquals(
             trans.published_texts, [u'm'])
+
+    def testGetLastTranslator(self):
+        """Tests whether we extract last translator information correctly."""
+        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        importer = MozillaXpiImporter()
+        translation_file = importer.parse(translation_entry)
+
+        # Let's try with the translation file, it has valid Last Translator
+        # information.
+        name, email = translation_file.header.getLastTranslator()
+        self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
+        self.assertEqual(email, u'carlos@canonical.com')
 
 
 def test_suite():

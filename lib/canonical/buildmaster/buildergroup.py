@@ -57,7 +57,7 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # XXX RBC 2007-05-23 bug=31546, 30633: builders that are not 'ok'
+            # XXX RBC 2007-05-23 bug 31546, 30633: builders that are not 'ok'
             # are not worth rechecking here for some currently undocumented
             # reason.
             if builder.builderok:
@@ -185,7 +185,7 @@ class BuilderGroup:
             (builder_status, build_id, build_status, logtail, filemap,
              dependencies) = queueItem.builder.slaveStatus()
         except (xmlrpclib.Fault, socket.error), info:
-            # XXX cprov 2005-06-29
+            # XXX cprov 2005-06-29:
             # Hmm, a problem with the xmlrpc interface,
             # disable the builder ?? or simple notice the failure
             # with a timestamp.
@@ -277,7 +277,7 @@ class BuilderGroup:
         queueItem.build.buildlog = self.getLogFromSlave(queueItem)
         queueItem.build.builder = queueItem.builder
         queueItem.build.dependencies = dependencies
-        # XXX cprov 2060615 bug=120584: Currently buildduration includes
+        # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for
         # the duration spent building locally.
         queueItem.build.datebuilt = UTC_NOW
@@ -301,7 +301,7 @@ class BuilderGroup:
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         build = queueItem.build
-        if build.archive.purpose != dbschema.ArchivePurpose.PPA:
+        if not build.archive.allowUpdatesToReleasePocket():
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id,
@@ -392,7 +392,7 @@ class BuilderGroup:
 
         original_slave = queueItem.builder.slave
 
-        # XXX Robert Collins, Celso Providelo 20070526:
+        # XXX Robert Collins, Celso Providelo 2007-05-26:
         # 'Refreshing' objects  procedure  is forced on us by using a
         # different process to do the upload, but as that process runs
         # in the same unix account, it is simply double handling and we

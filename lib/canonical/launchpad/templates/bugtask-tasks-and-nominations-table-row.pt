@@ -1,7 +1,9 @@
-<tal:bugtask define="expandable view/canSeeTaskDetails;
-                     indent_task view/shouldIndentTask;
-                     tasklink view/taskLink;
-                     form_row_id string:task${context/id}">
+<tal:bugtask 
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define="expandable view/canSeeTaskDetails;
+          indent_task view/shouldIndentTask;
+          tasklink view/taskLink;
+          form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
     <td width="14" tal:condition="nothing"><a tal:condition="expandable"
            tal:attributes="
@@ -127,11 +129,13 @@
       /></a>
     </td>
   </tr>
-  <tr
-    tal:attributes="id form_row_id"
-    tal:condition="expandable"
-    style="display: none"
-  >
-   <td colspan="5" tal:content="structure context/@@+edit-form" />
-  </tr>
+  <tal:form condition="view/displayEditForm">
+    <tr
+      tal:attributes="id form_row_id"
+      tal:condition="expandable"
+      style="display: none"
+    >
+     <td colspan="5" tal:content="structure context/@@+edit-form" />
+    </tr>
+  </tal:form>
 </tal:bugtask>

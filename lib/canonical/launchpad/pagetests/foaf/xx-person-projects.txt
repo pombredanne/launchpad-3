@@ -5,7 +5,7 @@ team.
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> related_projects = find_tag_by_id(
-    ...     anon_browser.contents, 'related-projects')
+    ...     anon_browser.contents, 'portlet-related-projects')
     >>> for tr in related_projects.findAll('tr'):
     ...     print extract_text(tr)
     Ubuntu Linux
@@ -43,7 +43,7 @@ displays only the first five.
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
     >>> related_projects = find_tag_by_id(
-    ...     anon_browser.contents, 'related-projects')
+    ...     anon_browser.contents, 'portlet-related-projects')
     >>> for tr in related_projects.findAll('tr'):
     ...     print extract_text(tr)
     Ubuntu Linux

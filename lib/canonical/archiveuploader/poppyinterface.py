@@ -6,6 +6,7 @@
 import logging
 import shutil
 import os
+import stat
 import time
 
 from canonical.lp import initZopeless
@@ -61,6 +62,12 @@ class PoppyInterface:
         # same filesystem (non-atomic "rename").
         self.lock.acquire(blocking=True)
 
+        # Adjust lockfile permissions to allow the runner of process-upload
+        # (lp_queue, member of lp_upload group) to be blocked on it (g+w).
+        lockfile_path = os.path.join(self.targetpath, ".lock")
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+        os.chmod(lockfile_path, mode | stat.S_IWGRP)
+
         # Move it to the target directory.
         while True:
             self.targetcount += 1
@@ -114,7 +121,7 @@ class PoppyInterface:
 
         # When we get on with the poppy path stuff, the below may be useful and
         # is thus left in rather than being removed.
-        
+
         #try:
         #    d = Distribution.byName(user)
         #    if d:

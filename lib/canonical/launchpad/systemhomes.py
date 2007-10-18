@@ -3,8 +3,13 @@
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
-    'RegistryApplication', 'ShipItApplication', 'MaloneApplication',
-    'BazaarApplication', 'RosettaApplication']
+    'BazaarApplication',
+    'MailingListApplication',
+    'MaloneApplication',
+    'RegistryApplication',
+    'RosettaApplication',
+    'ShipItApplication',
+    ]
 
 __metaclass__ = type
 
@@ -12,9 +17,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBazaarApplication, IBranchSet, IBugExternalRefSet,
+    BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-    ILanguageSet, ILaunchBag, ILaunchpadStatisticSet, IMaloneApplication,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet)
 
@@ -25,6 +31,10 @@ class RegistryApplication:
 
 class ShipItApplication:
     implements(IShipItApplication)
+
+
+class MailingListApplication:
+    implements(IMailingListApplication)
 
 
 class MaloneApplication:
@@ -156,3 +166,5 @@ class RosettaApplication:
         return stats.value('translator_count')
 
 
+class HWDBApplication:
+    implements(IHWDBApplication)

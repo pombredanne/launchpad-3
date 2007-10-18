@@ -11,7 +11,10 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
-    >>> alsa_mantis = Mantis("https://bugtrack.alsa-project.org/alsa-bug/")
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> alsa_mantis = Mantis(new_bugtracker(BugTrackerType.MANTIS))
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -32,7 +35,7 @@ If the status can't be converted, Unknown is returned, and a warning
 is logged.
 
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
-    WARNING:...:Unknown status/resolution foo/bar
+    WARNING:...:Unknown status/resolution foo/bar.
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
@@ -49,47 +52,36 @@ but didn't succeed. For example, if the bug number was invalid.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestMantis
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestMantis)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Bug Tracker",
-    ...     bugtrackertype=BugTrackerType.MANTIS,
-    ...     baseurl="http://bugs.example.com/",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> login('foo.bar@canonical.com')
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 3224, sample_person)
+    ...     example_bug_tracker, 1550, sample_person)
 
-    >>> login('no-priv@canonical.com')
 
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here:
 
-    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker)
 
 Collect the Example.com watches:
 
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    3224: None
+    1550: None
 
 And have our special Mantis instance process them:
 
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    3224: assigned: open
+    1550: assigned: open
 
 Let's add a few more watches:
 
@@ -101,14 +93,15 @@ Let's add a few more watches:
     ...     for bug_watch in example_bug_tracker.watches)
 
     >>> expected_remote_statuses
-    {3224: u'assigned: open'}
+    {1550: u'assigned: open'}
 
     >>> remote_bugs = [
-    ...     (7346, dict(status='assigned', resolution='open')),
-    ...     (6685, dict(status='new', resolution='open')),
-    ...     (8104, dict(status='assigned', resolution='open')),
-    ...     (6919, dict(status='assigned', resolution='open')),
-    ...     (8006, dict(status='resolved', resolution='no change required')),
+    ...     (1550, dict(status='assigned', resolution='open')),
+    ...     (1679, dict(status='closed', resolution='unable to reproduce')),
+    ...     (1730, dict(status='assigned', resolution='open')),
+    ...     (1738, dict(status='feedback', resolution='open')),
+    ...     (1748, dict(status='resolved', resolution='fixed')),
+    ...     (1798, None), # Remote bug doesn't exist.
     ... ]
 
     >>> for remote_bug_id, remote_bug in remote_bugs:
@@ -116,49 +109,60 @@ Let's add a few more watches:
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
-    ...     example_ext_bug_tracker.bugs[remote_bug_id] = remote_bug
-    ...     expected_remote_statuses[remote_bug_id] = (
-    ...         "%s: %s" % (remote_bug['status'], remote_bug['resolution']))
+    ...     if remote_bug is None:
+    ...         expected_remote_statuses[remote_bug_id] = 'UNKNOWN'
+    ...     else:
+    ...         expected_remote_statuses[remote_bug_id] = (
+    ...             "%s: %s" % (remote_bug['status'],
+    ...                         remote_bug['resolution']))
 
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
+    >>> from operator import attrgetter
+    >>> getid = attrgetter('id')
+
     >>> example_ext_bug_tracker.trace_calls = True
-    >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
-    CALLED _getPage('login.php?username=guest&password=guest')
-    CALLED _getPage('login_anon.php')
-    CALLED _postPage('view_all_set.php?f=3', ...)
-    CALLED _getPage('csv_export.php')
+    >>> example_ext_bug_tracker.updateBugWatches(
+    ...     sorted(example_bug_tracker.watches, key=getid))
+    CALLED _getPage(u'view.php?id=1550')
+    CALLED _getPage(u'view.php?id=1679')
+    CALLED _getPage(u'view.php?id=1730')
+    CALLED _getPage(u'view.php?id=1738')
+    CALLED _getPage(u'view.php?id=1748')
+    CALLED _getPage(u'view.php?id=1798')
+    WARNING:root:Didn't find bug u'1798' on http://bugs.some.where
+    (local bugs: 10).
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> for remote_bug_id in set(remote_statuses).union(
-    ...     expected_remote_statuses):
+    >>> for remote_bug_id in sorted(set(remote_statuses).union(
+    ...     expected_remote_statuses)):
     ...     remote_status = remote_statuses[remote_bug_id]
     ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
     ...     print 'Remote bug %d' % (remote_bug_id,)
     ...     print ' * Expected << %s >>' % (expected_remote_status,)
     ...     print ' *      Got << %s >>' % (remote_status,)
-    Remote bug 3224
+    Remote bug 1550
      * Expected << assigned: open >>
      *      Got << assigned: open >>
-    Remote bug 7346
+    Remote bug 1679
+     * Expected << closed: unable to reproduce >>
+     *      Got << closed: unable to reproduce >>
+    Remote bug 1730
      * Expected << assigned: open >>
      *      Got << assigned: open >>
-    Remote bug 8006
-     * Expected << resolved: no change required >>
-     *      Got << resolved: no change required >>
-    Remote bug 6919
-     * Expected << assigned: open >>
-     *      Got << assigned: open >>
-    Remote bug 8104
-     * Expected << assigned: open >>
-     *      Got << assigned: open >>
-    Remote bug 6685
-     * Expected << new: open >>
-     *      Got << new: open >>
+    Remote bug 1738
+     * Expected << feedback: open >>
+     *      Got << feedback: open >>
+    Remote bug 1748
+     * Expected << resolved: fixed >>
+     *      Got << resolved: fixed >>
+    Remote bug 1798
+     * Expected << UNKNOWN >>
+     *      Got << UNKNOWN >>
 
     >>> example_ext_bug_tracker.trace_calls = False
 
@@ -175,7 +179,7 @@ updated:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> bug_watch = example_bug_tracker.watches[0]
+    >>> bug_watch = sorted(example_bug_tracker.watches, key=getid)[0]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged

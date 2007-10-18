@@ -99,7 +99,7 @@ class TranslationGroupSet:
 
     def getByPerson(self, person):
         """See ITranslationGroupSet."""
-        # XXX CarlosPerelloMarin 20070402 bug=30789:
+        # XXX CarlosPerelloMarin 2007-04-02 bug=30789:
         # Direct members query is required until teams are members
         # of themselves.
         direct = TranslationGroup.select("""
