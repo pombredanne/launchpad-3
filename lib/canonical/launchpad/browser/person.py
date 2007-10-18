@@ -2788,7 +2788,8 @@ class RequestPeopleMergeView(AddView):
 class AdminMergeBaseView(LaunchpadFormView):
     """Base view for the pages where admins can merge people/teams."""
 
-    should_show_confirmation_message = False
+    should_confirm_email_reassignment = False
+    should_confirm_member_deactivation = False
     dupe_person_emails = ()
     dupe_person = None
     target_person = None
@@ -2801,20 +2802,45 @@ class AdminMergeBaseView(LaunchpadFormView):
             self.addError(
                 _("You can't merge %s into itself." % dupe_person.name))
 
-    @action('Merge', name='merge')
-    def merge_action(self, action, data):
+    def render(self):
+        # Subclasses may define other actions that they will render manually
+        # only in certain circunstances, so don't include them in the list of
+        # actions to be rendered.
+        self.actions = [self.merge_action]
+        return super(AdminMergeBaseView, self).render()
+
+    def doMerge(self, data, reassign_emails=False, deactivate_members=False):
         """Merge the two person/team entries specified in the form.
 
-        If the duplicated person has email addresses associated with, we'll
-        ask for confirmation before actually performing the merge.
+        If we're merging a person which has email addresses associated with,
+        we'll ask for confirmation before actually performing the merge.
+
+        In the case of teams being merged, a confirmation will be asked if
+        the team we're merging from still has active members, as in that
+        case we'll have to deactivate all members first.
         """
         emailset = getUtility(IEmailAddressSet)
         self.dupe_person = data['dupe_person']
         self.target_person = data['target_person']
         self.dupe_person_emails = emailset.getByPerson(self.dupe_person)
-        if self.dupe_person_emails and 'confirmed' not in self.request.form:
-            self.should_show_confirmation_message = True
+        if (not self.dupe_person.isTeam()
+            and self.dupe_person_emails.count() > 0 and not reassign_emails):
+            # We're merging a person which has one or more email addresses,
+            # so we better warn the admin doing the operation and have him
+            # check the emails that will be reassigned to ensure he's not
+            # doing anything stupid.
+            self.should_confirm_email_reassignment = True
             return
+        elif (self.dupe_person.activemembers.count() > 0
+              and not deactivate_members):
+            # Merging teams with active members is not possible, so we'll
+            # ask the admin if he wants to deactivate all members and then
+            # merge.
+            self.should_confirm_member_deactivation = True
+            return
+        else:
+            # No confirmation is needed, just go ahead and merge.
+            pass
 
         for email in self.dupe_person_emails:
             # XXX: Maybe this status change should be done only when merging
@@ -2822,7 +2848,10 @@ class AdminMergeBaseView(LaunchpadFormView):
             # -- Guilherme Salgado, 2007-10-15
             email.status = EmailAddressStatus.NEW
             email.person = self.target_person
-        getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
+        flush_database_updates()
+        getUtility(IPersonSet).merge(
+            self.dupe_person, self.target_person,
+            deactivate_members=deactivate_members, user=self.user)
         self.request.response.addInfoNotification(_(
             'Merge completed successfully.'))
         self.next_url = canonical_url(self.target_person)
@@ -2832,6 +2861,18 @@ class AdminPeopleMergeView(AdminMergeBaseView):
 
     label = "Merge Launchpad people"
     schema = IAdminPeopleMergeSchema
+
+    # XXX: Can't define this action in the superclass because of 
+    # https://bugs.edge.launchpad.net/zope3/+bug/154001.
+    # -- Guilherme Salgado, 2007-10-18
+    @action('Merge', name='merge')
+    def merge_action(self, action, data):
+        self.doMerge(data)
+
+    @action('Reassign E-mails and Merge', name='reassign_emails_and_merge')
+    def reassign_emails_and_merge_action(self, action, data):
+        """Reassign emails of the person to be merged and merge them."""
+        self.doMerge(data, reassign_emails=True)
 
 
 class AdminTeamMergeView(AdminMergeBaseView):
@@ -2852,6 +2893,19 @@ class AdminTeamMergeView(AdminMergeBaseView):
             self.addError(_(
                 "%s is associated with a Launchpad mailing list; we can't "
                 "merge it." % data['dupe_person'].name))
+
+    # XXX: Can't define this action in the superclass because of 
+    # https://bugs.edge.launchpad.net/zope3/+bug/154001.
+    # -- Guilherme Salgado, 2007-10-18
+    @action('Merge', name='merge')
+    def merge_action(self, action, data):
+        self.doMerge(data)
+
+    @action('Deactivate Members and Merge',
+            name='deactivate_members_and_merge')
+    def deactivate_members_and_merge_action(self, action, data):
+        """Deactivate all members of the team to be merged and merge them."""
+        self.doMerge(data, deactivate_members=True)
 
 
 class FinishedPeopleMergeRequestView(LaunchpadView):

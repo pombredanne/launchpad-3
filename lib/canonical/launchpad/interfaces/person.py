@@ -1354,10 +1354,19 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person):
-        """Merge a person into another.
+    def merge(from_person, to_person, deactivate_members=False, user=None):
+        """Merge a person/team into another.
 
-        The old user (from_person) will be left as an atavism.
+        The old person/team (from_person) will be left as an atavism.
+
+        When merging two person entries, from_person can't have email
+        addresses associated with.
+
+        When merging teams, from_person must have no IMailingLists
+        associated with and no active members. If it has active members,
+        though, it's possible to have them deactivated before the merge by
+        passing deactivate_members=True. In that case the user who's
+        performing the merge must be provided as well.
 
         We are not yet game to delete the `from_person` entry from the
         database yet. We will let it roll for a while and see what cruft

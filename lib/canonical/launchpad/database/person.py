@@ -37,6 +37,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.lp.dbschema import (
     ArchivePurpose, BugTaskImportance, SpecificationFilter,
@@ -1186,25 +1187,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
-    def deactivateMembersAndMerge(self, team, user):
-        """Deactivate all members of this team and merge it into the given one.
-
-        The reason given for the deactivation (which is sent by email to
-        each member) is that this team is going to be merged into another
-        one.
-        """
-        assert self.isTeam(), "This method is only available for teams."
-        assert user.inTeam(getUtility(ILaunchpadCelebrities).admin), (
-            "Only Launchpad admins can deactivate all members of a team "
-            "and merge it.")
-        comment = ('Deactivating all members as this team is being merged '
-                   'into %s.' % team.unique_displayname)
-        for membership in self.getActiveMemberships():
-            membership.setStatus(
-                TeamMembershipStatus.DEACTIVATED, user, comment)
-        flush_database_updates()
-        PersonSet().merge(self, team)
-
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -2128,7 +2110,8 @@ class PersonSet:
             orderBy=['-datecreated'], limit=limit)
 
 
-    def merge(self, from_person, to_person):
+    def merge(self, from_person, to_person,
+              deactivate_members=False, user=None):
         """See `IPersonSet`."""
         # Sanity checks
         if not IPerson.providedBy(from_person):
@@ -2138,16 +2121,31 @@ class PersonSet:
         assert getUtility(IMailingListSet).get(from_person.name) is None, (
             "Can't merge teams which have mailing lists into other teams.")
 
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        flush_database_updates()
-
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
-        if from_person.isTeam() and from_person.allmembers.count() > 0:
+        member_count = from_person.allmembers.count()
+        if member_count > 0 and not deactivate_members:
             raise AssertionError(
                 "Only teams without active members can be merged")
+        elif member_count > 0:
+            assert user is not None, ("To deactivate the members we need "
+                                      "to know the user who's logged in")
+            comment = (
+                'Deactivating all members as this team is being merged into '
+                '%s.  Please contact the administrators of <%s> if you have '
+                'any issues with this change.'
+                % (to_person.unique_displayname, canonical_url(to_person)))
+            for membership in from_person.getActiveMemberships():
+                membership.setStatus(
+                    TeamMembershipStatus.DEACTIVATED, user, comment)
+        else:
+            # Everything's fine.
+            pass
+
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        flush_database_updates()
 
         # Get a database cursor.
         cur = cursor()

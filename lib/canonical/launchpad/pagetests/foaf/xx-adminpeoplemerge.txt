@@ -31,7 +31,7 @@ these emails are going to be transferred.
 
 If the user confirms, spiv will be merged into salgado.
 
-    >>> admin_browser.getControl('Merge').click()
+    >>> admin_browser.getControl('Reassign E-mails and Merge').click()
     >>> admin_browser.url
     'http://launchpad.dev/~salgado'
 
@@ -49,9 +49,10 @@ If the user confirms, spiv will be merged into salgado.
 
     >>> logout()
 
-As said before, there's a separate page for merging teams.  In this case
-there's no email addresses to be transferred, so the merge is done
-without asking the user for confirmation.
+As said before, there's a separate page for merging teams.  In the case of
+teams, though, we can't merge teams with active members, so the user will
+first have to confirm that the members should be deactivated before the
+teams are merged.
 
     >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
     >>> admin_browser.getControl('Duplicated Team').value = (
@@ -59,6 +60,13 @@ without asking the user for confirmation.
     >>> admin_browser.getControl('Target Team').value = 'guadamen'
     >>> admin_browser.getControl('Merge').click()
 
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+    >>> print get_feedback_messages(admin_browser)[0]
+    Landscape Developers has 2 active members which will have to be
+    deactivated before the teams can be merged.
+
+    >>> admin_browser.getControl('Deactivate Members and Merge').click()
     >>> admin_browser.url
     'http://launchpad.dev/~guadamen'
 

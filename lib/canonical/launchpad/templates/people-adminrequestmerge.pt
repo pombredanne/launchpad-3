@@ -10,29 +10,52 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
-    <tal:confirmation metal:fill-slot="extra_info"
-                      condition="view/should_show_confirmation_message">
-      <p>Are you sure you want to merge
-        <strong tal:content="view/dupe_person/unique_displayname">
-          name12
-        </strong> into
-        <strong tal:content="view/target_person/unique_displayname">
-          name16
-        </strong>?
-      </p>
-      <div class="informational message">
-        The following email addresses are owned by 
-        <tal:dupe_displayname replace="view/dupe_person/displayname" />
-        and are going to be transferred to 
-        <tal:target_displayname replace="view/target_person/displayname" />:
-        <ul>
-          <li tal:repeat="email view/dupe_person_emails">
-            <strong tal:content="email/email"/>
-          </li>
-        </ul>
-      </div>
-      <input type="hidden" name="confirmed" value="1" />
-    </tal:confirmation>
+    <tal:extra_info metal:fill-slot="extra_info">
+      <tal:confirmation-for-people
+        condition="view/should_confirm_email_reassignment">
+        <p>Are you sure you want to merge
+          <strong tal:content="view/dupe_person/unique_displayname">
+            name12
+          </strong> into
+          <strong tal:content="view/target_person/unique_displayname">
+            name16
+          </strong>?
+        </p>
+        <div class="informational message">
+          The following email addresses are owned by 
+          <tal:dupe_displayname replace="view/dupe_person/displayname" />
+          and are going to be transferred to 
+          <tal:target_displayname replace="view/target_person/displayname" />:
+          <ul>
+            <li tal:repeat="email view/dupe_person_emails">
+              <strong tal:content="email/email"/>
+            </li>
+          </ul>
+          <tal:confirm-button 
+            replace="structure view/reassign_emails_and_merge_action/render" />
+        </div>
+      </tal:confirmation-for-people>
+
+      <tal:confirmation-for-teams
+          condition="view/should_confirm_member_deactivation">
+        <p>Are you sure you want to merge
+          <strong tal:content="view/dupe_person/unique_displayname">
+            name12
+          </strong> into
+          <strong tal:content="view/target_person/unique_displayname">
+            name16
+          </strong>?
+        </p>
+        <div class="informational message">
+          <tal:dupe_name replace="view/dupe_person/displayname" /> has
+          <tal:member_count replace="view/dupe_person/activemembers/count" />
+          active members which will have to be deactivated before the teams
+          can be merged.
+          <tal:confirm-button 
+            replace="structure view/deactivate_members_and_merge_action/render" />
+        </div>
+      </tal:confirmation-for-teams>
+    </tal:extra_info>
   </div>
 
 </div>

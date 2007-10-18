@@ -226,14 +226,11 @@ merged.
     ...
     AssertionError: Only teams without active members can be merged
 
-For cases like this we have a separate API which takes care of deactivating
-all active members of the team and performing the merge.
+For cases like this we have to explicitly instruct IPersonSet.merge() to
+deactivate all active members of the team we're merging from.
 
-    # Only admins can use that API, though, so we need to login as an admin.
-    >>> login('foo.bar@canonical.com')
-
-    >>> test_team.deactivateMembersAndMerge(
-    ...     landscape, personset.getByName('name16'))
+    >>> personset.merge(test_team, landscape, deactivate_members=True,
+    ...                 user=test_team.teamowner)
 
     # The resulting Landscape-developers has now a super team, but has
     # no polls and its members are still the same two from before the
