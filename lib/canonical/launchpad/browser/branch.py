@@ -328,16 +328,6 @@ class BranchView(LaunchpadView):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return self.context.url is None and self.context.owner != vcs_imports
 
-    def mirror_disabled(self):
-        """Has mirroring this branch been disabled?"""
-        return self.context.mirror_request_time is None
-
-    def in_mirror_queue(self):
-        """Is it likely that the branch is being mirrored in the next run of
-        the puller?
-        """
-        return self.context.mirror_request_time < datetime.now(pytz.UTC)
-
     @cachedproperty
     def landing_targets(self):
         """Return a decorated filtered list of landing targets."""
@@ -483,13 +473,6 @@ class BranchMirrorFailureView(LaunchpadFormView):
 
     field_names = []
 
-    def mirror_of_ssh(self):
-        """True if this a mirror branch with an sftp or bzr+ssh URL."""
-        if not self.context.url:
-            return False # not a mirror branch
-        uri = URI(self.context.url)
-        return uri.scheme in ('sftp', 'bzr+ssh')
-
     def in_mirror_queue(self):
         """Is it likely that the branch is being mirrored in the next run of
         the puller?
@@ -514,7 +497,7 @@ class BranchMirrorFailureView(LaunchpadFormView):
 
     def show_mirror_failure(self):
         """True if mirror_of_ssh is false and branch mirroring failed."""
-        if self.mirror_of_ssh():
+        if URI(self.context.url).scheme in ('sftp', 'bzr+ssh'):
             # SSH branches can't be mirrored, so a general failure message
             # is shown instead of the reported errors.
             return False
