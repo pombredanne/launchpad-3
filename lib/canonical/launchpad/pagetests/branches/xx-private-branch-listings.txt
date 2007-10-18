@@ -212,10 +212,16 @@ visible to those that would be able to see the branch.
 
 There are no branches linked to this bug.
 
-    >>> branch_table = find_tag_by_id(
-    ...     landscape_dev_browser.contents, 'bug_branch_details')
-    >>> print branch_table
-    None
+    >>> def printBugBranchLinks(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     if len(tags) == 0:
+    ...         print 'No bug branch links'
+    ...     else:
+    ...         for tag in tags:
+    ...             print extract_text(tag)
+
+    >>> printBugBranchLinks(landscape_dev_browser)
+    No bug branch links
 
 Now link to a private branch.
 
@@ -223,20 +229,15 @@ Now link to a private branch.
     >>> landscape_dev_browser.getControl('Branch').value = (
     ...     '~landscape-developers/landscape/trunk')
     >>> landscape_dev_browser.getControl('Continue').click()
-    >>> branch_table = find_tag_by_id(
-    ...     landscape_dev_browser.contents, 'bug_branch_details')
-    >>> print extract_text(branch_table)
-    Related branch    Developer             Status for this bug
-    Landscape trunk   Landscape Developers  Fix In Progress
+    >>> printBugBranchLinks(landscape_dev_browser)
+    ~landscape-developers/landscape/trunk (New) - Fix In Progress
 
-Since the link is to a private branch, the entire table is not
+Since the link is to a private branch, the entire section is not
 visible to a user that isn't able to see the branch itself.
 
     >>> anon_browser.open('http://launchpad.dev/bugs/10')
-    >>> branch_table = find_tag_by_id(
-    ...     anon_browser.contents, 'bug_branch_details')
-    >>> print branch_table
-    None
+    >>> printBugBranchLinks(anon_browser)
+    No bug branch links
 
 
 == Blueprint branch links ==

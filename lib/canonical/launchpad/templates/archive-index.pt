@@ -12,11 +12,10 @@
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Foo Bar PPA</h1>
+      <h1>PPA Overview</h1>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
@@ -31,11 +30,8 @@
       </tal:whiteboard>
 
       <div id="description">
-         <p>PPA description:</p>
          <tal:archive-description condition="context/description"
             replace="structure context/description/fmt:text-to-html" />
-         <p class="informational" tal:condition="not:context/description"
-            >No description available.</p>
       </div>
 
       <p>For more information about how to configure your system to

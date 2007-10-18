@@ -46,7 +46,9 @@ from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeimport import *
 from canonical.launchpad.interfaces.codeimportevent import *
+from canonical.launchpad.interfaces.codeimportjob import *
 from canonical.launchpad.interfaces.codeimportmachine import *
+from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -164,5 +166,4 @@ from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
-from canonical.launchpad.interfaces.cal import *
 from canonical.launchpad.interfaces.archive import *

@@ -8,12 +8,15 @@ __all__ = [
     'launch_smart_server']
 
 import os
+import urlparse
 
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
+
+from canonical.config import config
 
 
 class ForbiddenCommand(Exception):
@@ -146,6 +149,10 @@ def launch_smart_server(avatar):
 
     environment = dict(os.environ)
     environment['BZR_PLUGIN_PATH'] = bzr_plugin_path
+
+    # Extract the hostname from the supermirror root config.
+    hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
+    environment['BZR_EMAIL'] = '%s@%s' % (avatar.lpname, hostname)
     return RestrictedExecOnlySession(
         avatar,
         reactor,
