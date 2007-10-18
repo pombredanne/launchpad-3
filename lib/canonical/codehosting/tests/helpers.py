@@ -168,7 +168,7 @@ class BranchTestCase(TestCaseWithTransport):
             self.getUniqueString('description'))
 
     def makeBranch(self, branch_type=None, owner=None, name=None, product=None,
-                   url=None, **kwargs):
+                   url=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -192,7 +192,8 @@ class BranchTestCase(TestCaseWithTransport):
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return self.branch_set.new(
-            branch_type, name, owner, owner, product, url, **kwargs)
+            branch_type, name, owner, owner, product, url,
+            **optional_branch_args)
 
     def relaxSecurityPolicy(self):
         """Switch to using 'PermissiveSecurityPolicy'."""
