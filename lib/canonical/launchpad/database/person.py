@@ -38,23 +38,23 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.lp.dbschema import (
-    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, SpecificationSort)
+from canonical.lp.dbschema import ArchivePurpose, BugTaskImportance
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
     IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    IHasMugshot, IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
     ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
     JoinNotAllowed, LoginTokenType, PersonCreationRationale,
     QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -1271,9 +1271,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
     @property
+    def invited_member_count(self):
+        """See `IPerson`."""
+        return self.invited_members.count()
+
+    @property
     def deactivatedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+
+    @property
+    def deactivated_member_count(self):
+        """See `IPerson`."""
+        return self.deactivatedmembers.count()
 
     @property
     def expiredmembers(self):
@@ -1281,9 +1291,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
+    def expired_member_count(self):
+        """See `IPerson`."""
+        return self.expiredmembers.count()
+
+    @property
     def proposedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
+
+    @property
+    def proposed_member_count(self):
+        """See `IPerson`."""
+        return self.proposedmembers.count()
 
     @property
     def adminmembers(self):
@@ -1312,6 +1332,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.expiredmembers.union(
             self.deactivatedmembers,
             orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def inactive_member_count(self):
+        """See `IPerson`."""
+        return self.inactivemembers.count()
 
     @property
     def pendingmembers(self):
@@ -1573,6 +1598,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            getUtility(IHWSubmissionSet).setOwnership(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -1619,6 +1645,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
+        getUtility(IHWSubmissionSet).setOwnership(email)
         # Now we update our cache of the preferredemail
         setattr(self, '_preferredemail_cached', email)
 
@@ -1687,39 +1714,69 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def latestMaintainedPackages(self):
+    def getLatestMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery()
 
-    def latestUploadedButNotMaintainedPackages(self):
+    def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False):
-        # Issues a special query that returns the most recent
-        # sourcepackagereleases that were maintained/uploaded to
-        # distribution series by this person.
+    def getLatestUploadedPPAPackages(self):
+        """See `IPerson`."""
+        return self._latestSeriesQuery(
+            uploader_only=True, ppa_only=True)
+
+    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases (SPRs) related to this person.
+
+        :param uploader_only: controls if we are interested in SPRs where
+            the person in question is only the uploader (creator) and not the
+            maintainer (debian-syncs), or, if the flag is False, it returns all
+            SPR maintained by this person.
+
+        :param ppa_only: controls if we are interested only in source
+            package releases targeted to any PPAs or, if False, sources targeted
+            to primary archives.
+
+        Active 'ppa_only' flag is usually associated with active 'uploader_only'
+        because there shouldn't be any sense of maintainership for packages
+        uploaded to PPAs by someone else than the user himself.
+        """
+        clauses = ['sourcepackagerelease.upload_archive = archive.id']
+
         if uploader_only:
-            extra = """sourcepackagerelease.creator = %d AND
-                       sourcepackagerelease.maintainer != %d""" % (
-                       self.id, self.id)
+            clauses.append(
+                'sourcepackagerelease.creator = %s' % quote(self.id))
+            clauses.append(
+                'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
-            extra = "sourcepackagerelease.maintainer = %d" % self.id
+            clauses.append(
+                'sourcepackagerelease.maintainer = %s' % quote(self.id))
+
+        if ppa_only:
+            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
+        else:
+            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
+
+        query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
+                                    upload_archive)
                        sourcepackagerelease.id
-                  FROM sourcepackagerelease
+                  FROM sourcepackagerelease, archive
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename,
+              ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
-              """ % extra
+              """ % (query_clause)
+
         return SourcePackageRelease.select(
             query,
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer'])
+            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
     def isUploader(self, distribution):
         """See `IPerson`."""
@@ -2247,6 +2304,23 @@ class PersonSet:
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('mailinglistsubscription', 'person'))
+
+        # Update only the BranchSubscription that will not conflict
+        cur.execute('''
+            UPDATE BranchSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND branch NOT IN
+                (
+                SELECT branch
+                FROM BranchSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM BranchSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('branchsubscription', 'person'))
 
         # Update only the BountySubscriptions that will not conflict
         # XXX: StuartBishop 2005-03-31:

@@ -16,22 +16,22 @@ __all__ = [
     'MINUTES',
     ]
 
-from datetime import datetime
 import operator
+import os
 import time
 
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.app.datetimeutils import rfc1123_date
 
-# XXX - bac - 20 Sept 2007, modules in canonical.lazr should not import from
+# XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
-# working prototype.
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp import LaunchpadFormView
-from canonical.launchpad.webapp.publisher import LaunchpadView
+# working prototype.  Bug 153795.
+from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 MINUTES = 60
+MAX_AGE = 60 * MINUTES
 
 
 class FeedBase(LaunchpadFormView):
@@ -48,8 +48,8 @@ class FeedBase(LaunchpadFormView):
     - itemToAtomFeedEntry
     """
 
-    max_age = 60 * MINUTES
-    # XXX - bac 2-Oct-2007 - this should be in a config file
+    # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be in a config file.
+    max_age = MAX_AGE
     quantity = 25
     items = None
     template_files = {'atom': 'templates/feed-atom.pt',
@@ -68,30 +68,37 @@ class FeedBase(LaunchpadFormView):
         pass
 
     def getTitle(self):
+        """Return the title of the feed."""
         raise NotImplementedError
 
     def getURL(self):
+        """Return the URL for the feed.  It should be unique and permanent."""
         raise NotImplementedError
 
     def getSiteURL(self):
-        from canonical.launchpad.webapp.vhosts import allvhosts
+        """Return the URL for the main site of Launchpad."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
     def getItems(self):
+        """Get the individual unformatted items for the feed."""
         raise NotImplementedError
 
     def itemToFeedEntry(self, item):
+        """Convert a single item to a formatted feed entry."""
         raise NotImplementedError
 
     def getFeedFormat(self):
+        """Return the requested feed format.
+
+        Raises ValueError if the format is not supported.
+        """
         path = self.request['PATH_INFO']
-        if path.endswith('.atom'):
-            return 'atom'
-        elif path.endswith('.html'):
-            return 'html'
+        extension = os.path.splitext(path)[1]
+        if extension in ['.atom', '.html']:
+            return extension[1:]
         else:
-            raise ValueError, ('%s in %s is not atom or html'
-                % (extension, self.request['PATH_INFO']))
+            raise ValueError, ('%s is not supported'
+                % (self.request['PATH_INFO']))
 
     def getLogo(self):
         """Get the URL for the feed logo."""
@@ -107,20 +114,12 @@ class FeedBase(LaunchpadFormView):
         By default this is set to the most recent update of the entries in the
         feed.
         """
-        items = self.getItems()
-        if len(items) == 0:
+        sorted_items = sorted(self.getItems(),
+                              key=operator.attrgetter('date_updated'),
+                              reverse=True)
+        if len(sorted_items) == 0:
             return None
-        sorted_items = sorted(items, key=operator.attrgetter('date_updated'), reverse=True)
         return sorted_items[0].date_updated
-
-    def getNow(self):
-        """Return the current time in the correct format.
-
-        Using datetime.isoformat returns the seconds to six decimal places,
-        which confuses some feed readers.
-        """
-        return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-
 
     def render(self):
         expires = rfc1123_date(time.time() + self.max_age)

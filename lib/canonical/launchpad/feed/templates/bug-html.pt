@@ -19,7 +19,7 @@
     <div tal:omit-tag="python:True" tal:repeat="bugtask view/getPublicRawItems">
       <tr tal:repeat="bugtask bugtask/bug/bugtasks">
         <td class="icon right">
-          <img src="/@@/bug" 
+          <img src="/@@/bug"
             tal:replace="structure bugtask/image:icon:mainsite" />
         </td>
         <td class="amount">
@@ -38,15 +38,15 @@
         </td>
         <td tal:content="bugtask/bugtargetdisplayname"
             tal:condition="view/show_column/bugtargetdisplayname|nothing">
-        >mozilla-firefox (Ubuntu)</td>
+          mozilla-firefox (Ubuntu)</td>
         <td tal:content="bugtask/importance/title"
             tal:attributes="class string:importance${bugtask/importance/name}"
-            tal:condition="view/show_column/importance|nothing"
-        >Critical</td>
+            tal:condition="view/show_column/importance|nothing">
+          Critical</td>
         <td tal:content="bugtask/status/title"
             tal:attributes="class string:status${bugtask/status/name}"
-            tal:condition="view/show_column/status|nothing"
-        >Confirmed</td>
+            tal:condition="view/show_column/status|nothing">
+          Confirmed</td>
       </tr>
     </div>
     </tbody>
