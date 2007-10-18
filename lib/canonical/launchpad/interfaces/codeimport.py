@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
     ]
@@ -12,11 +13,41 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 
+from canonical.lazr import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root, RevisionControlSystems)
-from canonical.lp.dbschema import CodeImportReviewStatus
+
+
+class CodeImportReviewStatus(DBEnumeratedType):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = DBItem(1, """Pending Review
+
+        This code import request has recently been filed an has not
+        been reviewed yet.
+        """)
+
+    INVALID = DBItem(10, """Invalid
+
+        This code import will not be processed.
+        """)
+
+    REVIEWED = DBItem(20, """Reviewed
+
+        This code import has been approved and will be processed.
+        """)
+
+    SUSPENDED = DBItem(30, """Suspended
+
+        This code import has been approved, but it has been suspended
+        and is not processed.""")
 
 
 class ICodeImport(Interface):
@@ -62,7 +93,7 @@ class ICodeImport(Interface):
                       "code for, or None if there is no such series."))
 
     review_status = Choice(
-        title=_("Review Status"), vocabulary='CodeImportReviewStatus',
+        title=_("Review Status"), vocabulary=CodeImportReviewStatus,
         default=CodeImportReviewStatus.NEW,
         description=_("Before a code import is performed, it is reviewed."
             " Only reviewed imports are processed."))

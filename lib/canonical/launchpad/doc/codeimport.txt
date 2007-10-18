@@ -210,7 +210,7 @@ present the import's details on the page of the branch.
 Finally, you can search for imports by review status.  For instance,
 there is a single sample CodeImport with the "REVIEWED" status:
 
-    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> reviewed_imports = list(code_import_set.search(
     ...     review_status=CodeImportReviewStatus.REVIEWED))
     >>> reviewed_imports

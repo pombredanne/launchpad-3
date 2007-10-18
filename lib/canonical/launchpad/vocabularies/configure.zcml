@@ -61,11 +61,6 @@
       />
 
   <vocabulary
-      name="CodeImportReviewStatus"
-      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
-      />
-
-  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />

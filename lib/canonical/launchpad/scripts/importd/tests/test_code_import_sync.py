@@ -19,12 +19,11 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import CodeImport, ProductSeries, ProductSet
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, ICodeImportSet, ImportStatus, NotFoundError,
-    RevisionControlSystems)
+    BranchType, CodeImportReviewStatus, IBranchSet, ICodeImportSet,
+    ImportStatus, NotFoundError, RevisionControlSystems)
 from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import CodeImportReviewStatus
 
 
 UTC = pytz.timezone('UTC')
