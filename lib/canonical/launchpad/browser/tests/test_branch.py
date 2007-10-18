@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.branch import (
-    BranchAddView, BranchMirrorFailureView)
+    BranchAddView, BranchMirrorStatusView)
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
@@ -37,7 +37,7 @@ class TestBranchView(unittest.TestCase):
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
         branch = getUtility(IBranchSet).get(28)
-        branch_view = BranchMirrorFailureView(branch, self.request)
+        branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
                           branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...',
@@ -47,7 +47,7 @@ class TestBranchView(unittest.TestCase):
         """mirror_status_message on the view is the same as on the branch."""
         branch = getUtility(IBranchSet).get(5)
         branch.mirrorFailed("This is a short error message.")
-        branch_view = BranchMirrorFailureView(branch, self.request)
+        branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(
             len(branch.mirror_status_message)
             <= branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH,

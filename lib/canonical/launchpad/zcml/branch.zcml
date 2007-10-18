@@ -136,10 +136,10 @@
   <browser:page
       name="+mirror-failures"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchMirrorFailureView"
+      class="canonical.launchpad.browser.BranchMirrorStatusView"
       facet="branches"
       permission="launchpad.View"
-      template="../templates/branch-mirror-failure.pt" />
+      template="../templates/branch-mirror-status.pt" />
 
   <browser:page
       name="+reassign"

@@ -13,7 +13,7 @@ __all__ = [
     'BranchDeletionView',
     'BranchEditView',
     'BranchReassignmentView',
-    'BranchMirrorFailureView',
+    'BranchMirrorStatusView',
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
@@ -464,8 +464,12 @@ class BranchEditFormView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BranchMirrorFailureView(LaunchpadFormView):
-    """This view is displayed when the branch has failed to mirror."""
+class BranchMirrorStatusView(LaunchpadFormView):
+    """This view displays the mirror status of a branch.
+
+    This includes the next mirror time and any failures that may have
+    occurred.
+    """
 
     MAXIMUM_STATUS_MESSAGE_LENGTH = 128
 
