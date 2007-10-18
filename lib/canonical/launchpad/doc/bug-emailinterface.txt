@@ -1038,7 +1038,7 @@ message:
     ...
     The milestone 1.1 does not exist for Mozilla Firefox. Note that
     milestones are not automatically created from emails; they must be
-    created on the website at http://launchpad.dev/firefox/+addmilestone
+    created on the website.
     ...
 
 Attempting to set the milestone for a bug without sufficient
