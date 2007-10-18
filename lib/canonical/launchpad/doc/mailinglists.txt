@@ -104,7 +104,7 @@ registration date is set, and its status is set to REGISTERED.
     >>> list_one.team.displayname
     u'Team One'
     >>> list_one.registrant.name
-    u'ddaa'
+    u'no-priv'
     >>> # We have to compare dates this way because of minor clock skew
     >>> # between the Python process and the database (which is where
     >>> # date_registered comes from).  Also, Python's date objects don't
@@ -134,9 +134,9 @@ changes.
     >>> team_one.teamowner = cris
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
-    >>> # new_team() uses ddaa as the registrant.
+    >>> # new_team() uses No Privileges Person as the registrant.
     >>> list_one.registrant.name
-    u'ddaa'
+    u'no-priv'
 
 A mailing list cannot be registered more than once.
 

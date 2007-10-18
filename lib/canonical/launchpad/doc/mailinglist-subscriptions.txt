@@ -27,10 +27,10 @@ Anne gets two email addresses.  One is her preferred address...
     >>> team_one, list_one = new_team('team-one', with_list=True)
     >>> anne.join(team_one)
     >>> bart.join(team_one)
-    >>> # David Allouche shows up as a team member because he created the team
-    >>> # (in the doctest infrastructure).
+    >>> # No Privileges Person shows up as a team member because he created
+    >>> # the team (in the doctest infrastructure).
     >>> sorted(member.displayname for member in team_one.allmembers)
-    [u'Anne Person', u'Bart Person', u'David Allouche']
+    [u'Anne Person', u'Bart Person', u'No Privileges Person']
 
 Anne subscribes to the mailing list for team one.  Because Anne does not
 provide an email address when she subscribes, her preferred address is used.
@@ -77,16 +77,16 @@ we first create team-two as a subteam of team-one.
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> team_one.addMember(team_two, salgado, force_team_add=True)
     >>> sorted(member.displayname for member in team_one.allmembers)
-    [u'Anne Person', u'Bart Person', u'David Allouche', u'Team Two']
+    [u'Anne Person', u'Bart Person', u'No Privileges Person', u'Team Two']
 
 Cris joins team-two, becoming a direct member of team-two and an indirect
 member of team-one.
 
     >>> cris.join(team_two)
     >>> sorted(member.displayname for member in team_two.allmembers)
-    [u'Cris Person', u'David Allouche']
+    [u'Cris Person', u'No Privileges Person']
     >>> sorted(member.displayname for member in team_one.allmembers)
-    [u'Anne Person', u'Bart Person', u'Cris Person', u'David Allouche',
+    [u'Anne Person', u'Bart Person', u'Cris Person', u'No Privileges Person',
      u'Team Two']
 
 Now, by virtue of her indirect membership in team-one, Cris can subscribe to

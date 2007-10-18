@@ -13,10 +13,12 @@ __all__ = [
 
 import xmlrpclib
 
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMailingListSet, IPersonSet,
-    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
 from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
+    IMailingListSet, IPersonSet, MailingListStatus, PersonCreationRationale,
+    TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
@@ -45,7 +47,7 @@ def fault_catcher(func):
 
 
 def print_actions(pending_actions):
-    """A helper function for the mailinglist-xmlrpc.txt doctest.
+    """A helper function for the mailing list tests.
 
     This helps print the data structure returned from .getPendingActions() in
     a more succinct way so as to produce a more readable doctest.  It also
@@ -78,7 +80,9 @@ def print_actions(pending_actions):
 
 
 def print_info(info):
-    """A helper function for the mailinglist-subscription-xmlrpc.txt doctest.
+    """A helper function for the mailing list tests.
+
+    This prints the results of the XMLRPC .getPendingActions() call.
     """
     for team_name in sorted(info):
         print team_name
@@ -98,15 +102,18 @@ def new_team(team_name, with_list=False):
     # bug 125505.
     policy = TeamSubscriptionPolicy.OPEN
     personset = getUtility(IPersonSet)
-    ddaa = personset.getByName('ddaa')
-    team = personset.newTeam(ddaa, team_name, displayname,
+    team_creator = personset.getByName('no-priv')
+    team = personset.newTeam(team_creator, team_name, displayname,
                              subscriptionpolicy=policy)
     if not with_list:
         return team
-    carlos = personset.getByName('carlos')
+    # Any member of the mailing-list-experts team can review a list
+    # registration.  It doesn't matter which one.
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
-    team_list.review(carlos, MailingListStatus.APPROVED)
+    team_list.review(reviewer, MailingListStatus.APPROVED)
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
     return team, team_list
