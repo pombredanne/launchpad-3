@@ -62,7 +62,6 @@ an actual launchpad user.
     >>> test_tales("person/image:mugshot", person=spiv)
     '...<img...src="/@@/person-inactive-mugshot" />...'
 
-
 If you are on feeds.launchpad.net, you need to specify the rootsite, so
 that the links and images are pointing at the right hostname.
 
