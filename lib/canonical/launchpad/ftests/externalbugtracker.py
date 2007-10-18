@@ -110,10 +110,10 @@ def convert_python_status(status, resolution):
     return "%s:%s" % (status_map[status], resolution_map[resolution])
 
 def set_bugwatch_error_type(bug_watch, error_type):
-    """Set the lasterror field of a bug watch to a given error type."""
+    """Set the last_error_type field of a bug watch to a given error type."""
     login('test@canonical.com')
     bug_watch.remotestatus = None
-    bug_watch.lasterror = error_type
+    bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     logout()
 
