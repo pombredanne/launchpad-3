@@ -267,8 +267,11 @@ class TestMantis(Mantis):
 
     def cleanCache(self):
         """Clean the csv_data cache."""
-        if self.__dict__.has_key('_csv_data_cached_value'):
-            del(self._csv_data_cached_value)
+        # Remove the self._csv_data_cached_value if it exists.
+        try:
+            del self._csv_data_cached_value
+        except AttributeError:
+            pass
 
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
