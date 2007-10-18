@@ -224,7 +224,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     # revision control items

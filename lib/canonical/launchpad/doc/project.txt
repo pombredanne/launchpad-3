@@ -108,7 +108,7 @@ ordered by their names.
 We should be able to generate filtered lists of specs on a project.
 
  >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 
@@ -203,10 +203,10 @@ And that translatable product is 'Evolution'.
 
 With its 'trunk' series translatable.
 
-  >>> evo_serieses = evolution.translatable_serieses
-  >>> len(evo_serieses)
+  >>> evo_series = evolution.translatable_series
+  >>> len(evo_series)
   1
-  >>> evo_trunk = evo_serieses[0]
+  >>> evo_trunk = evo_series[0]
   >>> print evo_trunk.name
   trunk
 
@@ -229,15 +229,13 @@ Rosetta officially.
 
 And thus, it doesn't have any translatable series.
 
-  >>> len(netapplet.translatable_serieses)
+  >>> len(netapplet.translatable_series)
   0
 
 Even if it has resources to translate.
 
-  >>> translation_templates_count = 0
-  >>> for series in netapplet.serieses:
-  ...     translation_templates_count += len(series.getTranslationTemplates())
-  >>> translation_templates_count
+  >>> sum([len(series.getTranslationTemplates())
+  ...      for series in netapplet.serieses])
   1
 
 

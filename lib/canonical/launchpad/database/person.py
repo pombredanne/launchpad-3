@@ -38,24 +38,23 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskImportance, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    SpecificationSort)
+from canonical.lp.dbschema import ArchivePurpose, BugTaskImportance
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
     IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    IHasMugshot, IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
     ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
     JoinNotAllowed, LoginTokenType, PersonCreationRationale,
     QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -1599,6 +1598,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            getUtility(IHWSubmissionSet).setOwnership(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -1645,6 +1645,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
+        getUtility(IHWSubmissionSet).setOwnership(email)
         # Now we update our cache of the preferredemail
         setattr(self, '_preferredemail_cached', email)
 
@@ -1764,7 +1765,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
-                  FROM sourcepackagerelease
+                  FROM sourcepackagerelease, archive
                  WHERE %s
               ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
                        dateuploaded DESC
@@ -1773,7 +1774,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         return SourcePackageRelease.select(
             query,
-            clauseTables=['Archive'],
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
@@ -2304,6 +2304,23 @@ class PersonSet:
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('mailinglistsubscription', 'person'))
+
+        # Update only the BranchSubscription that will not conflict
+        cur.execute('''
+            UPDATE BranchSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND branch NOT IN
+                (
+                SELECT branch
+                FROM BranchSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM BranchSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('branchsubscription', 'person'))
 
         # Update only the BountySubscriptions that will not conflict
         # XXX: StuartBishop 2005-03-31:

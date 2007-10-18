@@ -1015,13 +1015,6 @@ ALTER TABLE bugproductinfestation DISABLE TRIGGER ALL;
 ALTER TABLE bugproductinfestation ENABLE TRIGGER ALL;
 
 
-ALTER TABLE bugrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugrelationship ENABLE TRIGGER ALL;
-
-
 ALTER TABLE bugsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (1, 11, 1, '2006-10-16 18:31:43.154816');
@@ -1105,16 +1098,16 @@ ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
 
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL);
 
 
 ALTER TABLE bugwatch ENABLE TRIGGER ALL;
@@ -1953,7 +1946,7 @@ ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
 ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
 
-INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1);
+INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint, raw_emailaddress) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1, 'test@canonical.com');
 
 
 ALTER TABLE hwsubmission ENABLE TRIGGER ALL;

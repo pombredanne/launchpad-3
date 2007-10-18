@@ -31,33 +31,29 @@ from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
-from canonical.lp.dbschema import ImportStatus
-from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces import (
-    ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
-    ITranslationImportQueue, IProductSeriesSet, NotFoundError,
-    RevisionControlSystems)
+from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
+    DefaultShortLink, StructuralObjectPresentation)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
+from canonical.launchpad.interfaces import (
+    ICountry, ILaunchpadCelebrities, IPOTemplateSet, IProductSeries,
+    IProductSeriesSet, ISourcePackageNameSet, ITranslationImporter,
+    ITranslationImportQueue, NotFoundError, RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets,
-    LaunchpadEditFormView, action, custom_widget
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
+    action, ApplicationMenu, canonical_url, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
-
+from canonical.lp.dbschema import ImportStatus
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
-
-from canonical.launchpad import _
 
 
 def quote(text):

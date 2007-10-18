@@ -11,7 +11,6 @@ __all__ = [
 from zope.interface import Attribute
 from zope.schema import Object
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
 

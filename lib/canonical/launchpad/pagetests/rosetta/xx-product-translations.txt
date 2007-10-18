@@ -19,8 +19,14 @@ for a distribution.
 
 We even have a language chart table.
 
-    >>> find_tag_by_id(anon_browser.contents, 'language-chart') is None
-    False
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'language-chart'))
+    Language Status Untranslated Need review Changed Last Edited By
+    Afrikaans 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Sotho, Southern 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Xhosa 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Zulu 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+
 
 If a product is not set up for translations in Launchpad, and you are its
 registrant or an admin, the Translations page suggests that you set it up for
@@ -100,7 +106,7 @@ registrant, so the text reflects both possibilities.
     ...
 
 Finally, if a product states that is not officially using Launchpad
-Translations.
+Translations...
 
     >>> anon_browser.open('http://launchpad.dev/netapplet')
     >>> portlet_content = find_tag_by_id(
@@ -111,7 +117,7 @@ Translations.
     Doesn&rsquo;t use Translations
     ...
 
-It doesn't show any translation template:
+... it doesn't show any translation template:
 
     >>> anon_browser.getLink('Translations').click()
     >>> print anon_browser.title
@@ -119,8 +125,12 @@ It doesn't show any translation template:
     >>> print find_main_content(anon_browser.contents)
     <...
     ...Translation setup needed...
-    >>> find_tag_by_id(anon_browser.contents, 'language-chart') is None
-    True
+
+And since the Network Applet isn't currently using Launchpad for
+Translations, there is no language chart show.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'language-chart')
+    None
 
 When browsing it as an admin, we can see that it has some 'obsolete'
 translation templates, which is just that the product is not using
@@ -129,17 +139,17 @@ them anymore.
     >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents,
-    ...                    'portlet-obsolete-translatable-branches'))
-    All branches with obsolete templates
+    ...                    'portlet-obsolete-translatable-series'))
+    All product series with obsolete templates
     NetApplet Series: trunk
 
 While we can see that anonymous people are not getting such information:
 
-    >>> find_tag_by_id(anon_browser.contents,
-    ...                'portlet-obsolete-translatable-branches') is None
-    True
+    >>> print find_tag_by_id(anon_browser.contents,
+    ...                'portlet-obsolete-translatable-series')
+    None
 
-So we could note that netapplet is using Launchpad for translations:
+If the netapplet project is updated to use Launchpad for translations...
 
     >>> admin_browser.getLink('Overview').click()
     >>> print admin_browser.title
@@ -153,14 +163,14 @@ So we could note that netapplet is using Launchpad for translations:
     ...     ).selected = True
     >>> admin_browser.getControl('Change').click()
 
-And now, there are no more obsolete entries.
+...there are no longer any obsolete entires.
 
     >>> admin_browser.getLink('Translations').click()
     >>> print admin_browser.title
     Translations of Network Applet in Launchpad
-    >>> find_tag_by_id(admin_browser.contents,
-    ...                'portlet-obsolete-translatable-branches') is None
-    True
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...                'portlet-obsolete-translatable-series')
+    None
 
 Also, we will get some translation status for network applet.
 
@@ -168,5 +178,10 @@ Also, we will get some translation status for network applet.
     >>> print find_main_content(anon_browser.contents)
     <...
     ...Translation overview...
-    >>> find_tag_by_id(anon_browser.contents, 'language-chart') is None
-    False
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'language-chart'))
+    Language Status Untranslated Need review Changed Last Edited By
+    Afrikaans 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Sotho, Southern 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Xhosa 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Zulu 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;

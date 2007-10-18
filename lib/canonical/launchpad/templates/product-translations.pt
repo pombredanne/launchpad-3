@@ -6,25 +6,25 @@
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-preflangs" />
-</metal:rightportlets>
+  <metal:portlets fill-slot="portlets">
+    <div tal:replace="structure context/@@+portlet-preflangs" />
+  </metal:portlets>
 
-    <metal:heading fill-slot="pageheading">
-      <tal:uses-translations condition="view/uses_translations">
+    <div metal:fill-slot="main"
+         define="uses_translations view/uses_translations;
+                 admin_user context/required:launchpad.TranslationsAdmin">
+      <tal:uses-translations condition="uses_translations">
         <h1>Translation overview</h1>
       </tal:uses-translations>
-      <tal:not-uses-translations condition="not: view/uses_translations">
-        <h1 tal:condition="context/required:launchpad.TranslationsAdmin">
+      <tal:not-uses-translations condition="not: uses_translations">
+        <h1 tal:condition="admin_user">
           How to start using Launchpad Translations
         </h1>
-        <h1 tal:condition="not: context/required:launchpad.TranslationsAdmin">
+        <h1 tal:condition="not: admin_user">
           Translation setup needed
         </h1>
       </tal:not-uses-translations>
-    </metal:heading>
-    <div metal:fill-slot="main">
-      <tal:uses-translations condition="view/uses_translations">
+      <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
           <p>
             For <tal:product replace="context/displayname" />,
@@ -35,9 +35,9 @@
           <div tal:replace="structure context/@@+portlet-translatables" />
         </tal:translatable>
       </tal:uses-translations>
-      <tal:not-uses-translations condition="not: view/uses_translations">
+      <tal:not-uses-translations condition="not: uses_translations">
         <tal:registrantoradmin
-          condition="context/required:launchpad.TranslationsAdmin">
+          condition="admin_user">
           <p>
             To set up <tal:product replace="context/displayname" /> for
             translation in Launchpad, you need to
@@ -62,7 +62,7 @@
           </p>
         </tal:registrantoradmin>
         <tal:other
-          condition="not: context/required:launchpad.TranslationsAdmin">
+          condition="not: admin_user">
           <p>
             The <tal:product replace="context/displayname" /> project is not
             set up for translation in Launchpad.
@@ -91,9 +91,9 @@
         </tal:other>
       </tal:not-uses-translations>
       <tal:registrant-or-admin
-        condition="context/required:launchpad.TranslationsAdmin">
+        condition="admin_user">
         <tal:has-obsolete-entries
-          condition="context/obsolete_translatable_serieses">
+          condition="context/obsolete_translatable_series">
           <div
             tal:replace="structure context/@@+portlet-obsolete-translatables" />
         </tal:has-obsolete-entries>

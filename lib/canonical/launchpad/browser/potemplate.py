@@ -551,13 +551,13 @@ class POTemplateSubsetNavigation(Navigation):
         elif potemplate.product is not None:
             official_rosetta = potemplate.product.official_rosetta
         else:
-            official_rosetta = False
+            raise AssertionError('Unknown context for %s' % potemplate.title)
 
         if ((official_rosetta and potemplate.iscurrent) or
             check_permission('launchpad.Admin', self.context)):
             # The target is using officially Launchpad Translations and the
-            # template is available to be translated, or is an admin which
-            # is browsing the system, in which case we show everything.
+            # template is available to be translated, or the user is a is a
+            # Launchpad administrator in which case we show everything.
             return potemplate
         else:
             raise NotFoundError(name)
