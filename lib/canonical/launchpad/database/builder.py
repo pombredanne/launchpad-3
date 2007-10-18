@@ -280,7 +280,7 @@ class Builder(SQLBase):
             ubuntu_components = ogre_components
             # A list of pockets that we are allowed to use for
             # dependencies.
-            primary_pocket_dependencies = {
+            pocket_dependencies = {
                 PackagePublishingPocket.RELEASE :
                     (PackagePublishingPocket.RELEASE,),
                 PackagePublishingPocket.SECURITY :
@@ -302,12 +302,6 @@ class Builder(SQLBase):
                      PackagePublishingPocket.PROPOSED),
                 }
 
-            partner_pocket_dependencies = (
-                PackagePublishingPocket.RELEASE,
-                PackagePublishingPocket.SECURITY,
-                PackagePublishingPocket.UPDATES,
-                )
-
             if (build_queue_item.build.archive.purpose ==
                     ArchivePurpose.PARTNER):
                 # XXX julian 2007-08-07 - this is a greasy hack.
@@ -316,9 +310,14 @@ class Builder(SQLBase):
                 # component is only in the partner archive, so we have
                 # to be careful with the sources.list archives.
                 ubuntu_components = 'main restricted universe multiverse'
-                ubuntu_pockets = partner_pocket_dependencies
+
+                # Although partner builds are always in the release
+                # pocket, they depend on the same pockets as though they
+                # were in the updates pocket.
+                ubuntu_pockets = pocket_dependencies[
+                    PackagePublishingPocket.UPDATES]
             else:
-                ubuntu_pockets = primary_pocket_dependencies[
+                ubuntu_pockets = pocket_dependencies[
                     build_queue_item.build.pocket]
 
             # Here we build a list of sources.list lines for each pocket

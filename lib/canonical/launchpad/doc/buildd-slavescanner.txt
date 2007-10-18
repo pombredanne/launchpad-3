@@ -1004,9 +1004,32 @@ addition to a reference to the release pocket in the partner archive itself.
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse', u'deb http://launchpad.dev/ubuntu-partner hoary main']
 
+  >>> bqItem3.destroySelf()
+  >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
+  >>> local_transaction.commit()
+
+Similarly, PPA builds pass the archives property:
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
+  >>> removeSecurityProxy(a_build).archive = cprov_archive
+  >>> local_transaction.commit()
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> a_builder.trusted = False
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://archive.ubuntu.com/ubuntu hoary main', u'deb http://ppa.launchpad.dev/cprov/ubuntu hoary main']
+
 Clean up before continuing:
 
   >>> bqItem3.destroySelf()
+  >>> a_builder.trusted = True
+  >>> a_builder.builderok = True
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
   >>> local_transaction.commit()
 
@@ -1058,7 +1081,8 @@ are dependent on the pocket that we are building in, such that:
 || backports || release + updates + security + backports ||
 ++-----------++------------------------------------------++
 
-Change the distroseries status for testing. FROZEN allows all pockets:
+Change the distroseries status for testing. FROZEN allows building in
+all pockets:
 
   >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> hoary_i386.distroseries.status = DistroSeriesStatus.FROZEN
