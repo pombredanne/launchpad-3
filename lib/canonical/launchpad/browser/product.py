@@ -1063,6 +1063,10 @@ class ProductBranchesView(BranchListingView):
 
     extra_columns = ('author',)
 
+    @property
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
             self.context, self.selected_lifecycle_status, self.user)

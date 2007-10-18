@@ -41,13 +41,14 @@ class BranchListingItem(BranchBadges):
     decorates(IBranch, 'branch')
 
     def __init__(self, branch, last_commit, now, role, show_bug_badge,
-                 show_blueprint_badge):
+                 show_blueprint_badge, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.role = role
         self._now = now
+        self.is_development_focus = is_dev_focus
 
     @property
     def elapsed_time(self):
@@ -113,9 +114,10 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
+        is_dev_focus = branch == self.view.development_focus_branch
         return BranchListingItem(
             branch, last_commit, self._now, role, show_bug_badge,
-            show_blueprint_badge)
+            show_blueprint_badge, is_dev_focus)
 
     def branches(self):
         """Return a list of BranchListingItems."""
@@ -137,6 +139,7 @@ class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
     schema = IBranchLifecycleFilter
     field_names = ['lifecycle']
+    development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     extra_columns = []
     title_prefix = 'Bazaar'
