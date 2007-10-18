@@ -280,7 +280,7 @@ We are going to now poke into the back of the db's head, and "privatise" the
 bug we have been using.
 
    >>> from canonical.launchpad.interfaces import (
-   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet)
+   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet, ILaunchBag)
    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> login('foo.bar@canonical.com')

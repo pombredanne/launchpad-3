@@ -109,7 +109,7 @@ count, but not No Privileges Person or the anonymous user.
     >>> print_count_difference(anon_counts, old_counts, BugTaskStatus.INCOMPLETE)
     INCOMPLETE: 1 bug(s) less
 
-    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
     >>> syncUpdate(bug)
 
