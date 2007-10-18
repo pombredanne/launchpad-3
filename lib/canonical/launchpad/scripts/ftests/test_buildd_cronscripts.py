@@ -12,7 +12,8 @@ from canonical.config import config
 from canonical.buildmaster.master import (
     BuilddMaster, BUILDMASTER_ADVISORY_LOCK_KEY, BUILDMASTER_LOCKFILENAME)
 from canonical.database.sqlbase import cursor
-from canonical.database.postgresql import acquire_advisory_lock
+from canonical.database.postgresql import (
+    acquire_advisory_lock, clear_all_advisory_locks)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.base import LOCK_PATH
 from canonical.testing import LaunchpadLayer
@@ -89,7 +90,7 @@ class TestBuilddCronscripts(TestBuilddCronscriptBase):
         self.assertRuns(runner=self.runBuilddSlaveScanner)
 
     def testRunSlaveScannerLocked(self):
-        """Check is buildd-slave-scanner.py respects build-master lock."""
+        """Check if buildd-slave-scanner.py respects build-master lock."""
         self.assertLocked(runner=self.runBuilddSlaveScanner)
 
     def testRunQueueBuilder(self):
@@ -113,9 +114,8 @@ class TestBuilddCronscriptsAdvisoryLock(
         self.local_cursor = cursor()
 
     def tearDown(self):
-        """Ensure all advisory locks are released."""
-        self.local_cursor.execute("SELECT pg_advisory_unlock_all()")
-        trash = self.local_cursor.fetchall()
+        """Ensure all advisory locks aquired in during tests are released."""
+        clear_all_advisory_locks(self.local_cursor)
 
     def acquireBuilddmasterAdvisoryLock(self):
         """Acquire builddmaster postgres advisory lock."""

@@ -62,13 +62,13 @@ class QueueBuilder(LaunchpadCronScript):
             self.logger.info("Dry run: changes will not be committed.")
             self.txn = _FakeZTM()
 
-        self.rebuildQueue()
-        self.txn.commit()
-
-        local_cursor = cursor()
-        if not release_advisory_lock(
-            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
-            self.logger.debug("Could not release advisory lock.")
+        try:
+            self.rebuildQueue()
+        finally:
+            local_cursor = cursor()
+            if not release_advisory_lock(
+                local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
+                self.logger.debug("Could not release advisory lock.")
 
     def rebuildQueue(self):
         """Look for and initialise new build jobs."""
@@ -99,6 +99,8 @@ class QueueBuilder(LaunchpadCronScript):
 
         # Re-score the NEEDSBUILD properly
         buildMaster.sanitiseAndScoreCandidates()
+
+        self.txn.commit()
 
     @property
     def lockfilename(self):

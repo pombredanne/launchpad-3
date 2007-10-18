@@ -433,7 +433,8 @@ def acquire_advisory_lock(cur, key):
 
     It is immediately available to other connections once it is released:
 
-    >>> cur.execute("SELECT pg_advisory_unlock_all()")
+    >>> clear_all_advisory_locks(cur)
+    True
     >>> acquire_advisory_lock(new_cur, 12345)
     True
 
@@ -453,14 +454,15 @@ def acquire_advisory_lock(cur, key):
     To cleanup after this test, release all acquired locks in the test
     connection:
 
-    >>> cur.execute("SELECT pg_advisory_unlock_all()")
+    >>> clear_all_advisory_locks(cur)
+    True
     """
     cur.execute('SELECT pg_try_advisory_lock(%s)' % key)
     return (cur.fetchone()[0] != 0)
 
 
 def release_advisory_lock(cur, key):
-    """Release a advisory lock for the given 'key';
+    """Release a advisory lock for the given 'key'.
 
     Return True if the 'release' procedure succeeded, otherwise False is
     returned.
@@ -477,7 +479,8 @@ def release_advisory_lock(cur, key):
 
     Once the lock is acquired it can be successfully release:
 
-    >>> cur.execute("SELECT pg_advisory_lock(12345)")
+    >>> acquire_advisory_lock(cur, 12345)
+    True
     >>> release_advisory_lock(cur, 12345)
     True
 
@@ -487,9 +490,9 @@ def release_advisory_lock(cur, key):
     >>> from canonical.ftests.pgsql import PgTestSetup
     >>> new_con = PgTestSetup().connect()
     >>> new_cur = new_con.cursor()
-    >>> new_cur.execute("SELECT pg_advisory_lock(12345)")
-    >>> trash = new_cur.fetchall()
 
+    >>> acquire_advisory_lock(new_cur, 12345)
+    True
     >>> release_advisory_lock(cur, 12345)
     False
 
@@ -501,15 +504,16 @@ def release_advisory_lock(cur, key):
     Lock acquisition is paired with lock release, i.e, if a lock was acquired
     multiple times it should be released multiple times too:
 
-    >>> cur.execute("SELECT pg_advisory_lock(12345)")
-    >>> cur.execute("SELECT pg_advisory_lock(12345)")
+    >>> acquire_advisory_lock(cur, 12345)
+    True
+    >>> acquire_advisory_lock(cur, 12345)
+    True
     >>> release_advisory_lock(cur, 12345)
     True
 
     Lock still acquired in the original connection:
 
-    >>> new_cur.execute("SELECT pg_try_advisory_lock(12345)")
-    >>> new_cur.fetchall()[0][0] != 0
+    >>> acquire_advisory_lock(new_cur, 12345)
     False
 
     >>> release_advisory_lock(cur, 12345)
@@ -517,17 +521,76 @@ def release_advisory_lock(cur, key):
 
     After the second release step the lock is available again:
 
-    >>> new_cur.execute("SELECT pg_try_advisory_lock(12345)")
-    >>> new_cur.fetchall()[0][0] != 0
+    >>> acquire_advisory_lock(new_cur, 12345)
     True
 
-    To cleanup after this test, release all acquired locks in the test
-    connection:
+    To cleanup after this test, release all acquired locks in the new test
+    connection and close it:
 
+    >>> clear_all_advisory_locks(new_cur)
+    True
     >>> new_con.close()
-    >>> cur.execute("SELECT pg_advisory_unlock_all()")
     """
     cur.execute('SELECT pg_advisory_unlock(%s)' % key)
+    return (cur.fetchone()[0] != 0)
+
+
+def clear_all_advisory_locks(cur):
+    """Release all advisory locks installed in the given database cursor.
+
+    Return True if the 'release' procedure succeeded, otherwise False is
+    returned.
+
+    Acquire a lock multiple times in the test connection:
+
+    >>> acquire_advisory_lock(cur, 12345)
+    True
+    >>> acquire_advisory_lock(cur, 12345)
+    True
+
+    Also acquire multiple locks:
+
+    >>> acquire_advisory_lock(cur, 12346)
+    True
+    >>> acquire_advisory_lock(cur, 12347)
+    True
+
+    Setup a new connection and verify that the lock are acquired:
+
+    >>> from canonical.ftests.pgsql import PgTestSetup
+    >>> new_con = PgTestSetup().connect()
+    >>> new_cur = new_con.cursor()
+
+    >>> acquire_advisory_lock(new_cur, 12345)
+    False
+    >>> acquire_advisory_lock(new_cur, 12346)
+    False
+    >>> acquire_advisory_lock(new_cur, 12347)
+    False
+
+    Use clear_all_advisory_locks in the test connection to release all locks
+    acquired in its context:
+
+    >>> clear_all_advisory_locks(cur)
+    True
+
+    Now the locks can be used (acquired) in the the new connection:
+
+    >>> acquire_advisory_lock(new_cur, 12345)
+    True
+    >>> acquire_advisory_lock(new_cur, 12346)
+    True
+    >>> acquire_advisory_lock(new_cur, 12347)
+    True
+
+    To cleanup after this test, release all acquired locks in the second test
+    connection and close it:
+
+    >>> clear_all_advisory_locks(new_cur)
+    True
+    >>> new_con.close()
+    """
+    cur.execute('SELECT pg_advisory_unlock_all()')
     return (cur.fetchone()[0] != 0)
 
 

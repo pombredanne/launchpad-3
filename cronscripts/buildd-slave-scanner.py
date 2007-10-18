@@ -37,18 +37,21 @@ class SlaveScanner(LaunchpadCronScript):
             local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
             raise LaunchpadScriptFailure(
                 "Another builddmaster script is already running")
+        try:
+            self.dispatchOrCollectJobs()
+        finally:
+            local_cursor = cursor()
+            if not release_advisory_lock(
+                local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
+                self.logger.debug("Could not release advisory lock.")
 
+    def dispatchOrCollectJobs(self):
         builder_set = getUtility(IBuilderSet)
         buildMaster = builder_set.pollBuilders(self.logger, self.txn)
         # XXX: lifeless 2007-05-25:
         # Only needed until the soyuz buildmaster class is fully deleted.
         builder_set.dispatchBuilds(
             self.logger, removeSecurityProxy(buildMaster))
-
-        local_cursor = cursor()
-        if not release_advisory_lock(
-            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
-            self.logger.debug("Could not release advisory lock.")
 
     @property
     def lockfilename(self):
