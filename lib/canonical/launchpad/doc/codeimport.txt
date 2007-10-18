@@ -284,6 +284,14 @@ need to pass the user as an argument.
     >>> [event.event_type.name for event in svn_events]
     ['CREATE', 'MODIFY']
 
+The launchpad.Edit privilege is required to use CodeImport.updateFromData.
+
+    >>> login(ANONYMOUS)
+    >>> svn_import.updateFromData({}, nopriv)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<CodeImport at ...>, 'updateFromData', 'launchpad.Edit')
+
 
 == Security ==
 
