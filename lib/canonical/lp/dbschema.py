@@ -22,7 +22,6 @@ __all__ = (
 'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BranchReviewStatus',
 'BugNominationStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -774,56 +773,6 @@ class BugInfestationStatus(DBSchema):
         Unknown
 
         We don't know if this bug infests that coderelease.
-        """)
-
-
-class BranchReviewStatus(DBSchema):
-    """Branch Review Cycle
-
-    This is an indicator of what the project thinks about this branch.
-    Typically, it will be set by the upstream as part of a review process
-    before the branch lands on an official series.
-    """
-
-    NONE = Item(10, """
-        None
-
-        This branch has not been queued for review, and no review has been
-        done on it.
-        """)
-
-    REQUESTED = Item(20, """
-        Requested
-
-        The author has requested a review of the branch. This usually
-        indicates that the code is mature and ready for merging, but it may
-        also indicate that the author would like some feedback on the
-        direction in which he is headed.
-        """)
-
-    NEEDSWORK = Item(30, """
-        Needs Further Work
-
-        The reviewer feels that this branch is not yet ready for merging, or
-        is not on the right track. Detailed comments would be found in the
-        reviewer discussion around the branch, see those for a list of the
-        issues to be addressed or discussed.
-        """)
-
-    MERGECONDITIONAL = Item(50, """
-        Conditional Merge Approved
-
-        The reviewer has said that this branch can be merged if specific
-        issues are addressed. The review feedback will be contained in the
-        branch discussion. Once those are addressed by the author the branch
-        can be merged without further review.
-        """)
-
-    MERGEAPPROVED = Item(60, """
-        Merge Approved
-
-        The reviewer is satisfied that the branch can be merged without
-        further changes.
         """)
 
 

@@ -9,7 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'vocab_factory',
-    'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugNominationStatusVocabulary',
@@ -32,7 +31,6 @@ from canonical.launchpad.interfaces import (
 
 # DB Schema Vocabularies
 
-BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskImportanceVocabulary = vocab_factory(
