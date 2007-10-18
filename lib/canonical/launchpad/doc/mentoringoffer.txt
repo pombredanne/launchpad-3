@@ -201,8 +201,8 @@ OK, let's mark the bug public again:
 
 When a spec or a bug is completed, it drops off the mentoring lists.
 
-   >>> from canonical.launchpad.interfaces import BugTaskStatus
-   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+   >>> from canonical.launchpad.interfaces import (
+   ...     BugTaskStatus, SpecificationImplementationStatus)
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates

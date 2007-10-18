@@ -383,12 +383,27 @@ them, e.g. IDistroSeries and ISourcePackage.
     Traceback (most recent call last):
       ...
     NotImplementedError: A new bug cannot be filed directly...
-    >>> params = CreateBugParams
+    >>> params = CreateBugParams(
     ...     owner=current_user(), title="test", comment="test")
     >>> ubuntu_warty_firefox.createBug(params)
     Traceback (most recent call last):
       ...
     NotImplementedError: A new bug cannot be filed directly...
+
+
+== Prevent reporter from being subscribed to filed bugs ==
+
+If necessary, subscriber_reporter may be specified when creating a bug,
+to prevent the reporter from being subscribed to the bug. This is useful
+when importing bugs.
+
+    >>> params = CreateBugParams(
+    ...     owner=current_user(), title="test", comment="test",
+    ...     subscribe_reporter=False)
+    >>> bug = ubuntu.createBug(params)
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
 
 == Date Last Updated ==
 

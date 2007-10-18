@@ -379,8 +379,8 @@ successes" list (if the mentorship was offered less than a year ago).
 We are going to now poke into the back of the db's head, and "complete" the
 bug and the blueprint we have been using.
 
-   >>> from canonical.launchpad.interfaces import ILaunchBag
-   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+   >>> from canonical.launchpad.interfaces import (
+   ...     ILaunchBag, SpecificationImplementationStatus)
    >>> login('foo.bar@canonical.com')
    >>> spec_1 = kubuntu.getSpecification('cluster-installation')
    >>> bug_2.is_complete

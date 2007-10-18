@@ -21,7 +21,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       If you need to change the type of bug tracker, please ask for
@@ -29,7 +29,7 @@
     </p>
 
   </div>
-    
+
 </div>
 </body>
 </html>
