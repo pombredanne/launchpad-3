@@ -36,7 +36,6 @@ __all__ = (
 'CveStatus',
 'DistroSeriesStatus',
 'ImportTestStatus',
-'ImportStatus',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -339,69 +338,6 @@ class SourcePackageUrgency(DBSchema):
         affect the integrity of systems using previous releases of the
         source package, and should be installed in the archive as soon
         as possible after appropriate review.
-        """)
-
-
-class ImportStatus(DBSchema):
-    """This schema describes the states that a SourceSource record can take
-    on."""
-
-    DONTSYNC = Item(1, """
-        Do Not Import
-
-        Launchpad will not attempt to make a Bazaar import.
-        """)
-
-    TESTING = Item(2, """
-        Testing
-
-        Launchpad has not yet attempted this import. The vcs-imports operator
-        will review the source details and either mark the series \"Do not
-        sync\", or perform a test import. If the test import is successful, a
-        public import will be created. After the public import completes, it
-        will be updated automatically.
-        """)
-
-    TESTFAILED = Item(3, """
-        Test Failed
-
-        The test import has failed. We will do further tests, and plan to
-        complete this import eventually, but it may take a long time. For more
-        details, you can ask on the launchpad-users@canonical.com mailing list
-        or on IRC in the #launchpad channel on irc.freenode.net.
-        """)
-
-    AUTOTESTED = Item(4, """
-        Test Successful
-
-        The test import was successful. The vcs-imports operator will lock the
-        source details for this series and perform a public Bazaar import.
-        """)
-
-    PROCESSING = Item(5, """
-        Processing
-
-        The public Bazaar import is being created. When it is complete, a
-        Bazaar branch will be published and updated automatically. The source
-        details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
-        """)
-
-    SYNCING = Item(6, """
-        Online
-
-        The Bazaar import is published and automatically updated to reflect the
-        upstream revision control system. The source details for this series
-        are locked and can only be modified by vcs-imports members and
-        Launchpad administrators.
-        """)
-
-    STOPPED = Item(7, """
-        Stopped
-
-        The Bazaar import has been suspended and is no longer updated. The
-        source details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
         """)
 
 

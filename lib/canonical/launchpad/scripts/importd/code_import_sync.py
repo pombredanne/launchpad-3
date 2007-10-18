@@ -11,10 +11,10 @@ __all__ = ['CodeImportSync']
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
+from canonical.lp.dbschema import CodeImportReviewStatus
 from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
-    IProductSeriesSet, RevisionControlSystems)
+    IProductSeriesSet, ImportStatus, RevisionControlSystems)
 from canonical.launchpad.webapp import canonical_url
 
 

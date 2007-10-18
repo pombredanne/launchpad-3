@@ -119,8 +119,8 @@ script that creates CodeImports from the existing information in the
 ProductSeries table.  The only ProductSeries with such information in
 the sample data is evolution/trunk.
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
-    >>> from canonical.lp.dbschema import ImportStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSeriesSet, ImportStatus)
     >>> [series] = getUtility(IProductSeriesSet).searchImports(
     ...     importstatus=ImportStatus.PROCESSING)
     >>> series.product.name
