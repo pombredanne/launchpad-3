@@ -520,11 +520,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             binarypackagepublishing=self)
 
     @property
-    def hasRemovalRequested(self):
-        """See ISecureBinaryPackagePublishingHistory"""
-        return self.datesuperseded is not None and self.supersededby is None
-
-    @property
     def displayname(self):
         """See IArchiveFilePublisherBase."""
         release = self.binarypackagerelease
