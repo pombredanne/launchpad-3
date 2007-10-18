@@ -32,7 +32,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    ISprint, ISprintSet, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationPriority, SpecificationSort)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -43,9 +45,6 @@ from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
-from canonical.lp.dbschema import (
-    SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationDefinitionStatus)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
