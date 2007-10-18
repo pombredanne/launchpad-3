@@ -124,7 +124,7 @@ a nice error message.
   >>> message in user_browser.contents
   True
 
-And let's see if we can edit the newly added bugtracker.
+We can edit the details of the newly added bugtracker.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
   >>> user_browser.getLink('Change details').click()
