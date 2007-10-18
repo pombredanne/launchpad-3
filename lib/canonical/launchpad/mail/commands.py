@@ -26,6 +26,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -649,7 +650,7 @@ class MilestoneEmailCommand(EditEmailCommand):
     _numberOfArguments = 1
 
     def convertArguments(self, context):
-        """ """
+        """See EmailCommand."""
         user = getUtility(ILaunchBag).user
         milestone_name = self.string_args[0]
 
@@ -657,13 +658,16 @@ class MilestoneEmailCommand(EditEmailCommand):
             # Remove milestone
             return {self.name: None}
         elif self._userCanEditMilestone(user, context):
-            milestone = context.pillar.getMilestone(milestone_name)
+            pillar = context.pillar
+            milestone = pillar.getMilestone(milestone_name)
             if milestone is None:
+                addmilestone_url = canonical_url(pillar) + '/+addmilestone'
                 raise EmailProcessingError(
                     "The milestone %s does not exist for %s. Note that "
                     "milestones are not automatically created from emails; "
-                    "they must be created on the website." % (
-                        milestone_name, context.pillar.title))
+                    "they must be created on the website at %s" % (
+                        milestone_name, context.pillar.title,
+                        addmilestone_url))
             else:
                 return {self.name: milestone}
         else:
@@ -673,16 +677,21 @@ class MilestoneEmailCommand(EditEmailCommand):
                 "milestones." % (context.pillar.title,))
 
     def _userCanEditMilestone(self, user, bugtask):
-        """Can the user edit the Milestone field?
+        """Can the user edit the Milestone field?"""
+        # Adapted from BugTaskEditView.userCanEditMilestone.
 
-        If yes, return True, otherwise return False.
+        # XXX: Consider refactoring this method and the
+        # userCanEditMilestone method on BugTaskEditView into a new
+        # method on IBugTask. This is non-trivial because
+        # check_permission cannot be used in a database class.
+        #   -- Gavin Panella, 2007-10-18.
 
-        Adapted from browser.bugtask.BugTaskEditView.userCanEditMilestone.
-        """
         pillar = bugtask.pillar
-        return (((pillar.bugcontact and user and
-                  user.inTeam(pillar.bugcontact)) or
-                 check_permission("launchpad.Edit", pillar)))
+        bugcontact = pillar.bugcontact
+        if user is not None and bugcontact is not None:
+            if user.inTeam(bugcontact):
+                return True
+        return check_permission("launchpad.Edit", pillar)
 
 
 class DBSchemaEditEmailCommand(EditEmailCommand):

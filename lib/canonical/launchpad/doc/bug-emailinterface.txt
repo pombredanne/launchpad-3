@@ -1010,8 +1010,7 @@ commands. It's possible to have these sub commands on separate lines:
     >>> print debian_task.assignee.displayname
     Sample Person
 
-And when the task is a product or a distroseries it's possible to
-assign the milestone:
+A milestone can be assigned to the current task.
 
     >>> firefox_task = [bugtask for bugtask in bug_four.bugtasks
     ...                 if bugtask.pillar.name == 'firefox'][0]
@@ -1038,7 +1037,7 @@ message:
     ...
     The milestone 1.1 does not exist for Mozilla Firefox. Note that
     milestones are not automatically created from emails; they must be
-    created on the website.
+    created on the website at http://launchpad.dev/firefox/+addmilestone
     ...
 
 Attempting to set the milestone for a bug without sufficient
