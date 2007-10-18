@@ -43,10 +43,10 @@ from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
     BUG_CONTACT_BUGTASK_STATUSES,
     BugNominationStatus,
-    BugTaskStatus,
-    BugTaskStatusSearch,
     BugTaskImportance,
     BugTaskSearchParams,
+    BugTaskStatus,
+    BugTaskStatusSearch,
     ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,

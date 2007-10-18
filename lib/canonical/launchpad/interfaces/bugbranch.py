@@ -84,9 +84,12 @@ class IBugBranch(IHasDateCreated, IHasBug):
 
 class IBugBranchSet(Interface):
 
-    def getBugBranchesForBranches(branches):
+    def getBugBranchesForBranches(branches, user):
         """Return a sequence of IBugBranch instances associated with
-        the given branches."""
+        the given branches.
+
+        Only return instances that are visible to the user.
+        """
 
     def getBugBranchesForBugTasks(tasks):
         """Return a sequence of IBugBranch instances associated with

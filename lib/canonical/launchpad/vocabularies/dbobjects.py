@@ -82,9 +82,9 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingList, IMailingListSet,
-    IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct, IProject,
-    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
+    IPerson, IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
+    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
     MailingListStatus)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
@@ -1190,8 +1190,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         quoted_query = quote_like(query)
         sql_query = ("""
-            (Specification.name ~ %s OR
-             Specification.title ~ %s OR
+            (Specification.name LIKE %s OR
+             Specification.title LIKE %s OR
              fti @@ ftq(%s))
             """
             % (quoted_query, quoted_query, quoted_query))

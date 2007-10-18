@@ -19,9 +19,9 @@ def main():
 
     template, dbname = sys.argv[1:]
 
-    con = psycopg.connect('dbname=template1')
-    con.set_isolation_level(0)
     for attempt in range(0, 10):
+        con = psycopg.connect('dbname=template1')
+        con.set_isolation_level(0)
         try:
             cur = con.cursor()
             cur.execute(
@@ -32,6 +32,7 @@ def main():
         except psycopg.Error:
             if attempt == 9:
                 raise
+            con.close()
             time.sleep(1)
         else:
             return 0

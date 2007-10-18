@@ -59,21 +59,13 @@
             />
     </browser:pages>
 
-    <browser:editform
+    <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IBugTracker"
-      schema="canonical.launchpad.interfaces.IBugTracker"
       class="canonical.launchpad.browser.BugTrackerEditView"
-      fields="title bugtrackertype summary baseurl contactdetails"
       permission="launchpad.AnyPerson"
       template="../templates/bugtracker-edit.pt"
-      >
-      <browser:widget
-        field="summary"
-        class="zope.app.form.browser.TextAreaWidget"
-        width="30"
-        height="5" />
-    </browser:editform>
+      />
 
     <!-- BugTrackerSet -->
     <content class="canonical.launchpad.database.BugTrackerSet">

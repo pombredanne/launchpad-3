@@ -17,7 +17,7 @@ __all__ = [
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.form.browser.editview import EditView
+from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
 
@@ -25,8 +25,9 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, LaunchpadFormView, Link, Navigation,
-    GetitemNavigation, redirection, LaunchpadView)
+    ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
+    redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -130,12 +131,21 @@ class BugTrackerView(LaunchpadView):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
 
 
-class BugTrackerEditView(EditView):
+class BugTrackerEditView(LaunchpadEditFormView):
 
-    usedfor = IBugTracker
+    schema = IBugTracker
+    field_names = ['title', 'bugtrackertype', 'summary',
+                   'baseurl', 'contactdetails']
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    custom_widget('summary', TextAreaWidget, width=30, height=5)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class BugTrackerNavigation(Navigation):

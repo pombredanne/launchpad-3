@@ -256,8 +256,9 @@ class SprintAddView(LaunchpadFormView):
 
     schema = ISprint
     label = "Register a meeting"
-    field_names = ['name', 'bugtrackertype', 'title', 'summary'
-                   'base_url', 'contact details']
+    field_names = ['name', 'title', 'summary', 'home_page', 'driver',
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
@@ -450,7 +451,7 @@ class SprintMeetingExportView(LaunchpadView):
 
             # skip sprints with no priority or less than low:
             if (spec.priority is None or
-                spec.priority < SpecificationPriority.LOW):
+                spec.priority < SpecificationPriority.UNDEFINED):
                 continue
 
             if (spec.definition_status not in
