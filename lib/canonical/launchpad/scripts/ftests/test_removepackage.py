@@ -154,6 +154,9 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         Return the publication IDs for the sources and binaries of the current
         mozilla-firefox release in warty (warty-i386, warty-hppa).
+
+        We return IDs instead of the records because they won't be useful in
+        callsites without a `flush_database_updates`.
         """
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         warty = ubuntu['warty']
