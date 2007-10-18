@@ -1,0 +1,37 @@
+= Private XML-RPC Authentication Server =
+
+The AuthServer interface is available on the authserver attribute
+of our private XMLRPC instance.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAuthServerApplication, IPrivateApplication)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> private_root = getUtility(IPrivateApplication)
+    >>> verifyObject(IAuthServerApplication, private_root.authserver)
+    True
+
+The AuthServerAPIView provides the IUserDetailsStorageV2 XML-RPC API:
+
+    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.authserver.interfaces import IUserDetailsStorageV2
+    >>> from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
+
+    >>> authserver_api = AuthServerAPIView(
+    ...     private_root.authserver, TestRequest())
+    >>> verifyObject(IUserDetailsStorageV2, authserver_api)
+    True
+
+That interface allows the Moin wiki to access user information:
+
+    >>> import xmlrpclib
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> authserver= xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc-private.launchpad.dev:8087/authserver',
+    ...     transport=XMLRPCTestTransport())
+
+    >>> user_dict = authserver.getUser('foo.bar@canonical.com')
+    >>> user_dict['displayname']
+    'Foo Bar'
+    >>> user_dict['emailaddresses']
+    'foo.bar@canonical.com'

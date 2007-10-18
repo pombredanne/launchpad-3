@@ -1,12 +1,19 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   >
 
   <securedutility
       class="canonical.launchpad.xmlrpc.PrivateApplication"
       provides="canonical.launchpad.interfaces.IPrivateApplication">
       <allow interface="canonical.launchpad.interfaces.IPrivateApplication"/>
+  </securedutility>
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.AuthServerApplication"
+    provides="canonical.launchpad.interfaces.IAuthServerApplication">
+    <allow interface="canonical.launchpad.interfaces.IAuthServerApplication"/>
   </securedutility>
 
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
@@ -74,5 +81,12 @@
   <class class="canonical.launchpad.xmlrpc.faults.BadStatus">
     <require like_class="xmlrpclib.Fault" />
   </class>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.IAuthServerApplication"
+    interface="canonical.authserver.interfaces.IUserDetailsStorageV2"
+    class="canonical.launchpad.xmlrpc.AuthServerAPIView"
+    permission="zope.Public"
+    />
 
 </configure>
