@@ -1,6 +1,7 @@
 = Claiming GPG Keys =
 
-This test verifies the basic claim a GPG key workflow.
+
+== Setup ==
 
     >>> import email, re
     >>> from canonical.launchpad.mail import stub
@@ -10,6 +11,11 @@ Setup the stub KeyServer:
 
     >>> z = ZecaTestSetup()
     >>> z.setUp()
+
+
+== Claim an encrypting GPG key ==
+
+This test verifies the basic claim a GPG key workflow.
 
 Start out with a clean page:
 
@@ -88,8 +94,8 @@ the clear text instructions contain the expected URLs pointing to more help.
 Import the secret keys needed for this test:
 
     >>> from canonical.launchpad.ftests import (
-    ...     import_secret_test_key, decrypt_content)
-    >>> import_secret_test_key()
+    ...     import_secret_test_key, decrypt_content, sign_content)
+    >>> import_secret_test_key('test@canonical.com.sec')
 
 'cipher_body' is a message encrypted with the just-imported
 1024D/DFD20543 OpenPGP key, we need to access the current IGpghandler
@@ -100,18 +106,15 @@ instance to access this key and decrypt the message.
     >>> from zope.security.management import endInteraction
     >>> endInteraction()
 
-Do the usual procedure to extract the token URL:
+Extract the token URL from the email:
 
-    >>> link = re.findall(r'http.*/token/.*', body)[0]
-    >>> token = re.sub(r'.*token/', '', link)
-
-Ensure token is ascii to avoid utf-8 mess in URL:
-
-    >>> base_path = '/token/%s' % token.encode('ascii')
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_string)  
+    >>> token_url = get_token_url_from_string(body)
 
 Go to the link sent by email, to validate the email address.
 
-    >>> browser.open("http://launchpad.dev%s" % base_path)
+    >>> browser.open(token_url)
 
 Get redirected to +validategpg, and confirm token:
 
@@ -157,7 +160,203 @@ Verify that the key was imported with the "can encrypt" flag set:
     >>> print key.can_encrypt
     True
 
+
+== Claim a sign-only GPG key ==
+
+Here, Sample Person wants to claim a GPG key that can only sign
+content. He can't verify his key by decrypting content on demand, but
+he can verify it by signing content. Launchpad sends him an email
+token. The email step ensures that an attacker who knows Sample
+Person's Launchpad password can't associate arbitrary GPG keys with
+their Launchpad account.
+
+    >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
+
+    >>> fingerprint = "447DBF38C4F9C4ED752246B77D88913717B05A8F"
+    >>> browser.getControl(name='fingerprint').value = fingerprint
+    >>> browser.getControl(name='import').click()
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    A message has been sent to test@canonical.com. To 
+    confirm the key 1024D/17B05A8F is yours, follow
+    the link inside.
+
+Sample Person checks his email.
+
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_msg)
+    >>> msg.get_content_type()
+    'text/plain'
+    >>> body = msg.get_payload(decode=True)
+
+The email is not encrypted, since Sample Person didn't claim the
+ability to decrypt text with this key.
+
+    >>> '-----BEGIN PGP MESSAGE-----' in body
+    False
+
+The email does contain some information about the key, and a token URL
+Sample Person should visit to verify his ownership of the key.
+
+    >>> print body
+    <BLANKLINE>
+    Hello,
+    ...
+        User name    : Sample Person
+        Email address: test@canonical.com
+    ...
+        Fingerprint : 447DBF38C4F9C4ED752246B77D88913717B05A8F
+      Key type/ID : 1024D/17B05A8F
+    <BLANKLINE>
+    UIDs:
+        sign.only@canonical.com
+    ...
+        http://launchpad.dev/token/...
+
+    >>> token_url = get_token_url_from_string(body)
+
+Side note: in a little while, Sample User will be asked to sign some
+text which includes the date the token was generated (to avoid replay
+attacks). To make this testable, we set the creation date of this
+token to a fixed value:
+
+    >>> nothing, token_value = token_url.split('http://launchpad.dev/token/')
+
+    >>> import pytz, datetime
+    >>> from canonical.launchpad.database import LoginToken
+    >>> logintoken = LoginToken.selectOneBy(token=token_value)
+    >>> logintoken.created = datetime.datetime(2005,04,01, 12,00,00,
+    ...                                        tzinfo=pytz.timezone('UTC'))
+    >>> logintoken.sync()
+
+Back to Sample User. He visits the token URL and is asked to sign some
+text to prove he owns the key.
+
+    >>> browser.open(token_url)
+    >>> browser.title
+    'Confirm sign-only OpenPGP key'
+
+Let's look at the text.
+
+    >>> verification_content = find_main_content(
+    ...     browser.contents).pre.string
+    >>> print verification_content
+    Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+    Launchpad user name12.  2005-04-01 12:00:00 UTC
+
+If he refuses to sign the text, he gets an error message.
+
+    >>> browser.getControl('Continue').click()
+    >>> browser.title
+    'Confirm sign-only OpenPGP key'
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    Required input is missing.
+
+If he signs a different text, he gets an error message.
+  
+    >>> import_secret_test_key('sign.only@canonical.com.sec')
+    >>> from canonical.launchpad.ftests import sign_content
+    >>> bad = sign_content(
+    ...     'This is not the verification message!', 
+    ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
+    >>> browser.getControl('Signed text').value = bad
+    >>> browser.getControl('Continue').click()
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    The signed content does not match the message found in the email.
+
+If he signs the text with a different key, he gets an error
+message. The following text was signed with the key DFD20543:
+
+    >>> signed_content = """
+    ... -----BEGIN PGP SIGNED MESSAGE-----
+    ... Hash: SHA1
+    ...
+    ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+    ... Launchpad user name12.  2005-04-01 12:00:00 UTC
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.4.1 (GNU/Linux)
+    ...
+    ... iD8DBQFDcLOh2yWXVgK6XvYRAkpWAKDFHRpVJc2flFwpQMMxub4cl+TcCACgyciu
+    ... s7GH1fQGOQMqpvpinwOjGto=
+    ... =w7/b
+    ... -----END PGP SIGNATURE-----
+    ... """
+    >>> browser.getControl('Signed text').value = signed_content
+    >>> browser.getControl('Continue').click()  
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543)
+    is not the key you were registering
+
+If he signs the text correctly, he is redirected to his home page. 
+
+    >>> good = sign_content(
+    ...     str(verification_content),
+    ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
+    >>> browser.getControl('Signed text').value = good
+    >>> browser.getControl('Continue').click()  
+    >>> browser.url
+    'http://launchpad.dev/~name12'
+
+The address associated with the key is not associated with his
+Launchpad account, so Launchpad gives him a message to that effect.
+
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    The key 1024D/17B05A8F was successfully validated.
+    Some email addresses were found in your key but are not 
+    registered with Launchpad:sign.only@canonical.com...
+
+Now that the key has been validated, the login token is consumed:
+
+    >>> LoginToken.selectOneBy(token=token_value).date_consumed is not None
+    True
+
+Now Sample Person's sign-only key is associated with his account. He
+verifies this:
+
+    >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
+
+    >>> content = find_main_content(browser.contents)
+    >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
+    [...'1024D/17B05A8F (sign only)']
+
+On a mad whim he decides to de-activate the key he just imported.
+
+    >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['3']
+    >>> browser.getControl('Deactivate Key').click()
+
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    Deactivated key(s): 1024D/17B05A8F
+
+Coming to his senses, he asks for a re-validation of the key.
+
+    >>> browser.getControl(name="REACTIVATE_GPGKEY").value = ['3']
+    >>> browser.getControl('Reactivate Key').click()
+
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    A message has been sent to test@canonical.com with instructions 
+    to reactivate these key(s): 1024D/17B05A8F
+
+He opens the page and checks that the key is displayed as pending
+revalidation.
+
+    >>> browser.reload()
+    >>> browser.getControl(name='REMOVE_GPGTOKEN').displayOptions
+    ['447DBF38C4F9C4ED752246B77D88913717B05A8F']
+
+(We won't run through the whole validation process again, as this key isn't
+used in any more tests.)
+
+== Teardown ==
+
 Kill stub KeyServer:
 
     >>> z.tearDown()
-
