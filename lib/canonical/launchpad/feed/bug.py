@@ -14,7 +14,7 @@ __all__ = [
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
-
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView

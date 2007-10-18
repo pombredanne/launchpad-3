@@ -30,7 +30,8 @@ from canonical.cachedproperty import cachedproperty
 # working prototype.  Bug 153795.
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.interfaces import IFeed, UnsupportedFeedFormat
+from canonical.lazr.interfaces import (
+    IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 MINUTES = 60
 MAX_AGE = 60 * MINUTES
@@ -123,10 +124,9 @@ class FeedBase(LaunchpadFormView):
     def render(self):
         """Render the feed."""
         expires = rfc1123_date(time.time() + self.max_age)
-        # self.date_updated can't run until after initialize() runs
         if self.date_updated is not None:
             last_modified = rfc1123_date(
-                                time.mktime(self.date_updated.timetuple()))
+                time.mktime(self.date_updated.timetuple()))
         else:
             last_modified = rfc1123_date(time.time())
         response = self.request.response
@@ -140,7 +140,8 @@ class FeedBase(LaunchpadFormView):
         elif self.format == 'html':
             return self.renderHTML()
         else:
-            raise UnsupportedFeedFormat("Format %s is not supported" % self.format)
+            raise UnsupportedFeedFormat("Format %s is not supported" %
+                                        self.format)
 
     def renderAtom(self):
         """Render the object as an Atom feed.
@@ -155,6 +156,7 @@ class FeedBase(LaunchpadFormView):
         Override this as opposed to overriding render().
         """
         return ViewPageTemplateFile(self.template_files['html'])(self)
+
 
 class FeedEntry:
     """An entry for a feed."""
@@ -183,8 +185,12 @@ class FeedEntry:
         self.contributors = contributors
         self.id = id_
 
+
 class FeedTypedData:
     """Data for a feed that includes its type."""
+
+    implements(IFeedTypedData)
+
     content_types = ['text', 'html', 'xhtml']
     def __init__(self, content, content_type='text'):
         self.content = content
@@ -192,12 +198,16 @@ class FeedTypedData:
             raise ValueError, "%s: is not valid" % content_type
         self.content_type = content_type
 
+
 class FeedPerson:
     """Data for person in a feed.
 
     If this class is consistently used we will not accidentally leak email
     addresses.
     """
+
+    implements(IFeedPerson)
+
     def __init__(self, person, rootsite):
         self.name = person.displayname
         # We don't want to disclose email addresses in public feeds.
