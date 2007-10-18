@@ -264,6 +264,7 @@ class TestMantis(Mantis):
 
     def cleanCache(self):
         """Clean the csv_data cache."""
+        # Remove the self._csv_data_cached_value if it exists.
         try:
             del self._csv_data_cached_value
         except AttributeError:
