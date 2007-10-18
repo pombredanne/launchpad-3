@@ -73,16 +73,19 @@ def import_public_test_keys():
     for email in iter_test_key_emails():
         import_public_key(email)
 
-def import_secret_test_key():
-    """Imports the secret key located in gpgkeysdir into local keyring."""
+def import_secret_test_key(keyfile='test@canonical.com.sec'):
+    """Imports the secret key located in gpgkeysdir into local keyring.
+
+    :param keyfile: The name of the file to be imported.
+    """
     # We import the secret key manually here because this is the only place
     # where we import a secret key and thus we don't need an API for this
     # on GPGHandler.
 
-    # Make sure that gpg-agent doesn't interfer.
+    # Make sure that gpg-agent doesn't interfere.
     if 'GPG_AGENT_INFO' in os.environ:
         del os.environ['GPG_AGENT_INFO']
-    seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
+    seckey = open(os.path.join(gpgkeysdir, keyfile)).read()
     context = gpgme.Context()
     context.armor = True
     newkey = StringIO(seckey)
@@ -138,3 +141,38 @@ def decrypt_content(content, password):
 
     return plain.getvalue()
 
+
+def sign_content(content, key_fingerprint, password,
+                 mode=gpgme.SIG_MODE_CLEAR):
+    """Signs content with a given GPG key.
+
+    :param content: The content to sign.
+    :param key_fingerprint: The fingerprint of the key to use when
+        signing the content.
+    :param password: The password to the key identified by key_fingerprint.
+    :param mode: The type of GPG signature to produce.
+    :return: The ASCII-armored signature for the content.
+    """
+
+    # Find the key and make it the only one allowed to sign content
+    # during this session.
+    ctx = gpgme.Context()
+    ctx.armor = True
+    key = ctx.get_key(key_fingerprint)
+    ctx.signers = [key]
+
+    # Set up containers.
+    plaintext = StringIO(content)
+    signature = StringIO()
+
+    def passphrase_cb(uid_hint, passphrase_info, prev_was_bad, fd):
+        os.write(fd, '%s\n' % password)  
+    ctx.passphrase_cb = passphrase_cb
+
+    # Sign the text.
+    try:
+        new_sig = ctx.sign(plaintext, signature, mode)
+    except gpgme.GpgmeError: 
+        return None
+
+    return signature.getvalue()

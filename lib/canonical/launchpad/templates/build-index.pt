@@ -52,6 +52,11 @@
           </tr>
 
           <tr>
+            <th>Component:</th>
+            <td tal:content="context/current_component/name"/>
+          </tr>
+
+          <tr>
             <th>Status:</th>
             <td>
               <span tal:replace="context/buildstate/title" />

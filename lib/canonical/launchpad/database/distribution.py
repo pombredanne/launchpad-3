@@ -62,14 +62,16 @@ from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
     ArchivePurpose, DistroSeriesStatus, PackagePublishingStatus,
-    PackageUploadStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
+    PackageUploadStatus)
 
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IArchiveSet, IBuildSet, IDistribution, IDistributionSet,
     IFAQTarget, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
     ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName, MirrorContent,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, TranslationPermission)
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -1036,7 +1038,7 @@ class DistributionSet:
         displayed.
         """
         distroset = Distribution.select()
-        return iter(sorted(shortlist(distroset,100),
+        return iter(sorted(shortlist(distroset, 100),
                         key=lambda distro: distro._sort_key))
 
     def __getitem__(self, name):
