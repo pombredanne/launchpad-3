@@ -209,7 +209,7 @@ Set up a test request and test widget.
     >>> product = getUtility(IProductSet).get(1)
     >>> licenses_field = IProduct['licenses'].bind(product)
     >>> vtype = licenses_field.value_type
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'field.licenses': []})
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
 There should be one checkbox for each license, and there should be a
@@ -217,7 +217,42 @@ link to the license policy.
 
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
-    >>> len(soup.table('input')) == len(License)
-    True
+    >>> len(soup.table('input'))
+    30
+    >>> len(License)
+    30
     >>> soup.a['href']
     u'http://www.ubuntu.com/community/ubuntustory/licensing'
+
+Zero selected licenses should return an empty set and the html
+output should have zero checked inputs.
+
+    >>> license_widget.getInputValue()
+    Set([])
+    >>> soup.findAll('input', checked='checked')
+    []
+
+One selected licenses should return a single-item set and the html
+output should have one checked input.
+
+    >>> request = LaunchpadTestRequest(form={'field.licenses': ['GPL']})
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+    >>> license_widget.getInputValue()
+    Set([<DBItem License.GPL, (130) GPL>])
+    >>> html = license_widget()
+    >>> soup = BeautifulSoup(html)
+    >>> soup.findAll('input', checked='checked')
+    [<input ... checked="checked" ... name="field.licenses" type="checkbox" value="GPL" />]
+
+Two selected licenses should return a single-item set and the html
+output should have one checked input.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.licenses': ['LGPL', 'GPL']})
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+    >>> license_widget.getInputValue()
+    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (140) LGPL>])
+    >>> html = license_widget()
+    >>> soup = BeautifulSoup(html)
+    >>> soup.findAll('input', checked='checked')
+    [<input ... checked="checked" ... name="field.licenses" type="checkbox" value="GPL" />, <input ... checked="checked" ... name="field.licenses" ... value="LGPL" />]

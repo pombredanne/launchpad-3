@@ -139,13 +139,21 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def _setLicenses(self, licenses):
         """Set the licenses from a tuple of license enums.
-        The licenses parameter must not be an empty tuple."""
-        assert len(licenses) != 0, "licenses argument must not be empty"
+
+        The licenses parameter must not be an empty tuple.
+        """
         licenses = set(licenses)
+        old_licenses = set(self.licenses)
+        if licenses == old_licenses:
+            return
+        # $product/+edit doesn't require a license if a license hasn't
+        # already been set, but updateContextFromData() updates all the
+        # fields, so we have to avoid this assertion when the attribute
+        # isn't actually being changed.
+        assert len(licenses) != 0, "licenses argument must not be empty"
         for license in licenses:
             if license not in License:
-                raise AssertionError, "%s is not a License" % license
-        old_licenses = set(self.licenses)
+                raise AssertionError("%s is not a License" % license)
 
         for license in old_licenses.difference(licenses):
             product_license = ProductLicense.selectOneBy(product=self, 
@@ -672,8 +680,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
-        """See canonical.launchpad.interfaces.product.IProductSet.
-        The licenses parameter must not be an empty tuple."""
+        """See `IProductSet`."""
 
         assert len(licenses) != 0, "licenses argument must not be empty"
 

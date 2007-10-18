@@ -10,7 +10,7 @@ __all__ = [
     'License',
     ]
 
-from zope.schema import Bool, Choice, Int, Text, TextLine, Set
+from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -38,23 +38,23 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class License(DBEnumeratedType):
-    """This schema contains OSI approved licenses."""
+    """Licenses in which a project's code can be released."""
 
-    AFL = DBItem(10, "Academic Free License")
+    ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "Affero GPL")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
-    CECILL = DBItem(60, "CeCILL License")
-    CDDL = DBItem(70, "CDDL")
+    CDDL = DBItem(60, "CDDL")
+    CECILL = DBItem(70, "CeCILL License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
     EIFFEL = DBItem(110, "Eiffel Forum License")
     GNAT = DBItem(120, "GNAT Modified GPL")
     GPL = DBItem(130, "GPL")
-    LGPL = DBItem(140, "LGPL")
-    IBM = DBItem(150, "IBM Public License")
+    IBM = DBItem(140, "IBM Public License")
+    LGPL = DBItem(150, "LGPL")
     MIT = DBItem(160, "MIT / X / Expat License")
     MPL = DBItem(170, "Mozilla Public License")
     OPEN_CONTENT = DBItem(180, "Open Content License")
@@ -265,8 +265,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     license_info = Description(
         title=_('Description of additional licenses'),
         required=False,
-        description=_("""Description of licenses that do not appear in 
-          the list above."""))
+        description=_(
+            "Description of licenses that do not appear in the list above."))
 
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
@@ -421,7 +421,10 @@ class IProductSet(Interface):
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
                       icon=None):
-        """Create and Return a brand new Product."""
+        """Create and Return a brand new Product.
+
+        The licenses parameter must not be an empty tuple.
+        """
 
     def forReview():
         """Return an iterator over products that need to be reviewed."""

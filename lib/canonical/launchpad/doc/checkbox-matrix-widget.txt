@@ -8,7 +8,6 @@ A custom widget to display checkboxes in multiple columns.
 This widget is created to allow many options to be displayed in a single
 page.
 
-    >>> import sets
     >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
@@ -32,26 +31,24 @@ as a set from _getFormValue() or getInputValue():
     ...     form={'field.licenses': ['LGPL', 'GPL']})
     >>> matrix_widget = CheckBoxMatrixWidget(licenses_field, vtype, request)
     >>> form_value = matrix_widget._getFormValue()
-    >>> isinstance(form_value, sets.Set)
-    True
+    >>> form_value
+    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (140) LGPL>])
     >>> input = matrix_widget.getInputValue()
-    >>> form_value == input
-    True
-    >>> input == sets.Set([License.GPL, License.LGPL])
-    True
-    >>> sorted(list(input))[0].title
-    'GPL'
+    >>> input
+    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (140) LGPL>])
 
 It should render as many rows as are specified by the column_count attribute.
 
     >>> import math
     >>> matrix_widget.column_count = 4
-    >>> all_licenses = [ token.value for token in License ]
+    >>> all_licenses = [token.value for token in License]
     >>> html = matrix_widget.renderValue(all_licenses)
     >>> soup = BeautifulSoup(html)
     >>> row_count = math.ceil(len(License) / float(matrix_widget.column_count))
-    >>> len(soup.table('tr')) == row_count
-    True
+    >>> len(soup.table('tr'))
+    8
+    >>> row_count
+    8.0
     >>> len(soup.table.tr('td'))
     4
 

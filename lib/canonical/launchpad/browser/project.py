@@ -42,7 +42,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBranchSet, ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     NotFoundError)
-from canonical.launchpad.browser import ProductAddViewBase
+from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin

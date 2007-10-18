@@ -1,10 +1,3 @@
-<tal:comment replace="nothing">
-  This macro expects the widget variables defined:
-
-  :licenses: A matrix of licenses.
-  :license_info: A textarea for the license description.
-</tal:comment>
-
 <script type="text/javascript"
         tal:condition="view/allow_pending_license">
   function unsetLicenses() {

@@ -108,11 +108,14 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         return items
 
 class LicenseWidget(CheckBoxMatrixWidget):
+    """A CheckBox widget with a custom template.
+
+    The allow_pending_license is provided so that $product/+edit
+    can display radio buttons to show that the license field is
+    optional for pre-existing products that have never had a license set.
+    """
     template = ViewPageTemplateFile('templates/license.pt')
     allow_pending_license = False
-
-    def __init__(self, field, vocabulary, request):
-        super(LicenseWidget, self).__init__(field, vocabulary, request)
 
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
