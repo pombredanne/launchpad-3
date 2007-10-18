@@ -30,7 +30,7 @@
               <div class="informational message" style="margin: 0 0 0 2em"
                    tal:condition="view/mailing_list_status_message">
                 <span tal:content="structure view/mailing_list_status_message">
-                  foo
+                  Not available because mailing list is being updated.
                 </span>
                 <input tal:replace="structure view/request_list_creation/render"
                        tal:condition="view/list_can_be_requested" />
@@ -40,6 +40,11 @@
             </label>
           </tal:disabled-option>
           <input tal:replace="structure contact_method" />:
+	  <tal:welcome_message_widget 
+              define="widget nocall:view/widgets/welcome_message|nothing"
+              condition="nocall: widget">
+		<metal:widget use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+	  </tal:welcome_message_widget>
           <tal:email-widget 
             define="contact_address nocall:view/widgets/contact_address;
                     field_name contact_address/context/__name__;

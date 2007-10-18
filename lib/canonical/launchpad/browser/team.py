@@ -185,8 +185,27 @@ class TeamContactAddressView(LaunchpadFormView):
         """The address for this team's mailing list."""
         return '%s@%s' % (self.context.name, MAILING_LISTS_DOMAIN)
 
-    def setUpWidgets(self, context=None):
-        """Set up the widgets for the mailing list contact choices.
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        The welcome message control will only be displayed if the
+        mailing list's state is ACTIVE, MODIFIED, or UPDATING.
+        """
+        super(TeamContactAddressView, self).setUpFields()
+
+        # Replace the default contact_methode field by a custom one.
+        self.form_fields = (
+            form.FormFields(self.getContactMethodField())
+            + self.form_fields.omit('contact_method'))
+            
+        mailing_list = self.getListInState(MailingListStatus.ACTIVE,
+                                           MailingListStatus.MODIFIED,
+                                           MailingListStatus.UPDATING)
+        if mailing_list is None:
+            self.form_fields = self.form_fields.omit('welcome_message')
+
+    def getContactMethodField(self):
+        """Create the form.Fields to use for the contact_method field.
 
         Check if the HOSTED_LIST option of our contact_method widget
         should be rendered by Zope3, manually (by ourselves) in the
@@ -208,14 +227,11 @@ class TeamContactAddressView(LaunchpadFormView):
             item.title = ('The Launchpad mailing list for this team - '
                           '<strong>%s</strong>' % self.mailinglist_address)
             vocab_items.insert(index, item)
-        contact_method = form.FormField(
+        return form.FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact these team's members?"),
                    required=True, values=vocab_items),
             custom_widget=self.custom_widgets['contact_method'])
-        self.form_fields = form.Fields(
-            contact_method, self.form_fields['contact_address'])
-        super(TeamContactAddressView, self).setUpWidgets(context=context)
 
     def validate(self, data):
         """Validate the team contact email address.
@@ -301,7 +317,7 @@ class TeamContactAddressView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "This team's Launchpad mailing list is currently "
                 "inactive and will be reactivated shortly.")
-        self.next_url = canonical_url(self.context)
+        self.next_url = canonical_url(self.context)    
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -309,6 +325,8 @@ class TeamContactAddressView(LaunchpadFormView):
         email_set = getUtility(IEmailAddressSet)
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
+        welcome_message = data.get('welcome_message', None)
+
         if contact_method == TeamContactMethod.NONE:
             if context.preferredemail is not None:
                 context.preferredemail.destroySelf()
@@ -320,6 +338,9 @@ class TeamContactAddressView(LaunchpadFormView):
                 "address.")
             context.setContactAddress(
                 email_set.getByEmail(mailing_list.address))
+            if (welcome_message is not None
+                and welcome_message != mailing_list.welcome_message):
+                mailing_list.welcome_message = welcome_message
         elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
             contact_address = data['contact_address']
             email = email_set.getByEmail(contact_address)

@@ -1453,6 +1453,11 @@ class ITeamContactAddressForm(Interface):
         title=_("How do people contact these team's members?"),
         required=True, vocabulary=TeamContactMethod)
 
+    welcome_message = Text(
+        title=_('Welcome Message'),
+        description=_('A message sent to those who join this mailing list.'),
+        required=False)
+
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""

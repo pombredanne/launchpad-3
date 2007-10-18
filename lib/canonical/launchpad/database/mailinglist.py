@@ -166,7 +166,7 @@ class MailingList(SQLBase):
         else:
             raise AssertionError(
                 'Only registered or active mailing lists may be modified')
-        self.welcome_message_text = text
+        self.welcome_message_text = text        
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
