@@ -1,5 +1,16 @@
 = Branch Details =
 
+Imports used later in the document:
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, IPersonSet)
+
+
 == Recent Revisions ==
 
 On the Code site, registered branches are reached by
@@ -183,13 +194,27 @@ For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information about
 when the branch was last mirrored and when it will be mirrored again.
 
+First we create an example branch, then call the APIs to indicate that it has
+been mirrored:
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> branch = getUtility(IBranchSet).new(
+    ...     BranchType.MIRRORED, name='mirrored', creator=no_priv,
+    ...     owner=no_priv, product=None, url='http://example.com/mirrored',
+    ...     title='Disabled branch')
+    >>> branch.last_mirrored = datetime(
+    ...     year=2007, month=10, day=1, tzinfo=pytz.timezone('UTC'))
+    >>> branch.mirror_request_time = None
+    >>> flush_database_updates()
+    >>> logout()
+
     >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    ...     'http://code.launchpad.dev/~no-priv/+junk/mirrored')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal
-    Location: http://trekkies.example.com/gnome-terminal/klingon
+    Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
-    Next mirror: As soon as possible
+    Next mirror: Disabled
 
 
 Branches that have never been mirrored don't have a 'Last mirrored' field.
@@ -204,11 +229,6 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
 
 If mirror_request_time is NULL, then mirroring of the branch is disabled.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranchSet, IPersonSet)
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> branch = getUtility(IBranchSet).new(
