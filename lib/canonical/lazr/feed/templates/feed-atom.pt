@@ -3,32 +3,19 @@
 <!ENTITY nbsp "&#160;">
 ]>
 
-<!--
-XXX: Edwin 2007-10-15 bug=153406 Doctype not working for some reason.
-XXX: bac   2007-10-17 Since the 'xmlns:tal' has not been declared yet this
-     comment defies the standard by using the unrecommended comment
-     delimiter.
-<!DOCTYPE feed [
-<!ENTITY % HTMLlat1 PUBLIC
-    "-//W3C//ENTITIES Latin 1 for XHTML//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
-%HTMLlat1;
-]>
--->
-
 <feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal">
 
-    <title tal:content="view/getTitle">Recently opened bugs</title>
+    <title tal:content="view/title">Recently opened bugs</title>
 
-    <id tal:content="view/getURL">http://feeds.launchpad.net/bugs/</id>
-    <link rel="self" tal:attributes="href view/getURL" />
-    <link rel="alternate" tal:attributes="href view/getSiteURL" />
-    <logo tal:condition="view/getLogo"
-          tal:content="view/getLogo" />
-    <icon tal:condition="view/getIcon"
-          tal:content="view/getIcon" />
+    <id tal:content="view/url">http://feeds.launchpad.net/bugs/</id>
+    <link rel="self" tal:attributes="href view/url" />
+    <link rel="alternate" tal:attributes="href view/site_url" />
+    <logo tal:condition="view/logo"
+          tal:content="view/logo" />
+    <icon tal:condition="view/icon"
+          tal:content="view/icon" />
     <updated tal:condition="view/date_updated"
              tal:content="view/date_updated">2007-05-26T12:45:01Z</updated>
     <entry tal:repeat="entry view/getItems">

@@ -19,7 +19,7 @@
             background: #99cc00;
         }
     </style>
-    <table tal:define="site_url view/feed/getSiteURL">
+    <table tal:define="site_url view/feed/site_url">
         <tr>
             <th>Affects</th>
             <th>Status</th>

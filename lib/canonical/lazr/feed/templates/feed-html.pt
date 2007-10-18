@@ -5,30 +5,30 @@
   i18n:domain="launchpad">
 
 <head>
-    <title tal:content="view/getTitle">Feed Title</title>
+    <title tal:content="view/title">Feed Title</title>
 </head>
 
 <body>
-    <h1 tal:content="view/getTitle">My Title</h1>
-    <div tal:repeat="item view/getItems" 
+    <h1 tal:content="view/title">My Title</h1>
+    <div tal:repeat="item view/getItems"
          style="border: 5px ridge black; padding: 10px; margin: 10px">
         <table>
             <tr><th>Title:</th>
                 <td>
-                <a tal:content="item/title/content" 
+                <a tal:content="item/title/content"
                     tal:attributes="href item/link_alternate">
                 Bug Title</a>
                 </td>
             </tr>
             <tr tal:repeat="author item/authors">
                 <th>Author:</th>
-                <td><a tal:content="author/name" 
+                <td><a tal:content="author/name"
                        tal:attributes="href author/uri">Author</a>
                 </td>
             </tr>
         </table>
         <tal:comment condition="nothing">
-        FeedEntry.content is a FeedTypedData object 
+        FeedEntry.content is a FeedTypedData object
              which has a content attribute
         </tal:comment>
         <div tal:replace="structure item/content/content">

@@ -22,6 +22,7 @@ import time
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
@@ -29,25 +30,16 @@ from canonical.cachedproperty import cachedproperty
 # working prototype.  Bug 153795.
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
 from canonical.launchpad.webapp.vhosts import allvhosts
-
+from canonical.lazr.interfaces import IFeed, UnsupportedFeedFormat
 
 MINUTES = 60
 MAX_AGE = 60 * MINUTES
 SUPPORTED_FEEDS = ('atom', 'html')
 
 class FeedBase(LaunchpadFormView):
-    """Base class for feeds.
+    """Base class for feeds."""
 
-    - context
-    - request
-    - initialize()  <-- subclass this for specific initialization
-    - getId()
-    - getUpdated()
-    - getTitle()
-    - getURL()
-    - getItems()
-    - itemToAtomFeedEntry
-    """
+    implements(IFeed)
 
     # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be in a config file.
     max_age = MAX_AGE
@@ -59,7 +51,7 @@ class FeedBase(LaunchpadFormView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.format = self.getFeedFormat()
+        self.format = self.feed_format
 
     def initialize(self):
         """Override this in subclasses.
@@ -68,15 +60,18 @@ class FeedBase(LaunchpadFormView):
         """
         pass
 
-    def getTitle(self):
+    @property
+    def title(self):
         """Return the title of the feed."""
         raise NotImplementedError
 
-    def getURL(self):
+    @property
+    def url(self):
         """Return the URL for the feed.  It should be unique and permanent."""
         raise NotImplementedError
 
-    def getSiteURL(self):
+    @property
+    def site_url(self):
         """Return the URL for the main site of Launchpad."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
@@ -88,25 +83,28 @@ class FeedBase(LaunchpadFormView):
         """Convert a single item to a formatted feed entry."""
         raise NotImplementedError
 
-    def getFeedFormat(self):
+    @property
+    def feed_format(self):
         """Return the requested feed format.
 
-        Raises ValueError if the format is not supported.
+        Raises UnsupportedFeedFormat if the format is not supported.
         """
         path = self.request['PATH_INFO']
         extension = os.path.splitext(path)[1]
         if len(extension) > 0 and extension[1:] in SUPPORTED_FEEDS:
             return extension[1:]
         else:
-            raise ValueError('%s is not supported' % path)
+            raise UnsupportedFeedFormat('%s is not supported' % path)
 
-    def getLogo(self):
+    @property
+    def logo(self):
         """Get the URL for the feed logo."""
         raise NotImplementedError
 
-    def getIcon(self):
+    @property
+    def icon(self):
         """Get the icon for the feed."""
-        return "%s/@@/launchpad" % self.getSiteURL()
+        return "%s/@@/launchpad" % self.site_url
 
     @cachedproperty
     def date_updated(self):
@@ -142,7 +140,7 @@ class FeedBase(LaunchpadFormView):
         elif self.format == 'html':
             return self.renderHTML()
         else:
-            raise NotImplementedError("Format %s is not implemented" % self.format)
+            raise UnsupportedFeedFormat("Format %s is not supported" % self.format)
 
     def renderAtom(self):
         """Render the object as an Atom feed.
