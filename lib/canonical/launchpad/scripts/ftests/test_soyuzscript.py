@@ -1,7 +1,8 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-"""Test SoyuzScript base class.
+"""Test the SoyuzScript base class.
 
-Checking if the base source and binary lookup methods are working properly.
+We check that the base source and binary lookup methods are working
+properly.
 """
 
 import unittest
