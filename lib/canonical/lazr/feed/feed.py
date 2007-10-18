@@ -20,9 +20,10 @@ import operator
 import os
 import time
 
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.app.datetimeutils import rfc1123_date
+from zope.app.pagetemplate import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
@@ -32,7 +33,7 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 MINUTES = 60
 MAX_AGE = 60 * MINUTES
-
+SUPPORTED_FEEDS = ('atom', 'html')
 
 class FeedBase(LaunchpadFormView):
     """Base class for feeds.
@@ -94,11 +95,10 @@ class FeedBase(LaunchpadFormView):
         """
         path = self.request['PATH_INFO']
         extension = os.path.splitext(path)[1]
-        if extension in ['.atom', '.html']:
+        if len(extension) > 0 and extension[1:] in SUPPORTED_FEEDS:
             return extension[1:]
         else:
-            raise ValueError, ('%s is not supported'
-                % (self.request['PATH_INFO']))
+            raise ValueError('%s is not supported' % path)
 
     def getLogo(self):
         """Get the URL for the feed logo."""
@@ -108,7 +108,8 @@ class FeedBase(LaunchpadFormView):
         """Get the icon for the feed."""
         return "%s/@@/launchpad" % self.getSiteURL()
 
-    def getUpdated(self):
+    @cachedproperty
+    def date_updated(self):
         """Get the update time for the feed.
 
         By default this is set to the most recent update of the entries in the
@@ -122,12 +123,12 @@ class FeedBase(LaunchpadFormView):
         return sorted_items[0].date_updated
 
     def render(self):
+        """Render the feed."""
         expires = rfc1123_date(time.time() + self.max_age)
-        # self.getUpdated() can't run until after initialize() runs
-        date_updated = self.getUpdated()
-        if date_updated is not None:
+        # self.date_updated can't run until after initialize() runs
+        if self.date_updated is not None:
             last_modified = rfc1123_date(
-                                time.mktime(self.getUpdated().timetuple()))
+                                time.mktime(self.date_updated.timetuple()))
         else:
             last_modified = rfc1123_date(time.time())
         response = self.request.response
@@ -141,7 +142,7 @@ class FeedBase(LaunchpadFormView):
         elif self.format == 'html':
             return self.renderHTML()
         else:
-            raise NotImplementedError, "Format %s is not implemented" % self.format
+            raise NotImplementedError("Format %s is not implemented" % self.format)
 
     def renderAtom(self):
         """Render the object as an Atom feed.

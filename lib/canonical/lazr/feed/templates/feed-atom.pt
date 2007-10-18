@@ -29,8 +29,8 @@ XXX: bac   2007-10-17 Since the 'xmlns:tal' has not been declared yet this
           tal:content="view/getLogo" />
     <icon tal:condition="view/getIcon"
           tal:content="view/getIcon" />
-    <updated tal:condition="view/getUpdated"
-             tal:content="view/getUpdated">2007-05-26T12:45:01Z</updated>
+    <updated tal:condition="view/date_updated"
+             tal:content="view/date_updated">2007-05-26T12:45:01Z</updated>
     <entry tal:repeat="entry view/getItems">
        <metal:entry metal:use-macro="entry/@@feed-entry-atom/feed-entry" />
     </entry>
