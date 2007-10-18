@@ -55,41 +55,35 @@ class FeedBase(LaunchpadFormView):
         self.format = self.feed_format
 
     def initialize(self):
-        """Override this in subclasses.
-
-        Default implementation does nothing.
-        """
+        """See `IFeed`."""
         pass
 
     @property
     def title(self):
-        """Return the title of the feed."""
+        """See `IFeed`."""
         raise NotImplementedError
 
     @property
     def url(self):
-        """Return the URL for the feed.  It should be unique and permanent."""
+        """See `IFeed`."""
         raise NotImplementedError
 
     @property
     def site_url(self):
-        """Return the URL for the main site of Launchpad."""
+        """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
     def getItems(self):
-        """Get the individual unformatted items for the feed."""
+        """See `IFeed`."""
         raise NotImplementedError
 
     def itemToFeedEntry(self, item):
-        """Convert a single item to a formatted feed entry."""
+        """See `IFeed`."""
         raise NotImplementedError
 
     @property
     def feed_format(self):
-        """Return the requested feed format.
-
-        Raises UnsupportedFeedFormat if the format is not supported.
-        """
+        """See `IFeed`."""
         path = self.request['PATH_INFO']
         extension = os.path.splitext(path)[1]
         if len(extension) > 0 and extension[1:] in SUPPORTED_FEEDS:
@@ -99,21 +93,17 @@ class FeedBase(LaunchpadFormView):
 
     @property
     def logo(self):
-        """Get the URL for the feed logo."""
+        """See `IFeed`."""
         raise NotImplementedError
 
     @property
     def icon(self):
-        """Get the icon for the feed."""
+        """See `IFeed`."""
         return "%s/@@/launchpad" % self.site_url
 
     @cachedproperty
     def date_updated(self):
-        """Get the update time for the feed.
-
-        By default this is set to the most recent update of the entries in the
-        feed.
-        """
+        """See `IFeed`."""
         sorted_items = sorted(self.getItems(),
                               key=operator.attrgetter('date_updated'),
                               reverse=True)
@@ -122,7 +112,7 @@ class FeedBase(LaunchpadFormView):
         return sorted_items[0].date_updated
 
     def render(self):
-        """Render the feed."""
+        """See `IFeed`."""
         expires = rfc1123_date(time.time() + self.max_age)
         if self.date_updated is not None:
             last_modified = rfc1123_date(
@@ -144,17 +134,11 @@ class FeedBase(LaunchpadFormView):
                                         self.format)
 
     def renderAtom(self):
-        """Render the object as an Atom feed.
-
-        Override this as opposed to overriding render().
-        """
+        """See `IFeed`."""
         return ViewPageTemplateFile(self.template_files['atom'])(self)
 
     def renderHTML(self):
-        """Render the object as an html feed.
-
-        Override this as opposed to overriding render().
-        """
+        """See `IFeed`."""
         return ViewPageTemplateFile(self.template_files['html'])(self)
 
 

@@ -79,7 +79,7 @@ class BugsFeedBase(FeedBase):
     rootsite = "bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(BugsFeedBase, self).initialize()
         self._show_column = None
 
@@ -123,13 +123,13 @@ class BugsFeedBase(FeedBase):
 
     @property
     def url(self):
-        """Get the identifying URL for the feed."""
+        """See `IFeed`."""
         return "%s/%s.%s" % (
             canonical_url(self.context), self.feedname, self.format)
 
     @property
     def logo(self):
-        """Get the application-specific logo."""
+        """See `IFeed`."""
         return "%s/@@/bug" % self.site_url
 
     def getPublicRawItems(self):
@@ -142,10 +142,7 @@ class BugsFeedBase(FeedBase):
                 if not bugtask.bug.private]
 
     def getItems(self):
-        """Get the items for the feed.
-
-        The result is assigned to self.items for caching.
-        """
+        """See `IFeed`."""
         if self.items is None:
             items = self.getPublicRawItems()
             # Convert the items into their feed entry representation.
@@ -153,7 +150,7 @@ class BugsFeedBase(FeedBase):
         return self.items
 
     def itemToFeedEntry(self, bugtask):
-        """Given a bugtask, format it for rendering."""
+        """See `IFeed`."""
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
@@ -169,7 +166,7 @@ class BugsFeedBase(FeedBase):
         return entry
 
     def renderHTML(self):
-        """Render the bug as HTML."""
+        """See `IFeed`."""
         return ViewPageTemplateFile('templates/bug-html.pt')(self)
 
 
@@ -182,14 +179,14 @@ class BugFeed(BugsFeedBase):
     feedname = "bug"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(BugFeed, self).initialize()
         if self.context.private:
             raise Unauthorized("Feeds do not serve private bugs")
 
     @property
     def title(self):
-        """Title for the feed."""
+        """See `IFeed`."""
         return "Bug %s" % self.context.id
 
     def getRawItems(self):
@@ -208,14 +205,14 @@ class BugTargetBugsFeed(BugsFeedBase):
     feedname = "latest-bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(BugTargetBugsFeed, self).initialize()
         self.delegate_view = BugTargetView(self.context, self.request)
         self.delegate_view.initialize()
 
     @property
     def title(self):
-        """Title for the feed."""
+        """See `IFeed`."""
         return "Bugs in %s" % self.context.displayname
 
     def getRawItems(self):
@@ -232,14 +229,14 @@ class PersonBugsFeed(BugsFeedBase):
     feedname = "latest-bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(PersonBugsFeed, self).initialize()
         self.delegate_view = PersonRelatedBugsView(self.context, self.request)
         self.delegate_view.initialize()
 
     @property
     def title(self):
-        """Title for the feed."""
+        """See `IFeed`."""
         return "Bugs for %s" % self.context.displayname
 
     def getRawItems(self):
@@ -263,7 +260,7 @@ class SearchBugsFeed(BugsFeedBase):
     feedname = "+bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(SearchBugsFeed, self).initialize()
         self.delegate_view = BugsBugTaskSearchListingView(self.context,
                                                           self.request)
@@ -279,11 +276,11 @@ class SearchBugsFeed(BugsFeedBase):
 
     @property
     def title(self):
-        """Title for the feed."""
+        """See `IFeed`."""
         return "Bugs from custom search"
 
     @property
     def url(self):
-        """Get the identifying URL for the feed."""
+        """See `IFeed`."""
         return "%s?%s" % (self.request.getURL(),
                           self.request.get('QUERY_STRING'))
