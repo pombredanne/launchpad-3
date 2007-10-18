@@ -949,6 +949,9 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 class BranchListingSort(EnumeratedType):
     """Choices for how to sort branch listings."""
 
+    # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
+    # that are not visible in the listing!
+
     PRODUCT = Item("""
         by project name
 

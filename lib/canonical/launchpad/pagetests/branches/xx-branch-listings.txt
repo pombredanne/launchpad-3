@@ -246,21 +246,43 @@ as the listing of branches owned by a person), the default ordering is
 by product name (which is of course called "project name" in the UI).
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getControl(name='field.sort_by').value
+    >>> sort_by_control = browser.getControl(name='field.sort_by')
+    >>> sort_by_control.value
     ['by project name']
-    >>> browser.getControl(name='field.sort_by').value = ['by project name']
+    >>> for option in sort_by_control.options:
+    ...     print option
+    by project name
+    by lifecycle status
+    by author name
+    by branch name
+    by registrant name
+    most recently changed first
+    least recently changed first
+    newest first
+    oldest first
 
 On a listing that can only have branches from one product, the default
 is to sort by lifecycle status, and product name is not one of the
 options that can be selected.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> browser.getControl(name='field.sort_by').value
+    >>> sort_by_control = browser.getControl(name='field.sort_by')
+    >>> sort_by_control.value
     ['by lifecycle status']
-    >>> browser.getControl(name='field.sort_by').value = ['by project name']
+    >>> sort_by_control.value = ['by project name']
     Traceback (most recent call last):
       ...
     ItemNotFoundError: insufficient items with name 'by project name'
+    >>> for option in sort_by_control.options:
+    ...     print option
+    by lifecycle status
+    by author name
+    by branch name
+    by registrant name
+    most recently changed first
+    least recently changed first
+    newest first
+    oldest first
 
 If you filter by a specific lifecycle status then ordering by
 lifecycle ceases to be relevant, and the default is to sort by author.

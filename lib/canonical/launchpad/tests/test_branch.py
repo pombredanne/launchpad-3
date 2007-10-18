@@ -28,10 +28,13 @@ class TestListingToSortOrder(unittest.TestCase):
                           DEFAULT_BRANCH_LISTING_SORT)
 
     def test_lifecycle(self):
-        """Sorting LIFECYCYLE moves the lifecycle reference to the first
-        element of the output."""
+        """Test with an option that's part of the default sort.
+
+        Sorting on LIFECYCYLE moves the lifecycle reference to the
+        first element of the output."""
         # Check that this isn't a no-op.
-        self.assertNotEquals(DEFAULT_BRANCH_LISTING_SORT[0], '-lifecycle_status')
+        self.assertNotEquals(DEFAULT_BRANCH_LISTING_SORT[0],
+                             '-lifecycle_status')
         lifecycle_order = BranchSet._listingSortToOrderBy(
             BranchListingSort.LIFECYCLE)
         self.assertEquals(lifecycle_order[0], '-lifecycle_status')
@@ -39,8 +42,11 @@ class TestListingToSortOrder(unittest.TestCase):
         self.assertColumnNotReferenced('lifecycle_status', lifecycle_order[1:])
 
     def test_sortOnColumNotInDefaultSortOrder(self):
-        """Test that sorting on a column not in the default sort order does
-        the right thing."""
+        """Test with an option that's not part of the default sort.
+
+        This should put the passed option first in the list, but leave
+        the rest the same.
+        """
         self.assertColumnNotReferenced(
             'owner_name', DEFAULT_BRANCH_LISTING_SORT)
         registrant_order = BranchSet._listingSortToOrderBy(
