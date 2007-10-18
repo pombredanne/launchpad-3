@@ -21,6 +21,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.editview import EditView
 
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
@@ -98,8 +99,8 @@ class BugTrackerView(LaunchpadView):
         This property was created for the Related projects portlet in
         the bug tracker's page.
         """
-        return list(chain(self.context.projects,
-                          self.context.products))
+        return shortlist(chain(self.context.projects,
+                               self.context.products), 100)
 
 
 class BugTrackerEditView(EditView):
