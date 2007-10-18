@@ -36,12 +36,12 @@ class TestExpandURL(BranchTestCase):
         self.api = PublicCodehostingAPI(None, None)
         # BranchType is only signficiant insofar as it is not a REMOTE branch.
         self.product = self.makeProduct()
-        self.trunk = self.makeBranch(BranchType.HOSTED, product=self.product)
 
         # Associate 'trunk' with the product's development focus. Use
         # removeSecurityProxy so that we can assign directly to user_branch.
         trunk_series = removeSecurityProxy(self.product).development_focus
-        trunk_series.user_branch = self.trunk
+        trunk_series.user_branch = (
+            self.makeBranch(BranchType.HOSTED, product=self.product))
 
     def makePrivateBranch(self, **kwargs):
         """Create an arbitrary private branch using `makeBranch`.
@@ -51,7 +51,7 @@ class TestExpandURL(BranchTestCase):
         branch = self.makeBranch(**kwargs)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.private = True
-        return naked_branch
+        return branch
 
     def makeProductSeries(self, product=None, owner=None, name=None,
                           summary=None, branch=None):
@@ -97,18 +97,25 @@ class TestExpandURL(BranchTestCase):
         URLs earlier in the list. We use a dict so we can easily add more
         information in the future.
         """
+        trunk = self.product.development_focus.user_branch
         results = self.api.resolve_lp_path(self.product.name)
         urls = [
-            'bzr+ssh://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
-            'sftp://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
-            'http://bazaar.launchpad.dev/%s' % self.trunk.unique_name]
+            'bzr+ssh://bazaar.launchpad.dev/%s' % trunk.unique_name,
+            'sftp://bazaar.launchpad.dev/%s' % trunk.unique_name,
+            'http://bazaar.launchpad.dev/%s' % trunk.unique_name]
         self.assertEqual(dict(urls=urls), results)
 
     def test_productOnly(self):
         """lp:product expands to the branch associated with development focus
         of the product.
         """
-        self.assertResolves(self.product.name, self.trunk.unique_name)
+        trunk = self.product.development_focus.user_branch
+        self.assertResolves(self.product.name, trunk.unique_name)
+        trunk_series = removeSecurityProxy(self.product).development_focus
+        trunk_series.user_branch = self.makeBranch(
+            BranchType.HOSTED, product=self.product)
+        self.assertResolves(
+            self.product.name, trunk_series.user_branch.unique_name)
 
     def test_productDoesntExist(self):
         """Return a NoSuchProduct fault if the product doesn't exist."""
@@ -166,7 +173,8 @@ class TestExpandURL(BranchTestCase):
         arbitrary_branch = self.makeBranch()
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
-        self.assertResolves(self.trunk.unique_name, self.trunk.unique_name)
+        trunk = self.product.development_focus.user_branch
+        self.assertResolves(trunk.unique_name, trunk.unique_name)
 
     def test_noSuchBranch(self):
         """Resolve paths to branches even if there is no branch of that name.
@@ -223,7 +231,8 @@ class TestExpandURL(BranchTestCase):
             faults.InvalidBranchIdentifier('foo/bar/baz'))
 
         # Should be invalid even if the branch exists.
-        unique_name = self.trunk.unique_name.lstrip('~')
+        trunk = self.product.development_focus.user_branch
+        unique_name = trunk.unique_name.lstrip('~')
         self.assertFault(
             unique_name, faults.InvalidBranchIdentifier(unique_name))
 
@@ -234,8 +243,9 @@ class TestExpandURL(BranchTestCase):
     def test_trailingSlashes(self):
         """Trailing slashes are trimmed."""
         # Trailing slashes on lp:product//
-        self.assertResolves(self.product.name + '/', self.trunk.unique_name)
-        self.assertResolves(self.product.name + '//', self.trunk.unique_name)
+        trunk = self.product.development_focus.user_branch
+        self.assertResolves(self.product.name + '/', trunk.unique_name)
+        self.assertResolves(self.product.name + '//', trunk.unique_name)
 
         # Trailing slashes on lp:~owner/product/branch//
         arbitrary_branch = self.makeBranch()
@@ -251,8 +261,11 @@ class TestExpandURL(BranchTestCase):
         For fully specified branch names, this means resolving the lp url.
         """
         arbitrary_branch = self.makePrivateBranch()
-        self.assertResolves(
-            arbitrary_branch.unique_name, arbitrary_branch.unique_name)
+        # Removing security proxy to get at the unique_name attribute of a
+        # private branch, and tests are currently running as an anonymous
+        # user.
+        unique_name = removeSecurityProxy(arbitrary_branch).unique_name
+        self.assertResolves(unique_name, unique_name)
 
     def test_privateBranchOnSeries(self):
         """We resolve invisible branches as if they don't exist.
@@ -260,7 +273,11 @@ class TestExpandURL(BranchTestCase):
         For references to product series, this means returning a
         NoBranchForSeries fault.
         """
-        series = self.makeProductSeries(branch=self.makePrivateBranch())
+        # Removing security proxy because we need to be able to get at
+        # attributes of a private branch and these tests are running as an
+        # anonymous user.
+        branch = removeSecurityProxy(self.makePrivateBranch())
+        series = self.makeProductSeries(branch=branch)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
             faults.NoBranchForSeries(series))
@@ -273,7 +290,8 @@ class TestExpandURL(BranchTestCase):
         indicate that there is no branch on the development focus. We do the
         same.
         """
-        naked_trunk = removeSecurityProxy(self.trunk)
+        trunk = self.product.development_focus.user_branch
+        naked_trunk = removeSecurityProxy(trunk)
         naked_trunk.private = True
         self.assertFault(
             self.product.name,
