@@ -184,7 +184,7 @@ class ProductLicenseMixin:
         if (License.OTHER_PROPRIETARY in self.product.licenses
                 or License.OTHER_OPEN_SOURCE in self.product.licenses):
             user = getUtility(ILaunchBag).user
-            subject = 'Project Registration'
+            subject = 'Project License Submitted'
             fromaddress = format_address("Launchpad",
                                          config.noreply_from_address)
             license_titles = '\n'.join(
@@ -211,7 +211,6 @@ class ProductLicenseMixin:
                 "Launchpad is free to use for software under approved "
                 "licenses. The Launchpad team will be in contact with "
                 "you soon."))
-
 
 
 class ProductSOP(StructuralObjectPresentation):

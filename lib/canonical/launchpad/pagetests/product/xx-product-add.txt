@@ -102,13 +102,32 @@ since the field is not required.
     >>> user_browser.getControl(
     ...     'Programming Language').value = 'Visual Python++, C'
     >>> user_browser.getControl('Summary').value = 'This is the summary'
-    >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_PROPRIETARY']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
     'http://launchpad.dev/testing2'
     >>> 'Test Product' in user_browser.contents
     True
+
+When a product is created with the license OTHER_PROPRIETARY an email
+is sent to feedback@canonical.com.
+
+The mail is sent when the transaction gets commited:
+
+    >>> import transaction
+    >>> transaction.commit()
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'feedback@launchpad.net'
+    >>> msg['From']
+    'Launchpad <noreply@launchpad.net>'
+    >>> msg['Subject']
+    'Project License Submitted'
 
 
 Now let's try to insert a product with the same name (testing).

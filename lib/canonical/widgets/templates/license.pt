@@ -19,12 +19,14 @@
     <input id="license_pending" name="license_status" type="radio"
           tal:attributes="checked is_empty"
           onClick="unsetLicenses()" />
-    <label for="license_pending">I haven't specified the license yet.</label>
+    <label for="license_pending">I haven't specified the license yet</label>
     <br/>
 
     <input id="license_complete" name="license_status" type="radio"
           tal:attributes="checked not:is_empty" />
-    <label for="license_complete">The project uses these licenses:</label>
+    <label for="license_complete">
+      This project consists of code licensed under:
+    </label>
   </div>
 
   <tal:if tal:condition="view/allow_pending_license">
