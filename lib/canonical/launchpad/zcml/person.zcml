@@ -45,6 +45,10 @@
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"
       />
+    <require
+      permission="launchpad.Admin"
+      attributes="deactivateAllMembers"
+      />
   </content>
 
   <browser:menus
