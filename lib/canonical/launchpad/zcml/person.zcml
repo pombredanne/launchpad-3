@@ -30,7 +30,6 @@
 
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPerson" />
-    <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
@@ -513,9 +512,9 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
-    class="canonical.launchpad.browser.TeamEmailView"
-    name="+editemail"
-    template="../templates/team-editemail.pt"
+    class="canonical.launchpad.browser.TeamContactAddressView"
+    name="+contactaddress"
+    template="../templates/team-contactaddress.pt"
     />
 
   <browser:page

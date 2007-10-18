@@ -74,7 +74,6 @@ the latest release if it is a distribution package.
   ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1")
   >>> print extract_text(find_tag_by_id(user_browser.contents, 'task17'))
   Affecting: mozilla-firefox (Ubuntu)
-  Latest release: 0.9
   Filed here by: Foo Bar
   When: 2004-01-17
   Assigned: 2005-01-17

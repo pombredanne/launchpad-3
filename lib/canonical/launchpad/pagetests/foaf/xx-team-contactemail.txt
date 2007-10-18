@@ -1,370 +1,258 @@
-  'name16' is an administrator of 'ubuntu-team', so he can manage this 
-  team's contact email address. In this test 'name16' adds a new
-  contact email address, validates it, then change it (having to
-  validate the new one to) and finally removes the new contact
-  email address.
-
-
-  Adding the new contact email address...
-
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Contact address...
-  ...
-
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... newcontactemail=ubuntu-team%40foo.com&ADD_EMAIL=Add""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...A confirmation message has been sent to...
-  ...
-
-  Get the token we'll have to use to finish the registration process.
-
-  >>> import email, re
-  >>> from canonical.launchpad.mail import stub
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_msg)
-  >>> body = msg.get_payload()
-  >>> link = re.findall(r'http.*/token/.*', body)[0]
-  >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
-
-  Check if the email was sent to the right address.
-
-  >>> to_addrs
-  ['ubuntu-team@foo.com']
-
-
-  Go to the link sent by email, to validate the email address.
-
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validateteamemail
-  <BLANKLINE>
-
-
-  >>> path = '%s/+validateteamemail' % base_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Confirm e-mail address:...ubuntu-team@foo.com...
-  ...
-
-
-  # XXX Guilherme Salgado 2007-06-29:
-  # Remember to check the notification message displayed after this
-  # submission when converting this to use testbrowser.
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... field.actions.continue=Continue""" % path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/~ubuntu-team
-  ...
-
-  
-  Now that we have a contact email address, I want to change it...
-
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...All notifications directed to this team...
-  ...
-  ...ubuntu-team@foo.com...
-  ...
-
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... newcontactemail=ubuntu-team%40bar.com&CHANGE_EMAIL=Change""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...A confirmation message has been sent to...
-  ...
-
-
-  Get the token we'll have to use to finish the registration process.
-
-  >>> import email, re
-  >>> from canonical.launchpad.mail import stub
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_msg)
-  >>> body = msg.get_payload()
-  >>> link = re.findall(r'http.*/token/.*', body)[0]
-  >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
-
-  Check if the email was sent to the right address.
-
-  >>> to_addrs
-  ['ubuntu-team@bar.com']
-
-
-  Go to the link sent by email, to validate the email address.
-
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validateteamemail
-  <BLANKLINE>
-
-
-  >>> path = '%s/+validateteamemail' % base_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Confirm e-mail address...ubuntu-team@bar.com...
-  ...
-
-
-  # XXX Guilherme Salgado 2007-06-29:
-  # Remember to check the notification message displayed after this
-  # submission when converting this to use testbrowser.
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... field.actions.continue=Continue""" % path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/~ubuntu-team
-  ...
-
-
-
-  Finally, remove the new contact email address.
-
-  >>> print http(r"""
-  ... GET /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...All notifications directed to...
-  ...
-  ...ubuntu-team@bar.com...
-  ...
-
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... REMOVE_EMAIL=Remove&newcontactemail=""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...The contact email address of this team has been removed...
-  ...
-  
-Test if we can see the error message displayed when two people try to
-register the same address at the same time. When this happens, the last one
-to validate will get an error message saying that address is already
-registered. 
-
-Team sets a new contact email address.
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... newcontactemail=foo%40bar.com&ADD_EMAIL=Add""")
-  HTTP/1.1 200 Ok
-  ...
-  ...A confirmation message has been sent to...
-  ...
-
-Get the token related to the validation of team email
-
-  >>> import email, re
-  >>> from canonical.launchpad.mail import stub
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_msg)
-  >>> body = msg.get_payload()
-  >>> link = re.findall(r'http.*/token/.*', body)[0]
-  >>> teamtoken = re.sub(r'.*token/', '', link)
-  >>> team_path = '/token/%s' % teamtoken
-
-  Check if the email was sent to the right address.
-
-  >>> to_addrs
-  ['foo@bar.com']
-
-Person adds a new email address(same as the team).
-
-  >>> print http(r"""
-  ... POST /~name16/+editemails HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... newemail=foo%40bar.com&ADD_EMAIL=Add""")
-  HTTP/1.1 200 Ok
-  ...
-  ...A confirmation message has been sent to...
-  ...
-
-Get the token related to the validation of person email
-
-  >>> import email, re
-  >>> from canonical.launchpad.mail import stub
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_msg)
-  >>> body = msg.get_payload()
-  >>> link = re.findall(r'http.*/token/.*', body)[0]
-  >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
-
-  Check if the email was sent to the right address.
-
-  >>> to_addrs
-  ['foo@bar.com']
-  
-Person validates the email address using the token.
-
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validateemail
-  <BLANKLINE>
-
-  >>> path = '%s/+validateemail' % base_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  ...
-  ...Confirm e-mail address...
-  ...
-
-  Email was validated.
-
-  # XXX Guilherme Salgado 2007-06-29:
-  # Remember to check the notification message displayed after this
-  # submission when converting this to use testbrowser.
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... field.actions.continue=Continue""" % path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/~name16
-  ...
-
-And now the team tries to validate the same email which will return a error
-messages because it's already validate to foobar person.
-
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """ % team_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validateteamemail
-  <BLANKLINE>
-
-
-  >>> path = '%s/+validateemail' % team_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  ...
-  ...Confirm e-mail address...
-  ...
-
-We get an error message
-
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... field.actions.continue=Continue""" % path)
-  HTTP/1.1 200 Ok
-  ...
-  ...This email address is already registered for another Launchpad user account...
-  ...
-
-
-Now 'name16' add the ubuntu-team@baz.com email address to the team.
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... newcontactemail=ubuntu-team%40baz.com&ADD_EMAIL=Add""")
-  HTTP/1.1 200 Ok
-  ...
-  ...A confirmation message has been sent to...
-  ...
-
-
-  >>> print http(r"""
-  ... POST /~ubuntu-team/+editemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... UNVALIDATED_SELECTED=ubuntu-team%40baz.com&REMOVE_UNVALIDATED=Remove""")
-  HTTP/1.1 200 Ok
-  ...
-  ...The email address 'ubuntu-team@baz.com' has been removed...
-  ...
+= Team contact address =
+
+Team admins are allowed to set the contact method used by Launchpad to
+send notifications to that team.  The possible contact methods are:
+
+    - Hosted mailing list:  Notifications are sent to this team's mailing
+                            list hosted on Launchpad.
+
+    - None:  There's no way to contact the team as a whole, so any
+             notification is sent to every member of the team.
+
+    - Another address:  All notifications are sent to the given email
+                        address (stored as the team's preferredemail).
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.title
+    'Landscape Developers contact address'
+
+As we can see, the landscape-developers team has no contact address.
+
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Each member individually']
+
+Changing it to an external address will require the user to go through
+the email address confirmation process.
+
+    >>> browser.getControl('Another e-mail address').selected = True
+    >>> browser.getControl(
+    ...     name='field.contact_address').value = 'foo@example.com'
+    >>> browser.getControl('Change').click()
+
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    A confirmation message has been sent to...
+
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> stub.test_emails
+    []
+
+    # Extract the link (from the email we just sent) the user will have to
+    # use to finish the registration process.
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+    >>> to_addrs
+    ['foo@example.com']
+
+Follow the token link, to confirm the new email address.
+
+    >>> browser.open(token_url)
+    >>> browser.title
+    'Confirm e-mail address'
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Email address successfully confirmed.
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.title
+    'Landscape Developers contact address'
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Another e-mail address']
+    >>> browser.getControl(name='field.contact_address').value
+    'foo@example.com'
+
+To change that to a hosted mailing list, we first need to request the
+mailing list to be activated.
+
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    Traceback (most recent call last):
+    ...
+    AttributeError: item is disabled
+
+    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Mailing list requested and queued for approval.
+
+    # We don't use getUtility(IMailingListSet) here because we want
+    # non-security-proxied objects so that we can call syncUpdate on them
+    # and change their status at our discretion.
+    >>> from canonical.launchpad.database import MailingListSet, Person
+    >>> list_set = MailingListSet()
+    >>> mailing_list = list_set.get('landscape-developers')
+    >>> mailing_list.status
+    <...MailingListStatus.REGISTERED...>
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Another e-mail address']
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Not available because the application for a mailing list is pending
+    approval.
+
+Once the mailing list is requested, the button to request its activation is
+not shown anymore.
+
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+If the application is declined, the button won't be shown either. Instead,
+we'll ask the user to contact a Launchpad admin.
+
+    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> foobar = Person.byName('name16')
+    >>> mailing_list.review(foobar, MailingListStatus.DECLINED)
+    >>> mailing_list.syncUpdate()
+    >>> logout()
+
+    >>> browser.reload()
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+    >>> for msg in get_feedback_messages(browser):
+    ...     print extract_text(msg)
+    Not available because the application for a mailing list has been
+    declined. Please contact a Launchpad administrator for further assistance.
+
+    # Here we manually change its status back to REGISTERED so that we can
+    # move on testing as if it wasn't declined.
+    >>> mailing_list.status = MailingListStatus.REGISTERED
+    >>> mailing_list.syncUpdate()
+
+Any time before the mailing list is approved, the application can be
+cancelled (and then re-requested afterwards).
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Cancel Application').click()
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Mailing list application cancelled.
+    >>> print list_set.get('landscape-developers')
+    None
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> mailing_list = list_set.get('landscape-developers')
+    >>> mailing_list
+    <MailingList for team "landscape-developers"; status=REGISTERED...
+
+The mailing list can be used as the team's contact address only when its
+status is ACTIVE. The process of activating a mailing list is invisible to
+users, so we'll simulate it here by directly accessing our database code.
+
+    >>> login('foo.bar@canonical.com')
+    >>> mailing_list.review(foobar, MailingListStatus.APPROVED)
+    >>> mailing_list.syncUpdate()
+    >>> logout()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Not available because mailing list is being constructed.
+
+    >>> mailing_list.startConstructing()
+    >>> mailing_list.syncUpdate()
+    >>> browser.reload()
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Not available because mailing list is being constructed.
+
+When the mailing list is constructed and made active, it can be used as
+the team's contact address.
+
+    >>> login('foo.bar@canonical.com')
+    >>> mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> mailing_list.syncUpdate()
+    >>> logout()
+
+    >>> browser.reload()
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    False
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team...]
+
+XXX: We don't really want all this functionality to be visible to users
+when this code lands on mainline, so there's a config variable which
+controls its visibility.  That variable is named expose_hosted_mailing_lists
+and if it's set to False the option to use a hosted mailing list is not
+visible.  This test will go away as soon as we decide to deploy that
+functionality on production. -- Guilherme Salgado 2007-09-20
+(https://launchpad.net/launchpad/+spec/team-mailing-list-beta-program)
+
+    >>> from canonical.config import config
+    >>> config.mailman.expose_hosted_mailing_lists
+    True
+
+    >>> browser.getControl(name='field.contact_method').displayOptions
+    ['\xa0The Launchpad mailing list for this team -
+      landscape-developers@lists.launchpad.net',
+     '\xa0Each member individually',
+     '\xa0Another e-mail address']
+
+    >>> config.mailman.expose_hosted_mailing_lists = False
+    >>> browser.reload()
+    >>> browser.getControl(name='field.contact_method').displayOptions
+    ['\xa0Each member individually',
+     '\xa0Another e-mail address']
+
+    >>> config.mailman.expose_hosted_mailing_lists = True
+    >>> browser.reload()
+    >>> browser.getControl(name='field.contact_method').displayOptions
+    ['\xa0The Launchpad mailing list for this team -
+      landscape-developers@lists.launchpad.net',
+     '\xa0Each member individually',
+     '\xa0Another e-mail address']
 

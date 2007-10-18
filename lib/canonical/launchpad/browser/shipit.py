@@ -740,11 +740,12 @@ class StandardShipItRequestAddView(AddView):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
-        # We're not shipping PPC CDs anymore.
-        quantityppc = 0
+        quantityppc = 0 # We're not shipping PPC CDs anymore.
         isdefault = data.get('isdefault')
+        user_description = data.get('user_description')
         request = getUtility(IStandardShipItRequestSet).new(
-            flavour, quantityx86, quantityamd64, quantityppc, isdefault)
+            flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description)
         notify(ObjectCreatedEvent(request))
 
 
