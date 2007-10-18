@@ -229,7 +229,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     # revision control items
@@ -383,16 +383,6 @@ class IProductSeriesSet(Interface):
         :param importstatus: If specified, limit the list to series which have
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
-        """
-
-    def importcount(status=None):
-        """Count the series with import data of a given status.
-
-        This method will not count series for deactivated products.
-
-        :param status: If specified, count the series which have the given
-            import status; if not specified or None, count all series with
-            a defined import status.
         """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):

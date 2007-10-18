@@ -33,9 +33,15 @@
     This is an inactive milestone.
   </p>
 
+  <div class="description"
+       tal:condition="context/description"
+       tal:content="structure context/description/fmt:text-to-html">
+    Description of milestone goes here.
+  </div>
+
   <tal:has_specs condition="specs">
 
-    <h3 id="specification-count" tal:content="view/specification_count_text" />
+    <h2 id="specification-count" tal:content="view/specification_count_text" />
 
     <table class="listing sortable" id="milestone_specs">
       <thead>
@@ -91,7 +97,7 @@
 
   <tal:has_bugtasks condition="bugtasks">
 
-    <h3 id="bug-count" tal:content="view/bugtask_count_text" />
+    <h2 id="bug-count" tal:content="view/bugtask_count_text" />
 
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
@@ -144,12 +150,15 @@
 
   </tal:has_bugtasks>
 
-  <tal:has_bugs_or_specs condition="not: view/has_bugs_or_specs">
-    You do not have any feature specifications or bug tasks targeted to
-    this milestone. For any given specification or bug task, you can
-    target it to a milestone to keep a handy listing of things you want
-    to get done in that milestone.
-  </tal:has_bugs_or_specs>
+  <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">
+    <h2>No blueprints or bugs targeted</h2>
+    <p>
+      You do not have any feature specifications or bug tasks targeted
+      to this milestone. For any given specification or bug task, you
+      can target it to a milestone to keep a handy listing of things you
+      want to get done in that milestone.
+    </p>
+  </tal:neither_bugs_nor_specs>
 
 </div> 
 </body>

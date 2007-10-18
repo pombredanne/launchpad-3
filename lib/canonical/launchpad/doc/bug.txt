@@ -632,8 +632,7 @@ Adding a branch.
 
 Editing a branch.
 
-    >>> from canonical.launchpad.interfaces import IBugBranch
-    >>> from canonical.lp.dbschema import BugBranchStatus
+    >>> from canonical.launchpad.interfaces import BugBranchStatus, IBugBranch
 
     >>> branch_before_modification = Snapshot(
     ...     bug_branch, providing=IBugBranch)
