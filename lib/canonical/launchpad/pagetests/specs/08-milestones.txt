@@ -5,9 +5,8 @@ Let's target a blueprint to the 1.0 milestone of Mozilla. Before we do this,
 the milestone page lists one feature targeted already, and no bugs:
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> content = find_main_content(admin_browser.contents)
-    >>> for heading in content.findAll('h3'):
-    ...     print extract_text(heading)
+    >>> tag = find_tag_by_id(admin_browser.contents, 'specification-count')
+    >>> print extract_text(tag)
     1 blueprint targeted
 
 We'll target the "canvas" blueprint. Each blueprint has a separate page for
@@ -51,6 +50,6 @@ Now, we should see the spec on the Mozilla Milestone 1.0 page.
 The count of targeted features has also updated.
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> for heading in content.findAll('h3'):
-    ...     print extract_text(heading)
+    >>> tag = find_tag_by_id(admin_browser.contents, 'specification-count')
+    >>> print extract_text(tag)
     2 blueprints targeted
