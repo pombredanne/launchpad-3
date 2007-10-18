@@ -6,8 +6,9 @@ from unittest import TestLoader
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    DistroSeriesStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
+
+from canonical.launchpad.interfaces import DistroSeriesStatus
 
 class TestIPublishingAPI(TestNativePublishingBase):
 

@@ -452,7 +452,7 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
   >>> breezy.status = DistroSeriesStatus.CURRENT
   >>> syncUpdate(breezy)
   >>> transaction.commit()

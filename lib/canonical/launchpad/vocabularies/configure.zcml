@@ -91,11 +91,6 @@
     />
 
   <vocabulary
-    name="DistroSeriesStatus"
-    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
-    />
-
-  <vocabulary
     name="FAQ"
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />

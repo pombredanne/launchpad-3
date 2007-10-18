@@ -30,11 +30,11 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
-    ILaunchpadCelebrities)
+    DistroSeriesStatus, IDistributionSet, IDistroSeriesSet, IPersonSet,
+    IArchiveSet, ILaunchpadCelebrities)
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
-    PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
+    PackageUploadStatus, PackagePublishingStatus,
     PackagePublishingPocket, ArchivePurpose)
 from canonical.testing import LaunchpadZopelessLayer
 

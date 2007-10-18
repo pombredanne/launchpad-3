@@ -34,7 +34,6 @@ __all__ = (
 'CodereleaseRelationships',
 'CodeImportReviewStatus',
 'CveStatus',
-'DistroSeriesStatus',
 'ImportTestStatus',
 'ImportStatus',
 'MirrorContent',
@@ -209,70 +208,6 @@ class CveStatus(DBSchema):
         general correspondence. There is either a newer entry that better
         defines the problem, or the original candidate was never promoted to
         "Entry" status.
-        """)
-
-
-class DistroSeriesStatus(DBSchema):
-    """Distribution Release Status
-
-    A DistroSeries (warty, hoary, or grumpy for example) changes state
-    throughout its development. This schema describes the level of
-    development of the distroseries. The typical sequence for a
-    distroseries is to progress from experimental to development to
-    frozen to current to supported to obsolete, in a linear fashion.
-    """
-
-    EXPERIMENTAL = Item(1, """
-        Experimental
-
-        This distroseries contains code that is far from active
-        release planning or management. Typically, distroseriess
-        that are beyond the current "development" release will be
-        marked as "experimental". We create those so that people
-        have a place to upload code which is expected to be part
-        of that distant future release, but which we do not want
-        to interfere with the current development release.
-        """)
-
-    DEVELOPMENT = Item(2, """
-        Active Development
-
-        The distroseries that is under active current development
-        will be tagged as "development". Typically there is only
-        one active development release at a time. When that freezes
-        and releases, the next release along switches from "experimental"
-        to "development".
-        """)
-
-    FROZEN = Item(3, """
-        Pre-release Freeze
-
-        When a distroseries is near to release the administrators
-        will freeze it, which typically means that new package uploads
-        require significant review before being accepted into the
-        release.
-        """)
-
-    CURRENT = Item(4, """
-        Current Stable Release
-
-        This is the latest stable release. Normally there will only
-        be one of these for a given distribution.
-        """)
-
-    SUPPORTED = Item(5, """
-        Supported
-
-        This distroseries is still supported, but it is no longer
-        the current stable release. In Ubuntu we normally support
-        a distroseries for 2 years from release.
-        """)
-
-    OBSOLETE = Item(6, """
-        Obsolete
-
-        This distroseries is no longer supported, it is considered
-        obsolete and should not be used on production systems.
         """)
 
 

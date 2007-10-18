@@ -9,8 +9,8 @@ __metaclass__ = type
 
 from canonical.archivepublisher.tests import datadir
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    DistroSeriesStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces import DistroSeriesStatus
 
 __all__ = ['FakeLogger']
 
