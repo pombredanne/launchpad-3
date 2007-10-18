@@ -355,6 +355,7 @@ def zopelessLaunchpadSecuritySetUp(test):
     test.old_security_policy = getSecurityPolicy()
     setSecurityPolicy(LaunchpadSecurityPolicy)
 
+
 def zopelessLaunchpadSecurityTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
