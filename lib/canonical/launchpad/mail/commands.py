@@ -26,7 +26,6 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -658,16 +657,13 @@ class MilestoneEmailCommand(EditEmailCommand):
             # Remove milestone
             return {self.name: None}
         elif self._userCanEditMilestone(user, context):
-            pillar = context.pillar
-            milestone = pillar.getMilestone(milestone_name)
+            milestone = context.pillar.getMilestone(milestone_name)
             if milestone is None:
-                addmilestone_url = canonical_url(pillar) + '/+addmilestone'
                 raise EmailProcessingError(
                     "The milestone %s does not exist for %s. Note that "
                     "milestones are not automatically created from emails; "
-                    "they must be created on the website at %s" % (
-                        milestone_name, context.pillar.title,
-                        addmilestone_url))
+                    "they must be created on the website." % (
+                        milestone_name, context.pillar.title))
             else:
                 return {self.name: milestone}
         else:
