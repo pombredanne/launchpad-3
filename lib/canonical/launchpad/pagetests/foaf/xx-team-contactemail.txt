@@ -32,7 +32,6 @@ user to go through the email address confirmation process.
     >>> browser.getControl(
     ...     name='field.contact_address').value = 'foo@example.com'
     >>> browser.getControl('Change').click()
-
     >>> browser.title
     'Landscape Developers in Launchpad'
     >>> for msg in get_feedback_messages(browser):
@@ -78,9 +77,10 @@ Follow the token link, to confirm the new email address.
 To change that to a hosted mailing list, we first need to request the
 mailing list to be activated.
 
-    >>> browser.getControl('The Launchpad mailing list').disabled
+    >>> description = 'The Launchpad mailing list for this team - '
+    >>> browser.getControl(description).disabled
     True
-    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl(description).selected = True
     Traceback (most recent call last):
     ...
     AttributeError: item is disabled
@@ -242,25 +242,42 @@ customize the mailing list's welcome message.
     
 The change takes effect in the database immediately.
 
-    >>> mailing_list = list_set.get('landscape-developers')
-    >>> print mailing_list.welcome_message
+    >>> browser.getLink('Change contact address').click()    
+    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> print welcome_message.value
     Welcome to the test team mailing list.
 
 But it takes a while to be propagated to Mailman. The user is informed
 of this.
 
-    >>> browser.getLink('Change contact address').click()    
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Not available because mailing list is being updated.
-    >>> print mailing_list.status.name
-    MODIFIED
+    Not available because mailing list is pending an update.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mailing_list.startUpdating()
-    >>> mailing_list.syncUpdate()
-    >>> logout()
-    >>> browser.reload()
+Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
+
+    >>> import xmlrpclib
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
+    >>> mailinglist_api = xmlrpclib.ServerProxy(
+    ...    private_root + 'mailinglists/',
+    ...    transport=XMLRPCTestTransport())
+    >>> mailinglist_api.getPendingActions()   
+    {'modify': [['landscape-developers', 
+                 {'welcome_message': 'Welcome to the test team 
+                                      mailing list.'}]]}
+
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+
+    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> print welcome_message.value
+    Welcome to the test team mailing list.
+
+    >>> description = 'The Launchpad mailing list for this team - '
+    >>> control = browser.getControl(description)
+    >>> control.selected 
+    True
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Not available because mailing list is being updated.
@@ -269,32 +286,64 @@ Usually there is no problem. The welcome message is propagated to
 Mailman, and the informative message disappears from the contact
 address view.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
-    >>> mailing_list.syncUpdate()
-    >>> logout()
-
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> no_security_list = removeSecurityProxy(mailing_list)
+    >>> no_security_list.status = MailingListStatus.ACTIVE
+    >>> no_security_list.syncUpdate()
     >>> browser.reload()
+
+    !>>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    !True
+
+    browser.reload()
     >>> get_feedback_messages(browser)
     []
+    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> print welcome_message.value
+    Welcome to the test team mailing list.
 
-If the change fails to propagate, the user will know about it.
+    >>> description = 'The Launchpad mailing list for this team - '
+    >>> control = browser.getControl(description)
+    >>> control.selected 
+    True
 
-    >>> login('foo.bar@canonical.com')
-    >>> mailing_list.welcome_message = mailing_list.welcome_message
-    >>> mailing_list.startUpdating()
-    >>> mailing_list.transitionToStatus(MailingListStatus.FAILED)
-    >>> mailing_list.syncUpdate()
-    >>> logout()
+What if the change fails to propagate? The user will know of this too.
+
+    >>> description = 'The Launchpad mailing list for this team - '
+    >>> control = browser.getControl(description)
+    >>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    True
+
+    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> welcome_message.value = 'This change will fail to propagate.'
+    >>> print welcome_message.value
+    This change will fail to propagate.
+    >>> browser.getControl('Change').click()
+    >>> mailing_list = list_set.get('landscape-developers')
+    >>> mailing_list.welcome_message
+    This change will fail to propagate.
+    >>> browser.getLink('Change contact address').click()    
+    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> print welcome_message.value
+    This change will fail to propagate.
+
+    >>> mailinglist_api.getPendingActions()
+    >>> browser.reload()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Not available because mailing list is being updated.
+
+    >>> mailinglist_api.reportStatus({'landscape-developers' : 'failure'})
 
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Not available because mailing list creation failed.
 
-Maneuver the mailing list back into a consistent state for the next
-test. To do this we need to bypass the workflow which prevents much of
-anything from being done with a mailing list in a FAILED state.
+Now we have to maneuver the mailing list back into a consistent state
+for the next test. To do this we need to bypass the workflow which
+prevents much of anything from being done with a mailing list in a
+FAILED state.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> no_security_list = removeSecurityProxy(mailing_list)

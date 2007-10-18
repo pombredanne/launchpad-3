@@ -150,6 +150,12 @@ class MailingList(SQLBase):
     def _get_welcome_message(self):
         return self.welcome_message_text
 
+    def canBeContactMethod(self):
+        """See `IMailingList`"""
+        return self.status in [MailingListStatus.ACTIVE,
+                               MailingListStatus.MODIFIED,
+                               MailingListStatus.UPDATING]
+
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
             # Do nothing because the status does not change.  When setting the
@@ -158,7 +164,7 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.status == MailingListStatus.ACTIVE:
+        elif self.canBeContactMethod():
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.

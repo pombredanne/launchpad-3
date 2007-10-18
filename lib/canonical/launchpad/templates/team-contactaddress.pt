@@ -20,42 +20,57 @@
     <metal:widgets fill-slot="widgets">
       <div tal:define="contact_method nocall:view/widgets/contact_method">
         <div>
-          <tal:disabled-option
-            condition="view/shouldRenderHostedListOptionManually">
-            <label style="font-weight: normal">
-              <input class="radioType" name="field.contact_method"
-                     type="radio" value="HOSTED_LIST" disabled="true" />
-              The Launchpad mailing list for this team -
-              <span tal:replace="view/mailinglist_address">a@b.com</span>
-              <div class="informational message" style="margin: 0 0 0 2em"
-                   tal:condition="view/mailing_list_status_message">
-                <span tal:content="structure view/mailing_list_status_message">
-                  Not available because mailing list is being updated.
-                </span>
-                <input tal:replace="structure view/request_list_creation/render"
-                       tal:condition="view/list_can_be_requested" />
-                <input tal:replace="structure view/cancel_list_creation/render"
-                       tal:condition="view/list_application_can_be_cancelled" />
-              </div>
+          <tal:options repeat="term view/form_fields/contact_method/field/vocabulary">
+            <tal:mailing_lists_enabled condition="view/shouldRenderHostedListOptionManually">
+              <tal:mailing_list_widget condition="repeat/term/start">
+                <label style="font-weight: normal">
+                  <input tal:attributes="disabled not:view/can_be_contact_method;
+                   checked python:term.value==view.initial_values['contact_method']"
+                   class="radioType" name="field.contact_method" type="radio" value="HOSTED_LIST"/>&nbsp;The Launchpad mailing list for this team - <strong tal:content="view/mailinglist_address">a@b.com</strong>
+                  <div class="informational message" style="margin: 0 0 0 2em"
+                      tal:condition="view/mailing_list_status_message">
+                    <span tal:content="structure view/mailing_list_status_message">
+                      Not available because mailing list is being updated.
+                    </span>
+                    <input tal:replace="structure view/request_list_creation/render"
+                           tal:condition="view/list_can_be_requested" />
+                    <input tal:replace="structure view/cancel_list_creation/render"
+                           tal:condition="view/list_application_can_be_cancelled" />
+                  </div>
+                </label>
+
+                <tal:welcome_message_widget 
+                  define="widget nocall:view/widgets/welcome_message|nothing"
+                  condition="nocall: widget">
+                  <div style="margin: 0 0 0 2em">
+                    <metal:widget use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+                  </div>
+                </tal:welcome_message_widget>
+              </tal:mailing_list_widget>
+            </tal:mailing_lists_enabled>
+           
+            <label style="font-weight: normal" tal:condition="python:term.token!='HOSTED_LIST'">
+              <input tal:attributes="value term/token;
+                                     checked python:term.value==view.initial_values['contact_method']"
+                class="radioType" name="field.contact_method" type="radio"/>&nbsp;<tal:label replace="structure term/title" />
             </label>
-          </tal:disabled-option>
-          <input tal:replace="structure contact_method" />:
-	  <tal:welcome_message_widget 
-              define="widget nocall:view/widgets/welcome_message|nothing"
-              condition="nocall: widget">
-		<metal:widget use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-	  </tal:welcome_message_widget>
-          <tal:email-widget 
-            define="contact_address nocall:view/widgets/contact_address;
-                    field_name contact_address/context/__name__;
-                    error python:view.getWidgetError(field_name);
-                    error_class python:error and 'error' or None;">
-            <span tal:attributes="class error_class">
-              <input tal:replace="structure contact_address" />
-              <div class="message" tal:condition="error"
-                 tal:content="structure error">Error message</div>
-            </span>
-          </tal:email-widget>
+
+            <tal:email-widget 
+              condition="repeat/term/end"
+              define="contact_address nocall:view/widgets/contact_address;
+                      field_name contact_address/context/__name__;
+                      error python:view.getWidgetError(field_name);
+                      error_class python:error and 'error' or None;">
+              <span tal:attributes="class error_class">
+                <input tal:replace="structure contact_address" />
+                <div class="message" tal:condition="error"
+                   tal:content="structure error">Error message</div>
+              </span>
+            </tal:email-widget>
+            <br tal:condition="not:repeat/term/end" />
+          </tal:options>
+        
+
         </div>
       </div>
       <br />
