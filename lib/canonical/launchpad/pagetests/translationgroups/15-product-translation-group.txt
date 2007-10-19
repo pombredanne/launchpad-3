@@ -38,6 +38,3 @@ you can't set translation group/permissions without using Translations.)
     Status: Active
     ...
     Translation group: The PolyGlot Translation Group
-    >>> print admin_browser.getLink(
-    ...     'The PolyGlot Translation Group').url
-    http://translations.launchpad.dev/+groups/polyglot
