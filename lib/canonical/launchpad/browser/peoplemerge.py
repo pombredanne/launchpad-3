@@ -100,7 +100,12 @@ class AdminMergeBaseView(LaunchpadFormView):
         self.actions = [self.merge_action]
         return super(AdminMergeBaseView, self).render()
 
-    def setUpData(self, data):
+    def setUpPeople(self, data):
+        """Store the people to be merged in instance variables.
+
+        Also store all emails associated with the dupe account in an
+        instance variable.
+        """
         emailset = getUtility(IEmailAddressSet)
         self.dupe_person = data['dupe_person']
         self.target_person = data['target_person']
@@ -122,6 +127,14 @@ class AdminMergeBaseView(LaunchpadFormView):
 
 
 class AdminPeopleMergeView(AdminMergeBaseView):
+    """A view for merging two Persons.
+
+    If the duplicate person has any email addresses associated with we'll
+    ask the user to confirm that it's okay to reassign these emails to the
+    other account.  We do it because the fact that the dupe person still has
+    email addresses is a possible indication that the admin may be merging
+    the wrong person.
+    """
 
     label = "Merge Launchpad people"
     schema = IAdminPeopleMergeSchema
@@ -133,7 +146,7 @@ class AdminPeopleMergeView(AdminMergeBaseView):
         If we're merging a person which has email addresses associated with
         we'll ask for confirmation before actually performing the merge.
         """
-        self.setUpData(data)
+        self.setUpPeople(data)
         if self.dupe_person_emails.count() > 0:
             # We're merging a person which has one or more email addresses,
             # so we better warn the admin doing the operation and have him
@@ -146,14 +159,16 @@ class AdminPeopleMergeView(AdminMergeBaseView):
     @action('Reassign E-mails and Merge', name='reassign_emails_and_merge')
     def reassign_emails_and_merge_action(self, action, data):
         """Reassign emails of the person to be merged and merge them."""
-        self.setUpData(data)
+        self.setUpPeople(data)
         self.doMerge(data)
 
 
 class AdminTeamMergeView(AdminMergeBaseView):
     """A view for merging two Teams.
 
-    The duplicate team cannot be associated with a mailing list.
+    The duplicate team cannot be associated with a mailing list and if it
+    has any active members we'll ask for confirmation from the user as we'll
+    need to deactivate all members before we can do the merge.
     """
 
     label = "Merge Launchpad teams"
@@ -177,7 +192,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
         has active members, as in that case we'll have to deactivate all
         members first.
         """
-        self.setUpData(data)
+        self.setUpPeople(data)
         if self.dupe_person.activemembers.count() > 0:
             # Merging teams with active members is not possible, so we'll
             # ask the admin if he wants to deactivate all members and then
@@ -190,7 +205,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
             name='deactivate_members_and_merge')
     def deactivate_members_and_merge_action(self, action, data):
         """Deactivate all members of the team to be merged and merge them."""
-        self.setUpData(data)
+        self.setUpPeople(data)
         comment = (
             'Deactivating all members as this team is being merged into %s. '
             'Please contact the administrators of <%s> if you have any '
