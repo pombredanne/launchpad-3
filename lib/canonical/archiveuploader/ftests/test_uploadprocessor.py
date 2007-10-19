@@ -986,6 +986,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "bar_1.0-1.dsc: Component 'badcomponent' is not valid\n"
             "bar_1.0.orig.tar.gz: Component 'badcomponent' is not valid\n"
             "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
+            "Further error processing not possible because of a "
+                "critical previous error.\n"
             "\n"
             "-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
@@ -1006,6 +1008,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: bar_1.0-1_source.changes rejected\n"
             "Rejected:\n"
             "Unable to find distroseries: flangetrousers\n"
+            "Further error processing not possible because of a "
+                "critical previous error.\n"
             "\n"
             "-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
