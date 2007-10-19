@@ -15,35 +15,13 @@ for the thing comprising the feed.  Rather than use a standard
 Launchpad interface, we'll define one here.
 
     >>> from zope.interface import Interface, Attribute, implements
-
-    >>> class IThing(Interface):
-    ...     value = Attribute('the value of the thing')
-
-    >>> class Thing(object):
-    ...     implements(IThing)
-    ...
-    ...     def __init__(self, value):
-    ...         self.value = value
-    ...
-    ...     def __repr__(self):
-    ...         return "<Thing '%s'>" % self.value
+    >>> from canonical.launchpad.ftests.feeds_helper import (
+    ...     IThing, Thing, ThingFeedView)
 
 
 == ZCML for browser:feeds ==
 
 The zcml `browser:feeds` directive describes a feed view.
-
-    >>> import canonical.launchpad.ftests
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> canonical.launchpad.ftests.IThing = IThing
-
-    >>> class ThingFeedView(LaunchpadView):
-    ...     usedfor = IThing
-    ...     feedname = "thing-feed"
-    ...     def __call__(self):
-    ...         return "a feed view on an IThing"
-
-    >>> canonical.launchpad.ftests.ThingFeedView = ThingFeedView
 
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
@@ -51,7 +29,7 @@ The zcml `browser:feeds` directive describes a feed view.
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <include file="lib/zope/app/meta.zcml" />
     ...   <browser:feeds
-    ...       module="canonical.launchpad.ftests"
+    ...       module="canonical.launchpad.ftests.feeds_helper"
     ...       classes="ThingFeedView"
     ...       />
     ... </configure>
@@ -66,7 +44,7 @@ Get the view from a `thing` on 'thing-feed' for a request.
     >>> request = LaunchpadTestRequest()
 
 To successfully get a view, the lookup must be on an object that is an
-`IThing` and the view name must be one of the three supported.  If the
+`IThing` and the view name must be one that is supported.  If the
 view is not found a ComponentLookupError is raised.  Also, the request
 must be in the FeedsLayer.
 

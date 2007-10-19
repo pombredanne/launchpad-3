@@ -11,8 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import (
-    Datetime, Int, List, Text, TextLine, URI)
+from zope.schema import Datetime, Int, List, Text, TextLine, URI
 
 
 class UnsupportedFeedFormat(Exception):
@@ -44,7 +43,7 @@ class IFeed(Interface):
     feed_format = TextLine(
         title=u"Feed format",
         description=u"Requested feed format.  "
-                     "Raises UnsupportedFeed if not supported.")
+                     "Raises `UnsupportedFeed` if not supported.")
 
     logo = TextLine(
         title=u"Logo URL",
@@ -58,21 +57,18 @@ class IFeed(Interface):
         title=u"Date update",
         description=u"Date of last update for the feed.")
 
-
-    def initialize():
-        """Initialize the feed.
-
-        This method should be overridden as needed.
-        """
-
     def getItems():
         """Get the individual unformatted items for the feed."""
 
+    def getPublicRawItems():
+        """Get the public items for the feed in their raw format.
+
+        Feeds do not show private items, so this method will screen out the
+        private items.
+        """
+
     def itemToFeedEntry(item):
         """Convert a single item to a formatted feed entry."""
-
-    def render():
-        """Render the feed."""
 
     def renderAtom():
         """Render the object as an Atom feed.
@@ -106,15 +102,15 @@ class IFeedPerson(Interface):
 
     name = TextLine(
         title=u"Name",
-        description=u"Person's name",
+        description=u"The person's name.",
         required=True)
 
     email = TextLine(
         title=u"Email",
-        description=u"Person's email address",
+        description=u"The person's email address.",
         required=False)
 
     uri = URI(
-        title=u"Name",
-        description=u"Person's name",
+        title=u"URI",
+        description=u"The URI for the person.",
         required=True)

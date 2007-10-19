@@ -8,6 +8,7 @@ as HTML instead of Atom.
     >>> from BeautifulSoup import SoupStrainer
 
 Define a helper function for parsing the entries:
+
     >>> def parse_entries(contents):
     ...     entries = [tag for tag in BeautifulSoup(browser.contents,
     ...                   parseOnlyThese=SoupStrainer('tr'))]
@@ -41,7 +42,7 @@ the bug itself.
     >>> print entry('td')[2].a['href']
     http://bugs.launchpad.dev/jokosher/+bug/12
     >>> print extract_text(entry('td')[3])
-    Jokosher 
+    Jokosher
     >>> print extract_text(entry('td')[4])
     Critical
     >>> print extract_text(entry('td')[5])
@@ -129,7 +130,6 @@ a feed.
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     23
-
 
     >>> entry = entries[1]
     >>> print extract_text(entry('td')[1])

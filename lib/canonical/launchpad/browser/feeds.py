@@ -65,6 +65,10 @@ class FeedsNavigation(Navigation):
 
         # Normalize the query string so caching is more effective.  This is
         # done by simply sorting the entries.
+
+        # XXX bac 20071019, we would like to normalize with respect to case
+        # too but cannot due to a problem with the bug search requiring status
+        # values to be of a particular case.  See bug 154562.
         query_string = self.request.get('QUERY_STRING', '')
         fields = sorted(query_string.split('&'))
         normalized_query_string = '&'.join(fields)
@@ -92,6 +96,7 @@ class FeedsNavigation(Navigation):
                 return getUtility(IBugSet).getByNameOrID(bug_id)
 
         # Handle persons and teams.
+        # http://feeds.launchpad.net/~salgado/latest-bugs.html
         if name.startswith('~'):
             # Redirect to the canonical name before doing the lookup.
             if canonical_name(name) != name:

@@ -35,14 +35,16 @@ from canonical.lazr.interfaces import (
 
 MINUTES = 60
 MAX_AGE = 60 * MINUTES
-SUPPORTED_FEEDS = ('atom', 'html')
+SUPPORTED_FEEDS = ('.atom', '.html')
+
 
 class FeedBase(LaunchpadFormView):
     """Base class for feeds."""
 
     implements(IFeed)
 
-    # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be in a config file.
+    # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be
+    # in a config file.
     max_age = MAX_AGE
     quantity = 25
     items = None
@@ -56,6 +58,10 @@ class FeedBase(LaunchpadFormView):
 
     def initialize(self):
         """See `IFeed`."""
+        # This method must not delegate to the superclass method as it does
+        # things that are inappropriate (e.g. set up widgets) for a Feed
+        # class.  Therefore this implementation must not be removed and
+        # invoking the super class version must not happen.
         pass
 
     @property
@@ -77,6 +83,10 @@ class FeedBase(LaunchpadFormView):
         """See `IFeed`."""
         raise NotImplementedError
 
+    def getPublicRawItems():
+        """See `IFeed`."""
+        raise NotImplementedError
+
     def itemToFeedEntry(self, item):
         """See `IFeed`."""
         raise NotImplementedError
@@ -86,7 +96,7 @@ class FeedBase(LaunchpadFormView):
         """See `IFeed`."""
         path = self.request['PATH_INFO']
         extension = os.path.splitext(path)[1]
-        if len(extension) > 0 and extension[1:] in SUPPORTED_FEEDS:
+        if len(extension) > 0 and extension in SUPPORTED_FEEDS:
             return extension[1:]
         else:
             raise UnsupportedFeedFormat('%s is not supported' % path)
@@ -176,10 +186,11 @@ class FeedTypedData:
     implements(IFeedTypedData)
 
     content_types = ['text', 'html', 'xhtml']
+
     def __init__(self, content, content_type='text'):
         self.content = content
         if content_type not in self.content_types:
-            raise ValueError, "%s: is not valid" % content_type
+            raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type
 
 
