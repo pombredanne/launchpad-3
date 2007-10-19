@@ -724,20 +724,16 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
+        extra_path = '/'.join(reversed(furtherPath))
         if name == 'link':
-            rootsite = None
-        if name.startswith('link:'):
-            if name == 'link':
-                rootsite = None
-            else:
-                rootsite = name.split(':')[1]
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
+            return self.link(extra_path)
+        elif name.startswith('link:'):
+            rootsite = name.split(':')[1]
             return self.link(extra_path, rootsite=rootsite)
         elif name in self.allowed_names:
             return getattr(self, name)()
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
     def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
