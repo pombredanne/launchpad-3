@@ -1,3 +1,7 @@
+= Duplicate bug watches =
+
+== Adding the same bug watch twice to a bug ==
+
 When adding bug watches, existing bug watches are re-used if there
 already is one pointing to the same remote bug. For example, let's start
 with adding a Debian bug watch to bug #8.
@@ -58,4 +62,28 @@ same bug watch.
     mozilla-firefox (Debian): Foo Bar
     thunderbird (Debian): debbugs #42
 
+
+== Adding the same bug watch to two different bugs ==
+
+If a bug watch which is already added to another bug is added, a
+notification is added linking to the bug. This is useful for detecting
+duplicates.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/5')
+    >>> user_browser.getLink(url='+distrotask').click()
+    >>> user_browser.getControl('Distribution').value = ['debian']
+    >>> user_browser.getControl('Source Package Name').value = (
+    ...     'mozilla-firefox')
+    >>> user_browser.getControl('URL').value = debian_bug
+    >>> user_browser.getControl('Continue').click()
+    >>> for message in get_feedback_messages(user_browser):
+    ...   print message
+    Bug #8 also links to the added bug watch (debbugs #42).
+    This bug has 1 duplicate
+
+The notification links to the bug in question.
+
+    >>> user_browser.getLink('Bug #8').click()
+    >>> user_browser.url
+    'http://.../+bug/8'
 

@@ -40,11 +40,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
-    NotFoundError)
+    IBranchSet, IProduct, IProductSet, IProject, IProjectSet, NotFoundError)
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -57,7 +55,7 @@ from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.helpers import shortlist
 
 
-class ProjectNavigation(Navigation, CalendarTraversalMixin):
+class ProjectNavigation(Navigation):
 
     usedfor = IProject
 
@@ -180,13 +178,6 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     enable_only = ['overview', 'branches', 'bugs', 'specifications',
                    'answers', 'translations']
-
-    def calendar(self):
-        target = '+calendar'
-        text = 'Calendar'
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled)
 
     def branches(self):
         text = 'Code'
@@ -345,7 +336,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    label = "Change project details"
+    label = "Change project group details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
@@ -585,7 +576,8 @@ class ProjectBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
     @property
     def no_branch_message(self):

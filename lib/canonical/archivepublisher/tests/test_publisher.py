@@ -494,34 +494,46 @@ class TestPublisher(TestNativePublishingBase):
         """Test the careful domination procedure.
 
         Check if it works on a development series.
-        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        A SUPERSEDED or DELETED published source should have its
+        scheduleddeletiondate set.
         """
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(
+        superseded_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(superseded_source.scheduleddeletiondate is None)
+        deleted_source = self.getPubSource(
+            status=PackagePublishingStatus.DELETED)
+        self.assertTrue(deleted_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
-        # Retrieve the publishing record again otherwise it would remain
-        # unchanged since domination procedure purges caches and does
-        # other bad things for sqlobject.
+        # Retrieve the publishing record again since the transaction was
+        # committed.
         from canonical.launchpad.database.publishing import (
             SourcePackagePublishingHistory)
-        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
+        superseded_source = SourcePackagePublishingHistory.get(
+            superseded_source.id)
+        deleted_source = SourcePackagePublishingHistory.get(
+            deleted_source.id)
 
-        # Publishing record got scheduled for removal
+        # Publishing records got scheduled for removal
         self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+            superseded_source.status, PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(superseded_source.scheduleddeletiondate is not None)
+        self.assertEqual(
+            deleted_source.status, PackagePublishingStatus.DELETED)
+        self.assertTrue(deleted_source.scheduleddeletiondate is not None)
 
     def testCarefulDominationOnObsoleteSeries(self):
         """Test the careful domination procedure.
 
         Check if it works on a obsolete series.
-        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        A SUPERSEDED published source should be have its scheduleddeletiondate
+        set.
         """
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
@@ -532,6 +544,7 @@ class TestPublisher(TestNativePublishingBase):
 
         pub_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
@@ -543,7 +556,8 @@ class TestPublisher(TestNativePublishingBase):
 
         # Publishing record got scheduled for removal.
         self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+            pub_source.status, PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is not None)
 
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):
@@ -658,29 +672,62 @@ class TestPublisher(TestNativePublishingBase):
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
-        first_md5_line = release_contents[md5_header_index + 3]
+
+        plain_sources_md5_line = release_contents[md5_header_index + 4]
         self.assertEqual(
-            first_md5_line,
+            plain_sources_md5_line,
+            (' 77b1655f4038b2f4e95c29429c3981bd              '
+             '211 main/source/Sources'))
+        release_md5_line = release_contents[md5_header_index + 5]
+        self.assertEqual(
+            release_md5_line,
             (' a5e5742a193740f17705c998206e18b6              '
              '114 main/source/Release'))
+        # We can't probe checksums of compressed files because they contain
+        # timestamps, their checksum varies with time.
+        print
+        for line in release_contents:
+            print line
+
+        gz_sources_md5_line = release_contents[md5_header_index + 6]
+        self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
-        first_sha1_line = release_contents[sha1_header_index + 3]
+
+        plain_sources_sha1_line = release_contents[sha1_header_index + 4]
         self.assertEqual(
-            first_sha1_line,
+            plain_sources_sha1_line,
+            (' db70d9d7421a78b2e009be3d8f2546678beb734c              '
+             '211 main/source/Sources'))
+        release_sha1_line = release_contents[sha1_header_index + 5]
+        self.assertEqual(
+            release_sha1_line,
             (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
              '114 main/source/Release'))
+        # See above.
+        gz_sources_sha1_line = release_contents[sha1_header_index + 6]
+        self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
-        first_sha256_line = release_contents[sha256_header_index + 3]
+
+        plain_sources_sha256_line = release_contents[sha256_header_index + 4]
         self.assertEqual(
-            first_sha256_line,
+            plain_sources_sha256_line,
+            (' 1ad45a96a6c7b35145a52fddc3c60daea9791fdde6639425289e58'
+             'cf3be3813a              211 main/source/Sources'))
+        release_sha256_line = release_contents[sha256_header_index + 5]
+        self.assertEqual(
+            release_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+        # See above.
+        gz_sources_sha256_line = release_contents[sha256_header_index + 6]
+        self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
+
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.
@@ -712,12 +759,12 @@ class TestPublisher(TestNativePublishingBase):
         self.assertTrue('Sources.gz\n' in stringified_contents)
         self.assertTrue('Sources\n' in stringified_contents)
 
-    def testWorldReadablePackagesAndSources(self):
-        """Test Packages.gz and Sources.gz files are created world readable.
+    def testWorldAndGroupReadablePackagesAndSources(self):
+        """Test Packages.gz and Sources.gz files are world and group readable.
 
         Packages.gz and Sources.gz files generated by NoMoreAF must be
-        world readable.  We'll test this in the partner archive as that
-        uses NoMoreAF.
+        world and group readable.  We'll test this in the partner archive
+        as that uses NoMoreAF. (No More Apt-Ftparchive)
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
         allowed_suites = []
@@ -738,9 +785,10 @@ class TestPublisher(TestNativePublishingBase):
         # What permissions are set on those files?
         for file in (sourcesgz_file, packagesgz_file):
             mode = stat.S_IMODE(os.stat(file).st_mode)
-            self.assertTrue(
-                (mode & stat.S_IROTH) == stat.S_IROTH,
-                "%s is not world readable." % file)
+            self.assertEqual(
+                (mode & (stat.S_IROTH | stat.S_IRGRP)),
+                (stat.S_IROTH | stat.S_IRGRP),
+                "%s is not world/group readable." % file)
 
 
 def test_suite():

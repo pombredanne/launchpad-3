@@ -10,11 +10,16 @@ __all__ = [
     'IPOFileAlternativeLanguage',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.component import getUtility
+from zope.interface import Attribute, implements, Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pomsgset import IPOMsgSet
@@ -325,14 +330,55 @@ class IPOFile(IRosettaStats):
         """
 
 
+class AlternativeLanguageVocabularyFactory:
+    """Gets vocab for user's preferred languages, or all languages if not set.
+
+    This is an `IContextSourceBinder` returning a `Vocabulary`.  It's meant to
+    present a short but complete list of languages a user might want to
+    translate to or get suggestions from.
+
+    Guessing based on browser languages is probably not a good idea: that list
+    may easily be incomplete, and its origin is not obvious.  From the user's
+    point of view it would be Launchpad behaviour that cannot be changed by
+    pushing buttons in Launchpad.  And even in cases where a guess based on
+    browser settings is reasonable, it would mask the need for a useful
+    Preferred Languages setting.  We can't encourage people to manage their
+    languages shortlist in Launchpad through their global browser
+    configuration.
+
+    Instead, if no preferred-languages setting is available (e.g. because the
+    visitor is not logged in), this will fall back to a vocabulary containing
+    all known translatable languages.
+    """
+    # XXX: JeroenVermeulen 2007-09-03: It doesn't seem right to define this
+    # class in an interface, but it's needed from inside another interface
+    # definition.  A factory is definitely the right approach though, since
+    # the two kinds of vocabulary are completely different in implementation
+    # and class derivation.  Also of course, the distinction applies unchanged
+    # throughout the vocabulary object's lifetime.  See interfaces.buglink.py
+    # for an example of the same implementation pattern.
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        """See `IContextSourceBinder`."""
+        user = getUtility(ILaunchBag).user
+        if user is not None and user.languages:
+            terms = [
+                SimpleTerm(language, language.code, language.displayname)
+                for language in user.translatable_languages]
+            if terms:
+                return SimpleVocabulary(terms)
+        return getVocabularyRegistry().get(None, "TranslatableLanguage")
+
+
 class IPOFileAlternativeLanguage(Interface):
     """A PO File's alternative language."""
 
     alternative_language = Choice(
-        title=_('Alternative language'),
-        description=_('''
-            Language from where we could get alternative translations for
-            this PO file.'''), vocabulary='TranslatableLanguage',
+        title=u'Alternative language',
+        description=(u'Language from where we could get alternative'
+                     u' translations for this PO file.'),
+        source=AlternativeLanguageVocabularyFactory(),
         required=False)
 
 

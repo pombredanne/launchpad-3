@@ -28,7 +28,6 @@ from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.branchvisibilitypolicy import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
-from canonical.launchpad.interfaces.bugextref import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
 from canonical.launchpad.interfaces.bugcve import *
@@ -45,7 +44,10 @@ from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeimport import *
+from canonical.launchpad.interfaces.codeimportevent import *
+from canonical.launchpad.interfaces.codeimportjob import *
 from canonical.launchpad.interfaces.codeimportmachine import *
+from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -144,6 +146,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
 from canonical.launchpad.interfaces.translationimporter import *
+from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
@@ -162,5 +165,4 @@ from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
-from canonical.launchpad.interfaces.cal import *
 from canonical.launchpad.interfaces.archive import *

@@ -36,7 +36,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None):
+                 binarypackagename=None, tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -54,6 +54,7 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
+        self.subscribe_reporter = subscribe_reporter
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -93,13 +94,16 @@ class CreateBugParams:
 
 
 class BugNameField(ContentNameField):
+    """Provides a a way to retrieve bugs by name."""
     errormessage = _("%s is already in use by another bug.")
 
     @property
     def _content_iface(self):
+        """Return the `IBug` interface."""
         return IBug
 
     def _getByName(self, name):
+        """Return a bug by name, or None."""
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except NotFoundError:
@@ -155,7 +159,6 @@ class IBug(IMessageTarget, ICanBeMentored):
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -174,6 +177,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
+    date_last_message = Datetime(
+        title=_('Date of last bug message'), required=False, readonly=True)
 
 
     def followup_subject():
@@ -388,9 +393,6 @@ class IBugDelta(Interface):
         "IBug's")
 
     # other things linked to the bug
-    external_reference = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "IBugExternalRefs.")
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
@@ -476,8 +478,11 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Launchpad that have a BugWatch matching the
-        given bug tracker and remote bug id."""
+        """Find one or None bugs for the BugWatch and bug tracker.
+
+        Find one or None bugs in Launchpad that have a BugWatch matching
+        the given bug tracker and remote bug id.
+        """
 
     def createBug(bug_params):
         """Create a bug and return it.

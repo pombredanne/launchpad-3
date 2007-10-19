@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -21,13 +22,12 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugWatchSet, ICveSet, ILaunchpadCelebrities,
-    IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
-    IProductSeries, IProductSeriesBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES,
-    IBugBranch, ISourcePackage)
+    IBug, IBugAttachmentSet, IBugBranch, IBugSet, IBugWatchSet, ICveSet,
+    IDistribution, IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IProductSeriesBugTask, ISourcePackage,
+    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -162,8 +162,6 @@ class Bug(SQLBase):
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    externalrefs = SQLMultipleJoin(
-            'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
@@ -185,6 +183,7 @@ class Bug(SQLBase):
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
+    date_last_message = UtcDateTimeCol(default=None)
 
     @property
     def displayname(self):
@@ -889,7 +888,8 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers", "tags"])
+                "product", "status", "subscribers", "tags",
+                "subscribe_reporter"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -933,7 +933,8 @@ class BugSet:
             datecreated=params.datecreated,
             security_related=params.security_related)
 
-        bug.subscribe(params.owner)
+        if params.subscribe_reporter:
+            bug.subscribe(params.owner)
         if params.tags:
             bug.tags = params.tags
 

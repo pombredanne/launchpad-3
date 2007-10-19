@@ -1,8 +1,7 @@
 Lets try to change dpl-2080's name to election-2100
 
-  >>> team_admin_browser = browser
-  >>> team_admin_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser = setupBrowser(
+  ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
   ...   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
   >>> team_admin_browser.getLink('Change details').click()

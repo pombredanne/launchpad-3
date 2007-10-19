@@ -7,7 +7,6 @@
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
-        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
         <require
@@ -133,6 +132,13 @@
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"
+        />
+
+    <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
         />
 
     <browser:page

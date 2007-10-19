@@ -7,7 +7,9 @@ __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
-    'TranslationsMixin'
+    'TranslateRedirectView',
+    'TranslationsMixin',
+    'TranslationsRedirectView',
     ]
 
 from zope.component import getUtility
@@ -134,3 +136,34 @@ class RosettaApplicationNavigation(Navigation):
     def products(self):
         # DEPRECATED
         return getUtility(IProductSet)
+
+
+class PageRedirectView:
+    """Redirects to translations site for the given page."""
+
+    def __init__(self, context, request, page):
+        self.context = context
+        self.request = request
+        self.page = page
+
+    def __call__(self):
+        """Redirect to self.page in the translations site."""
+        self.request.response.redirect(
+            '/'.join([
+                canonical_url(self.context, rootsite='translations'),
+                self.page
+                ]), status=301)
+
+
+class TranslateRedirectView(PageRedirectView):
+    """Redirects to translations site for +translate page."""
+
+    def __init__(self, context, request):
+        PageRedirectView.__init__(self, context, request, '+translate')
+
+
+class TranslationsRedirectView(PageRedirectView):
+    """Redirects to translations site for +translations page."""
+
+    def __init__(self, context, request):
+        PageRedirectView.__init__(self, context, request, '+translations')

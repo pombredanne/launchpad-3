@@ -8,7 +8,6 @@
   <!-- Product -->
   <content class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct" />
-    <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
@@ -169,6 +168,13 @@
     facet="translations"
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
     permission="zope.Public"
     />
 

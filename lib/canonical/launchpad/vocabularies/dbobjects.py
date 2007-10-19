@@ -9,6 +9,7 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'ActiveMailingListVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
@@ -73,17 +74,18 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.launchpad.database import (
     Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, Milestone, Person, PillarName, POTemplateName, Processor,
-    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    LanguagePack, MailingList, Milestone, Person, PillarName, POTemplateName,
+    Processor, ProcessorFamily, Product, ProductRelease, ProductSeries,
+    Project, SourcePackageRelease, Specification, Sprint, TranslationGroup)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
-    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType)
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingList, IMailingListSet,
+    IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct, IProject,
+    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
@@ -539,7 +541,8 @@ class PersonAccountToMergeVocabulary(
         return obj in self._select()
 
     def _select(self, text=""):
-        return getUtility(IPersonSet).findPerson(text)
+        return getUtility(IPersonSet).findPerson(
+            text, exclude_inactive_accounts=False)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -745,6 +748,88 @@ class PersonActiveMembershipVocabulary:
                 return self.getTerm(membership.team)
         else:
             raise LookupError(token)
+
+
+class ActiveMailingListVocabulary:
+    """The set of all active mailing lists."""
+
+    implements(IHugeVocabulary)
+
+    displayname = 'Select an active mailing list.'
+
+    def __init__(self, context):
+        assert context is None, (
+            'Unexpected context for ActiveMailingListVocabulary')
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        return iter(getUtility(IMailingListSet).active_lists)
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return getUtility(IMailingListSet).active_lists.count()
+
+    def __contains__(self, team_list):
+        """See `ISource`."""
+        # Unlike other __contains__() implementations in this module, and
+        # somewhat contrary to the interface definition, this method does not
+        # return False when team_list is not an IMailingList.  No interface
+        # check of the argument is done here.  Doing the interface check and
+        # returning False when we get an unexpected type would be more
+        # Pythonic, but we deliberately break that rule because it is
+        # considered more helpful to generate an OOPS when the wrong type of
+        # object is used in a containment test.  The __contains__() methods in
+        # this module that type check their arguments is considered incorrect.
+        # This also implies that .getTerm(), contrary to its interface
+        # definition, will not always raise LookupError when the term isn't in
+        # the vocabulary, because an exceptions from the containment test it
+        # does will just be passed on up the call stack.
+        return team_list.status == MailingListStatus.ACTIVE
+
+    def toTerm(self, team_list):
+        """Turn the team mailing list into a SimpleTerm."""
+        return SimpleTerm(team_list, team_list.team.name,
+                          team_list.team.displayname)
+
+    def getTerm(self, team_list):
+        """See `IBaseVocabulary`."""
+        if team_list not in self:
+            raise LookupError(team_list)
+        return self.toTerm(team_list)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # token should be the team name as a string.
+        team_list = getUtility(IMailingListSet).get(token)
+        if team_list is None:
+            raise LookupError(token)
+        return self.getTerm(team_list)
+
+    def search(self, text=None):
+        """Search for active mailing lists.
+
+        :param text: The name of a mailing list, which can be a partial
+            name.  This actually matches against the name of the team to which
+            the mailing list is linked.  If None (the default), all active
+            mailing lists are returned.
+        :return: An iterator over the active mailing lists matching the query.
+        """
+        if text is None:
+            return getUtility(IMailingListSet).active_lists
+        # The mailing list name, such as it has one, is really the name of the
+        # team to which it is linked.
+        return MailingList.select("""
+            MailingList.team = Person.id
+            AND Person.fti @@ ftq(%s)
+            AND Person.teamowner IS NOT NULL
+            AND MailingList.status = %s
+            """ % sqlvalues(text, MailingListStatus.ACTIVE),
+            clauseTables=['Person'])
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 def person_team_participations_vocabulary_factory(context):
@@ -1105,8 +1190,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         quoted_query = quote_like(query)
         sql_query = ("""
-            (Specification.name ~ %s OR
-             Specification.title ~ %s OR
+            (Specification.name LIKE %s OR
+             Specification.title LIKE %s OR
              fti @@ ftq(%s))
             """
             % (quoted_query, quoted_query, quoted_query))

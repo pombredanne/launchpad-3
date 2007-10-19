@@ -71,6 +71,7 @@ Branch URLs are required for mirrored branches.
     >>> print_details_table(browser)
     Project: Redfish
     Location: http://example.com/mirrored-branch
+    Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
 
 == Creating a remote branch ==
@@ -217,7 +218,7 @@ owner-product-name is unique for all branches.
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/~name12/+branch/gnome-terminal/main')
 
@@ -307,7 +308,7 @@ URL validation should check that the entered URL is not from Launchpad.
     ...     print message
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be on
-    launchpad.dev. Did you want to create a hosted branch instead?
+    launchpad.dev.
 
 
 == Attempting to create a branch in a forbidden project ==

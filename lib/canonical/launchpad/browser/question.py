@@ -1005,7 +1005,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
     select an element from this set using the radio buttons.
     """
 
-    _messageNoValue=_('No existing FAQs are relevant')
+    _messageNoValue = _('No existing FAQs are relevant')
 
     searchDisplayWidth = 30
 
@@ -1124,7 +1124,7 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
             }
 
     def setUpWidgets(self):
-        """Sets the default query on the search widget to the question title."""
+        """Set the query on the search widget to the question title."""
         super(QuestionLinkFAQView, self).setUpWidgets()
         self.widgets['faq'].default_query = self.context.title
 
@@ -1224,9 +1224,8 @@ class QuestionContextMenu(ContextMenu):
     def linkfaq(self):
         """Link for This is a FAQ."""
         text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ.'
-        can_give_answer = self.context.can_give_answer
-        return Link('+linkfaq', text, summary, enabled=can_give_answer)
+        summary = 'Answer this question using a FAQ, or add one as a comment.'
+        return Link('+linkfaq', text, summary)
 
 
 class QuestionSetContextMenu(ContextMenu):

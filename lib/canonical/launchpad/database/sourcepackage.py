@@ -18,12 +18,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
-    PackagingType, PackagePublishingPocket, BuildStatus,
-    PackagePublishingStatus)
+    PackagePublishingPocket, BuildStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -129,10 +128,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
-    This object implements the MagicSourcePackage specification. It is not a
-    true database object, but rather attempts to represent the concept of a
-    source package in a distro series, with links to the relevant database
-    objects.
+    This object is not a true database object, but rather attempts to
+    represent the concept of a source package in a distro series, with links
+    to the relevant database objects.
     """
 
     implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
@@ -166,7 +164,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distrorelease = %s AND
-                   SourcePackagePublishingHistory.archive IN %s
+                   SourcePackagePublishingHistory.archive IN %s AND
+                   SourcePackagePublishingHistory.dateremoved is NULL
                 """ % sqlvalues(
                         self.sourcepackagename,
                         self.distroseries,
@@ -208,8 +207,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def currentrelease(self):
-        latest_package = self._getFirstPublishingHistory(
-                     exclude_status=[PackagePublishingStatus.REMOVED])
+        latest_package = self._getFirstPublishingHistory()
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
@@ -217,9 +215,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
-        latest_package = self._getFirstPublishingHistory(
-                     version=version,
-                     exclude_status=[PackagePublishingStatus.REMOVED])
+        latest_package = self._getFirstPublishingHistory(version=version)
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
@@ -263,9 +259,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`."""
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
-                     exclude_status=[PackagePublishingStatus.REMOVED],
-                     order_by=[SQLConstant(order_const),
-                       "SourcePackagePublishingHistory.datepublished"])
+            order_by=[SQLConstant(order_const),
+                      "SourcePackagePublishingHistory.datepublished"])
         return [DistributionSourcePackageRelease(
                 distribution=self.distribution,
                 sourcepackagerelease=package.sourcepackagerelease)
@@ -283,13 +278,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename,
-                            self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.all_distro_archive_ids),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
             orderBy=[SQLConstant(order_const+" DESC")])

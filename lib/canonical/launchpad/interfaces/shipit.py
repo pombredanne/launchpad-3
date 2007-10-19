@@ -17,6 +17,7 @@ from zope.app.form.browser.itemswidgets import DropdownWidget
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
+from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -212,8 +213,8 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distroseries = ShipItDistroSeries.FEISTY
-    max_size_for_auto_approval = 16
+    current_distroseries = ShipItDistroSeries.GUTSY
+    max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -650,8 +651,16 @@ class IStandardShipItRequest(Interface):
     quantities = Attribute(
         _('A dictionary mapping architectures to their quantities.'))
     totalCDs = Attribute(_('Total number of CDs in this request.'))
-    description = Attribute(_('Description'))
-    description_without_flavour = Attribute(_('Description without Flavour'))
+    user_description = TextLine(
+        title=_('Description'), readonly=False, required=False,
+        description=_(
+            "This option's description. Leave it blank to use the default "
+            "(e.g. 5 Ubuntu CDs (3 PC CDs, 2 64-bit PC CDs))."))
+    description = TextLine(
+        title=_('Description'), readonly=True, required=False,
+        description=_(
+            "If user_description is not empty it's used. Otherwise we "
+            "generate a description based on the flavour and quantities."))
 
     def destroySelf():
         """Delete this object from the database."""
@@ -660,7 +669,8 @@ class IStandardShipItRequest(Interface):
 class IStandardShipItRequestSet(Interface):
     """The set of all standard ShipIt requests."""
 
-    def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
+    def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            description):
         """Create and return a new StandardShipItRequest."""
 
     def getByFlavour(flavour, user):

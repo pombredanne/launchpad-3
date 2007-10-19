@@ -403,4 +403,3 @@ class POExportView(BaseExportView):
 
     def getDefaultFormat(self):
         return self.context.potemplate.source_file_format
-

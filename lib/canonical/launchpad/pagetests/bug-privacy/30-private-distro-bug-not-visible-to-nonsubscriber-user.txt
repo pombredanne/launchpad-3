@@ -2,7 +2,7 @@ A user not subscribed to a private bug will not be able to see the bug.
 
 Neither directly.
 
-    >>> browser.addHeader("Authorization", "Basic no-privs@canonical.com:test")
+    >>> browser = setupBrowser("Basic no-privs@canonical.com:test")
     >>> browser.open("http://launchpad.dev/bugs/14")
     Traceback (most recent call last):
       ...

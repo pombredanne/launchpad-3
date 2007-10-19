@@ -8,7 +8,6 @@ no-priv cannot approve or decline his nomination, because he does not
 have the launchpad.Driver permission.
 
     >>> from zope.component import getView, getUtility
-    >>> from zope.testbrowser.testing import Browser
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
@@ -76,10 +75,7 @@ approve/decline link.
     True
     >>> logout()
 
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
+    >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open(
     ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+bug/1/nominations/2/+bugtasks-and-nominations-table-row")
@@ -106,10 +102,7 @@ Clicking "Decline" declines the nomination.
 Now only the "Approve" button shows, and the approve/decline link now
 reads only "approve".
 
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
+    >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open(
     ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+bug/1/nominations/2/+bugtasks-and-nominations-table-row")

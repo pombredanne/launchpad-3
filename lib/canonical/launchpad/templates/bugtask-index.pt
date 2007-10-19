@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="malone">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
+>
   <body>
     <metal:portlets fill-slot="portlets">
 
@@ -8,10 +18,13 @@
     <div tal:replace="structure context/bug/@@+portlet-specs" />
     <div tal:replace="structure context/bug/@@+portlet-attachments" />
     <div tal:replace="structure context/bug/@@+portlet-cve" />
-    <div tal:replace="structure context/bug/@@+portlet-reference" />
     <div tal:replace="structure context/bug/@@+portlet-watch" />
     <div tal:replace="structure context/@@+portlet-search" />
     
+      <div
+        tal:condition="context/target/sourcepackagename|nothing"
+        tal:replace="structure context/target/@@+portlet-details"
+      />
     </metal:portlets>
 
 <div metal:fill-slot="main">
@@ -108,37 +121,46 @@
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-      <tal:branches define="bug_branches view/bug_branches"
-                  condition="bug_branches">
-        <p tal:condition="context/bug/private" class="warning message"
-        >This bug is private, so avoid adding public branches here.</p>
-        <table class="listing" id="bug_branch_details">
-          <thead>
-            <tr>
-              <th>Related branch</th>
-              <th>Developer</th>
-              <th>Status for this bug</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug_branch bug_branches">
-              <td>
-                <img alt="" src="/@@/branch" />
-                <a
-                  tal:attributes="href bug_branch/branch/fmt:url"
-                  tal:content="bug_branch/branch/displayname"
-                >Integration branch</a>
-              </td>
-              <td tal:content="structure bug_branch/branch/owner/fmt:link" />
-              <td>
-                <a
-                  tal:attributes="href string:${bug_branch/fmt:url}/+status"
-                  tal:content="bug_branch/status/title"
-                >Under Development</a>
-              </td>
-              </tr>
-          </tbody>
-        </table>
+  <tal:branches define="bug_branches view/bug_branches"
+                condition="bug_branches">
+    <h2>Related branches</h2>
+
+<tal:bug-branches repeat="bug_branch bug_branches">
+  <div tal:define="show_edit bug_branch/required:launchpad.Edit"
+       tal:condition="bug_branch/branch/required:launchpad.View">
+    <div class="bug-branch-summary">
+      <tal:branch-ref replace="structure bug_branch/branch/fmt:link"/>
+      (<span tal:content="bug_branch/branch/lifecycle_status/title"
+      tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
+      >Experimental</span>) -
+      <tal:bug_branch_status condition="not: show_edit|nothing"
+                             replace="bug_branch/status/title"/>
+      <a tal:condition="show_edit"
+         tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
+                         onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
+        <tal:bug_branch_status replace="bug_branch/status/title"/>
+        <img src="/@@/expand"/>
+      </a>
+      <dl tal:condition="bug_branch/whiteboard"
+          tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+        <dd>
+          <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+            The whiteboard.
+          </tal:whiteboard>
+        </dd>
+      </dl>
+    </div>
+    <div tal:condition="show_edit|nothing"
+         tal:attributes="id string:bugbranch${bug_branch/id}"
+         style="display: none"
+         >
+      <dl><dd>
+        <tal:edit-form replace="structure bug_branch/@@+bug-edit"/>
+      </dd></dl>
+    </div>
+  </div>
+</tal:bug-branches>
+
       </tal:branches>
       <div class="report">
         <h2>Bug description

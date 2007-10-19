@@ -87,10 +87,11 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue,
     NotFoundError,
     )
-from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+    LaunchpadFormView, Navigation, stepto, canonical_name, canonical_url,
+    custom_widget)
+from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -304,11 +305,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
-    def calendar(self):
-        target = 'calendar'
-        text = 'Calendar'
-        return Link(target, text)
-
 
 class MaloneContextMenu(ContextMenu):
     # XXX mpt 2006-03-27: No longer visible on Bugs front page.
@@ -410,6 +406,18 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(
             'https://help.launchpad.net/Legal', status=301)
 
+    @stepto('faq')
+    def redirect_faq(self):
+        """Redirect /faq to help.launchpad.net/FAQ site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/FAQ', status=301)
+
+    @stepto('feedback')
+    def redirect_feedback(self):
+        """Redirect /feedback to help.launchpad.net/Feedback site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Feedback', status=301)
+
     stepto_utilities = {
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
@@ -419,7 +427,7 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
-        'hwdb': IHWDBApplication,
+        '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
@@ -455,8 +463,16 @@ class LaunchpadRootNavigation(Navigation):
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
-            person = getUtility(IPersonSet).getByName(name[1:].lower())
-            return person
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
+                return self.redirectSubTree(
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
+            else:
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -468,14 +484,17 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(IBazaarApplication)
 
         try:
-            return getUtility(IPillarNameSet)[name.lower()]
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
+                return self.redirectSubTree(
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
+            else:
+                return getUtility(IPillarNameSet)[name]
         except NotFoundError:
             return None
-
-    @stepto('calendar')
-    def calendar(self):
-        # XXX SteveAlexander 2005-10-06: permission=launchpad.AnyPerson
-        return MergedCalendar()
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect:
