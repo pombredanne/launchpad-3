@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'SprintAddView',
+    'SprintAttendeesCsvExportView',
     'SprintBrandingView',
     'SprintEditView',
     'SprintFacets',
@@ -22,7 +23,9 @@ __all__ = [
     'SprintView',
     ]
 
+import csv
 import pytz
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
@@ -490,3 +493,40 @@ class SprintSetView(LaunchpadView):
     def all_batched(self):
         return BatchNavigator(self.context.all, self.request)
 
+
+class SprintAttendeesCsvExportView(LaunchpadView):
+    """View for exporting the attendees for a sprint as CSV."""
+
+    def render(self):
+        """Render a CSV output of all the attendees for a sprint."""
+        rows = [('Launchpad username',
+                   'Display name',
+                   'Email',
+                   'Phone',
+                   'Organization',
+                   'City',
+                   'Country',
+                   'Timezone')]
+        for attendee in self.context.attendees:
+            if attendee.preferredemail is not None:
+                email = attendee.preferredemail.email
+            else:
+                email = ''
+            rows.append(
+                (attendee.name,
+                 attendee.displayname,
+                 email,
+                 attendee.phone,
+                 attendee.organization,
+                 attendee.city,
+                 attendee.country, 
+                 attendee.timezone))
+        # CSV can't handle unicode, so we force encoding
+        # everything as UTF-8
+        rows = [[unicode(column).encode('utf-8') for column in row]
+                for row in rows]
+        self.request.response.setHeader('Content-type', 'text/csv')
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerows(rows)
+        return output.getvalue()
