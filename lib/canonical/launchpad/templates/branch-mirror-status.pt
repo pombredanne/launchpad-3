@@ -1,0 +1,98 @@
+<tr>
+  <th>Next mirror:</th>
+  <tal:mirror-disabled tal:condition="view/mirror_disabled">
+    <td>Disabled</td>
+  </tal:mirror-disabled>
+  <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
+    <tal:mirror-in-future tal:condition="not:view/in_mirror_queue">
+      <td tal:attributes="title context/mirror_request_time/fmt:datetime"
+          tal:content="context/mirror_request_time/fmt:approximatedate"/>
+    </tal:mirror-in-future>
+    <tal:mirror-in-past tal:condition="view/in_mirror_queue">
+      <td>As soon as possible</td>
+    </tal:mirror-in-past>
+  </tal:mirror-enabled>
+</tr>
+
+<tal:show-mirror-failures tal:condition="view/show_mirror_failure">
+  <tr>
+    <td colspan="2" id="mirror-failure"
+        class="warning message" style="font-weight: normal">
+      <tal:owner condition="context/required:launchpad.Edit">
+        <tal:mirror-disabled tal:condition="view/mirror_disabled">
+          Launchpad no longer mirrors this branch, because
+          <tal:number-of-failures
+              tal:replace="context/mirror_failures">3
+          </tal:number-of-failures> attempts failed
+        </tal:mirror-disabled>
+
+        <tal:mirror-scheduled tal:condition="not:view/mirror_disabled">
+          <tal:failed-once tal:condition="view/mirror_failed_once">
+            This branch may be out of date, as Launchpad was not able to
+            access it
+            <span tal:attributes="title context/last_mirror_attempt/fmt:datetime"
+                  tal:content="context/last_mirror_attempt/fmt:displaydate" />
+          </tal:failed-once>
+
+          <tal:failed-multiple tal:condition="not:view/mirror_failed_once">
+            <tal:mirrored-yet tal:condition="context/last_mirrored">
+              This branch may be out of date, as Launchpad has not been able to
+              access between
+              <span tal:attributes="title context/last_mirrored/fmt:datetime"
+                    tal:content="context/last_mirrored/fmt:approximatedate" />
+              and
+              <span tal:attributes="title context/last_mirror_attempt/fmt:datetime"
+                    tal:content="context/last_mirror_attempt/fmt:approximatedate" />
+            </tal:mirrored-yet>
+            <tal:not-mirrored-yet tal:condition="not:context/last_mirrored">
+              Launchpad has not been able to mirror this branch. The last attempt
+              was at
+              <span tal:attributes="title context/last_mirror_attempt/fmt:datetime"
+                    tal:content="context/last_mirror_attempt/fmt:displaydate" />
+            </tal:not-mirrored-yet>
+          </tal:failed-multiple>
+        </tal:mirror-scheduled>
+
+        <tal:has-error-message tal:condition="context/mirror_status_message">
+          (<tal:error-message tal:replace="view/mirror_status_message">Error 1</tal:error-message>).
+        </tal:has-error-message>
+
+        <tal:no-error-message tal:condition="not:context/mirror_status_message">
+          (no error message available).
+        </tal:no-error-message>
+
+        <tal:mirror-scheduled tal:condition="not:view/mirror_disabled">
+          Launchpad will try again
+          <tal:mirror-in-future tal:condition="not:view/in_mirror_queue">
+            <span tal:attributes="title context/mirror_request_time/fmt:datetime"
+                  tal:content="context/mirror_request_time/fmt:approximatedate" />.
+            If you have fixed the problem, please ask Launchpad to try again.
+
+            <div metal:use-macro="context/@@launchpad_form/form" />
+          </tal:mirror-in-future>
+          <tal:mirror-in-past tal:condition="view/in_mirror_queue">
+            shortly.
+          </tal:mirror-in-past>
+        </tal:mirror-scheduled>
+
+        <tal:mirror-disabled tal:condition="view/mirror_disabled">
+          If you have fixed the problem, please ask Launchpad to try again.
+          <div metal:use-macro="context/@@launchpad_form/form" />
+        </tal:mirror-disabled>
+
+      </tal:owner>
+
+      <tal:not-owner condition="not:context/required:launchpad.Edit">
+        <tal:mirrored-yet tal:condition="context/last_mirrored">
+          This branch may be out of date, because Launchpad has not been
+          able to access it since
+          <span tal:attributes="title context/last_mirrored/fmt:datetime"
+                tal:content="context/last_mirrored/fmt:approximatedate" />.
+        </tal:mirrored-yet>
+        <tal:not-mirrored-yet tal:condition="not:context/last_mirrored">
+          This branch has not been mirrored, as Launchpad has been unable to
+          access it.
+        </tal:not-mirrored-yet>
+      </tal:not-owner>
+  </td></tr>
+</tal:show-mirror-failures>
