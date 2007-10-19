@@ -19,8 +19,6 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
-'BinaryPackageFileType',
-'BinaryPackageFormat',
 'BranchReviewStatus',
 'BugNominationStatus',
 'BugAttachmentType',
@@ -62,43 +60,6 @@ __all__ = (
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
-
-
-class BinaryPackageFormat(DBSchema):
-    """Binary Package Format
-
-    Launchpad tracks a variety of binary package formats. This schema
-    documents the list of binary package formats that are supported
-    in Launchpad.
-    """
-
-    DEB = Item(1, """
-        Ubuntu Package
-
-        This is the binary package format used by Ubuntu and all similar
-        distributions. It includes dependency information to allow the
-        system to ensure it always has all the software installed to make
-        any new package work correctly.  """)
-
-    UDEB = Item(2, """
-        Ubuntu Installer Package
-
-        This is the binary package format use by the installer in Ubuntu and
-        similar distributions.  """)
-
-    EBUILD = Item(3, """
-        Gentoo Ebuild Package
-
-        This is the Gentoo binary package format. While Gentoo is primarily
-        known for being a build-it-from-source-yourself kind of
-        distribution, it is possible to exchange binary packages between
-        Gentoo systems.  """)
-
-    RPM = Item(4, """
-        RPM Package
-
-        This is the format used by Mandrake and other similar distributions.
-        It does not include dependency tracking information.  """)
 
 
 class ImportTestStatus(DBSchema):
@@ -1163,35 +1124,6 @@ class SourcePackageRelationships(DBSchema):
         source package, but for a different distribution. For example, the
         "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
         Hat.  """)
-
-
-class BinaryPackageFileType(DBSchema):
-    """Binary Package File Type
-
-    Launchpad handles a variety of packaging systems and binary package
-    formats. This schema documents the known binary package file types.
-    """
-
-    DEB = Item(1, """
-        DEB Format
-
-        This format is the standard package format used on Ubuntu and other
-        similar operating systems.
-        """)
-
-    UDEB = Item(3, """
-        UDEB Format
-
-        This format is the standard package format used on Ubuntu and other
-        similar operating systems for the installation system.
-        """)
-
-    RPM = Item(2, """
-        RPM Format
-
-        This format is used on mandrake, Red Hat, Suse and other similar
-        distributions.
-        """)
 
 
 class CodereleaseRelationships(DBSchema):

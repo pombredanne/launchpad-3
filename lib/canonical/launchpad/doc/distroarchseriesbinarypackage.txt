@@ -29,7 +29,8 @@ existing builds that are in sampledata!
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
-  >>> binpackageformat = dbschema.BinaryPackageFormat.DEB
+  >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+  >>> binpackageformat = BinaryPackageFormat.DEB
   >>> priority = dbschema.PackagePublishingPriority.STANDARD
 
   >>> bpr = Build.get(9).createBinaryPackageRelease(

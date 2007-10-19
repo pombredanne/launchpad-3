@@ -130,10 +130,11 @@ given build record entry.
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
-    >>> from canonical.lp import dbschema
-    >>> binpackageformat = dbschema.BinaryPackageFormat.DEB
+    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.sourcepackagerelease.component.id
     >>> section = firefox_build.sourcepackagerelease.section.id
+    >>> from canonical.lp import dbschema
     >>> priority = dbschema.PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
     >>> depends = None

@@ -289,9 +289,10 @@ Let's create and publish and architecture-independent binary for
 evolution_1.0:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBinaryPackageNameSet, IComponentSet, ISectionSet)
+    ...     BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    ...     ISectionSet)
     >>> from canonical.lp.dbschema import (
-    ...     BinaryPackageFormat, PackagePublishingPriority,
+    ...     , PackagePublishingPriority,
     ...     PackagePublishingStatus)
     >>> from canonical.launchpad.database import (
     ...    SecureBinaryPackagePublishingHistory)

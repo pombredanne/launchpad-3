@@ -11,7 +11,8 @@ from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet)
+    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
+    IBinaryPackageReleaseSet)
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
@@ -34,7 +35,7 @@ class BinaryPackageRelease(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
-                               schema=dbschema.BinaryPackageFormat)
+                               schema=BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
                            notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
@@ -135,11 +136,11 @@ class BinaryPackageRelease(SQLBase):
         """See `IBinaryPackageRelease`."""
         determined_filetype = None
         if file.filename.endswith(".deb"):
-            determined_filetype = dbschema.BinaryPackageFileType.DEB
+            determined_filetype = BinaryPackageFileType.DEB
         elif file.filename.endswith(".rpm"):
-            determined_filetype = dbschema.BinaryPackageFileType.RPM
+            determined_filetype = BinaryPackageFileType.RPM
         elif file.filename.endswith(".udeb"):
-            determined_filetype = dbschema.BinaryPackageFileType.UDEB
+            determined_filetype = BinaryPackageFileType.UDEB
 
         return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
