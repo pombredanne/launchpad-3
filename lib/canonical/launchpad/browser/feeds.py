@@ -80,7 +80,7 @@ class FeedsNavigation(Navigation):
             return redirect
 
         # Handle the two formats of urls:
-        # http://feeds.launchpad.net/bugs/+search-bugs.atom?...
+        # http://feeds.launchpad.net/bugs/+bugs.atom?...
         # http://feeds.launchpad.net/bugs/1/bug.atom
         if name == 'bugs':
             stack = self.request.getTraversalStack()

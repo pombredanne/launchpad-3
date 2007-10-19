@@ -341,7 +341,7 @@ class NoneFormatter:
         elif name in self.allowed_names:
             return ''
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
 
 class ObjectFormatterAPI:
@@ -714,7 +714,7 @@ class BadgeDisplayAPI:
 
 
 class PersonFormatterAPI(ObjectFormatterExtendedAPI):
-    """Adapter for IPerson objects to a formatted string."""
+    """Adapter for `IPerson` objects to a formatted string."""
 
     implements(ITraversable)
 
@@ -724,7 +724,9 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
-        if name == 'link' or name[:5] == 'link:':
+        if name == 'link':
+            rootsite = None
+        if name.startswith('link:'):
             if name == 'link':
                 rootsite = None
             else:
