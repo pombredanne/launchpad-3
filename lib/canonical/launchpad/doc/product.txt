@@ -236,10 +236,10 @@ may not have a license set, so an empty tuple is valid.
     >>> productset.getByName('jokosher').licenses == ()
     True
     >>> product.licenses
-    (<DBItem License.GPL, (130) GPL>,)
+    (<...License.GPL...>,)
     >>> product.licenses = (License.GPL, License.LGPL)
     >>> product.licenses
-    (<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>)
+    (<...License.GPL...>, <...License.LGPL...>)
 
 This series is set as the development focus for the product:
 

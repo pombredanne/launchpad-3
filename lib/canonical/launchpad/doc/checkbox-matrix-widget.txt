@@ -31,9 +31,9 @@ as a set from _getFormValue() or getInputValue():
     ...     form={'field.licenses': ['LGPL', 'GPL']})
     >>> matrix_widget = CheckBoxMatrixWidget(licenses_field, vtype, request)
     >>> matrix_widget._getFormValue()
-    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>])
+    Set([<...License.GPL...>, <...License.LGPL...>])
     >>> matrix_widget.getInputValue()
-    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>])
+    Set([<...License.GPL...>, <...License.LGPL...>])
 
 It should render as many rows as are specified by the column_count attribute.
 
@@ -47,6 +47,8 @@ It should render as many rows as are specified by the column_count attribute.
     8
     >>> row_count
     8.0
+    >>> len(soup.table('tr')) == row_count
+    True
     >>> len(soup.table.tr('td'))
     4
 

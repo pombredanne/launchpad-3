@@ -221,6 +221,8 @@ link to the license policy.
     30
     >>> len(License)
     30
+    >>> len(soup.table('input')) == len(License)
+    True
     >>> soup.a['href']
     u'http://www.ubuntu.com/community/ubuntustory/licensing'
 
@@ -242,7 +244,7 @@ output should have one checked input.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<input ... checked="checked" ... name="field.licenses" type="checkbox" value="GPL" />]
+    [<... checked="checked" ... value="GPL" />]
 
 Two selected licenses should return a single-item set and the html
 output should have one checked input.
@@ -251,8 +253,8 @@ output should have one checked input.
     ...     form={'field.licenses': ['LGPL', 'GPL']})
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
     >>> license_widget.getInputValue()
-    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>])
+    Set([<...License.GPL...>, <...License.LGPL...>])
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<input ... checked="checked" ... name="field.licenses" type="checkbox" value="GPL" />, <input ... checked="checked" ... name="field.licenses" ... value="LGPL" />]
+    [<...checked="checked"...value="GPL" />, <...checked="checked"...value="LGPL" />]

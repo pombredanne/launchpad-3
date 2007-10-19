@@ -55,9 +55,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, ILaunchpadCelebrities, IProduct,
-    ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
-    ITranslationImportQueue, NotFoundError,
+    BranchListingSort, IHasIcon, ILaunchpadCelebrities, ILaunchBag, 
+    ILaunchpadCelebrities, IPillarNameSet, IProduct, IProductSeries,
+    IProductSet, ITranslationImportQueue, NotFoundError,
     ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
