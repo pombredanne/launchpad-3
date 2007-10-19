@@ -16,14 +16,15 @@ from canonical.archiveuploader.tests import datadir
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IArchiveSet, IDistributionSet, IPackageUploadSet)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
+    IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket,
+    PackagePublishingStatus, PackagePublishingPocket,
     PackageUploadStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks

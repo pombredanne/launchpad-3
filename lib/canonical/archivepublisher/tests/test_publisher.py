@@ -20,9 +20,10 @@ from canonical.archivepublisher.publishing import (
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IArchiveSet, IDistributionSet, IPersonSet)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
+    IPersonSet)
 from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):

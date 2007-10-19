@@ -11,11 +11,10 @@ from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    ArchivePurpose, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import ArchivePurpose
 
 
 def parse_options():

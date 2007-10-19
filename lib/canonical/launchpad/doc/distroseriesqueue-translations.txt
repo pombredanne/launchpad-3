@@ -179,8 +179,7 @@ For now we simply ignore translations for archives other than the
 Distribution archives (i.e. PPAs).
 
   >>> from canonical.launchpad.interfaces import (
-  ...    IPersonSet, IArchiveSet)
-  >>> from canonical.lp.dbschema import ArchivePurpose
+  ...    ArchivePurpose, IPersonSet, IArchiveSet)
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
   ...     purpose=ArchivePurpose.PPA,

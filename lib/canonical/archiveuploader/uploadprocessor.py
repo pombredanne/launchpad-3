@@ -57,8 +57,7 @@ from canonical.archiveuploader.nascentupload import (
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, NotFoundError)
-from canonical.lp.dbschema import ArchivePurpose
+    ArchivePurpose, IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 

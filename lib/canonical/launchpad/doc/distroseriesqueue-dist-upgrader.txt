@@ -274,8 +274,7 @@ Custom uploads for PPAs should works as expected, i.e, publish its
 files in the respective PPA location.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IArchiveSet, ILaunchpadCelebrities)
-  >>> from canonical.lp.dbschema import ArchivePurpose
+  ...     ArchivePurpose, IPersonSet, IArchiveSet, ILaunchpadCelebrities)
 
   >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
   >>> admin = getUtility(ILaunchpadCelebrities).admin

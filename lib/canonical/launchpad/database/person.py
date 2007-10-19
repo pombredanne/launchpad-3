@@ -39,16 +39,15 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskImportance, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    SpecificationSort)
+    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
-    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
+    AccountStatus, ArchivePurpose, BugTaskSearchParams, BugTaskStatus,
+    EmailAddressStatus, IBugTaskSet, ICalendarOwner, IDistribution,
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
     ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,

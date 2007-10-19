@@ -34,11 +34,11 @@ from canonical.archiveuploader.utils import (
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageNameSet)
+    ArchivePurpose, IComponentSet, ISectionSet, IBuildSet,
+    ILibraryFileAliasSet, IBinaryPackageNameSet)
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPriority, PackageUploadCustomFormat,
+    PackagePublishingPriority, PackageUploadCustomFormat,
     PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 

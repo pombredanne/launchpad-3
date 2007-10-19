@@ -15,10 +15,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, IPersonSet)
+    ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus)
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""

@@ -20,9 +20,9 @@ publications for a given distroseries:
     >>> from canonical.launchpad.database.publishing import (
     ...      SecureSourcePackagePublishingHistory)
     >>> from canonical.lp.dbschema import (
-    ...     ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket)
+    ...     PackagePublishingStatus, PackagePublishingPocket)
     >>> from canonical.launchpad.interfaces import (
-    ...     IArchiveSet, IPersonSet, IDistributionSet)
+    ...     ArchivePurpose, IArchiveSet, IPersonSet, IDistributionSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov = getUtility(IPersonSet).getByName('cprov')

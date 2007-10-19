@@ -19,7 +19,6 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
-'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BranchReviewStatus',
@@ -1591,44 +1590,4 @@ class BuildStatus(DBSchema):
         In those cases all the build historic information will be stored (
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
-        """)
-
-
-class ArchivePurpose(DBSchema):
-    """The purpose, or type, of an archive.
-
-    A distribution can be associated with different archives and this
-    schema item enumerates the different archive types and their purpose.
-    For example, old distro releases may need to be obsoleted so their
-    archive would be OBSOLETE_ARCHIVE.
-    """
-
-    PRIMARY = Item(1, """
-        Primary Archive
-
-        This is the primary Ubuntu archive.
-        """)
-
-    PPA = Item(2, """
-        PPA Archive
-
-        This is a Personal Package Archive.
-        """)
-
-    EMBARGOED = Item(3, """
-        Embargoed Archive
-
-        This is the archive for embargoed packages.
-        """)
-
-    PARTNER = Item(4, """
-        Partner Archive
-
-        This is the archive for partner packages.
-        """)
-
-    OBSOLETE = Item(5, """
-        Obsolete Archive
-
-        This is the archive for obsolete packages.
         """)

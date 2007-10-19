@@ -29,15 +29,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
-    IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchSeriesSet,
-    IHasBuildRecords, NotFoundError,
+    ArchivePurpose, BuildDaemonError, BuildSlaveFailure, CannotBuild,
+    CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet,
+    IDistroArchSeriesSet, IHasBuildRecords, NotFoundError,
     ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingPocket)
+    BuildStatus, PackagePublishingPocket)
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):

@@ -10,9 +10,9 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IDistributionSet, ILaunchpadCelebrities)
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket)
+    ArchivePurpose, DistroSeriesStatus, IDistributionSet,
+    ILaunchpadCelebrities)
+from canonical.lp.dbschema import PackagePublishingPocket
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
