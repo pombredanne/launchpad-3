@@ -67,11 +67,8 @@ def main():
 
     try:
         if options.series is not None:
-            series, pocket = distribution.getDistroSeriesAndPocket(
+            series, dummypocket = distribution.getDistroSeriesAndPocket(
                 options.series)
-            if '-' in options.series:
-                log.error("Pocket must not be specified: %s" % pocket.name)
-                return 1
         else:
             series = distribution.currentseries
     except NotFoundError, info:
