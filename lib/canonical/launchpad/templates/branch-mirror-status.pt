@@ -21,7 +21,9 @@
       <tal:owner condition="context/required:launchpad.Edit">
         <tal:mirror-disabled tal:condition="view/mirror_disabled">
           Launchpad no longer mirrors this branch, because
-          <span tal:replace="context/mirror_failures">3</span> attempts failed
+          <tal:number-of-failures
+              tal:replace="context/mirror_failures">3
+          </tal:number-of-failures> attempts failed
         </tal:mirror-disabled>
 
         <tal:mirror-scheduled tal:condition="not:view/mirror_disabled">
@@ -51,13 +53,13 @@
           </tal:failed-multiple>
         </tal:mirror-scheduled>
 
-        <span tal:condition="context/mirror_status_message">
-          (<span tal:replace="view/mirror_status_message">Error 1</span>).
-        </span>
+        <tal:has-error-message tal:condition="context/mirror_status_message">
+          (<tal:error-message tal:replace="view/mirror_status_message">Error 1</tal:error-message>).
+        </tal:has-error-message>
 
-        <span tal:condition="not:context/mirror_status_message">
+        <tal:no-error-message tal:condition="not:context/mirror_status_message">
           (no error message available).
-        </span>
+        </tal:no-error-message>
 
         <tal:mirror-scheduled tal:condition="not:view/mirror_disabled">
           Launchpad will try again
