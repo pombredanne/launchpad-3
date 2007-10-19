@@ -238,44 +238,34 @@ class Builder(SQLBase):
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
 
-        # PPA only uses the RELEASE pocket.
-        if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
-            ubuntu_source_lines = [
-                'deb http://archive.ubuntu.com/ubuntu %s %s'
-                % (dist_name, ogre_components)]
+        ubuntu_components = ogre_components
+
+        if (build_queue_item.build.archive.purpose == ArchivePurpose.PARTNER
+            or
+            build_queue_item.build.archive.purpose == ArchivePurpose.PPA):
+            # Although partner and PPA builds are always in the release
+            # pocket, they depend on the same pockets as though they
+            # were in the updates pocket.
+            ubuntu_pockets = self.pocket_dependencies[
+                PackagePublishingPocket.UPDATES]
+
+            # Partner and PPA may also depend on any component.
+            ubuntu_components = 'main restricted universe multiverse'
         else:
-            ubuntu_components = ogre_components
-            # A list of pockets that we are allowed to use for
-            # dependencies.
+            ubuntu_pockets = self.pocket_dependencies[
+                build_queue_item.build.pocket]
 
-            if (build_queue_item.build.archive.purpose ==
-                    ArchivePurpose.PARTNER):
-                # XXX julian 2007-08-07 - this is a greasy hack.
-                # Partner is a very special case because the partner
-                # component is only in the partner archive, so we have
-                # to be careful with the sources.list archives.
-                ubuntu_components = 'main restricted universe multiverse'
-
-                # Although partner builds are always in the release
-                # pocket, they depend on the same pockets as though they
-                # were in the updates pocket.
-                ubuntu_pockets = self.pocket_dependencies[
-                    PackagePublishingPocket.UPDATES]
+        # Here we build a list of sources.list lines for each pocket
+        # required in the primary archive.
+        ubuntu_source_lines = []
+        for pocket in ubuntu_pockets:
+            if pocket == PackagePublishingPocket.RELEASE:
+                dist_pocket = dist_name
             else:
-                ubuntu_pockets = self.pocket_dependencies[
-                    build_queue_item.build.pocket]
-
-            # Here we build a list of sources.list lines for each pocket
-            # required in the primary archive.
-            ubuntu_source_lines = []
-            for pocket in ubuntu_pockets:
-                if pocket == PackagePublishingPocket.RELEASE:
-                    dist_pocket = dist_name
-                else:
-                    dist_pocket = dist_name + pocketsuffix[pocket]
-                ubuntu_source_lines.append(
-                    'deb http://ftpmaster.internal/ubuntu %s %s'
-                    % (dist_pocket, ubuntu_components))
+                dist_pocket = dist_name + pocketsuffix[pocket]
+            ubuntu_source_lines.append(
+                'deb http://ftpmaster.internal/ubuntu %s %s'
+                % (dist_pocket, ubuntu_components))
 
         # ubuntu_source_lines now contains all the entries needed for the
         # pockets and components required in the primary archive.
@@ -389,6 +379,12 @@ class Builder(SQLBase):
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archseries.isNominatedArchIndep)
         args['archives'] = self._archivesForBuild(build_queue_item)
+        suite = build_queue_item.build.distroarchseries.distroseries.name
+        if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
+            suite += "-%s" % (build_queue_item.build.pocket.name.lower())
+        args['suite'] = suite
+        archive_purpose = build_queue_item.build.archive.purpose.name
+        args['archive_purpose'] = archive_purpose
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in

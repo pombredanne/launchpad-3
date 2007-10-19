@@ -200,6 +200,8 @@ hence certain package dependencies.
   ...             print "Archives: %s" % sorted(args['archives'])
   ...         else:
   ...             print "No archives set."
+  ...         print "Suite: %s" % args['suite']
+  ...         print "Archive Purpose: %s" % args['archive_purpose']
   ...         return ('BuildStatus.Building', info)
   ...     def fetchlogtail(self, size):
   ...         return 'BOGUS'
@@ -976,11 +978,19 @@ the primary archive.  It will pass an 'archives' property to the slave
 that contains sources.list entries for each pocket required in the
 primary archive.
 
+We also pass a property called 'suite' which is the current distroseries and
+pocket, (e.g. edgy-updates) and 'archive_purpose' which contains the build's
+archive.purpose (e.g. PRIMARY or PPA).  These latter two properties are
+used in the chroot to determine whether it needs to turn on some features
+or not (like pkgstriptranslations and pkgmaintainermangler).
+
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main']
+  Suite: hoary
+  Archive Purpose: PRIMARY
 
 Cleanup in preparation for the next test:
 
@@ -1003,6 +1013,8 @@ addition to a reference to the release pocket in the partner archive itself.
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse', u'deb http://launchpad.dev/ubuntu-partner hoary main']
+  Suite: hoary
+  Archive Purpose: PARTNER
 
   >>> bqItem3.destroySelf()
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
@@ -1023,7 +1035,9 @@ Similarly, PPA builds pass the archives property:
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://archive.ubuntu.com/ubuntu hoary main', u'deb http://ppa.launchpad.dev/cprov/ubuntu hoary main']
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse', u'deb http://ppa.launchpad.dev/cprov/ubuntu hoary main']
+  Suite: hoary
+  Archive Purpose: PPA
 
 Clean up before continuing:
 
@@ -1117,6 +1131,8 @@ A build in the updates pocket:
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
+  Suite: hoary-updates
+  Archive Purpose: PRIMARY
 
 A build in the proposed pocket:
 
@@ -1130,6 +1146,8 @@ A build in the proposed pocket:
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-proposed main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
+  Suite: hoary-proposed
+  Archive Purpose: PRIMARY
 
 A build in the security pocket:
 
@@ -1143,6 +1161,8 @@ A build in the security pocket:
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main']
+  Suite: hoary-security
+  Archive Purpose: PRIMARY
 
 A build in the backports pocket:
 
@@ -1156,6 +1176,8 @@ A build in the backports pocket:
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
+  Suite: hoary-backports
+  Archive Purpose: PRIMARY
 
 
 == Builder Status Handler ==
