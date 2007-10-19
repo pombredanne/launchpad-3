@@ -490,25 +490,17 @@ class PackagePublishingStatus(DBSchema):
         Superseded
 
         When a newer version of a [source] package is published the existing
-        one is marked as "superseded".  """)
+        one is marked as "superseded".
+        """)
 
-    PENDINGREMOVAL = Item(6, """
-        PendingRemoval
+    DELETED = Item(4, """
+        Deleted
 
-        Once a package is ready to be removed from the archive is is put
-        into this state and the removal will be acted upon when a period of
-        time has passed. When the package is moved to this state the
-        scheduleddeletiondate column is filled out. When that date has
-        passed the archive maintainance tools will remove the package from
-        the on-disk archive and remove the publishing record.  """)
-
-    REMOVED = Item(7, """
-        Removed
-
-        Once a package is removed from the archive, its publishing record
-        is set to this status. This means it won't show up in the SPP view
-        and thus will not be considered in most queries about source
-        packages in distroseriess. """)
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
 
 
 class PackagePublishingPriority(DBSchema):

@@ -673,12 +673,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id
-            """ % sqlvalues(self,
-                            self.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                SourcePackageName.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -701,12 +699,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id
-            """ % sqlvalues(self,
-                            self.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                SourcePackageName.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -734,10 +730,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(sourcepackagename, self,
-                            self.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                            self.all_distro_archive_ids),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
