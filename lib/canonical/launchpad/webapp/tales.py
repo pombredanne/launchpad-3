@@ -726,8 +726,14 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
         """Special-case traversal for links with an optional rootsite."""
         extra_path = '/'.join(reversed(furtherPath))
         if name == 'link':
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
             return self.link(extra_path)
         elif name.startswith('link:'):
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
             rootsite = name.split(':')[1]
             return self.link(extra_path, rootsite=rootsite)
         elif name in self.allowed_names:
