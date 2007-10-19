@@ -554,9 +554,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -929,13 +926,6 @@ INSERT INTO bugcve (id, bug, cve, date_created) VALUES (2, 2, 2, '2006-10-16 18:
 
 
 ALTER TABLE bugcve ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugexternalref DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugexternalref ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
@@ -2781,75 +2771,75 @@ ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
 
 ALTER TABLE libraryfilealias DISABLE TRIGGER ALL;
 
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (3, 2, 'firefox-0.9.2.orig.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (10, 10, 'hr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (11, 11, 'ca.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (12, 12, 'nb.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (13, 13, 'cs.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (15, 15, 'de.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (16, 16, 'fr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (18, 18, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (19, 19, 'fr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (21, 21, 'ja.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (22, 22, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (23, 23, 'nl.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (24, 24, 'cs.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (25, 25, 'da.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (26, 26, 'fi.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (27, 27, 'gl.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (28, 28, 'lt.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (29, 29, 'it.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (30, 30, 'tr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (31, 31, 'de.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (32, 32, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (33, 33, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (37, 37, 'pmount_1.9-1_all.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (38, 38, 'alsa-utils_1.0.9a-4.dsc', 'application/dsc', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (39, 39, 'alsa-utils_1.0.8-1ubuntu1.dsc', 'application/dsc', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (40, 40, 'mozilla-firefox_0.9_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (42, 42, 'linux-2.6.12_2.6.12.20_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (44, 44, 'at-3.14156_all.udeb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (51, 51, 'x4cWPgneBxsZOM21ZzpRPxsZXod.msg', 'message/rfc822', NULL, '2006-07-14 16:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (52, 52, 'mozilla-firefox_0.9_i386.changes', 'text/plain', NULL, '2006-07-31 15:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (53, 53, 'cdrkit-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (54, 54, 'foobar-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (55, 55, 'cdrkit_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (56, 56, 'foobar_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (57, 57, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2006-12-13 21:17:56.241901');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (58, 58, 'pt_BR.po', 'application/x-po', NULL, '2006-12-13 21:18:28.796588');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (59, 59, 'salgado-mugshot.jpg', 'image/jpeg', NULL, '2006-07-31 15:41:34.028627');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (62, 62, 'iceweasel-1.0.dsc', 'application/dsc', NULL, '2007-05-14 23:21:11.121446');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (63, 63, 'hwsubmission1.xml', 'text/xml', NULL, '2007-05-14 23:21:11.121446');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (65, 65, 'commercialpackage_1.0-1_source.changes', 'text/plain', NULL, '2007-08-09 21:25:37.832976');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (66, 66, 'commercialpackage_1.0.orig.tar.gz', 'application/gzipped-tar', NULL, '2007-08-09 21:25:37.832976');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (67, 67, 'commercialpackage_1.0-1.diff.gz', 'application/gzipped-patch', NULL, '2007-08-09 21:25:37.832976');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (68, 68, 'commercialpackage_1.0-1.dsc', 'text/x-debian-source-package', NULL, '2007-08-09 21:25:37.832976');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (69, 69, 'commercialpackage_1.0-1_i386.changes', 'text/plain', NULL, '2007-08-09 21:54:18.456616');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (70, 70, 'commercialpackage_1.0-1_i386.deb', 'application/x-debian-package', NULL, '2007-08-09 21:54:18.456616');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (71, 71, 'ubuntu-hoary-translations.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:14:26.037382');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (72, 72, 'ubuntu-hoary-translations-update.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:15:01.67038');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (73, 73, 'ubuntu-hoary-translations-update.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:15:19.947543');
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (74, 74, 'ubuntu-hoary-translations.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:16:01.017943');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.513628');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.719004');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (3, 2, 'firefox-0.9.2.orig.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.720995');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.722118');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.72427');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.725448');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.726709');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.72782');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.728969');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (10, 10, 'hr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.730095');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (11, 11, 'ca.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.731235');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (12, 12, 'nb.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.732351');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (13, 13, 'cs.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.733428');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.734559');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (15, 15, 'de.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.735676');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (16, 16, 'fr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.736752');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.737874');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (18, 18, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.739021');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (19, 19, 'fr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.740123');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.741219');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (21, 21, 'ja.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.742431');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (22, 22, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.762955');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (23, 23, 'nl.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.764234');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (24, 24, 'cs.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.765364');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (25, 25, 'da.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.766505');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (26, 26, 'fi.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.767657');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (27, 27, 'gl.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.768763');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (28, 28, 'lt.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.769835');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (29, 29, 'it.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.770965');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (30, 30, 'tr.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.772046');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (31, 31, 'de.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.773145');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (32, 32, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.774215');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (33, 33, 'es.po', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.775353');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.776472');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.777559');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.778666');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (37, 37, 'pmount_1.9-1_all.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.779865');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (38, 38, 'alsa-utils_1.0.9a-4.dsc', 'application/dsc', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.822749');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (39, 39, 'alsa-utils_1.0.8-1ubuntu1.dsc', 'application/dsc', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.846895');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (40, 40, 'mozilla-firefox_0.9_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.84809');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (42, 42, 'linux-2.6.12_2.6.12.20_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.849219');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.850382');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (44, 44, 'at-3.14156_all.udeb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.851502');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132', '2007-10-19 10:58:13.852621');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132', '2007-10-19 10:58:13.853708');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132', '2007-10-19 10:58:13.85482');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (51, 51, 'x4cWPgneBxsZOM21ZzpRPxsZXod.msg', 'message/rfc822', NULL, '2006-07-14 16:41:34.028627', '2007-10-19 10:58:13.855934');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (52, 52, 'mozilla-firefox_0.9_i386.changes', 'text/plain', NULL, '2006-07-31 15:41:34.028627', '2007-10-19 10:58:13.857022');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (53, 53, 'cdrkit-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627', '2007-10-19 10:58:13.85813');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (54, 54, 'foobar-1.0.dsc', 'application/dsc', NULL, '2006-12-01 15:41:34.028627', '2007-10-19 10:58:13.859267');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (55, 55, 'cdrkit_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627', '2007-10-19 10:58:13.860434');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (56, 56, 'foobar_1.0_all.deb', 'application/deb', NULL, '2006-12-01 15:41:34.028627', '2007-10-19 10:58:13.870884');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (57, 57, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2006-12-13 21:17:56.241901', '2007-10-19 10:58:13.87203');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (58, 58, 'pt_BR.po', 'application/x-po', NULL, '2006-12-13 21:18:28.796588', '2007-10-19 10:58:13.873149');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (59, 59, 'salgado-mugshot.jpg', 'image/jpeg', NULL, '2006-07-31 15:41:34.028627', '2007-10-19 10:58:13.874226');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968', '2007-10-19 10:58:13.875354');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968', '2007-10-19 10:58:13.876428');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (62, 62, 'iceweasel-1.0.dsc', 'application/dsc', NULL, '2007-05-14 23:21:11.121446', '2007-10-19 10:58:13.877549');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (63, 63, 'hwsubmission1.xml', 'text/xml', NULL, '2007-05-14 23:21:11.121446', '2007-10-19 10:58:13.878669');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (65, 65, 'commercialpackage_1.0-1_source.changes', 'text/plain', NULL, '2007-08-09 21:25:37.832976', '2007-10-19 10:58:13.879754');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (66, 66, 'commercialpackage_1.0.orig.tar.gz', 'application/gzipped-tar', NULL, '2007-08-09 21:25:37.832976', '2007-10-19 10:58:13.880934');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (67, 67, 'commercialpackage_1.0-1.diff.gz', 'application/gzipped-patch', NULL, '2007-08-09 21:25:37.832976', '2007-10-19 10:58:13.898928');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (68, 68, 'commercialpackage_1.0-1.dsc', 'text/x-debian-source-package', NULL, '2007-08-09 21:25:37.832976', '2007-10-19 10:58:13.906894');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (69, 69, 'commercialpackage_1.0-1_i386.changes', 'text/plain', NULL, '2007-08-09 21:54:18.456616', '2007-10-19 10:58:13.908058');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (70, 70, 'commercialpackage_1.0-1_i386.deb', 'application/x-debian-package', NULL, '2007-08-09 21:54:18.456616', '2007-10-19 10:58:13.909189');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (71, 71, 'ubuntu-hoary-translations.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:14:26.037382', '2007-10-19 10:58:13.910473');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (72, 72, 'ubuntu-hoary-translations-update.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:15:01.67038', '2007-10-19 10:58:13.91158');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (73, 73, 'ubuntu-hoary-translations-update.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:15:19.947543', '2007-10-19 10:58:13.91277');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (74, 74, 'ubuntu-hoary-translations.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:16:01.017943', '2007-10-19 10:58:13.934976');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3206,9 +3196,9 @@ ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 ALTER TABLE milestone DISABLE TRIGGER ALL;
 
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created, description) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created, description) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created, description) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL);
 
 
 ALTER TABLE milestone ENABLE TRIGGER ALL;
@@ -9353,20 +9343,20 @@ ALTER TABLE sshkey ENABLE TRIGGER ALL;
 
 ALTER TABLE standardshipitrequest DISABLE TRIGGER ALL;
 
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (1, 8, 1, 1, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (2, 5, 0, 0, true, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (3, 0, 0, 1, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (4, 10, 0, 0, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (5, 0, 1, 0, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (6, 1, 0, 0, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (7, 1, 0, 0, true, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (8, 5, 0, 0, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (9, 10, 0, 0, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (10, 0, 0, 1, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (11, 0, 0, 5, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (12, 8, 0, 2, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (13, 5, 0, 0, true, 3);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (14, 1, 0, 0, false, 3);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (1, 8, 1, 1, false, 1, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (2, 5, 0, 0, true, 1, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (3, 0, 0, 1, false, 1, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (4, 10, 0, 0, false, 1, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (5, 0, 1, 0, false, 1, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (6, 1, 0, 0, false, 1, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (7, 1, 0, 0, true, 2, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (8, 5, 0, 0, false, 2, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (9, 10, 0, 0, false, 2, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (10, 0, 0, 1, false, 2, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (11, 0, 0, 5, false, 2, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (12, 8, 0, 2, false, 2, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (13, 5, 0, 0, true, 3, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (14, 1, 0, 0, false, 3, NULL);
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;

@@ -23,7 +23,6 @@ from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugcomment import *
-from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.bugmessage import *
 from canonical.launchpad.browser.bugnomination import *

@@ -26,11 +26,6 @@
     />
 
   <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
-
-  <vocabulary
     name="BugTaskImportance"
     factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />

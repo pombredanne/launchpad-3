@@ -835,14 +835,6 @@ class BugExternalReferenceType(DBSchema):
         exists in the CVE database of security bugs.
         """)
 
-    URL = Item(2, """
-        URL
-
-        This external reference is a URL. Typically that means it
-        is a reference to a web page or other internet resource
-        related to the bug.
-        """)
-
 
 class BugRelationship(DBSchema):
     """Bug Relationship
