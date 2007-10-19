@@ -396,7 +396,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getSourcePackagePublishing(status, pocket, component=None,
                                    archive=None):
-        """Return a selectResult of ISourcePackagePublishing.
+        """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,

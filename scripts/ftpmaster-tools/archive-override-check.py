@@ -12,13 +12,13 @@ import sys
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
 from canonical.launchpad.interfaces import (
     IDistributionSet, NotFoundError)
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp import initZopeless
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket)
 
@@ -47,7 +47,7 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser='lucille', isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     try:

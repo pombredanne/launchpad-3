@@ -6,11 +6,6 @@
     />
 
   <vocabulary
-    name="BranchReviewStatus"
-    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
@@ -58,11 +53,6 @@
   <vocabulary
       name="Component"
       factory="canonical.launchpad.vocabularies.ComponentVocabulary"
-      />
-
-  <vocabulary
-      name="CodeImportReviewStatus"
-      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
       />
 
   <vocabulary
