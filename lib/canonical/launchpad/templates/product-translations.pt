@@ -4,15 +4,14 @@
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       i18n:domain="launchpad">
 
-<body>
-
-  <metal:portlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-preflangs" />
-  </metal:portlets>
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
 
     <div metal:fill-slot="main"
-         define="uses_translations view/uses_translations;
-                 admin_user context/required:launchpad.TranslationsAdmin">
+         tal:define="uses_translations view/uses_translations;
+                     admin_user context/required:launchpad.TranslationsAdmin">
       <tal:uses-translations condition="uses_translations">
         <h1>Translation overview</h1>
       </tal:uses-translations>
