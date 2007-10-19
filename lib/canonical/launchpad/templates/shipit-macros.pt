@@ -32,7 +32,7 @@
         <tal:save-widget define="widget nocall:cell">
 
           <tal:is-header condition="repeat/cell/start">
-            <th tal:content="cell" />
+            <th tal:content="cell" style="text-align: right" />
           </tal:is-header>
           <tal:is-not-header condition="not: repeat/cell/start">
             <td style="text-align: center">
