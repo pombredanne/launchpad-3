@@ -5,14 +5,14 @@
   i18n:domain="launchpad">
 
 <head>
-    <title tal:content="view/getTitle">Feed Title</title>
+    <title tal:content="view/title">Feed Title</title>
 </head>
 
 <body>
     <table style="border: 1px dotted black">
     <thead>
     <tr><th colspan="6" style="background: lightgray"
-            tal:content="view/getTitle">
+            tal:content="view/title">
         My Title</th>
     </tr>
     <tbody>
@@ -25,8 +25,7 @@
         <td class="amount">
           <a tal:attributes="href bugtask/fmt:url"
             tal:content="bugtask/bug/id"
-            tal:condition="view/show_column/id|nothing"
-            >42</a>
+            tal:condition="view/show_column/id|nothing">42</a>
         </td>
         <td>
           <a href="#"

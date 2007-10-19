@@ -13,9 +13,9 @@ __all__ = [
 
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
-from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
@@ -24,7 +24,9 @@ from canonical.launchpad.browser import (
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
     IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
-
+from canonical.lazr.feed import (
+    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+from canonical.lazr.interfaces import IFeed
 
 # XXX - bac 2-Oct-2007 - Bug 153785 - this value should be in a config file.
 BUG_MAX_AGE = 30 * MINUTES
@@ -53,7 +55,8 @@ class BugFeedContentView(LaunchpadView):
         super(BugFeedContentView, self).__init__(context, request)
         self.feed = feed
 
-    def getBugCommentsForDisplay(self):
+    @property
+    def bug_comments_for_display(self):
         """Get the rendered bug comments.
 
         Using the existing templates and views, transform the comments for the
@@ -70,11 +73,13 @@ class BugFeedContentView(LaunchpadView):
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
+    implements(IFeed)
+
     max_age = BUG_MAX_AGE
     rootsite = "bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(BugsFeedBase, self).initialize()
         self._show_column = None
 
@@ -116,14 +121,16 @@ class BugsFeedBase(FeedBase):
                 self._show_column[column] = value
         return self._show_column
 
-    def getURL(self):
-        """Get the identifying URL for the feed."""
+    @property
+    def url(self):
+        """See `IFeed`."""
         return "%s/%s.%s" % (
             canonical_url(self.context), self.feedname, self.format)
 
-    def getLogo(self):
-        """Get the application-specific logo."""
-        return "%s/@@/bug" % self.getSiteURL()
+    @property
+    def logo(self):
+        """See `IFeed`."""
+        return "%s/@@/bug" % self.site_url
 
     def getPublicRawItems(self):
         """Private bugs are not to be shown in feeds.
@@ -135,10 +142,7 @@ class BugsFeedBase(FeedBase):
                 if not bugtask.bug.private]
 
     def getItems(self):
-        """Get the items for the feed.
-
-        The result is assigned to self.items for caching.
-        """
+        """See `IFeed`."""
         if self.items is None:
             items = self.getPublicRawItems()
             # Convert the items into their feed entry representation.
@@ -146,7 +150,7 @@ class BugsFeedBase(FeedBase):
         return self.items
 
     def itemToFeedEntry(self, bugtask):
-        """Given a bugtask, format it for rendering."""
+        """See `IFeed`."""
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
@@ -162,24 +166,27 @@ class BugsFeedBase(FeedBase):
         return entry
 
     def renderHTML(self):
-        """Render the bug as HTML."""
+        """See `IFeed`."""
         return ViewPageTemplateFile('templates/bug-html.pt')(self)
 
 
 class BugFeed(BugsFeedBase):
     """Bug feeds for single bug."""
 
+    implements(IFeed)
+
     usedfor = IBug
     feedname = "bug"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(BugFeed, self).initialize()
         if self.context.private:
-            raise Unauthorized, "Feeds do not serve private bugs"
+            raise Unauthorized("Feeds do not serve private bugs")
 
-    def getTitle(self):
-        """Title for the feed."""
+    @property
+    def title(self):
+        """See `IFeed`."""
         return "Bug %s" % self.context.id
 
     def getRawItems(self):
@@ -192,17 +199,20 @@ class BugFeed(BugsFeedBase):
 class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""
 
+    implements(IFeed)
+
     usedfor = IBugTarget
     feedname = "latest-bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(BugTargetBugsFeed, self).initialize()
         self.delegate_view = BugTargetView(self.context, self.request)
         self.delegate_view.initialize()
 
-    def getTitle(self):
-        """Title for the feed."""
+    @property
+    def title(self):
+        """See `IFeed`."""
         return "Bugs in %s" % self.context.displayname
 
     def getRawItems(self):
@@ -213,17 +223,20 @@ class BugTargetBugsFeed(BugsFeedBase):
 class PersonBugsFeed(BugsFeedBase):
     """Bug feeds for a person."""
 
+    implements(IFeed)
+
     usedfor = IPerson
     feedname = "latest-bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(PersonBugsFeed, self).initialize()
         self.delegate_view = PersonRelatedBugsView(self.context, self.request)
         self.delegate_view.initialize()
 
-    def getTitle(self):
-        """Title for the feed."""
+    @property
+    def title(self):
+        """See `IFeed`."""
         return "Bugs for %s" % self.context.displayname
 
     def getRawItems(self):
@@ -241,11 +254,13 @@ class SearchBugsFeed(BugsFeedBase):
         search=Search+Bug+Reports&field.scope=all&field.scope.target=
     """
 
+    implements(IFeed)
+
     usedfor = IBugTaskSet
     feedname = "+bugs"
 
     def initialize(self):
-        """Initialize the feed."""
+        """See `IFeed`."""
         super(SearchBugsFeed, self).initialize()
         self.delegate_view = BugsBugTaskSearchListingView(self.context,
                                                           self.request)
@@ -259,11 +274,13 @@ class SearchBugsFeed(BugsFeedBase):
         items = results.getBugListingItems()
         return get_unique_bug_tasks(items)[:self.quantity]
 
-    def getTitle(self):
-        """Title for the feed."""
+    @property
+    def title(self):
+        """See `IFeed`."""
         return "Bugs from custom search"
 
-    def getURL(self):
-        """Get the identifying URL for the feed."""
+    @property
+    def url(self):
+        """See `IFeed`."""
         return "%s?%s" % (self.request.getURL(),
                           self.request.get('QUERY_STRING'))

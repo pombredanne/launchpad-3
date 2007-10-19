@@ -169,8 +169,11 @@ class IURLDirective(Interface):
 
 
 class IGlueDirective(Interface):
-    """ZCML glue to register some classes to do something."""
+    """ZCML glue to register some classes perform an action.
 
+    For each class in the classes list, found in the specified module, the
+    handler will hookup the class to do something.
+    """
     module = GlobalObject(
         title=u"Module in which the classes are found."
         )
@@ -208,7 +211,7 @@ class IFaviconDirective(Interface):
 
 
 def menus(_context, module, classes):
-    """Handler for the IMenusDirective."""
+    """Handler for the `IMenusDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
@@ -242,7 +245,7 @@ def menus(_context, module, classes):
 
 
 def feeds(_context, module, classes):
-    """Handler for the IFeedsDirective."""
+    """Handler for the `IFeedsDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
@@ -266,7 +269,7 @@ def feeds(_context, module, classes):
 
 
 def navigation(_context, module, classes):
-    """Handler for the INavigationDirective."""
+    """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
@@ -528,7 +531,7 @@ class IRenamedPageDirective(Interface):
 
 def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
                  rootsite=None):
-    """Will provide a RedirectView that will redirect to the new_name."""
+    """Will provide a `RedirectView` that will redirect to the new_name."""
     def renamed_factory(context, request):
         return RenamedView(
             context, request, new_name=new_name, rootsite=rootsite)
@@ -569,7 +572,7 @@ class ITourPageDirective(Interface):
 
 
 def tour_page(_context, for_, name, tour, layer=IDefaultBrowserLayer):
-    """Register a new LaunchpadTourView.
+    """Register a new `LaunchpadTourView`.
 
     This actually register a dynamically generated subclass that is protected
     with the configured permission.

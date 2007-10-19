@@ -20,33 +20,27 @@ import operator
 import os
 import time
 
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.app.datetimeutils import rfc1123_date
+from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
 from canonical.launchpad.webapp.vhosts import allvhosts
-
+from canonical.lazr.interfaces import (
+    IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 MINUTES = 60
 MAX_AGE = 60 * MINUTES
-
+SUPPORTED_FEEDS = ('atom', 'html')
 
 class FeedBase(LaunchpadFormView):
-    """Base class for feeds.
+    """Base class for feeds."""
 
-    - context
-    - request
-    - initialize()  <-- subclass this for specific initialization
-    - getId()
-    - getUpdated()
-    - getTitle()
-    - getURL()
-    - getItems()
-    - itemToAtomFeedEntry
-    """
+    implements(IFeed)
 
     # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be in a config file.
     max_age = MAX_AGE
@@ -58,62 +52,58 @@ class FeedBase(LaunchpadFormView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.format = self.getFeedFormat()
+        self.format = self.feed_format
 
     def initialize(self):
-        """Override this in subclasses.
-
-        Default implementation does nothing.
-        """
+        """See `IFeed`."""
         pass
 
-    def getTitle(self):
-        """Return the title of the feed."""
+    @property
+    def title(self):
+        """See `IFeed`."""
         raise NotImplementedError
 
-    def getURL(self):
-        """Return the URL for the feed.  It should be unique and permanent."""
+    @property
+    def url(self):
+        """See `IFeed`."""
         raise NotImplementedError
 
-    def getSiteURL(self):
-        """Return the URL for the main site of Launchpad."""
+    @property
+    def site_url(self):
+        """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
     def getItems(self):
-        """Get the individual unformatted items for the feed."""
+        """See `IFeed`."""
         raise NotImplementedError
 
     def itemToFeedEntry(self, item):
-        """Convert a single item to a formatted feed entry."""
+        """See `IFeed`."""
         raise NotImplementedError
 
-    def getFeedFormat(self):
-        """Return the requested feed format.
-
-        Raises ValueError if the format is not supported.
-        """
+    @property
+    def feed_format(self):
+        """See `IFeed`."""
         path = self.request['PATH_INFO']
         extension = os.path.splitext(path)[1]
-        if extension in ['.atom', '.html']:
+        if len(extension) > 0 and extension[1:] in SUPPORTED_FEEDS:
             return extension[1:]
         else:
-            raise ValueError, ('%s is not supported'
-                % (self.request['PATH_INFO']))
+            raise UnsupportedFeedFormat('%s is not supported' % path)
 
-    def getLogo(self):
-        """Get the URL for the feed logo."""
+    @property
+    def logo(self):
+        """See `IFeed`."""
         raise NotImplementedError
 
-    def getIcon(self):
-        """Get the icon for the feed."""
-        return "%s/@@/launchpad" % self.getSiteURL()
+    @property
+    def icon(self):
+        """See `IFeed`."""
+        return "%s/@@/launchpad" % self.site_url
 
-    def getUpdated(self):
-        """Get the update time for the feed.
-
-        By default this is set to the most recent update of the entries in the
-        feed.
-        """
+    @cachedproperty
+    def date_updated(self):
+        """See `IFeed`."""
         sorted_items = sorted(self.getItems(),
                               key=operator.attrgetter('date_updated'),
                               reverse=True)
@@ -122,12 +112,11 @@ class FeedBase(LaunchpadFormView):
         return sorted_items[0].date_updated
 
     def render(self):
+        """See `IFeed`."""
         expires = rfc1123_date(time.time() + self.max_age)
-        # self.getUpdated() can't run until after initialize() runs
-        date_updated = self.getUpdated()
-        if date_updated is not None:
+        if self.date_updated is not None:
             last_modified = rfc1123_date(
-                                time.mktime(self.getUpdated().timetuple()))
+                time.mktime(self.date_updated.timetuple()))
         else:
             last_modified = rfc1123_date(time.time())
         response = self.request.response
@@ -141,21 +130,17 @@ class FeedBase(LaunchpadFormView):
         elif self.format == 'html':
             return self.renderHTML()
         else:
-            raise NotImplementedError, "Format %s is not implemented" % self.format
+            raise UnsupportedFeedFormat("Format %s is not supported" %
+                                        self.format)
 
     def renderAtom(self):
-        """Render the object as an Atom feed.
-
-        Override this as opposed to overriding render().
-        """
+        """See `IFeed`."""
         return ViewPageTemplateFile(self.template_files['atom'])(self)
 
     def renderHTML(self):
-        """Render the object as an html feed.
-
-        Override this as opposed to overriding render().
-        """
+        """See `IFeed`."""
         return ViewPageTemplateFile(self.template_files['html'])(self)
+
 
 class FeedEntry:
     """An entry for a feed."""
@@ -184,8 +169,12 @@ class FeedEntry:
         self.contributors = contributors
         self.id = id_
 
+
 class FeedTypedData:
     """Data for a feed that includes its type."""
+
+    implements(IFeedTypedData)
+
     content_types = ['text', 'html', 'xhtml']
     def __init__(self, content, content_type='text'):
         self.content = content
@@ -193,12 +182,16 @@ class FeedTypedData:
             raise ValueError, "%s: is not valid" % content_type
         self.content_type = content_type
 
+
 class FeedPerson:
     """Data for person in a feed.
 
     If this class is consistently used we will not accidentally leak email
     addresses.
     """
+
+    implements(IFeedPerson)
+
     def __init__(self, person, rootsite):
         self.name = person.displayname
         # We don't want to disclose email addresses in public feeds.
