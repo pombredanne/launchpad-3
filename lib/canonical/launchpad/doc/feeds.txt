@@ -1,14 +1,14 @@
 = Feeds components =
 
-`Feeds` is a ZCML directive for handling feeds requests.  The
+`feeds` is a ZCML directive for handling feeds requests.  The
 directive requires minimal ZCML configuration and relies on
 implementing view classes defining the `usedfor` and `name` class
 variables.
 
 Feeds are defined on the `FeedsLayer` layer.
 
-== Demonstrating a feeds class ==
 
+== Demonstrating a feeds class ==
 
 In order to demonstrate a feed class, we need to create an interface
 for the thing comprising the feed.  Rather than use a standard
@@ -18,7 +18,6 @@ Launchpad interface, we'll define one here.
 
     >>> class IThing(Interface):
     ...     value = Attribute('the value of the thing')
-
 
     >>> class Thing(object):
     ...     implements(IThing)
@@ -32,7 +31,7 @@ Launchpad interface, we'll define one here.
 
 == ZCML for browser:feeds ==
 
-The zcml processor `browser:feeds` processes feeds classes.
+The zcml `browser:feeds` directive describes a feed view.
 
     >>> import canonical.launchpad.ftests
     >>> from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -63,7 +62,6 @@ Get the view from a `thing` on 'thing-feed' for a request.
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.layers import setFirstLayer, FeedsLayer
 
     >>> request = LaunchpadTestRequest()
 
@@ -85,6 +83,7 @@ not be found.
 
 Set the layer on the request for all subsequent uses.
 
+    >>> from canonical.launchpad.layers import setFirstLayer, FeedsLayer
     >>> setFirstLayer(request, FeedsLayer)
 
 If the context object is not an IThing then the view will not be
@@ -117,10 +116,11 @@ found, indicated by the absence of a ComponentLookupError.
     >>> thing = Thing('thing 1')
     >>> verifyObject(IThing, thing)
     True
-    >>> for name in ['thing-feed.atom', 'thing-feed.js', 'thing-feed.html']:
+    >>> for name in ['thing-feed.atom', 'thing-feed.html']:
     ...     feed_view = getMultiAdapter((thing, request), name=name)
-    >>> print feed_view()
+    ...     print feed_view()
     a feed view on an IThing
-    
+    a feed view on an IThing
+
 
 
