@@ -27,7 +27,8 @@ Sample Person.
 
 And the same for some blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+    >>> from canonical.launchpad.interfaces import (
+    ... SpecificationImplementationStatus)
     >>> from canonical.launchpad.database import Specification
     >>> spec = Specification.selectOneBy(name='media-integrity-check')
     >>> spec.assignee = sample_person

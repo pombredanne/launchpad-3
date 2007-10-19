@@ -65,6 +65,14 @@ class ShipitFrontPageView(LaunchpadView):
         self.flavour = _get_flavour_from_layer(self.request)
 
     @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
+
+    @property
+    def beta_download_link(self):
+        return config.shipit.beta_download_link
+
+    @property
     def download_or_buy_link(self):
         if self.flavour == ShipItFlavour.UBUNTU:
             return 'http://www.ubuntu.com/download'
@@ -207,6 +215,10 @@ class ShipItRequestView(GeneralFormView):
 
     def is_open(self):
         return shipit_is_open(self.flavour)
+
+    @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
 
     @property
     def dvds_section(self):
@@ -728,11 +740,12 @@ class StandardShipItRequestAddView(AddView):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
-        # We're not shipping PPC CDs anymore.
-        quantityppc = 0
+        quantityppc = 0 # We're not shipping PPC CDs anymore.
         isdefault = data.get('isdefault')
+        user_description = data.get('user_description')
         request = getUtility(IStandardShipItRequestSet).new(
-            flavour, quantityx86, quantityamd64, quantityppc, isdefault)
+            flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description)
         notify(ObjectCreatedEvent(request))
 
 

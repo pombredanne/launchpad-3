@@ -52,6 +52,15 @@ read.
     ...         None, 'Import branch')
 
 
+== CodeImport events ==
+
+Most mutating operations affecting code imports should create
+CodeImportEvent objects in the database to provide an audit trail.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportEventSet
+    >>> event_set = getUtility(ICodeImportEventSet)
+
+
 == Supported source systems ==
 
 The rcs_type field, which indicates whether the import is from CVS or
@@ -75,6 +84,12 @@ in the repository, known as the "module".
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
 
+Creating a CodeImport object creates a corresponding CodeImportEvent.
+
+    >>> cvs_events = event_set.getEventsForCodeImport(cvs_import)
+    >>> [event.event_type.name for event in cvs_events]
+    ['CREATE']
+
 
 === Import from Subversion ===
 
@@ -90,6 +105,12 @@ retrieve the tree to import.
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
 
+Creating a CodeImport object creates a corresponding CodeImportEvent.
+
+    >>> svn_events = event_set.getEventsForCodeImport(svn_import)
+    >>> [event.event_type.name for event in svn_events]
+    ['CREATE']
+
 
 == Creating a CodeImport from existing data ==
 
@@ -98,10 +119,10 @@ script that creates CodeImports from the existing information in the
 ProductSeries table.  The only ProductSeries with such information in
 the sample data is evolution/trunk.
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
-    >>> from canonical.lp.dbschema import ImportStatus
-    >>> [series] = getUtility(IProductSeriesSet).search(
-    ...     importstatus=ImportStatus.PROCESSING.value)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSeriesSet, ImportStatus)
+    >>> [series] = getUtility(IProductSeriesSet).searchImports(
+    ...     importstatus=ImportStatus.PROCESSING)
     >>> series.product.name
     u'evolution'
     >>> series.name
@@ -124,6 +145,51 @@ This CodeImport is associated to the evolution/main ProductSeries
     >>> from_existing_import.series.name
     u'trunk'
 
+== Update intervals ==
+
+After an import is initially completed, it must be updated regularly. Each
+code import can specify a custom update interval, or use a default value.
+
+There is a separate default update interval for each version control system,
+set in the Launchpad configuration system.
+
+    >>> from datetime import timedelta
+    >>> from canonical.config import config
+    >>> default_interval_cvs = timedelta(
+    ...     seconds=config.codeimport.default_interval_cvs)
+    >>> default_interval_subversion = timedelta(
+    ...     seconds=config.codeimport.default_interval_subversion)
+
+By default, code imports are created with an unspecified update interval.
+
+    >>> print cvs_import.update_interval
+    None
+    >>> print svn_import.update_interval
+    None
+
+When the update interval interval is unspecified, the effective update
+interval, which decides how often the import is actually updated, uses the
+appropriate default value for the RCS type.
+
+    >>> default_interval_cvs
+    datetime.timedelta(0, 43200)
+    >>> cvs_import.effective_update_interval
+    datetime.timedelta(0, 43200)
+
+    >>> default_interval_subversion
+    datetime.timedelta(0, 21600)
+    >>> svn_import.effective_update_interval
+    datetime.timedelta(0, 21600)
+
+If the update interval is set, then it overrides the default value.
+
+    >>> cvs_import.update_interval = timedelta(seconds=7200)
+    >>> cvs_import.effective_update_interval
+    datetime.timedelta(0, 7200)
+
+    >>> svn_import.update_interval = timedelta(seconds=3600)
+    >>> svn_import.effective_update_interval
+    datetime.timedelta(0, 3600)
 
 == Retreiving CodeImports ==
 
@@ -144,7 +210,7 @@ present the import's details on the page of the branch.
 Finally, you can search for imports by review status.  For instance,
 there is a single sample CodeImport with the "REVIEWED" status:
 
-    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> reviewed_imports = list(code_import_set.search(
     ...     review_status=CodeImportReviewStatus.REVIEWED))
     >>> reviewed_imports

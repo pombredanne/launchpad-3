@@ -1,0 +1,93 @@
+= Generic ExternalBugTracker Tests =
+
+ExternalBugTracker instances are used to communicate with remote bug
+trackers. This document tests those features that are common to all
+ExternalBugTracker instances.
+
+== Error Handling ==
+
+When an error occurs during the updating of bug watches it will be
+recorded against the bug watches themselves so that it can be displayed
+to users. We can test this by using a test version of
+ExternalBugTracker.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestBrokenExternalBugTracker)
+    >>> external_bugtracker = TestBrokenExternalBugTracker(
+    ...     'http://example.com')
+
+We'll create an example bug watch with which to test this. This will
+be passed to external_bugtracker's updateBugWatches() method and should
+have errors recorded against it. We log in as Sample Person to make
+these changes since there's no particular need to use one Person over
+another.
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.lp.dbschema import BugTrackerType
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Bug Tracker",
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> login('test@canonical.com')
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
+    ...     UnparseableBugData, UnparseableBugTrackerVersion)
+    >>> from socket import timeout
+
+TestBrokenExternalBugTracker allows us to force errors to occur, so we
+can use it to check that bug watches' last_error_types are being set
+correctly.
+
+We start with those errors that may be raised by
+ExternalBugTracker.initializeRemoteBugDB(). We supress exceptions
+because we're only interested in the bug watch's last error field.
+
+    >>> for error in [BugTrackerConnectError, UnparseableBugData,
+    ...     UnparseableBugTrackerVersion]:
+    ...     external_bugtracker.initialize_remote_bugdb_error = error
+    ...     try:
+    ...         external_bugtracker.updateBugWatches([example_bugwatch])
+    ...     except error:
+    ...         pass
+    ...     example_bugwatch.last_error_type.title
+    'Connection Error'
+    'Unparsable Bug'
+    'Unparsable Bug Tracker Version'
+
+We can run the same test on getRemoteStatus(), which can raise different
+errors. We temporarily silence the logging from this function because
+we're not interested in it.
+
+    >>> from canonical.launchpad.scripts import log
+    >>> loglevel = log._log.level
+    >>> external_bugtracker.initialize_remote_bugdb_error = None
+    >>> try:
+    ...     log._log.setLevel(100)
+    ...     for error in [BugNotFound, InvalidBugId, UnparseableBugData]:
+    ...         external_bugtracker.get_remote_status_error = error
+    ...         try:
+    ...             external_bugtracker.updateBugWatches([example_bugwatch])
+    ...         except:
+    ...             pass
+    ...         example_bugwatch.last_error_type.title
+    ... finally:
+    ...     log._log.setLevel(loglevel)
+    'Bug Not Found'
+    'Invalid Bug ID'
+    'Unparsable Bug'
+

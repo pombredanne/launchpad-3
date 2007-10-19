@@ -11,11 +11,13 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.interfaces import IProductSet, RevisionControlSystems
+from canonical.launchpad.interfaces import (
+    IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
@@ -211,6 +213,89 @@ class SyncIntervalTestCase(LaunchpadZopelessTestCase):
         series.cvsbranch = 'MAIN'
         series.certifyForSync()
         self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
+
+
+class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
+    """Tests for ProductSeriesSet.searchImports().
+    """
+
+    def setUp(self):
+        """Prepare by deleting all the import data in the sample data.
+
+        This means that the tests only have to care about the ProductSeries
+        they touch.
+        """
+        for series in ProductSeries.select():
+            series.deleteImport()
+        flush_database_updates()
+
+    def getSeriesForProduct(self, product_name):
+        """Return a arbitrary ProducSeries associated to named product."""
+        # We return the development focus of the product, just because that's
+        # the easiest thing to do.
+        product = getUtility(IProductSet).getByName(product_name)
+        return product.development_focus
+
+    def addImportDetailsToSeries(self, series):
+        """Add import data to the provided series.
+
+        'importstatus' will be set to SYNCING, abitrarily.
+        """
+        series.rcstype = RevisionControlSystems.CVS
+        series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
+        series.cvsmodule = 'hello'
+        series.cvsbranch = 'MAIN'
+        series.importstatus = ImportStatus.SYNCING
+        flush_database_updates()
+
+    def testEmpty(self):
+        """We start out with no series with import data, so searchImports()
+        returns no results.
+        """
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [])
+
+    def testOneSeries(self):
+        """When there is one series with import data, it is returned."""
+        series = self.getSeriesForProduct('firefox')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+
+    def testOneSeriesNoProject(self):
+        """Series for products with no project should be returned too."""
+        series = self.getSeriesForProduct('jokosher')
+        self.failIf(series.product.project)
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+
+    def testExcludeDeactivatedProducts(self):
+        """Deactivating a product means that series associated to it are no
+        longer returned.
+        """
+        series = self.getSeriesForProduct('firefox')
+        self.addImportDetailsToSeries(series)
+        self.failUnless(series.product.active)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+        series.product.active = False
+        flush_database_updates()
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [])
+
+    def testSearchByStatus(self):
+        """If passed a status, searchImports only returns series with that
+        status.
+        """
+        series = self.getSeriesForProduct('firefox')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            importstatus=ImportStatus.SYNCING)
+        self.assertEquals(list(results), [series])
+        results = getUtility(IProductSeriesSet).searchImports(
+            importstatus=ImportStatus.PROCESSING)
+        self.assertEquals(list(results), [])
 
 
 def test_suite():

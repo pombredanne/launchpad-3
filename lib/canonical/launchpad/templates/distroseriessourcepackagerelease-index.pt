@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
 <metal:heading fill-slot="pageheading">
@@ -21,24 +27,11 @@
 
   <h2>Publishing history</h2>
 
-  <table class="listing">
-    <thead>
-    <tr>
-        <th>When</th>
-        <th>Status</th>
-        <th>Target</th>
-        <th>Pocket</th>
-        <th>Component</th>
-        <th>Section</th>
-        <th>Version</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tal:block repeat="publishing context/publishing_history"
-                 replace="structure publishing/@@+listing-detailed">
-      </tal:block>
-    </tbody>
-  </table>
+  <div id="publishing_history">
+    <tal:block repeat="publishing context/publishing_history"
+               replace="structure publishing/@@+listing-detailed">
+    </tal:block>
+  </div>
 
   <h2>Download</h2>
 
@@ -55,7 +48,8 @@
 
   <h2>Changelog</h2>
 
-  <pre id="changelog" tal:content="context/sourcepackagerelease/changelog" />
+  <tal:pre
+       replace="structure context/sourcepackagerelease/@@+changelog" />
 
    <div id="changesfile" tal:define="changesfile context/changesfile">
      <p tal:condition="changesfile">

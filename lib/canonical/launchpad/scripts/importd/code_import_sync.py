@@ -11,10 +11,10 @@ __all__ = ['CodeImportSync']
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
-    IProductSeriesSet, RevisionControlSystems)
+    BranchType, CodeImportReviewStatus, IBranchSet, ICodeImportSet,
+    ILaunchpadCelebrities, IProductSeriesSet, ImportStatus,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -86,7 +86,7 @@ class CodeImportSync:
         Series for non-MAIN CVS branches are also ignored because we do not
         support imports from non-MAIN CVS branches.
         """
-        series_iterator = getUtility(IProductSeriesSet).search(forimport=True)
+        series_iterator = getUtility(IProductSeriesSet).searchImports()
         for series in series_iterator:
             if series.importstatus in (ImportStatus.DONTSYNC,
                                        ImportStatus.TESTFAILED):

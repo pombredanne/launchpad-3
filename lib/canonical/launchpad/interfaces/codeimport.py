@@ -5,18 +5,49 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Choice, Int, TextLine
+from zope.interface import Interface
+from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
+
+from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root, RevisionControlSystems)
-from canonical.lp.dbschema import CodeImportReviewStatus
+
+
+class CodeImportReviewStatus(DBEnumeratedType):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = DBItem(1, """Pending Review
+
+        This code import request has recently been filed an has not
+        been reviewed yet.
+        """)
+
+    INVALID = DBItem(10, """Invalid
+
+        This code import will not be processed.
+        """)
+
+    REVIEWED = DBItem(20, """Reviewed
+
+        This code import has been approved and will be processed.
+        """)
+
+    SUSPENDED = DBItem(30, """Suspended
+
+        This code import has been approved, but it has been suspended
+        and is not processed.""")
 
 
 class ICodeImport(Interface):
@@ -62,7 +93,7 @@ class ICodeImport(Interface):
                       "code for, or None if there is no such series."))
 
     review_status = Choice(
-        title=_("Review Status"), vocabulary='CodeImportReviewStatus',
+        title=_("Review Status"), vocabulary=CodeImportReviewStatus,
         default=CodeImportReviewStatus.NEW,
         description=_("Before a code import is performed, it is reviewed."
             " Only reviewed imports are processed."))
@@ -93,9 +124,19 @@ class ICodeImport(Interface):
             " Usually, it is the name of the project."))
 
     date_last_successful = Datetime(title=_("Last successful"), required=False)
-    update_interval = Attribute(_("The time between automatic updates of this"
-        " import. If unspecified, the import will be updated at a default"
-        " interval selected by Launcphad administrators."))
+
+    update_interval = Timedelta(
+        title=_("Update interval"), required=False, description=_(
+        "The user-specified time between automatic updates of this import. "
+        "If this is unspecified, the effective update interval is a default "
+        "value selected by Launchpad administrators."))
+
+    effective_update_interval = Timedelta(
+        title=_("Effective update interval"), required=True, readonly=True,
+        description=_(
+        "The effective time between automatic updates of this import. "
+        "If the user did not specify an update interval, this is a default "
+        "value selected by Launchpad adminstrators."))
 
 
 class ICodeImportSet(Interface):

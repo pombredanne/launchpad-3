@@ -1,0 +1,37 @@
+= Pre-release mode =
+
+We always open shipit a couple weeks before every new Ubuntu release, so
+that users can pre-order CDs and have them shipped as soon as the release is
+out.  We need to make it clear in the UI that these are pre-orders so that
+users are aware it may take a bit longer than the usual for the delivery.
+
+This is controlled by a config option, which allows us to easily flip the
+switch once the release is out and we move from pre-release to normal mode.
+
+    >>> from canonical.config import config
+    >>> config.shipit.prerelease_mode
+    False
+
+    >>> anon_browser.open('http://shipit.ubuntu.dev')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'chooseLinks'))
+    I want to download...
+    I want to request CDs of...
+
+    >>> config.shipit.prerelease_mode = True
+    >>> anon_browser.reload()
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'chooseLinks'))
+    I want to download and test the beta version of...
+    I want to pre-order CDs of...
+
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser.open('http://shipit.ubuntu.dev/myrequest')
+    >>> print extract_text(find_main_content(browser.contents).h1)
+    Pre-order Ubuntu ...
+
+    >>> print get_feedback_messages(browser)[0]
+    Ubuntu...has not been released yet, but we'll record your request...
+
+Restore the prerelease_mode config variable so that we don't screw up other
+tests.
+
+    >>> config.shipit.prerelease_mode = False

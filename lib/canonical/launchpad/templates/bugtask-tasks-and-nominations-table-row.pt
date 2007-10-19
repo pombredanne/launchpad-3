@@ -1,7 +1,9 @@
-<tal:bugtask define="expandable view/canSeeTaskDetails;
-                     indent_task view/shouldIndentTask;
-                     tasklink view/taskLink;
-                     form_row_id string:task${context/id}">
+<tal:bugtask 
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define="expandable view/canSeeTaskDetails;
+          indent_task view/shouldIndentTask;
+          tasklink view/taskLink;
+          form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
     <td width="14" tal:condition="nothing"><a tal:condition="expandable"
            tal:attributes="
@@ -86,9 +88,13 @@
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 0.25em"
            tal:attributes="href context/bugwatch/url">
-          <img
+          <img tal:condition="not:context/bugwatch/last_error_type"
             alt="Linked to "
             src="/@@/bug-remote"
+          />
+          <img tal:condition="context/bugwatch/last_error_type"
+            alt="Error updating bug watch"
+            src="/@@/warning"
           />
           <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
           #<span tal:replace="context/bugwatch/remotebug">123</span>
@@ -127,11 +133,13 @@
       /></a>
     </td>
   </tr>
-  <tr
-    tal:attributes="id form_row_id"
-    tal:condition="expandable"
-    style="display: none"
-  >
-   <td colspan="5" tal:content="structure context/@@+edit-form" />
-  </tr>
+  <tal:form condition="view/displayEditForm">
+    <tr
+      tal:attributes="id form_row_id"
+      tal:condition="expandable"
+      style="display: none"
+    >
+     <td colspan="5" tal:content="structure context/@@+edit-form" />
+    </tr>
+  </tal:form>
 </tal:bugtask>
