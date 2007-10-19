@@ -202,7 +202,7 @@ Now the Mozilla Project and Jokosher will appear in the Related
 projects portlet on the bug tracker page:
 
   >>> admin_browser.open(
-  ...     'http://launchpad.dev/bugs/bugtrackers/testtrac')
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla')
   >>> print extract_text(find_portlet(
   ...     admin_browser.contents, 'Related projects'))
   Related projects
