@@ -25,7 +25,12 @@ from canonical.launchpad.xmlrpc import faults
 
 
 class IBranchSetAPI(Interface):
-    """An XMLRPC interface for dealing with branches."""
+    """An XMLRPC interface for dealing with branches.
+
+    This XML-RPC interface was introduced to support Bazaar 0.8-2, which is
+    included in Ubuntu 6.06. This interface cannot be removed until Ubuntu
+    6.06 is end-of-lifed.
+    """
 
     def register_branch(branch_url, branch_name, branch_title,
                         branch_description, author_email, product_name):
@@ -129,6 +134,9 @@ class IPublicCodehostingAPI(Interface):
 
     def resolve_lp_path(path):
         """Expand the path segment of an lp: URL into a list of branch URLs.
+
+        This method is added to support Bazaar 0.93. It cannot be removed
+        until we stop supporting Bazaar 0.93.
 
         :return: A dict containing a single 'urls' key that maps to a list of
             URLs. Clients should use the first URL in the list that they can
