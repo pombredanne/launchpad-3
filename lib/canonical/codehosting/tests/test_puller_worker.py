@@ -1,14 +1,15 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Functional tests for branchtomirror.py."""
+"""Unit tests for worker.py."""
 
 __metaclass__ = type
 
 import httplib
-import logging
 import os
+import re
 import shutil
 import socket
+from StringIO import StringIO
 import tempfile
 import unittest
 import urllib2
@@ -16,7 +17,7 @@ import urllib2
 import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
-from bzrlib.revision import NULL_REVISION
+from bzrlib.revision import ensure_null, NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -26,42 +27,49 @@ from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
     NotBranchError)
 
-import transaction
-from canonical.launchpad import database
+from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.puller.worker import (
+    PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
+    BranchReferenceForbidden, BranchReferenceValueError,
+    get_canonical_url_for_branch_name, PullerWorkerProtocol)
+from canonical.codehosting.tests.helpers import (
+    create_branch_with_one_revision)
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.webapp import canonical_url
-from canonical.codehosting.tests.helpers import create_branch
-from canonical.codehosting.puller.branchtomirror import (
-    BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
-    BranchReferenceForbidden, BranchReferenceValueError)
-from canonical.authserver.client.branchstatus import BranchStatusClient
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
-from canonical.testing import LaunchpadFunctionalLayer, reset_logging
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
-class StubbedBranchStatusClient(BranchStatusClient):
-    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
+class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
 
-    def startMirroring(self, branch_id):
-        pass
+    def __init__(self):
+        self.calls = []
+
+    def startMirroring(self, branch_to_mirror):
+        self.calls.append(('startMirroring', branch_to_mirror))
+
+    def mirrorSucceeded(self, branch_to_mirror, last_revision):
+        self.calls.append(
+            ('mirrorSucceeded', branch_to_mirror, last_revision))
+
+    def mirrorFailed(self, branch_to_mirror, message, oops_id):
+        self.calls.append(
+            ('mirrorFailed', branch_to_mirror, message, oops_id))
 
 
-class StubbedBranchToMirror(BranchToMirror):
-    """Partially stubbed subclass of BranchToMirror, for unit tests."""
+class StubbedPullerWorker(PullerWorker):
+    """Partially stubbed subclass of PullerWorker, for unit tests."""
 
     enable_checkBranchReference = False
     enable_checkSourceUrl = True
 
     def _checkSourceUrl(self):
         if self.enable_checkSourceUrl:
-            BranchToMirror._checkSourceUrl(self)
+            PullerWorker._checkSourceUrl(self)
 
     def _checkBranchReference(self):
         if self.enable_checkBranchReference:
-            BranchToMirror._checkBranchReference(self)
+            PullerWorker._checkBranchReference(self)
 
     def _openSourceBranch(self):
         self.testcase.open_call_count += 1
@@ -69,15 +77,38 @@ class StubbedBranchToMirror(BranchToMirror):
     def _mirrorToDestBranch(self):
         pass
 
-    def _mirrorSuccessful(self, logger):
-        pass
 
-    def _mirrorFailed(self, logger, error_msg):
-        self.testcase.errors.append(error_msg)
+class PullerWorkerMixin:
+    """Mixin for tests that want to make PullerWorker objects."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        # Change the HOME environment variable in order to ignore existing
+        # user config files.
+        self._home = os.environ.get('HOME', None)
+        os.environ.update({'HOME': self.test_dir})
+
+    def tearDown(self):
+        if self._home is not None:
+            os.environ['HOME'] = self._home
+        shutil.rmtree(self.test_dir)
+
+    def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
+                         protocol=None):
+        """Anonymous creation method for PullerWorker."""
+        if src_dir is None:
+            src_dir = os.path.join(self.test_dir, 'source_dir')
+        if dest_dir is None:
+            dest_dir = os.path.join(self.test_dir, 'dest_dir')
+        if protocol is None:
+            protocol = PullerWorkerProtocol(StringIO())
+        return PullerWorker(
+            src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
+            branch_type=branch_type, protocol=protocol)
 
 
 class ErrorHandlingTestCase(unittest.TestCase):
-    """Base class to test BranchToMirror error reporting."""
+    """Base class to test PullerWorker error reporting."""
 
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -90,34 +121,28 @@ class ErrorHandlingTestCase(unittest.TestCase):
         class hierarchy and we do not want to end up calling unittest.TestCase
         twice.
         """
-        client = StubbedBranchStatusClient()
-        self.branch = StubbedBranchToMirror(
-            src='foo', dest='bar', branch_status_client=client, branch_id=1,
-            unique_name='owner/product/foo', branch_type=None)
-        self.errors = []
+        self.protocol = StubbedPullerWorkerProtocol()
+        self.branch = StubbedPullerWorker(
+            src='foo', dest='bar', branch_id=1,
+            unique_name='owner/product/foo', branch_type=None,
+            protocol=self.protocol)
         self.open_call_count = 0
         self.branch.testcase = self
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-
-    def tearDown(self):
-        self._errorHandlingTearDown()
-        unittest.TestCase.tearDown(self)
-
-    def _errorHandlingTearDown(self):
-        """Teardown code that is specific to ErrorHandlingTestCase."""
-        reset_logging()
 
     def runMirrorAndGetError(self):
         """Run mirror, check that we receive exactly one error, and return its
         str().
         """
-        self.branch.mirror(logging.getLogger())
-        self.assertEqual(len(self.errors), 1)
-        error = str(self.errors[0])
-        self.errors = []
-        return error
+        self.branch.mirror()
+        self.assertEqual(
+            2, len(self.protocol.calls),
+            "Expected startMirroring and mirrorFailed, got: %r"
+            % (self.protocol.calls,))
+        startMirroring, mirrorFailed = self.protocol.calls
+        self.assertEqual(('startMirroring', self.branch), startMirroring)
+        self.assertEqual(('mirrorFailed', self.branch), mirrorFailed[:2])
+        self.protocol.calls = []
+        return str(mirrorFailed[2])
 
     def runMirrorAndAssertErrorStartsWith(self, expected_error):
         """Run mirror and check that we receive exactly one error, the str() of
@@ -135,95 +160,49 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.assertEqual(error, expected_error)
 
 
-class TestBranchToMirror(unittest.TestCase):
+class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
+    """Test the mirroring functionality of PullerWorker."""
 
-    layer = LaunchpadFunctionalLayer
-
-    testdir = None
+    test_dir = None
 
     def setUp(self):
-        self.testdir = tempfile.mkdtemp()
-        # Change the HOME environment variable in order to ignore existing
-        # user config files.
-        os.environ.update({'HOME': self.testdir})
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
+        PullerWorkerMixin.setUp(self)
 
     def tearDown(self):
-        shutil.rmtree(self.testdir)
-        self.authserver.tearDown()
+        PullerWorkerMixin.tearDown(self)
 
-    def _getBranchDir(self, branchname):
-        return os.path.join(self.testdir, branchname)
-
-    def testMirror(self):
-        # Create a branch
-        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
-        destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
-
-        client = BranchStatusClient()
-        to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
-            branch_type=None)
-        tree = create_branch(srcbranchdir)
-        to_mirror.mirror(logging.getLogger())
+    def testMirrorActuallyMirrors(self):
+        # Check that mirror() will mirror the Bazaar branch.
+        to_mirror = self.makePullerWorker()
+        tree = create_branch_with_one_revision(to_mirror.source)
+        to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(tree.last_revision(),
-                         mirrored_branch.last_revision())
-
-        # make sure that the last mirrored revision is recorded
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertEqual(branch.last_mirrored_id,
-                         mirrored_branch.last_revision())
+        self.assertEqual(
+            tree.last_revision(), mirrored_branch.last_revision())
 
     def testMirrorEmptyBranch(self):
         # Check that we can mirror an empty branch, and that the
-        # last_mirrored_id for an empty branch can be distinguished
-        # from an unmirrored branch.
+        # last_mirrored_id for an empty branch can be distinguished from an
+        # unmirrored branch.
+        to_mirror = self.makePullerWorker()
 
-        # Create a branch
-        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
-        destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
+        # Create an empty source branch.
+        os.makedirs(to_mirror.source)
+        tree = bzrdir.BzrDir.create_branch_and_repo(to_mirror.source)
 
-        client = BranchStatusClient()
-        to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
-            branch_type=None)
-
-        # create empty source branch
-        os.makedirs(srcbranchdir)
-        tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
-
-        to_mirror.mirror(logging.getLogger())
+        to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
-        # make sure that the last mirrored revision is recorded as a string
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertNotEqual(None, branch.last_mirrored_id)
-        self.assertEqual(NULL_REVISION, branch.last_mirrored_id)
 
-
-class TestBranchToMirrorFormats(TestCaseWithRepository):
-
-    layer = LaunchpadFunctionalLayer
+class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def setUp(self):
-        super(TestBranchToMirrorFormats, self).setUp()
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
+        TestCaseWithRepository.setUp(self)
 
     def tearDown(self):
-        self.authserver.tearDown()
-        super(TestBranchToMirrorFormats, self).tearDown()
+        TestCaseWithRepository.tearDown(self)
+        reset_logging()
 
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
@@ -275,12 +254,9 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
     def _mirror(self):
         # Mirror src-branch to dest-branch
-        client = BranchStatusClient()
         source_url = os.path.abspath('src-branch')
-        to_mirror = BranchToMirror(
-            source_url, 'dest-branch', client, branch_id=1, unique_name=None,
-            branch_type=None)
-        to_mirror.mirror(logging.getLogger())
+        to_mirror = self.makePullerWorker(src_dir=source_url)
+        to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
 
@@ -302,44 +278,49 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
             mirrored_branch.bzrdir._format.get_format_description())
 
 
-class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
-
-    layer = LaunchpadFunctionalLayer
+class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
+        PullerWorkerMixin.setUp(self)
 
     def tearDown(self):
-        self.authserver.tearDown()
+        PullerWorkerMixin.tearDown(self)
         TestCaseInTempDir.tearDown(self)
+        reset_logging()
+
+    def assertMirrorFailed(self, puller_worker, message_substring):
+        """Assert that puller_worker failed, and that message_substring is in
+        the message.
+
+        'puller_worker' must use a StubbedPullerWorkerProtocol.
+        """
+        protocol = puller_worker.protocol
+        self.assertEqual(
+            2, len(protocol.calls),
+            "Expected startMirroring and mirrorFailed, got: %r"
+            % (protocol.calls,))
+        startMirroring, mirrorFailed = protocol.calls
+        self.assertEqual(('startMirroring', puller_worker), startMirroring)
+        self.assertEqual(('mirrorFailed', puller_worker), mirrorFailed[:2])
+        self.assertContainsRe(
+            str(mirrorFailed[2]), re.escape(message_substring))
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existent_source = os.path.abspath('nonsensedir')
         dest_dir = 'dest-dir'
-        client = BranchStatusClient()
-        mybranch = BranchToMirror(
-            non_existent_source, dest_dir, client, branch_id=1,
-            unique_name='foo/bar/baz', branch_type=None)
-        mybranch.mirror(logging.getLogger())
+        my_branch = self.makePullerWorker(
+            src_dir=non_existent_source, dest_dir=dest_dir)
+        my_branch.mirror()
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
         non_existent_source = os.path.abspath('nonsensedir')
-        client = BranchStatusClient()
-        # ensure that we have no errors muddying up the test
-        client.mirrorComplete(1, NULL_REVISION)
-        mybranch = BranchToMirror(
-            non_existent_source, "non-existent-destination",
-            client, branch_id=1, unique_name='foo/bar/baz', branch_type=None)
-        mybranch.mirror(logging.getLogger())
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertEqual(1, branch.mirror_failures)
+        my_branch = self.makePullerWorker(
+            src_dir=non_existent_source, dest_dir="non-existent-destination",
+            protocol=StubbedPullerWorkerProtocol())
+        my_branch.mirror()
+        self.assertMirrorFailed(my_branch, 'Not a branch')
 
     def testMissingFileRevisionData(self):
         self.build_tree(['missingrevision/',
@@ -359,22 +340,16 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         tree.branch.repository.weave_store._put_weave(
             "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())
-        # now try mirroring this branch.
-        client = BranchStatusClient()
-        # clear the error status
-        client.mirrorComplete(1, NULL_REVISION)
         source_url = os.path.abspath('missingrevision')
-        mybranch = BranchToMirror(
-            source_url, "non-existent-destination", client, branch_id=1,
-            unique_name='foo/bar/baz', branch_type=None)
-        mybranch.mirror(logging.getLogger())
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertEqual(1, branch.mirror_failures)
+        my_branch = self.makePullerWorker(
+            src_dir=source_url, dest_dir="non-existent-destination",
+            protocol=StubbedPullerWorkerProtocol())
+        my_branch.mirror()
+        self.assertMirrorFailed(my_branch, 'No such file')
 
 
 class TestBadUrl(ErrorHandlingTestCase):
-    """Test that BranchToMirror does not try mirroring from bad URLs.
+    """Test that PullerWorker does not try mirroring from bad URLs.
 
     Bad URLs use schemes like sftp or bzr+ssh that usually require
     authentication, and hostnames in the launchpad.net domains.
@@ -440,10 +415,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
-        # errorHandlingTearDown must be called after
-        # TestCaseWithTransport.tearDown otherwise the latter fails
-        # when trying to uninstall its log handlers.
-        ErrorHandlingTestCase._errorHandlingTearDown(self)
+        reset_logging()
 
     def testCreateBranchReference(self):
         """Test that our createBranchReference helper works correctly."""
@@ -484,7 +456,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         return a_bzrdir.root_transport.base
 
     def testGetBranchReferenceValue(self):
-        """BranchToMirror._getBranchReference gives the reference value for
+        """PullerWorker._getBranchReference gives the reference value for
         a branch reference.
         """
         reference_value = 'http://example.com/branch'
@@ -494,7 +466,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
             self.branch._getBranchReference(reference_url), reference_value)
 
     def testGetBranchReferenceNone(self):
-        """BranchToMirror._getBranchReference gives None for a normal branch.
+        """PullerWorker._getBranchReference gives None for a normal branch.
         """
         self.make_branch('repo')
         branch_url = self.get_url('repo')
@@ -522,18 +494,18 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         self.assertEqual(self.open_call_count, 0)
 
 
-class TestCanTraverseReferences(unittest.TestCase):
-    """Unit tests for BranchToMirror._canTraverseReferences."""
+class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
+    """Unit tests for PullerWorker._canTraverseReferences."""
 
     def setUp(self):
-        self.client = BranchStatusClient()
+        PullerWorkerMixin.setUp(self)
+
+    def tearDown(self):
+        PullerWorkerMixin.setUp(self)
 
     def makeBranch(self, branch_type):
-        """Helper to create a BranchToMirror with a specified branch_type."""
-        return BranchToMirror(
-            src='foo', dest='bar', branch_status_client=self.client,
-            branch_id=1, unique_name='owner/product/foo',
-            branch_type=branch_type)
+        """Helper to create a PullerWorker with a specified branch_type."""
+        return self.makePullerWorker(branch_type=branch_type)
 
     def testTrueForMirrored(self):
         """We can traverse branch references when pulling mirror branches."""
@@ -567,10 +539,11 @@ class TestCanTraverseReferences(unittest.TestCase):
 
 
 class TestCheckBranchReference(unittest.TestCase):
-    """Unit tests for BranchToMirror._checkBranchReference."""
+    """Unit tests for PullerWorker._checkBranchReference."""
 
-    class StubbedBranchToMirror(BranchToMirror):
-        """Partially stubbed BranchToMirror."""
+    class StubbedPullerWorker(PullerWorker):
+        """Partially stubbed PullerWorker for checkBranchReference unit tests.
+        """
 
         def _getBranchReference(self, url):
             self.testcase.get_branch_reference_calls.append(url)
@@ -581,16 +554,15 @@ class TestCheckBranchReference(unittest.TestCase):
             return self.testcase.can_traverse_references
 
     def setUp(self):
-        client = BranchStatusClient()
-        self.branch = TestCheckBranchReference.StubbedBranchToMirror(
-            'foo', 'bar', client, 1, 'owner/product/foo', None)
+        self.branch = TestCheckBranchReference.StubbedPullerWorker(
+            'foo', 'bar', 1, 'owner/product/foo', None, None)
         self.branch.testcase = self
         self.get_branch_reference_calls = []
         self.reference_values = {}
         self.can_traverse_references = None
 
     def setUpReferences(self, locations):
-        """Set up the stubbed BranchToMirror to model a chain of references.
+        """Set up the stubbed PullerWorker to model a chain of references.
 
         Branch references can point to other branch references, forming a chain
         of locations. If the chain ends in a real branch, then the last
@@ -746,7 +718,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
         from the database. Instead, the path should be translated to a
         user-visible location.
         """
-        split_id = split_branch_id(self.branch.branch_id)
+        split_id = branch_id_to_path(self.branch.branch_id)
         def stubOpenSourceBranch():
             raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
                                  % split_id)
@@ -782,31 +754,89 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
 
+class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
+    """Tests for the client-side implementation of the protocol used to
+    communicate to the master process.
+    """
+
+    def setUp(self):
+        PullerWorkerMixin.setUp(self)
+        self.test_dir = tempfile.mkdtemp()
+        self.output = StringIO()
+        self.protocol = PullerWorkerProtocol(self.output)
+        self.branch_to_mirror = self.makePullerWorker()
+
+    def tearDown(self):
+        PullerWorkerMixin.tearDown(self)
+
+    def assertSentNetstrings(self, expected_netstrings):
+        """Assert that the protocol sent the given netstrings (in order)."""
+        observed_netstrings = self.getNetstrings(self.output.getvalue())
+        self.assertEqual(expected_netstrings, observed_netstrings)
+
+    def getNetstrings(self, line):
+        """Return the sequence of strings that are the netstrings that make up
+        'line'.
+        """
+        strings = []
+        while len(line) > 0:
+            colon_index = line.find(':')
+            length = int(line[:colon_index])
+            strings.append(line[colon_index+1:colon_index+1+length])
+            self.assertEqual(',', line[colon_index+1+length])
+            line = line[colon_index+length+2:]
+        return strings
+
+    def resetBuffers(self):
+        """Empty the test output and error buffers."""
+        self.output.truncate(0)
+        self.assertEqual('', self.output.getvalue())
+
+    def test_nothingSentOnConstruction(self):
+        """The protocol sends nothing until it receives an event."""
+        self.assertSentNetstrings([])
+
+    def test_startMirror(self):
+        """Calling startMirroring sends 'startMirroring' as a netstring."""
+        self.protocol.startMirroring(self.branch_to_mirror)
+        self.assertSentNetstrings(['startMirroring', '0'])
+
+    def test_mirrorSucceeded(self):
+        """Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'."""
+        self.protocol.startMirroring(self.branch_to_mirror)
+        self.resetBuffers()
+        self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
+        self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
+
+    def test_mirrorFailed(self):
+        """Calling 'mirrorFailed' sends the error message."""
+        self.protocol.startMirroring(self.branch_to_mirror)
+        self.resetBuffers()
+        self.protocol.mirrorFailed(
+            self.branch_to_mirror, 'Error Message', 'OOPS')
+        self.assertSentNetstrings(
+            ['mirrorFailed', '2', 'Error Message', 'OOPS'])
+
+
 class TestCanonicalUrl(unittest.TestCase):
     """Test cases for rendering the canonical url of a branch."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadScriptLayer
 
     def testCanonicalUrlConsistent(self):
-        # BranchToMirror._canonical_url is consistent with
+        # worker.get_canonical_url_for_branch_name is consistent with
         # webapp.canonical_url, if the provided unique_name is correct.
         branch = Branch.get(15)
         # Check that the unique_name used in this test is consistent with the
         # sample data. This is an invariant of the test, so use a plain assert.
         unique_name = 'name12/gnome-terminal/main'
         assert branch.unique_name == '~' + unique_name
-        branch_to_mirror = BranchToMirror(
-            src=None, dest=None, branch_status_client=None,
-            branch_id=None, unique_name=unique_name, branch_type=None)
         # Now check that our implementation of canonical_url is consistent with
         # the canonical one.
         self.assertEqual(
-            branch_to_mirror._canonical_url(), canonical_url(branch))
+            canonical_url(branch),
+            get_canonical_url_for_branch_name(unique_name))
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
