@@ -44,6 +44,10 @@
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"
       />
+    <require
+      permission="launchpad.Admin"
+      attributes="deactivateAllMembers"
+      />
   </content>
 
   <browser:menus
@@ -732,15 +736,19 @@
     template="../templates/people-requestmerge.pt"
     />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPersonSet"
     permission="launchpad.Admin"
-    class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
-    <browser:page
-      name="+adminrequestmerge"
-      template="../templates/people-adminrequestmerge.pt"
-      />
-  </browser:pages>
+    class="canonical.launchpad.browser.AdminPeopleMergeView"
+    name="+adminpeoplemerge"
+    template="../templates/people-adminrequestmerge.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.AdminTeamMergeView"
+    name="+adminteammerge"
+    template="../templates/people-adminrequestmerge.pt" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPersonSet"
