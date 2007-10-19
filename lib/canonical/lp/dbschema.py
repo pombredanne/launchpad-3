@@ -24,11 +24,7 @@ __all__ = [
     'BinaryPackageFormat',
     'BranchReviewStatus',
     'BuildStatus',
-    'CodereleaseRelationships',
-    'CodeImportReviewStatus',
     'DistroSeriesStatus',
-    'ImportTestStatus',
-    'ImportStatus',
     'MirrorContent',
     'MirrorPulseType',
     'MirrorSpeed',
@@ -125,32 +121,6 @@ class BinaryPackageFormat(DBSchema):
 
         This is the format used by Mandrake and other similar distributions.
         It does not include dependency tracking information.  """)
-
-
-class ImportTestStatus(DBSchema):
-    """An Arch Import Autotest Result
-
-    This enum tells us whether or not a sourcesource has been put through an
-    attempted import.
-    """
-
-    NEW = Item(0, """
-        Untested
-
-        The sourcesource has not yet been tested by the autotester.
-        """)
-
-    FAILED = Item(1, """
-        Failed
-
-        The sourcesource failed to import cleanly.
-        """)
-
-    SUCCEEDED = Item(2, """
-        Succeeded
-
-        The sourcesource was successfully imported by the autotester.
-        """)
 
 
 class DistroSeriesStatus(DBSchema):
@@ -288,69 +258,6 @@ class SourcePackageUrgency(DBSchema):
         affect the integrity of systems using previous releases of the
         source package, and should be installed in the archive as soon
         as possible after appropriate review.
-        """)
-
-
-class ImportStatus(DBSchema):
-    """This schema describes the states that a SourceSource record can take
-    on."""
-
-    DONTSYNC = Item(1, """
-        Do Not Import
-
-        Launchpad will not attempt to make a Bazaar import.
-        """)
-
-    TESTING = Item(2, """
-        Testing
-
-        Launchpad has not yet attempted this import. The vcs-imports operator
-        will review the source details and either mark the series \"Do not
-        sync\", or perform a test import. If the test import is successful, a
-        public import will be created. After the public import completes, it
-        will be updated automatically.
-        """)
-
-    TESTFAILED = Item(3, """
-        Test Failed
-
-        The test import has failed. We will do further tests, and plan to
-        complete this import eventually, but it may take a long time. For more
-        details, you can ask on the launchpad-users@canonical.com mailing list
-        or on IRC in the #launchpad channel on irc.freenode.net.
-        """)
-
-    AUTOTESTED = Item(4, """
-        Test Successful
-
-        The test import was successful. The vcs-imports operator will lock the
-        source details for this series and perform a public Bazaar import.
-        """)
-
-    PROCESSING = Item(5, """
-        Processing
-
-        The public Bazaar import is being created. When it is complete, a
-        Bazaar branch will be published and updated automatically. The source
-        details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
-        """)
-
-    SYNCING = Item(6, """
-        Online
-
-        The Bazaar import is published and automatically updated to reflect the
-        upstream revision control system. The source details for this series
-        are locked and can only be modified by vcs-imports members and
-        Launchpad administrators.
-        """)
-
-    STOPPED = Item(7, """
-        Stopped
-
-        The Bazaar import has been suspended and is no longer updated. The
-        source details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
         """)
 
 
@@ -532,25 +439,17 @@ class PackagePublishingStatus(DBSchema):
         Superseded
 
         When a newer version of a [source] package is published the existing
-        one is marked as "superseded".  """)
+        one is marked as "superseded".
+        """)
 
-    PENDINGREMOVAL = Item(6, """
-        PendingRemoval
+    DELETED = Item(4, """
+        Deleted
 
-        Once a package is ready to be removed from the archive is is put
-        into this state and the removal will be acted upon when a period of
-        time has passed. When the package is moved to this state the
-        scheduleddeletiondate column is filled out. When that date has
-        passed the archive maintainance tools will remove the package from
-        the on-disk archive and remove the publishing record.  """)
-
-    REMOVED = Item(7, """
-        Removed
-
-        Once a package is removed from the archive, its publishing record
-        is set to this status. This means it won't show up in the SPP view
-        and thus will not be considered in most queries about source
-        packages in distroseriess. """)
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -724,198 +623,4 @@ class BinaryPackageFileType(DBSchema):
 
         This format is used on mandrake, Red Hat, Suse and other similar
         distributions.
-        """)
-
-
-class CodereleaseRelationships(DBSchema):
-    """Coderelease Relationships
-
-    Code releases are both upstream releases and distribution source package
-    releases, and in this schema we document the relationships that Launchpad
-    understands between these two.
-    """
-
-    PACKAGES = Item(1, """
-        Packages
-
-        The subject is a distribution packing of the object. For example,
-        apache2-2.0.48-1 "packages" the upstream apache2.0.48.tar.gz.
-        """)
-
-    REPLACES = Item(2, """
-        Replaces
-
-        A subsequent release in the same product series typically
-        "replaces" the prior release. For example, apache2.0.48
-        "replaces" apache2.0.47. Similarly, within the distribution
-        world, apache-2.0.48-3ubuntu2 "replaces" apache2-2.0.48-3ubuntu2.
-        """)
-
-    DERIVESFROM = Item(3, """
-        Derives From
-
-        The subject package derives from the object package. It is common
-        for distributions to build on top of one another's work, creating
-        source packages that are modified versions of the source package
-        in a different distribution, and this relationship captures that
-        concept.
-        """)
-
-
-class CodeImportReviewStatus(DBSchema):
-    """CodeImport review status.
-
-    Before a code import is performed, it is reviewed. Only reviewed imports
-    are processed.
-    """
-
-    NEW = Item(1, """Pending Review
-
-    This code import request has recently been filed an has not been reviewed
-    yet.
-    """)
-
-    INVALID = Item(10, """Invalid
-
-    This code import will not be processed.
-    """)
-
-    REVIEWED = Item(20, """Reviewed
-
-    This code import has been approved and will be processed.
-    """)
-
-    SUSPENDED = Item(30, """Suspended
-
-    This code import has been approved, but it has been suspended and is not
-    processed.""")
-
-
-class BranchReviewStatus(DBSchema):
-    """Branch Review Cycle
-
-    This is an indicator of what the project thinks about this branch.
-    Typically, it will be set by the upstream as part of a review process
-    before the branch lands on an official series.
-    """
-
-    NONE = Item(10, """
-        None
-
-        This branch has not been queued for review, and no review has been
-        done on it.
-        """)
-
-    REQUESTED = Item(20, """
-        Requested
-
-        The author has requested a review of the branch. This usually
-        indicates that the code is mature and ready for merging, but it may
-        also indicate that the author would like some feedback on the
-        direction in which he is headed.
-        """)
-
-    NEEDSWORK = Item(30, """
-        Needs Further Work
-
-        The reviewer feels that this branch is not yet ready for merging, or
-        is not on the right track. Detailed comments would be found in the
-        reviewer discussion around the branch, see those for a list of the
-        issues to be addressed or discussed.
-        """)
-
-    MERGECONDITIONAL = Item(50, """
-        Conditional Merge Approved
-
-        The reviewer has said that this branch can be merged if specific
-        issues are addressed. The review feedback will be contained in the
-        branch discussion. Once those are addressed by the author the branch
-        can be merged without further review.
-        """)
-
-    MERGEAPPROVED = Item(60, """
-        Merge Approved
-
-        The reviewer is satisfied that the branch can be merged without
-        further changes.
-        """)
-
-
-class BuildStatus(DBSchema):
-    """Build status type
-
-    Builds exist in the database in a number of states such as 'complete',
-    'needs build' and 'dependency wait'. We need to track these states in
-    order to correctly manage the autobuilder queues in the BuildQueue table.
-    """
-
-    NEEDSBUILD = Item(0, """
-        Needs building
-
-        Build record is fresh and needs building. Nothing is yet known to
-        block this build and it is a candidate for building on any free
-        builder of the relevant architecture
-        """)
-
-    FULLYBUILT = Item(1, """
-        Successfully built
-
-        Build record is an historic account of the build. The build is complete
-        and needs no further work to complete it. The build log etc are all
-        in place if available.
-        """)
-
-    FAILEDTOBUILD = Item(2, """
-        Failed to build
-
-        Build record is an historic account of the build. The build failed and
-        cannot be automatically retried. Either a new upload will be needed
-        or the build will have to be manually reset into 'NEEDSBUILD' when
-        the issue is corrected
-        """)
-
-    MANUALDEPWAIT = Item(3, """
-        Dependency wait
-
-        Build record represents a package whose build dependencies cannot
-        currently be satisfied within the relevant DistroArchRelease. This
-        build will have to be manually given back (put into 'NEEDSBUILD') when
-        the dependency issue is resolved.
-        """)
-
-    CHROOTWAIT = Item(4, """
-        Chroot problem
-
-        Build record represents a build which needs a chroot currently known
-        to be damaged or bad in some way. The buildd maintainer will have to
-        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
-        has been fixed.
-        """)
-
-    SUPERSEDED = Item(5, """
-        Build for superseded Source
-
-        Build record represents a build which never got to happen because the
-        source package release for the build was superseded before the job
-        was scheduled to be run on a builder. Builds which reach this state
-        will rarely if ever be reset to any other state.
-        """)
-
-    BUILDING = Item(6, """
-        Currently building
-
-        Build record represents a build which is being build by one of the
-        available builders.
-        """)
-
-    FAILEDTOUPLOAD = Item(7, """
-        Failed to upload
-
-        Build record is an historic account of a build that could not be
-        uploaded correctly. It's mainly genereated by failures in
-        process-upload which quietly rejects the binary upload resulted
-        by the build procedure.
-        In those cases all the build historic information will be stored (
-        buildlog, datebuilt, duration, builder, etc) and the buildd admins
-        will be notified via process-upload about the reason of the rejection.
         """)

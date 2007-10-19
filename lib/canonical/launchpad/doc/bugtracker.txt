@@ -173,3 +173,11 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR:root:Connection timed out when updating http://bugs.example.com
+
+Errors that occur when updating a bug watch are recorded against that
+bug watch. The timeout will be recorded against the bug watch we just
+created in its last_error_type field.
+
+    >>> from canonical.launchpad.interfaces import BugWatchErrorType
+    >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
+    True

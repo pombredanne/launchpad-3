@@ -14,7 +14,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
-
+from canonical.config import config
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
@@ -34,7 +34,7 @@ from canonical.lp.dbschema import (
 
 
 class TestNativePublishingBase(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup creates a pool dir and setup librarian.
