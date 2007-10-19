@@ -366,8 +366,6 @@ class PullerWorker:
 
         else:
             last_rev = self._dest_branch.last_revision()
-            if last_rev is None:
-                last_rev = NULL_REVISION
             self.protocol.mirrorSucceeded(self, last_rev)
 
     def __eq__(self, other):
