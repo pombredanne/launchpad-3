@@ -2168,7 +2168,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result = POTemplate.selectBy(distroseries=self)
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -2182,7 +2183,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables = ['DistroRelease', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -2195,7 +2197,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables = ['DistroRelease', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
 
 class DistroSeriesSet:

@@ -15,7 +15,7 @@ and permissions.
     >>> admin_browser.getLink('Translations').click()
     >>> admin_browser.getLink('Change translators').click()
 
-Now let's submit to the form. We should be redirected to the product page.
+Now let's submit the form. We should be redirected to the product page.
 
     >>> print admin_browser.getControl('Translation group').displayOptions
     ['(no value)', 'Single-language Translators',

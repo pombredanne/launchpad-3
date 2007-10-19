@@ -29,6 +29,7 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
     IProductSeriesSourceAdmin, NotFoundError, PackagingType,
@@ -527,7 +528,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result = POTemplate.selectBy(productseries=self)
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -541,7 +543,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables = ['ProductSeries', 'Product'])
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -554,7 +557,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables = ['ProductSeries', 'Product'])
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
 
 class ProductSeriesSet:

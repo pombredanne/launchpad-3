@@ -518,7 +518,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             sourcepackagename=self.sourcepackagename)
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -533,7 +534,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             clauseTables = ['DistroRelease', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -547,4 +549,5 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             clauseTables = ['DistroRelease', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
