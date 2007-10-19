@@ -16,6 +16,17 @@
         />
   </content>
 
+  <content class="canonical.launchpad.database.BranchWithSortKeys">
+    <require
+        permission="launchpad.View"
+        interface="canonical.launchpad.interfaces.IBranch"
+        />
+    <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IBranch"
+        />
+  </content>
+
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"

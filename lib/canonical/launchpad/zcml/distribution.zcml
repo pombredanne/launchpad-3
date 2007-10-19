@@ -375,13 +375,11 @@
     template="../templates/distribution-change-mirror-admin.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
     facet="bugs"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/distribution-bugcontact.pt"
     />
