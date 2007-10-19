@@ -666,7 +666,7 @@ Check the publishing history again
   ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
   ...    print pub.status.name, pub.component.name, pub.pocket.name
-  PENDINGREMOVAL main RELEASE
+  SUPERSEDED main RELEASE
   PUBLISHED universe RELEASE
 
 Check if the package was moved properly to the component 'universe':

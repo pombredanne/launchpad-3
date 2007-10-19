@@ -108,7 +108,7 @@ ordered by their names.
 We should be able to generate filtered lists of specs on a project.
 
  >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 

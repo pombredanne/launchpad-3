@@ -12,8 +12,6 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
     DeleteBugContactError)
@@ -32,6 +30,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
+from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class DistributionSourcePackage(BugTargetBase,
@@ -116,11 +115,10 @@ class DistributionSourcePackage(BugTargetBase,
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                            self.distribution.all_distro_archive_ids),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
                      "-SourcePackagePublishingHistory.datepublished"])
