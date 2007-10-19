@@ -225,7 +225,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ISprint"
-    name="+attendees-csv-export"
+    name="+attendees-csv"
     class="canonical.launchpad.browser.sprint.SprintAttendeesCsvExportView"
     permission="launchpad.AnyPerson"
     attribute="__call__"

@@ -520,14 +520,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Arriving',
                  'Leaving')]
         for attendance in self.context.attendances:
-            if attendance.attendee.preferredemail is not None:
-                email = attendance.attendee.preferredemail.email
-            else:
-                email = ''
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
-                 email,
+                 attendance.attendee.safe_email_or_blank,
                  attendance.attendee.phone,
                  attendance.attendee.organization,
                  attendance.attendee.city,
