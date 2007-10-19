@@ -20,6 +20,10 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a product ==
 
+This feed gets the latest bugs reported against a product. The feed includes
+summary information about the bugs such as ID, title, author, and a link to
+the bug itself.
+
     >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.atom')
     >>> browser.title
     'Bugs in Jokosher'
@@ -50,6 +54,9 @@ Define a helper function for parsing the entries:
 
 
 == Latest bugs for a project ==
+
+This feed gets the latest bugs for a project, and has the same type of content
+as the latest bugs feed for a product.
 
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.atom')
     >>> browser.title
@@ -83,6 +90,8 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a person ==
 
+This feed gets the latest bugs for a person.
+
     >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.atom')
     >>> browser.title
     'Bugs for Foo Bar'
@@ -115,6 +124,7 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a team ==
 
+This feed gets the latest bugs for a whole team.
 First, make a team responsible for some bugs.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -161,6 +171,9 @@ some results.
 
 == General bug search ==
 
+This feed is the most useful of them all. Any bug search can be turned into
+a feed.
+
     >>> import cgi
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
@@ -199,6 +212,8 @@ some results.
 
 
 == Results for a single bug ==
+
+This feed shows the status of a single bug.
 
     >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
     >>> browser.title

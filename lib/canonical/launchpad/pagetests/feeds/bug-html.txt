@@ -1,6 +1,8 @@
 = HTML Feeds =
 
 HTML feeds produce snippets of html for inclusion in user's own web pages.
+The content of an HTML feed is very similar to an Atom feed, but is formatted
+as HTML instead of Atom.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> from BeautifulSoup import SoupStrainer
@@ -13,6 +15,10 @@ Define a helper function for parsing the entries:
 
 
 == Latest bugs for a product ==
+
+This feed gets the latest bugs reported against a product. The feed includes
+summary information about the bugs such as ID, title, author, and a link to
+the bug itself.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.html?'
     ...              'show_column=bugtargetdisplayname')
@@ -44,6 +50,9 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a project ==
 
+This feed gets the latest bugs for a project, and has the same type of content
+as the latest bugs feed for a product.
+
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
     ...              'show_column=bugtargetdisplayname')
     >>> browser.title
@@ -72,6 +81,8 @@ Define a helper function for parsing the entries:
 
 
 == Latest bugs for a person ==
+
+This feed gets the latest bugs for a person.
 
     >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.html')
     >>> browser.title
@@ -102,6 +113,9 @@ Define a helper function for parsing the entries:
 
 
 == General bug search ==
+
+This feed is the most useful of them all. Any bug search can be turned into
+a feed.
 
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.html?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"

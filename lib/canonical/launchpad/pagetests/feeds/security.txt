@@ -1,5 +1,6 @@
 == Feeds do not display private bugs ==
 
+Feeds never contain private bugs, as we are serving feeds over HTTP.
 First, set all the bugs to private.
 
     >>> from zope.security.interfaces import Unauthorized
