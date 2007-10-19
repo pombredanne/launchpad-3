@@ -508,6 +508,14 @@ class BranchMirrorStatusView(LaunchpadFormView):
         else:
             return self.context.mirror_failures
 
+    @property
+    def action_url(self):
+        return "%s/+mirror-failures" % canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     @action('Try again', name='try-again')
     def retry(self, action, data):
         self.context.requestMirror()
