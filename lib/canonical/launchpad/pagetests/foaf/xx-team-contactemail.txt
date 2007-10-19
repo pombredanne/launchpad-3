@@ -146,6 +146,7 @@ we'll ask the user to contact a Launchpad admin.
 Any time before the mailing list is approved, the application can be
 cancelled (and then re-requested afterwards).
 
+    >>> browser.getLink('Overview').click()
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('Cancel Application').click()
     >>> browser.title
