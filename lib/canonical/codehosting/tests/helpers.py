@@ -30,8 +30,8 @@ from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
-    UnknownBranchTypeError)
+    BranchType, IBranchSet, IPersonSet, IProductSet, License,
+    PersonCreationRationale, UnknownBranchTypeError)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -213,7 +213,8 @@ class BranchTestCase(TestCaseWithTransport):
             self.getUniqueString('displayname'),
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
-            self.getUniqueString('description'))
+            self.getUniqueString('description'),
+            licenses=[License.GPL])
 
     def makeBranch(self, branch_type=None):
         """Create and return a new, arbitrary Branch of the given type."""

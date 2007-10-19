@@ -30,12 +30,10 @@ as a set from _getFormValue() or getInputValue():
     >>> request = LaunchpadTestRequest(
     ...     form={'field.licenses': ['LGPL', 'GPL']})
     >>> matrix_widget = CheckBoxMatrixWidget(licenses_field, vtype, request)
-    >>> form_value = matrix_widget._getFormValue()
-    >>> form_value
-    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (140) LGPL>])
-    >>> input = matrix_widget.getInputValue()
-    >>> input
-    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (140) LGPL>])
+    >>> matrix_widget._getFormValue()
+    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>])
+    >>> matrix_widget.getInputValue()
+    Set([<DBItem License.GPL, (130) GPL>, <DBItem License.LGPL, (150) LGPL>])
 
 It should render as many rows as are specified by the column_count attribute.
 

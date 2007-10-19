@@ -156,8 +156,10 @@ class ProductLicenseMixin:
         or "Other/Open Source" is checked.
         """
         licenses = data.get('licenses', [])
+        license_widget = self.widgets.get('licenses')
         if (len(licenses) == 0 and
-            not self.widgets['licenses'].allow_pending_license):
+            license_widget is not None and
+            not license_widget.allow_pending_license):
             # License is optional on +edit page if not already set.
             self.setFieldError(
                 'licenses', 
@@ -746,7 +748,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         super(ProductEditView, self).setUpWidgets()
         # Licenses are optional on +edit page if they have not already 
         # been set. Subclasses may not have 'licenses' widget.
-        if len(self.context.licenses) == 0 and 'licenses' in self.widgets:
+        # ('licenses' in self.widgets) is broken.
+        if (len(self.context.licenses) == 0 and
+            self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
 
     @action("Change", name='change')
