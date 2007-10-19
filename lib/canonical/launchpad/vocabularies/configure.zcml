@@ -16,11 +16,6 @@
     />
 
   <vocabulary
-    name="BugWatch"
-    factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
-    />
-
-  <vocabulary
       name="Component"
       factory="canonical.launchpad.vocabularies.ComponentVocabulary"
       />
