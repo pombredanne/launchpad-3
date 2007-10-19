@@ -510,27 +510,31 @@ class SprintAttendeesCsvExportView(LaunchpadView):
     def render(self):
         """Render a CSV output of all the attendees for a sprint."""
         rows = [('Launchpad username',
-                   'Display name',
-                   'Email',
-                   'Phone',
-                   'Organization',
-                   'City',
-                   'Country',
-                   'Timezone')]
-        for attendee in self.context.attendees:
-            if attendee.preferredemail is not None:
-                email = attendee.preferredemail.email
+                 'Display name',
+                 'Email',
+                 'Phone',
+                 'Organization',
+                 'City',
+                 'Country',
+                 'Timezone',
+                 'Arriving',
+                 'Leaving')]
+        for attendance in self.context.attendances:
+            if attendance.attendee.preferredemail is not None:
+                email = attendance.attendee.preferredemail.email
             else:
                 email = ''
             rows.append(
-                (attendee.name,
-                 attendee.displayname,
+                (attendance.attendee.name,
+                 attendance.attendee.displayname,
                  email,
-                 attendee.phone,
-                 attendee.organization,
-                 attendee.city,
-                 attendee.country, 
-                 attendee.timezone))
+                 attendance.attendee.phone,
+                 attendance.attendee.organization,
+                 attendance.attendee.city,
+                 attendance.attendee.country, 
+                 attendance.attendee.timezone,
+                 attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
         # CSV can't handle unicode, so we force encoding
         # everything as UTF-8
         rows = [[self.encode_value(column)
