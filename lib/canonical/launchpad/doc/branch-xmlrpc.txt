@@ -1,5 +1,4 @@
-IBranchSetAPI
--------------
+= IBranchSetAPI =
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
@@ -10,9 +9,11 @@ IBranchSetAPI
     ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
     ...     transport=XMLRPCTestTransport())
 
+
+== register_branch ==
+
 register_branch(branch_url, branch_name, branch_title,
                 branch_description, author_email, product_name)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's register a branch using register_branch(). First we make sure that
 there is no branch with the URL we are going to register.
@@ -222,8 +223,7 @@ policy is forbidden will cause a fault result.
     The Landscape Project'>
 
 
-link_branch_to_bug(branch_url, bug_id, whiteboard)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+== link_branch_to_bug(branch_url, bug_id, whiteboard) ==
 
 link_branch_to_bug() associates a branch with a bug. Let's associate
 the branch we registered with bug 1. If the link is successful, the bug
@@ -266,8 +266,7 @@ We get an error if we try to specify a non-existant branch or bug:
     Fault: <Fault 40: 'No such bug: 99'>
 
 
-resolve_lp_path
-^^^^^^^^^^^^^^^
+== resolve_lp_path ==
 
 The resolve_lp_path API allows clients to retrieve a list of URLs for a
 branch by specifying the path component of an lp: URL.
@@ -307,6 +306,8 @@ The URLs that are likely to be faster or provide write access appear
 earlier in the list.
 
 
+=== lp:project ===
+
 If you specify a path with a single segment, then Launchpad treats that
 path as the name of a project, and returns URLs to the branch
 associated with the project's development focus series.
@@ -336,6 +337,8 @@ Launchpad also returns a fault if the project doesn't exist.
     Fault: <Fault 10: 'No such product: doesntexist'>
 
 
+=== lp:project/series ===
+
 If you specify a path with two segments, Launchpad treats that as a
 reference to a particular series on a project.
 
@@ -362,6 +365,8 @@ Similarly if the project doesn't exist:
     ...
     Fault: <Fault 10: 'No such product: doesntexist'>
 
+
+=== lp:~owner/product/branch ===
 
 Anything longer than two segments is treated as a unique branch name
 followed by an arbitrary path:
@@ -396,6 +401,8 @@ But if the project or the user doesn't exist, Launchpad will return a fault:
     ...
     Fault: <Fault 10: 'No such product: doesntexist'>
 
+
+=== Remote branches ===
 
 Some branches on Launchpad are 'remote' branches. These branches are
 not hosted on Launchpad and are only available (if at all) on remote
