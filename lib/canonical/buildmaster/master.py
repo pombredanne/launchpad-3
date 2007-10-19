@@ -430,29 +430,28 @@ class BuilddMaster:
         for build in candidates:
             # XXX cprov 2006-06-06: This iteration/check should be provided
             # by IBuild.
-
             if not build.distroseries.canUploadToPocket(build.pocket):
-                # skip retries for not allowed in distroseries/pocket
-                self._logger.debug('SKIPPED: %s can not build in %s/%s'
-                                   % (build.title, build.distroseries.name,
-                                      build.pocket.name))
+                # Do not retry released distroseries/pocket.
+                self._logger.debug(
+                    'SKIPPED: %s can not built.' % build.title)
                 continue
-
             if build.dependencies:
                 dep_score, remaining_deps = self._scoreAndCheckDependencies(
                     build.dependencies, build.distroarchseries)
-                # store new missing dependencies
+                # Store new missing dependencies.
                 build.dependencies = remaining_deps
                 if len(build.dependencies):
                     self._logger.debug(
                         'WAITING: %s "%s"' % (build.title, build.dependencies))
+                    # The build still having unsatisfied dependencies, commit
+                    # and go the the next one.
+                    self.commit()
                     continue
 
-            # retry build if missing dependencies is empty
+            # Retry build if missing dependencies is empty
             self._logger.debug('RETRY: "%s"' % build.title)
             build.retry()
-
-        self.commit()
+            self.commit()
 
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""

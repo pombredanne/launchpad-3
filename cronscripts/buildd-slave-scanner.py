@@ -40,7 +40,6 @@ class SlaveScanner(LaunchpadCronScript):
         try:
             self.dispatchOrCollectJobs()
         finally:
-            local_cursor = cursor()
             if not release_advisory_lock(
                 local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
                 self.logger.debug("Could not release advisory lock.")

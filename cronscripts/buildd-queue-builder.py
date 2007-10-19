@@ -25,6 +25,16 @@ from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
 
+# XXX cprov 2007-03-21: In order to avoid the partial commits inside
+# BuilddMaster to happen we pass a FakeZtm instance
+class _FakeZTM:
+    """A fake transaction manager."""
+    def begin(self):
+        pass
+    def commit(self):
+        pass
+
+
 class QueueBuilder(LaunchpadCronScript):
 
     def add_my_options(self):
@@ -43,32 +53,23 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
+        if self.options.dryrun:
+            self.logger.info("Dry run: changes will not be committed.")
+            self.txn = _FakeZTM()
+
         local_cursor = cursor()
         if not acquire_advisory_lock(
             local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
             raise LaunchpadScriptFailure(
                 "Another builddmaster script is already running")
-
-        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
-        # BuilddMaster to happen we pass a FakeZtm instance
-        class _FakeZTM:
-            """A fake transaction manager."""
-            def begin(self):
-                pass
-            def commit(self):
-                pass
-
-        if self.options.dryrun:
-            self.logger.info("Dry run: changes will not be committed.")
-            self.txn = _FakeZTM()
-
         try:
             self.rebuildQueue()
         finally:
-            local_cursor = cursor()
             if not release_advisory_lock(
                 local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
                 self.logger.debug("Could not release advisory lock.")
+
+        self.txn.commit()
 
     def rebuildQueue(self):
         """Look for and initialise new build jobs."""
@@ -99,8 +100,6 @@ class QueueBuilder(LaunchpadCronScript):
 
         # Re-score the NEEDSBUILD properly
         buildMaster.sanitiseAndScoreCandidates()
-
-        self.txn.commit()
 
     @property
     def lockfilename(self):
