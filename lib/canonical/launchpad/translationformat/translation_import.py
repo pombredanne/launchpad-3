@@ -142,7 +142,7 @@ class ExistingPOFileInDatabase:
         """Return a set of messages present in the database but not seen
         in the file being imported.
         """
-        unseen = ()
+        unseen = set()
         for (msgid, context) in self.messages:
             if (msgid, context) not in self.seen:
                 unseen.add((msgid, context))
