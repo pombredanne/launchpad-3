@@ -3,11 +3,9 @@ want to check out the distro side first.
 
 Ubuntu is using Launchpad for translations
 
-    >>> admin_browser.open('http://launchpad.dev/ubuntu')
-    >>> print admin_browser.title
-    Ubuntu Linux in Launchpad
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
+    ...     find_tag_by_id(anon_browser.contents, 'table-details'))
     Bug contact:
     ...
     Uses Launchpad for:
@@ -19,55 +17,59 @@ Ubuntu is using Launchpad for translations
 Ubuntu doesn't have TranslationGroup and uses open permissions. We can see
 that from the translations page.
 
-    >>> admin_browser.getLink('Translations').click()
-    >>> print admin_browser.title
+    >>> anon_browser.getLink('Translations').click()
+    >>> print anon_browser.title
     Translating Ubuntu
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
+    ...     find_tag_by_id(anon_browser.contents,
     ...                    'portlet-translation-permissions'))
     Translation permissions
     Translation group: Not assigned
     Permissions: Open
 
+And now make sure we can see the form to change the translation group
+and permissions on a project. For that, we are going to use Colin
+Watson's account, he's one of the owners of Ubuntu.
 
-And now make sure we can see the form to change the translation group and
-permissions on a project.
-
-    >>> admin_browser.getLink('Change translators').click()
-    >>> print admin_browser.title
+    >>> ubuntu_owner_browser = setupBrowser(
+    ...     auth='Basic colin.watson@ubuntulinux.com:test')
+    >>> ubuntu_owner_browser.open(anon_browser.url)
+    >>> ubuntu_owner_browser.getLink('Change translators').click()
+    >>> print ubuntu_owner_browser.title
     Appoint Ubuntu Linux's translation group
 
-Let's post to the form, setting the translation group to polyglot and closed
-permissions.
+Let's post to the form, setting the translation group to polyglot and
+closed permissions.
 
-    >>> admin_browser.getControl(
+    >>> ubuntu_owner_browser.getControl(
     ...     'Translation Permission System').displayValue = ['Closed']
-    >>> print admin_browser.getControl('Translation group').displayOptions
+    >>> print ubuntu_owner_browser.getControl(
+    ...     'Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
-    >>> admin_browser.getControl(
+    >>> ubuntu_owner_browser.getControl(
     ...     'Translation group').displayValue = [
     ...         'The PolyGlot Translation Group']
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.title
+    >>> ubuntu_owner_browser.getControl('Change').click()
+    >>> print ubuntu_owner_browser.title
     Appoint Ubuntu Linux's translation group
     >>> for tag in find_tags_by_class(
-    ...     admin_browser.contents, 'informational message'):
+    ...     ubuntu_owner_browser.contents, 'informational message'):
     ...     print tag.renderContents()
     Updated on ...
 
 And make sure these changes are now reflected in the Ubuntu translations page.
 
-    >>> admin_browser.getLink('Translations').click()
-    >>> print admin_browser.title
+    >>> anon_browser.reload()
+    >>> print anon_browser.title
     Translating Ubuntu
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
+    ...     find_tag_by_id(anon_browser.contents,
     ...                    'portlet-translation-permissions'))
     Translation permissions
     Translation group: The PolyGlot Translation Group
     Permissions: Closed
 
-    >>> admin_browser.getLink('The PolyGlot Translation Group').click()
-    >>> admin_browser.title
+    >>> anon_browser.getLink('The PolyGlot Translation Group').click()
+    >>> anon_browser.title
     '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'

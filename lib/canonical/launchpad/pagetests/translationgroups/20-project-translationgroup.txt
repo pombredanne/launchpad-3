@@ -1,58 +1,59 @@
-Lastly, we should be able to set the translation group on a project. We'll
-use the Gnome project as an example. First make sure we can see the Gnome
-project page and that it has no translation group assigned.
+Lastly, we should be able to set the translation group on a project.
+We'll use the Gnome project as an example. First make sure we can see
+the Gnome project page and that it has no translation group assigned.
 
-    >>> admin_browser.open('http://launchpad.dev/gnome')
-    >>> print admin_browser.title
-    The GNOME Project in Launchpad
-    >>> admin_browser.getLink('Translations').click()
-    >>> print admin_browser.title
+    >>> gnome_owner_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> gnome_owner_browser.open('http://launchpad.dev/gnome')
+    >>> gnome_owner_browser.getLink('Translations').click()
+    >>> print gnome_owner_browser.title
     Translatable projects for The GNOME Project
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
+    ...     find_tag_by_id(gnome_owner_browser.contents,
     ...                    'portlet-translation-permissions'))
     Translation permissions
     Translation group: Not assigned
     Permissions: Open
 
-And now make sure we can see the form to change the translation group and
-permissions on a project.
+And now make sure we can see the form to change the translation group
+and permissions on a project.
 
-    >>> admin_browser.getLink('Change translators').click()
-    >>> print admin_browser.title
+    >>> gnome_owner_browser.getLink('Change translators').click()
+    >>> print gnome_owner_browser.title
     Set translation group for The GNOME Project
 
-Let's post to the form, setting the translation group to polyglot and closed
-permissions.
+Let's post to the form, setting the translation group to polyglot and
+closed permissions.
 
-    >>> admin_browser.getControl(
+    >>> gnome_owner_browser.getControl(
     ...     'Translation Permission System').displayValue = ['Closed']
-    >>> print admin_browser.getControl('Translation group').displayOptions
+    >>> print gnome_owner_browser.getControl(
+    ...     'Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
-    >>> admin_browser.getControl(
+    >>> gnome_owner_browser.getControl(
     ...     'Translation group').displayValue = [
     ...         'The PolyGlot Translation Group']
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.title
+    >>> gnome_owner_browser.getControl('Change').click()
+    >>> print gnome_owner_browser.title
     Set translation group for The GNOME Project
     >>> for tag in find_tags_by_class(
-    ...     admin_browser.contents, 'informational message'):
+    ...     gnome_owner_browser.contents, 'informational message'):
     ...     print tag.renderContents()
     Updated on ...
 
 And make sure these changes are now reflected in the Gnome project page in
 the relevant portlet.
 
-    >>> admin_browser.getLink('Translations').click()
-    >>> print admin_browser.title
+    >>> gnome_owner_browser.getLink('Translations').click()
+    >>> print gnome_owner_browser.title
     Translatable projects for The GNOME Project
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
+    ...     find_tag_by_id(gnome_owner_browser.contents,
     ...                    'portlet-translation-permissions'))
     Translation permissions
     Translation group: The PolyGlot Translation Group
     Permissions: Closed
-    >>> admin_browser.getLink('The PolyGlot Translation Group').click()
-    >>> admin_browser.title
+    >>> gnome_owner_browser.getLink('The PolyGlot Translation Group').click()
+    >>> gnome_owner_browser.title
     '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'

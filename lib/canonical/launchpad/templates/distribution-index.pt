@@ -116,7 +116,10 @@
         />
       </div>
       <div class="right">
-        <div tal:replace="structure context/@@+portlet-details" />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-details"
+        />
         <div
           class="two column section"
           tal:content="structure context/@@+portlet-top-contributors"

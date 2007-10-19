@@ -1,87 +1,83 @@
-<div class="portlet" id="portlet-details">
-  <div class="portletBody portletContent">
-    <table class="summary">
-      <tbody>
-        <tr>
-          <th>Status:</th>
-          <td>
-            <ul>
-              <li tal:condition="context/reviewed">Reviewed</li>
-              <li tal:condition="context/active">Active</li>
-              <li tal:condition="not: context/active">Disabled</li>
-              <li tal:condition="context/official_malone">Uses Bugs</li>
-              <li tal:condition="not: context/official_malone"
-              >Doesn&rsquo;t use Bugs</li>
-              <li tal:condition="context/official_rosetta"
-              >Uses Translations</li>
-              <li tal:condition="not: context/official_rosetta"
-              >Doesn&rsquo;t use Translations</li>
-              <li tal:condition="context/official_answers"
-              >Uses Answers</li>
-              <li tal:condition="not: context/official_answers"
-              >Doesn&rsquo;t use Answers</li>
-              <li tal:condition="context/icon">Branded
-                <tal:icon replace="structure context/image:icon" />
-              </li>
-            </ul>
-          </td>
-          <td tal:condition="not:context/active">Not active</td>
-        </tr>
-        <tr tal:condition="context/project">
-          <th>Part of:</th>
-          <td>
-            <a
-              tal:attributes="href context/project/fmt:url"
-              tal:content="context/project/title"
-            >Project name</a>
-          </td>
-        </tr>
-        <tr>
-          <th>Driver:</th>
-          <td tal:condition="context/driver">
-            <a
-              tal:attributes="href context/driver/fmt:url"
-              tal:content="context/driver/displayname"
-            >Hubert Humphry</a>
-          </td>
-          <td tal:condition="not:context/driver">Not yet assigned</td>
-        </tr>
-        <tr>
-          <th>Bug contact:</th>
-          <td tal:condition="context/bugcontact">
-            <a
-              tal:attributes="href context/bugcontact/fmt:url"
-              tal:content="context/bugcontact/browsername"
-            >foo bar</a>
-          </td>
-          <td tal:condition="not:context/bugcontact">Not yet assigned</td>
-        </tr>
-        <tr>
-          <th>Security contact:</th>
-          <td tal:condition="context/security_contact">
-            <a
-              tal:attributes="href context/security_contact/fmt:url"
-              tal:content="context/security_contact/browsername"
-            >foo bar</a>
-          </td>
-          <td tal:condition="not:context/security_contact">Not yet assigned</td>
-        </tr>
-        <tr>
-          <th>Bug tracker:</th>
-          <td tal:condition="context/official_malone">Launchpad</td>
-          <td
-            tal:condition="not:context/official_malone"
-            tal:define="bugtracker context/getExternalBugTracker"
-          >
-            <a
-              tal:condition="bugtracker"
-              tal:attributes="href bugtracker/fmt:url"
-              tal:content="bugtracker/title"
-            >BugzApp</a>
-            <tal:none condition="not:bugtracker">None specified</tal:none>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+<table class="summary" id="table-details">
+  <tbody>
+    <tr>
+      <th>Status:</th>
+      <td>
+        <ul>
+          <li tal:condition="context/reviewed">Reviewed</li>
+          <li tal:condition="context/active">Active</li>
+          <li tal:condition="not: context/active">Disabled</li>
+          <li tal:condition="context/official_malone">Uses Bugs</li>
+          <li tal:condition="not: context/official_malone"
+          >Doesn&rsquo;t use Bugs</li>
+          <li tal:condition="context/official_rosetta"
+          >Uses Translations</li>
+          <li tal:condition="not: context/official_rosetta"
+          >Doesn&rsquo;t use Translations</li>
+          <li tal:condition="context/official_answers"
+          >Uses Answers</li>
+          <li tal:condition="not: context/official_answers"
+          >Doesn&rsquo;t use Answers</li>
+          <li tal:condition="context/icon">Branded
+            <tal:icon replace="structure context/image:icon" />
+          </li>
+        </ul>
+      </td>
+      <td tal:condition="not:context/active">Not active</td>
+    </tr>
+    <tr tal:condition="context/project">
+      <th>Part of:</th>
+      <td>
+        <a
+          tal:attributes="href context/project/fmt:url"
+          tal:content="context/project/title"
+        >Project name</a>
+      </td>
+    </tr>
+    <tr>
+      <th>Driver:</th>
+      <td tal:condition="context/driver">
+        <a
+          tal:attributes="href context/driver/fmt:url"
+          tal:content="context/driver/displayname"
+        >Hubert Humphry</a>
+      </td>
+      <td tal:condition="not:context/driver">Not yet assigned</td>
+    </tr>
+    <tr>
+      <th>Bug contact:</th>
+      <td tal:condition="context/bugcontact">
+        <a
+          tal:attributes="href context/bugcontact/fmt:url"
+          tal:content="context/bugcontact/browsername"
+        >foo bar</a>
+      </td>
+      <td tal:condition="not:context/bugcontact">Not yet assigned</td>
+    </tr>
+    <tr>
+      <th>Security contact:</th>
+      <td tal:condition="context/security_contact">
+        <a
+          tal:attributes="href context/security_contact/fmt:url"
+          tal:content="context/security_contact/browsername"
+        >foo bar</a>
+      </td>
+      <td tal:condition="not:context/security_contact">Not yet assigned</td>
+    </tr>
+    <tr>
+      <th>Bug tracker:</th>
+      <td tal:condition="context/official_malone">Launchpad</td>
+      <td
+        tal:condition="not:context/official_malone"
+        tal:define="bugtracker context/getExternalBugTracker"
+      >
+        <a
+          tal:condition="bugtracker"
+          tal:attributes="href bugtracker/fmt:url"
+          tal:content="bugtracker/title"
+        >BugzApp</a>
+        <tal:none condition="not:bugtracker">None specified</tal:none>
+      </td>
+    </tr>
+  </tbody>
+</table>

@@ -4,16 +4,12 @@
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       i18n:domain="launchpad">
   <body>
-
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div
-      tal:replace="structure context/@@+portlet-translation-groups-and-permission"
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet
+        replace="structure context/@@+portlet-translation-groups-and-permission"
       />
-    <div tal:replace="structure context/@@+portlet-preflangs" />
-  </metal:rightportlets>
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
 
   <metal:heading fill-slot="pageheading">
 

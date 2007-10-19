@@ -7,20 +7,16 @@
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
-<body>
+  i18n:domain="launchpad" >
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div
-    tal:condition="context/official_rosetta"
-    tal:replace="structure context/@@+portlet-translation-groups-and-permission"
-    />
-  <div tal:replace="structure request/@@+portlet-preflangs" />
-</metal:rightportlets>
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet
+        condition="context/official_rosetta"
+        replace="structure context/@@+portlet-translation-groups-and-permission"
+      />
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
 
 <metal:heading fill-slot="pageheading">
   <h1>Translations</h1>

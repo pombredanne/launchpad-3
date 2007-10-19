@@ -1,64 +1,68 @@
-
 We should also be able to set a translation group and translation
 permissions on a product. We'll use the Netapplet product for this test.
 First make sure it uses Launchpad for translations.
 
-    >>> admin_browser.open('http://launchpad.dev/netapplet')
-    >>> print admin_browser.title
-    Network Applet in Launchpad
+    >>> netapplet_owner_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
+    ...                    'table-details'))
     Status: Active
     ...
     Doesn&rsquo;t use Translations
     ...
-    >>> admin_browser.getLink('Change details').click()
-    >>> print admin_browser.title
+    >>> netapplet_owner_browser.getLink('Change details').click()
+    >>> print netapplet_owner_browser.title
     Change project details
-    >>> admin_browser.getControl(
+    >>> netapplet_owner_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
     ...     ).selected = True
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.title
+    >>> netapplet_owner_browser.getControl('Change').click()
+    >>> print netapplet_owner_browser.title
     Network Applet in Launchpad
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
+    ...                    'table-details'))
     Status: Active
     ...
     Uses Translations
     ...
 
-Netapplet doesn't have TranslationGroup and uses open permissions. We can see
-that from the translations page.
+Netapplet doesn't have TranslationGroup and uses open permissions. We
+can see that from the translations page.
 
-    >>> admin_browser.getLink('Translations').click()
-    >>> print admin_browser.title
+    >>> netapplet_owner_browser.getLink('Translations').click()
+    >>> print netapplet_owner_browser.title
     Translations of Network Applet in Launchpad
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'portlet-translation-permissions'))
     Translation permissions
     Translation group: Not assigned
     Permissions: Open
 
-Now let's make sure we can see the page to let us change translation group
-and permissions.
+Now let's make sure we can see the page to let us change translation
+group and permissions.
 
-    >>> admin_browser.getLink('Change translators').click()
-    >>> print admin_browser.title
+    >>> netapplet_owner_browser.getLink('Change translators').click()
+    >>> print netapplet_owner_browser.title
     Set translation group for Network Applet
-    >>> print admin_browser.getControl('Translation group').displayOptions
+    >>> print netapplet_owner_browser.getControl(
+    ...     'Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
-    >>> print admin_browser.getControl('Translation group').displayValue
+    >>> print netapplet_owner_browser.getControl(
+    ...     'Translation group').displayValue
     ['(no value)']
 
 Now let's post to the form. We should be redirected to the product page.
 
-    >>> admin_browser.getControl('Translation group').displayValue = (
-    ...     ['The PolyGlot Translation Group'])
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.title
+    >>> netapplet_owner_browser.getControl(
+    ...     'Translation group').displayValue = [
+    ...         'The PolyGlot Translation Group']
+    >>> netapplet_owner_browser.getControl('Change').click()
+    >>> print netapplet_owner_browser.title
     Translations of Network Applet in Launchpad
 
 Now these changes show up in the product page.
@@ -68,11 +72,11 @@ be adjusted to test this properly. Launchpad should also be fixed so that
 you can't set translation group/permissions without using Translations.)
 
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents,
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'portlet-translation-permissions'))
     Translation permissions
     Translation group: The PolyGlot Translation Group
     Permissions: Open
-    >>> admin_browser.getLink('The PolyGlot Translation Group').click()
-    >>> admin_browser.title
+    >>> netapplet_owner_browser.getLink('The PolyGlot Translation Group').click()
+    >>> netapplet_owner_browser.title
     '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'
