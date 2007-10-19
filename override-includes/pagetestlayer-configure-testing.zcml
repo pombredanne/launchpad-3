@@ -1,0 +1,11 @@
+<configure xmlns="http://namespaces.zope.org/zope" >
+
+  <!-- When running the test suite, apply PageTestLayer as the default
+       skin. -->
+  <adapter
+      for="zope.publisher.interfaces.browser.IBrowserRequest"
+      provides="zope.publisher.interfaces.browser.IDefaultSkin"
+      factory="canonical.launchpad.layers.PageTestLayer"
+      />
+
+</configure>
