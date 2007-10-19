@@ -692,14 +692,6 @@ def get_bug_edit_notification_texts(bug_delta):
         if removed_tags:
             changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
 
-    if bug_delta.external_reference is not None:
-        old_ext_ref = bug_delta.external_reference.get('old')
-        if old_ext_ref is not None:
-            changes.append(u'** Web link removed: %s' % old_ext_ref.url)
-        new_ext_ref = bug_delta.external_reference['new']
-        if new_ext_ref is not None:
-            changes.append(u'** Web link added: %s' % new_ext_ref.url)
-
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
@@ -937,42 +929,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-def notify_bug_external_ref_added(ext_ref, event):
-    """Notify CC'd list that a new web link has been added for this
-    bug.
-
-    ext_ref must be an IBugExternalRef. event must be an
-    ISQLObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=ext_ref.bug,
-        bugurl=canonical_url(ext_ref.bug),
-        user=event.user,
-        external_reference={'new' : ext_ref})
-
-    add_bug_change_notifications(bug_delta)
-
-
-def notify_bug_external_ref_edited(edited_ext_ref, event):
-    """Notify CC'd list that a web link has been edited.
-
-    edited_ext_ref must be an IBugExternalRef. event must be an
-    ISQLObjectModifiedEvent.
-    """
-    old = event.object_before_modification
-    new = event.object
-    if ((old.url != new.url) or (old.title != new.title)):
-        # A change was made that's worth sending an edit
-        # notification about.
-        bug_delta = BugDelta(
-            bug=new.bug,
-            bugurl=canonical_url(new.bug),
-            user=event.user,
-            external_reference={'old' : old, 'new' : new})
-
-        add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_watch_added(watch, event):
