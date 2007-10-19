@@ -1,6 +1,6 @@
 = Atom Feeds =
 
-Feeds produce XML not HTML.  Therefore we must parse the output as XML
+Atom feeds produce XML not HTML.  Therefore we must parse the output as XML
 using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
@@ -16,6 +16,7 @@ Define a helper function for parsing the entries:
     ...     entries = [tag for tag in BSS(browser.contents,
     ...                   parseOnlyThese=SoupStrainer('entry'))]
     ...     return entries
+
 
 == Latest bugs for a product ==
 
@@ -79,6 +80,7 @@ Define a helper function for parsing the entries:
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name12
 
+
 == Latest bugs for a person ==
 
     >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.atom')
@@ -109,6 +111,7 @@ Define a helper function for parsing the entries:
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
+
 
 == Latest bugs for a team ==
 
@@ -154,9 +157,9 @@ some results.
     >>> print len(entries)
     3
 
+
 == General bug search ==
 
-    >>> import cgi
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
@@ -189,6 +192,7 @@ some results.
     Sample Person
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name12
+
 
 == Results for a single bug ==
 

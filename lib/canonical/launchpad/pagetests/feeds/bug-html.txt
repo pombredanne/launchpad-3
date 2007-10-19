@@ -5,16 +5,12 @@ HTML feeds produce snippets of html for inclusion in user's own web pages.
     >>> from BeautifulSoup import BeautifulSoup
     >>> from BeautifulSoup import SoupStrainer
 
-Please note that when displaying the results of the feeds in a reader
-the order of entries may not be the same as generated.  Some readers
-will arrange the entries in a different sort order based on the update
-time.
-
 Define a helper function for parsing the entries:
     >>> def parse_entries(contents):
     ...     entries = [tag for tag in BeautifulSoup(browser.contents,
     ...                   parseOnlyThese=SoupStrainer('tr'))]
     ...     return entries
+
 
 == Latest bugs for a product ==
 
@@ -45,6 +41,7 @@ Define a helper function for parsing the entries:
     >>> print extract_text(entry('td')[5])
     Confirmed
 
+
 == Latest bugs for a project ==
 
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
@@ -72,6 +69,7 @@ Define a helper function for parsing the entries:
     Unknown
     >>> print extract_text(entry('td')[5])
     Unknown
+
 
 == Latest bugs for a person ==
 
@@ -102,9 +100,9 @@ Define a helper function for parsing the entries:
     >>> print extract_text(entry('td')[5])
     New
 
+
 == General bug search ==
 
-    >>> import cgi
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.html?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
