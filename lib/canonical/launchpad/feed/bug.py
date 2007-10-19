@@ -74,45 +74,12 @@ class BugsFeedBase(FeedBase):
 
     max_age = BUG_MAX_AGE
     rootsite = "bugs"
-    _show_column = None
-
-    @property
-    def show_column(self):
-        """Return a dictionary of columns to be displayed.
-
-        The columns to be shown can be selected via the query string for
-        customization.
-        """
-        if self._show_column is not None:
-            return self._show_column
-        self._show_column = dict(
-            id = True,
-            title = True,
-            bugtargetdisplayname = True,
-            importance = True,
-            status = True)
-
-        # If the feed is for an IBugTarget it doesn't make sense to display
-        # the selected bug target name so it is unselected.
-        if IBugTarget.providedBy(self.context):
-            self._show_column['bugtargetdisplayname'] = False
-
-        # The defaults can be overridden via the query.
-        override = self.request.get('show_column')
-        if override:
-            for column in override.split(','):
-                if column == '' or column == '-':
-                    # No column name is specified so it is ignored.
-                    continue
-                elif column.startswith('-'):
-                    # The column is turned off.
-                    value = False
-                    column = column[1:]
-                else:
-                    # The column is turned on.
-                    value = True
-                self._show_column[column] = value
-        return self._show_column
+    show_column = dict(
+        id = True,
+        title = True,
+        bugtargetdisplayname = True,
+        importance = True,
+        status = True)
 
     @property
     def url(self):
@@ -196,6 +163,10 @@ class BugTargetBugsFeed(BugsFeedBase):
 
     usedfor = IBugTarget
     feedname = "latest-bugs"
+    # Make a copy of the inherited class variable so the one copy does get
+    # mutated for all subclasses.
+    show_column = BugsFeedBase.show_column.copy()
+    del show_column['bugtargetdisplayname']
 
     @property
     def title(self):
@@ -239,10 +210,6 @@ class SearchBugsFeed(BugsFeedBase):
 
     usedfor = IBugTaskSet
     feedname = "+bugs"
-
-    def initialize(self):
-        """See `IFeed`."""
-        super(SearchBugsFeed, self).initialize()
 
     def _getRawItems(self):
         """Perform the search."""

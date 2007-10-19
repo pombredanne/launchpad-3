@@ -43,7 +43,7 @@ class IFeed(Interface):
     feed_format = TextLine(
         title=u"Feed format",
         description=u"Requested feed format.  "
-                     "Raises `UnsupportedFeed` if not supported.")
+                     "Raises UnsupportedFeed if not supported.")
 
     logo = TextLine(
         title=u"Logo URL",

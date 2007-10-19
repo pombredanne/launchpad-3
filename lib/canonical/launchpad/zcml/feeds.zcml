@@ -16,7 +16,9 @@
         for="canonical.launchpad.interfaces.IFeedsApplication"
         factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
         />
-<!--
+
+    <!-- This section for +dims is present since the OOPS page loads it and it is best
+         to register it here than to trigger NotFound errors. -->
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+dims"
@@ -24,7 +26,6 @@
         class="canonical.launchpad.browser.BrowserWindowDimensions"
         attribute="__call__"
         />
--->
     <browser:defaultView
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+index"

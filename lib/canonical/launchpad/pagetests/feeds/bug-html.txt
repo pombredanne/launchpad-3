@@ -42,10 +42,8 @@ the bug itself.
     >>> print entry('td')[2].a['href']
     http://bugs.launchpad.dev/jokosher/+bug/12
     >>> print extract_text(entry('td')[3])
-    Jokosher
-    >>> print extract_text(entry('td')[4])
     Critical
-    >>> print extract_text(entry('td')[5])
+    >>> print extract_text(entry('td')[4])
     Confirmed
 
 
@@ -74,10 +72,8 @@ as the latest bugs feed for a product.
     >>> print extract_text(entry('td')[2])
     Thunderbird crashes
     >>> print extract_text(entry('td')[3])
-    Mozilla Thunderbird
-    >>> print extract_text(entry('td')[4])
     Unknown
-    >>> print extract_text(entry('td')[5])
+    >>> print extract_text(entry('td')[4])
     Unknown
 
 

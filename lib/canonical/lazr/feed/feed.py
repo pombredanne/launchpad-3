@@ -96,7 +96,7 @@ class FeedBase(LaunchpadFormView):
         """See `IFeed`."""
         path = self.request['PATH_INFO']
         extension = os.path.splitext(path)[1]
-        if len(extension) > 0 and extension in SUPPORTED_FEEDS:
+        if extension in SUPPORTED_FEEDS:
             return extension[1:]
         else:
             raise UnsupportedFeedFormat('%s is not supported' % path)
