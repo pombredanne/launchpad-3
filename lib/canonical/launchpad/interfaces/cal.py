@@ -1,5 +1,4 @@
 # Copyright 2005 Canonical Ltd. All rights reserved.
-# pylint: disable-msg=E0211,E0213
 
 """Calendar-related interfaces."""
 
