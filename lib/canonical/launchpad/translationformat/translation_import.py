@@ -229,7 +229,6 @@ class TranslationImporter:
             # We create a new user without a password.
             comment = 'when importing the %s translation of %s' % (
                 self.pofile.language.displayname, self.potemplate.displayname)
-            comment = ''
 
             person, dummy = personset.createPersonAndEmail(
                 email, PersonCreationRationale.POFILEIMPORT,
