@@ -9,8 +9,7 @@ launchpad build daemon.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IBuildSet)
-    >>> from canonical.lp.dbschema import BuildStatus
+    ...    BuildStatus, IDistributionSet, IBuildSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']

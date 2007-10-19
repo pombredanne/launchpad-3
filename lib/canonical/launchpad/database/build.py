@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -30,7 +30,8 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
+    ArchivePurpose, BuildStatus, IBuild, IBuildSet, NotFoundError,
+    ILaunchpadCelebrities)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI

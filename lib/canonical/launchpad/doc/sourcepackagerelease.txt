@@ -245,7 +245,7 @@ Build.buildstate, by default is set to NEEDSBUILD.
 
 Optionally you can pass also another status:
 
-    >>> from canonical.lp.dbschema import BuildStatus
+    >>> from canonical.launchpad.interfaces import BuildStatus
     >>> evo_build_i386_ppa = evo_spr.createBuild(
     ...     hoary_i386, pocket_release, cprov.archive,
     ...     status=BuildStatus.SUPERSEDED)

@@ -694,7 +694,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-  >>> from canonical.lp.dbschema import BuildStatus
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> bqItem10.build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognise this build record as a

@@ -23,9 +23,9 @@ from canonical.database.sqlbase import (
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.lp.dbschema import (
-    PackageUploadStatus, BuildStatus, PackagePublishingPocket)
+    PackageUploadStatus, PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    BuildStatus, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 

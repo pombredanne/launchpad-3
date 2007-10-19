@@ -18,10 +18,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, BuildStatus, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, IQuestionTarget,
+    BuildStatus, ISourcePackage, IHasBuildRecords, IQuestionTarget,
     PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 

@@ -608,8 +608,8 @@ Check there's a SourcePackageRelease with no build.
 
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName, Build)
-  >>> from canonical.lp.dbschema import (
-  ...     BuildStatus, PackagePublishingPocket)
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id

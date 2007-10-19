@@ -12,8 +12,9 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket)
+from canonical.lp.dbschema import PackagePublishingPocket
+
+from canonical.launchpad.interfaces import BuildStatus
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""

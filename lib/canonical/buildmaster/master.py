@@ -20,7 +20,8 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, CannotBuild, BuildSlaveFailure, IBuildQueueSet, IBuildSet
+    ArchivePurpose, BuildStatus, BuildSlaveFailure, CannotBuild,
+    IBuildQueueSet, IBuildSet
     )
 
 from canonical.lp import dbschema
@@ -411,7 +412,7 @@ class BuilddMaster:
         """
         # Get the missing dependency fields
         arch_ids = [arch.id for arch in self._archserieses]
-        status = dbschema.BuildStatus.MANUALDEPWAIT
+        status = BuildStatus.MANUALDEPWAIT
         bqset = getUtility(IBuildSet)
         candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
         # XXX cprov 2006-02-27: IBuildSet.getBuildsByArch API is evil,
@@ -456,7 +457,7 @@ class BuilddMaster:
         # Get the current build job candidates
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=BuildStatus.NEEDSBUILD)
         if not candidates:
             return
 
@@ -499,7 +500,7 @@ class BuilddMaster:
         """
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=BuildStatus.NEEDSBUILD)
         if not candidates:
             return {}
 
@@ -547,7 +548,7 @@ class BuilddMaster:
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (build_candidate.build.id, build_candidate.id))
                 build_candidate.build.buildstate = (
-                    dbschema.BuildStatus.SUPERSEDED)
+                    BuildStatus.SUPERSEDED)
                 build_candidate.destroySelf()
 
         self.commit()

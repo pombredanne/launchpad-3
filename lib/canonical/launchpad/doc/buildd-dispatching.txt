@@ -153,7 +153,7 @@ buildqueue record, so the build was eliminated:
 
   >>> BuilddSlaveTestSetup().tearDown()
 
-  >>> from canonical.lp.dbschema import BuildStatus
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
   >>> job.destroySelf()
   >>> flush_database_updates()
