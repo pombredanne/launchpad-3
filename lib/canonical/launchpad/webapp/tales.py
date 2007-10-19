@@ -32,7 +32,6 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBug,
     IBugAttachment,
-    IBugExternalRef,
     IBugNomination,
     IBugSet,
     IHasIcon,
@@ -1837,8 +1836,7 @@ class GotoStructuralObject:
         """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
-            IBugNomination.providedBy(self.context) or
-            IBugExternalRef.providedBy(self.context)):
+            IBugNomination.providedBy(self.context)):
             return self.view.current_bugtask
         else:
             return self.context

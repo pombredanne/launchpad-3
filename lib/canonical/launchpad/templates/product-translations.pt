@@ -2,11 +2,15 @@
       lang="en"
       metal:use-macro="context/@@main_template/master"
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-      i18n:domain="launchpad">
+      i18n:domain="launchpad" >
 
   <body>
     <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-preflangs" />
+      <tal:portlet
+        condition="context/official_rosetta"
+        replace="structure context/@@+portlet-translation-groups-and-permission"
+      />
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
     </metal:portlets>
 
     <div metal:fill-slot="main"

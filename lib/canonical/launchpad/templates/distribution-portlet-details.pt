@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="summary">
+  class="summary" id="table-details">
   <tbody>
     <tr>
       <th>Bug contact:</th>
@@ -30,20 +30,6 @@
       <td tal:condition="not:context/members">None</td>
       <td tal:condition="context/members">
         <a tal:replace="structure context/members/fmt:link" />
-      </td>
-    </tr>
-    <tr>
-      <th>Translations:</th>
-      <td tal:content="context/translationpermission/title">Open</td>
-    </tr>
-    <tr>
-      <th>Translation group:</th>
-      <td tal:condition="not:context/translationgroup">None</td>
-      <td tal:condition="context/translationgroup">
-        <a
-          tal:attributes="href context/translationgroup/fmt:url"
-          tal:content="context/translationgroup/title"
-        />
       </td>
     </tr>
     <tr>

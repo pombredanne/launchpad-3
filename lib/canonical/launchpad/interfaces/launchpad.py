@@ -131,7 +131,6 @@ class IMaloneApplication(ILaunchpadApplication):
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Launchpad")
     projects_with_bugs_count = Attribute("The number of products and "
         "distributions which have bugs in Launchpad.")

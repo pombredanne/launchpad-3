@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'vocab_factory',
     'BugAttachmentTypeVocabulary',
-    'BugRefVocabulary',
     'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTrackerTypeVocabulary',
@@ -35,7 +34,6 @@ BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
-BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
