@@ -32,7 +32,6 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBug,
     IBugAttachment,
-    IBugExternalRef,
     IBugNomination,
     IBugSet,
     IHasIcon,
@@ -1636,6 +1635,8 @@ class FormattersAPI:
         """
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
+        text = text.replace(
+            "<<email address hidden>>", "<email address hidden>")
         return text
 
     def lower(self):
@@ -1835,8 +1836,7 @@ class GotoStructuralObject:
         """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
-            IBugNomination.providedBy(self.context) or
-            IBugExternalRef.providedBy(self.context)):
+            IBugNomination.providedBy(self.context)):
             return self.view.current_bugtask
         else:
             return self.context

@@ -243,7 +243,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
  >>> firefox = productset.getByName('firefox')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 
@@ -332,7 +332,13 @@ no longer appear in the result set.
     >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
     ...     product=productset.getByName('thunderbird'),
     ...     lifecycle_statuses=None)
-    >>> for branch in thunderbird_branches:
+    >>> for branch_view in thunderbird_branches:
+    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForProduct
+    ...     # returns objects from BranchWithSortKeys, which is a view and so
+    ...     # can't be modified.  Get the branch with the same id.  This can
+    ...     # go away when BranchWithSortKeys goes away, i.e. when we get
+    ...     # away from SQLObject.
+    ...     branch = getUtility(IBranchSet).get(branch_view.id)
     ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
     >>> flush_database_updates()
 

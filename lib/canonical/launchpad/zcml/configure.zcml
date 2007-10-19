@@ -23,7 +23,6 @@
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
-    <include file="bugextref.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
@@ -38,7 +37,6 @@
     <include file="bug.zcml" />
     <include file="build.zcml" />
     <include file="builder.zcml" />
-    <include file="calendar.zcml" />
     <include file="codeimport.zcml" />
     <include file="codeimportevent.zcml" />
     <include file="codeimportjob.zcml" />
