@@ -6,11 +6,6 @@
     />
 
   <vocabulary
-    name="BranchReviewStatus"
-    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
@@ -18,11 +13,6 @@
   <vocabulary
     name="BugAttachmentType"
     factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
-    />
-
-  <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
     />
 
   <vocabulary
@@ -63,11 +53,6 @@
   <vocabulary
       name="Component"
       factory="canonical.launchpad.vocabularies.ComponentVocabulary"
-      />
-
-  <vocabulary
-      name="CodeImportReviewStatus"
-      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
       />
 
   <vocabulary
@@ -241,18 +226,8 @@
     />
 
   <vocabulary
-    name="Specification"
-    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
-    />
-
-  <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationImplementationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -261,28 +236,8 @@
     />
 
   <vocabulary
-    name="SpecificationPriority"
-    factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationDefinitionStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationGoalStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
-    />
-
-  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
-    />
-
-  <vocabulary
-    name="SprintSpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
     />
 
   <vocabulary
@@ -301,9 +256,9 @@
     />
 
   <vocabulary
-    name="TranslationPermission"
-    factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-    />
+   name="TranslationPermission"
+   factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+   />
 
   <vocabulary
     name="UserTeamsParticipation"

@@ -170,7 +170,7 @@ we are in the testing environment):
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Invalid URL: https://blueprints.launchpad.dev/foo/bar/baz\nFor Launchpad to mirror a branch, the original branch cannot be on <code>launchpad.dev</code>. Did you want to <a href="https://help.launchpad.net/CreatingAHostedBranch">create a hosted branch</a> instead?'>
+    Fault: <Fault 120: 'Invalid URL: https://blueprints.launchpad.dev/foo/bar/baz\nFor Launchpad to mirror a branch, the original branch cannot be on <code>launchpad.dev</code>.'>
 
 Registering a branch name that ends in a slash works, but the slash
 gets removed from the stored URL:

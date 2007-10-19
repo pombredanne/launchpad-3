@@ -30,15 +30,15 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    PackagePublishingStatus, PackageUploadStatus)
 
 from canonical.launchpad.interfaces import (
     IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries,
     IDistroSeriesSet, IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, LanguagePackType, NotFoundError)
+    ISourcePackageNameSet, LanguagePackType, NotFoundError,
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -1538,11 +1538,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.REMOVED),
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.distribution.all_distro_archive_ids),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -1569,11 +1566,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.REMOVED),
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.distribution.all_distro_archive_ids),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -1604,12 +1598,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(
-                    binarypackagename,
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.REMOVED),
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(binarypackagename, self,
+                            self.distribution.all_distro_archive_ids),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease'],
@@ -1670,9 +1661,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self, owner=owner)
         return dar
 
-    def newMilestone(self, name, dateexpected=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IDistroSeries."""
-        return Milestone(name=name, dateexpected=dateexpected,
+        return Milestone(
+            name=name, dateexpected=dateexpected, description=description,
             distribution=self.distribution, distroseries=self)
 
     def getLatestUploads(self):

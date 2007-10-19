@@ -17,9 +17,9 @@ instance here:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestIssuezilla
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
-    >>> issuezilla = TestIssuezilla(mozilla_bugzilla.baseurl)
+    >>> issuezilla = TestIssuezilla(mozilla_bugzilla)
     >>> issuezilla._probe_version()
-    u'2.11-ooo'
+    (2, 11)
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000:
@@ -44,12 +44,12 @@ Old-style Bugzillas are quite similar to Issuezilla. Again we pretend
 Mozilla.org's using this old version. Here's the scoop:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestOldBugzilla
-    >>> old_bugzilla = TestOldBugzilla(mozilla_bugzilla.baseurl)
+    >>> old_bugzilla = TestOldBugzilla(mozilla_bugzilla)
 
   a) The version is way old:
 
     >>> old_bugzilla._probe_version()
-    u'2.10'
+    (2, 10)
 
   b) The tags are not prefixed with the bz: namespace:
 
@@ -77,10 +77,11 @@ Bugzilla oddities
 
 Some Bugzillas have some weird properties that we need to cater for:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestWeirdBugzilla
-    >>> weird_bugzilla = TestWeirdBugzilla(mozilla_bugzilla.baseurl)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestWeirdBugzilla)
+    >>> weird_bugzilla = TestWeirdBugzilla(mozilla_bugzilla)
     >>> weird_bugzilla._probe_version()
-    u'2.20+'
+    (2, 20)
 
   a) The bug status tag is <bz:status> and not <bz:bug_status>
 
@@ -114,10 +115,11 @@ Broken Bugzillas
 What does /not/ work as expected is parsing Bugzillas which produce
 invalid XML:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestBrokenBugzilla
-    >>> broken_bugzilla = TestBrokenBugzilla(mozilla_bugzilla.baseurl)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestBrokenBugzilla)
+    >>> broken_bugzilla = TestBrokenBugzilla(mozilla_bugzilla)
     >>> broken_bugzilla._probe_version()
-    u'2.20+'
+    (2, 20)
     >>> "</foobar>" in broken_bugzilla._readBugItemFile()
     True
     >>> broken_bugzilla.updateBugWatches(mozilla_bugzilla.watches)

@@ -41,10 +41,6 @@
             name="+index"
             template="../templates/bazaar-index.pt"
             />
-        <browser:page
-            name="+portlet-importstats"
-            template="../templates/bazaar-portlet-importstats.pt"
-            />
     </browser:pages>
 
 <xmlrpc:view

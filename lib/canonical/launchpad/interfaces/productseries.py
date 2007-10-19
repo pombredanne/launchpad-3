@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ImportStatus',
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
@@ -33,6 +34,69 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class ImportStatus(DBEnumeratedType):
+    """This schema describes the states that a SourceSource record can take
+    on."""
+
+    DONTSYNC = DBItem(1, """
+        Do Not Import
+
+        Launchpad will not attempt to make a Bazaar import.
+        """)
+
+    TESTING = DBItem(2, """
+        Testing
+
+        Launchpad has not yet attempted this import. The vcs-imports operator
+        will review the source details and either mark the series \"Do not
+        sync\", or perform a test import. If the test import is successful, a
+        public import will be created. After the public import completes, it
+        will be updated automatically.
+        """)
+
+    TESTFAILED = DBItem(3, """
+        Test Failed
+
+        The test import has failed. We will do further tests, and plan to
+        complete this import eventually, but it may take a long time. For more
+        details, you can ask on the launchpad-users@canonical.com mailing list
+        or on IRC in the #launchpad channel on irc.freenode.net.
+        """)
+
+    AUTOTESTED = DBItem(4, """
+        Test Successful
+
+        The test import was successful. The vcs-imports operator will lock the
+        source details for this series and perform a public Bazaar import.
+        """)
+
+    PROCESSING = DBItem(5, """
+        Processing
+
+        The public Bazaar import is being created. When it is complete, a
+        Bazaar branch will be published and updated automatically. The source
+        details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
+
+    SYNCING = DBItem(6, """
+        Online
+
+        The Bazaar import is published and automatically updated to reflect the
+        upstream revision control system. The source details for this series
+        are locked and can only be modified by vcs-imports members and
+        Launchpad administrators.
+        """)
+
+    STOPPED = DBItem(7, """
+        Stopped
+
+        The Bazaar import has been suspended and is no longer updated. The
+        source details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
 
 class RevisionControlSystems(DBEnumeratedType):
@@ -229,7 +293,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     # revision control items
@@ -336,15 +400,15 @@ class IProductSeriesSourceAdmin(Interface):
     def markTestFailed():
         """Mark this import as TESTFAILED.
 
-        See `dbschema.ImportStatus` for what this means.  This method also
-        clears timestamps and other ancillary data.
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
         """
 
     def markDontSync():
         """Mark this import as DONTSYNC.
 
-        See `dbschema.ImportStatus` for what this means.  This method also
-        clears timestamps and other ancillary data.
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
         """
 
     def deleteImport():
@@ -383,16 +447,6 @@ class IProductSeriesSet(Interface):
         :param importstatus: If specified, limit the list to series which have
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
-        """
-
-    def importcount(status=None):
-        """Count the series with import data of a given status.
-
-        This method will not count series for deactivated products.
-
-        :param status: If specified, count the series which have the given
-            import status; if not specified or None, count all series with
-            a defined import status.
         """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):

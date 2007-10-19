@@ -252,6 +252,30 @@ We want most of the people to use the standard options we provide when making
 new requests, because if we give them a text field for entering the quantity,
 lots of people will just enter as many as they can, just because they can.
 
+New standard options can be created any time we want. We just need to specify
+the flavour, quantities, whether or not this should be the default option and
+an optional description. If the description is not provided, one will be
+generated for us.
+
+    >>> optionset = getUtility(IStandardShipItRequestSet)
+    >>> option = optionset.new(UBUNTU, 5, 1, 0, False, '5 PC CDs and 1 64-bit')
+    >>> option.flavour
+    <DBItem ShipItFlavour.UBUNTU...
+    >>> option.quantityx86
+    5
+    >>> option.quantityamd64
+    1
+    >>> option.quantityppc
+    0
+    >>> option.description
+    u'5 PC CDs and 1 64-bit'
+    >>> option.destroySelf()
+
+    >>> option = optionset.new(UBUNTU, 2, 2, 1, False)
+    >>> option.description
+    u'5 Ubuntu CDs (2 PC Edition, 2 64-bit PC Edition, 1 Mac Edition)'
+    >>> option.destroySelf()
+
 These options are presented as a set of radio buttons and their visibility
 changes according to the logged in user. That is, some users get to see all
 options while others can see only the options with at most N CDs.
@@ -259,8 +283,7 @@ options while others can see only the options with at most N CDs.
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.is_trusted_on_shipit
     True
-    >>> optionset = getUtility(IStandardShipItRequestSet)
-    >>> for option in optionset.getByFlavour(ShipItFlavour.UBUNTU, sabdfl):
+    >>> for option in optionset.getByFlavour(UBUNTU, sabdfl):
     ...     print option.description
     1 Ubuntu CD (1 64-bit PC Edition)
     1 Ubuntu CD (1 Mac Edition)
@@ -272,7 +295,7 @@ options while others can see only the options with at most N CDs.
     >>> jdub = getUtility(IPersonSet).getByName('jdub')
     >>> jdub.is_trusted_on_shipit
     False
-    >>> for option in optionset.getByFlavour(ShipItFlavour.UBUNTU, jdub):
+    >>> for option in optionset.getByFlavour(UBUNTU, jdub):
     ...     print option.description
     1 Ubuntu CD (1 64-bit PC Edition)
     1 Ubuntu CD (1 Mac Edition)
