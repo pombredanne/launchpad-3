@@ -27,6 +27,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IBounty"
         class="canonical.launchpad.browser.BountyView"
+        layer="canonical.launchpad.layers.PageTestLayer"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -117,8 +118,9 @@
         name="+index" />
 
     <browser:addform
-        name="+new"
         for="canonical.launchpad.interfaces.IBountySet"
+        layer="canonical.launchpad.layers.PageTestLayer"
+        name="+new"
         schema="canonical.launchpad.interfaces.IBounty"
         fields="name title summary usdvalue difficulty description"
         class="canonical.launchpad.browser.BountyAddView"
@@ -128,6 +130,7 @@
 
     <browser:pages
       for="canonical.launchpad.interfaces.IBountySet"
+      layer="canonical.launchpad.layers.PageTestLayer"
       permission="zope.Public">
       <browser:page
         template="../templates/bounties-index.pt"

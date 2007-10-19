@@ -63,11 +63,12 @@ class PageTestLayer(LaunchpadLayer):
     forbidden views.
 
     This layer is applied to the request that is used for running page tests.
-    If any pages used this layer, they would be accessible to pagetests but
-    would produce 404s when visited interactively.
-    No pages are registered for this layer, but the SystemErrorView base
-    class looks at the request to see if it provides this interface.  If so,
-    it renders tracebacks as plain text.
+    Pages registered with this layer are accessible to pagetests but return
+    404s when visited interactively, so this should be used only for pages we
+    want to maintain but not expose to users.
+
+    The SystemErrorView base class looks at the request to see if it provides
+    this interface.  If so, it renders tracebacks as plain text.
     """
 
 
