@@ -34,4 +34,4 @@ That interface allows the Moin wiki to access user information:
     >>> user_dict['displayname']
     'Foo Bar'
     >>> user_dict['emailaddresses']
-    'foo.bar@canonical.com'
+    ['foo.bar@canonical.com']
