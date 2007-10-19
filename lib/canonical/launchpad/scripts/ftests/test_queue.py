@@ -660,18 +660,23 @@ class TestQueueTool(TestQueueBase):
         override each package individually.
         """
         # Start off by setting up a packageuploadbuild that points to
-        # a build with two binaries.  I could include this in the sample
-        # data but doing so causes many tests to fail so it's far easier
-        # to set it up here.
+        # a build with two binaries.
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-
         [mozilla_queue_item] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='mozilla-firefox')
+
         # The build with ID '2' is for mozilla-firefox, which produces
         # binaries for 'mozilla-firefox' and 'mozilla-firefox-data'.
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
         PackageUploadBuild(packageupload=mozilla_queue_item, build=2)
+        LaunchpadZopelessLayer.txn.commit()
+
+        # Switching db users starts a new transaction.  We must re-fetch
+        # breezy-autotest.
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
 
         queue_action = self.execute_command(
             'override binary mozilla-firefox-data mozilla-firefox',
@@ -686,10 +691,21 @@ class TestQueueTool(TestQueueBase):
         for queue_item in queue_items:
             for packagebuild in queue_item.builds:
                 for package in packagebuild.build.binarypackages:
-                    self.assertEqual('restricted', package.component.name)
-                    self.assertEqual('editors', package.section.name)
-                    self.assertEqual('OPTIONAL', package.priority.name)
-
+                    self.assertEqual(
+                        'restricted', package.component.name,
+                        "The component '%s' is not the expected 'restricted'"
+                        "for package %s" % (
+                            package.component.name, package.name))
+                    self.assertEqual(
+                        'editors', package.section.name,
+                        "The section '%s' is not the expected 'editors'"
+                        "for package %s" % (
+                            package.section.name, package.name))
+                    self.assertEqual(
+                        'OPTIONAL', package.priority.name,
+                        "The priority '%s' is not the expected 'OPTIONAL'"
+                        "for package %s" % (
+                            package.section.name, package.name))
 
     def testOverrideBinaryWithArchiveChange(self):
         """Check if archive changes are disallowed for binary overrides.
