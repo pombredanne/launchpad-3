@@ -134,7 +134,7 @@
       template="../templates/branch-delete.pt" />
 
   <browser:page
-      name="+mirror-failures"
+      name="+mirror-status"
       for="canonical.launchpad.interfaces.IBranch"
       class="canonical.launchpad.browser.BranchMirrorStatusView"
       facet="branches"

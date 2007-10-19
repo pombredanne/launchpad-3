@@ -68,7 +68,7 @@ div.revision p {
             <td>Not mirrored yet</td>
           </tal:not-mirror-yet>
         </tr>
-        <tal:mirror-failures tal:replace="structure context/@@+mirror-failures" />
+        <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>
       <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
         <tr>

@@ -510,7 +510,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
 
     @property
     def action_url(self):
-        return "%s/+mirror-failures" % canonical_url(self.context)
+        return "%s/+mirror-status" % canonical_url(self.context)
 
     @property
     def next_url(self):
