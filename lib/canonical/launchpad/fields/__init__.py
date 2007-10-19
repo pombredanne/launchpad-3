@@ -16,6 +16,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
+from canonical.foaf import nickname
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -334,11 +335,7 @@ class BlacklistableContentNameField(ContentNameField):
             # The attribute wasn't changed.
             return
 
-        name = input.encode('UTF-8')
-        cur = cursor()
-        cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
-        blacklisted = cur.fetchone()[0]
-        if blacklisted:
+        if nickname.is_blacklisted(name=input):
             raise LaunchpadValidationError(
                     "The name '%(input)s' has been blocked by the "
                     "Launchpad administrators" % vars()

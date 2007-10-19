@@ -233,6 +233,7 @@ bug_remove_question = LaunchbagBugID('Bug #%d - This is not a question')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
+bugbranch_edit = "Edit branch fix status"
 bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
@@ -1282,9 +1283,9 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
 
-team_edit = 'Edit team information'
+team_contactaddress = ContextDisplayName('%s contact address')
 
-team_editemail = ContextDisplayName('%s contact e-mail address')
+team_edit = 'Edit team information'
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 
