@@ -14,9 +14,8 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import SprintSpecificationStatus
-
-from canonical.launchpad.interfaces import ISprintSpecification
+from canonical.launchpad.interfaces import (
+    ISprintSpecification, SprintSpecificationStatus)
 
 
 class SprintSpecification(SQLBase):
@@ -24,7 +23,7 @@ class SprintSpecification(SQLBase):
 
     implements(ISprintSpecification)
 
-    _table='SprintSpecification'
+    _table = 'SprintSpecification'
 
     sprint = ForeignKey(dbName='sprint', foreignKey='Sprint',
         notNull=True)

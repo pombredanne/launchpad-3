@@ -37,7 +37,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None):
+                 binarypackagename=None, tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -55,6 +55,7 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
+        self.subscribe_reporter = subscribe_reporter
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):

@@ -250,7 +250,7 @@ class Builder(SQLBase):
 
         # Build extra arguments
         args = {}
-        args["ogrecomponent"] = build_queue_item.current_component.name
+        args["ogrecomponent"] = build_queue_item.build.current_component.name
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
@@ -271,7 +271,8 @@ class Builder(SQLBase):
                 'multiverse': 'main restricted universe multiverse',
                 'partner' : 'partner',
                 }
-            ogre_components = ogre_map[build_queue_item.current_component.name]
+            ogre_components = ogre_map[
+                build_queue_item.build.current_component.name]
             dist_name = build_queue_item.archseries.distroseries.name
             archive_url = build_queue_item.build.archive.archive_url
 

@@ -1324,6 +1324,7 @@ returned.
      (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
      (u'Launchpad Buildd Admins', u'Foo Bar'),
      (u'Launchpad Developers', u'Foo Bar'),
+     (u'Mailing List Experts', u'Launchpad Administrators'),
      (u'Mirror Administrators', u'Mark Shuttleworth'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),
@@ -1654,7 +1655,8 @@ context blueprint.
 
 First, we set up a product with three blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     SpecificationDefinitionStatus)
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> foobar_person = getUtility(IPersonSet).getByName('name16')
     >>> foobar_person.displayname
@@ -1736,10 +1738,20 @@ or fallbacks to a full text search.
 
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
-    >>> list(vocab.search('ec-b')) == [spec_b]
+    >>> list(vocab.search('spec-b')) == [spec_b]
     True
     >>> list(vocab.search('third')) == [spec_c]
     True
+
+The search method uses the SQL `LIKE` operator, with the values quoted
+appropriately. Queries conataining regual expression operators, for
+example, will simply look for the respective characters within the
+vocabulary's item (this used to be the cause of an OOPS, see
+https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
+
+    >>> list(vocab.search('*'))
+    []
+
 
 # XXX Tom Berger 2007-07-05: document more vocabularies here, particularly
 # when they break!

@@ -46,9 +46,6 @@ class IBuildQueue(Interface):
     files = Attribute(
         "Collection of files related to the ISourcePackageRelease "
         "releated to this job.")
-    current_component = Attribute(
-        "Component where the ISourcePackageRelease releated to "
-        "this job got published in.")
     urgency = Attribute(
         "Urgency of the ISourcePackageRelease releated to this job.")
     archhintlist = Attribute(

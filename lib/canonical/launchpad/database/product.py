@@ -25,7 +25,6 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -44,14 +43,12 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
     IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    TranslationPermission)
-from canonical.lp.dbschema import (
     SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus)
+    SpecificationImplementationStatus, TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -59,7 +56,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
+    implements(IProduct, IFAQTarget, IQuestionTarget,
                IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
@@ -127,10 +124,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
 
-    calendar = ForeignKey(
-        dbName='calendar', foreignKey='Calendar', default=None,
-        forceDBName=True)
-
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
         return "BugTask.product = %d" % self.id
@@ -159,13 +152,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
-
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(
-                title='%s Product Calendar' % self.displayname,
-                revision=0)
-        return self.calendar
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')

@@ -16,11 +16,13 @@ __all__ = [
     'IPersonSet',
     'IPerson',
     'IRequestPeopleMerge',
+    'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
     'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
@@ -35,7 +37,7 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -300,7 +302,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subjected to approval by one of
+        All subscriptions for this team are subject to approval by one of
         the team's administrators.
         """)
 
@@ -581,12 +583,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "including subteams.")
     adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
+    expired_member_count = Attribute("Number of EXPIRED members.")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
+    proposed_member_count = Attribute("Number of PROPOSED members")
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
+    inactive_member_count = Attribute("Number of inactive members")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    deactivated_member_count = Attribute("Number of deactivated members")
     invited_members = Attribute("List of members with INVITED status")
+    invited_member_count = Attribute("Number of members with INVITED status")
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
@@ -791,8 +798,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             'open_inprogress': The number of open bugs that ar In Progress.
         """
 
+    def setContactAddress(email):
+        """Set the given email address as this team's contact address.
+
+        This method must be used only for teams.
+        """
+
     def setPreferredEmail(email):
-        """Set the given email address as this person's preferred one."""
+        """Set the given email address as this person's preferred one.
+
+        This method must be used only for people, not teams.
+        """
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
@@ -900,16 +916,23 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         Return an iterable of matching results.
         """
 
-    def latestMaintainedPackages():
-        """Return SourcePackageReleases maintained by this person.
+    def getLatestMaintainedPackages():
+        """Return `SourcePackageRelease`s maintained by this person.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
         """
 
-    def latestUploadedButNotMaintainedPackages():
-        """Return SourcePackageReleases created by this person but
+    def getLatestUploadedButNotMaintainedPackages():
+        """Return `SourcePackageRelease`s created by this person but
         not maintained by him.
+
+        This method will only include the latest source package release
+        for each source package name, distribution series combination.
+        """
+
+    def getLatestUploadedPPAPackages():
+        """Return `SourcePackageRelease`s uploaded by this person to any PPA.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
@@ -1395,6 +1418,41 @@ class ITeamCreation(ITeam):
             "the team creation, a new message will be sent to this address "
             "with instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class TeamContactMethod(EnumeratedType):
+    """The method used by Launchpad to contact a given team."""
+
+    HOSTED_LIST = Item("""
+        The Launchpad mailing list for this team
+
+        Notifications directed to this team are sent to its Launchpad-hosted
+        mailing list.
+        """)
+
+    NONE = Item("""
+        Each member individually
+
+        Notifications directed to this team will be sent to each of its
+        members.
+        """)
+
+    EXTERNAL_ADDRESS = Item("""
+        Another e-mail address
+
+        Notifications directed to this team are sent to the contact address
+        specified.
+        """)
+
+
+class ITeamContactAddressForm(Interface):
+
+    contact_address = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False)
+
+    contact_method = Choice(
+        title=_("How do people contact these team's members?"),
+        required=True, vocabulary=TeamContactMethod)
 
 
 class JoinNotAllowed(Exception):

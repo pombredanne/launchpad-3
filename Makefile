@@ -24,6 +24,7 @@ default: inplace
 
 schema: build
 	$(MAKE) -C database/schema
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata

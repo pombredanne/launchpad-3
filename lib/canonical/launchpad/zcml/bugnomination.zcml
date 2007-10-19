@@ -19,10 +19,11 @@
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugNomination"
-      name="+bugtasks-and-nominations-table-row"
       class="canonical.launchpad.browser.BugNominationTableRowView"
       permission="launchpad.View"
-      template="../templates/bugnomination-tasks-and-nominations-table-row.pt" />
+      name="+bugtasks-and-nominations-table-row"
+      template="../templates/bugnomination-tasks-and-nominations-table-row.pt"
+      />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugNomination"

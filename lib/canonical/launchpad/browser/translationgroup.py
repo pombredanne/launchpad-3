@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
     NotFoundError
     )
-from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
