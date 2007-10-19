@@ -24,6 +24,8 @@
       parent_utility="canonical.launchpad.interfaces.IBountySet"
       />
 
+    <!-- The bounty system is kept maintained but not available for users.
+    This is achieved by putting it on the PageTestLayer. -->
     <browser:pages
         for="canonical.launchpad.interfaces.IBounty"
         class="canonical.launchpad.browser.BountyView"
@@ -117,6 +119,8 @@
         for="canonical.launchpad.interfaces.IBountySet"
         name="+index" />
 
+    <!-- The bounty system is kept maintained but not available for users.
+    This is achieved by putting it on the PageTestLayer. -->
     <browser:addform
         for="canonical.launchpad.interfaces.IBountySet"
         layer="canonical.launchpad.layers.PageTestLayer"
@@ -128,6 +132,8 @@
         template="../templates/bounty-add.pt"
         />
 
+    <!-- The bounty system is kept maintained but is not accessible to users.
+    This is achieved by putting it on the PageTestLayer. -->
     <browser:pages
       for="canonical.launchpad.interfaces.IBountySet"
       layer="canonical.launchpad.layers.PageTestLayer"
