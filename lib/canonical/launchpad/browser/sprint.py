@@ -497,6 +497,16 @@ class SprintSetView(LaunchpadView):
 class SprintAttendeesCsvExportView(LaunchpadView):
     """View for exporting the attendees for a sprint as CSV."""
 
+    def encode_value(self, value):
+        """Encode a value for CSV.
+        
+        Return the string representation of `value` encoded as UTF-8,
+        or the empty string if value is None."""
+        if value is not None:
+            return unicode(value).encode('utf-8')
+        else:
+            return ''
+
     def render(self):
         """Render a CSV output of all the attendees for a sprint."""
         rows = [('Launchpad username',
@@ -523,9 +533,13 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendee.timezone))
         # CSV can't handle unicode, so we force encoding
         # everything as UTF-8
-        rows = [[unicode(column).encode('utf-8') for column in row]
+        rows = [[self.encode_value(column)
+                 for column in row]
                 for row in rows]
         self.request.response.setHeader('Content-type', 'text/csv')
+        self.request.response.setHeader(
+            'Content-disposition',
+            'attachment; filename=%s-attendees.csv' % self.context.name)
         output = StringIO()
         writer = csv.writer(output)
         writer.writerows(rows)

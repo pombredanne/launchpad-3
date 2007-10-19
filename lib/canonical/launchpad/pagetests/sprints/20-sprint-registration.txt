@@ -117,6 +117,6 @@ for exporting the list of attendees in CSV format.
   text/csv
   >>> print browser.contents
   Launchpad username,Display name,Email,Phone,Organization,City,Country,Timezone
-  carlos,Carlos Perelló Marín,carlos@canonical.com,None,None,None,None,UTC
-  name12,Sample Person,test@canonical.com,None,None,None,None,Australia/Perth
+  carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,UTC
+  name12,Sample Person,test@canonical.com,,,,,Australia/Perth
   <BLANKLINE>
