@@ -30,4 +30,4 @@ UPDATE bug
 DROP AGGREGATE concat(text);
 DROP TABLE bugexternalref;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 47, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 14, 0);
