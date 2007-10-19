@@ -30,11 +30,11 @@ Create and populate a temporary file and pretend it is a chroot:
   >>> temp_fd.write('fooooooooooo baaaaaaaaaar')
   >>> temp_fd.close()
 
-Adding a new chroot for ubuntu/hoary-security/i386:
+Adding a new chroot for ubuntu/hoary/i386:
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary-security",
+  ...                             "-s", "hoary",
   ...                             "-a", "i386",
   ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
@@ -44,9 +44,9 @@ Adding a new chroot for ubuntu/hoary-security/i386:
   0
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
   DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) added.
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) added.
   INFO    Success.
   <BLANKLINE>
 
@@ -55,7 +55,7 @@ Update the previous chroot (with the same file, just a test):
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "update",
   ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary-security",
+  ...                             "-s", "hoary",
   ...                             "-a", "i386",
   ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
@@ -65,9 +65,9 @@ Update the previous chroot (with the same file, just a test):
   0
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
   DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) updated.
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) updated.
   INFO    Success.
   <BLANKLINE>
 
@@ -77,7 +77,7 @@ Check the error when requesting to add a chroot for an unknown suite
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary-foo",
+  ...                             "-s", "foo",
   ...                             "-a", "i386",
   ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
@@ -87,7 +87,24 @@ Check the error when requesting to add a chroot for an unknown suite
   1
   >>> print stderr
   DEBUG   Intitialising connetion.
-  ERROR   Series not found: 'hoary-foo'
+  ERROR   Series not found: 'foo'
+  <BLANKLINE>
+
+Specifying the pocket in the series is not allowed:
+
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-security",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stderr
+  DEBUG   Intitialising connetion.
+  ERROR   Pocket must not be specified: SECURITY
   <BLANKLINE>
 
 Remove the temporary file created by this script
@@ -111,19 +128,19 @@ before changing anything in the DB:
   1
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/RELEASE'
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
   ERROR   Could not open: ...no-such-file
   <BLANKLINE>
 
 
-Retrieve an specified chroot to a given filename, download the file
+Retrieve a specified chroot to a given filename, download the file
 from librarian and store in the specified file:
 
   >>> filepath = os.path.join(config.root, "foo")
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "get",
   ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary-security",
+  ...                             "-s", "hoary",
   ...                             "-a", "i386",
   ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
@@ -133,8 +150,8 @@ from librarian and store in the specified file:
   0
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) retrieved.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
   DEBUG   Writing to '...foo'.
   INFO    Success.
   <BLANKLINE>
@@ -154,7 +171,7 @@ Remove an uploaded chroot, invalidate the respective PocketChroot entry:
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "remove",
   ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary-security",
+  ...                             "-s", "hoary",
   ...                             "-a", "i386"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
@@ -163,9 +180,9 @@ Remove an uploaded chroot, invalidate the respective PocketChroot entry:
   0
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) retrieved.
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) removed.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) removed.
   INFO    Success.
   <BLANKLINE>
 
@@ -177,7 +194,7 @@ message:
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "get",
   ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary-security",
+  ...                             "-s", "hoary",
   ...                             "-a", "i386",
   ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
@@ -187,7 +204,7 @@ message:
   1
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
   ERROR   Chroot was deleted.
   <BLANKLINE>
 
@@ -217,7 +234,7 @@ Check the behavior with no Librarian instance running:
   1
   >>> print stderr
   DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/RELEASE'
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
   ERROR   Librarian upload failed: (111, 'Connection refused')
   <BLANKLINE>
 
