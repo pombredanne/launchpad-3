@@ -14,7 +14,7 @@ time.
 Define a helper function for parsing the entries:
     >>> def parse_entries(contents):
     ...     entries = [tag for tag in BSS(browser.contents,
-    ...                   parseOnlyThese=SoupStrainer('entry'))]
+    ...                parseOnlyThese=SoupStrainer('entry'))]
     ...     return entries
 
 
@@ -117,11 +117,11 @@ Define a helper function for parsing the entries:
 
 First, make a team responsible for some bugs.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet)
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> one_mem_browser = setupBrowser(auth='Basic one-membership@test.com:test')
+    >>> one_mem_browser = setupBrowser(
+    ...    auth='Basic one-membership@test.com:test')
     >>> personset = getUtility(IPersonSet)
 
 Subscribe simple-team to a number of bugs.
@@ -145,7 +145,8 @@ Subscribe simple-team to a number of bugs.
 Now we can do a query on the lastest bugs for simple team and expect
 some results.
 
-    >>> browser.open('http://feeds.launchpad.dev/~simple-team/latest-bugs.atom')
+    >>> browser.open(
+    ...    'http://feeds.launchpad.dev/~simple-team/latest-bugs.atom')
     >>> browser.title
     'Bugs for Simple Team'
 
@@ -160,6 +161,7 @@ some results.
 
 == General bug search ==
 
+    >>> import cgi
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
@@ -168,10 +170,12 @@ some results.
     'Bugs from custom search'
 
     >>> soup = BSS(browser.contents)
-    >>> entry_id = extract_text(soup.find('id'))
-    >>> assert entry_id==cgi.escape(browser.url), (
-    ...     "Id does not match URL \n  %s\n  %s" 
-    ...     % (entry_id, cgi.escape(url)))
+    >>> feed_id = extract_text(soup.find('id'))
+    >>> print feed_id
+    http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
+
+    >>> print cgi.escape(browser.url)
+    http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
