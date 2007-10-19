@@ -34,6 +34,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IHasBuildRecords, IHasTranslationTemplates, IQuestionTarget,
     ISourcePackage, PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
