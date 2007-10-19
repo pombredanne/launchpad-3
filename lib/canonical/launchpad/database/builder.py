@@ -201,6 +201,9 @@ class Builder(SQLBase):
 
         Return a dictionary that maps a pocket to pockets that it can
         depend on for a build.
+
+        The dependencies apply equally no matter which archive type is
+        using them; but some archives may not have builds in all the pockets.
         """
         return {
             PackagePublishingPocket.RELEASE :
@@ -224,21 +227,29 @@ class Builder(SQLBase):
                  PackagePublishingPocket.PROPOSED),
             }
 
-    def _archivesForBuild(self, build_queue_item):
-        """Work out what sources.list lines should be passed to the builder."""
-        # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
-        ogre_map = {
+    @property
+    def component_dependencies(self):
+        """A dictionary of component to component dependencies.
+
+        Return a dictionary that maps a component to a string of
+        components that it is allowed to depend on for a build. This
+        string can be used directly at the end of sources.list lines.
+        """
+        return {
             'main': 'main',
             'restricted': 'main restricted',
             'universe': 'main restricted universe',
             'multiverse': 'main restricted universe multiverse',
             'partner' : 'partner',
             }
-        ogre_components = ogre_map[build_queue_item.current_component.name]
+
+    def _determineArchivesForBuild(self, build_queue_item):
+        """Work out what sources.list lines should be passed to the builder."""
+        ogre_components = self.component_dependencies[
+            build_queue_item.current_component.name]
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
-
-        ubuntu_components = ogre_components
+        ubuntu_source_lines = []
 
         if (build_queue_item.build.archive.purpose == ArchivePurpose.PARTNER
             or
@@ -251,13 +262,17 @@ class Builder(SQLBase):
 
             # Partner and PPA may also depend on any component.
             ubuntu_components = 'main restricted universe multiverse'
+            source_line = (
+                'deb %s %s %s'
+                % (archive_url, dist_name, ogre_components))
+            ubuntu_source_lines.append(source_line)
         else:
             ubuntu_pockets = self.pocket_dependencies[
                 build_queue_item.build.pocket]
+            ubuntu_components = ogre_components
 
         # Here we build a list of sources.list lines for each pocket
         # required in the primary archive.
-        ubuntu_source_lines = []
         for pocket in ubuntu_pockets:
             if pocket == PackagePublishingPocket.RELEASE:
                 dist_pocket = dist_name
@@ -266,16 +281,6 @@ class Builder(SQLBase):
             ubuntu_source_lines.append(
                 'deb http://ftpmaster.internal/ubuntu %s %s'
                 % (dist_pocket, ubuntu_components))
-
-        # ubuntu_source_lines now contains all the entries needed for the
-        # pockets and components required in the primary archive.
-        if (build_queue_item.build.archive.purpose !=
-                ArchivePurpose.PRIMARY):
-            # We need to add entries for the non-primary archive now.
-            source_line = (
-                'deb %s %s %s'
-                % (archive_url, dist_name, ogre_components))
-            ubuntu_source_lines.append(source_line)
 
         return ubuntu_source_lines
 
@@ -378,7 +383,7 @@ class Builder(SQLBase):
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archseries.isNominatedArchIndep)
-        args['archives'] = self._archivesForBuild(build_queue_item)
+        args['archives'] = self._determineArchivesForBuild(build_queue_item)
         suite = build_queue_item.build.distroarchseries.distroseries.name
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
