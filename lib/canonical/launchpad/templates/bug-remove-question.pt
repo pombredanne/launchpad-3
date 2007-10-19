@@ -1,0 +1,75 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone">
+
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
+
+      <h1>This is not a question</h1>
+    </metal:heading>
+
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/bug/@@+portlet-questions" />
+    </metal:leftportlets>
+
+    <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure context/@@+portlet-search" />
+    </metal:rightportlets>
+
+    <metal:main fill-slot="main">
+      <metal:form use-macro="context/@@launchpad_form/form">
+        <div metal:fill-slot="extra_info">
+          <p tal:condition="not: view/has_question">
+            A question was not created from this bug. There is nothing
+            to change.
+          </p>
+
+          <p>
+            Reactivate this bug report by removing the question created
+            from the bug. The bug's status, importance, etc.. can then
+            be edited. The bug's status will not be updated for any project
+            that it affects. A bug contact must update the approprate
+            statues after the question is removed. The question will still
+            exist--its status can be updated separately from this bug.
+          </p>
+        </div>
+
+        <div class="actions" metal:fill-slot="buttons">
+          <input tal:repeat="action view/actions"
+            tal:replace="structure action/render"
+            tal:condition="view/has_question" />
+          <input
+            tal:replace="structure view/cancel_action/render"
+            tal:condition="not: view/has_question" />
+        </div>
+      </metal:form>
+    </metal:main>
+
+    <metal:help fill-slot="help">
+      <p>
+        Choose 'This is not a question' to restore the bug report. The
+        bug's status, importance, ect... in all locations that is affects
+        can be edit again. A comment is required to explain that the
+        bug reported is reactivated. After the question is removed, the
+        bug's status should be updated for the affected project.
+      </p>
+      <p>
+        The question is a separate entity from the bug. Its status will
+        not be changed.
+      </p>
+    </metal:help>
+  </body>
+</html>
