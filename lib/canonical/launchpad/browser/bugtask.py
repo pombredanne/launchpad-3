@@ -62,18 +62,17 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
- BugAttachmentType, BugNominationStatus, BugTaskImportance, BugTaskSearchParams,
- BugTaskStatus, BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet,
- IBugBranchSet, IBugExternalRefSet, IBugNominationSet, IBugSet, IBugTask,
- IBugTaskSearch, IBugTaskSet, ICveSet, IDistribution,
- IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
- IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
- INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
- IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
- IProject, ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
- NotFoundError, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
- UnexpectedFormData, valid_upstreamtask, validate_distrotask
-)
+    BugAttachmentType, BugNominationStatus, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
+    IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
+    IBugTaskSearch, IBugTaskSet, ICveSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
+    IProject, ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -304,12 +303,6 @@ class BugTaskNavigation(Navigation):
         """traverse to an attachment by id."""
         if name.isdigit():
             return getUtility(IBugAttachmentSet)[name]
-
-    @stepthrough('references')
-    def traverse_references(self, name):
-        """Traverse to a reference by id."""
-        if name.isdigit():
-            return getUtility(IBugExternalRefSet)[name]
 
     @stepthrough('comments')
     def traverse_comments(self, name):

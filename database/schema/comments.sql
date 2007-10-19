@@ -126,13 +126,6 @@ our ability we\'ll try and keep the bug task syncronised with the state of
 the remote bug watch.';
 
 
--- BugExternalRef
-
-COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
-COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
-COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
-
-
 -- BugNotification
 
 COMMENT ON TABLE BugNotification IS 'The text representation of changes to a bug, which are used to send email notifications to bug changes.';

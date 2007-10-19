@@ -10,7 +10,6 @@ __all__ = [
     'BugFacets',
     'BugMarkAsDuplicateView',
     'BugNavigation',
-    'BugRelatedObjectEditView',
     'BugSecrecyEditView',
     'BugSetNavigation',
     'BugTextView',
@@ -32,7 +31,6 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
     IBug,
-    IBugExternalRef,
     IBugSet,
     IBugTaskSet,
     IBugWatchSet,
@@ -475,28 +473,6 @@ class BugSecrecyEditView(BugEditViewBase):
     def change_action(self, action, data):
         """Update the bug."""
         self.updateBugFromData(data)
-
-
-class BugRelatedObjectEditView(LaunchpadEditFormView):
-    """Page for editing links related to bugs."""
-    schema = IBugExternalRef
-    field_names = ["title", "url"]
-
-    def __init__(self, context, request):
-        LaunchpadEditFormView.__init__(self, context, request)
-        # Store the current bug in an attribute of the view, so that
-        # ZPT rendering code can access it.
-        self.bug = getUtility(ILaunchBag).bug
-        self.current_bugtask = getUtility(ILaunchBag).bugtask
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        """Redirect to the bug page."""
-        return canonical_url(self.current_bugtask)
 
 
 class DeprecatedAssignedBugsView:

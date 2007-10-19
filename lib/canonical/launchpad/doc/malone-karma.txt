@@ -49,14 +49,6 @@ Change the description of a bug:
     >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['description']))
     Karma added: action=bugdescriptionchanged, distribution=debian
 
-Add a web link to a bug:
-
-    >>> from canonical.launchpad.interfaces import IBugExternalRefSet
-    >>> link = getUtility(IBugExternalRefSet).createBugExternalRef(
-    ...     bug, "http://www.com/", "Some link", foo_bar)
-    >>> notify(SQLObjectCreatedEvent(link))
-    Karma added: action=bugextrefadded, distribution=debian
-
 Add a CVE reference to a bug:
 
     >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
@@ -204,8 +196,9 @@ Adding a comment generates a karma event, but gives no points:
     Karma added: action=bugcommentadded, distribution=debian
     Karma added: action=bugcommentadded, distribution=debian
 
-Now, let's ensure that we've covered every one of Malone's karma
-actions, except for updating the obsolete "summary" and "priority":
+Now, let's check that we've covered all of Launchpad's bug-related karma
+actions, except for updating the obsolete "summary", "priority", and "Web
+links":
 
     >>> from canonical.launchpad.database import KarmaCategory
     >>> bugs_category = KarmaCategory.byName('bugs')
@@ -216,6 +209,9 @@ actions, except for updating the obsolete "summary" and "priority":
     >>> priority_change = getUtility(
     ...     IKarmaActionSet).getByName('bugtaskprioritychanged')
     >>> karma_helper.added_karma_actions.add(priority_change)
+    >>> link_change = getUtility(
+    ...     IKarmaActionSet).getByName('bugextrefadded')
+    >>> karma_helper.added_karma_actions.add(link_change)
     >>> karma_helper.added_karma_actions == set(bugs_karma_actions)
     True
 
@@ -227,4 +223,5 @@ XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries
 were removed, all the karma gained from updating bug summaries will have
 expired. Then the 'bugsummarychanged' row should be removed from the database,
 and summary_change can be removed from this test. The same applies to the
-'bugtaskprioritychanged' row on about 2007-05-15.
+'bugtaskprioritychanged' row after about 2007-05-15, and the 'bugextrefadded'
+row after about 2008-09-25.
