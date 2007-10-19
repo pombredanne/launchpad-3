@@ -147,8 +147,8 @@ class BugTrackerView(LaunchpadView):
 class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
-    field_names = ['title', 'bugtrackertype', 'summary',
-                   'baseurl', 'contactdetails']
+    field_names = ['name', 'title', 'bugtrackertype',
+                   'summary', 'baseurl', 'contactdetails']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
 
