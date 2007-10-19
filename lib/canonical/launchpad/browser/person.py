@@ -101,23 +101,22 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, BugTaskStatus,
+    BranchListingSort, BugTaskSearchParams, BugTaskStatus,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICalendarOwner, ICountry,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, INewPerson,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
+    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
+    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IPOTemplateSet,
-    IRequestPreferredLanguages, ISignedCodeOfConductSet, ISSHKeySet, ITeam,
-    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
-    QuestionParticipation, SSHKeyType, TeamMembershipRenewalPolicy,
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
+    ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
+    NotFoundError, PersonCreationRationale, QuestionParticipation,
+    SpecificationFilter, SSHKeyType, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -129,7 +128,6 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
@@ -189,9 +187,7 @@ class BranchTraversalMixin:
             return super(BranchTraversalMixin, self).traverse(product_name)
 
 
-class PersonNavigation(CalendarTraversalMixin,
-                       BranchTraversalMixin,
-                       Navigation):
+class PersonNavigation(BranchTraversalMixin, Navigation):
 
     usedfor = IPerson
 
@@ -567,15 +563,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Software that %s is involved in translating' %
             self.context.browsername)
         return Link('', text, summary)
-
-    def calendar(self):
-        text = 'Calendar'
-        summary = (
-            u'%s\N{right single quotation mark}s scheduled events' %
-            self.context.browsername)
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link('+calendar', text, summary, enabled=enabled)
 
 
 class PersonBranchesMenu(ApplicationMenu):
@@ -3019,7 +3006,8 @@ class PersonBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3043,10 +3031,12 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
+    no_sort_by = (BranchListingSort.AUTHOR,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3054,21 +3044,24 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
+    no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
-    """View for branch listing for a subscribed's authored branches."""
+    """View for branch listing for a person's subscribed branches."""
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):

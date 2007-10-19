@@ -18,7 +18,6 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
     >>> from canonical.lp.dbschema import BugTrackerType
     >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
     >>> external_bugzilla = Bugzilla(invalid_version_bugzilla, version='A.B4')
-    >>> external_bugzilla.updateBugWatches([])
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
@@ -35,7 +34,7 @@ slightly modified implementation.
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla)
     >>> version = external_bugzilla._probe_version()
     >>> version
-    u'2.20+'
+    (2, 20)
 
 Status Conversion
 -----------------
@@ -65,7 +64,8 @@ if the bug is closed:
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
-    >>> external_bugzilla.convertRemoteStatus('CLOSED PATCH_ALREADY_AVAILABLE').title
+    >>> external_bugzilla.convertRemoteStatus(
+    ...     'CLOSED PATCH_ALREADY_AVAILABLE').title
     'Fix Released'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED CODE_FIX').title
     'Fix Released'
@@ -177,8 +177,7 @@ We need to create a new ExternalBugtracker for the Mozilla tracker:
 
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
     ...     'mozilla.org')
-    >>> external_bugzilla = TestBugzilla(
-    ...     mozilla_bugzilla, version)
+    >>> external_bugzilla = TestBugzilla(mozilla_bugzilla, '2.20')
     >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
 
 Let's update the bug watch, and see that the linked bug watch got
@@ -228,9 +227,16 @@ bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
     ...     lambda self, data: '<invalid xml>')
-    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
     Traceback (most recent call last):
     ...
     UnparseableBugData:
     Failed to parse XML description for https://bugzilla.mozilla.org...
 
+The error is also recorded in each bug watch's last_error_type field so that
+it can be displayed to the user.
+
+    >>> bug_watch1.last_error_type.title
+    'Unparsable Bug'
+    >>> bug_watch2.last_error_type.title
+    'Unparsable Bug'

@@ -6,11 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'ISprintSpecification',
+    'SprintSpecificationStatus'
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, Datetime
+from zope.schema import Choice, Int, Text, Datetime
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
 
 class ISprintSpecification(Interface):
     """A link between a Sprint and a Specification."""
@@ -61,4 +64,32 @@ class ISprintSpecification(Interface):
         """Flag the sprint as being declined by the decider."""
 
 
+class SprintSpecificationStatus(DBEnumeratedType):
+    """The current approval status of the spec on this sprint's agenda.
 
+    This enum allows us to know whether or not the meeting admin team has
+    agreed to discuss an item.
+    """
+
+    ACCEPTED = DBItem(10, """
+        Accepted
+
+        The meeting organisers have confirmed this topic for the meeting
+        agenda.
+        """)
+
+    DECLINED = DBItem(20, """
+        Declined
+
+        This spec has been declined from the meeting agenda
+        because of a lack of available resources, or uncertainty over
+        the specific requirements or outcome desired.
+        """)
+
+    PROPOSED = DBItem(30, """
+        Proposed
+
+        This spec has been submitted for consideration by the meeting
+        organisers. It has not yet been accepted or declined for the
+        agenda.
+        """)

@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 
-from canonical.lp.dbschema import SpecificationGoalStatus
+from canonical.launchpad.interfaces import SpecificationGoalStatus
 
 
 def specification_goalstatus(spec, event):

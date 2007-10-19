@@ -6,8 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'deferToThread',
-    'make_bazaar_branch_and_tree']
+    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
@@ -186,22 +186,28 @@ class BranchTestCase(TestCaseWithTransport):
     def getUniqueString(self, prefix=None):
         """Return a string to this run of the test case.
 
+        The string returned will always be a valid name that can be used in
+        Launchpad URLs.
+
         :param prefix: Used as a prefix for the unique string. If unspecified,
             defaults to the name of the test.
         """
         if prefix is None:
             prefix = self.id().split('.')[-1]
-        return "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
+        return string.replace('_', '-').lower()
 
     def getUniqueURL(self):
         """Return a URL unique to this run of the test case."""
         return 'http://%s.example.com/%s' % (
             self.getUniqueString(), self.getUniqueString())
 
-    def makePerson(self):
+    def makePerson(self, email=None, name=None):
         """Create and return a new, arbitrary Person."""
-        email = self.getUniqueString('email')
-        name = self.getUniqueString('person-name')
+        if email is None:
+            email = self.getUniqueString('email')
+        if name is None:
+            name = self.getUniqueString('person-name')
         return getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
 
@@ -215,22 +221,33 @@ class BranchTestCase(TestCaseWithTransport):
             self.getUniqueString('summary'),
             self.getUniqueString('description'))
 
-    def makeBranch(self, branch_type=None):
-        """Create and return a new, arbitrary Branch of the given type."""
+    def makeBranch(self, branch_type=None, owner=None, name=None, product=None,
+                   url=None, **optional_branch_args):
+        """Create and return a new, arbitrary Branch of the given type.
+
+        Any parameters for IBranchSet.new can be specified to override the
+        default ones.
+        """
         if branch_type is None:
             branch_type = BranchType.HOSTED
-        owner = self.makePerson()
-        branch_name = self.getUniqueString('branch')
-        product = self.makeProduct()
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('branch')
+        if product is None:
+            product = self.makeProduct()
+
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif branch_type == BranchType.MIRRORED:
+        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
+              and url is None):
             url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return self.branch_set.new(
-            branch_type, branch_name, owner, owner, product, url)
+            branch_type, name, owner, owner, product, url,
+            **optional_branch_args)
 
     def relaxSecurityPolicy(self):
         """Switch to using 'PermissiveSecurityPolicy'."""
@@ -407,7 +424,7 @@ def make_bazaar_branch_and_tree(db_branch):
         % db_branch)
     branch_dir = os.path.join(
         config.codehosting.branches_root, branch_id_to_path(db_branch.id))
-    return create_branch(branch_dir)
+    return create_branch_with_one_revision(branch_dir)
 
 
 def adapt_suite(adapter, base_suite):
@@ -418,7 +435,7 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch(branch_dir):
+def create_branch_with_one_revision(branch_dir):
     """Create a dummy Bazaar branch at the given directory."""
     if not os.path.exists(branch_dir):
         os.makedirs(branch_dir)
