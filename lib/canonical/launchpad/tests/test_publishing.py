@@ -25,11 +25,9 @@ from canonical.launchpad.interfaces import (
     BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
     ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
     IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
-    PackagePublishingPriority)
+    PackagePublishingPriority, SourcePackageUrgency)
 
 from canonical.librarian.client import LibrarianClient
-
-from canonical.lp.dbschema import SourcePackageUrgency
 
 
 class TestNativePublishingBase(LaunchpadZopelessTestCase):

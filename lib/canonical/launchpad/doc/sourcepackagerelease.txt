@@ -140,7 +140,7 @@ IDistroSeries API:
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
   >>> from canonical.database.constants import UTC_NOW
-  >>> from canonical.lp.dbschema import SourcePackageUrgency
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 

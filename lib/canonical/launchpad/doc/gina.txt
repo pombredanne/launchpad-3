@@ -204,7 +204,7 @@ Check if the changelog message was stored correcly:
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
 
-    >>> from canonical.lp.dbschema import SourcePackageUrgency
+    >>> from canonical.launchpad.interfaces import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 

@@ -43,8 +43,8 @@ BuildQueue entries.
     >>> multiverse_component = comp_set['multiverse']
 
 
-    >>> from canonical.lp.dbschema import SourcePackageUrgency
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingPocket, SourcePackageUrgency)
     >>> from zope.security.proxy import removeSecurityProxy
 
     >>> def setUpBuildQueueEntry(

@@ -17,7 +17,7 @@ uploaded into the system.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-  >>> from canonical.lp.dbschema import SourcePackageUrgency
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
   >>> from canonical.database.constants import UTC_NOW
 
   # Login as an admin.

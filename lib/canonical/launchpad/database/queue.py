@@ -39,11 +39,11 @@ from canonical.launchpad.interfaces import (
     NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, PackageUploadCustomFormat, pocketsuffix,
     QueueBuildAcceptError, QueueInconsistentStateError,
-    QueueStateWriteProtectedError, QueueSourceAcceptError)
+    QueueStateWriteProtectedError, QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import SourcePackageFileType
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
