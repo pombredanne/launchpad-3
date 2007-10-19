@@ -51,10 +51,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, ICalendarOwner, ICountry, IDistribution, IHasIcon,
-    ILaunchpadCelebrities, IPillarNameSet, IProduct, IProductSeries,
-    IProductSet, IProject, ITranslationImportQueue, BranchListingSort,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+    IBranchSet, ICountry, IDistribution, IHasIcon, ILaunchpadCelebrities,
+    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
+    ITranslationImportQueue, BranchListingSort, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
