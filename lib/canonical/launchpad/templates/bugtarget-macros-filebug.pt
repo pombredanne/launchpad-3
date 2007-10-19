@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <metal:basic_filebug_widgets metal:define-macro="basic_filebug_widgets">
 
   <tal:bugtarget
@@ -255,6 +259,7 @@
             if it uses one. If you can't find an appropriate place to file
             your bug, please contact the administrator of
             <tal:project replace="context/displayname">Project</tal:project>.
+          </p>
         </tal:singular>
 
         <ul class="product-bug-options" tal:repeat="product context/products">
@@ -325,3 +330,4 @@
   </tal:not_uses_malone>
 
 </metal:not_uses_malone>
+</tal:root>

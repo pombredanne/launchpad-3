@@ -1,5 +1,10 @@
-<div class="portlet" id="portlet-blueprints"
-     tal:condition="context/specifications">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-blueprints"
+  tal:condition="context/specifications"
+>
   <h2>Related blueprints</h2>
   <div class="portletBody">
     <table>

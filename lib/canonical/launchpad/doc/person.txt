@@ -82,6 +82,23 @@ a user account when its first email address is confirmed)
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
+In the case of teams, though, the account_status is not changed as their
+account_status must always be set to NOACCOUNT. (Notice how we use
+setContactAddress() rather than setPreferredEmail() here, since the latter
+can be used only for people and the former only for teams)
+
+    >>> shipit_admins = personset.getByName('shipit-admins')
+    >>> shipit_admins.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> email = emailset.new('foo@baz.com', shipit_admins)
+    >>> shipit_admins.setContactAddress(email)
+    >>> email.status
+    <DBItem EmailAddressStatus.PREFERRED...
+    >>> shipit_admins.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
 When a new sourcepackage is imported and a Person entry has to be created
 because we don't know about the maintainer of that package, the code to create
 the person should look like this:
@@ -442,63 +459,82 @@ addresses that belongs to a person using the methods provided by IPersonSet.
 While we don't have Full Text Indexes in the emailaddress table, we'll be
 trying to match the text only against the beginning of an email address:
 
+    # First we'll define a utility function to help us displaying the results.
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> results = personset.find('ubuntu')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Mirror Administrators', u'ubuntu-mirror-admins', [])
-    (u'Sigurd Gartmann', u'sigurd-ubuntu', [u'sigurd-ubuntu@brogar.org'])
-    (u'Ubuntu Gnome Team', u'name18', [])
-    (u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
-    (u'Ubuntu Translators', u'ubuntu-translators', [])
+    >>> def print_people(results):
+    ...     for person in results:
+    ...         emails = [email.email for email in emailset.getByPerson(person)]
+    ...         print (
+    ...             "%s (%s): %s" % (person.displayname, person.name, emails))
 
-    >>> results = personset.find('steve.alexander')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Steve Alexander', u'stevea', [u'steve.alexander@ubuntulinux.com'])
+    >>> print_people(personset.find('ubuntu'))
+    Mirror Administrators (ubuntu-mirror-admins): []
+    Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Ubuntu Translators (ubuntu-translators): []
+
+    >>> print_people(personset.find('steve.alexander'))
+    Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
 
 Searching only for People based on their names or email addresses:
 
-    >>> results = personset.findPerson('james.blackwell')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'James Blackwell', u'jblack', [u'james.blackwell@ubuntulinux.com'])
+    >>> print_people(personset.findPerson('james.blackwell'))
+    James Blackwell (jblack): [u'james.blackwell@ubuntulinux.com']
 
-    >>> results = personset.findPerson('dave')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Dave Miller', u'justdave', [u'dave.miller@ubuntulinux.com', u'justdave@bugzilla.org'])
+    >>> print_people(personset.findPerson('dave'))
+    Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
+                             u'justdave@bugzilla.org']
+
+By default, when searching only for people, any person whose account is
+inactive is not included in the list, but we can tell findPerson to include
+them as well.
+    
+    >>> from canonical.launchpad.interfaces import AccountStatus
+    >>> dave = personset.getByName('justdave')
+    >>> login('dave.miller@ubuntulinux.com')
+    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> flush_database_updates()
+    >>> list(personset.findPerson('dave'))
+    []
+
+    >>> print_people(
+    ...     personset.findPerson('dave', exclude_inactive_accounts=False))
+    Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
+                             u'justdave@bugzilla.org']
+
+    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> flush_database_updates()
+    >>> login(ANONYMOUS)
 
 Searching only for Teams based on their names or email addresses:
 
-    >>> results = personset.findTeam('support')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
+    >>> print_people(personset.findTeam('support'))
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
 
-    >>> results = personset.findTeam('translators')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Ubuntu Translators', u'ubuntu-translators', [])
-
+    >>> print_people(personset.findTeam('translators'))
+    Ubuntu Translators (ubuntu-translators): []
 
 == Packages related to a person ==
 
-To obtain the packages a person is related to, we can use the
-latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
-methods of IPersonSet. The former will return the latest
-SourcePackageReleases a person uploaded in which he is listed as the
-Maintainer. The latter will return the latest SourcePackageReleases a
-person uploaded (where he isn't the maintainer).
+To obtain the packages a person is related to, we can use:
+
+ 1. getLatestMaintainedPackages(),
+ 2. getLatestUploadedButNotMaintainedPackages(),
+ 3. getLatestUploadedPPAPackages methods of IPersonSet.
+
+The 1st will return the latest SourcePackageReleases related to a
+person in which he is listed as the Maintainer. The second will return
+the latest SourcePackageReleases a person uploaded (and where he isn't
+the maintainer).
+
+Both, 1st and 2nd methods, only consider sources upload to primary archives.
+
+The 3rd method returns SourcePackageReleases uploaded by the person in
+question to any PPA.
 
     >>> sabdfl = personset.getByName('sabdfl')
-    >>> for sprelease in sabdfl.latestMaintainedPackages():
+    >>> for sprelease in sabdfl.getLatestMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
@@ -509,19 +545,27 @@ person uploaded (where he isn't the maintainer).
     (u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
-    >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
+    >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'iceweasel', u'Ubuntu Warty', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'at', u'Ubuntu Hoary', u'0.00')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
+
+
+    >>> for sprelease in sabdfl.getLatestUploadedPPAPackages():
+    ...     print (sprelease.name,
+    ...            sprelease.upload_archive.owner.name,
+    ...            sprelease.uploaddistroseries.fullseriesname,
+    ...            sprelease.version)
+    (u'iceweasel', u'sabdfl', u'Ubuntu Warty', u'1.0')
+    (u'iceweasel', u'no-priv', u'Ubuntu Warty', u'1.0')
 
 
 == Pillars owned or driven by a person or team ==
@@ -681,9 +725,10 @@ certain criteria:
 
 First, Carlos does not have any completed specifications assigned to him:
 
-    >>> from canonical.lp.dbschema import SpecificationFilter
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
     >>> carlos.specifications(filter=[
-    ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
+    ...     SpecificationFilter.ASSIGNEE,
+    ...     SpecificationFilter.COMPLETE]).count()
     0
 
 Next, Carlos has three incomplete specs *related* to him:

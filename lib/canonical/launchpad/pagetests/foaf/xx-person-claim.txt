@@ -2,8 +2,7 @@
 Alexander Limi was browsing through Launchpad and found a page for
 himself, even though he has never used Launchpad.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
+    >>> browser = setupBrowser()
     >>> browser.open('http://launchpad.dev/~limi')
     >>> browser.url
     'http://launchpad.dev/~limi'

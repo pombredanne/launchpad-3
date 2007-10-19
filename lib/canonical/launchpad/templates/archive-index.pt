@@ -1,17 +1,21 @@
 <html 
-  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
   >
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Foo Bar PPA</h1>
+      <h1>PPA Overview</h1>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
@@ -26,11 +30,8 @@
       </tal:whiteboard>
 
       <div id="description">
-         <p>PPA description:</p>
          <tal:archive-description condition="context/description"
             replace="structure context/description/fmt:text-to-html" />
-         <p class="informational" tal:condition="not:context/description"
-            >No description available.</p>
       </div>
 
       <p>For more information about how to configure your system to
@@ -54,10 +55,10 @@
           <li id="binary_counter">
              <span tal:replace="view/binary_count_text" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
-	  <li id="total_size">
+	      <li id="total_size">
              Estimated archive size:
              <span tal:replace="context/estimated_size/fmt:bytes" /></li>
-        <ul>
+        </ul>
       </div>
 
       <p>Browse the archive in
@@ -117,9 +118,9 @@
     </div>
 
     <p metal:fill-slot="help">
-      Here you can find information about the source packages
-      currently published in the PPA in question. This page also
-      provides estimated archive sizes.
+      You can view the current
+      <a href="https://help.launchpad.net/PPATermsofUse"
+      >Terms of Use</a> for the Launchpad PPA service.
     </p>
 
   </body>

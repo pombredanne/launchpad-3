@@ -187,6 +187,14 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     main_archive = Attribute('Main Archive')
 
+    supported = Attribute(
+        "Whether or not this series is currently supported.")
+
+    active = Attribute(
+        "Whether or not this series is stable and supported, or under "
+        "current development. This excludes series which are experimental "
+        "or obsolete.")
+
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.
 
@@ -388,7 +396,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getSourcePackagePublishing(status, pocket, component=None,
                                    archive=None):
-        """Return a selectResult of ISourcePackagePublishing.
+        """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
@@ -445,7 +453,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     def initialiseFromParent():

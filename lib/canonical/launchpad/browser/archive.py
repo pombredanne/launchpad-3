@@ -63,7 +63,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds', 'view_tos']
+    links = ['admin', 'edit', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -78,11 +78,6 @@ class ArchiveOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View build records'
         return Link('+builds', text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def view_tos(self):
-        text = 'Review terms of service'
-        return Link('+view-tos', text, icon='info')
 
 
 class ArchiveView(LaunchpadView):
@@ -123,6 +118,7 @@ class ArchiveActivateView(LaunchpadFormView):
     """
 
     schema = IPPAActivateForm
+    custom_widget('description', TextAreaWidget, height=3)
 
     def initialize(self):
         """Redirects user to the PPA page if it is already activated."""
@@ -135,7 +131,12 @@ class ArchiveActivateView(LaunchpadFormView):
         if len(self.errors) == 0:
             if not data.get('accepted'):
                 self.addError(
-                    "PPA ToS has to be accepted to complete the activation.")
+                    "PPA Terms of Service must be accepted to activate "
+                    "your PPA.")
+
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
 
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
@@ -144,6 +145,10 @@ class ArchiveActivateView(LaunchpadFormView):
             owner=self.context, distribution=None, purpose=ArchivePurpose.PPA,
             description=data['description'])
         self.next_url = canonical_url(ppa)
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self.next_url = canonical_url(self.context)
 
 
 class ArchiveBuildsView(BuildRecordsView):

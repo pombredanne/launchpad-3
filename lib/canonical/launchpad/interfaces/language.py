@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Language interfaces."""
 
@@ -7,12 +7,30 @@ __metaclass__ = type
 __all__ = [
     'ILanguage',
     'ILanguageSet',
+    'TextDirection',
     ]
 
 from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import TextDirection
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class TextDirection(DBEnumeratedType):
+    """The base text direction for a language."""
+
+    LTR = DBItem(0, """
+        Left to Right
+
+        Text is normally written from left to right in this language.
+        """)
+
+    RTL = DBItem(1, """
+        Right to Left
+
+        Text is normally written from left to right in this language.
+        """)
+
 
 class ILanguage(Interface):
     """A Language."""
@@ -79,7 +97,7 @@ class ILanguage(Interface):
         title=u'Text direction',
         description=u'The direction of text in this language.',
         required=True,
-        vocabulary='TextDirection')
+        vocabulary=TextDirection)
 
     displayname = TextLine(
         title=u'The displayname of the language',
