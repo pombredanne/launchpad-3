@@ -34,7 +34,7 @@ fi
 
 if [ -z "$1" ]; then
     rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-    files=`bzr st -r $rev | sed '/^ /!d; /[a-z] /d; /@/d'`
+    files=`bzr st --short -r $rev | sed '/^.[MNR]/!d; s/.* //'`
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
@@ -71,7 +71,10 @@ group_lines_by_file() {
 conflicts=""
 for file in $files; do
     # NB. Odd syntax on following line to stop lint.sh detecting conflict
-    # markers in itself.    
+    # markers in itself.
+    if [ ! -f "$file" ]; then
+        continue
+    fi
     if grep -q -e '<<<''<<<<' -e '>>>''>>>>' $file; then
         conflicts="$conflicts $file"
     fi
@@ -119,12 +122,18 @@ fi
 
 export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
+
+# XXX sinzui 2007-10-18 bug=154140:
+# Pylint should really do a better job of not reporting false positives.
 sed_deletes="/^*/d; /Unused import \(action\|_python\)/d; "
+sed_deletes="$sed_deletes /Unable to import .*sql\(object\|base\)/d; "
 sed_deletes="$sed_deletes /_action.* Undefined variable/d; "
 sed_deletes="$sed_deletes /_getByName.* Instance/d; "
-sed_deletes="$sed_deletes /Redefining built-in .id/d;"
-sed_deletes="$sed_deletes /Redefining built-in 'filter'/d;"
-sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,;"
+sed_deletes="$sed_deletes /Redefining built-in .id/d; "
+sed_deletes="$sed_deletes /Redefining built-in 'filter'/d; "
+sed_deletes="$sed_deletes /<lambda>] Using variable .* before assignment/d; "
+sed_deletes="$sed_deletes /Comma not followed by a space/{N;N};/,[])}]/d; "
+sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,; "
 
 # Note that you can disable specific tests by placing pylint
 # instruction in a comment:
