@@ -56,6 +56,12 @@ COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibi
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
 
+-- BranchWithSortKeys
+
+COMMENT ON VIEW BranchWithSortKeys IS 'A hack to allow the sorting of queries to Branch by human-meaningful keys in the face of limitations in SQLObject.  Will go away when we start using Storm.  This view has all the columns of Branch with three extra names joined on to it.';
+COMMENT ON COLUMN BranchWithSortKeys.product_name IS 'Branch.product.name';
+COMMENT ON COLUMN BranchWithSortKeys.author_name IS 'Branch.author.displayname';
+COMMENT ON COLUMN BranchWithSortKeys.owner_name IS 'Branch.owner.displayname';
 
 -- Bug
 
