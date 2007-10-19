@@ -32,7 +32,6 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBug,
     IBugAttachment,
-    IBugExternalRef,
     IBugNomination,
     IBugSet,
     IHasIcon,
@@ -56,6 +55,7 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
@@ -667,6 +667,27 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         source = icon_map[self._context.buildstate]
 
         return self.icon_template % (alt, title, source)
+
+
+class BadgeDisplayAPI:
+    """Adapter for IHasBadges to the images for the badges.
+
+    Used for context/badges:small and context/badges:large.
+    """
+
+    def __init__(self, context):
+        # Adapt the context.
+        self.context = IHasBadges(context)
+
+    def small(self):
+        """Render the visible badge's icon images."""
+        badges = self.context.getVisibleBadges()
+        return ''.join([badge.renderIconImage() for badge in badges])
+
+    def large(self):
+        """Render the visible badge's heading images."""
+        badges = self.context.getVisibleBadges()
+        return ''.join([badge.renderHeadingImage() for badge in badges])
 
 
 class PersonFormatterAPI(ObjectFormatterExtendedAPI):
@@ -1614,6 +1635,8 @@ class FormattersAPI:
         """
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
+        text = text.replace(
+            "<<email address hidden>>", "<email address hidden>")
         return text
 
     def lower(self):
@@ -1813,8 +1836,7 @@ class GotoStructuralObject:
         """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
-            IBugNomination.providedBy(self.context) or
-            IBugExternalRef.providedBy(self.context)):
+            IBugNomination.providedBy(self.context)):
             return self.view.current_bugtask
         else:
             return self.context

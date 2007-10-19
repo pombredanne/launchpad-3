@@ -76,11 +76,6 @@ def cve_added(cve, event):
     _assignKarmaUsingBugContext(event.user, cve.bug, 'bugcverefadded')
 
 
-def extref_added(extref, event):
-    """Assign karma to the user which added :extref:."""
-    _assignKarmaUsingBugContext(event.user, extref.bug, 'bugextrefadded')
-
-
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
     user = event.user

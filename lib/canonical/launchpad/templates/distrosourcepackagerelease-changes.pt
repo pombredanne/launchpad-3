@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="boardComment">
 
-  <div class="boardCommentDetails">
+  <div class="boardCommentDetails"
+       tal:attributes="id string:detail_${context/name}_${context/version}">
     <div>
       <strong><a tal:content="context/version"
          tal:attributes="href context/fmt:url">2.0.39</a></strong>
@@ -18,19 +19,12 @@
     </table>
   </div>
 
-  <div class="boardCommentBody">
-
+  <div
+   class="boardCommentBody"
+   tal:attributes="id string:body_${context/name}_${context/version}">
     <div style="font-family: monospace;"
-      tal:condition="not: view/user"
-      tal:content="structure
-        context/sourcepackagerelease/change_summary/fmt:obfuscate-email/fmt:email-to-html">
-      Change summary text
-    </div>
-    <div style="font-family: monospace;"
-      tal:condition="view/user"
-      tal:content="structure
-        context/sourcepackagerelease/change_summary/fmt:email-to-html">
-      Change summary text
+         tal:content=
+           "structure context/sourcepackagerelease/@@+change_summary">
     </div>
 
   </div>

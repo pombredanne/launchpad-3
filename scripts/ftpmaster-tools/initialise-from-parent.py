@@ -18,10 +18,10 @@ from optparse import OptionParser
 from zope.component import getUtility
 from contrib.glock import GlobalLock
 
+from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp import initZopeless
 from canonical.lp.dbschema import (
     PackageUploadStatus, BuildStatus, PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
@@ -60,7 +60,7 @@ def main():
 
     log.debug("Initialising connection.")
 
-    ztm = initZopeless(dbuser='lucille', isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     try:

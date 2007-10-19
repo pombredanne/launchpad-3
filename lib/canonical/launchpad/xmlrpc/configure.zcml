@@ -39,6 +39,10 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithUsername">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
   <class class="canonical.launchpad.xmlrpc.faults.NoSuchBranch">
     <require like_class="xmlrpclib.Fault" />
   </class>
@@ -72,6 +76,18 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.BadStatus">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoBranchForSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchIdentifier">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
