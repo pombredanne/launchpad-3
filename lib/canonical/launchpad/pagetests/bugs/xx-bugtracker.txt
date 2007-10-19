@@ -177,3 +177,36 @@ And now the test tracker should have been updated:
   True
 
   >>> logout()
+
+== Related projects portlet ==
+
+Related projects and project groups are shown in a portlet on the bug
+tracker page.
+
+First we need to change a project group and a project to use our new
+bug tracker:
+
+  >>> admin_browser.open('http://launchpad.dev/mozilla/+edit')
+  >>> admin_browser.getControl('Bug Tracker:').displayValue = [
+  ...     'A test Bugzilla Tracker']
+  >>> admin_browser.getControl('Change Details').click()
+
+  >>> admin_browser.open('http://launchpad.dev/jokosher/+edit')
+  >>> admin_browser.getControl(name='field.bugtracker'
+  ...     ).displayValue = ['In a registered bug tracker:']
+  >>> admin_browser.getControl(name='field.bugtracker.bugtracker'
+  ...     ).displayValue = ['A test Bugzilla Tracker']
+  >>> admin_browser.getControl('Change').click()
+
+Now the Mozilla Project and Jokosher will appear in the Related
+projects portlet on the bug tracker page:
+
+  >>> admin_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testtrac')
+  >>> print extract_text(find_portlet(
+  ...     admin_browser.contents, 'Related projects'))
+  Related projects
+    You can link a registered bug tracker with a registered project in
+    Launchpad:
+      The Mozilla Project
+      Jokosher Audio Editor

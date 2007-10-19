@@ -15,10 +15,13 @@ __all__ = [
     'RemoteBug',
     ]
 
+from itertools import chain
+
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
@@ -88,6 +91,16 @@ class BugTrackerView(LaunchpadView):
 
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
+
+    @property
+    def related_projects(self):
+        """Return all project groups and projects.
+
+        This property was created for the Related projects portlet in
+        the bug tracker's page.
+        """
+        return shortlist(chain(self.context.projects,
+                               self.context.products), 100)
 
 
 class BugTrackerEditView(LaunchpadEditFormView):
