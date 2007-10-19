@@ -30,9 +30,7 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
     IBugWatchSet, IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
-    IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS,
-    UNKNOWN_REMOTE_STATUS)
-    BugTaskStatus)
+    IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"

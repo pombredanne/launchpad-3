@@ -24,7 +24,7 @@ status and resolution, to make the test more readable.
     ...     Roundup)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     convert_python_status, new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> python = Roundup(new_bugtracker(
     ...     BugTrackerType.ROUNDUP, base_url='http://bugs.python.org'))
     >>> python.convertRemoteStatus(

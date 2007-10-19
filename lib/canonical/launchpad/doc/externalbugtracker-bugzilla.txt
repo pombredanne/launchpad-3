@@ -15,7 +15,7 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
     >>> external_bugzilla = Bugzilla(invalid_version_bugzilla, version='A.B4')
     Traceback (most recent call last):
@@ -170,7 +170,7 @@ from a bug task.
 We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
-    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskImportance
     >>> thunderbird_task.importance = BugTaskImportance.HIGH
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
