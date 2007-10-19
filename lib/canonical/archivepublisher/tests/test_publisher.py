@@ -21,9 +21,7 @@ from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IPersonSet)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    IPersonSet, PackagePublishingPocket, PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):

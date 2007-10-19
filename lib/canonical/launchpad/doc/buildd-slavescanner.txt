@@ -675,7 +675,6 @@ this case cleanly. We need to set the pocket to updates for this test as its
 uploading to warty.
 
   >>> bqItem10 = getUtility(IBuildSet).getByBuildID(6).createBuildQueueEntry()
-  >>> from canonical.lp import dbschema
 
 XXX: The pocket attribute is not intended to be changed in regular code, but
 for this test we want to change it on the fly. An alternative would be to add
@@ -683,7 +682,8 @@ new sample data for a build that can be uploaded with binary packages attached
 to it.
 
   >>> from zope.security.proxy import removeSecurityProxy
-  >>> removeSecurityProxy(bqItem10.build).pocket = dbschema.PackagePublishingPocket.UPDATES
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> removeSecurityProxy(bqItem10.build).pocket = PackagePublishingPocket.UPDATES
   >>> setupBuildQueue(bqItem10, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -860,7 +860,8 @@ Create a totally bogus CHROOT
 
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> from canonical.launchpad.database import PocketChroot
-  >>> pocket = dbschema.PackagePublishingPocket.RELEASE
+  >>> from canonical.launchpad.database import PackagePublishinPocket
+  >>> pocket = PackagePublishingPocket.RELEASE
   >>> chroot = LibraryFileAlias.get(1)
   >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=pocket, chroot=chroot)
@@ -932,7 +933,7 @@ are builds for now superseded source package releases in the queue.
 This involves subbing in a scarily large amount of crud, so here
 goes nothing.
 
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
   >>> class MockBG:
   ...     def firstAvailable(self, is_trusted=False):
@@ -1010,7 +1011,7 @@ Clean up before continuing:
 
 When there is no chroot it should not alter the buildstate:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> PocketChroot.selectBy(
   ...     distroarchseries=bqItem3.archseries,
   ...     pocket=PackagePublishingPocket.SECURITY).count()
@@ -1026,7 +1027,7 @@ Override the builder's slave with one that will claim to be 'OK'
 
 Change the pocket for testing: XXX create a new build or change sample data.XXX
   >>> removeSecurityProxy(bqItem3.build).pocket = \
-  ...     dbschema.PackagePublishingPocket.SECURITY
+  ...     PackagePublishingPocket.SECURITY
   >>> bqItem3.build.buildstate = BuildStatus.NEEDSBUILD
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   >>> bqItem3.build.buildstate.name

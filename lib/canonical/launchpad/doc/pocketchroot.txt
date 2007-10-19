@@ -7,7 +7,7 @@ based on IDistroArchSeries to handle them: get, add and update.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interface import PackagePublishingPocket
 
 
 Grab a distroarchseries:

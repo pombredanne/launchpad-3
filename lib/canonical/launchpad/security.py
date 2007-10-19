@@ -23,10 +23,9 @@ from canonical.launchpad.interfaces import (
     ISprint, ISprintSpecification, IStandardShipItRequest,
     IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
     ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator)
+    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
-from canonical.lp.dbschema import PackageUploadStatus
 
 
 class AuthorizationBase:

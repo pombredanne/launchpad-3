@@ -24,13 +24,12 @@ from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
     ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet)
+    IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
+    PackagePublishingPriority)
 
 from canonical.librarian.client import LibrarianClient
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket, SourcePackageUrgency,
-    PackagePublishingPriority)
+from canonical.lp.dbschema import SourcePackageUrgency
 
 
 class TestNativePublishingBase(LaunchpadZopelessTestCase):

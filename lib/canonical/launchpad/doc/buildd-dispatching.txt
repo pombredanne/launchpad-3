@@ -32,7 +32,7 @@ Setup a suitable chroot for Hoary i386:
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ILibraryFileAliasSet)
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
   >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
 

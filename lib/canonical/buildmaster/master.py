@@ -21,10 +21,9 @@ from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, BuildSlaveFailure, CannotBuild,
-    IBuildQueueSet, IBuildSet
-    )
+    IBuildQueueSet, IBuildSet, PackagePublishingPocket,
+    PackagePublishingStatus)
 
-from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.buildd.utils import notes
@@ -143,7 +142,7 @@ class BuilddMaster:
                              distroarchseries.architecturetag))
 
         # check ARCHSERIES across available pockets
-        for pocket in dbschema.PackagePublishingPocket.items:
+        for pocket in PackagePublishingPocket.items:
             if distroarchseries.getChroot(pocket):
                 # Fill out the contents
                 self._archserieses.setdefault(distroarchseries, {})
@@ -540,7 +539,7 @@ class BuilddMaster:
             # or removed) as SUPERSEDED.
             spr = build_candidate.build.sourcepackagerelease
             if (spr.publishings and spr.publishings[0].status <=
-                dbschema.PackagePublishingStatus.PUBLISHED):
+                PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
                 self.commit()
             else:

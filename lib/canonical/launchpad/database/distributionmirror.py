@@ -25,16 +25,15 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
 
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    SourcePackageFileType)
+from canonical.lp.dbschema import SourcePackageFileType
 
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
     IMirrorCDImageDistroSeries, IMirrorDistroArchSeries,
     IMirrorDistroSeriesSource, IMirrorProbeRecord, MirrorContent, MirrorSpeed,
-    MirrorStatus, pocketsuffix, PROBE_INTERVAL)
+    MirrorStatus, PackagePublishingPocket,
+    PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL)
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)

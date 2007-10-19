@@ -161,11 +161,6 @@
     />
 
   <vocabulary
-    name="PackagePublishingPocket"
-    factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
-    />
-
-  <vocabulary
     name="PackageRelease"
     factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
     />

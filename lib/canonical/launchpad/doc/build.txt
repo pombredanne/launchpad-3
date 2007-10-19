@@ -134,7 +134,8 @@ given build record entry.
     >>> component = firefox_build.sourcepackagerelease.component.id
     >>> section = firefox_build.sourcepackagerelease.section.id
     >>> from canonical.lp import dbschema
-    >>> priority = dbschema.PackagePublishingPriority.STANDARD
+    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
     >>> depends = None
     >>> recommends = None
@@ -276,7 +277,7 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
 Checking optional 'pocket' restriction:
 
-    >>> from canonical.lp.dbschema import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
     >>> bs.getBuildsByArchIds(arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
@@ -369,7 +370,7 @@ other is SUPERSEDED.  The published package does not have any builds but
 the superseded one does.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.lp.dbschema import PackagePublishingStatus
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> hoary_pmount = removeSecurityProxy(hoary.getSourcePackage('pmount'))
     >>> published_hoary_pmount = hoary_pmount._getPublishingHistory(
     ...     include_status=[PackagePublishingStatus.PUBLISHED])
@@ -428,7 +429,7 @@ Using the optional name argument to filter build results:
 
 or using optional pocket argument:
 
-    >>> from canonical.lp.dbschema import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
     >>> ubuntu.getBuildRecords(
     ...    build_state=BuildStatus.NEEDSBUILD,

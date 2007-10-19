@@ -22,10 +22,9 @@ from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
-    BuildStatus, IDistributionSet, NotFoundError)
+    BuildStatus, IDistributionSet, NotFoundError, PackageUploadStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 

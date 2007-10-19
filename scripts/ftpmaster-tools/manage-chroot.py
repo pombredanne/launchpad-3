@@ -15,7 +15,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -23,7 +23,6 @@ from canonical.launchpad.scripts.ftpmaster import (
 
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import PackagePublishingPocket
 
 def main():
     parser = OptionParser()

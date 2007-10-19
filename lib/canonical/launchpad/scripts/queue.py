@@ -23,17 +23,15 @@ from sha import sha
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IPackageUploadSet,
-    IComponentSet, ISectionSet, QueueInconsistentStateError)
+    IDistributionSet, IPackageUploadSet, IComponentSet, ISectionSet,
+    NotFoundError, PackagePublishingPriority,
+    PackagePublishingPocket, PackageUploadStatus, QueueInconsistentStateError)
 
 from canonical.archiveuploader.tagfiles import TagFileParseError
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackagePublishingPriority,
-    PackagePublishingPocket)
 
 
 name_queue_map = {

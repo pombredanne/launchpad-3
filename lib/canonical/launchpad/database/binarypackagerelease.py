@@ -12,13 +12,12 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseSet)
+    IBinaryPackageReleaseSet, PackagePublishingPriority,
+    PackagePublishingStatus)
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.lp import dbschema
 
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
@@ -40,7 +39,7 @@ class BinaryPackageRelease(SQLBase):
                            notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = EnumCol(dbName='priority', notNull=True,
-                       schema=dbschema.PackagePublishingPriority)
+                       schema=PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -127,7 +126,7 @@ class BinaryPackageRelease(SQLBase):
             self.binarypackagename,
             self.build.distroarchseries,
             self.build.distribution.all_distro_archive_ids,
-            dbschema.PackagePublishingStatus.SUPERSEDED)
+            PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
@@ -200,7 +199,7 @@ class BinaryPackageReleaseSet:
             queries.append('BinaryPackageRelease.version = %s'
                          % sqlvalues(version))
         else:
-            status_published = dbschema.PackagePublishingStatus.PUBLISHED
+            status_published = PackagePublishingStatus.PUBLISHED
             queries.append('BinaryPackagePublishingHistory.status = %s'
                          % sqlvalues(status_published))
 
@@ -227,7 +226,7 @@ class BinaryPackageReleaseSet:
         """ % sqlvalues([archive.id for archive in
                             distroseries.distribution.all_distro_archives],
                         distroseries,
-                        dbschema.PackagePublishingStatus.REMOVED)
+                        PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

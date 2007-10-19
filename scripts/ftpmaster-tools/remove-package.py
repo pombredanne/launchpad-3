@@ -23,11 +23,11 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
                                           SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 

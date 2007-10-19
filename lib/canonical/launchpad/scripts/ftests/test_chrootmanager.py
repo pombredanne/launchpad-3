@@ -10,10 +10,10 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingPocket)
 from canonical.launchpad.scripts.ftpmaster import (
     ChrootManager, ChrootManagerError)
-from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.testing import LaunchpadZopelessLayer
 
 class TestChrootManager(TestCase):

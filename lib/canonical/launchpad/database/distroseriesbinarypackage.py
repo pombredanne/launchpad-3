@@ -9,13 +9,13 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+from canonical.launchpad.interfaces import (
+    IDistroSeriesBinaryPackage, PackagePublishingStatus)
 
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus
 
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".

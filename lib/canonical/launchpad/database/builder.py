@@ -32,11 +32,10 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder,
     IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords, NotFoundError,
-    ProtocolVersionMismatch, pocketsuffix)
+    PackagePublishingPocket, ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):

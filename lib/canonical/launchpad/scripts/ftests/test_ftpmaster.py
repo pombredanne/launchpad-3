@@ -16,12 +16,11 @@ from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet, ISectionSet)
+    IDistributionSet, IComponentSet, ISectionSet, PackagePublishingPocket,
+    PackagePublishingPriority)
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
     ArchiveCruftCheckerError)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority)
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.

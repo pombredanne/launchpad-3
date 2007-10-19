@@ -24,14 +24,14 @@ existing builds that are in sampledata!
   >>> from canonical.launchpad.database.build import Build
   >>> from canonical.launchpad.database.component import Component
   >>> from canonical.launchpad.database.section import Section
-  >>> from canonical.lp import dbschema
   >>> from canonical.database.constants import UTC_NOW
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
   >>> from canonical.launchpad.interfaces import BinaryPackageFormat
   >>> binpackageformat = BinaryPackageFormat.DEB
-  >>> priority = dbschema.PackagePublishingPriority.STANDARD
+  >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+  >>> priority = PackagePublishingPriority.STANDARD
 
   >>> bpr = Build.get(9).createBinaryPackageRelease(
   ...   binarypackagename=firefox_name.id,
@@ -59,10 +59,10 @@ existing builds that are in sampledata!
   ...   section=misc_section.id,
   ...   priority=priority,
   ...   distroarchseries=hoary_i386.id,
-  ...   status=dbschema.PackagePublishingStatus.PUBLISHED,
+  ...   status=PackagePublishingStatus.PUBLISHED,
   ...   datecreated=UTC_NOW,
   ...   datepublished=UTC_NOW,
-  ...   pocket=dbschema.PackagePublishingPocket.RELEASE,
+  ...   pocket=PackagePublishingPocket.RELEASE,
   ...   datesuperseded=None,
   ...   supersededby=None,
   ...   datemadepending=None,
@@ -96,10 +96,10 @@ existing builds that are in sampledata!
   ...   section=misc_section.id,
   ...   priority=priority,
   ...   distroarchseries=hoary_i386.id,
-  ...   status=dbschema.PackagePublishingStatus.PUBLISHED,
+  ...   status=PackagePublishingStatus.PUBLISHED,
   ...   datecreated=UTC_NOW,
   ...   datepublished=UTC_NOW,
-  ...   pocket=dbschema.PackagePublishingPocket.RELEASE,
+  ...   pocket=PackagePublishingPocket.RELEASE,
   ...   datesuperseded=None,
   ...   supersededby=None,
   ...   datemadepending=None,

@@ -19,7 +19,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchSeriesSet,
-    IBuildSet, IPublishing)
+    IBuildSet, IPublishing, PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
@@ -31,8 +31,6 @@ from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, IPublishing)

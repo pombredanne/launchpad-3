@@ -23,10 +23,9 @@ from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, pocketsuffix)
+    ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.librarian.client import LibrarianClient
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 

@@ -18,7 +18,6 @@ __all__ = [
     'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
     'InfestationStatusVocabulary',
-    'PackagePublishingPocketVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
@@ -51,8 +50,6 @@ CodeImportReviewStatusVocabulary = vocab_factory(
     dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-PackagePublishingPocketVocabulary = vocab_factory(
-    dbschema.PackagePublishingPocket)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)

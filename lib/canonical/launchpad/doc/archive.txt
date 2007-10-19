@@ -184,7 +184,7 @@ Or return build records in a specific status:
 
 And finally build records target to a given pocket:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> cprov_archive.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   4

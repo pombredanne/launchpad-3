@@ -7,8 +7,8 @@ uploaded into the system.
   ...     ProcessorFamily, Component, GPGKey, Section,
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet, 
+  ...     PackagePublishingPocket, PackagePublishingStatus)
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
@@ -17,9 +17,7 @@ uploaded into the system.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-  >>> from canonical.lp.dbschema import (
-  ... SourcePackageUrgency, PackagePublishingStatus,
-  ... PackagePublishingPocket)
+  >>> from canonical.lp.dbschema import SourcePackageUrgency
   >>> from canonical.database.constants import UTC_NOW
 
   # Login as an admin.
@@ -122,7 +120,7 @@ queue:
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()

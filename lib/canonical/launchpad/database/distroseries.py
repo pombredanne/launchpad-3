@@ -29,16 +29,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus, 
-    SpecificationSort, SpecificationImplementationStatus)
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
     IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
     IHasQueueItems, ILibraryFileAliasSet, IPublishedPackageSet, IPublishing,
     ISourcePackage, ISourcePackageName, ISourcePackageNameSet,
-    LanguagePackType, NotFoundError)
+    LanguagePackType, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.database.bugtarget import BugTargetBase

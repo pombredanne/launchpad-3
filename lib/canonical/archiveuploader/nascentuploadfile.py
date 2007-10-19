@@ -35,10 +35,9 @@ from canonical.archiveuploader.utils import (
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
-    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet)
-from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
+    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
     PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
+from canonical.librarian.utils import filechunks
 
 
 apt_pkg.InitSystem()

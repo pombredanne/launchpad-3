@@ -23,8 +23,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.database import SecureSourcePackagePublishingHistory
-from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 

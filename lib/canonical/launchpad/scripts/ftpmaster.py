@@ -37,12 +37,10 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IBinaryPackageNameSet, IDistributionSet,
     IBinaryPackageReleaseSet, ILaunchpadCelebrities, NotFoundError,
-    ILibraryFileAliasSet)
+    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority,)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close

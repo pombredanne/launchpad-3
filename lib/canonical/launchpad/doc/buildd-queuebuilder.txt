@@ -25,9 +25,9 @@ import the bunch of required database classes:
   ...      PocketChroot, DistroArchSeries, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
-  >>> from canonical.lp.dbschema import (
-  ...      PackagePublishingPocket, PackagePublishingStatus,
-  ...      SourcePackageFileType)
+  >>> from canonical.lp.dbschema import SourcePackageFileType
+  >>> from canonical.launchpad.interfaces import (
+  ...      PackagePublishingPocket, PackagePublishingStatus)
 
   >>> from canonical.database.constants import UTC_NOW
 
