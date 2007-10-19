@@ -14,10 +14,15 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"
-    permission="zope.Public">
+    permission="zope.Public"
+    class="canonical.launchpad.browser.BinaryPublishingRecordView">
     <browser:page
       name="+listing-detailed"
       template="../templates/binarypackagepublishinghistory-listing-detailed.pt"
+      />
+    <browser:page
+      name="+record-details"
+      template="../templates/packagepublishing-details.pt"
       />
   </browser:pages>
 

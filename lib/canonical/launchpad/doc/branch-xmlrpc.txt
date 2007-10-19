@@ -1,5 +1,4 @@
-IBranchSetAPI
--------------
+= IBranchSetAPI =
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
@@ -10,9 +9,11 @@ IBranchSetAPI
     ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
     ...     transport=XMLRPCTestTransport())
 
+
+== register_branch ==
+
 register_branch(branch_url, branch_name, branch_title,
                 branch_description, author_email, product_name)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's register a branch using register_branch(). First we make sure that
 there is no branch with the URL we are going to register.
@@ -222,8 +223,7 @@ policy is forbidden will cause a fault result.
     The Landscape Project'>
 
 
-link_branch_to_bug(branch_url, bug_id, whiteboard)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+== link_branch_to_bug(branch_url, bug_id, whiteboard) ==
 
 link_branch_to_bug() associates a branch with a bug. Let's associate
 the branch we registered with bug 1. If the link is successful, the bug
@@ -264,3 +264,156 @@ We get an error if we try to specify a non-existant branch or bug:
     Traceback (most recent call last):
     ...
     Fault: <Fault 40: 'No such bug: 99'>
+
+
+== resolve_lp_path ==
+
+The resolve_lp_path API allows clients to retrieve a list of URLs for a
+branch by specifying the path component of an lp: URL.
+
+Use of this method by any client other than the 'Launchpad' plugin of
+Bazaar is strictly unsupported.
+
+This API is deprecated, and will eventually be replaced with an
+equivalent method in the new Launchpad API infrastructure.
+
+Note that authentication is not required to use this method.
+
+    >>> branchset_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc.launchpad.dev/bazaar/',
+    ...     transport=XMLRPCTestTransport())
+
+
+On success, resolve_lp_path returns a dict containing a single key,
+'urls':
+
+    >>> results = branchset_api.resolve_lp_path('~vcs-imports/evolution/main')
+    >>> print results.keys()
+    ['urls']
+
+
+The value of a key is a list of URLs from which the branch can be
+accessed:
+
+    >>> results = branchset_api.resolve_lp_path('~vcs-imports/evolution/main')
+    >>> for url in results['urls']:
+    ...     print url
+    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
+
+The URLs that are likely to be faster or provide write access appear
+earlier in the list.
+
+
+=== lp:project ===
+
+If you specify a path with a single segment, then Launchpad treats that
+path as the name of a project, and returns URLs to the branch
+associated with the project's development focus series.
+
+    >>> results = branchset_api.resolve_lp_path('evolution')
+    >>> for url in results['urls']:
+    ...     print url
+    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
+
+
+Launchpad returns a fault if the development focus doesn't have branch
+associated with it.
+
+    >>> branchset_api.resolve_lp_path('firefox')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 170: 'Series trunk on firefox has no branch associated with it'>
+
+
+Launchpad also returns a fault if the project doesn't exist.
+
+    >>> branchset_api.resolve_lp_path('doesntexist')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 10: 'No such product: doesntexist'>
+
+
+=== lp:project/series ===
+
+If you specify a path with two segments, Launchpad treats that as a
+reference to a particular series on a project.
+
+    >>> results = branchset_api.resolve_lp_path('evolution/trunk')
+    >>> for url in results['urls']:
+    ...     print url
+    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
+
+
+If the series doesn't exist, then the server returns a fault.
+
+    >>> branchset_api.resolve_lp_path('firefox/doesntexist')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 180: 'Project firefox has no series called "doesntexist"'>
+
+
+Similarly if the project doesn't exist:
+
+    >>> branchset_api.resolve_lp_path('doesntexist/trunk')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 10: 'No such product: doesntexist'>
+
+
+=== lp:~owner/product/branch ===
+
+Anything longer than two segments is treated as a unique branch name
+followed by an arbitrary path:
+
+    >>> results = branchset_api.resolve_lp_path('~vcs-imports/evolution/main')
+    >>> for url in results['urls']:
+    ...     print url
+    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
+
+
+Launchpad will still resolve the branch even if it doesn't exist:
+
+    >>> results = branchset_api.resolve_lp_path('~sabdfl/+junk/doesntexist')
+    >>> for url in results['urls']:
+    ...     print url
+    bzr+ssh://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
+    sftp://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
+    http://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
+
+
+But if the project or the user doesn't exist, Launchpad will return a fault:
+
+    >>> branchset_api.resolve_lp_path('~doesntexist/+junk/trunk')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 200: 'No such person: doesntexist'>
+
+    >>> branchset_api.resolve_lp_path('~sabdfl/doesntexist/trunk')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 10: 'No such product: doesntexist'>
+
+
+=== Remote branches ===
+
+Some branches on Launchpad are 'remote' branches. These branches are
+not hosted on Launchpad and are only available (if at all) on remote
+sites. For these branches, resolve_lp_path returns only a single URL.
+
+    >>> from canonical.launchpad.interfaces import (BranchType, IPersonSet)
+    >>> arbitrary_person = getUtility(IPersonSet).getByName('name12')
+    >>> getUtility(IBranchSet).new(
+    ...     BranchType.REMOTE, 'remote', arbitrary_person, arbitrary_person,
+    ...     None, 'http://example.com/remote_branch')
+    <Branch u'~name12/+junk/remote' (80)>
+    >>> results = branchset_api.resolve_lp_path('~name12/+junk/remote')
+    >>> results['urls']
+    ['http://example.com/remote_branch']

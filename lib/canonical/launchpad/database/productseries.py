@@ -31,10 +31,10 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError, PackagingType, RevisionControlSystems, SpecificationSort,
-    SpecificationGoalStatus, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus)
-from canonical.lp.dbschema import ImportStatus
+    ImportStatus, NotFoundError, PackagingType, RevisionControlSystems,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationGoalStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 
 
 class NoImportBranchError(Exception):
@@ -526,10 +526,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
-    def newMilestone(self, name, dateexpected=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
-        return Milestone(name=name, dateexpected=dateexpected,
-                         product=self.product, productseries=self)
+        return Milestone(
+            name=name, dateexpected=dateexpected, description=description,
+            product=self.product, productseries=self)
 
 
 class ProductSeriesSet:
