@@ -1520,11 +1520,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.REMOVED),
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.distribution.all_distro_archive_ids),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -1551,11 +1548,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.REMOVED),
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.distribution.all_distro_archive_ids),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -1586,12 +1580,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(
-                    binarypackagename,
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.REMOVED),
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(binarypackagename, self,
+                            self.distribution.all_distro_archive_ids),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease'],

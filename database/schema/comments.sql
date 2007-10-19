@@ -56,6 +56,12 @@ COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibi
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
 
+-- BranchWithSortKeys
+
+COMMENT ON VIEW BranchWithSortKeys IS 'A hack to allow the sorting of queries to Branch by human-meaningful keys in the face of limitations in SQLObject.  Will go away when we start using Storm.  This view has all the columns of Branch with three extra names joined on to it.';
+COMMENT ON COLUMN BranchWithSortKeys.product_name IS 'Branch.product.name';
+COMMENT ON COLUMN BranchWithSortKeys.author_name IS 'Branch.author.displayname';
+COMMENT ON COLUMN BranchWithSortKeys.owner_name IS 'Branch.owner.displayname';
 
 -- Bug
 
@@ -366,7 +372,6 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
-COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
@@ -409,7 +414,7 @@ COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can appr
 COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
 gives the state of our efforts to import the upstream code from its revision
 control system and publish that in the baz revision control system. The
-allowed values are documented in dbschema.BazImportStatus.';
+allowed values are documented in ImportStatus.';
 COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
 by upstream for this product series. The value is defined in
 dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
@@ -495,7 +500,6 @@ this project\'s translation process. The enum lists different approaches to
 translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
-COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 -- COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.';
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
 COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a project.';
@@ -686,28 +690,6 @@ COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
--- Calendar
-
-COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
-COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
-COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
-
-
--- CalendarSubscription
-COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
-COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
-
-COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
-COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
-COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
-COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
-COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
-COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
-COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
-COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
-
 COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinaryPackageName.name IS
@@ -841,9 +823,14 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket int
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+
+-- BinaryPackagePublishingHistory and PublishedPackage Views
+
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
-COMMENT ON VIEW PublishedPackageView IS
+COMMENT ON VIEW PublishedPackage IS
     'A very large view that brings together all the information about
     packages that are currently being published within a distribution. This
     view was designed for the page which shows packages published in the
@@ -912,7 +899,6 @@ COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will ha
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
-COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to that person.';
@@ -1270,6 +1256,7 @@ COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that thi
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
 
 -- SecureSourcePackagePublishingHistory
+
 COMMENT ON TABLE SecureSourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
@@ -1286,6 +1273,11 @@ COMMENT ON COLUMN SecureSourcePackagePublishingHistory.dateremoved IS 'The date/
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+
+-- SourcePackagePublishingHistory View
+
 COMMENT ON VIEW SourcePackagePublishingHistory IS 'A view on SecureSourcePackagePublishingHistory that restricts access to embargoed entries';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
 

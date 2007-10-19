@@ -41,9 +41,10 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
-    ICountry, ILaunchpadCelebrities, IPOTemplateSet, IProductSeries,
-    IProductSeriesSet, ISourcePackageNameSet, ITranslationImporter,
-    ITranslationImportQueue, NotFoundError, RevisionControlSystems)
+    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
+    ITranslationImporter, ITranslationImportQueue, NotFoundError,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -51,7 +52,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
-from canonical.lp.dbschema import ImportStatus
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 

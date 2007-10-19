@@ -113,7 +113,20 @@ branch appears in the table.
 The role can be "Author", if the person is pointed to by the 'author' attribute
 of the branch.
 
-    >>> gterm_klingon = branchset[18]
+    >>> def get_sample_person_branch_with_id(id):
+    ...     """Return the BranchWithSortKeys object of id `id`."""
+    ...     # XXX Michael Hudson 2007-10-18 bug=154016: Because the view class
+    ...     # calls getBranchesForPerson which returns BranchWithSortKeys
+    ...     # objects, roleForBranch expects BranchWithSortKeys objects too.
+    ...     # All this can go away when we get rid of BranchWithSortKeys,
+    ...     # which is when we move away from SQLObject.
+    ...     sample_person_branches = branchset.getBranchesForPerson(
+    ...         sampleperson)
+    ...     [result] = [branch for branch in sample_person_branches
+    ...                 if branch.id == id]
+    ...     return result
+
+    >>> gterm_klingon = get_sample_person_branch_with_id(18)
     >>> gterm_klingon.author == sampleperson
     True
     >>> sampleperson_branches_view.roleForBranch(gterm_klingon)
@@ -122,6 +135,7 @@ of the branch.
 If the person is not the branch's author, the role is "Registrant" if the
 person is pointed to by the 'owner' attribute of the branch.
 
+    >>> gterm_dev = get_sample_person_branch_with_id(15)
     >>> gterm_dev.author == sampleperson
     False
     >>> gterm_dev.owner == sampleperson
@@ -132,7 +146,7 @@ person is pointed to by the 'owner' attribute of the branch.
 If the person is neither author nor registrant of a branch, role is
 "Subscriber" if the person is indeed subscribed to the branch.
 
-    >>> gterm_launchpad = branchset[24]
+    >>> gterm_launchpad = get_sample_person_branch_with_id(24)
     >>> gterm_launchpad.author == sampleperson
     False
     >>> gterm_launchpad.owner == sampleperson
