@@ -8,7 +8,6 @@ import inspect
 from zope.interface import Interface, implements
 from zope.component import getUtility
 import zope.component.servicenames
-from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
@@ -22,12 +21,11 @@ from zope.app.component.metaconfigure import (
     handler, adapter, utility, view, PublicPermission)
 
 from zope.app.component.contentdirective import ContentDirective
-from zope.app.component.interface import provideInterface
 from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.menumeta import menuItemDirective
+from zope.app.publisher.browser.viewmeta import page
 import zope.app.form.browser.metaconfigure
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -35,19 +33,15 @@ from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
 
-from zope.app.publisher.browser.metaconfigure import (
-    defaultView as original_defaultView)
-
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb, IAuthorization,
-    IBreadcrumbProvider)
+    IContextMenu, IAuthorization, IBreadcrumbProvider)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
-
+from canonical.launchpad.layers import FeedsLayer
 
 class IAuthorizationsDirective(Interface):
     """Set up authorizations as given in a module."""
@@ -174,35 +168,33 @@ class IURLDirective(Interface):
         required=False)
 
 
-class IMenusDirective(Interface):
+class IGlueDirective(Interface):
+    """ZCML glue to register some classes perform an action.
+
+    For each class in the classes list, found in the specified module, the
+    handler will hookup the class to do something.
+    """
+    module = GlobalObject(
+        title=u"Module in which the classes are found."
+        )
+
+    classes = Tokens(
+        value_type=PythonIdentifier(),
+        title=u"Space separated list of classes to register.",
+        required=True
+        )
+
+
+class IMenusDirective(IGlueDirective):
     """Hook up facets and menus."""
 
-    module = GlobalObject(
-        title=u"Module in which menu classes are found.",
-        required=True
-        )
 
-    classes = Tokens(
-        value_type=PythonIdentifier(),
-        title=u"Space separated list of classes to be registered as menus.",
-        required=True
-        )
-
-
-class INavigationDirective(Interface):
+class INavigationDirective(IGlueDirective):
     """Hook up traversal etc."""
 
-    module = GlobalObject(
-        title=u"Module in which menu classes are found.",
-        required=True
-        )
 
-    classes = Tokens(
-        value_type=PythonIdentifier(),
-        title=u"Space separated list of classes to be registered as navigation"
-               " components",
-        required=True
-        )
+class IFeedsDirective(IGlueDirective):
+    """Hook up feeds."""
 
 
 class IFaviconDirective(Interface):
@@ -219,7 +211,7 @@ class IFaviconDirective(Interface):
 
 
 def menus(_context, module, classes):
-    """Handler for the IMenusDirective."""
+    """Handler for the `IMenusDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
@@ -252,8 +244,32 @@ def menus(_context, module, classes):
                 permission=PublicPermission)
 
 
+def feeds(_context, module, classes):
+    """Handler for the `IFeedsDirective`."""
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+
+    for feedclassname in classes:
+        feedclass = getattr(module, feedclassname)
+
+        for_ = feedclass.usedfor
+
+        feedname = feedclass.feedname
+
+        atom_name = '%s.atom' % feedname
+        html_fragment_name = '%s.html' % feedname
+        javascript_name = '%s.js' % feedname
+
+        layer = FeedsLayer
+
+        for name in atom_name, html_fragment_name, javascript_name:
+            original_page(_context, name, PublicPermission, for_,
+                          layer=layer, class_=feedclass)
+
+
 def navigation(_context, module, classes):
-    """Handler for the INavigationDirective."""
+    """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
@@ -515,7 +531,7 @@ class IRenamedPageDirective(Interface):
 
 def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
                  rootsite=None):
-    """Will provide a RedirectView that will redirect to the new_name."""
+    """Will provide a `RedirectView` that will redirect to the new_name."""
     def renamed_factory(context, request):
         return RenamedView(
             context, request, new_name=new_name, rootsite=rootsite)
@@ -556,7 +572,7 @@ class ITourPageDirective(Interface):
 
 
 def tour_page(_context, for_, name, tour, layer=IDefaultBrowserLayer):
-    """Register a new LaunchpadTourView.
+    """Register a new `LaunchpadTourView`.
 
     This actually register a dynamically generated subclass that is protected
     with the configured permission.
@@ -782,4 +798,3 @@ class SchemaDisplayDirective(
 
         zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
             self)
-

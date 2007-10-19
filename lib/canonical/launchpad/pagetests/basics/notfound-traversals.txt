@@ -58,6 +58,8 @@ status is returned.
 >>> check_redirect("/legal", status=301)
 >>> check_redirect("/faq", status=301)
 >>> check_redirect("/feedback", status=301)
+>>> check_redirect("/", host='feeds.launchpad.dev', status=301)
+>>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
 >>> check("/translations/+about")

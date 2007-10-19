@@ -1,0 +1,148 @@
+= HTML Feeds =
+
+HTML feeds produce snippets of html for inclusion in user's own web pages.
+The content of an HTML feed is very similar to an Atom feed, but is formatted
+as HTML instead of Atom.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> from BeautifulSoup import SoupStrainer
+
+Define a helper function for parsing the entries:
+    >>> def parse_entries(contents):
+    ...     entries = [tag for tag in BeautifulSoup(browser.contents,
+    ...                   parseOnlyThese=SoupStrainer('tr'))]
+    ...     return entries
+
+
+== Latest bugs for a product ==
+
+This feed gets the latest bugs reported against a product. The feed includes
+summary information about the bugs such as ID, title, author, and a link to
+the bug itself.
+
+    >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.html?'
+    ...              'show_column=bugtargetdisplayname')
+    >>> browser.title
+    'Bugs in Jokosher'
+    >>> browser.url
+    'http://feeds.launchpad.dev/jokosher/latest-bugs.html?show_column=bugtargetdisplayname'
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    3
+    >>> entry = entries[1]
+    >>> print extract_text(entry('td')[1])
+    12
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/jokosher/+bug/12
+    >>> print extract_text(entry('td')[2])
+    Copy, Cut and Delete operations should work on selections
+    >>> print entry('td')[2].a['href']
+    http://bugs.launchpad.dev/jokosher/+bug/12
+    >>> print extract_text(entry('td')[3])
+    Jokosher 
+    >>> print extract_text(entry('td')[4])
+    Critical
+    >>> print extract_text(entry('td')[5])
+    Confirmed
+
+
+== Latest bugs for a project ==
+
+This feed gets the latest bugs for a project, and has the same type of content
+as the latest bugs feed for a product.
+
+    >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
+    ...              'show_column=bugtargetdisplayname')
+    >>> browser.title
+    'Bugs in the Mozilla Project'
+    >>> browser.url
+    'http://feeds.launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    10
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry('td')[1])
+    9
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/thunderbird/+bug/9
+    >>> print extract_text(entry('td')[2])
+    Thunderbird crashes
+    >>> print extract_text(entry('td')[3])
+    Mozilla Thunderbird
+    >>> print extract_text(entry('td')[4])
+    Unknown
+    >>> print extract_text(entry('td')[5])
+    Unknown
+
+
+== Latest bugs for a person ==
+
+This feed gets the latest bugs for a person.
+
+    >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.html')
+    >>> browser.title
+    'Bugs for Foo Bar'
+    >>> browser.url
+    'http://feeds.launchpad.dev/~name16/latest-bugs.html'
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    11
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry('td')[1])
+    3
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[2])
+    Bug Title Test
+    >>> print entry('td')[2].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[3])
+    mozilla-firefox (Debian)
+    >>> print extract_text(entry('td')[4])
+    Unknown
+    >>> print extract_text(entry('td')[5])
+    New
+
+
+== General bug search ==
+
+This feed is the most useful of them all. Any bug search can be turned into
+a feed.
+
+    >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.html?"
+    ...        "field.searchtext=&search=Search+Bug+Reports&"
+    ...        "field.scope=all&field.scope.target=")
+    >>> browser.open(url)
+    >>> browser.title
+    'Bugs from custom search'
+
+    >>> soup = BeautifulSoup(browser.contents)
+
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    23
+
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry('td')[1])
+    3
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[2])
+    Bug Title Test
+    >>> print entry('td')[2].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[3])
+    mozilla-firefox (Debian)
+    >>> print extract_text(entry('td')[4])
+    Unknown
+    >>> print extract_text(entry('td')[5])
+    New
