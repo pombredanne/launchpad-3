@@ -138,6 +138,11 @@ for CANDIDATE in $SIGNLIST_PARTNER; do
   fi
 done
 
+# Generate the -commercial pocket for backwards compatibility with
+# dapper, edgy and feisty releases.  Don't fail the whole script if it
+# fails.
+commercial-compat.sh || true
+
 # The Packages and Sources files are very large and would cripple our
 # mirrors, so we remove them now that the uncompressed MD5SUMS are in the
 # Release files.
@@ -183,7 +188,7 @@ LSLR=ls-lR.gz
 
 ( cd $ARCHIVEROOT ; \
   dsync-flist -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
-  dsync-flist -q md5sums $DSYNCLIST | gzip -9n > ${MD5LIST} ; \
+  (dsync-flist -q md5sums $DSYNCLIST; find dists '(' -name 'Packages*' -o -name 'Sources*' -o -name 'Release*' ')' -print | xargs -r md5sum) | gzip -9n > ${MD5LIST} ; \
   dsync-flist -q link-dups $DSYNCLIST || true )
 
 # Clear out empty and thus redundant dirs
@@ -197,4 +202,5 @@ cron.germinate
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ssh archvsync@syowa
     ssh archvsync@frei
+    ssh archvsync@rockhopper
 fi

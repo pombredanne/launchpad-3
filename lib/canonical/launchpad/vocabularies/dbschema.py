@@ -12,7 +12,6 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
-    'BugBranchStatusVocabulary',
     'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTrackerTypeVocabulary',
@@ -22,11 +21,6 @@ __all__ = [
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'SpecificationImplementationStatusVocabulary',
-    'SpecificationPriorityVocabulary',
-    'SpecificationDefinitionStatusVocabulary',
-    'SpecificationGoalStatusVocabulary',
-    'SprintSpecificationStatusVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
     ]
@@ -34,13 +28,13 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
-
+from canonical.launchpad.interfaces import (
+    TranslationFileFormat, TranslationPermission)
 
 # DB Schema Vocabularies
 
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
-BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
@@ -56,10 +50,5 @@ InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
-SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
-SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
-SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
-SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
-TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
-TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+TranslationFileFormatVocabulary = vocab_factory(TranslationFileFormat)
+TranslationPermissionVocabulary = vocab_factory(TranslationPermission)

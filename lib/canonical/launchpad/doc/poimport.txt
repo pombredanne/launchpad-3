@@ -27,7 +27,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-    >>> from canonical.lp.dbschema import RosettaImportStatus
+    >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -239,7 +239,7 @@ errors.
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 This is the dbschema that controls the validation of a translation.
-    >>> from canonical.lp.dbschema import TranslationValidationStatus
+    >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
 template. Remember, we need to tell the system that this po file is a

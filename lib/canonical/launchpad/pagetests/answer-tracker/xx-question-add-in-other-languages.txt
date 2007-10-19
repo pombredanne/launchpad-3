@@ -97,9 +97,7 @@ the language in the question details portlet.
 It's also possible that the user chose English in the first page but
 then changed his mind on the second page.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['en']

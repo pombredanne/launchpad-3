@@ -1,5 +1,4 @@
-Incoming Mail
-=============
+= Incoming Mail =
 
 When an email is sent to Launchpad we need to handle it somehow. This
 is done by handleEmails:
@@ -14,8 +13,8 @@ message it:
     * Lets the handler process the message
     * Deletes the message from the mail box
 
-Mail Handlers
--------------
+
+== Mail Handlers ==
 
 A mail handler is a utility which knows how to handle mail sent to a
 specific domain. It is registered as a named utility providing
@@ -87,8 +86,7 @@ Now we can see that each handler handled that mails sent to its domain:
     True
 
 
-Unhandled Mail
---------------
+== Unhandled Mail ==
 
 So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an error message was sent
@@ -105,8 +103,8 @@ errors_address.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
-Mail from Persons not registered in Launchpad
----------------------------------------------
+
+== Mail from Persons not registered in Launchpad ==
 
 If a Person who isn't registered in Launchpad sends an email, we'll
 most of the time reject the email:
@@ -137,8 +135,8 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 
     >>> stub.test_emails = []
 
-X-Original-To
--------------
+
+== X-Original-To ==
 
 If available, the X-Original-To header is used to determine to which
 address the email was sent to:
@@ -161,8 +159,8 @@ the To and CC headers will be ignored:
     >>> msgid in foo_handler.handledMails
     False
 
-DB exceptions
--------------
+
+== DB exceptions ==
 
 If something goes wrongs in the handler, a DB exception can be raised,
 leaving the database in a bad state. If that happens a traceback should
@@ -225,8 +223,8 @@ There are no mails left in the mail box:
     >>> len(stub.test_emails)
     0
 
-Librarian not running
----------------------
+
+== Librarian not running ==
 
 If for some reason the Librarian isn't up and running, we shouldn't
 loose any emails. All that should happen is that an error should get
@@ -254,8 +252,8 @@ logged.
     >>> LibrarianLayer.reveal()
     >>> stub.test_emails = []
 
-Handling bounces
-----------------
+
+== Handling bounces ==
 
 Some broken mailers might not respect the Errors-To and Return-Path
 headers, send error messages back to the address, from which the email
@@ -300,7 +298,7 @@ empty Return-Path, but there are some broken mailers out there.
     0
 
 
-Some test cleanup code:
+== Doctest cleanup ==
 
     >>> LibrarianLayer.hide()
     >>> config.malone.bugmail_error_from_address = old_error_from_address

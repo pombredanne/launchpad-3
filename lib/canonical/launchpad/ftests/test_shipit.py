@@ -153,7 +153,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # when creating the previous account.
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
-            distroseries=ShipItDistroSeries.GUTSY)
+            distroseries=ShipItDistroSeries.DAPPER)
         self.failUnless(request2.isApproved(), flavour)
         self.failIfEqual(request.distroseries, request2.distroseries)
         self.assertEqual(

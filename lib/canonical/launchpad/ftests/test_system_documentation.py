@@ -21,9 +21,12 @@ from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
+from canonical.launchpad.ftests.xmlrpc_helper import (
+    fault_catcher, mailingListPrintActions, mailingListPrintInfo)
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
-    IPersonSet, TeamSubscriptionPolicy)
+    CreateBugParams, EmailAddressStatus, IBugTaskSet, IDistributionSet,
+    IEmailAddressSet, ILanguageSet, ILaunchBag, IMailingListSet, IPersonSet,
+    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -72,6 +75,10 @@ def setUp(test):
 
 def tearDown(test):
     logout()
+
+def checkwatchesSetUp(test):
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 def poExportSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('poexport')
@@ -218,41 +225,8 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     login(ANONYMOUS)
 
 
-def mailingListPrintActions(pending_actions):
-    """A helper function for the mailinglist-xmlrpc.txt doctest.
-
-    This helps print the data structure returned from .getPendingActions() in
-    a more succinct way so as to produce a more readable doctest.  It also
-    eliminates trivial representational differences caused by the doctest
-    being run both with an internal view and via an XMLRPC proxy.
-
-    The problem is that the types of the values in the pending_actions
-    dictionary will be different depending on which way the doctest is run.
-    The contents will be the same but when run via an XMLRPC proxy, the values
-    will be strs, and when run via the internal view, they will be unicodes.
-    If you don't coerce the values, they'll print differently, superficially
-    breaking the doctest.  For example, unicodes will print with a u-prefix
-    (e.g. u'Welcome to Team One') while the strs will print without a prefix
-    (e.g. 'Welcome to Team One').
-
-    The only way to write a doctest so that both correct results will pass is
-    to coerce one string type to the other, and coercing to unicodes seems
-    like the most straightforward thing to do.  The keys of the dictionary do
-    not need to be coerced because they will be strs in both cases.
-    """
-    for action in sorted(pending_actions):
-        for team in sorted(pending_actions[action]):
-            if action in ('create', 'modify'):
-                team, modification = team
-                modification = dict((k, unicode(v))
-                                    for k, v in modification.items())
-                print team, '-->', action, modification
-            else:
-                print team, '-->', action
-
-
-def mailingListNewTeam(team_name):
-    """A helper function for the mailinglist-xmlrpc.txt doctest.
+def mailingListNewTeam(team_name, with_list=False):
+    """A helper function for the mailinglist doctests.
 
     This just provides a convenience function for creating the kinds of teams
     we need to use in the doctest.
@@ -263,8 +237,40 @@ def mailingListNewTeam(team_name):
     policy = TeamSubscriptionPolicy.OPEN
     personset = getUtility(IPersonSet)
     ddaa = personset.getByName('ddaa')
-    return personset.newTeam(ddaa, team_name, displayname,
+    team = personset.newTeam(ddaa, team_name, displayname,
                              subscriptionpolicy=policy)
+    if not with_list:
+        return team
+    carlos = personset.getByName('carlos')
+    list_set = getUtility(IMailingListSet)
+    team_list = list_set.new(team)
+    team_list.review(carlos, MailingListStatus.APPROVED)
+    team_list.startConstructing()
+    team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    return team, team_list
+
+
+def mailingListNewPerson(first_name):
+    """Create a new person with the given first name.
+
+    The person will be given two email addresses, with the 'long form'
+    (e.g. anne.person@example.com) as the preferred address.  Return the new
+    person object.
+    """
+    variable_name = first_name.lower()
+    full_name = first_name + ' Person'
+    # E.g. firstname.person@example.com will be the preferred address.
+    preferred_address = variable_name + '.person@example.com'
+    # E.g. aperson@example.org will be an alternative address.
+    alternative_address = variable_name[0] + 'person@example.org'
+    person, email = getUtility(IPersonSet).createPersonAndEmail(
+        preferred_address,
+        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+        name=variable_name, displayname=full_name)
+    person.setPreferredEmail(email)
+    email = getUtility(IEmailAddressSet).new(alternative_address, person)
+    email.status = EmailAddressStatus.VALIDATED
+    return person
 
 
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
@@ -277,42 +283,30 @@ def mailingListXMLRPCInternalSetUp(test):
     # architecture.  Don't use ServerProxy.  We do this because it's easier to
     # debug because when things go horribly wrong, you see the errors on
     # stdout instead of in an OOPS report living in some log file somewhere.
-    #
-    # There's one gotcha here: when running the same doctest with the
-    # ServerProxy, faults are turned into exceptions by the XMLRPC machinery,
-    # but with the direct view the faults are just returned.  This causes an
-    # impedence mismatch with exception display in the doctest that cannot be
-    # papered over by using ellipses.  So to make this work in a consistent
-    # way, a subclass of the view class is used which prints faults to match
-    # the output of ServerProxy (proper exceptions aren't really necessary).
-    import xmlrpclib
-    def adapter(func):
-        def caller(self, *args, **kws):
-            result = func(self, *args, **kws)
-            if isinstance(result, xmlrpclib.Fault):
-                # Fake this to look like exception output.  The second line is
-                # necessary to match ellipses in the doctest, but its contents
-                # are completely ignored; /something/ just has to be there.
-                print 'Traceback (most recent call last):'
-                print 'ignore'
-                print 'Fault:', result
-            else:
-                return result
-        return caller
-    from canonical.launchpad.xmlrpc import RequestedMailingListAPI
-    class ImpedenceMatchingView(RequestedMailingListAPI):
-        @adapter
+    from canonical.launchpad.xmlrpc import MailingListAPIView
+    class ImpedenceMatchingView(MailingListAPIView):
+        @fault_catcher
         def getPendingActions(self):
             return super(ImpedenceMatchingView, self).getPendingActions()
-        @adapter
+        @fault_catcher
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
+        @fault_catcher
+        def getMembershipInformation(self, teams):
+            return super(ImpedenceMatchingView, self).getMembershipInformation(
+                teams)
+        @fault_catcher
+        def isLaunchpadMember(self, address):
+            return super(ImpedenceMatchingView, self).isLaunchpadMember(
+                address)
     # Expose in the doctest's globals, the view as the thing with the
-    # IRequestedMailingListAPI interface.  Also expose the helper functions.
+    # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['print_actions'] = mailingListPrintActions
+    test.globs['new_person'] = mailingListNewPerson
     test.globs['new_team'] = mailingListNewTeam
+    test.globs['print_actions'] = mailingListPrintActions
+    test.globs['print_info'] = mailingListPrintInfo
     # Expose different commit() functions to handle the 'external' case below
     # where there is more than one connection.  The 'internal' case here has
     # just one coneection so the flush is all we need.
@@ -334,9 +328,18 @@ def mailingListXMLRPCExternalSetUp(test):
     # tests, but if we're able to resolve the big XXX above the
     # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
     # two globals will end up being different functions.
-    test.globs['print_actions'] = mailingListPrintActions
+    test.globs['mailinglist_api'] = mailinglist_api
+    test.globs['new_person'] = mailingListNewPerson
     test.globs['new_team'] = mailingListNewTeam
+    test.globs['print_actions'] = mailingListPrintActions
+    test.globs['print_info'] = mailingListPrintInfo
     test.globs['commit'] = flush_database_updates
+
+
+def mailingListSubscriptionSetUp(test):
+    setUp(test)
+    test.globs['new_team'] = mailingListNewTeam
+    test.globs['new_person'] = mailingListNewPerson
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -593,6 +596,97 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'externalbugtracker-bugzilla.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-bugzilla-oddities.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-oddities.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-checkwatches.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-checkwatches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-debbugs.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-debbugs.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-mantis-csv.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-mantis-csv.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-mantis.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-mantis.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-python.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-python.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-roundup.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-roundup.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-sourceforge.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-sourceforge.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-trac.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'mailinglist-subscriptions-xmlrpc.txt': FunctionalDocFileSuite(
+            '../doc/mailinglist-subscriptions-xmlrpc.txt',
+            setUp=mailingListXMLRPCInternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'mailinglist-subscriptions-xmlrpc.txt-external': FunctionalDocFileSuite(
+            '../doc/mailinglist-subscriptions-xmlrpc.txt',
+            setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
+            ),
+    'mailinglist-subscriptions.txt': FunctionalDocFileSuite(
+            '../doc/mailinglist-subscriptions.txt',
+            setUp=mailingListSubscriptionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
+            ),
     }
 
 
@@ -633,6 +727,7 @@ def test_suite():
         suite.addTest(one_test)
 
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(test_suite())

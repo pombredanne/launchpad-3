@@ -291,7 +291,7 @@ fi
 
 
 echo "Setting up devpad repository..."
-ssh devpad.canonical.com ~mark/devpad-setup
+ssh devpad.canonical.com /code/rocketfuel-built/launchpad/utilities/devpad-setup
 
 
 # Create the local branch structure we will use for managing Launchpad code
@@ -333,6 +333,13 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
 fi
 
 # Setup Bazaar locations configuration
+if [ ! -d ~/.bazaar ]; then
+  mkdir ~/.bazaar
+  if [ $? -ne 0 ]; then
+    echo "Unable to create ~/.bazaar/ directory"
+    exit 1
+  fi
+fi
 if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
@@ -341,7 +348,7 @@ if [ $? -ne 0 ]; then
   branchloc=$(eval echo "~/canonical/lp-branches")
   echo "
 [${branchloc}]
-pqm_email = Canonical PQM <pqm@pqm.ubuntu.com>
+pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
 public_branch = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
 public_branch:policy = appendpath
@@ -394,6 +401,14 @@ if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-status should be deleted so I can
          recreate it."
 fi
+if [ ! -e rocketfuel-push ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-push
+fi
+ls -l rocketfuel-push | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-push should be deleted so I can
+         recreate it."
+fi
 
 
 # Make sure we have all the right code in place for source dependencies
@@ -403,11 +418,25 @@ echo "
 Thank you for using this script. You can improve it for everyone by
 committing changes to LP in utilities/rocketfuel-setup.
 
-Now you can use "rocketfuel-branch foo" to create a new branch of LP called
-"foo", with all the source dependencies properly linked in.
+You should use the following commands to manage your Rocketfuel:
 
-And you can use "rocketfuel-get" to update your copy of trunk and the
-necessary source dependencies.
+ rocketfuel-branch foo
+    Create a new branch of LP called "foo" in ~/canonical/lp-branches/foo,
+    with all the source dependencies properly linked in.
+
+ rocketfuel-get
+    Update your copy of trunk and the necessary source dependencies, and
+    make sure all source dependencies are properly linked in to all the
+    branches you are working on.
+
+ rocketfuel-status
+    Check each of the branches in ~/canonical/lp-branches/ and show which of
+    them have uncommitted changes, also check which ones have revisions that
+    have not yet landed on trunk.
+
+ rocketfuel-push
+    Push all of your branches to devpad, so that you have a server-side
+    backup of everything.
 
 Happy hacking!
 "
