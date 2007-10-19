@@ -195,11 +195,109 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.slave = new_slave
 
-    def startBuild(self, build_queue_item, logger):
-        """See IBuilder."""
-        logger.info("startBuild(%s, %s, %s, %s)", self.url,
-                    build_queue_item.name, build_queue_item.version,
-                    build_queue_item.build.pocket.title)
+    @property
+    def pocket_dependencies(self):
+        """A dictionary of pocket to possible pocket tuple.
+
+        Return a dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+        """
+        return {
+            PackagePublishingPocket.RELEASE :
+                (PackagePublishingPocket.RELEASE,),
+            PackagePublishingPocket.SECURITY :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY),
+            PackagePublishingPocket.UPDATES :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY,
+                 PackagePublishingPocket.UPDATES),
+            PackagePublishingPocket.BACKPORTS :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY,
+                 PackagePublishingPocket.UPDATES,
+                 PackagePublishingPocket.BACKPORTS),
+            PackagePublishingPocket.PROPOSED :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY,
+                 PackagePublishingPocket.UPDATES,
+                 PackagePublishingPocket.PROPOSED),
+            }
+
+    def _archivesForBuild(self, build_queue_item):
+        """Work out what sources.list lines should be passed to the builder."""
+        # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
+        ogre_map = {
+            'main': 'main',
+            'restricted': 'main restricted',
+            'universe': 'main restricted universe',
+            'multiverse': 'main restricted universe multiverse',
+            'partner' : 'partner',
+            }
+        ogre_components = ogre_map[build_queue_item.current_component.name]
+        dist_name = build_queue_item.archseries.distroseries.name
+        archive_url = build_queue_item.build.archive.archive_url
+
+        # PPA only uses the RELEASE pocket.
+        if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
+            ubuntu_source_lines = [
+                'deb http://archive.ubuntu.com/ubuntu %s %s'
+                % (dist_name, ogre_components)]
+        else:
+            ubuntu_components = ogre_components
+            # A list of pockets that we are allowed to use for
+            # dependencies.
+
+            if (build_queue_item.build.archive.purpose ==
+                    ArchivePurpose.PARTNER):
+                # XXX julian 2007-08-07 - this is a greasy hack.
+                # Partner is a very special case because the partner
+                # component is only in the partner archive, so we have
+                # to be careful with the sources.list archives.
+                ubuntu_components = 'main restricted universe multiverse'
+
+                # Although partner builds are always in the release
+                # pocket, they depend on the same pockets as though they
+                # were in the updates pocket.
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.UPDATES]
+            else:
+                ubuntu_pockets = self.pocket_dependencies[
+                    build_queue_item.build.pocket]
+
+            # Here we build a list of sources.list lines for each pocket
+            # required in the primary archive.
+            ubuntu_source_lines = []
+            for pocket in ubuntu_pockets:
+                if pocket == PackagePublishingPocket.RELEASE:
+                    dist_pocket = dist_name
+                else:
+                    dist_pocket = dist_name + pocketsuffix[pocket]
+                ubuntu_source_lines.append(
+                    'deb http://ftpmaster.internal/ubuntu %s %s'
+                    % (dist_pocket, ubuntu_components))
+
+        # ubuntu_source_lines now contains all the entries needed for the
+        # pockets and components required in the primary archive.
+        if (build_queue_item.build.archive.purpose !=
+                ArchivePurpose.PRIMARY):
+            # We need to add entries for the non-primary archive now.
+            source_line = (
+                'deb %s %s %s'
+                % (archive_url, dist_name, ogre_components))
+            ubuntu_source_lines.append(source_line)
+
+        return ubuntu_source_lines
+
+    def _verifyBuildRequest(self, build_queue_item, logger):
+        """Assert some pre-build checks.
+
+        The build request is checked:
+         * Untrusted builds can't build on a trusted builder
+         * Ensure that we have a chroot
+         * Ensure that the build pocket allows builds for the current
+           distroseries state.
+        """
         if self.trusted:
             assert build_queue_item.is_trusted, (
                 "Attempt to build untrusted item on a trusted-only builder.")
@@ -231,11 +329,11 @@ class Builder(SQLBase):
                 "to the series status of %s."
                 % (build.title, build.id, build.pocket.name,
                    build.distroseries.name))
-        # If we are building untrusted source reset the entire machine.
-        if not self.trusted:
-            self.resetSlaveHost(logger)
 
+    def _dispatchBuildToSlave(self, build_queue_item, args, buildid, logger):
+        """Start the build on the slave builder."""
         # Send chroot.
+        chroot = build_queue_item.archseries.getChroot()
         self.cacheFileOnSlave(logger, chroot)
 
         # Build filemap structure with the files required in this build
@@ -245,115 +343,7 @@ class Builder(SQLBase):
             filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
             self.cacheFileOnSlave(logger, f.libraryfile)
 
-        # Build extra arguments
-        args = {}
-        args["ogrecomponent"] = build_queue_item.current_component.name
-        # turn 'arch_indep' ON only if build is archindep or if
-        # the specific architecture is the nominatedarchindep for
-        # this distroseries (in case it requires any archindep source)
-        # XXX kiko 2006-08-31:
-        # There is no point in checking if archhintlist ==
-        # 'all' here, because it's redundant with the check for
-        # isNominatedArchIndep.
-        args['arch_indep'] = (
-            build_queue_item.archhintlist == 'all' or
-            build_queue_item.archseries.isNominatedArchIndep)
-
-        # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
-        ogre_map = {
-            'main': 'main',
-            'restricted': 'main restricted',
-            'universe': 'main restricted universe',
-            'multiverse': 'main restricted universe multiverse',
-            'partner' : 'partner',
-            }
-        ogre_components = ogre_map[build_queue_item.current_component.name]
-        dist_name = build_queue_item.archseries.distroseries.name
-        archive_url = build_queue_item.build.archive.archive_url
-
-        # PPA only uses the RELEASE pocket.
-        if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
-            ubuntu_source_lines = [
-                'deb http://archive.ubuntu.com/ubuntu %s %s'
-                % (dist_name, ogre_components)]
-        else:
-            ubuntu_components = ogre_components
-            # A list of pockets that we are allowed to use for
-            # dependencies.
-            pocket_dependencies = {
-                PackagePublishingPocket.RELEASE :
-                    (PackagePublishingPocket.RELEASE,),
-                PackagePublishingPocket.SECURITY :
-                    (PackagePublishingPocket.RELEASE,
-                     PackagePublishingPocket.SECURITY),
-                PackagePublishingPocket.UPDATES :
-                    (PackagePublishingPocket.RELEASE,
-                     PackagePublishingPocket.SECURITY,
-                     PackagePublishingPocket.UPDATES),
-                PackagePublishingPocket.BACKPORTS :
-                    (PackagePublishingPocket.RELEASE,
-                     PackagePublishingPocket.SECURITY,
-                     PackagePublishingPocket.UPDATES,
-                     PackagePublishingPocket.BACKPORTS),
-                PackagePublishingPocket.PROPOSED :
-                    (PackagePublishingPocket.RELEASE,
-                     PackagePublishingPocket.SECURITY,
-                     PackagePublishingPocket.UPDATES,
-                     PackagePublishingPocket.PROPOSED),
-                }
-
-            if (build_queue_item.build.archive.purpose ==
-                    ArchivePurpose.PARTNER):
-                # XXX julian 2007-08-07 - this is a greasy hack.
-                # See comment above about not modelling Ogre here.
-                # Partner is a very special case because the partner
-                # component is only in the partner archive, so we have
-                # to be careful with the sources.list archives.
-                ubuntu_components = 'main restricted universe multiverse'
-
-                # Although partner builds are always in the release
-                # pocket, they depend on the same pockets as though they
-                # were in the updates pocket.
-                ubuntu_pockets = pocket_dependencies[
-                    PackagePublishingPocket.UPDATES]
-            else:
-                ubuntu_pockets = pocket_dependencies[
-                    build_queue_item.build.pocket]
-
-            # Here we build a list of sources.list lines for each pocket
-            # required in the primary archive.
-            ubuntu_source_lines = []
-            for pocket in ubuntu_pockets:
-                if pocket == PackagePublishingPocket.RELEASE:
-                    dist_pocket = dist_name
-                else:
-                    dist_pocket = dist_name + pocketsuffix[pocket]
-                ubuntu_source_lines.append(
-                    'deb http://ftpmaster.internal/ubuntu %s %s'
-                    % (dist_pocket, ubuntu_components))
-
-        # ubuntu_source_lines now contains all the entries needed for the
-        # pockets and components required in the primary archive.
-        args['archives'] = ubuntu_source_lines
-        if (build_queue_item.build.archive.purpose !=
-                ArchivePurpose.PRIMARY):
-            # We need to add entries for the non-primary archive now.
-            source_line = (
-                'deb %s %s %s'
-                % (archive_url, dist_name, ogre_components))
-            args['archives'].append(source_line)
-
         chroot_sha1 = chroot.content.sha1
-        # store DB information
-        build_queue_item.builder = self
-        build_queue_item.buildstart = UTC_NOW
-        build_queue_item.build.buildstate = BuildStatus.BUILDING
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
-        logger.debug("Initiating build %s on %s" % (buildid, self.url))
-
         try:
             status, info = self.slave.build(
                 buildid, "debian", chroot_sha1, filemap, args)
@@ -366,11 +356,49 @@ class Builder(SQLBase):
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
         except (xmlrpclib.Fault, socket.error), info:
-            # mark builder as 'failed'.
+            # Mark builder as 'failed'.
             self._logger.debug(
                 "Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder("Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
+
+    def startBuild(self, build_queue_item, logger):
+        """See IBuilder."""
+        logger.info("startBuild(%s, %s, %s, %s)", self.url,
+                    build_queue_item.name, build_queue_item.version,
+                    build_queue_item.build.pocket.title)
+
+        # Make sure the request is valid; an exception is raised if it's not.
+        self._verifyBuildRequest(build_queue_item, logger)
+
+        # If we are building untrusted source reset the entire machine.
+        if not self.trusted:
+            self.resetSlaveHost(logger)
+
+        # Build extra arguments.
+        args = {}
+        args["ogrecomponent"] = build_queue_item.current_component.name
+        # turn 'arch_indep' ON only if build is archindep or if
+        # the specific architecture is the nominatedarchindep for
+        # this distroseries (in case it requires any archindep source)
+        # XXX kiko 2006-08-31:
+        # There is no point in checking if archhintlist ==
+        # 'all' here, because it's redundant with the check for
+        # isNominatedArchIndep.
+        args['arch_indep'] = (
+            build_queue_item.archhintlist == 'all' or
+            build_queue_item.archseries.isNominatedArchIndep)
+        args['archives'] = self._archivesForBuild(build_queue_item)
+
+        # Generate a string which can be used to cross-check when obtaining
+        # results so we know we are referring to the right database object in
+        # subsequent runs.
+        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
+        logger.debug("Initiating build %s on %s" % (buildid, self.url))
+
+        # Do it.
+        build_queue_item.markAsBuilding(self)
+        self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
 
     @property
     def status(self):

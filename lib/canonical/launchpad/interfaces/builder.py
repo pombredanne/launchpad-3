@@ -181,6 +181,13 @@ class IBuilder(IHasOwner):
     def setSlaveForTesting(new_slave):
         """Set a new slave object. This is for testing only."""
 
+    def pocket_dependencies():
+        """A dictionary of pocket to a tuple of pocket dependencies.
+
+        Return a dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+        """
+
     def slaveStatus():
         """Get the slave status for this builder.
 

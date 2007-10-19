@@ -197,7 +197,7 @@ hence certain package dependencies.
   ...         info = 'OkSlave BUILDING'
   ...         print info
   ...         if 'archives' in args:
-  ...             print "Archives: %s" % args['archives']
+  ...             print "Archives: %s" % sorted(args['archives'])
   ...         else:
   ...             print "No archives set."
   ...         return ('BuildStatus.Building', info)
@@ -1049,11 +1049,17 @@ Override the builder's slave with one that will claim to be 'OK'
 
   >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
-Change the pocket for testing:
-XXX create a new build or change sample data.XXX
-  >>> removeSecurityProxy(bqItem3.build).pocket = \
-  ...     dbschema.PackagePublishingPocket.SECURITY
-  >>> bqItem3.build.buildstate = BuildStatus.NEEDSBUILD
+Make a build in the security pocket:
+
+  >>> hoary = hoary_i386.distroseries
+  >>> hoary_evo = hoary.getSourcePackage(
+  ...    'evolution').currentrelease.sourcepackagerelease
+  >>> security_build = hoary_evo.createBuild(
+  ...     distroarchseries=hoary_i386,
+  ...     pocket=dbschema.PackagePublishingPocket.SECURITY,
+  ...     processor=hoary_i386.default_processor,
+  ...     archive=hoary_i386.main_archive)
+  >>> security_bqItem = security_build.createBuildQueueEntry()
 
 Builddmaster stops before starting to build a denied build.
 Since hoary is in development, we are not able to dispatch
@@ -1061,25 +1067,34 @@ builds for post-release pockets:
 
   >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> bm.startBuild(real_buildergroup, a_builder, security_bqItem)
   Traceback (most recent call last):
   ...
-  AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu hoary SECURITY (8) can not be built for pocket SECURITY: invalid pocket due to the series status of hoary.
+  AssertionError: i386 build of evolution 1.0 in ubuntu hoary SECURITY (31) can not be built for pocket SECURITY: invalid pocket due to the series status of hoary.
 
 == Pocket dependencies ==
 
 When passing the archives property to a slave, the required pockets
 are dependent on the pocket that we are building in, such that:
 
-++-----------++------------------------------------------++
-||  Target   ||            Required Pockets              ||
-++-----------++------------------------------------------++
-|| release   || release                                  ||
-|| updates   || release + updates + security             ||
-|| proposed  || release + updates + security + proposed  ||
-|| security  || release + security                       ||
-|| backports || release + updates + security + backports ||
-++-----------++------------------------------------------++
+  >>> def show_pocket_deps():
+  ...     print "Pocket    |   Dependencies"
+  ...     print "----------+---------------"
+  ...     for (key, value) in a_builder.pocket_dependencies.items():
+  ...         print "%7s |" % (key.name,),
+  ...         for pocket in value:
+  ...             print pocket.name,
+  ...         print
+
+  >>> show_pocket_deps()
+  Pocket    |   Dependencies
+  ----------+---------------
+    RELEASE | RELEASE
+  BACKPORTS | RELEASE SECURITY UPDATES BACKPORTS
+   SECURITY | RELEASE SECURITY
+    UPDATES | RELEASE SECURITY UPDATES
+   PROPOSED | RELEASE SECURITY UPDATES PROPOSED
+
 
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:
@@ -1114,7 +1129,7 @@ A build in the proposed pocket:
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main', u'deb http://ftpmaster.internal/ubuntu hoary-proposed main']
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-proposed main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
 
 A build in the security pocket:
 
@@ -1140,7 +1155,7 @@ A build in the backports pocket:
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main']
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
 
 
 == Builder Status Handler ==
