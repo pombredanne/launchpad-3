@@ -10,8 +10,6 @@ import socket
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
