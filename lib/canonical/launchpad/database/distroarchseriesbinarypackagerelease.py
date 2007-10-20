@@ -93,7 +93,7 @@ class DistroArchSeriesBinaryPackageRelease:
             query += " AND status = %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+            query, orderBy='-id')
 
     @property
     def publishing_history(self):
@@ -106,7 +106,7 @@ class DistroArchSeriesBinaryPackageRelease:
                     self.distroarchseries,
                     self.distribution.all_distro_archive_ids,
                     self.binarypackagerelease),
-            orderBy='-datecreated')
+            orderBy='-id')
 
     @property
     def pocket(self):
@@ -281,7 +281,7 @@ class DistroArchSeriesBinaryPackageRelease:
         if (new_component == current.component and
             new_section == current.section and
             new_priority == current.priority):
-            return
+            return None
 
         # See if the archive has changed by virtue of the component changing:
         new_archive = self.distribution.getArchiveByComponent(
@@ -292,7 +292,7 @@ class DistroArchSeriesBinaryPackageRelease:
                 "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
-        SecureBinaryPackagePublishingHistory(
+        return SecureBinaryPackagePublishingHistory(
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,

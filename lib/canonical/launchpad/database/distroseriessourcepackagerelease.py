@@ -106,7 +106,7 @@ class DistroSeriesSourcePackageRelease:
                     self.distroseries,
                     self.distroseries.distribution.all_distro_archive_ids,
                     self.sourcepackagerelease),
-            orderBy='-datecreated')
+            orderBy='-id')
 
     @property
     def builds(self):
@@ -117,7 +117,7 @@ class DistroSeriesSourcePackageRelease:
             DistroArchRelease.distrorelease = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distroseries.id),
-            orderBy='-datecreated',
+            orderBy='-id',
             clauseTables=['DistroArchRelease'])
 
     @property
@@ -194,7 +194,7 @@ class DistroSeriesSourcePackageRelease:
                         self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
-            orderBy='-datecreated')
+            orderBy='-id')
 
         return current
 
@@ -218,7 +218,7 @@ class DistroSeriesSourcePackageRelease:
 
         if (new_component == current.component and
             new_section == current.section):
-            return
+            return None
 
         # See if the archive has changed by virtue of the component
         # changing:
@@ -229,7 +229,7 @@ class DistroSeriesSourcePackageRelease:
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
-        SecureSourcePackagePublishingHistory(
+        return SecureSourcePackagePublishingHistory(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
             status=PackagePublishingStatus.PENDING,

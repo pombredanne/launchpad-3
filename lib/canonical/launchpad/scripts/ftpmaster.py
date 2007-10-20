@@ -152,12 +152,19 @@ class ArchiveOverrider:
                            % (package_name, self.distroseries.name))
             return
 
-        sp.currentrelease.changeOverride(new_component=self.component,
-                                         new_section=self.section)
-        self.log.info("'%s/%s/%s' source overridden"
-                      % (sp.currentrelease.sourcepackagerelease.title,
-                         sp.currentrelease.component.name,
-                         sp.currentrelease.section.name))
+        override = sp.currentrelease.changeOverride(
+            new_component=self.component, new_section=self.section)
+
+        if override is None:
+            self.log.info("'%s/%s/%s' remained the same"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
+        else:
+            self.log.info("'%s/%s/%s' source overridden"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
 
     def processBinaryChange(self, package_name):
         """Perform changes in a given binary package name
@@ -221,15 +228,23 @@ class ArchiveOverrider:
                              distroarchseries.architecturetag))
             return
         dasbpr = dasbp[current.binarypackagerelease.version]
-        dasbpr.changeOverride(
+        override = dasbpr.changeOverride(
             new_component=self.component,
             new_priority=self.priority,
             new_section=self.section)
-        self.log.info(
-            "'%s/%s/%s/%s' binary overridden in %s"
-            % (current.binarypackagerelease.title, current.component.name,
-               current.section.name, current.priority.name,
-               current.distroarchseries.displayname))
+        if override is None:
+            self.log.info(
+                "'%s/%s/%s/%s' remained the same"
+                % (current.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name))
+        else:
+            self.log.info(
+                "'%s/%s/%s/%s' binary overridden in %s"
+                % (override.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name,
+                   override.distroarchseries.displayname))
 
 
 class ArchiveCruftCheckerError(Exception):
