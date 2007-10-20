@@ -1,68 +1,56 @@
 = Bugtask Expiration =
 
-Old unassigned INCOMPLETE bugtasks clutter Malone's search results,
+Old unattended Incomplete bugtasks clutter Malone's search results,
 making the bug staff's job difficult. A script is run daily to
-locate unassigned INCOMPLETE bugtasks that have not been updated in
+locate unattended Incomplete bugtasks that have not been updated in
 2 months, and sets their status to INVALID. Only bugtasks for projects
 that use Malone will be expired; this rule does not apply to Bugs
-imported from upstream bug trackers. The four preconditions are:
+imported from upstream bug trackers. The preconditions are:
 
 1. The bugtask belongs to a project that uses Malone to track bugs.
-2. The last message on the Bug is older than 60 days.
-3. The bugtask has the status INCOMPLETE.
-4. The bugtask is not assigned to anyone.
+2. The bugtask has the status Incomplete.
+3. The last message on the bug is older than 60 days.
+4. The bug is not a duplicate.
+5. The bug has at least one message (a request for more information).
+6. The bug does not have any other valid bugtasks.
+7. The bugtask is not assigned to anyone.
+8. The bugtask does not have a milestone. 
 
-Bugtasks cannot transition to INVALID automatically unless they meet
+Bugtasks cannot transition to Invalid automatically unless they meet
 all the rules stated above.
+
 
 == Setup ==
 
-    >>> from canonical.launchpad.database import BugTask
+The test harness provides create_old_bug() and summarize_bugtask()
+for creating old bugs and printing a summary of their state. It
+also provides ubuntu, hoary, and jokosher for our test.
+
+BugTaskSet provides methods for locating bugtasks. We also need
+BugTaskStatus for checking the status of bugtasks.
+
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IDistributionSet, IBugTaskSet, ILaunchBag)
-
-    # Sample Person is a bug contact for Ubuntu and may update the BugTasks.
-    >>> login('test@canonical.com')
-    >>> sample_person = getUtility(ILaunchBag).user
+    ...     BugTaskStatus, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
-
-There are no INVALID Bugtasks in sampledata.
-
-    >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
-    0
-
-
-== Age ==
-
-The expiration period is set using the
-config.alone.days_before_expiration configuration variable. It
-defaults to 60 days. The period is measured from the date_incomplete
-field. We expire bugtasks that are INCOMPLETE for 60 days or more.
-
-    >>> from canonical.config import config
-    >>> old_age_days = config.malone.days_before_expiration
-    >>> old_age_days
-    60
 
 
 == findExpirableBugTasks ==
 
 BugTaskSet provides findExpirableBugTasks to find bugtasks that
-qualify for expiration. The bugtasks must have the status of
-Incomplete, be unassigned, and affecting a distribution or
-product that uses Malone.
+qualify for expiration. The bugtasks must must meet all the
+preconditions stated in this tests introduction.
 
 findExpirableBugTasks requires a parameter for the minimum days old
-(min_days_old) that the bugtask has been in the Incomplete status
-without message activity.
-ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
+(min_days_old) that the bugtask has been in the unattended Incomplete
+status.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
     Traceback (most recent call last):
     ...
     TypeError: findExpirableBugTasks() takes exactly 2 arguments (1 given)
 
-There are no expirable bugtasks in the sampledata.
+Looking back 9,999 days, findExpirableBugTasks reports that there are no
+expirable bugtasks in the sampledata.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(9999)
     >>> len(expirable_bugtasks)
@@ -77,7 +65,8 @@ will suffice.
     >>> ubuntu_bugtask = create_old_bug(
     ...     'expirable_distro', 351, ubuntu)
 
-    # An expirable bugtask, a distroseries.
+    # An expirable bugtask, a distroseries. The ubuntu  bugtask is its
+    # conjoined slave.
     >>> hoary_bugtask = bugtaskset.createTask(
     ...     bug=ubuntu_bugtask.bug, owner=sample_person,
     ...     distroseries=ubuntu.currentseries)
@@ -107,16 +96,16 @@ Lets also make some bugs that almost qualify for expiration.
     >>> milestone_bugtask = create_old_bug('milestone', 61, ubuntu)
     >>> milestone_bugtask.milestone = ubuntu.currentseries.newMilestone("0.1")
 
-    # An new bugtask that is not expirable, on a bug with many bugtasks.
+    # An New bugtask that is not expirable, on a bug with many bugtasks.
     >>> new_bugtask = bugtaskset.createTask(
     ...     bug=ubuntu_bugtask.bug, owner=sample_person,
     ...     product=thunderbird)
 
-    # A bugtask that is not expirable because it has no messages.
+    # A bugtask that is not expirable because it has no reply messages.
     >>> no_replys_bugtask = create_old_bug(
     ...     'no_replys', 61, ubuntu, with_message=False)
 
-    # A bugtask that is not expirable because it not old.
+    # A bugtask that is not expirable because it less than the min_days_old.
     >>> recent_bugtask = create_old_bug('recent', 31, ubuntu)
 
     >>> bugtasks = [ubuntu_bugtask, hoary_bugtask,
@@ -124,7 +113,7 @@ Lets also make some bugs that almost qualify for expiration.
     ...     confirmed_bugtask, duplicate_bugtask, external_bugtask,
     ...     milestone_bugtask, no_replys_bugtask, recent_bugtask]
 
-    >>> summarize_bugtask(bugtasks)
+    >>> summarize_bugtasks(bugtasks)
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
@@ -170,7 +159,6 @@ directly expired because only the master bugtask can change the status.
 
     >>> new_bugtask.transitionToStatus(
     ...     BugTaskStatus.WONTFIX, sample_person)
-
     >>> for bt in hoary_bugtask.bug.bugtasks:
     ...         print bt.bugtargetdisplayname, bt.status.title
     Mozilla Thunderbird   Won't Fix
@@ -178,9 +166,7 @@ directly expired because only the master bugtask can change the status.
     Ubuntu Hoary          Incomplete
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
-
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
-    >>> summarize_bugtask(expirable_bugtasks)
+    >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
     hoary        True    351  Incomplete  False     False  False  False
 
@@ -188,19 +174,40 @@ Reducing the age to 60 days old, both hoary and jokosher bugtasks
 are returned.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
-    >>> summarize_bugtask(expirable_bugtasks)
+    >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
     jokosher     True     61  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
 
 
+== The default expirtation age ==
+
+The expiration age is set using the
+config.malone.days_before_expiration configuration variable. It
+defaults to 60 days. The period is measured from the date_incomplete
+field. We expire bugtasks that are Incomplete and unattended for 60
+days or more.
+
+    >>> from canonical.config import config
+    >>> old_age_days = config.malone.days_before_expiration
+    >>> old_age_days
+    60
+
+
 == Running the script ==
+
+There are no INVALID Bugtasks in sampledata.
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
+    0
+
+    >>> # We want to check the hoary_bugtask messags later.
+    >>> starting_bug_messages_count = (
+    ...     hoary_bugtask.bug.messages.count())
 
 The script 'expire-bugs.py' writes its report to stdout. It makes its
 database changes as the Bug Watch Updater user.
-
-    >>> starting_bug_messages_count = (
-    ...     hoary_bugtask.bug.messages.count())
 
     # Commit the current transaction because the script will run in
     # another transaction, and thus it won't see the changes done on
@@ -235,12 +242,12 @@ database changes as the Bug Watch Updater user.
 
 == After the script has run ==
 
-There are four Invalid bugtasks. Thundirbird was expired previously in
-the test. Jokosher, hoary and ubuntu were expired by the expiration
-process. Although ubuntu was never returned by findExpirableBugTasks,
-it was expired because its master (hoary) was expired.
+There are three Invalid bugtasks. Jokosher, hoary and ubuntu were
+expired by the expiration process. Although ubuntu was never returned
+by findExpirableBugTasks, it was expired because its master (hoary) was
+expired.
 
-    >>> summarize_bugtask(bugtasks)
+    >>> summarize_bugtasks(bugtasks)
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
     ubuntu       True      0  Invalid     False     False  False  False
     hoary        True      0  Invalid     False     False  False  False
@@ -272,15 +279,13 @@ status.
     [Expired for Ubuntu Hoary because there has been no activity for 60 days.]
 
 The message explaining the reason for the expiration was posted by the
-Bug Janitor celebrity. Only one message was created for when the master
-and slave bugtasks were expired.
+Launchpad Janitor celebrity. Only one message was created for when the
+master and slave bugtasks were expired.
 
-    >>> ending_bug_messages_count = (
-    ...     hoary_bugtask.bug.messages.count())
-    >>> ending_bug_messages_count
+    >>> starting_bug_messages_count
+    2
+    >>> hoary_bugtask.bug.messages.count()
     3
-    >>> starting_bug_messages_count + 1 == ending_bug_messages_count
-    True
 
     >>> message =  hoary_bugtask.bug.messages[-1]
     >>> print message.owner.name

@@ -244,7 +244,7 @@ def _create_old_bug(
     return bugtask
 
 
-def _summarize_bugtask(bugtasks):
+def _summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
     print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLY?'
     for bugtask in bugtasks:
@@ -267,13 +267,15 @@ def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
     test.globs['create_old_bug'] = _create_old_bug
-    test.globs['summarize_bugtask'] = _summarize_bugtask
+    test.globs['summarize_bugtasks'] = _summarize_bugtasks
     test.globs['ubuntu'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['jokosher'] = getUtility(
         IProductSet).getByName('jokosher')
     test.globs['thunderbird'] = getUtility(
         IProductSet).getByName('thunderbird')
     test.globs['flush_database_caches'] = flush_database_caches
+    test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
+        'test@canonical.com')
     login('test@canonical.com')
 
 
