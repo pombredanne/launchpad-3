@@ -3,7 +3,7 @@
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet']
+__all__ = ['Product', 'ProductSet', 'ProductLicense']
 
 
 from sqlobject import (
@@ -24,7 +24,6 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -43,14 +42,12 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    TranslationPermission)
-from canonical.lp.dbschema import (
+    IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus)
+    SpecificationImplementationStatus, TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -58,7 +55,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
+    implements(IProduct, IFAQTarget, IQuestionTarget,
                IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
@@ -126,9 +123,42 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
 
-    calendar = ForeignKey(
-        dbName='calendar', foreignKey='Calendar', default=None,
-        forceDBName=True)
+    license_info = StringCol(dbName='license_info', default=None)
+
+    def _getLicenses(self):
+        """Get the licenses as a tuple."""
+        return tuple(
+            product_license.license
+            for product_license 
+                in ProductLicense.selectBy(product=self, orderBy='license'))
+
+    def _setLicenses(self, licenses):
+        """Set the licenses from a tuple of license enums.
+
+        The licenses parameter must not be an empty tuple.
+        """
+        licenses = set(licenses)
+        old_licenses = set(self.licenses)
+        if licenses == old_licenses:
+            return
+        # $product/+edit doesn't require a license if a license hasn't
+        # already been set, but updateContextFromData() updates all the
+        # fields, so we have to avoid this assertion when the attribute
+        # isn't actually being changed.
+        assert len(licenses) != 0, "licenses argument must not be empty"
+        for license in licenses:
+            if license not in License:
+                raise AssertionError("%s is not a License" % license)
+
+        for license in old_licenses.difference(licenses):
+            product_license = ProductLicense.selectOneBy(product=self, 
+                                                         license=license)
+            product_license.destroySelf()
+
+        for license in licenses.difference(old_licenses):
+            ProductLicense(product=self, license=license)
+
+    licenses = property(_getLicenses, _setLicenses)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -158,13 +188,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
-
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(
-                title='%s Product Calendar' % self.displayname,
-                revision=0)
-        return self.calendar
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
@@ -644,8 +667,11 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+                      icon=None, licenses=(), license_info=None):
+        """See `IProductSet`."""
+
+        assert len(licenses) != 0, "licenses argument must not be empty"
+
         product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
@@ -654,7 +680,9 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed,
-            icon=icon, logo=logo, mugshot=mugshot)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+
+        product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
@@ -756,3 +784,8 @@ class ProductSet:
         return self.stats.value('products_with_branches')
 
 
+class ProductLicense(SQLBase):
+    """A product's license."""
+
+    product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
+    license = EnumCol(dbName='license', notNull=True, schema=License)

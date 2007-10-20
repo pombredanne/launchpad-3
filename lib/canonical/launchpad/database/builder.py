@@ -246,7 +246,7 @@ class Builder(SQLBase):
     def _determineArchivesForBuild(self, build_queue_item):
         """Work out what sources.list lines should be passed to the builder."""
         ogre_components = self.component_dependencies[
-            build_queue_item.current_component.name]
+            build_queue_item.build.current_component.name]
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
         ubuntu_source_lines = []
@@ -372,7 +372,7 @@ class Builder(SQLBase):
 
         # Build extra arguments.
         args = {}
-        args["ogrecomponent"] = build_queue_item.current_component.name
+        args["ogrecomponent"] = build_queue_item.build.current_component.name
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)

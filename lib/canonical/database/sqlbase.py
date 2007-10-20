@@ -266,6 +266,12 @@ class ZopelessTransactionManager(object):
     _installed = None
     alreadyInited = False
 
+    # Reset database connection at end of every transaction?  We do this by
+    # default to protect us against leaks and accidentally carrying over
+    # state between logically unconnected requests, but sometimes we do need
+    # to carry over state such as temporary tables.
+    reset_after_transaction = True
+
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
         if cls._installed is not None:
@@ -367,11 +373,12 @@ class ZopelessTransactionManager(object):
     def commit(self):
         self.manager.get().commit()
 
-        # We always remove the existing transaction & connection, for
-        # simplicity.  SQLObject does connection pooling, and we don't have any
-        # indication that reconnecting every transaction would be a performance
-        # problem anyway.
-        self.desc._deactivate()
+        # By default we close the connection after completing a transaction,
+        # to safeguard against cached SQLObject data and SQL session state
+        # spilling out of their transactions.  Connection pooling keeps the
+        # performance penalty acceptably low.
+        if self.reset_after_transaction:
+            self.desc._deactivate()
 
         if self.implicitBegin:
             self.begin()
@@ -382,7 +389,8 @@ class ZopelessTransactionManager(object):
         for obj in objects:
             obj.reset()
             obj.expire()
-        self.desc._deactivate()
+        if self.reset_after_transaction:
+            self.desc._deactivate()
         if self.implicitBegin:
             self.begin()
 

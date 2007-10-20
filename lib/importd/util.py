@@ -19,12 +19,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import ProductSeries
-from canonical.launchpad.interfaces import IProductSeriesSet
+from canonical.launchpad.interfaces import IProductSeriesSet, ImportStatus
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.lp import initZopeless
-
-from canonical.lp.dbschema import ImportStatus
 
 
 def _interval_to_seconds(interval):

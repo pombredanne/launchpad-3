@@ -25,6 +25,12 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import PackagePublishingStatus, ArchivePurpose
 
 
+condemned_states = [
+    PackagePublishingStatus.SUPERSEDED,
+    PackagePublishingStatus.DELETED,
+    ]
+
+
 def getDeathRow(archive, log, pool_root_override):
     """Return a Deathrow object for the archive supplied.
 
@@ -78,7 +84,7 @@ class DeathRow:
     def reap(self, dry_run=False):
         """Reap packages that should be removed from the distribution.
 
-        Looks through all packages that are in PENDINGREMOVAL status and
+        Looks through all packages that are in condemned states and
         have scheduleddeletiondate is in the past, try to remove their
         files from the archive pool (which may be impossible if they are
         used by other packages which are published), and mark them as
@@ -100,26 +106,30 @@ class DeathRow:
 
     def _collectCondemned(self):
         source_files = SourcePackageFilePublishing.select("""
-            publishingstatus = %s AND
+            publishingstatus IN %s AND
             sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
+            SourcePackagePublishingHistory.dateremoved is NULL AND
+            SourcePackagePublishingHistory.scheduleddeletiondate
+                 is not NULL AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.archive, UTC_NOW),
+            """ % sqlvalues(condemned_states, self.archive, UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
         self.logger.debug("%d Sources" % source_files.count())
 
         binary_files = BinaryPackageFilePublishing.select("""
-            publishingstatus = %s AND
+            publishingstatus IN %s AND
             binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
+            BinaryPackagePublishingHistory.dateremoved is NULL AND
+            BinaryPackagePublishingHistory.scheduleddeletiondate
+                 is not NULL AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.archive, UTC_NOW),
+            """ % sqlvalues(condemned_states, self.archive, UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
 
@@ -142,22 +152,22 @@ class DeathRow:
         if ISecureSourcePackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureSourcePackagePublishingHistory.status != %s AND
                 SecureSourcePackagePublishingHistory.archive = %s AND
+                SecureSourcePackagePublishingHistory.dateremoved is NULL AND
                 SecureSourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageReleaseFile.sourcepackagerelease AND
                 SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED, self.archive))
+            """ % sqlvalues(self.archive))
             clauseTables.append('SourcePackageReleaseFile')
         elif ISecureBinaryPackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureBinaryPackagePublishingHistory.status != %s AND
                 SecureBinaryPackagePublishingHistory.archive = %s AND
+                SecureBinaryPackagePublishingHistory.dateremoved is NULL AND
                 SecureBinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease AND
                 BinaryPackageFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED, self.archive))
+            """ % sqlvalues(self.archive))
             clauseTables.append('BinaryPackageFile')
         else:
             raise AssertionError("%r is not supported." % publication_class)
@@ -175,11 +185,11 @@ class DeathRow:
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pub in all_publications:
             # Deny removal if any reference is still active.
-            if (pub.status != PackagePublishingStatus.PENDINGREMOVAL):
+            if pub.status not in condemned_states:
                 return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.
-            if (pub.scheduleddeletiondate > right_now):
+            if pub.scheduleddeletiondate > right_now:
                 return False
 
         return True
@@ -256,6 +266,5 @@ class DeathRow:
         self.logger.debug("Marking %s condemned packages as removed." %
                           len(condemned_records))
         for record in condemned_records:
-            record.status = PackagePublishingStatus.REMOVED
             record.dateremoved = UTC_NOW
 

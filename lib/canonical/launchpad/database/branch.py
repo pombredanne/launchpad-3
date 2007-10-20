@@ -4,9 +4,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'BranchWithSortKeys',
+    'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import os
 
@@ -29,11 +31,12 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchType, BranchTypeError, BranchVisibilityRule,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    NotFoundError)
+    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
+    BranchVisibilityRule, CannotDeleteBranch,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    ILaunchpadCelebrities, InvalidBranchMergeProposal,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -439,7 +442,7 @@ class Branch(SQLBase):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.mirror_request_time = (
-                    datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+                    datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
             else:
                 self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
@@ -451,9 +454,65 @@ class Branch(SQLBase):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        self.mirror_request_time = (
-            datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+        if (self.branch_type == BranchType.MIRRORED
+            and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
+            self.mirror_request_time = (
+                datetime.now(pytz.timezone('UTC'))
+                + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
+        else:
+            self.mirror_request_time = None
         self.syncUpdate()
+
+
+class BranchWithSortKeys(Branch):
+    """A hack to allow the sorting of Branch queries by human-meaningful keys.
+
+    The view BranchWithSortKeys has all of the columns of Branch, with:
+
+     - product.name joined as product_name
+     - author.displayname joined as author_name
+     - owner.displayname joined as owner_name
+
+    These columns are never accessed at the Python level so we don't define
+    them in this class.
+
+    If we could get SQLObject to generate LEFT OUTER JOINs nicely, all this
+    wouldn't be necessary.
+
+    XXX: MichaelHudson 2007-10-12 bug=154016: Get rid of this hack
+    when we've converted over to using Storm.
+    """
+
+    @classmethod
+    def select(cls, query, clauseTables=None, orderBy=None):
+        """Wrap a query that refers to Branch to refer to BranchWithSortKeys.
+
+        All the queries carefully and generically created in this file refer
+        to the Branch table.  To be able to query the BranchWithSortKeys view
+        instead, we ask the view for the rows with the same ids as the
+        branches returned by the generated query.
+        """
+        query = """BranchWithSortKeys.id IN
+                   (SELECT Branch.id FROM Branch WHERE %s)""" % (query,)
+        return super(BranchWithSortKeys, cls).select(
+            query, clauseTables=clauseTables, orderBy=orderBy)
+
+
+LISTING_SORT_TO_COLUMN = {
+    BranchListingSort.PRODUCT: 'product_name',
+    BranchListingSort.LIFECYCLE: '-lifecycle_status',
+    BranchListingSort.AUTHOR: 'author_name',
+    BranchListingSort.NAME: 'name',
+    BranchListingSort.REGISTRANT: 'owner_name',
+    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: 'last_scanned',
+    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
+    BranchListingSort.NEWEST_FIRST: 'date_created',
+    BranchListingSort.OLDEST_FIRST: '-date_created',
+    }
+
+
+DEFAULT_BRANCH_LISTING_SORT = [
+    'product_name', '-lifecycle_status', 'author_name', 'name']
 
 
 class BranchSet:
@@ -878,8 +937,30 @@ class BranchSet:
                 quote(lifecycle_statuses))
         return lifecycle_clause
 
+    @staticmethod
+    def _listingSortToOrderBy(sort_by):
+        """Compute a value to pass as orderBy to BranchWithSortKeys.select().
+
+        :param sort_by: an item from the BranchListingSort enumeration.
+        """
+        order_by = DEFAULT_BRANCH_LISTING_SORT[:]
+        if sort_by is None:
+            return order_by
+        else:
+            column = LISTING_SORT_TO_COLUMN[sort_by]
+            if column.startswith('-'):
+                variant_column = column[1:]
+            else:
+                variant_column = '-' + column
+            if column in order_by:
+                order_by.remove(column)
+            if variant_column in order_by:
+                order_by.remove(variant_column)
+            order_by.insert(0, column)
+            return order_by
+
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
-                             visible_by_user=None):
+                             visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         query_params = {
             'person': person.id,
@@ -905,19 +986,21 @@ class BranchSet:
             '''
             % query_params)
 
-        return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+        return BranchWithSortKeys.select(
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
-                                    visible_by_user=None):
+                                    visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = 'Branch.author = %s %s' % (person.id, lifecycle_clause)
-        return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+        return BranchWithSortKeys.select(
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None):
+                                      visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
@@ -926,11 +1009,12 @@ class BranchSet:
             Branch.author != %s) %s
             '''
             % (person.id, person.id, lifecycle_clause))
-        return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+        return BranchWithSortKeys.select(
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None):
+                                      visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
@@ -938,23 +1022,25 @@ class BranchSet:
             AND BranchSubscription.person = %s %s
             '''
             % (person.id, lifecycle_clause))
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
-            clauseTables=['BranchSubscription'])
+            clauseTables=['BranchSubscription'],
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
-                              visible_by_user=None):
+                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
         query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
 
-        return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+        return BranchWithSortKeys.select(
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
-                              visible_by_user=None):
+                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert project is not None, "Must have a valid project."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
@@ -962,9 +1048,10 @@ class BranchSet:
         query = 'Branch.product = Product.id AND Product.project = %s %s' % (
             project.id, lifecycle_clause)
 
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
-            clauseTables=['Product'])
+            clauseTables=['Product'],
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""

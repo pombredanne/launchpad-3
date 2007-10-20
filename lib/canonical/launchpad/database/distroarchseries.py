@@ -145,16 +145,13 @@ class DistroArchSeries(SQLBase):
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.status != %s AND
+            BinaryPackagePublishingHistory.dateremoved is NULL AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self),
-                   quote(archives),
-                   quote(PackagePublishingStatus.REMOVED),
-                   quote(text),
-                   quote_like(text)),
+            """ % (quote(self), quote(archives),
+                   quote(text), quote_like(text)),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),

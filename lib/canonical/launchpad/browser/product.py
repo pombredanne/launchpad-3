@@ -19,6 +19,7 @@ __all__ = [
     'ProductView',
     'ProductDownloadFilesView',
     'ProductAddView',
+    'ProductAddViewBase',
     'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
@@ -47,33 +48,37 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
+from zope.formlib import form
+from zope.schema import Choice, List
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProduct,
-    ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon, UnsafeFormGetSubmissionError)
+    BranchListingSort, IBranchSet, IDistribution, IHasIcon,
+    ILaunchpadCelebrities, ILaunchBag,
+    ILaunchpadCelebrities, IPillarNameSet, IProduct, IProductSeries,
+    IProductSet, IProject, ITranslationImportQueue, NotFoundError,
+    ITranslationImportQueue, License, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
+from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
@@ -82,12 +87,12 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.widgets.product import ProductBugTrackerWidget
+from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class ProductNavigation(
-    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
+    Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
@@ -131,6 +136,83 @@ class ProductSetNavigation(Navigation):
         if product is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(product))
+
+
+class ProductLicenseMixin:
+    """Adds license validation and requests reviews of licenses.
+
+    Subclasses must inherit from Launchpad[Edit]FormView as well.
+
+    Requires the "product" attribute be set in the child
+    classes' action handler.
+    """
+    def validate(self, data):
+        """Validate 'licenses' and 'license_info'.
+
+        'licenses' must not be empty unless the product already
+        exists and never has had a license set.
+
+        'license_info' must not be empty if "Other/Proprietary"
+        or "Other/Open Source" is checked.
+        """
+        licenses = data.get('licenses', [])
+        license_widget = self.widgets.get('licenses')
+        if (len(licenses) == 0 and
+            license_widget is not None and
+            not license_widget.allow_pending_license):
+            # License is optional on +edit page if not already set.
+            self.setFieldError(
+                'licenses', 
+                'Select all licenses for this software or select '
+                'Other/Proprietary or Other/Open Source.')
+        elif License.OTHER_PROPRIETARY in licenses:
+            if not data.get('license_info'):
+                self.setFieldError(
+                    'license_info', 
+                    'A description of the "Other/Proprietary" '
+                    'license you checked is required.')
+        elif License.OTHER_OPEN_SOURCE in licenses:
+            if not data.get('license_info'):
+                self.setFieldError(
+                    'license_info', 
+                    'A description of the "Other/Open Source" '
+                    'license you checked is required.')
+        else:
+            # Launchpad is ok with all licenses used in this project
+            pass
+
+    def notifyFeedbackMailingList(self):
+        """Email feedback@canonical.com to review product license."""
+        if (License.OTHER_PROPRIETARY in self.product.licenses
+                or License.OTHER_OPEN_SOURCE in self.product.licenses):
+            user = getUtility(ILaunchBag).user
+            subject = 'Project License Submitted'
+            fromaddress = format_address("Launchpad",
+                                         config.noreply_from_address)
+            license_titles = '\n'.join(
+                license.title for license in self.product.licenses)
+            def indent(text):
+                text = '\n    '.join(line for line in text.split('\n'))
+                text = '    ' + text
+                return text
+
+            template = helpers.get_email_template('product-license.txt')
+            message = template % dict(
+                user_browsername=user.browsername,
+                user_name=user.name,
+                product_name=self.product.name,
+                product_summary=indent(self.product.summary),
+                license_titles=indent(license_titles),
+                license_info=indent(self.product.license_info))
+
+            simple_sendmail(fromaddress,
+                            'feedback@launchpad.net',
+                            subject, message)
+
+            self.request.response.addInfoNotification(_(
+                "Launchpad is free to use for software under approved "
+                "licenses. The Launchpad team will be in contact with "
+                "you soon."))
 
 
 class ProductSOP(StructuralObjectPresentation):
@@ -189,13 +271,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Translations'
         summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
-
-    def calendar(self):
-        target = '+calendar'
-        text = 'Calendar'
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled)
 
 
 class ProductOverviewMenu(ApplicationMenu):
@@ -647,7 +722,7 @@ class ProductBrandingView(BrandingChangeView):
     field_names = ['icon', 'logo', 'mugshot']
 
 
-class ProductEditView(LaunchpadEditFormView):
+class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
@@ -657,12 +732,29 @@ class ProductEditView(LaunchpadEditFormView):
         "bugtracker", "official_rosetta", "official_answers",
         "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus"]
+        "programminglang", "development_focus", "licenses", "license_info"]
+    custom_widget(
+        'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
+
+    def setUpWidgets(self):
+        super(ProductEditView, self).setUpWidgets()
+        # Licenses are optional on +edit page if they have not already 
+        # been set. Subclasses may not have 'licenses' widget.
+        # ('licenses' in self.widgets) is broken.
+        if (len(self.context.licenses) == 0 and
+            self.widgets.get('licenses') is not None):
+            self.widgets['licenses'].allow_pending_license = True
 
     @action("Change", name='change')
     def change_action(self, action, data):
+        previous_licenses = self.context.licenses
         self.updateContextFromData(data)
+        # only send email the first time licenses are set
+        if len(previous_licenses) == 0:
+            # self.product is expected by notifyFeedbackMailingList
+            self.product = self.context
+            self.notifyFeedbackMailingList()
 
     @property
     def next_url(self):
@@ -875,18 +967,37 @@ class ProductSetView(LaunchpadView):
         return self.matches > self.max_results_to_display
 
 
-class ProductAddView(LaunchpadFormView):
+class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
+    """Abstract class for adding a new product.
+
+    ProductLicenseMixin requires the "product" attribute be set in the 
+    child classes' action handler.
+    """
 
     schema = IProduct
-    field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl',
-                   'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang', 'reviewed']
+    product = None
+    field_names = ['name', 'displayname', 'title', 'summary',
+                   'description', 'homepageurl', 'sourceforgeproject',
+                   'freshmeatproject', 'wikiurl', 'screenshotsurl',
+                   'downloadurl', 'programminglang',
+                   'licenses', 'license_info']
+    custom_widget(
+        'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
+
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
+
+
+class ProductAddView(ProductAddViewBase):
+
+    field_names = (ProductAddViewBase.field_names 
+                   + ['owner', 'project', 'reviewed'])
 
     label = "Register an upstream open source project"
     product = None
@@ -898,7 +1009,7 @@ class ProductAddView(LaunchpadFormView):
         return self.user.inTeam(vcs_imports)
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
+        super(ProductAddView, self).setUpFields()
         if not self.isVCSImport():
             # vcs-imports members get it easy and are able to change
             # the owner and reviewed status during the edit process;
@@ -934,13 +1045,10 @@ class ProductAddView(LaunchpadFormView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            )
+            licenses = data['licenses'],
+            license_info=data['license_info'])
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProductBugContactEditView(LaunchpadEditFormView):
@@ -1061,10 +1169,12 @@ class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
     extra_columns = ('author',)
+    no_sort_by = (BranchListingSort.PRODUCT,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
     @property
     def no_branch_message(self):
