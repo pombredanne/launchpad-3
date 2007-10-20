@@ -23,6 +23,7 @@ __all__ = [
     'ArchivePurpose',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
+    'BuildStatus',
     'DistroSeriesStatus',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
