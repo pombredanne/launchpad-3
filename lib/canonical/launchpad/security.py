@@ -208,6 +208,34 @@ class EditSpecificationSubscription(AuthorizationBase):
                 user.inTeam(self.obj.specification.approver) or
                 user.inTeam(admins))
 
+
+class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
+    """Base class that allow access to Rosetta experts and Launchpad admins.
+    """
+
+    def checkAuthenticated(self, user):
+        """Allow Launchpad's admins and Rosetta experts edit all fields."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_expert))
+
+
+class AdminProductTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProduct` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owners are
+        able to change translation settings for a product.
+        """
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_expert))
+
+
 class AdminSeriesByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IProductSeries
@@ -623,17 +651,6 @@ class UseApiDoc(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return True
-
-
-class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
-    """Base class that allow access to Rosetta experts and Launchpad admins.
-    """
-
-    def checkAuthenticated(self, user):
-        """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        admins = getUtility(ILaunchpadCelebrities).admin
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-        return user.inTeam(admins) or user.inTeam(rosetta_experts)
 
 
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):

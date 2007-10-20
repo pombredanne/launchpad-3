@@ -66,11 +66,10 @@ def main():
 
     try:
         if options.series is not None:
-            series, pocket = distribution.getDistroSeriesAndPocket(
+            series, dummypocket = distribution.getDistroSeriesAndPocket(
                 options.series)
         else:
             series = distribution.currentseries
-            pocket = PackagePublishingPocket.RELEASE
     except NotFoundError, info:
         log.error("Series not found: %s" % info)
         return 1
@@ -81,9 +80,8 @@ def main():
         log.error(info)
         return 1
 
-    log.debug("Initialising ChrootManager for '%s/%s'"
-              % (dar.title, pocket.name))
-    chroot_manager = ChrootManager(dar, pocket, filepath=options.filepath)
+    log.debug("Initialising ChrootManager for '%s'" % (dar.title))
+    chroot_manager = ChrootManager(dar, filepath=options.filepath)
 
     if action in chroot_manager.allowed_actions:
         chroot_action = getattr(chroot_manager, action)

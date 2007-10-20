@@ -12,79 +12,74 @@ __all__ = [
 import logging
 from cStringIO import StringIO
 
-from psycopg import ProgrammingError
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-
-from canonical.database.sqlbase import (cursor, flush_database_caches,
-    flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
-    IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
-    IHasQueueItems, ILibraryFileAliasSet, IPublishedPackageSet, IPublishing,
-    ISourcePackage, ISourcePackageName, ISourcePackageNameSet,
-    LanguagePackType, NotFoundError, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.sqlbase import (cursor, flush_database_caches,
+    flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
-from canonical.launchpad.database.bug import (
-    get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
+from canonical.launchpad.database.distroserieslanguage import (
+    DistroSeriesLanguage, DummyDistroSeriesLanguage)
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.distroseries_translations_copy import (
     copy_active_translations)
-from canonical.launchpad.database.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
-from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
-from canonical.launchpad.database.distroserieslanguage import (
-    DistroSeriesLanguage, DummyDistroSeriesLanguage)
+from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
+from canonical.launchpad.database.queue import (
+    PackageUpload, PackageUploadQueue)
+from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.pomsgset import POMsgSet
-from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.queue import (
-    PackageUpload, PackageUploadQueue)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
-from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
+    IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
+    IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
+    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
+    ISourcePackageNameSet, LanguagePackType, NotFoundError,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin):
     """A particular series of a distribution."""
-    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing)
+    implements(
+        IDistroSeries, IHasBuildRecords, IHasQueueItems,
+        IHasTranslationTemplates, IPublishing)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -346,22 +341,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IDistroSeries."""
         return self.architectures.count()
 
-    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(distroseries=self)
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
-
-    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(distroseries=self, iscurrent=True)
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            result, key=lambda x: (-x.priority, x.potemplatename.name))
-
     @property
     def fullseriesname(self):
         return "%s %s" % (
@@ -575,7 +554,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # lastly, we need to update the message count for this distro
         # series itself
         messagecount = 0
-        for potemplate in self.currentpotemplates:
+        for potemplate in self.getCurrentTranslationTemplates():
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
         ztm.commit()
@@ -1487,6 +1466,43 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def main_archive(self):
         return self.distribution.main_archive
+
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(distroseries=self)
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            distrorelease = %s AND
+            iscurrent IS TRUE AND
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.official_rosetta IS TRUE
+            ''' % sqlvalues(self),
+            clauseTables = ['DistroRelease', 'Distribution'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            distrorelease = %s AND
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
+            ''' % sqlvalues(self),
+            clauseTables = ['DistroRelease', 'Distribution'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
 
 class DistroSeriesSet:

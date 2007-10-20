@@ -15,7 +15,6 @@ __all__ = [
 from zope.interface import Attribute
 from zope.schema import Object
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -85,14 +84,6 @@ class ISourcePackage(IBugTarget):
         "currently published in this distro series, organised by "
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
-
-    potemplates = Attribute(
-        _("Return an iterator over this distroseries/sourcepackagename's "
-          "PO templates."))
-
-    currentpotemplates = Attribute(
-        _("Return an iterator over this distroseries/sourcepackagename's "
-          "PO templates that have the 'iscurrent' flag set'."))
 
     def __getitem__(version):
         """Return the source package release with the given version in this

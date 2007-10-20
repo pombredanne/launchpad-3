@@ -157,9 +157,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=True
         )
     binarycount = Attribute("Binary Packages Counter")
-    potemplates = Attribute("The set of potemplates in the series")
-    currentpotemplates = Attribute("The set of potemplates in the series "
-        "with the iscurrent flag set")
+
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("The architectures in this series.")

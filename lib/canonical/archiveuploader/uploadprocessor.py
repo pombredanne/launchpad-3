@@ -53,7 +53,7 @@ import shutil
 from zope.component import getUtility
 
 from canonical.archiveuploader.nascentupload import (
-    NascentUpload, FatalUploadError)
+    NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
@@ -294,6 +294,12 @@ class UploadProcessor:
                                exc_info=True)
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except EarlyReturnUploadError:
+                # An error occurred that prevented further error collection,
+                # add this fact to the list of errors.
+                upload.reject(
+                    "Further error processing not possible because of "
+                    "a critical previous error.")
             except Exception, e:
                 # In case of unexpected unhandled exception, we'll
                 # *try* to reject the upload. This may fail and cause

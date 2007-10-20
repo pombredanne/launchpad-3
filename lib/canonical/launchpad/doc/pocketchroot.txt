@@ -1,6 +1,6 @@
 = PocketChroot =
 
-PocketChroot records combine DistroArchSeries, Pocket and a Chroot.
+PocketChroot records combine DistroArchSeries and a Chroot.
 
 Chroot are identified per LibraryFileAlias and we offer three method
 based on IDistroArchSeries to handle them: get, add and update.
@@ -24,56 +24,46 @@ they are, they simply need to be provide ILFA interface):
 
 Check if getPocketChroot returns None for unknown chroots:
 
-  >>> p_chroot = hoary_i386.getPocketChroot(
-  ...     pocket=PackagePublishingPocket.UPDATES)
-  >>> p_chroot is None
-  True
+  >>> p_chroot = hoary_i386.getPocketChroot()
+  >>> print p_chroot
+  None
 
 Check if getChroot returns the 'default' argument on not found chroots:
 
-  >>> hoary_i386.getChroot(
-  ...     pocket=PackagePublishingPocket.UPDATES, default='duuuuh')
+  >>> hoary_i386.getChroot(default='duuuuh')
   'duuuuh'
 
 Invoke addOrUpdateChroot for missing chroot, so it will insert a new
 record in PocketChroot:
 
-  >>> p_chroot = hoary_i386.addOrUpdateChroot(
-  ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot1)
+  >>> p_chroot = hoary_i386.addOrUpdateChroot(chroot=chroot1)
   >>> print p_chroot.id
   1
   >>> print p_chroot.distroarchseries.architecturetag
   i386
   >>> print p_chroot.chroot.id,
   1
-  >>> print p_chroot.pocket.name
-  UPDATES
 
-Invoke addOrUpdateChroot on an existent PocketChroot, it will update
+Invoke addOrUpdateChroot on an existing PocketChroot, it will update
 the chroot:
 
-  >>> p_chroot = hoary_i386.addOrUpdateChroot(
-  ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot2)
+  >>> p_chroot = hoary_i386.addOrUpdateChroot(chroot=chroot2)
   >>> print p_chroot.id
   1
   >>> print p_chroot.distroarchseries.architecturetag
   i386
   >>> print p_chroot.chroot.id,
   2
-  >>> print p_chroot.pocket.name
-  UPDATES
-
 
 Ensure chroot was updated by retriving it from DB again:
 
-  >>> hoary_i386.getPocketChroot(PackagePublishingPocket.UPDATES).chroot.id
+  >>> hoary_i386.getPocketChroot().chroot.id
   2
 
 Check if getChroot returns the correspondent Chroot LFA instance for
-valid chroots
+valid chroots.
 
-  >>> chroot = hoary_i386.getChroot(
-  ...     pocket=PackagePublishingPocket.UPDATES)
+  >>> chroot = hoary_i386.getChroot()
   >>> chroot.id
   2
 
@@ -82,17 +72,3 @@ Force transaction commit in order to test DB constraints:
   >>> import transaction
   >>> transaction.commit()
 
-
-Invoke addOrUpdateChroot for an unknown chroot, it creates a new
-PocketChroot record:
-
-  >>> p_chroot = hoary_i386.addOrUpdateChroot(
-  ...      pocket=PackagePublishingPocket.RELEASE, chroot=chroot1)
-  >>> print p_chroot.id
-  2
-  >>> print p_chroot.distroarchseries.architecturetag
-  i386
-  >>> print p_chroot.chroot.id,
-  1
-  >>> print p_chroot.pocket.name
-  RELEASE

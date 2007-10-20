@@ -8,6 +8,7 @@ __all__ = [ 'copy_active_translations' ]
 
 import logging
 
+from psycopg import ProgrammingError
 from zope.interface import implements
 
 from canonical.database.multitablecopy import MultiTableCopy
@@ -924,7 +925,7 @@ def copy_active_translations(child_series, transaction, logger):
     full_name = "%s_%s" % (child_series.distribution.name, child_series.name)
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
-    if len(child_series.potemplates) == 0:
+    if len(child_series.getCurrentTranslationTemplates()) == 0:
         # This is a new distroseries; copy from scratch
         _copy_active_translations_to_new_series(
             child_series, transaction, copier, logger)
