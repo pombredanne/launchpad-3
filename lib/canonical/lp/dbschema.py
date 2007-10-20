@@ -697,25 +697,3 @@ class BinaryPackageFileType(DBSchema):
         This format is used on mandrake, Red Hat, Suse and other similar
         distributions.
         """)
-
-
-class ArchivePurpose(DBSchema):
-    """The purpose, or type, of an archive.
-
-    A distribution can be associated with different archives and this
-    schema item enumerates the different archive types and their purpose.
-    For example, old distro releases may need to be obsoleted so their
-    archive would be OBSOLETE_ARCHIVE.
-    """
-
-    PRIMARY = Item(1, """
-        Primary Archive
-
-        This is the primary Ubuntu archive.
-        """)
-
-    PPA = Item(2, """
-        PPA Archive
-
-        This is a Personal Package Archive.
-        """)
