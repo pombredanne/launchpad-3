@@ -34,7 +34,8 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IBinaryPackageNameSet, IDistributionSet,
     IBinaryPackageReleaseSet, ILaunchpadCelebrities, NotFoundError,
-    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingPriority)
+    ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
