@@ -109,3 +109,14 @@ And lets ensure Carlos is now listed:
   Carlos Perell&#243; Mar&#237;n
   Sample Person
 
+In order to make it easy to organize a meeting, we provide a facility
+for exporting the list of attendees in CSV format.
+
+  >>> browser.open('http://launchpad.dev/sprints/ubz/+attendees-csv')
+  >>> print browser.headers['content-type']
+  text/csv
+  >>> print browser.contents
+  Launchpad username,Display name,Email,Phone,Organization,City,Country,Timezone,Arriving,Leaving
+  carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,UTC,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
+  name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
+  <BLANKLINE>
