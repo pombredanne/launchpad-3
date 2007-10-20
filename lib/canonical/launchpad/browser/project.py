@@ -40,7 +40,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProduct, IProductSet, IProject, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -365,17 +366,7 @@ class ProjectReviewView(ProjectEditView):
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
-class ProjectAddProductView(LaunchpadFormView):
-
-    schema = IProduct
-    field_names = ['name', 'displayname', 'title', 'summary', 'description',
-                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang']
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
-    custom_widget('wikiurl', TextWidget, displayWidth=30)
-    custom_widget('downloadurl', TextWidget, displayWidth=30)
+class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
     product = None
@@ -402,13 +393,11 @@ class ProjectAddProductView(LaunchpadFormView):
             sourceforgeproject=data['sourceforgeproject'],
             programminglang=data['programminglang'],
             project=self.context,
-            owner=self.user)
+            owner=self.user,
+            licenses = data['licenses'],
+            license_info=data['license_info'])
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProjectSetView(object):

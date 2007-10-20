@@ -986,3 +986,4 @@ class ArchivePurpose(DBSchema):
 
         This is the archive for obsolete packages.
         """)
+
