@@ -685,10 +685,6 @@ class TestPublisher(TestNativePublishingBase):
              '114 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        print
-        for line in release_contents:
-            print line
-
         gz_sources_md5_line = release_contents[md5_header_index + 6]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 

@@ -72,7 +72,11 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section.
 
-        It is changed only if the argument is not None.
+        It is changed only if the argument is not None and the current
+        publication has different details.
+
+        Return the just-created `ISecureSourcePackagePublishingHistory` record
+        or None if nothing was overridden.
         """
 
     def supersede():

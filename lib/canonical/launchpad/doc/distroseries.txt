@@ -435,7 +435,11 @@ Perform `post publication` override:
 
    >>> new_section = getUtility(ISectionSet)['base']
 
-   >>> netapplet_srcrel.changeOverride(new_section=new_section)
+   >>> override = netapplet_srcrel.changeOverride(new_section=new_section)
+   >>> override.section == new_section
+   True
+   >>> override.status.name
+   'PENDING'
    >>> pub_hist = netapplet_srcrel.publishing_history
    >>> pub_hist.count()
    2

@@ -40,5 +40,5 @@ Assemble our DARBPRs for fun and profit:
   pmount 0.1-1 <BinaryPackagePublishingHistory at 0x...>
 
   >>> print mf_warty.status.title, pm_warty.status.title, pm_hoary.status.title
-  Published Superseded Published
+  Published Published Published
 

@@ -67,7 +67,11 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
                        new_priority=None):
         """Change the component, section and/or priority.
 
-        It is changed only if the argument is not None.
+        It is changed only if the argument is not None and the current
+        publication has different details.
+
+        Return the just-created `ISecureBinaryPackagePublishingHistory`
+        record or None if nothing was overridden.
         """
 
     def supersede():
