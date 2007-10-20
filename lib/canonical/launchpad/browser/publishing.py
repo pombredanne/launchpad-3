@@ -12,7 +12,7 @@ __all__ = [
 from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.interfaces import PackagePublishingStatus
 
 
 class BasePublishingRecordView(LaunchpadView):

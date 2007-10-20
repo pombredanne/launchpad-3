@@ -28,14 +28,14 @@ from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
+    IPOTemplateSet, IPackaging, ICountry, ISourcePackage,
+    PackagePublishingPocket)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     GetitemNavigation, stepto, redirection)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
-from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):

@@ -121,8 +121,8 @@ not, according the distroseries status and the upload target pocket.
    >>> breezy_autotest = ubuntu['breezy-autotest']
    >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.lp.dbschema import (
-   ...     PackagePublishingPocket, DistroSeriesStatus)
+   >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+   >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
    >>> warty.status.name
    'CURRENT'
@@ -932,7 +932,7 @@ the future.
    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
    >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.lp.dbschema import (
+   >>> from canonical.launchpad.interfaces import (
    ...    PackagePublishingPocket, PackagePublishingStatus)
 
    >>> hoary_pub_sources = hoary.getSourcePackagePublishing(

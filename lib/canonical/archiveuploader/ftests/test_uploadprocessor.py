@@ -30,12 +30,11 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
-    ILaunchpadCelebrities)
+    ArchivePurpose, DistroSeriesStatus, IDistributionSet, IDistroSeriesSet,
+    IPersonSet, IArchiveSet, ILaunchpadCelebrities, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
-from canonical.lp.dbschema import (
-    PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
-    PackagePublishingPocket, ArchivePurpose)
+
 from canonical.testing import LaunchpadZopelessLayer
 
 class BrokenUploadPolicy(AbstractUploadPolicy):

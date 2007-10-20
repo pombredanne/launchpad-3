@@ -64,16 +64,14 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries,
-    IDistroSeriesSet, IHasBuildRecords, IHasQueueItems,
-    IHasTranslationTemplates, ILibraryFileAliasSet,
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
+    IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
+    IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
     ISourcePackageNameSet, LanguagePackType, NotFoundError,
-    SpecificationFilter, SpecificationSort, SpecificationImplementationStatus,
-    SpecificationGoalStatus)
-from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus)
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,

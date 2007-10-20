@@ -27,11 +27,11 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, QueueInconsistentStateError)
+    ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
+    ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
+    PackagePublishingPocket, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
-from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class FatalUploadError(Exception):

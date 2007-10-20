@@ -16,10 +16,9 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError, IComponentSet)
+    IDistributionSet, NotFoundError, IComponentSet, PackagePublishingPocket)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class PackageLocationError(Exception):

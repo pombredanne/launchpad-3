@@ -25,7 +25,7 @@ import the bunch of required database classes:
   ...      PocketChroot, DistroArchSeries, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
-  >>> from canonical.lp.dbschema import (
+  >>> from canonical.launchpad.interfaces import (
   ...      PackagePublishingPocket, PackagePublishingStatus,
   ...      SourcePackageFileType)
 
