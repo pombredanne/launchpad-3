@@ -17,7 +17,7 @@ database submissions by this person.
 Submissions that are marked as private are only displayed to the 
 submitter himself.
 
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> from StringIO import StringIO
     >>> submit_data = {
     ...     'Date Created:': '2007-01-01',
@@ -84,7 +84,7 @@ displayed.
 Submissions that are marked as private and owned by a team are only
 visible for members of the team and admins.
 
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> team_submit_data = {
     ...     'Date Created:': '2007-01-01',
     ...     'Format Version:': ['VERSION_1'],
@@ -125,7 +125,7 @@ visible for members of the team and admins.
 Individual submissions can be rendered in an RFC-822-formatted file.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/hwdb/+submission/unique-id-1/+text')
+    ...     'http://launchpad.dev/+hwdb/+submission/unique-id-1/+text')
     >>> print browser.contents
     Date-Created: 2007-01-01 00:00:00+00:00
     Date-Submitted: ...
@@ -139,7 +139,7 @@ Individual submissions can be rendered in an RFC-822-formatted file.
 Private submissions can't be viewed anonymously:
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+submission/unique-id-3a/+text')
+    ...     'http://launchpad.dev/+hwdb/+submission/unique-id-3a/+text')
     Traceback (most recent call last):
     ...
     NotFound: ...
@@ -148,7 +148,7 @@ But they can with the right permissions.
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open(
-    ...     'http://launchpad.dev/hwdb/+submission/unique-id-3a/+text')
+    ...     'http://launchpad.dev/+hwdb/+submission/unique-id-3a/+text')
     >>> print browser.contents
     Date-Created: 2007-01-01 00:00:00+00:00
     Date-Submitted: ...
@@ -162,11 +162,11 @@ But they can with the right permissions.
 
 == Submissions listed by fingerprint ==
 
-The pages http://launchpad.dev/hwdb/+fingerprint/(fingerprint) list
+The pages http://launchpad.dev/+hwdb/+fingerprint/(fingerprint) list
 all submissions for a fingerprint/system name.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
     Date submitted     Submitted by    Download     Raw
@@ -179,13 +179,13 @@ is False.
     >>> submit_data_checkboxes['Private Submission'] = False
     >>> submit_data_checkboxes['Contactable'] = True
     >>> submit_data['Unique Submission Key:'] = 'unique-id-4'
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
     ...     browser, submit_data, submit_data_checkboxes, submit_file, 
     ...     'test3.txt')
     >>> browser.getControl('Upload').click()
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
     Date submitted     Submitted by            Download     Raw
@@ -196,7 +196,7 @@ Private submissions are only displayed for the owner.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
     Date submitted     Submitted by              Download        Raw
@@ -207,7 +207,7 @@ Private submissions are only displayed for the owner.
 A page for an unknown fingerprint displays an according message.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+fingerprint/unknownfingerprint')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/unknownfingerprint')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Submissions for system: unknownfingerprint
     There are no submissions for this system.

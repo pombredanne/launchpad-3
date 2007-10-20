@@ -11,18 +11,35 @@ __all__ = [
 import cgi
 import re
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.tales import FormattersAPI
-from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 
 class SourcePackageReleaseView(LaunchpadView):
 
+    @property
     def changelog(self):
+        """Return a linkified changelog."""
         return self._linkify_changelog(
             self.context.changelog, self.context.name)
+
+    @property
+    def change_summary(self):
+        """Return a linkified change summary."""
+        return self._linkify_changelog(
+            self.context.change_summary, self.context.name)
+
+    def _obfuscate_email(self, text):
+        """Obfuscate email addresses if the user is not logged in."""
+        if not text:
+            # If there is nothing to obfuscate, the FormattersAPI
+            # will blow up, so just return.
+            return text
+        formatter = FormattersAPI(text)
+        if self.user:
+            return text
+        else:
+            return formatter.obfuscate_email()
 
     def _linkify_bug_numbers(self, changelog):
         """Linkify to a bug if LP: #number appears in the changelog text."""
@@ -57,6 +74,7 @@ class SourcePackageReleaseView(LaunchpadView):
         """Linkify source packages and bug numbers in changelogs."""
         if changelog is None:
             return ''
+        changelog = self._obfuscate_email(changelog)
         changelog = cgi.escape(changelog)
         changelog = self._linkify_packagename(changelog, sourcepkgnametxt)
         changelog = self._linkify_bug_numbers(changelog)

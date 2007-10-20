@@ -4,6 +4,7 @@
 
 __all__ = [
     'BazaarApplication',
+    'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
     'RegistryApplication',
@@ -17,10 +18,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
+    BugTaskSearchParams, IBazaarApplication,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
+    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
+    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet)
 
@@ -35,6 +36,10 @@ class ShipItApplication:
 
 class MailingListApplication:
     implements(IMailingListApplication)
+
+
+class FeedsApplication:
+    implements(IFeedsApplication)
 
 
 class MaloneApplication:
@@ -55,10 +60,6 @@ class MaloneApplication:
     @property
     def bugwatch_count(self):
         return getUtility(IBugWatchSet).search().count()
-
-    @property
-    def bugextref_count(self):
-        return getUtility(IBugExternalRefSet).search().count()
 
     @property
     def bugtask_count(self):

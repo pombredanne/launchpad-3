@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.archiveuploader.tests import datadir
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     IArchiveSet, IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
@@ -262,7 +263,7 @@ class TestQueueTool(TestQueueBase):
         moz_publishing = bat_i386.getBinaryPackage('pmount').releases
 
         self.assertEqual(1, len(moz_publishing))
-        self.assertEqual(PackagePublishingStatus.REMOVED,
+        self.assertEqual(PackagePublishingStatus.DELETED,
                          moz_publishing[0].status)
 
         # invoke queue tool filtering by name
@@ -652,6 +653,60 @@ class TestQueueTool(TestQueueBase):
             CommandRunnerError, self.execute_command, 'override binary 1',
             component_name='multiverse')
 
+    def testOverridingMulipleBinariesFromSameBuild(self):
+        """Check that multiple binary override works for the same build.
+
+        Overriding binary packages generated from the same build should
+        override each package individually.
+        """
+        # Start off by setting up a packageuploadbuild that points to
+        # a build with two binaries.
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        [mozilla_queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')
+
+        # The build with ID '2' is for mozilla-firefox, which produces
+        # binaries for 'mozilla-firefox' and 'mozilla-firefox-data'.
+        PackageUploadBuild(packageupload=mozilla_queue_item, build=2)
+        LaunchpadZopelessLayer.txn.commit()
+
+        # Switching db users starts a new transaction.  We must re-fetch
+        # breezy-autotest.
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        queue_action = self.execute_command(
+            'override binary mozilla-firefox-data mozilla-firefox',
+            component_name='restricted', section_name='editors',
+            priority_name='optional')
+
+        self.assertEqual(2, queue_action.items_size)
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox-data'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')))
+        for queue_item in queue_items:
+            for packagebuild in queue_item.builds:
+                for package in packagebuild.build.binarypackages:
+                    self.assertEqual(
+                        'restricted', package.component.name,
+                        "The component '%s' is not the expected 'restricted'"
+                        "for package %s" % (
+                            package.component.name, package.name))
+                    self.assertEqual(
+                        'editors', package.section.name,
+                        "The section '%s' is not the expected 'editors'"
+                        "for package %s" % (
+                            package.section.name, package.name))
+                    self.assertEqual(
+                        'OPTIONAL', package.priority.name,
+                        "The priority '%s' is not the expected 'OPTIONAL'"
+                        "for package %s" % (
+                            package.section.name, package.name))
+
     def testOverrideBinaryWithArchiveChange(self):
         """Check if archive changes are disallowed for binary overrides.
 
@@ -697,7 +752,7 @@ class TestQueueToolInJail(TestQueueBase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
-    def _getsha1(self,filename):
+    def _getsha1(self, filename):
         """Return a sha1 hex digest of a file"""
         file_sha = sha()
         opened_file = open(filename,"r")
@@ -733,13 +788,13 @@ class TestQueueToolInJail(TestQueueBase):
 
         # Check that the file has not changed (we don't care if it was
         # re-written, just that it's not changed)
-        self.assertEqual(existing_sha1,new_sha1)
+        self.assertEqual(existing_sha1, new_sha1)
 
     def testFetchActionRaisesErrorIfDifferentFileAlreadyFetched(self):
         """Check that fetching a file that has already been fetched
         raises an error if they are not the same file.  (bug 67014)
         """
-        CLOBBERED="you're clobbered"
+        CLOBBERED = "you're clobbered"
 
         queue_action = self.execute_command('fetch 1')
         self.assertEqual(
@@ -758,7 +813,7 @@ class TestQueueToolInJail(TestQueueBase):
         line = f.read()
         f.close()
 
-        self.assertEqual(CLOBBERED,line)
+        self.assertEqual(CLOBBERED, line)
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem
