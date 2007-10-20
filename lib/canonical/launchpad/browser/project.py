@@ -40,7 +40,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProduct, IProductSet, IProject, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
