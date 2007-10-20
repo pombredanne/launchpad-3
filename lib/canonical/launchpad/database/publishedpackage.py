@@ -20,8 +20,10 @@ class PublishedPackage(SQLBase):
 
     implements(IPublishedPackage)
 
-    _table = 'PublishedPackageView'
+    _table = 'PublishedPackage'
 
+    archive = ForeignKey(
+        dbName='archive', foreignKey='Archive', immutable=True)
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution',
                               immutable=True)

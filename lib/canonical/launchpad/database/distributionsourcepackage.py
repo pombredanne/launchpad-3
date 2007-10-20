@@ -114,11 +114,10 @@ class DistributionSourcePackage(BugTargetBase,
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                            self.distribution.all_distro_archive_ids),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
                      "-SourcePackagePublishingHistory.datepublished"])

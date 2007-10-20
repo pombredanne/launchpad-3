@@ -65,7 +65,7 @@ And, if we mark some packages to be pending removal. Source publication
   >>> pub = SSPPH.get(15)
   >>> print pub.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = old_date
 
 Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
@@ -75,7 +75,7 @@ Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
   hoary
   >>> print pub.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.SUPERSEDED
   >>> pub.scheduleddeletiondate = old_date
 
 But so does source publication 20, which we'll set to pending removal
@@ -89,7 +89,7 @@ deleted yet.
   >>> print [f.libraryfile.filename
   ...        for f in pub.sourcepackagerelease.files]
   [u'alsa-utils_1.0.9a-4ubuntu1.dsc']
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.SUPERSEDED
   >>> pub.scheduleddeletiondate = future_date
 
 Knock off some binaries as well:
@@ -97,13 +97,13 @@ Knock off some binaries as well:
   >>> pub = SBPPH.get(17)
   >>> print pub.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.SUPERSEDED
   >>> pub.scheduleddeletiondate = old_date
 
   >>> pub = SBPPH.get(19)
   >>> print pub.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = old_date
 
 As above, both 19 and 21 binary publication refer to the same pmount
@@ -146,13 +146,13 @@ and one binary) and the date removed properly set up:
 
   >>> source_pub = SSPPH.get(15)
   >>> source_pub.status.name
-  'REMOVED'
+  'DELETED'
   >>> source_pub.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
   >>> binary_pub = SBPPH.get(17)
   >>> binary_pub.status.name
-  'REMOVED'
+  'SUPERSEDED'
   >>> binary_pub.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
@@ -161,11 +161,11 @@ binary publication 19 (file hold by another active publication), of
 course are left alone:
 
   >>> pub = SSPPH.get(20)
-  >>> pub.status.name != PackagePublishingStatus.REMOVED
+  >>> pub.dateremoved is None
   True
 
   >>> pub = SBPPH.get(19)
-  >>> pub.status != PackagePublishingStatus.REMOVED
+  >>> pub.dateremoved is None
   True
 
 
@@ -179,10 +179,10 @@ Test that bytes freed computing is handled correctly:
   ...    return 5
   >>> dr._removeFile = removeFileReturningSize
   >>> pub = SSPPH.get(2)
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = old_date
   >>> pub = SBPPH.get(24)
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.SUPERSEDED
   >>> pub.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> dr.reap()
@@ -201,7 +201,7 @@ Test that random exceptions are handled correctly:
   ...    raise TypeError
   >>> dr._removeFile = removeFileRaisingOtherException
   >>> pub = SSPPH.get(10)
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.status = PackagePublishingStatus.SUPERSEDED
   >>> pub.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> dr.reap()

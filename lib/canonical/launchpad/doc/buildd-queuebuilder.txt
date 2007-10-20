@@ -26,7 +26,7 @@ import the bunch of required database classes:
   ...      SourcePackageReleaseFile)
 
   >>> from canonical.launchpad.interfaces import (
-  ...      PackagePublishingPocket, PackagePublishingStatus
+  ...      PackagePublishingPocket, PackagePublishingStatus,
   ...      SourcePackageFileType)
 
   >>> from canonical.database.constants import UTC_NOW

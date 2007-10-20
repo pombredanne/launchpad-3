@@ -198,7 +198,7 @@ class DistroSeriesSourcePackageRelease:
         return current
 
     def changeOverride(self, new_component=None, new_section=None):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
 
         # Check we have been asked to do something
         if (new_component is None and
@@ -241,7 +241,7 @@ class DistroSeriesSourcePackageRelease:
         )
 
     def supersede(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         # Retrieve current publishing info
         current = self.current_published
         current = SecureSourcePackagePublishingHistory.get(current.id)
@@ -250,8 +250,20 @@ class DistroSeriesSourcePackageRelease:
 
         return current
 
+    def delete(self, removed_by, removal_comment=None):
+        """See `IDistroSeriesSourcePackageRelease`."""
+        # Retrieve current publishing info
+        current = self.current_published
+        current = SecureSourcePackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.DELETED
+        current.datesuperseded = UTC_NOW
+        current.removed_by = removed_by
+        current.removal_comment = removal_comment
+
+        return current
+
     def copyTo(self, distroseries, pocket):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         current = self.current_published
 
         copy = SecureSourcePackagePublishingHistory(
@@ -266,3 +278,29 @@ class DistroSeriesSourcePackageRelease:
             embargo=False,
         )
         return copy
+
+    @property
+    def published_binaries(self):
+        """See `IDistroSeriesSourcePackageRelease`."""
+        target_binaries = []
+
+        # Get the binary packages in each distroarchseries and store them
+        # in target_binaries for returning.  We are looking for *published*
+        # binarypackagereleases in all arches for the 'source' and its
+        # location.
+        for binary in self.binaries:
+            if binary.architecturespecific:
+                considered_arches = [binary.build.distroarchseries]
+            else:
+                considered_arches = self.distroseries.architectures
+
+            for distroarchseries in considered_arches:
+                dasbpr = distroarchseries.getBinaryPackage(
+                    binary.name)[binary.version]
+                # Only include objects with published binaries.
+                if dasbpr is None or dasbpr.current_publishing_record is None:
+                    continue
+                target_binaries.append(dasbpr)
+
+        return target_binaries
+

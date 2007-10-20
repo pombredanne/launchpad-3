@@ -463,7 +463,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getSourcePackagePublishing(status, pocket, component=None,
                                    archive=None):
-        """Return a selectResult of ISourcePackagePublishing.
+        """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
@@ -520,7 +520,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     def initialiseFromParent():

@@ -30,7 +30,9 @@ existing builds that are in sampledata!
   >>> misc_section = Section.selectOneBy(name="base")
   >>> from canonical.launchpad.interfaces import BinaryPackageFormat
   >>> binpackageformat = BinaryPackageFormat.DEB
-  >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+  >>> from canonical.launchpad.interfaces import (
+  ...     PackagePublishingPriority, PackagePublishingStatus,
+  ...     PackagePublishingPocket)
   >>> priority = PackagePublishingPriority.STANDARD
 
   >>> bpr = Build.get(9).createBinaryPackageRelease(

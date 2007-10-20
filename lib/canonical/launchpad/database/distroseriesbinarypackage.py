@@ -11,11 +11,11 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.interfaces import (
     IDistroSeriesBinaryPackage, PackagePublishingStatus)
-
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
+
 
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".
@@ -83,12 +83,11 @@ class DistroSeriesBinaryPackage:
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackagePublishingHistory.status != %s
+            BinaryPackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(
                     self.distroseries,
                     self.distroseries.distribution.all_distro_archive_ids,
-                    self.binarypackagename,
-                    PackagePublishingStatus.REMOVED),
+                    self.binarypackagename),
             orderBy=['-datecreated'],
             clauseTables=['DistroArchRelease', 'BinaryPackageRelease'])
         return sorted(ret, key=lambda a: (

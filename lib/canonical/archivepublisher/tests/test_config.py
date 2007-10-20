@@ -6,27 +6,22 @@
 __metaclass__ = type
 
 from unittest import TestLoader
-import sys
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
+    LaunchpadZopelessTestCase)
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.testing import ZopelessLayer
 
 
 class TestConfig(LaunchpadZopelessTestCase):
 
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-
-    def testImport(self):
-        """canonical.archivepublisher.Config should be importable"""
-        from canonical.archivepublisher.config import Config
 
     def testInstantiate(self):
         """Config should instantiate"""

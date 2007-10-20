@@ -162,8 +162,6 @@ class Bug(SQLBase):
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    externalrefs = SQLMultipleJoin(
-            'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
@@ -890,7 +888,8 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers", "tags"])
+                "product", "status", "subscribers", "tags",
+                "subscribe_reporter"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -934,7 +933,8 @@ class BugSet:
             datecreated=params.datecreated,
             security_related=params.security_related)
 
-        bug.subscribe(params.owner)
+        if params.subscribe_reporter:
+            bug.subscribe(params.owner)
         if params.tags:
             bug.tags = params.tags
 

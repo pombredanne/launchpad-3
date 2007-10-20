@@ -108,12 +108,12 @@ sourcepackagename before passing to regexp.
 
   >>> libc = hoary.getSourcePackage('libstdc++')['b8p']
   >>> libc_view = queryView(libc, "+changelog", request)
-  >>> print libc_view.changelog()
+  >>> print libc_view.changelog
   libstdc++ (<a href="../../../hoary/+source/libstdc++/9.9-1">9.9-1</a>) hoary; urgency=high
   <BLANKLINE>
    * Placeholder
   <BLANKLINE>
-   -- Sample Person &lt;test@canonical.com&gt; Tue, 10 Feb 2006 10:10:08 +0300
+   -- Sample Person &lt;email address hidden&gt; Tue, 10 Feb 2006 10:10:08 +0300
   <BLANKLINE>
   <BLANKLINE>
 

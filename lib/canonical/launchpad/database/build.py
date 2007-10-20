@@ -258,6 +258,8 @@ class Build(SQLBase):
 
         extra_headers = {
             'X-Launchpad-Build-State': self.buildstate.name,
+            'X-Launchpad-Build-Component' : self.current_component.name,
+            'X-Launchpad-Build-Arch' : self.distroarchseries.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
@@ -284,7 +286,7 @@ class Build(SQLBase):
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))
-            archive_tag = '%s main archive' % self.distribution.name
+            archive_tag = '%s primary archive' % self.distribution.name
             subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
@@ -346,6 +348,7 @@ class Build(SQLBase):
             'source_url': source_url,
             'extra_info': extra_info,
             'archive_tag': archive_tag,
+            'component_tag' : self.current_component.name,
             }
         message = template % replacements
 

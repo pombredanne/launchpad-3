@@ -261,7 +261,7 @@ class TestQueueTool(TestQueueBase):
         moz_publishing = bat_i386.getBinaryPackage('pmount').releases
 
         self.assertEqual(1, len(moz_publishing))
-        self.assertEqual(PackagePublishingStatus.REMOVED,
+        self.assertEqual(PackagePublishingStatus.DELETED,
                          moz_publishing[0].status)
 
         # invoke queue tool filtering by name

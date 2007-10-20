@@ -23,7 +23,7 @@ __all__ = [
     'pocketsuffix'
     ]
 
-from zope.schema import Bool, Datetime, Int, TextLine
+from zope.schema import Bool, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -68,6 +68,7 @@ class IArchivePublisher(Interface):
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
+    displayname = Attribute("Text representation of the current record.")
 
     def publish(diskpool, log):
         """Publish or ensure contents of this publish record
@@ -140,7 +141,8 @@ class PoolFileOverwriteError(Exception):
 # Source package publishing
 #
 
-class IBaseSourcePackagePublishing(Interface):
+class ISourcePackageFilePublishing(Interface):
+    """Source package release files and their publishing status"""
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
@@ -162,10 +164,6 @@ class IBaseSourcePackagePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
-    """Source package release files and their publishing status"""
     sourcepackagepublishing = Int(
             title=_('Sourcepackage publishing record id'), required=True,
             readonly=True,
@@ -179,8 +177,8 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
             )
 
 
-class ISourcePackagePublishingBase(Interface):
-    """Base class for ISourcePackagePublishing, without extra properties."""
+class ISecureSourcePackagePublishingHistory(Interface):
+    """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -219,10 +217,6 @@ class ISourcePackagePublishingBase(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
-    """Base class with extra attributes for ISSPPH."""
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
@@ -244,10 +238,6 @@ class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
                     'published set'),
             required=False, readonly=False,
             )
-
-
-class ISecureSourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
-    """A source package publishing history record."""
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -256,9 +246,17 @@ class ISecureSourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
             title=_('The date on which this record had its embargo lifted'),
             required=False, readonly=False,
             )
+    removed_by = Int(
+        title=_('The IPerson responsible for the removal'),
+        required=False, readonly=False,
+        )
+    removal_comment = Text(
+        title=_('Reason why this publication is going to be removed.'),
+        required=False, readonly=False,
+        )
 
 
-class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
+class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
     """A source package publishing history record."""
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
@@ -288,8 +286,8 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
 # Binary package publishing
 #
 
-
-class IBaseBinaryPackagePublishing(Interface):
+class IBinaryPackageFilePublishing(Interface):
+    """Binary package files and their publishing status"""
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
@@ -308,10 +306,6 @@ class IBaseBinaryPackagePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class IBinaryPackageFilePublishing(IBaseBinaryPackagePublishing):
-    """Binary package files and their publishing status"""
     # Note that it is really /source/ package name below, and not a
     # thinko; at least, that's what Celso tells me the code uses
     #   -- kiko, 2006-03-22
@@ -335,7 +329,8 @@ class IBinaryPackageFilePublishing(IBaseBinaryPackagePublishing):
             )
 
 
-class IExtendedBinaryPackagePublishing(Interface):
+class ISecureBinaryPackagePublishingHistory(Interface):
+    """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -399,10 +394,6 @@ class IExtendedBinaryPackagePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
-    """A binary package publishing record."""
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -412,17 +403,22 @@ class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
                     'embargo lifted'),
             required=False, readonly=False,
             )
+    removed_by = Int(
+        title=_('The IPerson responsible for the removal'),
+        required=False, readonly=False,
+        )
+    removal_comment = Text(
+        title=_('Reason why this publication is going to be removed.'),
+        required=False, readonly=False,
+        )
 
 
-class IBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
+class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypacakgerelease in this distroarchseries.")
 
-    hasRemovalRequested = Bool(
-            title=_('Whether a removal has been requested for this record')
-            )
 
 class PackagePublishingStatus(DBEnumeratedType):
     """Package Publishing Status
@@ -458,23 +454,14 @@ class PackagePublishingStatus(DBEnumeratedType):
         When a newer version of a [source] package is published the existing
         one is marked as "superseded".  """)
 
-    PENDINGREMOVAL = DBItem(6, """
-        PendingRemoval
+    DELETED = DBItem(4, """
+        Deleted
 
-        Once a package is ready to be removed from the archive is is put
-        into this state and the removal will be acted upon when a period of
-        time has passed. When the package is moved to this state the
-        scheduleddeletiondate column is filled out. When that date has
-        passed the archive maintainance tools will remove the package from
-        the on-disk archive and remove the publishing record.  """)
-
-    REMOVED = DBItem(7, """
-        Removed
-
-        Once a package is removed from the archive, its publishing record
-        is set to this status. This means it won't show up in the SPP view
-        and thus will not be considered in most queries about source
-        packages in distroseriess. """)
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
 
 
 class PackagePublishingPriority(DBEnumeratedType):

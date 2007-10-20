@@ -42,7 +42,7 @@ def sanitize_feisty_apt_ftparchive_output(text):
 
 
 class TestFTPArchive(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)

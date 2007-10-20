@@ -556,7 +556,7 @@ because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.interface import PackagePublishingStatus
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                           AND distrorelease = %s
     ...                           AND status in (%s, %s)""" %

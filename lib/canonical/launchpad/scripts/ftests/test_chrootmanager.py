@@ -9,6 +9,7 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackagePublishingPocket)
@@ -18,7 +19,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 class TestChrootManager(TestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment and retrieve useful instances."""

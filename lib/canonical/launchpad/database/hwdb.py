@@ -19,11 +19,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
-    HWSubmissionFormat, HWSubmissionInvalidEmailAddress,
-    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWSubmission,
-    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
-    PersonCreationRationale)
+    EmailAddressStatus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
+    HWSubmissionProcessingStatus, IHWSubmission, IHWSubmissionSet,
+    IHWSystemFingerprint, IHWSystemFingerprintSet, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IPersonSet)
+
 
 class HWSubmission(SQLBase):
     """See `IHWSubmission`."""
@@ -48,6 +48,7 @@ class HWSubmission(SQLBase):
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
+    raw_emailaddress = StringCol(notNull=True)
 
 
 class HWSubmissionSet:
@@ -70,12 +71,6 @@ class HWSubmissionSet:
 
         personset = getUtility(IPersonSet)
         owner = personset.getByEmail(emailaddress)
-        if owner is None:
-            owner, email = personset.createPersonAndEmail(
-                emailaddress,
-                PersonCreationRationale.OWNER_SUBMITTED_HARDWARE_TEST)
-            if owner is None:
-                raise HWSubmissionInvalidEmailAddress, 'invalid email address'
 
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)
@@ -106,7 +101,8 @@ class HWSubmissionSet:
             owner=owner,
             distroarchseries=distroarchseries,
             raw_submission=libraryfile,
-            system_fingerprint=fingerprint)
+            system_fingerprint=fingerprint,
+            raw_emailaddress=emailaddress)
 
     def _userHasAccessClause(self, user):
         """Limit results of HWSubmission queries to rows the user can access."""
@@ -168,9 +164,22 @@ class HWSubmissionSet:
                      'submission_key'])
 
     def submissionIdExists(self, submission_key):
-            """See `IHWSubmissionSet`."""
-            rows = HWSubmission.selectBy(submission_key=submission_key)
-            return rows.count() > 0
+        """See `IHWSubmissionSet`."""
+        rows = HWSubmission.selectBy(submission_key=submission_key)
+        return bool(rows)
+        return rows.count() > 0
+
+    def setOwnership(self, email):
+        """See `IHWSubmissionSet`."""
+        assert email.status in (EmailAddressStatus.VALIDATED,
+                                EmailAddressStatus.PREFERRED), (
+            'Invalid email status for setting ownership of an HWDB '
+            'submission: %s' % email.status.title)
+        person = email.person
+        submissions =  HWSubmission.selectBy(
+            raw_emailaddress=email.email, owner=None)
+        for submission in submissions:
+            submission.owner = person
 
 
 class HWSystemFingerprint(SQLBase):

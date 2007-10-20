@@ -7,8 +7,9 @@ uploaded into the system.
   ...     ProcessorFamily, Component, GPGKey, Section,
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet, 
-  ...     PackagePublishingPocket, PackagePublishingStatus)
+  ...     IComponentSet, IDistributionSet, IDistroSeriesSet,
+  ...     ISourcePackageNameSet, PackagePublishingPocket,
+  ...     PackagePublishingStatus)
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
@@ -125,9 +126,22 @@ An upload to the RELEASE pocket will add items to the import queue:
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
 
-  # There are exactly the 10 entries imported by pmount.
-  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
-  10
+As we can see from the translation import queue content.
+
+  >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
+  ...     print '%s/%s: %s' % (
+  ...         entry.distroseries.name, entry.sourcepackagename.name,
+  ...         entry.path)
+  dapper/pmount: po/es_ES.po
+  dapper/pmount: po/ca.po
+  dapper/pmount: po/de.po
+  dapper/pmount: po/cs.po
+  dapper/pmount: po/es.po
+  dapper/pmount: po/fr.po
+  dapper/pmount: po/hr.po
+  dapper/pmount: po/nb.po
+  dapper/pmount: po/pmount.pot
+  dapper/pmount: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -162,14 +176,79 @@ But an upload to the UPDATE pocket will add items to the import queue:
   >>> queue_item.pocket = PackagePublishingPocket.UPDATES
   >>> queue_item.customfiles[0].publish()
 
-  # And we get 10 new entries imported.
-  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
-  10
+As we can see from the translation import queue content.
+
+  >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
+  ...     print '%s/%s: %s' % (
+  ...         entry.distroseries.name, entry.sourcepackagename.name,
+  ...         entry.path)
+  dapper/pmount: po/es_ES.po
+  dapper/pmount: po/ca.po
+  dapper/pmount: po/de.po
+  dapper/pmount: po/cs.po
+  dapper/pmount: po/es.po
+  dapper/pmount: po/fr.po
+  dapper/pmount: po/hr.po
+  dapper/pmount: po/nb.po
+  dapper/pmount: po/pmount.pot
+  dapper/pmount: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
   >>> transaction.abort()
 
+Uploads to restricted component are accepted too.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
+  >>> restricted_component = getUtility(IComponentSet)['restricted']
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+
+  # Change the component where this package was attached.
+  >>> queue_item.builds[0].build.sourcepackagerelease.override(
+  ...     component=restricted_component)
+  >>> queue_item.customfiles[0].publish()
+
+As we can see from the translation import queue content.
+
+  >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
+  ...     print '%s/%s: %s' % (
+  ...         entry.distroseries.name, entry.sourcepackagename.name,
+  ...         entry.path)
+  dapper/pmount: po/es_ES.po
+  dapper/pmount: po/ca.po
+  dapper/pmount: po/de.po
+  dapper/pmount: po/cs.po
+  dapper/pmount: po/es.po
+  dapper/pmount: po/fr.po
+  dapper/pmount: po/hr.po
+  dapper/pmount: po/nb.po
+  dapper/pmount: po/pmount.pot
+  dapper/pmount: po/it_IT.po
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # component.
+  >>> transaction.abort()
+
+But the ones into universe are not accepted.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
+  >>> universe_component = getUtility(IComponentSet)['universe']
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+
+  # Change the component where this package was attached.
+  >>> queue_item.builds[0].build.sourcepackagerelease.override(
+  ...     component=universe_component)
+  >>> queue_item.customfiles[0].publish()
+
+This time, we don't get any entry in the import queue.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  0
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # component.
+  >>> transaction.abort()
 
 == Translations from PPA build ==
 

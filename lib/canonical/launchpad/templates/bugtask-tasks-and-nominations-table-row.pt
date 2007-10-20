@@ -88,9 +88,13 @@
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 0.25em"
            tal:attributes="href context/bugwatch/url">
-          <img
+          <img tal:condition="not:context/bugwatch/last_error_type"
             alt="Linked to "
             src="/@@/bug-remote"
+          />
+          <img tal:condition="context/bugwatch/last_error_type"
+            alt="Error updating bug watch"
+            src="/@@/warning"
           />
           <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
           #<span tal:replace="context/bugwatch/remotebug">123</span>

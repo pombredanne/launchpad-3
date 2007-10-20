@@ -161,7 +161,7 @@ It's not present, Let's create it to check if getBuildByArch responds
 appropriately (we won't care about the source architecturehintlist in
 this test, see more details in buildd-queuebuilder)
 
-  >>> from canonical.launchpad.interface import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> created_build = pmount_source.sourcepackagerelease.createBuild(
   ...     foobuntu['i386'], PackagePublishingPocket.RELEASE,
   ...     ubuntu.main_archive)
