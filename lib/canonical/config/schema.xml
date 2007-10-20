@@ -905,7 +905,7 @@ k            </description>
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string"
         default="/var/tmp/sm-ng/masterlock" />
-        <key name="maximum_workers" datatype="integer" />
+        <key name="maximum_workers" datatype="integer" default="4"/>
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>

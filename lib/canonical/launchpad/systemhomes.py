@@ -37,8 +37,10 @@ class ShipItApplication:
 class MailingListApplication:
     implements(IMailingListApplication)
 
+
 class FeedsApplication:
     implements(IFeedsApplication)
+
 
 class MaloneApplication:
     implements(IMaloneApplication)

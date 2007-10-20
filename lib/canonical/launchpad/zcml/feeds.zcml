@@ -17,6 +17,12 @@
         factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
         />
 
+    <!-- This section for +dims is present since the OOPS page loads it.
+         If +dims is requested on feeds, that means that a browser that
+         renders JS has recieved an OOPS page on feeds, so it is
+         relevant for us to collect its page dimensions. If a Feed reader
+         gets the OOPS page, it likely won't execute the JS and so won't
+         try to read +dims. -->
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+dims"
@@ -24,7 +30,6 @@
         class="canonical.launchpad.browser.BrowserWindowDimensions"
         attribute="__call__"
         />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+index"

@@ -33,15 +33,14 @@ from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
 
+from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
-
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IFacetMenu, IApplicationMenu,
     IContextMenu, IAuthorization, IBreadcrumbProvider)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
-from canonical.launchpad.layers import FeedsLayer
 
 class IAuthorizationsDirective(Interface):
     """Set up authorizations as given in a module."""
@@ -172,7 +171,8 @@ class IGlueDirective(Interface):
     """ZCML glue to register some classes perform an action.
 
     For each class in the classes list, found in the specified module, the
-    handler will hookup the class to do something.
+    handler will hookup the class to do something.  Since this is a fairly
+    generic mechanism, what that 'something' is isn't important.
     """
     module = GlobalObject(
         title=u"Module in which the classes are found."
