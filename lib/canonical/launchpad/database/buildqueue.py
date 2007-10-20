@@ -181,6 +181,12 @@ class BuildQueue(SQLBase):
             distroname, distroseriesname, archname, sourcename, version, state
             ))
 
+    def markAsBuilding(self, builder):
+        """See `IBuildQueue`."""
+        self.builder = builder
+        self.buildstart = UTC_NOW
+        self.build.buildstate = BuildStatus.BUILDING
+
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """See IBuildQueue."""

@@ -141,11 +141,10 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHSERIES across available pockets
-        for pocket in dbschema.PackagePublishingPocket.items:
-            if distroarchseries.getChroot(pocket):
-                # Fill out the contents
-                self._archserieses.setdefault(distroarchseries, {})
+        # Is there a chroot for this archseries?
+        if distroarchseries.getChroot():
+            # Fill out the contents.
+            self._archserieses.setdefault(distroarchseries, {})
 
     def setupBuilders(self, archseries):
         """Setting up a group of builder slaves for a given DistroArchSeries.
