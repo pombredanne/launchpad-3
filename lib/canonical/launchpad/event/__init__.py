@@ -4,4 +4,3 @@
 
 from canonical.launchpad.event.sqlobjectevent import *
 from canonical.launchpad.event.team import *
-from canonical.launchpad.event.bug import *

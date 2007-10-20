@@ -18,7 +18,7 @@
         <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
       </div>
 
-      <h1>This is a question</h1>
+      <h1>Convert this to a question</h1>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
@@ -33,7 +33,7 @@
       <metal:form use-macro="context/@@launchpad_form/form">
         <div metal:fill-slot="extra_info">
           <p tal:condition="not: view/can_be_a_question">
-            A question cannot be created from this bug.
+            This bug cannot be converted into a question.
             <tal:question condition="context/bug/getQuestionCreatedFromBug">
               A question was already created from this bug.
             </tal:question>
@@ -60,9 +60,6 @@
           <input tal:repeat="action view/actions"
             tal:replace="structure action/render"
             tal:condition="view/can_be_a_question" />
-          <input
-            tal:replace="structure view/cancel_action/render"
-            tal:condition="not: view/can_be_a_question" />
         </div>
       </metal:form>
     </metal:main>
@@ -70,7 +67,7 @@
     <metal:help fill-slot="help">
       <p>
         A bug must meet a few conditions to be convertible to a question.
-        its status must be either New, Incomplete, Confirmed, or Wont Fix
+        Its status must be either New, Incomplete, Confirmed, or Wont Fix.
         The bug's project must use Launchpad to track bugs.
       </p>
       <p>

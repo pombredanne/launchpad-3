@@ -16,7 +16,7 @@ __all__ = [
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
-    'ICreateQuestionFromBugForm',
+    'IConvertToQuestionForm',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
@@ -889,12 +889,12 @@ class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
     """Marker interface to render custom template for the bug nominations."""
 
 
-class ICreateQuestionFromBugForm(Interface):
+class IConvertToQuestionForm(Interface):
     """Form for creating and question from a bug."""
     comment = Text(
         title=_('Comment'),
         description=_('An explanation of why the bug report is a question.'),
-        required=True)
+        required=False)
 
 
 class IRemoveQuestionFromBugForm(Interface):
@@ -902,4 +902,4 @@ class IRemoveQuestionFromBugForm(Interface):
     comment = Text(
         title=_('Comment'),
         description=_('An explanation of why the bug report is valid.'),
-        required=True)
+        required=False)

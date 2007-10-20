@@ -8,6 +8,7 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
+    'IBugBecameQuestionEvent',
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
@@ -108,6 +109,13 @@ class BugNameField(ContentNameField):
             return getUtility(IBugSet).getByNameOrID(name)
         except NotFoundError:
             return None
+
+class IBugBecameQuestionEvent(Interface):
+    """A bug became a question."""
+
+    bug = Attribute("The bug that was changed to a question.")
+    question = Attribute("The question that the bug became.")
+    user = Attribute("The user that changed the bug to a question.")
 
 
 class CreatedBugWithNoBugTasksError(Exception):
@@ -312,7 +320,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         3. The bug was not made into a question previously.
         """
 
-    def createQuestionFromBug(person, comment):
+    def convertToQuestion(person, comment=None):
         """Create and return a Question from this Bug.
 
         Bugs that are also in external bug trackers cannot be converted

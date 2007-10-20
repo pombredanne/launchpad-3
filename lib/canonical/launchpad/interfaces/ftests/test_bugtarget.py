@@ -33,18 +33,6 @@ def bugtarget_filebug(bugtarget, summary, status=None):
         getUtility(ILaunchBag).user, summary, comment=summary, status=status))
 
 
-def invalidate_distribution_bugtask(bugtasks):
-    """Set the Distribution bugtask status to Invalid.
-
-    The Distribution bugtask is often needed to create another bugtask, but
-    it interferes with other tests.
-    """
-    for bugtask in bugtasks:
-        if IDistribution.providedBy(bugtask.target):
-            bugtask.transitionToStatus(
-                BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-
-
 def productSetUp(test):
     """Setup the `IProduct` test."""
     setUp(test)
@@ -120,8 +108,6 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
     getUtility(IBugTaskSet).createTask(
         bug, getUtility(ILaunchBag).user, distroseries=distroseries,
         sourcepackagename=sourcepackagename, status=status)
-    # The distribution bugtask interferes with bugtarget-questiontarget.txt.
-    invalidate_distribution_bugtask(bug.bugtasks)
     return bug
 
 
@@ -129,7 +115,7 @@ def distributionSeriesSetUp(test):
     """Setup the `IDistroSeries` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['bugtarget'] = ubuntu.getSeries('warty')
+    test.globs['bugtarget'] = ubuntu.getSeries('hoary')
     test.globs['filebug'] = distroseries_filebug
 
 
@@ -139,7 +125,10 @@ def sourcepackage_filebug(source_package, summary, status=None):
         source_package.distroseries, summary,
         sourcepackagename=source_package.sourcepackagename, status=status)
     # The distribution bugtask interferes with bugtarget-questiontarget.txt.
-    invalidate_distribution_bugtask(bug.bugtasks)
+    for bugtask in bug.bugtasks:
+        if IDistribution.providedBy(bugtask.target):
+            bugtask.transitionToStatus(
+                BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     return bug
 
 

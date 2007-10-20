@@ -1047,7 +1047,7 @@ def notify_bug_became_question(event):
     bug = event.bug
     question = event.question
     change_info = '\n'.join([
-        '** bug changed to question: "%s"\n' % question.title,
+        '** bug changed to question:\n'
         '   %s' %  canonical_url(question)])
     bug.addChangeNotification(change_info, person=event.user)
 

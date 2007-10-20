@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 
-__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
+__all__ = [
+    'Bug', 'BugBecameQuestionEvent', 'BugSet', 'get_bug_tags',
+    'get_bug_tags_open_count']
 
 
 import operator
@@ -22,13 +24,13 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBug, IBugAttachmentSet, IBugBranch, IBugSet,
-    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IProduct, IProductSeries, IProductSeriesBugTask,
-    IQuestionTarget, ISourcePackage, IUpstreamBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
+    IBugBranch, IBugSet, IBugWatchSet, ICveSet, IDistribution,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
+    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -52,7 +54,6 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.event.bug import BugBecameQuestionEvent
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -127,6 +128,16 @@ class BugTag(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     tag = StringCol(notNull=True)
+
+
+class BugBecameQuestionEvent:
+    """See `IBugBecameQuestionEvent`."""
+    implements(IBugBecameQuestionEvent)
+
+    def __init__(self, bug, question, user):
+        self.bug = bug
+        self.question = question
+        self.user = user
 
 
 class Bug(SQLBase):
@@ -578,34 +589,25 @@ class Bug(SQLBase):
         Only one bugtask must meet both conditions to be return. When
         zero or many bugtasks match, None is returned.
         """
-        developed_statuses = [
-            BugTaskStatus.TRIAGED, BugTaskStatus.INPROGRESS,
-            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
-        bugtasks = []
-        for bugtask in self.bugtasks:
-            if (bugtask.status == BugTaskStatus.UNKNOWN
-                or bugtask.bugwatch is not None
-                or (bugtask.pillar.official_malone is False
-                    and bugtask.status != BugTaskStatus.INVALID)):
-                # The bug exists in another bugtracker.
-                return None
-            elif bugtask.status in developed_statuses:
-                # This bug is legitimate for a BugTarget.
-                return None
-            elif (bugtask.status != BugTaskStatus.INVALID
-                and bugtask.conjoined_master is None):
-                # This bugtask can provide a QuestionTarget.
-                bugtasks.append(bugtask)
-            else:
-                # The bugtask is either Invalid or a conjoined slave.
-                pass
-
-        if len(bugtasks) != 1:
-            # These is more than one candidate to provide a QuestionTarget.
+        # XXX sinzui 2007-10-19:
+        # We may want to removed the bugtask.conjoined_master check
+        # below. It is used to simplify the task of converting
+        # conjoined bugtasks to question--since slaves cannot be
+        # directly updated anyway.
+        non_invalid_bugtasks = [
+            bugtask for bugtask in self.bugtasks
+            if (bugtask.status != BugTaskStatus.INVALID
+                and bugtask.conjoined_master is None)]
+        if len(non_invalid_bugtasks) != 1:
             return None
-        return bugtasks[0]
+        [valid_bugtask] = non_invalid_bugtasks
+        if valid_bugtask.pillar.official_malone:
+            return valid_bugtask
+        else:
+            return None
 
-    def createQuestionFromBug(self, person, comment):
+
+    def convertToQuestion(self, person, comment=None):
         """See `IBug`."""
         question = self.getQuestionCreatedFromBug()
         assert question is None, (
@@ -618,16 +620,19 @@ class Bug(SQLBase):
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
-        bugtask.statusexplanation = comment
+        edited_fields = ['status']
+        if comment is not None:
+            bugtask.statusexplanation = comment
+            edited_fields.append('statusexplanation')
+            self.newMessage(
+                owner=person, subject=self.followup_subject(),
+                content=comment)
         notify(
             SQLObjectModifiedEvent(
                 object=bugtask,
                 object_before_modification=bugtask_before_modification,
-                edited_fields=['status', 'statusexplanation'],
+                edited_fields=edited_fields,
                 user=person))
-
-        self.newMessage(
-            owner=person, subject=self.followup_subject(), content=comment)
 
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
@@ -638,13 +643,9 @@ class Bug(SQLBase):
     def getQuestionCreatedFromBug(self):
         """See `IBug`."""
         for question in self.questions:
-            if question.owner == self.owner:
-                # Questions do not save orignal descriptions; the message
-                # indexes will be off by 1.
-                bug_description_date = self.messages[1].datecreated
-                question_description_date = question.messages[0].datecreated
-                if bug_description_date == question_description_date:
-                    return question
+            if (question.owner == self.owner
+                and question.datecreated == self.datecreated):
+                return question
         return None
 
     def canMentor(self, user):

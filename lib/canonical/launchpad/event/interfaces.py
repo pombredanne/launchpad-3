@@ -56,9 +56,3 @@ class IKarmaAssignedEvent(IObjectEvent):
 
     karma = Attribute("The Karma object assigned to the person.")
 
-
-class IBugBecameQuestionEvent(Interface):
-    """A bug became a question."""
-
-    bug = Attribute("The bug that was changed to a question.")
-    question = Attribute("The question that the bug became.")

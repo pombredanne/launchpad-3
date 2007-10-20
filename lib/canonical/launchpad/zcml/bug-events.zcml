@@ -88,7 +88,7 @@
    handler="canonical.launchpad.subscribers.karma.cve_added" />
 
 <subscriber
-   for="canonical.launchpad.event.interfaces.IBugBecameQuestionEvent"
+   for="canonical.launchpad.interfaces.IBugBecameQuestionEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_became_question"
    />
 

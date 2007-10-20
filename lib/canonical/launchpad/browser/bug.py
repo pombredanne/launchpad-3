@@ -223,13 +223,13 @@ class BugContextMenu(ContextMenu):
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'This is a question'
+        text = 'Convert to question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
         return Link('+create-question', text, icon='edit', enabled=enabled)
 
     def removequestion(self):
         """Remove the created question from this bug."""
-        text = 'This is not a question'
+        text = 'Remove the question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
         return Link('+remove-question', text, icon='edit', enabled=enabled)
 

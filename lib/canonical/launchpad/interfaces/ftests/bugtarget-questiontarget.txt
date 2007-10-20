@@ -33,7 +33,7 @@ to make it into a question.
     >>> print bug.getQuestionCreatedFromBug()
     None
 
-    >>> question = bug.createQuestionFromBug(
+    >>> question = bug.convertToQuestion(
     ...     sample_person, "This is a question.")
 
     >>> question.owner == bug.owner
@@ -65,7 +65,8 @@ can also be retrieved using bug.getQuestionCreatedFromBug().
 
 A bug can only be converted to a question once.
 
-    >>> question = bug.createQuestionFromBug(sample_person, "Fail.")
+    >>> question = bug.convertToQuestion(sample_person, "Fail.")
     Traceback (most recent call last):
     ...
     AssertionError: This bug was already converted to question #...
+

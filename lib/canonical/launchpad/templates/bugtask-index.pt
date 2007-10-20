@@ -97,7 +97,7 @@
   <p id="bug-is-question" class="informational message"
     tal:condition="context/bug/getQuestionCreatedFromBug"
     tal:define="question context/bug/getQuestionCreatedFromBug">
-    This report is a question:
+    This bug report was converted into a question:
     Question #<tal:question-id replace="question/id" />:
     <a href=""
       tal:attributes="href question/fmt:url"

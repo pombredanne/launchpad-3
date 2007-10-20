@@ -26,7 +26,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
     """An object that can have a new question asked about it."""
 
     def newQuestion(owner, title, description, language=None,
-                    datecreated=None, notify_subscribers=True):
+                    datecreated=None):
         """Create a new question.
 
          A new question is created with status OPEN.
@@ -41,8 +41,6 @@ class IQuestionTarget(ISearchableByQuestionOwner):
                  is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
-        :notify_subscribers: A boolean that indicates whether to notify
-                             subscribers about the added comment.
         """
 
     def createQuestionFromBug(bug):

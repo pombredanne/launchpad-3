@@ -31,7 +31,6 @@ to questions.
     >>> target = getUtility(IProductSet)['jokosher']
     >>> bug_params = CreateBugParams(
     ...     title="Print is broken", comment="blah blah blah", owner=no_priv)
-    >>> bug_params.setBugTarget(product=target)
     >>> bug = target.createBug(bug_params)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.status.title
@@ -50,7 +49,8 @@ Person changing the status, and a message about why the report is
 a question.
 
     >>> login('test@canonical.com')
-    >>> question = bug.createQuestionFromBug(
+    >>> bug_subscription = bug.subscribe(sample_person)
+    >>> question = bug.convertToQuestion(
     ...     sample_person, "This is a question.")
 
     >>> question.target == target
@@ -61,6 +61,17 @@ a question.
     True
     >>> question.description == bug.description
     True
+    >>> question.datecreated == bug.datecreated
+    True
+    >>> # Bugs save the Bug.description as the first message;
+    >>> # questions do not.
+    >>> question.messages.count() == bug.messages.count() - 1
+    True
+
+The comment parameter for convertToQuestion is optional. When it
+id provided, it is added to the bug, and the bug's messages are copied
+to the question.
+
     >>> question.messages[-1].text_contents == bug.messages[-1].text_contents
     True
 
@@ -74,7 +85,8 @@ a question.
     u'This is a question.'
 
 Once converted to a question, the bugtask status is Invalid. The
-statusexplanation explanation is set to an empty string.
+statusexplanation is set to the comment the user provided to
+explain why the bug is a question.
 
     >>> bugtask.status.title
     'Invalid'
@@ -84,20 +96,23 @@ statusexplanation explanation is set to an empty string.
 Subscribers to the bug are notified that the bug was made into a
 question and that the bugtasks are Invalid.
 
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    1
+    >>> recipients = bug.getBugNotificationRecipients()
+    >>> [address for address in recipients.getEmails()]
+    ['daf@canonical.com', 'no-priv@canonical.com', 'test@canonical.com']
 
-    >>> notifications[0]['To']
-    'no-priv@canonical.com'
-
-    >>> notifications[0]['Subject']
-    '[Question #15]: Print is broken'
+    >>> from canonical.launchpad.database import BugNotification
+    >>> bug_notifications = BugNotification.select(orderBy='-id')
+    >>> for notification in bug_notifications:
+    ...     print notification.message.text_contents
+    ** bug changed to question:
+       http://answers.launchpad.dev/jokosher/+question/...
+    ** Changed in: jokosher
+       Status: New => Invalid
+    This is a question.
 
 A bug can only be converted to a question once.
 
-    >>> question = bug.createQuestionFromBug(sample_person, "Fail.")
+    >>> question = bug.convertToQuestion(sample_person, "Fail.")
     Traceback (most recent call last):
     ...
     AssertionError: This bug was already converted to question #...
@@ -111,8 +126,8 @@ to it, but QuestionBug links are a many to many relationship. The
 question can also be retrieved using the getQuestionCreatedFromBug()
 method.
 
-    >>> bug.getQuestionCreatedFromBug() == question
-    True
+    >>> bug.title
+    u'Print is broken'
 
     >>> [bug_link.question.title for bug_link in question.bug_links]
     [u'Print is broken']
@@ -144,18 +159,15 @@ Distribution does not use Launchpad to track bugs.
 
 == Only one bugtask must be valid ==
 
-In the rare instance where a bug has more than one bugtask, the only
-one must be have a status in New, Incomplete, Confirmed or Wont Fix,
-and is not a conjoined slave. All other bugtasks must be Invalid or
-a conjoined slave.
+In the rare instance where a bug has more than one bugtask, there must
+be exactly one bugtask having a non-Invalid status.
 
     >>> login('no-priv@canonical.com')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> bug_params = CreateBugParams(
     ...     title="Print is borked", comment="blah blah blah", owner=no_priv)
-    >>> bug_params.setBugTarget(distribution=ubuntu)
-    >>> ubuntu_bug = getUtility(IBugSet).createBug(bug_params)
+    >>> ubuntu_bug = ubuntu.createBug(bug_params)
 
     >>> evo_ubuntu = getUtility(ISourcePackageNameSet)['evolution']
     >>> evo_bugtask = getUtility(IBugTaskSet).createTask(
@@ -174,14 +186,14 @@ a conjoined slave.
     False
 
 The user can choose to Invalidate one or more bugtasks so that only
-one bugtask can provide the QuestionTarget.
+one bugtask can provide the QuestionTarget. Note that the comment
+is not provided
 
     >>> evo_bugtask.transitionToStatus(BugTaskStatus.INVALID, sample_person)
     >>> ubuntu_bug.canBeAQuestion()
     True
 
-    >>> question = ubuntu_bug.createQuestionFromBug(
-    ...     sample_person, "Many bugtasks are one question")
+    >>> question = ubuntu_bug.convertToQuestion(sample_person)
     >>> question.title
     u'Print is borked'
     >>> question.target.name
@@ -190,4 +202,4 @@ one bugtask can provide the QuestionTarget.
     >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
     [u'ubuntu: Invalid', u'evolution: Invalid']
     >>> [bt.statusexplanation for bt in bugtasks]
-    [u'Many bugtasks are one question', None]
+    [None, None]

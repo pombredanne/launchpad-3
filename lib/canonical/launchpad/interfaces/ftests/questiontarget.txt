@@ -524,7 +524,7 @@ the bug are copied to the question.
     >>> question_message = target_question.messages[-1]
     >>> question_message.text_contents == bug_message.text_contents
     True
-    
+
     >>> target_question.owner.displayname
     u'Sample Person'
     >>> target_question.title
