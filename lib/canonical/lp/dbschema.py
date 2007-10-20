@@ -22,7 +22,6 @@ __all__ = (
 'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BranchReviewStatus',
 'BugNominationStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -31,21 +30,11 @@ __all__ = (
 'BugRelationship',
 'BugTaskImportance',
 'BuildStatus',
-'CodereleaseRelationships',
-'CodeImportReviewStatus',
 'CveStatus',
 'DistroSeriesStatus',
-'ImportTestStatus',
-'ImportStatus',
-'MirrorContent',
-'MirrorPulseType',
-'MirrorSpeed',
-'MirrorStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
-'ShippingRequestStatus',
-'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
@@ -94,31 +83,6 @@ class BinaryPackageFormat(DBSchema):
         This is the format used by Mandrake and other similar distributions.
         It does not include dependency tracking information.  """)
 
-
-class ImportTestStatus(DBSchema):
-    """An Arch Import Autotest Result
-
-    This enum tells us whether or not a sourcesource has been put through an
-    attempted import.
-    """
-
-    NEW = Item(0, """
-        Untested
-
-        The sourcesource has not yet been tested by the autotester.
-        """)
-
-    FAILED = Item(1, """
-        Failed
-
-        The sourcesource failed to import cleanly.
-        """)
-
-    SUCCEEDED = Item(2, """
-        Succeeded
-
-        The sourcesource was successfully imported by the autotester.
-        """)
 
 class BugTrackerType(DBSchema):
     """The Types of BugTracker Supported by Launchpad
@@ -342,69 +306,6 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
-class ImportStatus(DBSchema):
-    """This schema describes the states that a SourceSource record can take
-    on."""
-
-    DONTSYNC = Item(1, """
-        Do Not Import
-
-        Launchpad will not attempt to make a Bazaar import.
-        """)
-
-    TESTING = Item(2, """
-        Testing
-
-        Launchpad has not yet attempted this import. The vcs-imports operator
-        will review the source details and either mark the series \"Do not
-        sync\", or perform a test import. If the test import is successful, a
-        public import will be created. After the public import completes, it
-        will be updated automatically.
-        """)
-
-    TESTFAILED = Item(3, """
-        Test Failed
-
-        The test import has failed. We will do further tests, and plan to
-        complete this import eventually, but it may take a long time. For more
-        details, you can ask on the launchpad-users@canonical.com mailing list
-        or on IRC in the #launchpad channel on irc.freenode.net.
-        """)
-
-    AUTOTESTED = Item(4, """
-        Test Successful
-
-        The test import was successful. The vcs-imports operator will lock the
-        source details for this series and perform a public Bazaar import.
-        """)
-
-    PROCESSING = Item(5, """
-        Processing
-
-        The public Bazaar import is being created. When it is complete, a
-        Bazaar branch will be published and updated automatically. The source
-        details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
-        """)
-
-    SYNCING = Item(6, """
-        Online
-
-        The Bazaar import is published and automatically updated to reflect the
-        upstream revision control system. The source details for this series
-        are locked and can only be modified by vcs-imports members and
-        Launchpad administrators.
-        """)
-
-    STOPPED = Item(7, """
-        Stopped
-
-        The Bazaar import has been suspended and is no longer updated. The
-        source details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
-        """)
-
-
 class SourcePackageFileType(DBSchema):
     """Source Package File Type
 
@@ -583,25 +484,17 @@ class PackagePublishingStatus(DBSchema):
         Superseded
 
         When a newer version of a [source] package is published the existing
-        one is marked as "superseded".  """)
+        one is marked as "superseded".
+        """)
 
-    PENDINGREMOVAL = Item(6, """
-        PendingRemoval
+    DELETED = Item(4, """
+        Deleted
 
-        Once a package is ready to be removed from the archive is is put
-        into this state and the removal will be acted upon when a period of
-        time has passed. When the package is moved to this state the
-        scheduleddeletiondate column is filled out. When that date has
-        passed the archive maintainance tools will remove the package from
-        the on-disk archive and remove the publishing record.  """)
-
-    REMOVED = Item(7, """
-        Removed
-
-        Once a package is removed from the archive, its publishing record
-        is set to this status. This means it won't show up in the SPP view
-        and thus will not be considered in most queries about source
-        packages in distroseriess. """)
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -778,70 +671,6 @@ class BinaryPackageFileType(DBSchema):
         """)
 
 
-class CodereleaseRelationships(DBSchema):
-    """Coderelease Relationships
-
-    Code releases are both upstream releases and distribution source package
-    releases, and in this schema we document the relationships that Launchpad
-    understands between these two.
-    """
-
-    PACKAGES = Item(1, """
-        Packages
-
-        The subject is a distribution packing of the object. For example,
-        apache2-2.0.48-1 "packages" the upstream apache2.0.48.tar.gz.
-        """)
-
-    REPLACES = Item(2, """
-        Replaces
-
-        A subsequent release in the same product series typically
-        "replaces" the prior release. For example, apache2.0.48
-        "replaces" apache2.0.47. Similarly, within the distribution
-        world, apache-2.0.48-3ubuntu2 "replaces" apache2-2.0.48-3ubuntu2.
-        """)
-
-    DERIVESFROM = Item(3, """
-        Derives From
-
-        The subject package derives from the object package. It is common
-        for distributions to build on top of one another's work, creating
-        source packages that are modified versions of the source package
-        in a different distribution, and this relationship captures that
-        concept.
-        """)
-
-
-class CodeImportReviewStatus(DBSchema):
-    """CodeImport review status.
-
-    Before a code import is performed, it is reviewed. Only reviewed imports
-    are processed.
-    """
-
-    NEW = Item(1, """Pending Review
-
-    This code import request has recently been filed an has not been reviewed
-    yet.
-    """)
-
-    INVALID = Item(10, """Invalid
-
-    This code import will not be processed.
-    """)
-
-    REVIEWED = Item(20, """Reviewed
-
-    This code import has been approved and will be processed.
-    """)
-
-    SUSPENDED = Item(30, """Suspended
-
-    This code import has been approved, but it has been suspended and is not
-    processed.""")
-
-
 class BugInfestationStatus(DBSchema):
     """Bug Infestation Status
 
@@ -894,56 +723,6 @@ class BugInfestationStatus(DBSchema):
         Unknown
 
         We don't know if this bug infests that coderelease.
-        """)
-
-
-class BranchReviewStatus(DBSchema):
-    """Branch Review Cycle
-
-    This is an indicator of what the project thinks about this branch.
-    Typically, it will be set by the upstream as part of a review process
-    before the branch lands on an official series.
-    """
-
-    NONE = Item(10, """
-        None
-
-        This branch has not been queued for review, and no review has been
-        done on it.
-        """)
-
-    REQUESTED = Item(20, """
-        Requested
-
-        The author has requested a review of the branch. This usually
-        indicates that the code is mature and ready for merging, but it may
-        also indicate that the author would like some feedback on the
-        direction in which he is headed.
-        """)
-
-    NEEDSWORK = Item(30, """
-        Needs Further Work
-
-        The reviewer feels that this branch is not yet ready for merging, or
-        is not on the right track. Detailed comments would be found in the
-        reviewer discussion around the branch, see those for a list of the
-        issues to be addressed or discussed.
-        """)
-
-    MERGECONDITIONAL = Item(50, """
-        Conditional Merge Approved
-
-        The reviewer has said that this branch can be merged if specific
-        issues are addressed. The review feedback will be contained in the
-        branch discussion. Once those are addressed by the author the branch
-        can be merged without further review.
-        """)
-
-    MERGEAPPROVED = Item(60, """
-        Merge Approved
-
-        The reviewer is satisfied that the branch can be merged without
-        further changes.
         """)
 
 
@@ -1048,14 +827,6 @@ class BugExternalReferenceType(DBSchema):
 
         This external reference is a CVE number, which means it
         exists in the CVE database of security bugs.
-        """)
-
-    URL = Item(2, """
-        URL
-
-        This external reference is a URL. Typically that means it
-        is a reference to a web page or other internet resource
-        related to the bug.
         """)
 
 

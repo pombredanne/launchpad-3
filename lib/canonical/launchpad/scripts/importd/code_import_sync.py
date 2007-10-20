@@ -10,11 +10,12 @@ __all__ = ['CodeImportSync']
 
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
-    IProductSeriesSet, RevisionControlSystems)
+    BranchType, CodeImportReviewStatus, IBranchSet, ICodeImportSet,
+    ILaunchpadCelebrities, IProductSeriesSet, ImportStatus,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -175,14 +176,14 @@ class CodeImportSync:
                 self.logger.debug("Aborted creating CodeImport.")
                 return
         # Given the branch, we can create the CodeImport.
+        review_status = self.reviewStatusFromImportStatus(series.importstatus)
+        date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
         code_import = getUtility(ICodeImportSet).newWithId(
             series.id, vcs_imports, branch, series.rcstype,
+            review_status=review_status,
+            date_last_successful=date_last_successful,
             svn_branch_url=series.svnrepository,
             cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
-        review_status = self.reviewStatusFromImportStatus(series.importstatus)
-        code_import.review_status = review_status
-        date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
-        code_import.date_last_successful = date_last_successful
         self.logger.debug("Done creating CodeImport.")
         return code_import
 
@@ -213,16 +214,27 @@ class CodeImportSync:
                 # A branch name conflict occured.
                 self.logger.debug("Aborted updating CodeImport.")
                 return
-            code_import.branch = new_branch
-        code_import.date_last_successful = date_last_successful
+            # Normally, the CodeImport API does not allow changing the branch
+            # after creation, but synchronization with the legacy data model is
+            # special case where we need to break the rules.
+            removeSecurityProxy(code_import).branch = new_branch
 
-        code_import.rcs_type = series.rcstype
-        code_import.cvs_root = series.cvsroot
-        code_import.cvs_module = series.cvsmodule
+        # Normally, the CodeImport API would only allow setting the
+        # date_last_successful to UTC_NOW. Breaking the rules again.
+        removeSecurityProxy(code_import).date_last_successful = (
+            date_last_successful)
+
+        data = {'rcs_type': series.rcstype,
+                'cvs_root': series.cvsroot,
+                'cvs_module': series.cvsmodule,
+                'svn_branch_url': series.svnrepository}
         assert series.cvsbranch is None or series.cvsbranch == 'MAIN'
-        code_import.svn_branch_url = series.svnrepository
-        review_status = self.reviewStatusFromImportStatus(series.importstatus)
-        code_import.review_status = review_status
+        data['review_status'] = (
+            self.reviewStatusFromImportStatus(series.importstatus))
+        # For lack of a real user, changes to the CodeImport object are
+        # credited to the vcs-imports team.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        code_import.updateFromData(data, vcs_imports)
         self.logger.debug("Done updating Codeimport.")
 
     def createNewImportBranch(self, series):

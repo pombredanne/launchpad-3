@@ -264,7 +264,6 @@ one.)
 >>> check("/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/firefox/+bug/1/+addsubscriber", auth=True)
 >>> check("/firefox/+bug/1/+addcomment", auth=True)
->>> check("/firefox/+bug/1/+addurl", auth=True)
 >>> check("/firefox/+bug/1/+activity", auth=True)
 
 Viewing a bug in a distribution context where the current development
@@ -277,7 +276,6 @@ release is targeted.
 >>> check("/ubuntu/+bug/2/+subscribe", auth=True)
 >>> check("/ubuntu/+bug/2/+addsubscriber", auth=True)
 >>> check("/ubuntu/+bug/2/+addcomment", auth=True)
->>> check("/ubuntu/+bug/2/+addurl", auth=True)
 >>> check("/ubuntu/+bug/2/+activity", auth=True)
 
 Viewing a bug comment.
@@ -391,7 +389,6 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
@@ -427,8 +424,6 @@ And this is for a person:
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
->>> check("/~name16/+calendar")
->>> check("/~name16/+calendar/+subscribe", auth=True)
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
