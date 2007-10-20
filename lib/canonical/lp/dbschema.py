@@ -27,8 +27,6 @@ __all__ = (
 'BugRelationship',
 'BugTaskImportance',
 'CveStatus',
-'ShippingRequestStatus',
-'ShippingService',
 )
 
 from canonical.lazr import DBEnumeratedType as DBSchema

@@ -183,11 +183,16 @@ appropriate default value for the RCS type.
 
 If the update interval is set, then it overrides the default value.
 
-    >>> cvs_import.update_interval = timedelta(seconds=7200)
+As explained in the "Modify CodeImports" section, the interface does not allow
+direct attribute modification. So we use removeSecurityProxy in this example.
+
+    >>> removeSecurityProxy(cvs_import).update_interval = (
+    ...     timedelta(seconds=7200))
     >>> cvs_import.effective_update_interval
     datetime.timedelta(0, 7200)
 
-    >>> svn_import.update_interval = timedelta(seconds=3600)
+    >>> removeSecurityProxy(svn_import).update_interval = (
+    ...     timedelta(seconds=3600))
     >>> svn_import.effective_update_interval
     datetime.timedelta(0, 3600)
 
@@ -244,6 +249,48 @@ however.
     http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
     >>> print canonical_url(svn_import)
     http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
+
+
+== Modifying CodeImports ==
+
+Modifications to CodeImport objects must be done using setter methods
+that create CodeImportEvent objects when appropriate. This is enforced
+by preventing the setting of any attribute through the ICodeImport
+interface.
+
+Even though David can access CodeImportObjects, he cannot set attributes
+on those objects.
+
+    >>> login('david.allouche@canonical.com')
+    >>> svn_import.svn_branch_url
+    u'svn://svn.example.com/trunk'
+    >>> svn_import.svn_branch_url = 'svn://svn.example.com/branch/1.0'
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ('svn_branch_url', <CodeImport at 0x...>)
+
+Modifications can be done using the CodeImport.updateFromData method. If
+any change were made, this method creates a CodeImportEvent describing
+them. The CodeImportEvent records the user that made the change, so we
+need to pass the user as an argument.
+
+    >>> svn_import.svn_branch_url
+    u'svn://svn.example.com/trunk'
+    >>> data = {'svn_branch_url': 'svn://svn.example.com/branch/1.0'}
+    >>> svn_import.updateFromData(data, nopriv)
+    >>> svn_import.svn_branch_url
+    u'svn://svn.example.com/branch/1.0'
+    >>> svn_events = event_set.getEventsForCodeImport(svn_import)
+    >>> [event.event_type.name for event in svn_events]
+    ['CREATE', 'MODIFY']
+
+The launchpad.Edit privilege is required to use CodeImport.updateFromData.
+
+    >>> login(ANONYMOUS)
+    >>> svn_import.updateFromData({}, nopriv)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<CodeImport at ...>, 'updateFromData', 'launchpad.Edit')
 
 
 == Security ==

@@ -633,6 +633,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "we'll use to communicate with them."),
         readonly=True)
 
+    safe_email_or_blank = TextLine(
+        title=_("Safe email for display"),
+        description=_("The person's preferred email if they have"
+                      "one and do not choose to hide it. Otherwise"
+                      "the empty string."),
+        readonly=True)
+
     preferredemail_sha1 = TextLine(
         title=_("SHA-1 Hash of Preferred Email"),
         description=_("The SHA-1 hash of the preferred email address and "
