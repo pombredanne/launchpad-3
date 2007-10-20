@@ -8,31 +8,20 @@
 __metaclass__ = type
 
 import _pythonpath
+import os
+import sys
 
 from zope.component import getUtility
 
 from canonical.archivepublisher.debversion import Version
-from canonical.buildmaster.master import (
-    BuilddMaster, BUILDMASTER_ADVISORY_LOCK_KEY, BUILDMASTER_LOCKFILENAME)
-
+from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.config import config
-from canonical.database.postgresql import (
-    acquire_advisory_lock, release_advisory_lock)
-from canonical.database.sqlbase import cursor
+from canonical.buildmaster.master import (
+    BuilddMaster, builddmaster_lockfilename)
 
 from canonical.launchpad.interfaces import IDistroArchSeriesSet
-from canonical.launchpad.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
-
-
-# XXX cprov 2007-03-21: In order to avoid the partial commits inside
-# BuilddMaster to happen we pass a FakeZtm instance
-class _FakeZTM:
-    """A fake transaction manager."""
-    def begin(self):
-        pass
-    def commit(self):
-        pass
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
+    LaunchpadScriptFailure)
 
 
 class QueueBuilder(LaunchpadCronScript):
@@ -47,8 +36,8 @@ class QueueBuilder(LaunchpadCronScript):
         """Invoke rebuildQueue.
 
         Check if the cron.daily is running, quietly exits if true.
+        Force isolation level to READ_COMMITTED_ISOLATION.
         Deals with the current transaction according the dry-run option.
-        Acquire and Release a postgres advisory lock for the entire procedure.
         """
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
@@ -57,24 +46,20 @@ class QueueBuilder(LaunchpadCronScript):
             self.logger.info("Dry run: changes will not be committed.")
             self.txn = _FakeZTM()
 
-        local_cursor = cursor()
-        if not acquire_advisory_lock(
-            local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
-            raise LaunchpadScriptFailure(
-                "Another builddmaster script is already running")
-        try:
-            self.rebuildQueue()
-        finally:
-            if not release_advisory_lock(
-                local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY):
-                self.logger.debug("Could not release advisory lock.")
-
+        self.rebuildQueue()
         self.txn.commit()
 
     def rebuildQueue(self):
         """Look for and initialise new build jobs."""
 
         self.logger.info("Rebuilding Build Queue.")
+
+        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
+        # BuilddMaster to happen we pass a FakeZtm instance
+        class _FakeZTM:
+            """A fake transaction manager."""
+            def commit(self):
+                pass
 
         buildMaster = BuilddMaster(self.logger, self.txn)
 
@@ -104,14 +89,14 @@ class QueueBuilder(LaunchpadCronScript):
     @property
     def lockfilename(self):
         """Buildd master cronscript shares the same lockfile."""
-        return BUILDMASTER_LOCKFILENAME
+        return builddmaster_lockfilename
 
 
 if __name__ == '__main__':
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     try:
-        script.run()
+        script.run(isolation=READ_COMMITTED_ISOLATION)
     finally:
         script.unlock()
 
