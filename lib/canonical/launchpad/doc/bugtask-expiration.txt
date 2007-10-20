@@ -32,6 +32,19 @@ There are no INVALID Bugtasks in sampledata.
     0
 
 
+== Age ==
+
+The expiration period is set using the
+config.alone.days_before_expiration configuration variable. It
+defaults to 60 days. The period is measured from the date_incomplete
+field. We expire bugtasks that are INCOMPLETE for 60 days or more.
+
+    >>> from canonical.config import config
+    >>> old_age_days = config.malone.days_before_expiration
+    >>> old_age_days
+    60
+
+
 == findExpirableBugTasks ==
 
 BugTaskSet provides findExpirableBugTasks to find bugtasks that
@@ -43,6 +56,7 @@ findExpirableBugTasks requires a parameter for the minimum days old
 (min_days_old) that the bugtask has been in the Incomplete status
 without message activity.
 ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
+
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
     Traceback (most recent call last):
     ...
@@ -57,15 +71,6 @@ There are no expirable bugtasks in the sampledata.
 Let's make some bugtasks that qualify for expiration. A Jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
-
-    >>> # date_incomplete and date_confirmed are guarded by bugtasks's
-    >>> # transition logic and ZCML. This function will change the
-    >>> # underlying SQLObject's value for a column.
-    >>> from canonical.launchpad.ftests import set_so_attr
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from datetime import datetime, timedelta
-    >>> from pytz import UTC
-    >>> now = datetime.now(UTC)
 
     # A expirable bugtask. It will be expired because its conjoined
     # master can be expired.
@@ -158,10 +163,10 @@ bugtasks that are valid.
     Ubuntu                Incomplete
     Ubuntu Hoary          Incomplete
 
-If the valid bugtask becomes Invalid, the Hoary bugtask will be
-displayed The ubuntu_bugtask is never returned; it is a conjoined slave
-to the ubuntu_hoary_bugtask. Slave bugtasks cannot be directly expired
-because only the master bugtask can change the status.
+If the valid bugtask becomes Invalid or Won't Fix, the Hoary bugtask
+will be displayed The ubuntu_bugtask is never returned; it is a
+conjoined slave to the ubuntu_hoary_bugtask. Slave bugtasks cannot be
+directly expired because only the master bugtask can change the status.
 
     >>> new_bugtask.transitionToStatus(
     ...     BugTaskStatus.WONTFIX, sample_person)
@@ -179,7 +184,7 @@ because only the master bugtask can change the status.
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
     hoary        True    351  Incomplete  False     False  False  False
 
-Reducing the age to 60 days old, buth hoary and jokosher bugtasks
+Reducing the age to 60 days old, both hoary and jokosher bugtasks
 are returned.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
@@ -187,19 +192,6 @@ are returned.
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
     jokosher     True     61  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
-
-
-== Age ==
-
-The expiration period is set using the
-config.alone.days_before_expiration configuration variable. It
-defaults to 60 days. The period is measured from the date_incomplete
-field. We expire bugtasks that are INCOMPLETE for 60 days or more.
-
-    >>> from canonical.config import config
-    >>> old_age_days = config.malone.days_before_expiration
-    >>> old_age_days
-    60
 
 
 == Running the script ==
@@ -296,3 +288,6 @@ and slave bugtasks were expired.
 
     >>> print message.text_contents
     [Expired for Ubuntu Hoary because there has been no activity for 60 days.]
+
+The bug's activity log was updated too.
+
