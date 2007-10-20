@@ -2,6 +2,7 @@
 """Database classes that implement SourcePacakge items."""
 
 __metaclass__ = type
+
 __all__ = [
     'SourcePackage',
     'SourcePackageQuestionTargetMixin',
@@ -9,40 +10,36 @@ __all__ = [
 
 from operator import attrgetter
 from warnings import warn
-
-from zope.interface import implements
-
 from sqlobject.sqlbuilder import SQLConstant
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
-
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, BuildStatus, PackagePublishingStatus)
-
-from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
-from canonical.launchpad.database.sourcepackagerelease import (
-    SourcePackageRelease)
-from canonical.launchpad.database.translationimportqueue import (
-    HasTranslationImportsMixin)
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
+from canonical.launchpad.database.question import (
+    QuestionTargetMixin, QuestionTargetSearch)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (
+    IHasBuildRecords, IHasTranslationTemplates, IQuestionTarget,
+    ISourcePackage, PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket, PackagePublishingStatus)
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -133,7 +130,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     to the relevant database objects.
     """
 
-    implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
+    implements(
+        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
+        IQuestionTarget)
 
     def __init__(self, sourcepackagename, distroseries):
         self.sourcepackagename = sourcepackagename
@@ -291,21 +290,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def name(self):
         return self.sourcepackagename.name
-
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
-        return sorted(list(result), key=lambda x: x.potemplatename.name)
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            iscurrent=True)
-        return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def product(self):
@@ -528,3 +512,43 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return None
 
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename)
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            distrorelease = %s AND
+            sourcepackagename = %s AND
+            iscurrent IS TRUE AND
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.official_rosetta IS TRUE
+            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
+            clauseTables = ['DistroRelease', 'Distribution'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            distrorelease = %s AND
+            sourcepackagename = %s AND
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
+            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
+            clauseTables = ['DistroRelease', 'Distribution'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))

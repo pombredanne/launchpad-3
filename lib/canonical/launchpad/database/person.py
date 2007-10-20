@@ -1666,6 +1666,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return None
 
     @property
+    def safe_email_or_blank(self):
+        """See `IPerson`."""
+        if ((self.preferredemail is not None) and
+            not(self.hide_email_addresses)):
+            return self.preferredemail.email
+        else:
+            return ''
+
+    @property
     def preferredemail_sha1(self):
         """See `IPerson`."""
         preferredemail = self.preferredemail

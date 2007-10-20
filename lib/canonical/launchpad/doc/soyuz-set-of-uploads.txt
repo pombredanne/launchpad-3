@@ -1,5 +1,4 @@
-Soyuz Set of Uploads Test
--------------------------
+= Soyuz Set of Uploads Test =
 
 This test will:
 
@@ -13,8 +12,7 @@ This test will:
   * Cleanup
 
 
-Pre-creating directories
-------------------------
+== Pre-creating directories ==
 
 First, let's create the temporary directory structure where we'll put uploaded
 files in.
@@ -30,8 +28,28 @@ files in.
   >>> os.mkdir(incoming_dir)
 
 
-Processing Uploads
-------------------
+== A note about error checking ==
+
+To be able to process the entire upload and provide the full set of
+errors, we need:
+  1. A changes file with no syntax errors
+  2. A changes file with at least a valid email address for the
+     changed-by field or the package signer, both of which must be registered
+     in Launchpad.
+  3. A changes file with a valid distroseries and pocket (e.g. gutsy-updates)
+  4. A changes file that enumerates all the files in the upload, with
+     correct md5 sum and file sizes.
+  5. Actual files uploaded that match the ones described in the changes file.
+ 
+ If (1) is not available, the upload silently fails.
+ If (2) is not available, the upload silently fails.
+ If (3) or (4) is not available, the upload is rejected immediately with
+ no further checking.
+ If any files in (5) are missing, we report as much information as we can
+ about what is available.
+
+
+== Processing Uploads ==
 
 Before asking the system to process the upload, we must prepare the
 database and services to receive it. Since we're using

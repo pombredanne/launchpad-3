@@ -67,6 +67,7 @@
     <include file="entitlement.zcml" />
     <include file="faq.zcml" />
     <include file="faqcollection.zcml" />
+    <include file="feeds.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="hwdb.zcml" />
@@ -154,7 +155,7 @@
     <include file="widgets.zcml" />
 
     <!-- System homepages -->
-    <include file="rosetta.zcml" />
+    <include file="translations.zcml" />
     <include file="malone.zcml" />
     <include file="registry.zcml" />
     <include file="bazaar.zcml" />

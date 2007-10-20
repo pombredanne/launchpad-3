@@ -36,9 +36,8 @@ Setup a suitable chroot for Hoary i386:
 
   >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
 
-  >>> pocket = PackagePublishingPocket.RELEASE
   >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
-  >>> pc = hoary_i386.addOrUpdateChroot(pocket=pocket, chroot=chroot)
+  >>> pc = hoary_i386.addOrUpdateChroot(chroot=chroot)
 
 Activate builders present in sampledata, we need to be logged in as a
 member of launchpad-buildd-admin:

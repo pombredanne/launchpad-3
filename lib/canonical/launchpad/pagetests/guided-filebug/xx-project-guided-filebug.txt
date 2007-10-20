@@ -183,6 +183,8 @@ displayed.
     >>> admin_browser.getControl('Display Name:').value = 'Testy Product'
     >>> admin_browser.getControl('Title:').value = 'A Product for Testing'
     >>> admin_browser.getControl('Summary:').value = 'Used for testing'
+    >>> admin_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> admin_browser.getControl(name='field.license_info').value = 'foo'
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://launchpad.dev/testy'
@@ -281,6 +283,8 @@ filebug page:
     >>> admin_browser.getControl('Display Name:').value = 'Another product'
     >>> admin_browser.getControl('Title:').value = 'For Testing'
     >>> admin_browser.getControl('Summary:').value = 'Used for testing'
+    >>> admin_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> admin_browser.getControl(name='field.license_info').value = 'foo'
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://launchpad.dev/second-test'
