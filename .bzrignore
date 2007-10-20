@@ -10,6 +10,7 @@ sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly
 sourcecode/hct
+sourcecode/launchpad-loggerhead
 sourcecode/loggerhead
 sourcecode/launchpad-loggerhead
 sourcecode/mailman
@@ -36,3 +37,4 @@ database/schema/diagrams/*.dot
 thread*.request
 ./TAGS
 lib/mailman
+TAGS
