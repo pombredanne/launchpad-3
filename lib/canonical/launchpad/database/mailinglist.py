@@ -18,8 +18,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    ILaunchpadCelebrities, IMailingList, IMailingListSet,
-    IMailingListSubscription, MailingListStatus)
+    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
+    IMailingListSet, IMailingListSubscription, MailingListStatus,
+    MAILING_LISTS_DOMAIN)
 
 
 class MailingList(SQLBase):
@@ -51,6 +52,11 @@ class MailingList(SQLBase):
 
     welcome_message_text = StringCol(default=None)
 
+    @property
+    def address(self):
+        """See `IMailingList`."""
+        return '%s@%s' % (self.team.name, MAILING_LISTS_DOMAIN)
+
     def __repr__(self):
         return '<MailingList for team "%s"; status=%s at %#x>' % (
             self.team.name, self.status.name, id(self))
@@ -67,9 +73,9 @@ class MailingList(SQLBase):
                           MailingListStatus.DECLINED), (
             'Reviewed lists may only be approved or declined')
         # The reviewer must be a Launchpad administrator.
-        assert reviewer is not None and reviewer.inTeam(
-            getUtility(ILaunchpadCelebrities).admin), (
-            'Reviewer must be a Launchpad administrator')
+        assert reviewer is not None and reviewer.hasParticipationEntryFor(
+            getUtility(ILaunchpadCelebrities).mailing_list_experts), (
+            'Reviewer must be a member of the Mailing List Experts team')
         self.reviewer = reviewer
         self.status = status
         self.date_reviewed = UTC_NOW
@@ -105,14 +111,41 @@ class MailingList(SQLBase):
                 'target_state result must be inactive or failed')
             self._clearSubscriptions()
         else:
-            raise AssertionError('Not a valid state transition')
+            raise AssertionError(
+                'Not a valid state transition: %s -> %s'
+                % (self.status, target_state))
         self.status = target_state
+        if target_state == MailingListStatus.ACTIVE:
+            email_set = getUtility(IEmailAddressSet)
+            email = email_set.getByEmail(self.address)
+            if email is None:
+                email = email_set.new(self.address, self.team)
+            email.status = EmailAddressStatus.VALIDATED
+            assert email.person == self.team, (
+                "Email already associated with another team.")
 
     def deactivate(self):
         """See `IMailingList`."""
         assert self.status == MailingListStatus.ACTIVE, (
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
+        email = getUtility(IEmailAddressSet).getByEmail(self.address)
+        email.status = EmailAddressStatus.NEW
+
+    def reactivate(self):
+        """See `IMailingList`."""
+        # XXX: The Mailman side of this is not yet implemented, although it
+        # will be implemented soon. -- Guilherme Salgado, 2007-10-08
+        # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
+        assert self.status == MailingListStatus.INACTIVE, (
+            'Only inactive mailing lists may be reactivated')
+        self.status = MailingListStatus.APPROVED
+
+    def cancelRegistration(self):
+        """See `IMailingList`."""
+        assert self.status == MailingListStatus.REGISTERED, (
+            "Only mailing lists in the REGISTERED state can be canceled.")
+        self.destroySelf()
 
     def _get_welcome_message(self):
         return self.welcome_message_text

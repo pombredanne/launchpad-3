@@ -3,9 +3,8 @@
 An Archive models a Debian Archive ...
 
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.lp.dbschema import ArchivePurpose
   >>> from canonical.launchpad.interfaces import (
-  ...     IPerson, IPersonSet, IArchiveSet, IArchive,
+  ...     ArchivePurpose, IPerson, IPersonSet, IArchiveSet, IArchive,
   ...     IDistributionSet)
 
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -422,7 +421,7 @@ This method can return build records for sources matching the given
 
 Or return build records in a specific status:
 
-  >>> from canonical.lp.dbschema import BuildStatus
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> cprov_archive.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
   3
 
@@ -435,7 +434,7 @@ Or return build records in a specific status:
 
 And finally build records target to a given pocket:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> cprov_archive.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   4
@@ -565,7 +564,7 @@ An Archive can be retrieved via IPerson.archive property:
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
-  >>> from canonical.lp.dbschema import ArchivePurpose
+  >>> from canonical.launchpad.interfaces import ArchivePurpose
   >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
   ...     ubuntutest, ArchivePurpose.PARTNER)
   >>> partner_archive.description

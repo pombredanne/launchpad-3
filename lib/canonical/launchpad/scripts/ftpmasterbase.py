@@ -16,11 +16,10 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, NotFoundError, IComponentSet)
+    ArchivePurpose, IComponentSet, IDistributionSet, NotFoundError,
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 
 class PackageLocationError(Exception):
@@ -29,7 +28,6 @@ class PackageLocationError(Exception):
 
 class PackageLocation:
     """Object used to model locations when copying publications.
-
 
     It groups distribution, distroseries and pocket in a way they
     can be easily manipulated and compared.
@@ -121,7 +119,7 @@ class SoyuzScript(LaunchpadScript):
      * `addExtraSoyuzOption`: a method to include extra command-line options;
      * `mainTask`: a method to actually perform a specific task.
 
-    See self.add_my_options contexts for the default `SoyuzScript`
+    See `add_my_options` contexts for the default `SoyuzScript`
     command-line options.
     """
     success_message = "Done."
@@ -294,7 +292,7 @@ class SoyuzScript(LaunchpadScript):
     def waitForUserConfirmation(self):
         """Blocks the script flow waiting for a user confirmation.
 
-        Return True immediatelly if options.confirm_all was passed or after
+        Return True immediately if options.confirm_all was passed or after
         getting a valid confirmation, False otherwise.
         """
         if not self.options.confirm_all and not self._getUserConfirmation():

@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-""" Functional Tests for PackageRemover script class.
+"""Functional Tests for PackageRemover script class.
 
 This file performs tests on the PackageRemover script class and on the script
 file itself.
@@ -19,11 +19,11 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import QuietLogger
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingStatus)
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
-from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class TestRemovePackageScript(LaunchpadZopelessTestCase):
@@ -89,7 +89,7 @@ class TestRemovePackageScript(LaunchpadZopelessTestCase):
 class TestPackageRemover(LaunchpadZopelessTestCase):
     """Test the PackageRemover class.
 
-    Perform tests directly in the script class.
+    Perform tests directly on the script class.
     """
 
     user_name = 'sabdfl'
@@ -139,8 +139,13 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         test_args.append(name)
 
-        remover = PackageRemover(name='lp-remove-package', test_args=test_args)
-        remover.logger = QuietLogger()
+        remover = PackageRemover(
+            name='lp-remove-package', test_args=test_args)
+        # Swallowing all log messages.
+        remover.logger = FakeLogger()
+        def message(self, prefix, *stuff, **kw):
+            pass
+        remover.logger.message = message
         remover.setupLocation()
         return remover
 
@@ -166,13 +171,14 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         return (mozilla_src_pub.id, mozilla_bin_pub_ids)
 
-    def _preparePublicationIDs(self, pub_ids, source):
-        """Prepare given publication ID list for checks.
+    def _preparePublicationIDs(self, pub_ids, source=True):
+        """Prepare the given publication ID list for checks.
 
-        Ensure 'pub_ids' is a list and define to the correct database 'getter'
-        (`SourcePackagePublishingHistory` or BinaryPackagePublishingHistory).
+        Ensure that 'pub_ids' is a list and find the correct database
+        'getter' (`SourcePackagePublishingHistory` or
+        `BinaryPackagePublishingHistory`).
 
-        Return a tuple containing (pub_ids, getter)
+        Return a tuple (pub_ids, getter).
         """
         if not isinstance(pub_ids, list):
             pub_ids = [pub_ids]
@@ -184,15 +190,19 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         return pub_ids, getter
 
-    def assertPublished(self, pub_ids, source=True):
-        """Check if the give pub_ids list items are PUBLISHED.
+    def assertPublished(self, pub_ids, source):
+        """Check if the given pub_ids list items are PUBLISHED.
 
-        Supports both, a list of publishing records IDs or a single ID.
-        Performs a lookup on publishing table and check for:
+        `pub_ids` can be a list of publishing records IDs or a single ID.
+
+        Performs a lookup on publishing table and checks each entry for:
+
          * PUBLISHED status,
          * empty removed_by,
          * empty removal_comment.
-        'source' flag controls if it's a source or binary lookup
+
+        The 'source' flag indicates if the lookup should be in the source or
+        binary tables.
         """
         pub_ids, getter = self._preparePublicationIDs(pub_ids, source)
         for pub_id in pub_ids:
@@ -201,14 +211,18 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
             self.assertEqual(None, pub.removed_by)
             self.assertEqual(None, pub.removal_comment)
 
-    def assertDeleted(self, pub_ids, source=True):
-        """Check if the give pub_ids list items are DELETED.
+    def assertDeleted(self, pub_ids, source):
+        """Check if the given pub_ids list items are DELETED.
 
-        Supports both, a list of publishing records IDs or a single ID.
-        Performs a lookup on publishing table and check for:
+        `pub_ids` can be a list of publishing records IDs or a single ID.
+
+        Performs a lookup on publishing table and checks each entry for:
          * DELETED status,
-         * not empty removed_by,
-         * not empty removal_comment.
+         * removed_by.name equal to self.user_name,
+         * removal_comment equal to self.removal_comment.
+
+        The 'source' flag indicates if the lookup should be in the source or
+        binary tables.
         """
         pub_ids, getter = self._preparePublicationIDs(pub_ids, source)
         for pub_id in pub_ids:
@@ -233,7 +247,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual(
             sorted([pub.id for pub in removals]), sorted(removal_candidates))
 
-        self.assertDeleted(mozilla_src_pub_id)
+        self.assertDeleted(mozilla_src_pub_id, source=True)
         self.assertDeleted(mozilla_bin_pub_ids, source=False)
 
     def testRemoveSourceOnly(self):
@@ -252,7 +266,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual(
             sorted([pub.id for pub in removals]), sorted(removal_candidates))
 
-        self.assertDeleted(mozilla_src_pub_id)
+        self.assertDeleted(mozilla_src_pub_id, source=True)
         self.assertPublished(mozilla_bin_pub_ids, source=False)
 
     def testRemoveBinaryOnly(self):
@@ -284,7 +298,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual(
             sorted([pub.id for pub in removals]), sorted(removal_candidates))
 
-        self.assertPublished(mozilla_src_pub_id)
+        self.assertPublished(mozilla_src_pub_id, source=True)
         self.assertPublished(other_bin_pub_ids, source=False)
         self.assertDeleted(mozilla_firefox_bin_pub_ids, source=False)
 
@@ -319,17 +333,16 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual(
             sorted([pub.id for pub in removals]), sorted(removal_candidates))
 
-        self.assertPublished(mozilla_src_pub_id)
+        self.assertPublished(mozilla_src_pub_id, source=True)
         self.assertPublished(other_bin_pub_ids, source=False)
         self.assertDeleted(mozilla_firefox_bin_pub_ids, source=False)
 
     def testRemoveComponentFilter(self):
-        """Check the component filter.
+        """Check the component filter behaviour.
 
-        `lp-remove-package.py mozilla-firefox` -> 5 removals
-        `lp-remove-package.py mozilla-firefox -c main` -> 5 removals
-        `lp-remove-package.py mozilla-firefox -c multiverse` -> raises
-            SoyuzScriptError.
+        Filtering by component main ('-c main') will produce exactly
+        the same result than not passing any component filter, because
+        all test publications are in main component.
         """
         remover = self.getRemover()
         removals_without_component = remover.mainTask()
@@ -341,8 +354,13 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertEqual(
             len(removals_without_component), len(removals_with_main_component))
 
-        self.layer.abort()
+    def testRemoveComponentFilterError(self):
+        """Check a component filter error.
 
+        Filtering by component multiverse ('-c multiverse') will raise
+        `SoyuzScriptError` because the selected publications are in main
+        component.
+        """
         remover = self.getRemover(component='multiverse')
         self.assertRaises(SoyuzScriptError, remover.mainTask)
 

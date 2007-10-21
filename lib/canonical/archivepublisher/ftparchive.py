@@ -13,10 +13,9 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
+from canonical.launchpad.interfaces import (
+    PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
 
-from canonical.launchpad.interfaces import pocketsuffix
 
 def package_name(filename):
     """Extract a package name from a debian package filename."""

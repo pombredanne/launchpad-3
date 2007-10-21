@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
-    DeleteBugContactError)
+    DeleteBugContactError, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -30,7 +30,6 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
-from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class DistributionSourcePackage(BugTargetBase,

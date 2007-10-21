@@ -25,7 +25,7 @@ import the bunch of required database classes:
   ...      PocketChroot, DistroArchSeries, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
-  >>> from canonical.lp.dbschema import (
+  >>> from canonical.launchpad.interfaces import (
   ...      PackagePublishingPocket, PackagePublishingStatus,
   ...      SourcePackageFileType)
 
@@ -342,7 +342,7 @@ the default score value of 0:
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-  >>> bq.current_component.name
+  >>> bq.build.current_component.name
   u'main'
   >>> bq.build.sourcepackagerelease.component.name
   u'main'

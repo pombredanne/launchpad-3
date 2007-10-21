@@ -12,7 +12,8 @@ __all__ = [
 from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.interfaces import PackagePublishingStatus
+
 
 class BasePublishingRecordView(LaunchpadView):
     """Base Publishing view class."""
@@ -22,7 +23,7 @@ class BasePublishingRecordView(LaunchpadView):
 
         A publishing record deletion represents the explicit request from a
         archive-administrator (self.remove_by) to purge the published contents
-        of this record from the archive by a arbitrary reason
+        of this record from the archive for an arbitrary reason
         (self.removal_comment).
         """
         return self.context.status == PackagePublishingStatus.DELETED
@@ -61,7 +62,7 @@ class BasePublishingRecordView(LaunchpadView):
          * DELETED -> the publishing was explicitly marked for removal by a
            archive-administrator, it's not wanted in the archive.
 
-         * OBSOLETE -> the publication has become obsolete because it's targeted
+         * OBSOLETE -> the publication has become obsolete because its targeted
            distroseries has become obsolete (not supported by its developers).
         """
         return self.context.dateremoved is not None

@@ -12,11 +12,9 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackageRelease)
+    IDistroArchSeriesBinaryPackageRelease, PackagePublishingStatus)
 
 from canonical.database.sqlbase import sqlvalues
-
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)

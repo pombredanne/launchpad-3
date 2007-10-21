@@ -17,13 +17,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
+    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     enabled_with_permission, ApplicationMenu, GetitemNavigation,
     Link, LaunchpadView, StandardLaunchpadFacets)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lp.dbschema import BuildStatus
 
 
 class BuildUrl:
@@ -129,6 +129,15 @@ class BuildView(LaunchpadView):
         # invoke context method to rescore the build record
         self.context.buildqueue_record.manualScore(score)
         return 'Build Record rescored to %s' % self.score
+
+    @property
+    def user_can_retry_build(self):
+        """Return True if the user is permitted to Retry Build.
+
+        The build must be re-tryable.
+        """
+        return (check_permission('launchpad.Edit', self.context)
+            and self.context.can_be_retried)
 
 
 class CompleteBuild:

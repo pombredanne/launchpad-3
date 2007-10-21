@@ -16,6 +16,9 @@ __all__ = [
     'IArchiveFilePublisher',
     'IArchiveSafePublisher',
     'NotInPool',
+    'PackagePublishingPocket',
+    'PackagePublishingPriority',
+    'PackagePublishingStatus',
     'PoolFileOverwriteError',
     'pocketsuffix'
     ]
@@ -24,15 +27,8 @@ from zope.schema import Bool, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.lp.dbschema import PackagePublishingPocket
 
-pocketsuffix = {
-    PackagePublishingPocket.RELEASE: "",
-    PackagePublishingPocket.SECURITY: "-security",
-    PackagePublishingPocket.UPDATES: "-updates",
-    PackagePublishingPocket.PROPOSED: "-proposed",
-    PackagePublishingPocket.BACKPORTS: "-backports",
-}
+from canonical.lazr import DBEnumeratedType, DBItem
 
 #
 # Archive Publisher API and Exceptions
@@ -446,9 +442,8 @@ class ISecureBinaryPackagePublishingHistory(Interface):
 class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
 
-    distroarchseriesbinarypackagerelease = Attribute(
-        "The object that represents this binarypacakgerelease "
-        "in this distroarchseries.")
+    distroarchseriesbinarypackagerelease = Attribute("The object that "
+        "represents this binarypacakgerelease in this distroarchseries.")
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):
@@ -456,3 +451,155 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
         It is changed only if the argument is not None.
         """
+
+
+class PackagePublishingStatus(DBEnumeratedType):
+    """Package Publishing Status
+
+     A package has various levels of being published within a DistroSeries.
+     This is important because of how new source uploads dominate binary
+     uploads bit-by-bit. Packages (source or binary) enter the publishing
+     tables as 'Pending', progress through to 'Published' eventually become
+     'Superseded' and then become 'PendingRemoval'. Once removed from the
+     DistroSeries the publishing record is also removed.
+     """
+
+    PENDING = DBItem(1, """
+        Pending
+
+        This [source] package has been accepted into the DistroSeries and
+        is now pending the addition of the files to the published disk area.
+        In due course, this source package will be published.
+        """)
+
+    PUBLISHED = DBItem(2, """
+        Published
+
+        This package is currently published as part of the archive for that
+        distroseries. In general there will only ever be one version of any
+        source/binary package published at any one time. Once a newer
+        version becomes published the older version is marked as superseded.
+        """)
+
+    SUPERSEDED = DBItem(3, """
+        Superseded
+
+        When a newer version of a [source] package is published the existing
+        one is marked as "superseded".  """)
+
+    DELETED = DBItem(4, """
+        Deleted
+
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
+
+
+class PackagePublishingPriority(DBEnumeratedType):
+    """Package Publishing Priority
+
+    Binary packages have a priority which is related to how important
+    it is to have that package installed in a system. Common priorities
+    range from required to optional and various others are available.
+    """
+
+    REQUIRED = DBItem(50, """
+        Required
+
+        This priority indicates that the package is required. This priority
+        is likely to be hard-coded into various package tools. Without all
+        the packages at this priority it may become impossible to use dpkg.
+        """)
+
+    IMPORTANT = DBItem(40, """
+        Important
+
+        If foo is in a package; and "What is going on?! Where on earth is
+        foo?!?!" would be the reaction of an experienced UNIX hacker were
+        the package not installed, then the package is important.
+        """)
+
+    STANDARD = DBItem(30, """
+        Standard
+
+        Packages at this priority are standard ones you can rely on to be in
+        a distribution. They will be installed by default and provide a
+        basic character-interface userland.
+        """)
+
+    OPTIONAL = DBItem(20, """
+        Optional
+
+        This is the software you might reasonably want to install if you did
+        not know what it was or what your requiredments were. Systems such
+        as X or TeX will live here.
+        """)
+
+    EXTRA = DBItem(10, """
+        Extra
+
+        This contains all the packages which conflict with those at the
+        other priority levels; or packages which are only useful to people
+        who have very specialised needs.
+        """)
+
+
+class PackagePublishingPocket(DBEnumeratedType):
+    """Package Publishing Pocket
+
+    A single distroseries can at its heart be more than one logical
+    distroseries as the tools would see it. For example there may be a
+    distroseries called 'hoary' and a SECURITY pocket subset of that would
+    be referred to as 'hoary-security' by the publisher and the distro side
+    tools.
+    """
+
+    RELEASE = DBItem(0, """
+        Release
+
+        The package versions that were published
+        when the distribution release was made.
+        For releases that are still under development,
+        packages are published here only.
+        """)
+
+    SECURITY = DBItem(10, """
+        Security
+
+        Package versions containing security fixes for the released
+        distribution.
+        It is a good idea to have security updates turned on for your system.
+        """)
+
+    UPDATES = DBItem(20, """
+        Updates
+
+        Package versions including new features after the distribution
+        release has been made.
+        Updates are usually turned on by default after a fresh install.
+        """)
+
+    PROPOSED = DBItem(30, """
+        Proposed
+
+        Package versions including new functions that should be widely
+        tested, but that are not yet part of a default installation.
+        People who "live on the edge" will test these packages before they
+        are accepted for use in "Updates".
+        """)
+
+    BACKPORTS = DBItem(40, """
+        Backports
+
+        Backported packages.
+        """)
+
+pocketsuffix = {
+    PackagePublishingPocket.RELEASE: "",
+    PackagePublishingPocket.SECURITY: "-security",
+    PackagePublishingPocket.UPDATES: "-updates",
+    PackagePublishingPocket.PROPOSED: "-proposed",
+    PackagePublishingPocket.BACKPORTS: "-backports",
+}

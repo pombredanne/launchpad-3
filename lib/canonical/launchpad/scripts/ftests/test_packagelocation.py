@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-"""Test PackageLocation base class."""
+"""Test PackageLocation class."""
 
 import unittest
 

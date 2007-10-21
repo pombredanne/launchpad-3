@@ -30,12 +30,11 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
-    ILaunchpadCelebrities)
+    ArchivePurpose, DistroSeriesStatus, IDistributionSet, IDistroSeriesSet,
+    IPersonSet, IArchiveSet, ILaunchpadCelebrities, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
-from canonical.lp.dbschema import (
-    PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
-    PackagePublishingPocket, ArchivePurpose)
+
 from canonical.testing import LaunchpadZopelessLayer
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
@@ -970,6 +969,54 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEmail(
             contents,
             recipients=[self.name16_recipient, self.kinnison_recipient])
+
+    def testUploadWithBadComponent(self):
+        """Test uploading with a bad component.
+
+        Uploading with a bad component should not generate lots of misleading
+        errors, and only mention the component problem.
+        """
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_bad_component", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected\n"
+            "Rejected:\n"
+            "bar_1.0-1.dsc: Component 'badcomponent' is not valid\n"
+            "bar_1.0.orig.tar.gz: Component 'badcomponent' is not valid\n"
+            "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
+            "Further error processing not possible because of a "
+                "critical previous error.\n"
+            "\n"
+            "-----BEGIN PGP SIGNED MESSAGE-----\n"
+            ]
+
+        self.assertEmail(contents)
+
+    def testUploadWithBadDistroseries(self):
+        """Test uploading with a bad distroseries in the changes file.
+
+        Uploading with a broken distroseries should not generate a message
+        with a code exception in the email rejection.  It should warn about
+        the bad distroseries only.
+        """
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_bad_distroseries", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected\n"
+            "Rejected:\n"
+            "Unable to find distroseries: flangetrousers\n"
+            "Further error processing not possible because of a "
+                "critical previous error.\n"
+            "\n"
+            "-----BEGIN PGP SIGNED MESSAGE-----\n"
+            ]
+        self.assertEmail(
+            contents,
+            recipients=[
+                'Foo Bar <foo.bar@canonical.com>',
+                'Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
     def testUploadWithBadSection(self):
         """Uploads with a bad section are rejected."""

@@ -1,13 +1,14 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-"""Test SoyuzScript base class.
+"""Test the SoyuzScript base class.
 
-Checking if the base source and binary lookup methods are working properly.
+We check that the base source and binary lookup methods are working
+properly.
 """
 
 import unittest
 
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.scripts import QuietLogger
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
 
@@ -16,19 +17,17 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
     """Test the SoyuzScript class."""
 
     def getNakedSoyuz(self, version=None, component=None, arch=None,
-                      suite='warty', distribution_name='ubuntu',
-                      confirm_all=True):
+                      suite=None, distribution_name='ubuntu'):
         """Return a SoyuzScript instance.
 
         Do not call SoyuzScript.setupLocation().
         Allow tests to use a set of default options and pass an
         inactive logger to SoyuzScript.
         """
-        test_args=['-s', suite,
-                   '-d', distribution_name ]
+        test_args=['-d', distribution_name, '-y' ]
 
-        if confirm_all:
-            test_args.append('-y')
+        if suite is not None:
+            test_args.extend(['-s', suite])
 
         if version is not None:
             test_args.extend(['-e', version])
@@ -40,7 +39,11 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
             test_args.extend(['-c', component])
 
         soyuz = SoyuzScript(name='soyuz-script', test_args=test_args)
-        soyuz.logger = QuietLogger()
+        # Swallowing all log messages.
+        soyuz.logger = FakeLogger()
+        def message(self, prefix, *stuff, **kw):
+            pass
+        soyuz.logger.message = message
         return soyuz
 
     def getSoyuz(self, *args, **kwargs):
@@ -57,7 +60,7 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         soyuz = self.getSoyuz()
 
         self.assertEqual(soyuz.location.distribution.name, 'ubuntu')
-        self.assertEqual(soyuz.location.distroseries.name, 'warty')
+        self.assertEqual(soyuz.location.distroseries.name, 'hoary')
         self.assertEqual(soyuz.location.pocket.name, 'RELEASE')
 
         soyuz = self.getNakedSoyuz(distribution_name='beeblebrox')
@@ -67,31 +70,31 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         self.assertRaises(SoyuzScriptError, soyuz.setupLocation)
 
     def testFindSource(self):
-        """The findSource method of SoyuzScript finds mozilla-firefox in the
+        """The findSource method of SoyuzScript finds pmount in the
         default component, main, but not in other components or with a
         non-existent version, etc.
         """
         soyuz = self.getSoyuz()
-        src = soyuz.findSource('mozilla-firefox')
+        src = soyuz.findSource('pmount')
         self.assertEqual(
-            src.title, 'mozilla-firefox 0.9 (source) in ubuntu warty')
+            src.title, 'pmount 0.1-2 (source) in ubuntu hoary')
 
-        soyuz = self.getSoyuz(component='main')
-        src = soyuz.findSource('mozilla-firefox')
+        soyuz = self.getSoyuz(suite='hoary', component='main')
+        src = soyuz.findSource('pmount')
         self.assertEqual(
-            src.title, 'mozilla-firefox 0.9 (source) in ubuntu warty')
+            src.title, 'pmount 0.1-2 (source) in ubuntu hoary')
 
         soyuz = self.getSoyuz()
         self.assertRaises(SoyuzScriptError, soyuz.findSource, 'marvin')
 
         soyuz = self.getSoyuz(version='666')
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'mozilla-firefox')
+        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'pmount')
 
         soyuz = self.getSoyuz(component='multiverse')
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'mozilla-firefox')
+        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'pmount')
 
-        soyuz = self.getSoyuz(suite='warty-security')
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'mozilla-firefox')
+        soyuz = self.getSoyuz(suite='hoary-security')
+        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'pmount')
 
     def testFindBinaries(self):
         """The findBinary method of SoyuzScript finds mozilla-firefox in the
@@ -100,24 +103,24 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         """
         soyuz = self.getSoyuz()
 
-        binaries = soyuz.findBinaries('mozilla-firefox')
+        binaries = soyuz.findBinaries('pmount')
         self.assertEqual(len(binaries), 2)
         binary_names = set([b.name for b in binaries])
-        self.assertEqual(list(binary_names), ['mozilla-firefox'])
+        self.assertEqual(list(binary_names), ['pmount'])
 
         self.assertRaises(SoyuzScriptError, soyuz.findBinaries, 'marvin')
 
         soyuz = self.getSoyuz(version='666')
         self.assertRaises(
-            SoyuzScriptError, soyuz.findBinaries, 'mozilla-firefox')
+            SoyuzScriptError, soyuz.findBinaries, 'pmount')
 
         soyuz = self.getSoyuz(component='multiverse')
         self.assertRaises(
-            SoyuzScriptError, soyuz.findBinaries, 'mozilla-firefox')
+            SoyuzScriptError, soyuz.findBinaries, 'pmount')
 
         soyuz = self.getSoyuz(suite='warty-security')
         self.assertRaises(
-            SoyuzScriptError, soyuz.findBinaries, 'mozilla-firefox')
+            SoyuzScriptError, soyuz.findBinaries, 'pmount')
 
 
 def test_suite():
