@@ -27,35 +27,44 @@ using Launchpad officially, so it's not in this page.
 
 Let's confirm what we just stated.
 
-  >>> browser.open('http://launchpad.dev/gnome')
-  >>> print browser.url
-  http://launchpad.dev/gnome
+  >>> anon_browser.open('http://launchpad.dev/gnome')
+  >>> print anon_browser.title
+  The GNOME Project in Launchpad
 
 Netapplet is in fact a product belonging to GNOME project.
 
-  >>> netapplet_link = browser.getLink('Network Applet')
-  >>> netapplet_link.click()
-  >>> print browser.url
-  http://launchpad.dev/netapplet
+  >>> anon_browser.getLink('Network Applet').click()
+  >>> print anon_browser.title
+   Network Applet in Launchpad
 
 It's not using Launchpad Translations officially
 
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     print tag
-  <...
-  ...Status:...
-  ...Active...
+  >>> for tag in find_tags_by_class(anon_browser.contents, 'summary'):
+  ...     print extract_text(tag)
+  Status: Active
   ...Doesn&rsquo;t use Translations...
 
-And it has translations.
+Anonymous users don't see the translations
 
-  >>> browser.open('http://translations.launchpad.dev/netapplet')
-  >>> print browser.url
-  http://translations.launchpad.dev/netapplet
+  >>> anon_browser.getLink('Translations').click()
+  >>> print anon_browser.title
+  Translations of Network Applet in Launchpad
 
-  >>> netapplet_template = browser.getLink('View Template & All Languages...')
-  >>> print netapplet_template.url
-  http://translations.launchpad.dev/netapplet/trunk/+pots/netapplet
+  >>> find_tag_by_id(
+  ...     anon_browser.contents,
+  ...     'portlet-obsolete-translatable-series') is None
+  True
+
+but administrators see translations disabled.
+
+  >>> admin_browser.open(anon_browser.url)
+  >>> print admin_browser.title
+  Translations of Network Applet in Launchpad
+  >>> print extract_text(find_tag_by_id(
+  ...     admin_browser.contents,
+  ...     'portlet-obsolete-translatable-series'))
+  All product series with obsolete templates
+  NetApplet Series: trunk
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
 translations and is using Launchpad Translations officially, and it 
@@ -87,7 +96,6 @@ It's using Launchpad Translations officially.
   http://launchpad.dev/alsa-utils
   >>> for tag in find_tags_by_class(browser.contents, 'summary'):
   ...     print tag
-  ...     
   <...
   ...Status:...
   ...Active...

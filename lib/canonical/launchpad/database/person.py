@@ -38,14 +38,12 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.lp.dbschema import ArchivePurpose, BugTaskImportance
-
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
-    IBugTaskSet, IDistribution, IDistributionSet, IEmailAddress,
-    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot,
-    IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    AccountStatus, ArchivePurpose, BugTaskSearchParams,
+    BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID,
+    IJabberIDSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IMailingListSet, INACTIVE_ACCOUNT_STATUSES,
     IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
     ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey, ISSHKeySet,
@@ -56,6 +54,8 @@ from canonical.launchpad.interfaces import (
     SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES)
+
+from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct

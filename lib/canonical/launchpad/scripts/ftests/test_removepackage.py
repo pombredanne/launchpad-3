@@ -19,11 +19,11 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
-from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class TestRemovePackageScript(LaunchpadZopelessTestCase):

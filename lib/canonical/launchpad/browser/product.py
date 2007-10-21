@@ -39,7 +39,6 @@ __all__ = [
 
 import cgi
 from operator import attrgetter
-from warnings import warn
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -48,19 +47,15 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
-from zope.formlib import form
-from zope.schema import Choice, List
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, IDistribution, IHasIcon,
-    ILaunchpadCelebrities, ILaunchBag,
+    IBranchSet, ICountry, IDistribution, IHasIcon, ILaunchBag,
     ILaunchpadCelebrities, IPillarNameSet, IProduct, IProductSeries,
-    IProductSet, IProject, ITranslationImportQueue, NotFoundError,
-    ITranslationImportQueue, License, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+    IProductSet, IProject, ITranslationImportQueue, BranchListingSort, License,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -529,10 +524,17 @@ class ProductView(LaunchpadView):
         self.product = self.context
         self.status_message = None
 
+    @cachedproperty
+    def uses_translations(self):
+        """Whether this product has translatable templates."""
+        return (self.context.official_rosetta and self.primary_translatable)
+
+    @cachedproperty
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
 
-        If there is no primary translatable object, returns None.
+        If there is no primary translatable object, returns an empty
+        dictionary.
 
         The dictionary has the keys:
          * 'title': The title of the translatable object.
@@ -541,41 +543,14 @@ class ProductView(LaunchpadView):
         """
         translatable = self.context.primary_translatable
 
-        if translatable is not None:
-            if ISourcePackage.providedBy(translatable):
-                sourcepackage = translatable
+        if translatable is None:
+            return {}
 
-                object_translatable = {
-                    'title': sourcepackage.title,
-                    'potemplates': sourcepackage.currentpotemplates,
-                    'base_url': '/distros/%s/%s/+sources/%s' % (
-                        sourcepackage.distribution.name,
-                        sourcepackage.distroseries.name,
-                        sourcepackage.name)
-                    }
-
-            elif IProductSeries.providedBy(translatable):
-                productseries = translatable
-
-                object_translatable = {
-                    'title': productseries.title,
-                    'potemplates': productseries.currentpotemplates,
-                    'base_url': '/projects/%s/%s' % (
-                        self.context.name,
-                        productseries.name)
-                    }
-            else:
-                # The translatable object does not implements an
-                # ISourcePackage nor a IProductSeries. As it's not a critical
-                # failure, we log only it instead of raise an exception.
-                warn("Got an unknown type object as primary translatable",
-                     RuntimeWarning)
-                return None
-
-            return object_translatable
-
-        else:
-            return None
+        return {
+            'title': translatable.title,
+            'potemplates': translatable.getCurrentTranslationTemplates(),
+            'base_url': canonical_url(translatable)
+            }
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -629,7 +604,7 @@ class ProductView(LaunchpadView):
         potemplatenames = set([])
 
         for series in self.context.serieses:
-            for potemplate in series.potemplates:
+            for potemplate in series.getTranslationTemplates():
                 potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)

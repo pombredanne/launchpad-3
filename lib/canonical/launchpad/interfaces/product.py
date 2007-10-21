@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces including and related to IProduct."""
 
@@ -324,6 +324,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     translatable_series = Attribute(
         "A list of the series of this product for which we have translation "
         "templates.")
+
+    obsolete_translatable_series = Attribute("""
+        A list of the series of this product with obsolete translation
+        templates.""")
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to "

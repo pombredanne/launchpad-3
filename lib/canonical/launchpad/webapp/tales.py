@@ -30,6 +30,7 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
+    BuildStatus,
     IBug,
     IBugAttachment,
     IBugNomination,
@@ -674,14 +675,14 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
-            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            dbschema.BuildStatus.BUILDING: "/@@/build-building",
-            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            BuildStatus.BUILDING: "/@@/build-building",
+            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name

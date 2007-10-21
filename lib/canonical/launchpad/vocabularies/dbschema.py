@@ -14,9 +14,7 @@ __all__ = [
     'BugTaskImportanceVocabulary',
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
-    'DistroSeriesStatusVocabulary',
     'InfestationStatusVocabulary',
-    'PackagePublishingPocketVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
@@ -38,10 +36,7 @@ BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
-DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-PackagePublishingPocketVocabulary = vocab_factory(
-    dbschema.PackagePublishingPocket)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 TranslationFileFormatVocabulary = vocab_factory(TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(TranslationPermission)

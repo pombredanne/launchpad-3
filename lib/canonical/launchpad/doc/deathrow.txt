@@ -5,7 +5,7 @@ Testing the Package Death Row
   >>> import datetime
   >>> import pytz
   >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> from canonical.archivepublisher.deathrow import DeathRow
   >>> from canonical.archivepublisher.diskpool import DiskPool
   >>> from canonical.launchpad.database import Distribution

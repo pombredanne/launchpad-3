@@ -226,7 +226,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
         # values are the right ones.
         messagecount = 0
         currentcount = 0
-        for template in hoary.currentpotemplates:
+        for template in hoary.getCurrentTranslationTemplates():
             messagecount += template.messageCount()
             # Get the Spanish IPOFile.
             pofile = template.getPOFileByLang('es')
@@ -303,7 +303,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
         # script run recalculated.
         new_messagecount = 0
         new_currentcount = 0
-        for template in hoary.currentpotemplates:
+        for template in hoary.getCurrentTranslationTemplates():
             new_messagecount += template.messageCount()
             pofile = template.getPOFileByLang('es')
             if pofile is not None:
