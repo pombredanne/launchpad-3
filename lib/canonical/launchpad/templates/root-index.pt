@@ -28,7 +28,7 @@
         accept-charset="UTF-8"
       >
         <tal:comment replace="nothing">
-          Do not replace the line below: "Is your project registerd yet?"
+          Do not replace the line below: "Is your project registered yet?"
           without contacting the IS team. It's used by Nagios to verify
           the app servers are running.
         </tal:comment>
@@ -40,10 +40,19 @@
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            We make it easy to <strong>collaborate
+            Launchpad is a free software hosting and development
+            website. We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
-            <a href="/+about">Learn&nbsp;more&#8230;</a>
+            <br />
+            <center>
+              <a href="/+about">
+                <img
+                  alt="Take a tour"
+                  src="/+icing/but-lrg-takeatour.gif"
+                />
+              </a>
+            </center>
           </p>
         </div>
         <div class="three column middle">
