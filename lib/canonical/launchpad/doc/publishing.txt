@@ -126,8 +126,9 @@ IArchiveFilePublishing.
  >>> verifyObject(IArchiveFilePublisher, any_pub_file)
  True
 
- >>> [pub_file.libraryfilealias.filename for pub_file in spph.files]
- [u'alsa-utils_1.0.8-1ubuntu1.dsc']
+ >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name)
+ ...   for pub_file in spph.files]
+ [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc')]
 
 'secure_record' returns a ISecureSourcePackagePublishing instance
 corresponding to this publication. This instance implements
@@ -194,4 +195,7 @@ Generating respective "Packages" stanzas based on IArchivePublish:
 
  >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
  [u'mozilla-firefox_0.9_i386.deb']
+
+ >>> [pub_file.archive_url for pub_file in bpph.files]
+ [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 

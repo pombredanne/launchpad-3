@@ -40,7 +40,7 @@ def makePoolPath(source_name, component_name):
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
     def publish(self, diskpool, log):
-        """See IArchiveFilePublisherBase."""
+        """See IArchiveFilePublisher."""
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -66,6 +66,13 @@ class ArchiveFilePublisherBase:
                       "However, publishing of other packages is not affected."
                       % info)
             raise info
+
+    @property
+    def archive_url(self):
+        """See IArchiveFilePublisher."""
+        return (self.archive.archive_url + "/" +
+                makePoolPath(self.sourcepackagename, self.componentname) + "/" +
+                self.libraryfilealiasfilename)
 
 
 class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
@@ -114,6 +121,18 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     def publishing_record(self):
         """See `ArchiveFilePublisherBase`."""
         return self.sourcepackagepublishing
+
+    @property
+    def file_type_name(self):
+        """See `ArchiveFilePublisherBase`."""
+        fn = self.libraryfilealiasfilename
+        if ".orig.tar." in fn:
+            return "orig"
+        if fn.endswith(".dsc"):
+            return "dsc"
+        if ".diff." in fn:
+            return "diff"
+        return "other"
 
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
@@ -433,7 +452,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisherBase."""
+        """See IArchiveFilePublisher."""
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
@@ -519,7 +538,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisherBase."""
+        """See IArchiveFilePublisher."""
         release = self.binarypackagerelease
         name = release.binarypackagename.name
         distroseries = self.distroarchseries.distroseries

@@ -133,6 +133,7 @@ The headings:
     <th>Pocket</th>
     <th>Component</th>
     <th>Section</th>
+    <th>Files</th>
     </tr>
     </thead>
     ...
@@ -148,6 +149,7 @@ The data:
     Release
     main
     editors
+    i386
     iceweasel - 1.0
     2007-07-09
     Published
@@ -155,6 +157,9 @@ The data:
     Release
     main
     editors
+    orig
+    dsc
+    i386
     cdrkit - 1.0
     2007-07-09
     Published
@@ -162,13 +167,14 @@ The data:
     Release
     main
     editors
+    dsc
 
 == Searching an archive ==
 
 We can search a PPA for a particular package.  A non-existent package shows
 no results.
 
-    >>> field = browser.getControl("Packages with name containing:")
+    >>> field = browser.getControl("Package name contains:")
     >>> field.value = 'nonexistentpackage'
     >>> browser.getControl("Search").click()
     >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
@@ -176,7 +182,7 @@ no results.
 
 Searching for the package "iceweasel" show's that Celso is providing this.
 
-    >>> field = browser.getControl("Packages with name containing:")
+    >>> field = browser.getControl("Package name contains:")
     >>> field.value = 'iceweasel'
     >>> browser.getControl("Search").click()
     >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
@@ -239,6 +245,7 @@ The package row headings show an Uploader column:
     <th>Pocket</th>
     <th>Component</th>
     <th>Section</th>
+    <th>Files</th>
     </tr>
     </thead>
     ...
@@ -249,15 +256,21 @@ The package row data shows the uploader:
     ...    print extract_text(ppa_row)
     mozilla-firefox - 0.9
     name16
-    <BLANKLINE>
     Pending
     hoary
     Release
     main
     base
+    orig
+
+Links from files go to their on-archive locations:
+
+    >>> browser.getLink("orig").url
+    'http://ppa.launchpad.dev/ubuntu-team/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz'
 
 The uploader name is linkified to that user's home page:
 
     >>> browser.getLink(id="uploader").click()
     >>> browser.url
     'http://launchpad.dev/~name16'
+

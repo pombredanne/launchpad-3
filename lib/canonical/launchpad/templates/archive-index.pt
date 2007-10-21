@@ -67,7 +67,7 @@
 
       <div>
         <form name="package_search" action="" method="GET">
-           <label for="name"> Packages with name containing:</label>
+           <label for="name">Package name contains:</label>
            <input id="name" title="Package Name" size="20"
                   type="text" name="name_filter"
                   tal:attributes="value view/name_filter"/>
@@ -92,6 +92,7 @@
             <th>Pocket</th>
             <th>Component</th>
             <th>Section</th>
+            <th>Files</th>
           </tr>
         </thead>
         <tbody>

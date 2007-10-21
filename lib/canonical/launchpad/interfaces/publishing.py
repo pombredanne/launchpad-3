@@ -63,6 +63,37 @@ class IPublishing(Interface):
         getPendingPublications.
         """
 
+
+class IFilePublishing(Interface):
+    """Base interface for *FilePublishing classes."""
+    distribution = Int(
+            title=_('Distribution ID'), required=True, readonly=True,
+            )
+    distroseriesname = TextLine(
+            title=_('Series name'), required=True, readonly=True,
+            )
+    componentname = TextLine(
+            title=_('Component name'), required=True, readonly=True,
+            )
+    publishingstatus = Int(
+            title=_('Package publishing status'), required=True, readonly=True,
+            )
+    pocket = Int(
+            title=_('Package publishing pocket'), required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
+    libraryfilealias = Int(
+            title=_('Binarypackage file alias'), required=True,
+            readonly=True,
+            )
+    libraryfilealiasfilename = TextLine(
+            title=_('File name'), required=True, readonly=True,
+            )
+    archive_url = Attribute('The on-archive URL for the published file.')
+
+
 class IArchivePublisher(Interface):
     """Ability to publish a publishing record."""
 
@@ -141,39 +172,16 @@ class PoolFileOverwriteError(Exception):
 # Source package publishing
 #
 
-class ISourcePackageFilePublishing(Interface):
+class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-    distroseriesname = TextLine(
-            title=_('Series name'), required=True, readonly=True,
-            )
+    file_type_name = Attribute(
+        "The uploaded file's type; one of 'orig', 'dsc', 'diff' or 'other'")
     sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
-            )
-    componentname = TextLine(
-            title=_('Component name'), required=True, readonly=True,
-            )
-    publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
-            )
-    pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
             )
     sourcepackagepublishing = Int(
             title=_('Sourcepackage publishing record id'), required=True,
             readonly=True,
-            )
-    libraryfilealias = Int(
-            title=_('Sourcepackage release file alias'), required=True,
-            readonly=True,
-            )
-    libraryfilealiasfilename = TextLine(
-            title=_('File name'), required=True, readonly=True,
             )
 
 
@@ -286,26 +294,8 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 # Binary package publishing
 #
 
-class IBinaryPackageFilePublishing(Interface):
+class IBinaryPackageFilePublishing(IFilePublishing):
     """Binary package files and their publishing status"""
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-    distroseriesname = TextLine(
-            title=_('Series name'), required=True, readonly=True,
-            )
-    componentname = TextLine(
-            title=_('Component name'), required=True, readonly=True,
-            )
-    publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
-            )
-    pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
-            )
     # Note that it is really /source/ package name below, and not a
     # thinko; at least, that's what Celso tells me the code uses
     #   -- kiko, 2006-03-22
@@ -315,13 +305,6 @@ class IBinaryPackageFilePublishing(Interface):
     binarypackagepublishing = Int(
             title=_('Binary Package publishing record id'), required=True,
             readonly=True,
-            )
-    libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True,
-            readonly=True,
-            )
-    libraryfilealiasfilename = TextLine(
-            title=_('File name'), required=True, readonly=True,
             )
     architecturetag = TextLine(
             title=_("Architecture tag. As per dpkg's use"), required=True,
