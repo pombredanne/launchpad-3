@@ -78,7 +78,7 @@ In the table rows, the "Owner" is a clickable link to his PPA page.
 
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
-    'Personal Package Archive for Celso Providelo'
+    'PPA for Celso Providelo'
 
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
@@ -98,7 +98,7 @@ properly.
 
     >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
     >>> anon_browser.title
-    'Personal Package Archive for Mark Shuttleworth'
+    'PPA for Mark Shuttleworth'
 
     >>> results = find_tag_by_id(anon_browser.contents,'package_counters')
     >>> text = extract_text(results)
@@ -116,8 +116,6 @@ will be presented to user containing:
  * SourcePackageRelease title (<source_name> - <source-version>),
  * Date Published,
  * target DistroSeries,
- * target Pocket,
- * original Component and
  * original Section
 
 The headings:
@@ -129,9 +127,7 @@ The headings:
     <th>Source</th>
     <th>Published</th>
     <th>Status</th>
-    <th>Target</th>
-    <th>Pocket</th>
-    <th>Component</th>
+    <th>Series</th>
     <th>Section</th>
     <th>Files</th>
     </tr>
@@ -146,16 +142,12 @@ The data:
     2007-07-09
     Published
     hoary
-    Release
-    main
     editors
     i386
     iceweasel - 1.0
     2007-07-09
     Published
     warty
-    Release
-    main
     editors
     orig
     dsc
@@ -164,8 +156,6 @@ The data:
     2007-07-09
     Published
     breezy-autotest
-    Release
-    main
     editors
     dsc
 
@@ -241,9 +231,7 @@ The package row headings show an Uploader column:
     <th>Uploader</th>
     <th>Published</th>
     <th>Status</th>
-    <th>Target</th>
-    <th>Pocket</th>
-    <th>Component</th>
+    <th>Series</th>
     <th>Section</th>
     <th>Files</th>
     </tr>
@@ -258,8 +246,6 @@ The package row data shows the uploader:
     name16
     Pending
     hoary
-    Release
-    main
     base
     orig
 

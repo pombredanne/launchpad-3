@@ -11,8 +11,6 @@
          >PUBLISHED</td>
      <td tal:content="context/sourcepackagerelease/uploaddistroseries/name"
          >dapper</td>
-     <td tal:content="context/pocket/title">RELEASE</td>
-     <td tal:content="context/component/name">main</td>
      <td tal:content="context/section/name">base</td>
      <td>
         <tal:sourcefiles repeat="file context/files">

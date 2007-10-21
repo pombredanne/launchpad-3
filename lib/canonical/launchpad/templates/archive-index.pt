@@ -89,9 +89,7 @@ deb-src <a tal:attributes="href context/archive_url"
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
-            <th>Target</th>
-            <th>Pocket</th>
-            <th>Component</th>
+            <th>Series</th>
             <th>Section</th>
             <th>Files</th>
           </tr>
