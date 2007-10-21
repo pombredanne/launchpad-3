@@ -1,0 +1,56 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.FeedsApplication"
+        provides="canonical.launchpad.interfaces.IFeedsApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IFeedsApplication" />
+    </securedutility>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
+        />
+
+    <!-- This section for +dims is present since the OOPS page loads it.
+         If +dims is requested on feeds, that means that a browser that
+         renders JS has recieved an OOPS page on feeds, so it is
+         relevant for us to collect its page dimensions. If a Feed reader
+         gets the OOPS page, it likely won't execute the JS and so won't
+         try to read +dims. -->
+    <browser:page
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        name="+dims"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BrowserWindowDimensions"
+        attribute="__call__"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        name="+index"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="FeedsNavigation"
+        />
+
+    <!-- Macros -->
+    <browser:page
+        for="*"
+        name="feed-entry-atom"
+        permission="zope.Public"
+        template="../../lazr/feed/templates/feed-entry-atom.pt"
+        />
+
+    <!-- Feeds -->
+    <browser:feeds
+        module="canonical.launchpad.feed"
+        classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed"
+        />
+</configure>

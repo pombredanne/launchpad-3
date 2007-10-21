@@ -6,11 +6,6 @@
     />
 
   <vocabulary
-    name="BranchReviewStatus"
-    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
@@ -28,11 +23,6 @@
   <vocabulary
     name="BugNominationStatus"
     factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
 
   <vocabulary
@@ -61,11 +51,6 @@
       />
 
   <vocabulary
-      name="CodeImportReviewStatus"
-      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
-      />
-
-  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -88,11 +73,6 @@
   <vocabulary
     name="DistroSeries"
     factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
-    />
-
-  <vocabulary
-    name="DistroSeriesStatus"
-    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
 
   <vocabulary
@@ -163,11 +143,6 @@
   <vocabulary
     name="NonMergedPeopleAndTeams"
     factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
-    />
-
-  <vocabulary
-    name="PackagePublishingPocket"
-    factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
     />
 
   <vocabulary

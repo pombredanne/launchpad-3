@@ -22,10 +22,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, NotFoundError,
-    ICodeImportEventSet, RevisionControlSystems,
-    ICodeImport, ICodeImportSet)
-from canonical.lp.dbschema import CodeImportReviewStatus
+    CodeImportReviewStatus, ICodeImport, ICodeImportEventSet, ICodeImportSet,
+    ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
 
 
 class CodeImport(SQLBase):
@@ -81,6 +79,14 @@ class CodeImport(SQLBase):
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
+    def updateFromData(self, data, user):
+        """See `ICodeImport`."""
+        event_set = getUtility(ICodeImportEventSet)
+        token = event_set.beginModify(self)
+        for name, value in data.items():
+            setattr(self, name, value)
+        event_set.newModify(self, user, token)
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
@@ -113,8 +119,10 @@ class CodeImportSet:
     # should be removed after the transition to the new code import system is
     # complete.
 
-    def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def newWithId(self, id, registrant, branch, rcs_type,
+            review_status=CodeImportReviewStatus.NEW,
+            date_last_successful=None,
+            svn_branch_url=None, cvs_root=None, cvs_module=None):
         """See `ICodeImportSet`."""
         assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
         if rcs_type == RevisionControlSystems.CVS:
@@ -135,6 +143,8 @@ class CodeImportSet:
         assert len(cur.fetchall()) == 1
         code_import = CodeImport(
             id=id, registrant=registrant, owner=registrant, branch=branch,
+            review_status=review_status,
+            date_last_successful=date_last_successful,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)

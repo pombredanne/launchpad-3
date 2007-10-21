@@ -10,10 +10,11 @@ import cgi
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
-    LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -105,3 +106,18 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
                 self.renderSelectedItem(**project_bugtracker_arguments))
 
         return items
+
+class LicenseWidget(CheckBoxMatrixWidget):
+    """A CheckBox widget with a custom template.
+
+    The allow_pending_license is provided so that $product/+edit
+    can display radio buttons to show that the license field is
+    optional for pre-existing products that have never had a license set.
+    """
+    template = ViewPageTemplateFile('templates/license.pt')
+    allow_pending_license = False
+
+    def __call__(self):
+        self.checkbox_matrix = super(LicenseWidget, self).__call__()
+        return self.template()
+

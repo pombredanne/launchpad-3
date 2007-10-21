@@ -23,7 +23,6 @@
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
-    <include file="bugextref.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
@@ -38,7 +37,6 @@
     <include file="bug.zcml" />
     <include file="build.zcml" />
     <include file="builder.zcml" />
-    <include file="calendar.zcml" />
     <include file="codeimport.zcml" />
     <include file="codeimportevent.zcml" />
     <include file="codeimportjob.zcml" />
@@ -69,6 +67,7 @@
     <include file="entitlement.zcml" />
     <include file="faq.zcml" />
     <include file="faqcollection.zcml" />
+    <include file="feeds.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="hwdb.zcml" />
@@ -156,7 +155,7 @@
     <include file="widgets.zcml" />
 
     <!-- System homepages -->
-    <include file="rosetta.zcml" />
+    <include file="translations.zcml" />
     <include file="malone.zcml" />
     <include file="registry.zcml" />
     <include file="bazaar.zcml" />

@@ -27,15 +27,19 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, QueueInconsistentStateError)
+    ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
+    ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
+    PackagePublishingPocket, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
-from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class FatalUploadError(Exception):
     """A fatal error occurred processing the upload; processing aborted."""
+
+
+class EarlyReturnUploadError(Exception):
+    """An error occurred that prevented further error collection."""
 
 
 class NascentUpload:
@@ -125,9 +129,9 @@ class NascentUpload:
         # We need to process changesfile addresses at this point because
         # we depend on an already initialised policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
-        self.run_and_collect_errors(self.changes.processAddresses)
+        self.run_and_reject_on_error(self.changes.processAddresses)
 
-        self.run_and_collect_errors(self.changes.processFiles)
+        self.run_and_reject_on_error(self.changes.processFiles)
 
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
@@ -387,6 +391,13 @@ class NascentUpload:
                 self.warn(str(error))
             else:
                 raise AssertionError("Unknown error occurred: %s" % str(error))
+
+    def run_and_reject_on_error(self, callable):
+        """Run given callable and raise EarlyReturnUploadError on errors."""
+        self.run_and_collect_errors(callable)
+        if self.is_rejected:
+            raise EarlyReturnUploadError(
+                "An error occurred that prevented further processing.")
 
     @property
     def is_ppa(self):

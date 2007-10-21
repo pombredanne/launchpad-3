@@ -29,9 +29,10 @@ from zope.component import getUtility
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
-from canonical.lp import initZopeless, dbschema
+from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.interfaces import IComponentSet
+from canonical.launchpad.interfaces import (
+    IComponentSet, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
 
@@ -154,8 +155,8 @@ def run_gina(options, ztm, target_section):
     log.info("Dry run: %s" % (dry_run))
     log.info("")
 
-    if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
-        pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
+    if hasattr(PackagePublishingPocket, pocket.upper()):
+        pocket = getattr(PackagePublishingPocket, pocket.upper())
     else:
         log.error("Could not find a pocket schema for %s" % pocket)
         sys.exit(1)
