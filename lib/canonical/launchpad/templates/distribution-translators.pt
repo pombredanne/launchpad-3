@@ -7,9 +7,17 @@
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
-<body>
+  i18n:domain="launchpad" >
+
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet
+        condition="context/official_rosetta"
+        replace="structure context/@@+portlet-translation-groups-and-permission"
+      />
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
+
   <tal:tag condition="view/update"/>
   <metal:heading fill-slot="pageheading">
     <h1>Select a new translation group</h1>

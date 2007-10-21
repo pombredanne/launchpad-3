@@ -8062,6 +8062,15 @@ ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
 ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
 
 
+ALTER TABLE productlicense DISABLE TRIGGER ALL;
+
+INSERT INTO productlicense (id, product, license) VALUES (1, 1, 1);
+INSERT INTO productlicense (id, product, license) VALUES (2, 1, 2);
+
+
+ALTER TABLE productlicense ENABLE TRIGGER ALL;
+
+
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
 
 INSERT INTO productrelease (id, datereleased, version, codename, description, changelog, "owner", summary, productseries, datecreated) VALUES (1, '2004-06-28 00:00:00', '1.0.0', 'First Stable Release', '', '', 12, 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 2, '2005-06-06 08:59:51.930201');

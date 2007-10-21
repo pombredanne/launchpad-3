@@ -87,4 +87,13 @@
         template="../templates/rosetta-status-legend.pt" />
   </browser:pages>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IHasTranslationGroup"
+    facet="translations"
+    permission="zope.Public"
+    name="+portlet-translation-groups-and-permission"
+    template="../templates/hastranslationgroup-portlet-translation-groups-and-permission.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
 </configure>

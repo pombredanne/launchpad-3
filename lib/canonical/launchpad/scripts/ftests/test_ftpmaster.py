@@ -17,13 +17,11 @@ from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet, ISectionSet)
+    IDistributionSet, IComponentSet, ISectionSet, PackagePublishingPocket,
+    PackagePublishingPriority)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority)
-
 
 class LocalLogger(FakeLogger):
     """Local log facility """

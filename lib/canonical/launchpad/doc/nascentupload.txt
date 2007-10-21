@@ -12,10 +12,10 @@ We need to be logged into the security model in order to get any further
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     DistroSeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
 A NascentUpload is a collection of files in a directory. They
@@ -459,7 +459,7 @@ The upload will be rejected.
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> hoary.getQueueItems(PackageUploadStatus.NEW).count()
   1
 
@@ -565,7 +565,7 @@ simplicity and claim 'build from ACCEPTED' feature.
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)

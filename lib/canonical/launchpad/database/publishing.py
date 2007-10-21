@@ -20,15 +20,13 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    PoolFileOverwriteError)
+    PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket, PoolFileOverwriteError)
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py

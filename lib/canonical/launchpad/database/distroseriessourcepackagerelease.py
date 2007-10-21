@@ -19,11 +19,10 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
-    IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
+    IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 from canonical.lp import decorates
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackageUploadStatus)
 
 
 class DistroSeriesSourcePackageRelease:

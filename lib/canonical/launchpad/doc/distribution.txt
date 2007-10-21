@@ -17,8 +17,8 @@ The IDistributionSet utility is accessed in the usual fashion:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IDistributionSet, IHasTranslationImports)
-    >>> from canonical.lp.dbschema import PackagePublishingPocket
+    ...     IDistribution, IDistributionSet, IHasTranslationImports,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -566,7 +566,7 @@ Create a NEW PackageUpload record for cprov PPA:
 
       >>> hoary = ubuntu['hoary']
 
-      >>> from canonical.lp.dbschema import PackagePublishingPocket
+      >>> from canonical.launchpad.interfaces import PackagePublishingPocket
       >>> queue = hoary.createQueueEntry(
       ...      pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
       ...      changesfilename='foo', changesfilecontent='bar')
@@ -631,7 +631,7 @@ publishing record:
       >>> from canonical.launchpad.database.publishing import (
       ...     SecureSourcePackagePublishingHistory, 
       ...     SecureBinaryPackagePublishingHistory) 
-      >>> from canonical.lp.dbschema import PackagePublishingStatus
+      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
       >>> pmount = hoary.getSourcePackage('pmount')
       >>> pmount_spr = pmount.currentrelease.sourcepackagerelease
