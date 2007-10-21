@@ -23,6 +23,13 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
+      name="feeds"
+      schema="canonical.launchpad.webapp.metazcml.IFeedsDirective"
+      handler="canonical.launchpad.webapp.metazcml.feeds"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
       name="renamed-page"
       schema="canonical.launchpad.webapp.metazcml.IRenamedPageDirective"
       handler="canonical.launchpad.webapp.metazcml.renamed_page"

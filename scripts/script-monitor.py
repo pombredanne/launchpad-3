@@ -76,13 +76,14 @@ def main():
             # Construct our email
             msg = MIMEText('\n'.join(msg))
             msg['Subject'] = "Scripts failed to run: %s" % ", ".join(subj)
-            msg['From'] = 'launchpad@lists.canonical.com'
+            msg['From'] = 'script-failures@launchpad.net'
+            msg['Reply-To'] = 'launchpad@lists.canonical.com'
             msg['To'] = 'launchpad@lists.canonical.com'
             
             # Send out the email
             smtp = smtplib.SMTP()
             smtp.connect()
-            smtp.sendmail('launchpad@lists.canonical.com', ['launchpad@lists.canonical.com'], msg.as_string())
+            smtp.sendmail('script-failures@launchpad.net', ['launchpad@lists.canonical.com'], msg.as_string())
             smtp.close()
             return 2
     except:

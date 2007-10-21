@@ -9,7 +9,7 @@ import unittest
 import os
 import datetime
 
-from canonical.lp.dbschema import ImportStatus
+from canonical.launchpad.interfaces import ImportStatus
 from importd import JobStrategy
 from importd.Job import Job, CopyJob
 from importd.tests import testutil, helpers

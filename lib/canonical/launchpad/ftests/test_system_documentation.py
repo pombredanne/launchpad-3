@@ -758,6 +758,14 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    # Also run the pillar.txt doctest under the Zopeless layer.
+    # This exposed bug #149632.
+    'pillar.txt-zopeless': LayeredDocFileSuite(
+            '../doc/pillar.txt',
+            setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 

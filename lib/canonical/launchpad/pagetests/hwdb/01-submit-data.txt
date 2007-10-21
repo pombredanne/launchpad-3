@@ -2,7 +2,7 @@
 
 Submissions to the hardware database are done at the following URL:
 
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
 
 All form fields must be filled with valid values.
 
@@ -67,7 +67,7 @@ error.
     ...               'Unique Submission Key:'):
     ...     wrong_data = submit_data.copy()
     ...     del wrong_data[field]
-    ...     browser.open('http://launchpad.dev/hwdb/+submit')
+    ...     browser.open('http://launchpad.dev/+hwdb/+submit')
     ...     fill_form(
     ...         browser, wrong_data, submit_data_checkboxes, submit_file,
     ...         'test.txt')
@@ -112,7 +112,7 @@ error.
 
 The file with the test data must also be provided.
 
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, None, 'test.txt')
     >>> browser.getControl('Upload').click()
@@ -127,7 +127,7 @@ is rejected and an explaining header is added to the response.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Unique Submission Key:'] = 'unique-id-1'
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -142,7 +142,7 @@ The field "Date Created" must contain a valid timestamp.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Date Created:'] = 'no timestamp'
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -157,7 +157,7 @@ The field "Submission Key" may contain only ASCII characters.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Unique Submission Key:'] = u'wrong id \xc0'.encode('utf8')
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -172,7 +172,7 @@ The field "Email address:" musr contain a valid email address.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Email address:'] = 'no email'
-    >>> browser.open('http://launchpad.dev/hwdb/+submit')
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -180,6 +180,6 @@ The field "Email address:" musr contain a valid email address.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Error in emailaddress - no email isn't a valid email address
+    X-Launchpad-Hwdb-Submission: Error in emailaddress - Invalid email address
     ...
 

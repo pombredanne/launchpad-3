@@ -26,10 +26,8 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
+    BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
     )
-
-from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,

@@ -9,6 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
     <allow interface="canonical.launchpad.interfaces.IPublishing"/>
     <require
         permission="launchpad.TranslationsAdmin"
@@ -317,8 +318,8 @@
     schema="canonical.launchpad.interfaces.IMilestone"
     class="canonical.launchpad.browser.milestone.MilestoneAddView"
     facet="overview"
-    fields="name dateexpected"
-    keyword_arguments="name dateexpected"
+    fields="name dateexpected description"
+    keyword_arguments="name dateexpected description"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
     >

@@ -18,10 +18,6 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingPocket,
-    PackagePublishingStatus)
-
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
@@ -31,7 +27,8 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
+    ArchivePurpose, BuildStatus, IBuild, IBuildSet, NotFoundError,
+    ILaunchpadCelebrities, PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -261,6 +258,8 @@ class Build(SQLBase):
 
         extra_headers = {
             'X-Launchpad-Build-State': self.buildstate.name,
+            'X-Launchpad-Build-Component' : self.current_component.name,
+            'X-Launchpad-Build-Arch' : self.distroarchseries.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
@@ -287,7 +286,7 @@ class Build(SQLBase):
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))
-            archive_tag = '%s main archive' % self.distribution.name
+            archive_tag = '%s primary archive' % self.distribution.name
             subject = "[Build #%d] %s" % (self.id, self.title)
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
@@ -349,6 +348,7 @@ class Build(SQLBase):
             'source_url': source_url,
             'extra_info': extra_info,
             'archive_tag': archive_tag,
+            'component_tag' : self.current_component.name,
             }
         message = template % replacements
 

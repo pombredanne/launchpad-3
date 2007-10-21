@@ -20,15 +20,13 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    PoolFileOverwriteError)
+    PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket, PoolFileOverwriteError)
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -213,6 +211,9 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -257,6 +258,9 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -351,6 +355,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
+    embargolifted = UtcDateTimeCol(default=None)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def publishedBinaries(self):
         """See ISourcePackagePublishingHistory."""
@@ -480,6 +489,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
+    embargolifted = UtcDateTimeCol(default=None)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property
     def distroarchseriesbinarypackagerelease(self):
@@ -502,11 +516,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See IArchivePublisherBase."""
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
-
-    @property
-    def hasRemovalRequested(self):
-        """See ISecureBinaryPackagePublishingHistory"""
-        return self.datesuperseded is not None and self.supersededby is None
 
     @property
     def displayname(self):
