@@ -28,7 +28,7 @@
         accept-charset="UTF-8"
       >
         <tal:comment replace="nothing">
-          Do not replace the line below: "Is your project registerd yet?"
+          Do not replace the line below: "Is your project registered yet?"
           without contacting the IS team. It's used by Nagios to verify
           the app servers are running.
         </tal:comment>
