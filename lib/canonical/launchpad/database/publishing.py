@@ -24,9 +24,9 @@ from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket, PoolFileOverwriteError)
+    IArchiveSafePublisher, PackagePublishingPriority,
+    PackagePublishingStatus, PackagePublishingPocket,
+    PoolFileOverwriteError)
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -37,10 +37,10 @@ def makePoolPath(source_name, component_name):
         'pool', poolify(source_name, component_name))
 
 
-class ArchiveFilePublisherBase:
+class FilePublishingBase(SQLBase):
     """Base class to publish files in the archive."""
     def publish(self, diskpool, log):
-        """See IArchiveFilePublisher."""
+        """See IFilePublishing."""
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -69,13 +69,13 @@ class ArchiveFilePublisherBase:
 
     @property
     def archive_url(self):
-        """See IArchiveFilePublisher."""
+        """See IFilePublishing."""
         return (self.archive.archive_url + "/" +
                 makePoolPath(self.sourcepackagename, self.componentname) + "/" +
                 self.libraryfilealiasfilename)
 
 
-class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
+class SourcePackageFilePublishing(FilePublishingBase):
     """Source package release files and their publishing status.
 
     Represents the source portion of the pool.
@@ -84,7 +84,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     _idType = str
     _defaultOrder = "id"
 
-    implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
+    implements(ISourcePackageFilePublishing)
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
@@ -119,12 +119,12 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     @property
     def publishing_record(self):
-        """See `ArchiveFilePublisherBase`."""
+        """See `IFilePublishing`."""
         return self.sourcepackagepublishing
 
     @property
     def file_type_name(self):
-        """See `ArchiveFilePublisherBase`."""
+        """See `ISourcePackagePublishingHistory`."""
         fn = self.libraryfilealiasfilename
         if ".orig.tar." in fn:
             return "orig"
@@ -135,7 +135,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         return "other"
 
 
-class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
+class BinaryPackageFilePublishing(FilePublishingBase):
     """A binary package file which is published.
 
     Represents the binary portion of the pool.
@@ -144,7 +144,7 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     _idType = str
     _defaultOrder = "id"
 
-    implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
+    implements(IBinaryPackageFilePublishing)
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
@@ -303,7 +303,7 @@ class ArchivePublisherBase:
     """Base class for ArchivePublishing task."""
 
     def publish(self, diskpool, log):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
@@ -313,7 +313,7 @@ class ArchivePublisherBase:
             self.secure_record.setPublished()
 
     def getIndexStanza(self):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
 
@@ -355,7 +355,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
        Excluding embargoed stuff
     """
-    implements(ISourcePackagePublishingHistory, IArchivePublisher)
+    implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -411,12 +411,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def secure_record(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return SecureSourcePackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self)
 
@@ -452,14 +452,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisher."""
+        """see IPublishing."""
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
                                 self.distroseries.name)
 
     def buildIndexStanzaFields(self):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         # special fields preparation
         spr = self.sourcepackagerelease
         pool_path = makePoolPath(spr.name, self.component.name)
@@ -488,7 +488,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory, IArchivePublisher)
+    implements(IBinaryPackagePublishingHistory)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -527,18 +527,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def secure_record(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return SecureBinaryPackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisher."""
+        """See IPublishing."""
         release = self.binarypackagerelease
         name = release.binarypackagename.name
         distroseries = self.distroarchseries.distroseries
@@ -547,7 +547,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    self.distroarchseries.architecturetag)
 
     def buildIndexStanzaFields(self):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
 

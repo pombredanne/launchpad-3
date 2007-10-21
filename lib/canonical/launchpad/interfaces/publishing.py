@@ -11,9 +11,8 @@ __all__ = [
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
     'IBinaryPackagePublishingHistory',
-    'IPublishing',
-    'IArchivePublisher',
-    'IArchiveFilePublisher',
+    'ICanPublishPackages',
+    'IFilePublishing',
     'IArchiveSafePublisher',
     'NotInPool',
     'PackagePublishingPocket',
@@ -31,11 +30,30 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 #
-# Archive Publisher API and Exceptions
+# Exceptions
 #
 
-class IPublishing(Interface):
-    """Ability to publish associated publishing records."""
+
+class NotInPool(Exception):
+    """Raised when an attempt is made to remove a non-existent file."""
+
+
+class PoolFileOverwriteError(Exception):
+    """Raised when an attempt is made to overwrite a file in the pool.
+
+    The proposed file has different content as the one in pool.
+    This exception is unexpected and when it happens we keep the original
+    file in pool and print a warning in the publisher log. It probably
+    requires manual intervention in the archive.
+    """
+
+
+#
+# Base Interfaces
+#
+
+class ICanPublishPackages(Interface):
+    """Denotes the ability to publish associated publishing records."""
 
     def getPendingPublications(archive, pocket, is_careful):
         """Return the specific group of records to be published.
@@ -64,38 +82,21 @@ class IPublishing(Interface):
         """
 
 
-class IFilePublishing(Interface):
-    """Base interface for *FilePublishing classes."""
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-    distroseriesname = TextLine(
-            title=_('Series name'), required=True, readonly=True,
-            )
-    componentname = TextLine(
-            title=_('Component name'), required=True, readonly=True,
-            )
-    publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
-            )
-    pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
-            )
-    libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True,
-            readonly=True,
-            )
-    libraryfilealiasfilename = TextLine(
-            title=_('File name'), required=True, readonly=True,
-            )
-    archive_url = Attribute('The on-archive URL for the published file.')
+class IArchiveSafePublisher(Interface):
+    """Safe Publication methods"""
+
+    def setPublished():
+        """Set a publishing record to published.
+
+        Basically set records to PUBLISHED status only when they
+        are PENDING and do not update datepublished value of already
+        published field when they were checked via 'careful'
+        publishing.
+        """
 
 
-class IArchivePublisher(Interface):
-    """Ability to publish a publishing record."""
+class IPublishing(Interface):
+    """Base interface for all *Publishing classes"""
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
@@ -125,8 +126,35 @@ class IArchivePublisher(Interface):
         """
 
 
-class IArchiveFilePublisher(Interface):
-    """Ability to publish and archive file"""
+class IFilePublishing(Interface):
+    """Base interface for *FilePublishing classes"""
+
+    distribution = Int(
+            title=_('Distribution ID'), required=True, readonly=True,
+            )
+    distroseriesname = TextLine(
+            title=_('Series name'), required=True, readonly=True,
+            )
+    componentname = TextLine(
+            title=_('Component name'), required=True, readonly=True,
+            )
+    publishingstatus = Int(
+            title=_('Package publishing status'), required=True, readonly=True,
+            )
+    pocket = Int(
+            title=_('Package publishing pocket'), required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
+    libraryfilealias = Int(
+            title=_('Binarypackage file alias'), required=True,
+            readonly=True,
+            )
+    libraryfilealiasfilename = TextLine(
+            title=_('File name'), required=True, readonly=True,
+            )
+    archive_url = Attribute('The on-archive URL for the published file.')
 
     publishing_record = Attribute(
         "Return the respective Source or Binary publishing record "
@@ -139,34 +167,6 @@ class IArchiveFilePublisher(Interface):
         or add file from librarian if it's not present. Update the database
         to represent the current archive state.
         """
-
-
-class IArchiveSafePublisher(Interface):
-    """Safe Publication methods"""
-
-    def setPublished():
-        """Set a publishing record to published.
-
-        Basically set records to PUBLISHED status only when they
-        are PENDING and do not update datepublished value of already
-        published field when they were checked via 'careful'
-        publishing.
-        """
-
-
-class NotInPool(Exception):
-    """Raised when an attempt is made to remove a non-existent file."""
-
-
-class PoolFileOverwriteError(Exception):
-    """Raised when an attempt is made to overwrite a file in the pool.
-
-    The proposed file has different content as the one in pool.
-    This exception is unexpected and when it happens we keep the original
-    file in pool and print a warning in the publisher log. It probably
-    requires manual intervention in the archive.
-    """
-
 
 #
 # Source package publishing
@@ -185,7 +185,7 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureSourcePackagePublishingHistory(Interface):
+class ISecureSourcePackagePublishingHistory(IPublishing):
     """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -312,7 +312,7 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureBinaryPackagePublishingHistory(Interface):
+class ISecureBinaryPackagePublishingHistory(IPublishing):
     """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,

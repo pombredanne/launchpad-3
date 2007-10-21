@@ -10,7 +10,7 @@
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
-    <allow interface="canonical.launchpad.interfaces.IPublishing"/>
+    <allow interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
     <require
         permission="launchpad.TranslationsAdmin"
         set_attributes="hide_all_translations defer_translation_imports"
