@@ -60,7 +60,8 @@ echo == Expiring questions `date` ==
 python expire-questions.py
 
 echo == Expiring bugs `date` ==
-python expire-bugtasks.py
+# XXX Do not enable expire-bugtasks until users have beta tested it.
+#python expire-bugtasks.py
 
 echo == Product Release Finder `date` ==
 python product-release-finder.py -q

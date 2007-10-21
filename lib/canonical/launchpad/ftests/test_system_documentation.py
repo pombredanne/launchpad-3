@@ -21,7 +21,8 @@ from zope.testing.doctest import DocFileSuite
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
-    flush_database_caches, flush_database_updates, READ_COMMITTED_ISOLATION)
+    commit, flush_database_caches, flush_database_updates,
+    READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.ftests.xmlrpc_helper import (
@@ -274,6 +275,7 @@ def bugtaskExpirationSetUp(test):
     test.globs['thunderbird'] = getUtility(
         IProductSet).getByName('thunderbird')
     test.globs['flush_database_caches'] = flush_database_caches
+    test.globs['commit'] = commit
     test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
         'test@canonical.com')
     login('test@canonical.com')

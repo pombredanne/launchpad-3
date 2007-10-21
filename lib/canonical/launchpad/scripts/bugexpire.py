@@ -55,8 +55,8 @@ class BugJanitor:
         message_template = ('[Expired for %s because there has been no '
             'activity for %d days.]')
         self.log.info(
-            'Expiring unassigned, INCOMPLETE bugtask without activity for '
-            'the last %d days for projects that use Malone.' %
+            'Expiring unattended, INCOMPLETE bugtasks older than '
+            '%d days for projects that use Malone.' %
             self.days_before_expiration)
         self._login()
         try:
