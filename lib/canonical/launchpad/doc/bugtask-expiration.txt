@@ -209,8 +209,11 @@ There are no Invalid Bugtasks in sampledata.
     >>> # We want to check the hoary_bugtask messags later.
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
 
-The script 'expire-bugtakss.py' writes its report to stdout. It makes
-its database changes as the Bug Watch Updater user.
+The script 'expire-bugtasks.py' writes its report to stdout. It makes
+its database changes as the user set config.malone.expiration_dbuser.
+
+    >>> config.malone.expiration_dbuser
+    'bugnotification'
 
     # Commit the current transaction because the script will run in
     # another transaction, and thus it won't see the changes done on
@@ -297,3 +300,7 @@ master and slave bugtasks were expired.
 
 The bug's activity log was updated too.
 
+    >>> for activity in hoary_bugtask.bug.activity:
+    ...     print (activity.person.displayname, activity.whatchanged,
+    ...            activity.oldvalue, activity.newvalue, activity.message)
+    Sample Person
