@@ -101,9 +101,10 @@ Files published are accessible via the files property:
  >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
  True
 
- >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name)
+ >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name, pub_file.archive_url)
  ...   for pub_file in spph.files]
- [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc')]
+ [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
+   u'http://launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 == Secure Source Publishing ==
 

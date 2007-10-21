@@ -297,3 +297,12 @@ class BuildRecordsView(LaunchpadView):
     def searchName(self):
         """Control the presentation of search box."""
         return True
+
+    @property
+    def form_submitted(self):
+        return "build_text" in self.request
+
+    @property
+    def no_results(self):
+        return self.form_submitted and not self.complete_builds
+

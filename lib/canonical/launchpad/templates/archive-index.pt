@@ -12,7 +12,8 @@
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1>PPA Overview</h1>
+      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /></h2>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
@@ -34,10 +35,14 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <p>For more information about how to configure your system to
-        use packages from this PPA see
-        <a href="https://help.launchpad.net/PPAQuickStart"
-        >quick-start guide</a>.</p>
+      <h2>sources.list entries</h2>
+
+      <pre style="border: 1px solid gray; padding: 0.3em">
+deb <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /> ubuntu main
+deb-src <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /> ubuntu main</pre>
+
 
       <h2>Packages</h2>
 
@@ -60,10 +65,6 @@
              <span tal:replace="context/estimated_size/fmt:bytes" /></li>
         </ul>
       </div>
-
-      <p>Browse the archive in
-         <a tal:attributes="href context/archive_url"
-            tal:content="context/archive_url" />.</p>
 
       <div>
         <form name="package_search" action="" method="GET">
@@ -122,6 +123,14 @@
       You can view the current
       <a href="https://help.launchpad.net/PPATermsofUse"
       >Terms of Use</a> for the Launchpad PPA service.
+
+      <br />
+      <br />
+      For more information about how to configure your system to
+      use packages from this PPA see
+      <a href="https://help.launchpad.net/PPAQuickStart"
+      >quick-start guide</a>.
+
     </p>
 
   </body>
