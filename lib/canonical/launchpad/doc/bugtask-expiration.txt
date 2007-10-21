@@ -298,9 +298,12 @@ master and slave bugtasks were expired.
     >>> print message.text_contents
     [Expired for Ubuntu Hoary because there has been no activity for 60 days.]
 
-The bug's activity log was updated too.
+The bug's activity log was updated too with the statusexplanation and
+status changes.
 
     >>> for activity in hoary_bugtask.bug.activity:
-    ...     print (activity.person.displayname, activity.whatchanged,
-    ...            activity.oldvalue, activity.newvalue, activity.message)
-    Sample Person
+    ...     print "%s %s %s %s" % (
+    ...         activity.person.displayname,
+    ...         activity.whatchanged, activity.oldvalue, activity.newvalue)
+    Launchpad Janitor  None: status             Incomplete  Invalid
+    Launchpad Janitor  None: statusexplanation  None        [Expired for...
