@@ -17,9 +17,10 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_rosetta official_answers
+                      official_malone official_answers
                       releaseroot development_focus bugtracker
-                      homepage_content icon logo mugshot"
+                      homepage_content icon logo mugshot 
+                      license_info licenses"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -32,6 +33,12 @@
     <require
       permission="launchpad.Admin"
       set_attributes="name active reviewed autoupdate private_bugs"
+      />
+    <!-- Changes to official_rosetta must be available to Launchpad
+         Translations admins so we need its own permission. -->
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="official_rosetta"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -198,6 +205,11 @@
       name="+portlet-translatables"
       facet="translations"
       template="../templates/product-portlet-translatables.pt"
+      />
+    <browser:page
+      name="+portlet-obsolete-translatables"
+      facet="translations"
+      template="../templates/product-portlet-obsolete-translatables.pt"
       />
   </browser:pages>
 

@@ -22,7 +22,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database.publishing import (
      BinaryPackagePublishingHistory, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.interfaces import PackagePublishingStatus
 
 
 def clear_cache():

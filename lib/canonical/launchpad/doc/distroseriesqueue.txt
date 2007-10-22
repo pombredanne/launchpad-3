@@ -81,7 +81,7 @@ convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
   ...      IDistributionSet, QueueInconsistentStateError)
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
@@ -117,7 +117,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
 Confirm we can now find ed published in hoary.
 
   >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
@@ -181,7 +181,7 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 Retrieve some data from DB to play more with counter.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -413,7 +413,7 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
 
 Also check the optional argument pocket:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.RELEASE).count()

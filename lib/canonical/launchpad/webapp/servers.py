@@ -27,7 +27,8 @@ from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    IShipItApplication, IOpenIdApplication, IPrivateApplication)
+    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
+    IShipItApplication)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -194,6 +195,8 @@ class LaunchpadRequestPublicationFactory:
                           PublicXMLRPCRequest, PublicXMLRPCPublication))
         vhrps.append(VHRP('xmlrpc_private',
                           PrivateXMLRPCRequest, PrivateXMLRPCPublication))
+        vhrps.append(VHRP('feeds', FeedsBrowserRequest,
+            FeedsPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -816,6 +819,18 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
 
+# ---- feeds
+
+class FeedsPublication(LaunchpadBrowserPublication):
+    """The publication used for Launchpad feed requests."""
+
+    root_object_interface = IFeedsApplication
+
+
+class FeedsBrowserRequest(LaunchpadBrowserRequest):
+    """Request type for a launchpad feed."""
+    implements(canonical.launchpad.layers.FeedsLayer)
+
 
 # ---- openid
 
@@ -827,4 +842,3 @@ class OpenIdPublication(LaunchpadBrowserPublication):
 
 class OpenIdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.OpenIdLayer)
-

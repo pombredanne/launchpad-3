@@ -32,14 +32,13 @@ from zope.component import getUtility
 from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet, IPersonSet)
+    DistroSeriesStatus, IBinaryPackageNameSet, IDistributionSet,
+    IBinaryPackageReleaseSet, ILaunchpadCelebrities, NotFoundError,
+    ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    DistroSeriesStatus)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
@@ -319,7 +318,7 @@ class ArchiveCruftChecker:
         """
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
-                "File does not exists:%s" % filename)
+                "File does not exist: %s" % filename)
         unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
@@ -824,8 +823,8 @@ class ChrootManagerError(Exception):
 class ChrootManager:
     """Chroot actions wrapper.
 
-    The 'distroarchseries' and 'pocket' arguments are mandatory and
-    'filepath' is optional.
+    The 'distroarchseries' argument is mandatory and 'filepath' is
+    optional.
 
     'filepath' is required by some allowed actions as source or destination,
 
@@ -836,9 +835,8 @@ class ChrootManager:
 
     allowed_actions = ['add', 'update', 'remove', 'get']
 
-    def __init__(self, distroarchseries, pocket, filepath=None):
+    def __init__(self, distroarchseries, filepath=None):
         self.distroarchseries = distroarchseries
-        self.pocket = pocket
         self.filepath = filepath
         self._messages = []
 
@@ -877,16 +875,15 @@ class ChrootManager:
         Return the respective IPocketChroot instance.
         Raises ChrootManagerError if it could not be found.
         """
-        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot()
         if pocket_chroot is None:
             raise ChrootManagerError(
-                'Could not find chroot for %s/%s'
-                % (self.distroarchseries.title, self.pocket.name))
+                'Could not find chroot for %s'
+                % (self.distroarchseries.title))
 
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) retrieved."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) retrieved."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
         return pocket_chroot
 
@@ -895,49 +892,46 @@ class ChrootManager:
         if self.filepath is None:
             raise ChrootManagerError('Missing local chroot file path.')
         alias = self._upload()
-        return self.distroarchseries.addOrUpdateChroot(self.pocket, alias)
+        return self.distroarchseries.addOrUpdateChroot(alias)
 
     def add(self):
         """Create a new PocketChroot record.
 
         Raises ChrootManagerError if self.filepath isn't set.
-        Update of pre-existent PocketChroot record will be automaticaly
+        Update of pre-existing PocketChroot record will be automatically
         handled.
         It's a bind to the self.update method.
         """
         pocket_chroot = self._update()
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) added."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) added."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
     def update(self):
         """Update a PocketChroot record.
 
         Raises ChrootManagerError if filepath isn't set
-        Creation of inexistent PocketChroot records will be automaticaly
+        Creation of non-existing PocketChroot records will be automatically
         handled.
         """
         pocket_chroot = self._update()
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) updated."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) updated."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
     def remove(self):
-        """Overwrite existent PocketChroot file to none.
+        """Overwrite existing PocketChroot file to none.
 
         Raises ChrootManagerError if the chroot record isn't found.
         """
         pocket_chroot = self._getPocketChroot()
-        self.distroarchseries.addOrUpdateChroot(self.pocket, None)
+        self.distroarchseries.addOrUpdateChroot(None)
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) removed."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) removed."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
     def get(self):
-        """Download chroot file from Librarian and store"""
+        """Download chroot file from Librarian and store."""
         pocket_chroot = self._getPocketChroot()
 
         if self.filepath is None:

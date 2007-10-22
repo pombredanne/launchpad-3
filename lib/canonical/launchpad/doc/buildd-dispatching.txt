@@ -32,13 +32,12 @@ Setup a suitable chroot for Hoary i386:
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ILibraryFileAliasSet)
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
   >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
 
-  >>> pocket = PackagePublishingPocket.RELEASE
   >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
-  >>> pc = hoary_i386.addOrUpdateChroot(pocket=pocket, chroot=chroot)
+  >>> pc = hoary_i386.addOrUpdateChroot(chroot=chroot)
 
 Activate builders present in sampledata, we need to be logged in as a
 member of launchpad-buildd-admin:
@@ -153,7 +152,7 @@ buildqueue record, so the build was eliminated:
 
   >>> BuilddSlaveTestSetup().tearDown()
 
-  >>> from canonical.lp.dbschema import BuildStatus
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
   >>> job.destroySelf()
   >>> flush_database_updates()

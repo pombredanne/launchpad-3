@@ -26,11 +26,6 @@
     />
 
   <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
-
-  <vocabulary
     name="BugTaskImportance"
     factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />
@@ -78,11 +73,6 @@
   <vocabulary
     name="DistroSeries"
     factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
-    />
-
-  <vocabulary
-    name="DistroSeriesStatus"
-    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
 
   <vocabulary
@@ -153,11 +143,6 @@
   <vocabulary
     name="NonMergedPeopleAndTeams"
     factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
-    />
-
-  <vocabulary
-    name="PackagePublishingPocket"
-    factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
     />
 
   <vocabulary
