@@ -132,6 +132,8 @@ class SourcePackageFilePublishing(FilePublishingBase):
             return "dsc"
         if ".diff." in fn:
             return "diff"
+        if fn.endswith(".tar.gz"):
+            return "tar"
         return "other"
 
 
