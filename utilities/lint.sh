@@ -34,7 +34,7 @@ fi
 
 if [ -z "$1" ]; then
     rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-    files=`bzr st --short -r $rev | sed '/^.[MNR]/!d; s/.* //'`
+    files=`bzr st --short -r $rev | sed '/^.[MN]/!d; s/.* //'`
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
