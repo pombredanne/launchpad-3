@@ -9,7 +9,6 @@
   <!-- SourcePackagePublishingHistory -->
   <content class="canonical.launchpad.database.SourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
-    <allow interface="canonical.launchpad.interfaces.IArchivePublisher" />
   </content>
 
   <browser:pages
@@ -38,7 +37,6 @@
   <content class="canonical.launchpad.database.SourcePackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing" />
-    <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
     <!-- XXX cprov 2006-06-14: Missing security adapter. -->
   </content>
 

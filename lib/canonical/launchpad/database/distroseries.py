@@ -67,7 +67,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
     IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
     IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
-    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
+    IPublishedPackageSet, ICanPublishPackages, ISourcePackage, ISourcePackageName,
     ISourcePackageNameSet, LanguagePackType, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
     SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
@@ -79,7 +79,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates, IPublishing)
+        IHasTranslationTemplates, ICanPublishPackages)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -1382,7 +1382,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         copy_active_translations(self, transaction, logger)
 
     def getPendingPublications(self, archive, pocket, is_careful):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         queries = ['distrorelease = %s' % sqlvalues(self)]
 
         # Query main archive for this distroseries
@@ -1413,7 +1413,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return publications
 
     def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         log.debug("Publishing %s-%s" % (self.title, pocket.name))
         log.debug("Attempting to publish pending sources.")
 
