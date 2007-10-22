@@ -123,10 +123,10 @@ for exporting the list of attendees in CSV format to registered users.
   name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
   <BLANKLINE>
 
-Anonymous users cannot access the CSV report.
+Unregistered and anonymous users cannot access the CSV report.
 
-  >>> anon_browser.open('http://launchpad.dev/sprints/ubz')
-  >>> anon_browser.getLink('Export attendees to CSV').click()
+  >>> admin_browser.open('http://launchpad.dev/sprints/ubz')
+  >>> admin_browser.getLink('Export attendees to CSV').click()
   Traceback (most recent call last):
   ...
   LinkNotFoundError

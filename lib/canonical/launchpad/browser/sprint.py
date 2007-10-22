@@ -102,11 +102,13 @@ class SprintOverviewMenu(ApplicationMenu):
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def attendee_export(self):
         text = 'Export attendees to CSV'
         summary = 'Export attendee contact information to CSV format'
-        return Link('+attendees-csv', text, summary, icon='info')
+        enabled = self.user in [attendance.attendee
+                                for attendance in self.context.attendances]
+        return Link(
+            '+attendees-csv', text, summary, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
