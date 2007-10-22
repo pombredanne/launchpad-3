@@ -773,7 +773,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Personal Package Archive for Andrew Bennetts is disabled",
+            "PPA for Andrew Bennetts is disabled",
             "If you don't understand why your files were rejected please "
                 "send an email",
             "to launchpad-users@lists.canonical.com for help."
@@ -920,8 +920,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Personal Package Archive for Celso Providelo only "
-            "supports uploads to 'ubuntu'"]
+            "PPA for Celso Providelo only supports uploads to 'ubuntu'"]
         self.assertEmail(contents)
 
     def testUploadToUnknownDistribution(self):

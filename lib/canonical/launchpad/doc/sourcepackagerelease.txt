@@ -253,9 +253,6 @@ Optionally you can pass also another status:
     >>> evo_build_i386_ppa.buildstate.name
     'SUPERSEDED'
 
-    >>> print evo_build_i386_ppa.archive.title
-    Personal Package Archive for Celso Providelo
-
 Successfully Build lookups on the just created Build records:
 
     >>> test_build_i386 = evo_spr.getBuildByArch(

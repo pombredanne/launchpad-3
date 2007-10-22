@@ -300,7 +300,7 @@ class BuildRecordsView(LaunchpadView):
 
     @property
     def form_submitted(self):
-        return "build_text" in self.request
+        return "build_state" in self.request.form
 
     @property
     def no_results(self):
