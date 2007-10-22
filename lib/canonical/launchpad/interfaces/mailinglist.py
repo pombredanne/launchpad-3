@@ -285,6 +285,21 @@ class IMailingList(Interface):
         title=_("This list's email address."), required=True, readonly=True,
         description=_("The text representation of this team's email address."))
 
+    def canBeContactMethod():
+        """Is this mailing list in a state to be used as a contact method?
+
+        Only mailing lists that have actually been created can be used
+        as a contact method for a team.
+
+        XXX leonardr 2007-10-18 bug=153997: A mailing list that has
+        been created but that subsequently got into a FAILED state
+        should be allowed as a contact method (after all, it was a
+        contact method before), even though mail might not get through
+        right now. But a mailing list that was never created and is in
+        a FAILED state should not be allowed as a contact method. We
+        need some way of distinguishing between these two cases.        
+        """        
+
     def review(reviewer, status):
         """Review the mailing list's registration.
 
