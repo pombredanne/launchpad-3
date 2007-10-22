@@ -99,16 +99,16 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.ACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be active or failed')
-        # State: From UPDATING to either ACTIVE or FAILED
+        # State: From UPDATING to either ACTIVE or MOD_FAILED
         elif self.status == MailingListStatus.UPDATING:
             assert target_state in (MailingListStatus.ACTIVE,
-                                    MailingListStatus.FAILED), (
-                'target_state result must be active or failed')
-        # State: From DEACTIVATING to INACTIVE or FAILED
+                                    MailingListStatus.MOD_FAILED), (
+                'target_state result must be active or mod_failed')
+        # State: From DEACTIVATING to INACTIVE or MOD_FAILED
         elif self.status == MailingListStatus.DEACTIVATING:
             assert target_state in (MailingListStatus.INACTIVE,
-                                    MailingListStatus.FAILED), (
-                'target_state result must be inactive or failed')
+                                    MailingListStatus.MOD_FAILED), (
+                'target_state result must be inactive or mod_failed')
             self._clearSubscriptions()
         else:
             raise AssertionError(
@@ -154,7 +154,8 @@ class MailingList(SQLBase):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
-                               MailingListStatus.UPDATING]
+                               MailingListStatus.UPDATING,
+                               MailingListStatus.MOD_FAILED]
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:

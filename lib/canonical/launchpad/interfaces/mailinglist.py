@@ -119,6 +119,12 @@ class MailingListStatus(DBEnumeratedType):
         Mailman will be informed of this and will take the necessary actions
         to deactive the list.
         """)
+    
+    MOD_FAILED = DBItem(11, """
+        Modification failed
+
+        Mailman was unsuccessful in modifying the mailing list.
+        """)
 
 
 class MailingListAutoSubscribePolicy(DBEnumeratedType):
@@ -286,18 +292,13 @@ class IMailingList(Interface):
         description=_("The text representation of this team's email address."))
 
     def canBeContactMethod():
-        """Is this mailing list in a state to be used as a contact method?
+        """Is this mailing list in a state to be selected as a contact method?
 
-        Only mailing lists that have actually been created can be used
-        as a contact method for a team.
-
-        XXX leonardr 2007-10-18 bug=153997: A mailing list that has
-        been created but that subsequently got into a FAILED state
-        should be allowed as a contact method (after all, it was a
-        contact method before), even though mail might not get through
-        right now. But a mailing list that was never created and is in
-        a FAILED state should not be allowed as a contact method. We
-        need some way of distinguishing between these two cases.        
+        Only mailing lists that have actually been created can be
+        selected as a contact method for a team. This doesn't
+        neccessarily mean that the list can actually be _used_ as a
+        contact method right now: its status might be
+        `MailingListStatus.MOD_FAILED`.
         """        
 
     def review(reviewer, status):
