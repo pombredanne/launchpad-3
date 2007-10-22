@@ -6,41 +6,47 @@ BEGIN;
 
 -- Merge POMsgSet into POSubmission as new class TranslationMessage
 
+-- Columns are grouped by data size, with variable-length data coming at the
+-- end.  This has been shown to improve performance quite radially in some
+-- cases.
+
 CREATE TABLE TranslationMessage(
 	id serial,
 	msgstr0 integer,
 	msgstr1 integer,
 	msgstr2 integer,
 	msgstr3 integer,
+	pofile integer NOT NULL,
+	potmsgset integer NOT NULL,
 	origin integer NOT NULL,
-	date_created timestamp without time zone
-		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-	person integer NOT NULL,
+	submitter integer NOT NULL,
+	reviewer integer,
 	validationstatus integer DEFAULT 0 NOT NULL,
 	is_current boolean DEFAULT false NOT NULL,
 	is_imported boolean DEFAULT false NOT NULL,
-
 	was_in_last_import boolean NOT NULL,
-	pofile integer NOT NULL,
 	was_obsolete_in_last_import boolean NOT NULL,
 	is_fuzzy boolean NOT NULL,
-	potmsgset integer NOT NULL,
+	date_created timestamp without time zone
+		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
 	date_reviewed timestamp without time zone,
-	reviewer integer,
 
+	comment_text text,
+
+	-- For migration purposes: references to objects that constitute this
+	-- TranslationMessage.  Will be dropped later on.
 	msgsetid integer,
 	id0 integer,
 	id1 integer,
 	id2 integer,
 	id3 integer,
-	comment_text text,
 
 	CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK ((reviewer IS NULL) = (date_reviewed IS NULL))
 );
 
 ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__person__fk
-	FOREIGN KEY (person) REFERENCES person(id);
+	ADD CONSTRAINT translationmessage__submitter__fk
+	FOREIGN KEY (submitter) REFERENCES Person(id);
 ALTER TABLE ONLY TranslationMessage
 	ADD CONSTRAINT translationmessage__msgstr0__fk
 	FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
@@ -55,7 +61,7 @@ ALTER TABLE ONLY TranslationMessage
 	FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
 ALTER TABLE ONLY TranslationMessage
 	ADD CONSTRAINT translationmessage__reviewer__fk
-	FOREIGN KEY (reviewer) REFERENCES person(id);
+	FOREIGN KEY (reviewer) REFERENCES Person(id);
 ALTER TABLE ONLY TranslationMessage
 	ADD CONSTRAINT translationmessage__pofile__fk
 	FOREIGN KEY (pofile) REFERENCES pofile(id);
@@ -67,10 +73,11 @@ CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
 	ON TranslationMessage(potmsgset, pofile) WHERE is_current;
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
 	ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
-CREATE INDEX translationmessage__person__idx ON TranslationMessage(person);
+CREATE INDEX translationmessage__submitter__idx
+	ON TranslationMessage(submitter);
 CREATE INDEX translationmessage__reviewer__idx
 	ON TranslationMessage(reviewer);
--- TODO: Do we need indexes on was_in_last_import?
+-- TODO: Do we actually need indexes on was_in_last_import?
 CREATE INDEX translationmessage__pofile__was_in_last_import__idx
 	ON TranslationMessage(pofile, was_in_last_import);
 CREATE INDEX translationmessage__was_in_last_import__idx
@@ -118,37 +125,37 @@ CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, was_in_last_import, pofile,
-	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
-	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
+	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
+	submitter, reviewer, validationstatus, is_current, is_imported,
+	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
+	date_created, date_reviewed, comment_text,
+	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
+	m.pofile AS pofile,
+	m.potmsgset AS potmsgset,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
+	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+	m.reviewer AS reviewer,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
 	TRUE AS is_current,
 	TRUE AS is_imported,
-
 	(m.sequence > 0) AS was_in_last_import,
-	m.pofile AS pofile,
 	m.obsolete AS was_obsolete_in_last_import,
 	m.isfuzzy AS is_fuzzy,
-	m.potmsgset AS potmsgset,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+		AS date_created,
 	m.date_reviewed AS date_reviewed,
-	m.reviewer AS reviewer,
+	m.commenttext AS comment_text,
 
 	m.id AS msgsetid,
 	s0.id AS id0,
 	s1.id AS id1,
 	s2.id AS id2,
-	s3.id AS id3,
-
-	m.commenttext AS comment_text
+	s3.id AS id3
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -179,37 +186,38 @@ WHERE
 
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, was_in_last_import, pofile,
-	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
-	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
+	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
+	submitter, reviewer, validationstatus, is_current, is_imported,
+	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
+	date_created, date_reviewed, comment_text,
+	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
+	m.pofile AS pofile,
+	m.potmsgset AS potmsgset,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
+	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+	m.reviewer AS reviewer,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
 	TRUE AS is_current,
 	FALSE AS is_imported,
 
 	(m.sequence > 0) AS was_in_last_import,
-	m.pofile AS pofile,
 	m.obsolete AS was_obsolete_in_last_import,
 	m.isfuzzy AS is_fuzzy,
-	m.potmsgset AS potmsgset,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+		AS date_created,
 	m.date_reviewed AS date_reviewed,
-	m.reviewer AS reviewer,
+	m.commenttext AS comment_text,
 
 	m.id AS msgsetid,
 	s0.id AS id0,
 	s1.id AS id1,
 	s2.id AS id2,
-	s3.id AS id3,
-
-	m.commenttext AS comment_text
+	s3.id AS id3
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -237,37 +245,38 @@ WHERE
 
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, was_in_last_import, pofile,
-	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
-	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
+	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
+	submitter, reviewer, validationstatus, is_current, is_imported,
+	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
+	date_created, date_reviewed, comment_text,
+	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
+	m.pofile AS pofile,
+	m.potmsgset AS potmsgset,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
+	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+	m.reviewer AS reviewer,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
 	FALSE AS is_current,
 	TRUE AS is_imported,
 
 	(m.sequence > 0) AS was_in_last_import,
-	m.pofile AS pofile,
 	m.obsolete AS was_obsolete_in_last_import,
 	m.isfuzzy AS is_fuzzy,
-	m.potmsgset AS potmsgset,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+		AS date_created,
 	m.date_reviewed AS date_reviewed,
-	m.reviewer AS reviewer,
+	m.commenttext AS comment_text,
 
 	m.id AS msgsetid,
 	s0.id AS id0,
 	s1.id AS id1,
 	s2.id AS id2,
-	s3.id AS id3,
-
-	m.commenttext AS comment_text
+	s3.id AS id3
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -290,39 +299,41 @@ WHERE
 	NOT s0.active OR NOT s1.active OR NOT s2.active OR NOT s3.active
 ;
 
--- Bundle POSubmissions that are not all published or active.
+-- Bundle POSubmissions that are not all published or active (but are all by
+-- the same person and created at the same time).
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, was_in_last_import, pofile,
-	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
-	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
+	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
+	submitter, reviewer, validationstatus, is_current, is_imported,
+	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
+	date_created, date_reviewed, comment_text,
+	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
+	m.pofile AS pofile,
+	m.potmsgset AS potmsgset,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
+	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+	m.reviewer AS reviewer,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
 	FALSE AS is_current,
 	FALSE AS is_imported,
 
 	(m.sequence > 0) AS was_in_last_import,
-	m.pofile AS pofile,
 	m.obsolete AS was_obsolete_in_last_import,
 	m.isfuzzy AS is_fuzzy,
-	m.potmsgset AS potmsgset,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+		AS date_created,
 	m.date_reviewed AS date_reviewed,
-	m.reviewer AS reviewer,
+	m.commenttext AS comment_text,
 
 	m.id AS msgsetid,
 	s0.id AS id0,
 	s1.id AS id1,
 	s2.id AS id2,
-	s3.id AS id3,
-
-	m.commenttext AS comment_text
+	s3.id AS id3
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -374,31 +385,34 @@ WHERE
 	Pos.validationstatus = 0;
 
 
-DROP TABLE POFileTranslator;
-
 -- Redirect foreign-key constraints pointing to POMsgSet
 ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
 
 DROP VIEW POExport;
+DROP TABLE POFileTranslator;
 
 DROP TABLE POSubmission;
 DROP TABLE POMsgSet;
 
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
 
--- Restore foreign-key constraints previously pointing to POMsgSet
-ALTER TABLE POFile ADD COLUMN last_touched_message integer;
-ALTER TABLE POFile
-	ADD CONSTRAINT pofile__last_touched_message__fkey FOREIGN KEY (last_touched_message) REFERENCES TranslationMessage(id);
+-- POFile.last_touched_pomsgset is no longer needed; instead POFile holds the
+-- person who last modified a TranslationMessage in the POFile and the date of
+-- the change.  There was already a column for the last translator, but it was
+-- not maintained.
+ALTER TABLE POFile ADD COLUMN date_created timestamp without time zone;
+
 UPDATE POFile
-SET last_touched_message = Pos.id
-FROM TranslationMessage Pos
-WHERE last_touched_pomsgset = Pos.msgsetid;
+SET
+	date_created = TranslationMessage.date_created,
+	lasttranslator = TranslationMessage.submitter
+FROM TranslationMessage
+WHERE TranslationMessage.id = POFile.last_touched_pomsgset;
+
 ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
 
 -- Merge POTemplateName into POTemplate
-
 ALTER TABLE POTemplate ADD COLUMN name text;
 ALTER TABLE POTemplate ADD COLUMN translation_domain text;
 
@@ -421,9 +435,9 @@ ALTER TABLE POTemplate
 -- Merge POMsgIDSighting into POTMsgSet
 ALTER TABLE POTMsgSet RENAME primemsgid TO msgid_singular;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
-
 ALTER TABLE POTMsgSet
-	ADD CONSTRAINT potmsgset__msgid_plural__fk FOREIGN KEY (msgid_plural) REFERENCES POMsgID(id);
+	ADD CONSTRAINT potmsgset__msgid_plural__fk
+	FOREIGN KEY (msgid_plural) REFERENCES POMsgID(id);
 
 UPDATE POTMsgSet
 SET msgid_plural = sighting.pomsgid
@@ -605,9 +619,9 @@ ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 INSERT INTO POFileTranslator (
     person, pofile, latest_message, date_last_touched
     )
-SELECT DISTINCT ON (person, pofile) person, pofile, id, date_created
+SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
 FROM TranslationMessage
-ORDER BY person, pofile, date_created DESC, id DESC;
+ORDER BY submitter, pofile, date_created DESC, id DESC;
 
 DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
@@ -620,7 +634,7 @@ DECLARE
 BEGIN
     -- If we are deleting a row, we need to remove the existing
     -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (person, pofile) the same
+    -- We also treat UPDATEs that change the key (submitter, pofile) the same
     -- as deletes. UPDATEs that don't change these columns are treated like
     -- INSERTs below.
     IF TG_OP = 'INSERT' THEN
@@ -629,27 +643,25 @@ BEGIN
         v_trash_old := TRUE;
     ELSE -- UPDATE
         v_trash_old = (
-            OLD.person != NEW.person OR OLD.pomsgset != NEW.pomsgset
+            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
             );
     END IF;
 
     IF v_trash_old THEN
 
         -- Delete the old record.
-        DELETE FROM POFileTranslator USING TranslationMessage
-        WHERE POFileTranslator.pofile = TranslationMessage.pofile
-            AND POFileTranslator.person = OLD.person
-            AND TranslationMessage.id = OLD.pomsgset;
+        DELETE FROM POFileTranslator
+        WHERE POFileTranslator.latest_message = OLD.latest_message;
 
         -- Insert a past record if there is one.
         INSERT INTO POFileTranslator (
             person, pofile, latest_message, date_last_touched
             )
-            SELECT DISTINCT ON (person, pofile)
-                person, pofile, id, date_created
-            FROM TranslationMessage
-            WHERE pomsgset = OLD.pomsgset AND person = OLD.person
-            ORDER BY person, pofile, date_created DESC, id DESC;
+        SELECT DISTINCT ON (submitter, pofile)
+            submitter, pofile, id, date_created
+        FROM TranslationMessage
+        WHERE pofile = OLD.pofile AND person = OLD.submitter
+        ORDER BY person, pofile, date_created DESC, id DESC;
 
         -- No NEW with DELETE, so we can short circuit and leave.
         IF TG_OP = 'DELETE' THEN
@@ -657,26 +669,20 @@ BEGIN
         END IF;
     END IF;
 
-    -- Get our new pofile id
-    SELECT INTO v_pofile pofile FROM TranslationMessage
-    WHERE id = NEW.pomsgset;
-
     -- Standard 'upsert' loop to avoid race conditions.
     LOOP
         UPDATE POFileTranslator
-            SET
-                date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
-                latest_message = NEW.id
-            WHERE
-                person = NEW.person
-                AND pofile = v_pofile;
+        SET
+            date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+            latest_message = NEW.id
+        WHERE person = NEW.submitter AND pofile = NEW.pofile;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         END IF;
 
         BEGIN
             INSERT INTO POFileTranslator (person, pofile, latest_message)
-            VALUES (NEW.person, v_pofile, NEW.id);
+            VALUES (NEW.submitter, NEW.pofile, NEW.id);
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         EXCEPTION WHEN unique_violation THEN
             -- do nothing
