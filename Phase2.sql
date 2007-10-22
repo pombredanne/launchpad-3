@@ -1,5 +1,7 @@
 -- Migration script for "Phase 2" Translations database schema optimization.
 
+SET client_min_messages=ERROR;
+
 BEGIN;
 
 -- Merge POMsgSet into POSubmission as new class TranslationMessage
@@ -18,10 +20,10 @@ CREATE TABLE TranslationMessage(
 	is_current boolean DEFAULT false NOT NULL,
 	is_imported boolean DEFAULT false NOT NULL,
 
-	sequence integer NOT NULL,
+	was_in_last_import boolean NOT NULL,
 	pofile integer NOT NULL,
-	obsolete boolean NOT NULL,
-	isfuzzy boolean NOT NULL,
+	was_obsolete_in_last_import boolean NOT NULL,
+	is_fuzzy boolean NOT NULL,
 	potmsgset integer NOT NULL,
 	date_reviewed timestamp without time zone,
 	reviewer integer,
@@ -31,7 +33,7 @@ CREATE TABLE TranslationMessage(
 	id1 integer,
 	id2 integer,
 	id3 integer,
-	commenttext text,
+	comment_text text,
 
 	CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK ((reviewer IS NULL) = (date_reviewed IS NULL))
 );
@@ -66,12 +68,13 @@ CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
 	ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
 CREATE INDEX translationmessage__person__idx ON TranslationMessage(person);
-CREATE INDEX translationmessage__pofile__sequence__idx
-	ON TranslationMessage(pofile, sequence);
 CREATE INDEX translationmessage__reviewer__idx
 	ON TranslationMessage(reviewer);
-CREATE INDEX translationmessage__sequence__idx
-	ON TranslationMessage(sequence);
+-- TODO: Do we need indexes on was_in_last_import?
+CREATE INDEX translationmessage__pofile__was_in_last_import__idx
+	ON TranslationMessage(pofile, was_in_last_import);
+CREATE INDEX translationmessage__was_in_last_import__idx
+	ON TranslationMessage(was_in_last_import);
 
 CREATE INDEX translationmessage__msgstr0__idx ON TranslationMessage(msgstr0);
 CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
@@ -116,9 +119,9 @@ CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
-	isfuzzy, potmsgset, date_reviewed, reviewer,
-	msgsetid, id0, id1, id2, id3, commenttext)
+	validationstatus, is_current, is_imported, was_in_last_import, pofile,
+	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
+	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
@@ -131,10 +134,10 @@ SELECT
 	TRUE AS is_current,
 	TRUE AS is_imported,
 
-	m.sequence AS sequence,
+	(m.sequence > 0) AS was_in_last_import,
 	m.pofile AS pofile,
-	m.obsolete AS obsolete,
-	m.isfuzzy AS isfuzzy,
+	m.obsolete AS was_obsolete_in_last_import,
+	m.isfuzzy AS is_fuzzy,
 	m.potmsgset AS potmsgset,
 	m.date_reviewed AS date_reviewed,
 	m.reviewer AS reviewer,
@@ -145,7 +148,7 @@ SELECT
 	s2.id AS id2,
 	s3.id AS id3,
 
-	m.commenttext AS commenttext
+	m.commenttext AS comment_text
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -177,9 +180,9 @@ WHERE
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
-	isfuzzy, potmsgset, date_reviewed, reviewer,
-	msgsetid, id0, id1, id2, id3, commenttext)
+	validationstatus, is_current, is_imported, was_in_last_import, pofile,
+	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
+	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
@@ -192,10 +195,10 @@ SELECT
 	TRUE AS is_current,
 	FALSE AS is_imported,
 
-	m.sequence AS sequence,
+	(m.sequence > 0) AS was_in_last_import,
 	m.pofile AS pofile,
-	m.obsolete AS obsolete,
-	m.isfuzzy AS isfuzzy,
+	m.obsolete AS was_obsolete_in_last_import,
+	m.isfuzzy AS is_fuzzy,
 	m.potmsgset AS potmsgset,
 	m.date_reviewed AS date_reviewed,
 	m.reviewer AS reviewer,
@@ -206,7 +209,7 @@ SELECT
 	s2.id AS id2,
 	s3.id AS id3,
 
-	m.commenttext AS commenttext
+	m.commenttext AS comment_text
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -235,9 +238,9 @@ WHERE
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
-	isfuzzy, potmsgset, date_reviewed, reviewer,
-	msgsetid, id0, id1, id2, id3, commenttext)
+	validationstatus, is_current, is_imported, was_in_last_import, pofile,
+	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
+	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
@@ -250,10 +253,10 @@ SELECT
 	FALSE AS is_current,
 	TRUE AS is_imported,
 
-	m.sequence AS sequence,
+	(m.sequence > 0) AS was_in_last_import,
 	m.pofile AS pofile,
-	m.obsolete AS obsolete,
-	m.isfuzzy AS isfuzzy,
+	m.obsolete AS was_obsolete_in_last_import,
+	m.isfuzzy AS is_fuzzy,
 	m.potmsgset AS potmsgset,
 	m.date_reviewed AS date_reviewed,
 	m.reviewer AS reviewer,
@@ -264,7 +267,7 @@ SELECT
 	s2.id AS id2,
 	s3.id AS id3,
 
-	m.commenttext AS commenttext
+	m.commenttext AS comment_text
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -290,9 +293,9 @@ WHERE
 -- Bundle POSubmissions that are not all published or active.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
-	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
-	isfuzzy, potmsgset, date_reviewed, reviewer,
-	msgsetid, id0, id1, id2, id3, commenttext)
+	validationstatus, is_current, is_imported, was_in_last_import, pofile,
+	was_obsolete_in_last_import, is_fuzzy, potmsgset, date_reviewed,
+	reviewer, msgsetid, id0, id1, id2, id3, comment_text)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
@@ -305,10 +308,10 @@ SELECT
 	FALSE AS is_current,
 	FALSE AS is_imported,
 
-	m.sequence AS sequence,
+	(m.sequence > 0) AS was_in_last_import,
 	m.pofile AS pofile,
-	m.obsolete AS obsolete,
-	m.isfuzzy AS isfuzzy,
+	m.obsolete AS was_obsolete_in_last_import,
+	m.isfuzzy AS is_fuzzy,
 	m.potmsgset AS potmsgset,
 	m.date_reviewed AS date_reviewed,
 	m.reviewer AS reviewer,
@@ -319,7 +322,7 @@ SELECT
 	s2.id AS id2,
 	s3.id AS id3,
 
-	m.commenttext AS commenttext
+	m.commenttext AS comment_text
 FROM POMsgSet m
 LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pomsgset = m.id AND
@@ -397,15 +400,15 @@ ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
 -- Merge POTemplateName into POTemplate
 
 ALTER TABLE POTemplate ADD COLUMN name text;
-ALTER TABLE POTemplate ADD COLUMN translationdomain text;
+ALTER TABLE POTemplate ADD COLUMN translation_domain text;
 
 UPDATE POTemplate
-SET name = ptn.name, translationdomain = ptn.translationdomain
+SET name = ptn.name, translation_domain = ptn.translationdomain
 FROM POTemplateName ptn
 WHERE potemplatename = ptn.id;
 
 ALTER TABLE POTemplate ALTER name SET NOT NULL;
-ALTER TABLE POTemplate ALTER translationdomain SET NOT NULL;
+ALTER TABLE POTemplate ALTER translation_domain SET NOT NULL;
 
 DROP VIEW POTExport;
 
@@ -433,7 +436,7 @@ DROP TABLE POMsgIDSighting;
 CREATE VIEW POExport(
 	id,
 	name,
-	translationdomain,
+	translation_domain,
 	potemplate,
 	productseries,
 	sourcepackagename,
@@ -452,9 +455,9 @@ CREATE VIEW POExport(
 	sourcecomment,
 	flagscomment,
 	filereferences,
-	posequence,
-	obsolete,
-	isfuzzy,
+	was_in_last_import,
+	was_obsolete_in_last_import,
+	is_fuzzy,
 	pocommenttext,
 	translation0,
 	translation1,
@@ -468,7 +471,7 @@ CREATE VIEW POExport(
 SELECT
 	COALESCE(potmsgset.id::text, 'X'::text) || '.'::text || COALESCE(translationmessage.id::text, 'X'::text) AS id,
 	potemplate.name,
-	potemplate.translationdomain,
+	potemplate.translation_domain,
 	potemplate.id AS potemplate,
 	potemplate.productseries,
 	potemplate.sourcepackagename,
@@ -487,10 +490,10 @@ SELECT
 	potmsgset.sourcecomment,
 	potmsgset.flagscomment,
 	potmsgset.filereferences,
-	translationmessage."sequence" AS posequence,
-	translationmessage.obsolete,
-	translationmessage.isfuzzy,
-	translationmessage.commenttext AS pocommenttext,
+	translationmessage.was_in_last_import AS was_in_last_import,
+	translationmessage.was_obsolete_in_last_import,
+	translationmessage.is_fuzzy,
+	translationmessage.comment_text AS pocommenttext,
 	potranslation0.translation AS translation0,
 	potranslation1.translation AS translation1,
 	potranslation2.translation AS translation2,
@@ -521,7 +524,7 @@ LEFT JOIN potranslation AS potranslation3 ON
 CREATE VIEW POTExport(
 	id,
 	name,
-	translationdomain,
+	translation_domain,
 	potemplate,
 	productseries,
 	sourcepackagename,
@@ -541,7 +544,7 @@ CREATE VIEW POTExport(
 SELECT
 	COALESCE(potmsgset.id::text, 'X'::text) AS id,
 	potemplate.name,
-	potemplate.translationdomain,
+	potemplate.translation_domain,
 	potemplate.id AS potemplate,
 	potemplate.productseries,
 	potemplate.sourcepackagename,
@@ -571,14 +574,124 @@ ALTER TABLE TranslationMessage DROP COLUMN id3;
 
 -- Re-create POFileTranslator (replacing latest_posubmission)
 CREATE TABLE POFileTranslator (
-	id integer NOT NULL,
+	id serial,
 	person integer NOT NULL,
 	pofile integer NOT NULL,
 	latest_message integer NOT NULL,
-	date_last_touched timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL);
+	date_last_touched timestamp without time zone
+		DEFAULT timezone('UTC'::text, now()) NOT NULL);
 
--- TODO: Re-populate POFileTranslator
--- TODO: Rewrite triggers that keep POFileTranslator updated
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator__latest_message__fk
+	FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
+	DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator__person__fk
+	FOREIGN KEY (person) REFERENCES Person(id);
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator__pofile__fk
+	FOREIGN KEY (pofile) REFERENCES POFile(id);
+
+CREATE INDEX pofiletranslator__date_last_touched__idx
+	ON POFileTranslator(date_last_touched);
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator__person__pofile__key
+	UNIQUE (person, pofile);
+ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
+
+-- Re-populate POFileTranslator
+INSERT INTO POFileTranslator (
+    person, pofile, latest_message, date_last_touched
+    )
+SELECT DISTINCT ON (person, pofile) person, pofile, id, date_created
+FROM TranslationMessage
+ORDER BY person, pofile, date_created DESC, id DESC;
+
+DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
+DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
+	RETURNS TRIGGER AS $$
+DECLARE
+    v_pofile INTEGER;
+    v_trash_old BOOLEAN;
+BEGIN
+    -- If we are deleting a row, we need to remove the existing
+    -- POFileTranslator row and reinsert the historical data if it exists.
+    -- We also treat UPDATEs that change the key (person, pofile) the same
+    -- as deletes. UPDATEs that don't change these columns are treated like
+    -- INSERTs below.
+    IF TG_OP = 'INSERT' THEN
+        v_trash_old := FALSE;
+    ELSIF TG_OP = 'DELETE' THEN
+        v_trash_old := TRUE;
+    ELSE -- UPDATE
+        v_trash_old = (
+            OLD.person != NEW.person OR OLD.pomsgset != NEW.pomsgset
+            );
+    END IF;
+
+    IF v_trash_old THEN
+
+        -- Delete the old record.
+        DELETE FROM POFileTranslator USING TranslationMessage
+        WHERE POFileTranslator.pofile = TranslationMessage.pofile
+            AND POFileTranslator.person = OLD.person
+            AND TranslationMessage.id = OLD.pomsgset;
+
+        -- Insert a past record if there is one.
+        INSERT INTO POFileTranslator (
+            person, pofile, latest_message, date_last_touched
+            )
+            SELECT DISTINCT ON (person, pofile)
+                person, pofile, id, date_created
+            FROM TranslationMessage
+            WHERE pomsgset = OLD.pomsgset AND person = OLD.person
+            ORDER BY person, pofile, date_created DESC, id DESC;
+
+        -- No NEW with DELETE, so we can short circuit and leave.
+        IF TG_OP = 'DELETE' THEN
+            RETURN NULL; -- Ignored because this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- Get our new pofile id
+    SELECT INTO v_pofile pofile FROM TranslationMessage
+    WHERE id = NEW.pomsgset;
+
+    -- Standard 'upsert' loop to avoid race conditions.
+    LOOP
+        UPDATE POFileTranslator
+            SET
+                date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                latest_message = NEW.id
+            WHERE
+                person = NEW.person
+                AND pofile = v_pofile;
+        IF found THEN
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        END IF;
+
+        BEGIN
+            INSERT INTO POFileTranslator (person, pofile, latest_message)
+            VALUES (NEW.person, v_pofile, NEW.id);
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_translationmessage() IS
+    'Trigger maintaining the POFileTranslator table';
+
+CREATE TRIGGER mv_pofiletranslator_translationmessage
+	BEFORE INSERT OR DELETE OR UPDATE ON TranslationMessage
+	FOR EACH ROW
+	EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
 ROLLBACK;
 
