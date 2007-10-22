@@ -163,8 +163,8 @@ class BugTargetBugsFeed(BugsFeedBase):
 
     usedfor = IBugTarget
     feedname = "latest-bugs"
-    # Make a copy of the inherited class variable so the one copy does get
-    # mutated for all subclasses.
+    # Make a copy of the inherited class variable so the one copy does
+    # not get mutated for all subclasses.
     show_column = BugsFeedBase.show_column.copy()
     del show_column['bugtargetdisplayname']
 
