@@ -73,7 +73,7 @@ Fetch brand new component, section and priority:
 
    >>> from canonical.launchpad.interfaces import (
    ...     IComponentSet, ISectionSet)
-   >>> from canonical.lp.dbschema import PackagePublishingPriority
+   >>> from canonical.launchpad.interfaces import PackagePublishingPriority
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
    >>> new_priority = PackagePublishingPriority.IMPORTANT

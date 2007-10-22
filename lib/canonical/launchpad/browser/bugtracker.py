@@ -15,15 +15,18 @@ __all__ = [
     'RemoteBug',
     ]
 
+from itertools import chain
+
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.form.browser.editview import EditView
+from zope.app.form.browser import TextAreaWidget
 
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IProject, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
+    IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
-    redirection, LaunchpadView)
+    action, canonical_url, custom_widget, ContextMenu, Link, Navigation,
+    GetitemNavigation, redirection, LaunchpadEditFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -89,13 +92,32 @@ class BugTrackerView(LaunchpadView):
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
 
+    @property
+    def related_projects(self):
+        """Return all project groups and projects.
 
-class BugTrackerEditView(EditView):
+        This property was created for the Related projects portlet in
+        the bug tracker's page.
+        """
+        return shortlist(chain(self.context.projects,
+                               self.context.products), 100)
 
-    usedfor = IBugTracker
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+class BugTrackerEditView(LaunchpadEditFormView):
+
+    schema = IBugTracker
+    field_names = ['name', 'title', 'bugtrackertype',
+                   'summary', 'baseurl', 'contactdetails']
+
+    custom_widget('summary', TextAreaWidget, width=30, height=5)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class BugTrackerNavigation(Navigation):

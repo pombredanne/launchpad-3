@@ -7,9 +7,17 @@
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad" >
+
   <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet
+        condition="context/official_rosetta"
+        replace="structure context/@@+portlet-translation-groups-and-permission"
+      />
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
+
     <div metal:fill-slot="main">
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>

@@ -26,7 +26,6 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-search" />
   <div tal:replace="structure context/bug/@@+portlet-cve" />
-  <div tal:replace="structure context/bug/@@+portlet-reference" />
   <div tal:replace="structure context/bug/@@+portlet-watch" />
 </metal:rightportlets>
 

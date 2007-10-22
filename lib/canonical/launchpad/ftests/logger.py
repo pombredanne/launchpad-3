@@ -5,9 +5,11 @@
 __metaclass__ = type
 __all__ = ['MockLogger']
 
+# XXX cprov 20071018: This class should be combined with with
+# launchpad.scripts.logger.FakeLogger at some point.
+
 class MockLogger:
-    """Imitates a logger, but prints to standard output.
-    """
+    """Imitates a logger, but prints to standard output."""
 
     def log(self, *args, **kwargs):
         print "log>", ' '.join(args)

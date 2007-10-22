@@ -10,7 +10,6 @@ __all__ = [
     'BugFacets',
     'BugMarkAsDuplicateView',
     'BugNavigation',
-    'BugRelatedObjectEditView',
     'BugSecrecyEditView',
     'BugSetNavigation',
     'BugTextView',
@@ -475,24 +474,6 @@ class BugSecrecyEditView(BugEditViewBase):
     def change_action(self, action, data):
         """Update the bug."""
         self.updateBugFromData(data)
-
-
-class BugRelatedObjectEditView(SQLObjectEditView):
-    """View class for edit views of bug-related object.
-
-    Examples would include the edit cve page, edit subscription page,
-    etc.
-    """
-    def __init__(self, context, request):
-        SQLObjectEditView.__init__(self, context, request)
-        # Store the current bug in an attribute of the view, so that
-        # ZPT rendering code can access it.
-        self.bug = getUtility(ILaunchBag).bug
-        self.current_bugtask = getUtility(ILaunchBag).bugtask
-
-    def changed(self):
-        """Redirect to the bug page."""
-        self.request.response.redirect(canonical_url(self.current_bugtask))
 
 
 class DeprecatedAssignedBugsView:

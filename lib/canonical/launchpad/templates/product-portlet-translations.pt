@@ -9,7 +9,7 @@
 
       <ul>
         <li class="translations"
-            tal:repeat="template translatable/potemplates">
+            tal:repeat="template translatable/getCurrentTranslationTemplates">
           <a tal:attributes="href template/fmt:url"
              tal:content="template/title">template title</a>
         </li>

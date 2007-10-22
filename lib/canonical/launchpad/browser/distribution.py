@@ -42,8 +42,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
-    ILaunchpadCelebrities, IPublishedPackageSet, MirrorContent, NotFoundError)
+    DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
+    IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
+    MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -63,7 +64,6 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class DistributionNavigation(
@@ -538,10 +538,16 @@ class DistributionEditView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class DistributionBugContactEditView(SQLObjectEditView):
+class DistributionBugContactEditView(LaunchpadEditFormView):
     """Browser view for editing the distribution bug contact."""
-    def changed(self):
-        """Redirect to the distribution page."""
+    schema = IDistribution
+    field_names = ['bugcontact']
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Save the new bug contact and display a notification."""
+        self.updateContextFromData(data)
+
         distribution = self.context
         contact_display_value = None
 
@@ -565,7 +571,10 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "bugmail. You can, of course, set a distribution bug "
                 "contact again whenever you want to.")
 
-        self.request.response.redirect(canonical_url(distribution))
+    @property
+    def next_url(self):
+        """Redirect to the distribution page."""
+        return canonical_url(self.context)
 
 
 class DistributionLanguagePackAdminView(LaunchpadEditFormView):

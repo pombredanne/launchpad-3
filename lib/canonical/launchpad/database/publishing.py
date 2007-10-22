@@ -20,14 +20,12 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
+    IArchiveSafePublisher, PackagePublishingPriority,
+    PackagePublishingStatus, PackagePublishingPocket,
     PoolFileOverwriteError)
 
 
@@ -39,10 +37,10 @@ def makePoolPath(source_name, component_name):
         'pool', poolify(source_name, component_name))
 
 
-class ArchiveFilePublisherBase:
+class FilePublishingBase(SQLBase):
     """Base class to publish files in the archive."""
     def publish(self, diskpool, log):
-        """See IArchiveFilePublisherBase."""
+        """See IFilePublishing."""
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -69,8 +67,15 @@ class ArchiveFilePublisherBase:
                       % info)
             raise info
 
+    @property
+    def archive_url(self):
+        """See IFilePublishing."""
+        return (self.archive.archive_url + "/" +
+                makePoolPath(self.sourcepackagename, self.componentname) + "/" +
+                self.libraryfilealiasfilename)
 
-class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
+
+class SourcePackageFilePublishing(FilePublishingBase):
     """Source package release files and their publishing status.
 
     Represents the source portion of the pool.
@@ -79,7 +84,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     _idType = str
     _defaultOrder = "id"
 
-    implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
+    implements(ISourcePackageFilePublishing)
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
@@ -114,11 +119,23 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     @property
     def publishing_record(self):
-        """See `ArchiveFilePublisherBase`."""
+        """See `IFilePublishing`."""
         return self.sourcepackagepublishing
 
+    @property
+    def file_type_name(self):
+        """See `ISourcePackagePublishingHistory`."""
+        fn = self.libraryfilealiasfilename
+        if ".orig.tar." in fn:
+            return "orig"
+        if fn.endswith(".dsc"):
+            return "dsc"
+        if ".diff." in fn:
+            return "diff"
+        return "other"
 
-class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
+
+class BinaryPackageFilePublishing(FilePublishingBase):
     """A binary package file which is published.
 
     Represents the binary portion of the pool.
@@ -127,7 +144,7 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     _idType = str
     _defaultOrder = "id"
 
-    implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
+    implements(IBinaryPackageFilePublishing)
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
@@ -213,6 +230,9 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -257,6 +277,9 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -280,7 +303,7 @@ class ArchivePublisherBase:
     """Base class for ArchivePublishing task."""
 
     def publish(self, diskpool, log):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
@@ -290,7 +313,7 @@ class ArchivePublisherBase:
             self.secure_record.setPublished()
 
     def getIndexStanza(self):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
 
@@ -332,7 +355,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
        Excluding embargoed stuff
     """
-    implements(ISourcePackagePublishingHistory, IArchivePublisher)
+    implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -351,6 +374,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
+    embargolifted = UtcDateTimeCol(default=None)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def publishedBinaries(self):
         """See ISourcePackagePublishingHistory."""
@@ -383,12 +411,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def secure_record(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return SecureSourcePackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self)
 
@@ -424,14 +452,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def displayname(self):
-        """See IArchiveFilePublisherBase."""
+        """see IPublishing."""
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
                                 self.distroseries.name)
 
     def buildIndexStanzaFields(self):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         # special fields preparation
         spr = self.sourcepackagerelease
         pool_path = makePoolPath(spr.name, self.component.name)
@@ -460,7 +488,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory, IArchivePublisher)
+    implements(IBinaryPackagePublishingHistory)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -480,6 +508,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
+    embargolifted = UtcDateTimeCol(default=None)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property
     def distroarchseriesbinarypackagerelease(self):
@@ -494,23 +527,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     @property
     def secure_record(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return SecureBinaryPackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
-        """See IArchivePublisherBase."""
+        """See IPublishing."""
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
 
     @property
-    def hasRemovalRequested(self):
-        """See ISecureBinaryPackagePublishingHistory"""
-        return self.datesuperseded is not None and self.supersededby is None
-
-    @property
     def displayname(self):
-        """See IArchiveFilePublisherBase."""
+        """See IPublishing."""
         release = self.binarypackagerelease
         name = release.binarypackagename.name
         distroseries = self.distroarchseries.distroseries
@@ -519,7 +547,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    self.distroarchseries.architecturetag)
 
     def buildIndexStanzaFields(self):
-        """See IArchivePublisher"""
+        """See IPublishing"""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
 
