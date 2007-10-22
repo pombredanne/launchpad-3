@@ -140,20 +140,10 @@ WHERE
 	Pos.validationstatus = 0;
 
 
--- Redirect foreign-key constraints pointing to POSubmission
-ALTER TABLE POFileTranslator DROP CONSTRAINT personpofile__latest_posubmission__fk;
+DROP TABLE POFileTranslator;
 
 -- Redirect foreign-key constraints pointing to POMsgSet
 ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
-
--- TODO: This is naive.  New POSubmission can now "belong" to different Person!
-UPDATE POFileTranslator SET latest_posubmission = Pos.id
-FROM POSubmission_new Pos
-WHERE
-	latest_posubmission = Pos.id0 OR
-	latest_posubmission = Pos.id1 OR
-	latest_posubmission = Pos.id2 OR
-	latest_posubmission = Pos.id3;
 
 DROP VIEW POExport;
 
@@ -230,18 +220,12 @@ ALTER TABLE POTemplate
 	ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
 -- Merge POMsgIDSighting into POTMsgSet
-ALTER TABLE POTMsgSet ADD COLUMN msgid integer;
+ALTER TABLE POTMsgSet ALTER COLUMN primemsgid RENAME TO msgid;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
 
 ALTER TABLE POTMsgSet
-	ADD CONSTRAINT potmsgset__msgid__fk FOREIGN KEY (msgid) REFERENCES POMsgID(id);
-ALTER TABLE POTMsgSet
 	ADD CONSTRAINT potmsgset__msgid_plural__fk FOREIGN KEY (msgid_plural) REFERENCES POMsgID(id);
 
-UPDATE POTMsgSet
-SET msgid = sighting.pomsgid
-FROM POMsgIDSighting sighting
-WHERE sighting.potmsgset = POTMsgSet.id AND pluralform = 0;
 UPDATE POTMsgSet
 SET msgid_plural = sighting.pomsgid
 FROM POMsgIDSighting sighting
@@ -381,6 +365,16 @@ ALTER TABLE POSubmission DROP COLUMN id0;
 ALTER TABLE POSubmission DROP COLUMN id1;
 ALTER TABLE POSubmission DROP COLUMN id2;
 ALTER TABLE POSubmission DROP COLUMN id3;
+
+-- Re-create POFileTranslator (replacing latest_posubmission)
+CREATE TABLE POFileTranslator (
+	id integer NOT NULL,
+	person integer NOT NULL,
+	pofile integer NOT NULL,
+	latest_message integer NOT NULL,
+	date_last_touched timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL);
+
+-- TODO: Re-populate POFileTranslator
 
 ROLLBACK;
 
