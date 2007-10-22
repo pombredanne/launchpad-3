@@ -18,12 +18,12 @@ presented in cprov's page:
     ...
     LinkNotFoundError
 
-Instead, a 'Show Personal Package Archive' link is presented which
+Instead, a 'Personal Package Archive' link is presented which
 drives the user to their Personal Package Archive page:
 
-    >>> cprov_browser.getLink("Show Personal Package Archive").click()
+    >>> cprov_browser.getLink("Personal Package Archive").click()
     >>> cprov_browser.title
-    'Personal Package Archive for Celso Providelo'
+    'PPA for Celso Providelo'
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
@@ -47,7 +47,7 @@ a Personal Package Archive that doesn't exist yet:
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open("http://launchpad.dev/~name12")
-    >>> sample_browser.getLink("Show Personal Package Archive")
+    >>> sample_browser.getLink(url="+archive")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -195,12 +195,11 @@ We also allow LP-admins to create Personal Package Archives in the
 name of other users or teams:
 
     >>> admin_browser.open("http://launchpad.dev/~carlos")
-    >>> admin_browser.getLink("Show Personal Package Archive")
+    >>> admin_browser.getLink(url="+archive")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> admin_browser.open("http://launchpad.dev/~carlos")
     >>> admin_browser.getLink("Activate Personal Package Archive").click()
     >>> admin_browser.getControl(name="field.accepted").value = True
     >>> admin_browser.getControl(name="field.description").value = (

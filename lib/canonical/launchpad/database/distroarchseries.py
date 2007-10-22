@@ -19,7 +19,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchSeriesSet,
-    IBuildSet, IPublishing, PackagePublishingPocket, PackagePublishingStatus)
+    IBuildSet, ICanPublishPackages, PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
@@ -33,7 +33,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.helpers import shortlist
 
 class DistroArchSeries(SQLBase):
-    implements(IDistroArchSeries, IHasBuildRecords, IPublishing)
+    implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
     _table = 'DistroArchRelease'
     _defaultOrder = 'id'
 
@@ -228,7 +228,7 @@ class DistroArchSeries(SQLBase):
             orderBy=['-id'])
 
     def getPendingPublications(self, archive, pocket, is_careful):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         queries = [
             "distroarchrelease = %s AND archive = %s"
             % sqlvalues(self, archive)
@@ -255,7 +255,7 @@ class DistroArchSeries(SQLBase):
         return publications
 
     def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 

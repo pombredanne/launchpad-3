@@ -479,7 +479,7 @@ class TranslationImporter:
                 pomsgset.sequence = count
                 pomsgset.commenttext = message.comment
                 if potmsgset.sequence == 0:
-                    # We are importing a message that does not exists in
+                    # We are importing a message that does not exist in
                     # latest translation template so we can update its values.
                     potmsgset.sourcecomment = message.source_comment
                     potmsgset.filereferences = message.file_references
