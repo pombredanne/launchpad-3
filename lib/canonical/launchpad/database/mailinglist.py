@@ -120,7 +120,9 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            email.status = EmailAddressStatus.VALIDATED
+            if email.status in [
+                EmailAddressStatus.NEW, EmailAddressStatus.OLD]:
+                email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
 

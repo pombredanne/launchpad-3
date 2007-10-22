@@ -1499,7 +1499,7 @@ class ITeamContactAddressForm(Interface):
 class ITeamMailingListConfigurationForm(Interface):
 
     welcome_message = TextLine(
-        title=_("Welcome message"), required=False, readonly=False)
+        title=_("Welcome message."), required=False, readonly=False)
 
 
 class JoinNotAllowed(Exception):

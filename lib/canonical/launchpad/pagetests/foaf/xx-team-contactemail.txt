@@ -207,8 +207,10 @@ users, so we'll simulate it here by directly accessing our database code.
 Even after the mailing list has been requested and approved, it cannot
 be configured until it's made active:
 
-    >>> browser.getLink('Configure mailing list') is None
-    True
+    >>> browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ... 
+    LinkNotFoundError
 
 When the mailing list is constructed and made active, it can be used as
 the team's contact address.
@@ -244,11 +246,12 @@ contact address.
 
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
+    >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
     >>> browser.getLink('Configure mailing list') is None
     False
-     
+
 == Customizing the welcome message ==
 
 A project with a mailing list can have a custom welcome message. The
@@ -257,7 +260,7 @@ currently the team's contact address.
 
     >>> browser.getLink('Configure mailing list').click()
 
-    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> welcome_message = browser.getControl('Welcome message.')
     >>> welcome_message.value
     ''
     >>> welcome_message.value = 'Welcome to the test team mailing list.'
@@ -273,7 +276,7 @@ mailing list configuration screen displays an informative message:
 Changes to the welcome message take effect in the database immediately.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> welcome_message = browser.getControl('Welcome message.')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
@@ -293,6 +296,9 @@ showing up and cluttering up the test.)
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team - landscape-developers@lists.launchpad.net']
 
 Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
 
@@ -323,8 +329,8 @@ address view.
 
     >>> browser.reload()
     >>> get_feedback_messages(browser)
-    ['']
-    >>> welcome_message = browser.getControl('Welcome Message')
+    []
+    >>> welcome_message = browser.getControl('Welcome message.')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
@@ -334,7 +340,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Configure mailing list').click()    
-    >>> welcome_message = browser.getControl('Welcome Message')
+    >>> welcome_message = browser.getControl('Welcome message.')
     >>> print welcome_message.value
     This change will fail to propagate.
 
@@ -352,7 +358,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This mailing list is in an inconsistent state beacuse changes to
+    This mailing list is in an inconsistent state because changes to
     its configuration failed to propagate.
 
 (Now we have to maneuver the mailing list back into a consistent state
@@ -397,8 +403,10 @@ functionality on production. -- Guilherme Salgado 2007-09-20
     ['\xa0Each member individually',
      '\xa0Another e-mail address']
 
-    >>> browser.getLink('Configure mailing list') is None
-    >>> True
+    >>> browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
     >>> config.mailman.expose_hosted_mailing_lists = True
     >>> browser.reload()
