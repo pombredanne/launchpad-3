@@ -318,7 +318,7 @@ class ArchiveCruftChecker:
         """
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
-                "File does not exists:%s" % filename)
+                "File does not exist: %s" % filename)
         unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
