@@ -297,82 +297,82 @@ class BranchSorting(TestCase):
 
     def createPersonWithTwoBranches(self):
         """Create a person and two branches that belong to that person."""
-        new_bod, email = getUtility(IPersonSet).createPersonAndEmail(
+        new_person, email = getUtility(IPersonSet).createPersonAndEmail(
             "test@example.com",
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
 
         branch_set = getUtility(IBranchSet)
         branch_a = branch_set.new(
-            BranchType.MIRRORED, "a", new_bod, new_bod, None,
+            BranchType.MIRRORED, "a", new_person, new_person, None,
             "http://bzr.example.com/a")
         branch_b = branch_set.new(
-            BranchType.MIRRORED, "b", new_bod, new_bod, None,
+            BranchType.MIRRORED, "b", new_person, new_person, None,
             "http://bzr.example.com/b")
 
-        return new_bod, branch_a, branch_b
+        return new_person, branch_a, branch_b
+
+    def assertEqualByID(self, first, second):
+        """Compare two lists of database objects by id."""
+        # XXX: 2007-10-22 MichaelHudson bug=154016: This is only needed
+        # because getBranchesForPerson queries the BranchWithSortKeys table
+        # and we want to compare the results with objects from the Branch
+        # table.  This method can be removed when we can get rid of
+        # BranchWithSortKeys.
+        self.assertEqual([a.id for a in first], [b.id for b in second])
+
+    def xmas(self, year):
+        """Create a UTC datetime for Christmas of the given year."""
+        UTC = pytz.timezone("UTC")
+        return datetime(year=year, month=12, day=25, tzinfo=UTC)
 
     def test_sortByRecentChanges(self):
         """Test the MOST/LEAST_RECENTLY_CHANGED_FIRST options."""
-        new_bod, branch_a, branch_b = self.createPersonWithTwoBranches()
+        new_person, modified_in_2005, modified_in_2006 = (
+            self.createPersonWithTwoBranches())
 
         # XXX 2007-10-22 MichaelHudson: Currently we (ab)use last_scanned as
         # the date the branch was last changed.  1.1.11 will introduce a
-        # date_last_modified column, which this test will need to set
-        # instead.
-        UTC = pytz.timezone("UTC")
+        # date_last_modified column, which this test will need to set instead.
+        modified_in_2005.last_scanned = self.xmas(2005)
+        modified_in_2006.last_scanned = self.xmas(2006)
 
-        branch_a.last_scanned = datetime(year=2005, month=12, day=25, tzinfo=UTC)
-        branch_b.last_scanned = datetime(year=2006, month=12, day=25, tzinfo=UTC)
+        syncUpdate(modified_in_2005)
+        syncUpdate(modified_in_2006)
 
-        syncUpdate(branch_a)
-        syncUpdate(branch_b)
-
-        # XXX: 2007-10-22 MichaelHudson bug=154016: We have to check the ids
-        # because getBranchesForPerson queries the BranchWithSortKeys table.
-        # This can be rewritten more sensibly when we can get rid of
-        # BranchWithSortKeys.
-        branch_set = getUtility(IBranchSet)
-        self.assertEqual(
-            [b.id for b in branch_set.getBranchesForPerson(
-                new_bod,
-                sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)],
-            [branch_b.id, branch_a.id])
-        self.assertEqual(
-            [b.id for b in branch_set.getBranchesForPerson(
-                new_bod,
-                sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST)],
-            [branch_a.id, branch_b.id])
+        getBranchesForPerson = getUtility(IBranchSet).getBranchesForPerson
+        self.assertEqualByID(
+            getBranchesForPerson(
+                new_person,
+                sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST),
+            [modified_in_2006, modified_in_2005])
+        self.assertEqualByID(
+            getBranchesForPerson(
+                new_person,
+                sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST),
+            [modified_in_2005, modified_in_2006])
 
     def test_sortByAge(self):
         """Test the NEWEST_FIRST and OLDEST_FIRST options."""
-        new_bod, branch_a, branch_b = self.createPersonWithTwoBranches()
+        new_person, created_in_2005, created_in_2006 = (
+            self.createPersonWithTwoBranches())
 
-        UTC = pytz.timezone("UTC")
+        # In the normal course of things date_created is not writable and so
+        # we have to use removeSecurityProxy() here.
+        removeSecurityProxy(created_in_2005).date_created = self.xmas(2005)
+        removeSecurityProxy(created_in_2006).date_created = self.xmas(2006)
 
-        # In the normal course of things, date_created is not writable...
-        removeSecurityProxy(branch_a).date_created = (
-            datetime(year=2005, month=12, day=25, tzinfo=UTC))
-        removeSecurityProxy(branch_b).date_created = (
-            datetime(year=2006, month=12, day=25, tzinfo=UTC))
+        syncUpdate(created_in_2005)
+        syncUpdate(created_in_2006)
 
-        syncUpdate(branch_a)
-        syncUpdate(branch_b)
-
-        # XXX: 2007-10-22 MichaelHudson bug=154016: We have to check the ids
-        # because getBranchesForPerson queries the BranchWithSortKeys table.
-        # This can be rewritten more sensibly when we can get rid of
-        # BranchWithSortKeys.
-        branch_set = getUtility(IBranchSet)
-        self.assertEqual(
-            [b.id for b in branch_set.getBranchesForPerson(
-                new_bod,
-                sort_by=BranchListingSort.NEWEST_FIRST)],
-            [branch_b.id, branch_a.id])
-        self.assertEqual(
-            [b.id for b in branch_set.getBranchesForPerson(
-                new_bod,
-                sort_by=BranchListingSort.OLDEST_FIRST)],
-            [branch_a.id, branch_b.id])
+        getBranchesForPerson = getUtility(IBranchSet).getBranchesForPerson
+        self.assertEqualByID(
+            getBranchesForPerson(
+                new_person, sort_by=BranchListingSort.NEWEST_FIRST),
+            [created_in_2006, created_in_2005])
+        self.assertEqualByID(
+            getBranchesForPerson(
+                new_person, sort_by=BranchListingSort.OLDEST_FIRST),
+            [created_in_2005, created_in_2006])
 
 
 def test_suite():
