@@ -222,7 +222,7 @@ def _create_old_bug(
     
     :title: A string. The bug title for testing.
     :age: An int. The bug's age in days.
-    :target: A BugTarkget, the bug's target.
+    :target: A BugTarkget. The bug's target.
     :status: A BugTaskStatus. The status of the bug's single bugtask.
     :with_message: A Bool. Whether to create a reply message.
     """
@@ -247,7 +247,7 @@ def _create_old_bug(
 
 def _summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
-    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLY?'
+    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in bugtasks:
         if len(bugtask.bug.bugtasks) == 1:
             title = bugtask.bug.title

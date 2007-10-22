@@ -14,7 +14,7 @@ imported from upstream bug trackers. The preconditions are:
 5. The bug has at least one message (a request for more information).
 6. The bug does not have any other valid bugtasks.
 7. The bugtask is not assigned to anyone.
-8. The bugtask does not have a milestone. 
+8. The bugtask does not have a milestone.
 
 Bugtasks cannot transition to Invalid automatically unless they meet
 all the rules stated above.
@@ -112,7 +112,7 @@ expired. The other bugs do not meet one of the preconditions.
     ...     no_replys_bugtask, recent_bugtask]
 
     >>> summarize_bugtasks(bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
     jokosher     True     61  Incomplete  False     False  False  False
@@ -149,7 +149,7 @@ valid.
     0
 
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     thunderbird  False   351  New         False     False  False  False
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
@@ -159,7 +159,7 @@ will be displayed.
 
     >>> new_bugtask.transitionToStatus(BugTaskStatus.WONTFIX, sample_person)
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     thunderbird  False   351  Won't Fix   False     False  False  False
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
@@ -167,7 +167,7 @@ will be displayed.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
     >>> summarize_bugtasks(expirable_bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     hoary        True    351  Incomplete  False     False  False  False
 
 The ubuntu bugtask is never returned; it is a conjoined slave to the
@@ -179,7 +179,7 @@ are returned.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
     >>> summarize_bugtasks(expirable_bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     jokosher     True     61  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
 
@@ -206,7 +206,7 @@ There are no Invalid Bugtasks in sampledata.
     >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
     0
 
-    >>> # We want to check the hoary_bugtask messags later.
+    >>> # We want to check the hoary bugtask messages later.
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
 
 The script 'expire-bugtasks.py' writes its report to stdout. It makes
@@ -252,7 +252,7 @@ by findExpirableBugTasks(), it was expired because its master (hoary)
 was expired. The remaining bugtasks are unchanged.
 
     >>> summarize_bugtasks(bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True      0  Invalid     False     False  False  False
     hoary        True      0  Invalid     False     False  False  False
     jokosher     True      0  Invalid     False     False  False  False
@@ -271,12 +271,12 @@ Only the three test bugtasks were expired in the entire database.
     >>> invalid_bugtasks.count()
     3
     >>> summarize_bugtasks(invalid_bugtasks)
-    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLY?
+    ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True      0  Invalid     False     False  False  False
     jokosher     True      0  Invalid     False     False  False  False
     hoary        True      0  Invalid     False     False  False  False
 
-The bugtasks statusexplaination was updated to explain the change in
+The bugtasks statusexplanation was updated to explain the change in
 status.
 
     >>> print hoary_bugtask.statusexplanation
