@@ -17,6 +17,7 @@ __all__ = [
     'IPerson',
     'IRequestPeopleMerge',
     'ITeamContactAddressForm',
+    'ITeamMailingListConfigurationForm',
     'ITeamCreation',
     'ITeamReassignment',
     'ITeam',
@@ -1493,6 +1494,12 @@ class ITeamContactAddressForm(Interface):
         title=_('Welcome Message'),
         description=_('A message sent to those who join this mailing list.'),
         required=False)
+
+
+class ITeamMailingListConfigurationForm(Interface):
+
+    welcome_message = TextLine(
+        title=_("Welcome message"), required=False, readonly=False)
 
 
 class JoinNotAllowed(Exception):

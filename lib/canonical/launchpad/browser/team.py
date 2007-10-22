@@ -7,6 +7,7 @@ __all__ = [
     'TeamAddView',
     'TeamBrandingView',
     'TeamContactAddressView',
+    'TeamMailingListConfigurationView',
     'TeamEditView',
     'TeamMemberAddView',
     ]
@@ -32,9 +33,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingListSet, IPersonSet,
-    ITeamContactAddressForm, ITeamCreation, ITeamMember, ITeam,
-    LoginTokenType, MailingListStatus, MAILING_LISTS_DOMAIN,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    ITeamContactAddressForm, ITeamCreation, ITeamMailingListConfigurationForm,
+    ITeamMember, ITeam, LoginTokenType, MailingListStatus,
+    MAILING_LISTS_DOMAIN, TeamContactMethod, TeamMembershipStatus,
+    UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -303,8 +305,7 @@ class TeamContactAddressView(LaunchpadFormView):
         mailing_list = getUtility(IMailingListSet).get(context.name)
         if (mailing_list is not None 
             and mailing_list.address == context.preferredemail.email):
-            return dict(contact_method=TeamContactMethod.HOSTED_LIST,
-                        welcome_message=mailing_list.welcome_message)
+            return dict(contact_method=TeamContactMethod.HOSTED_LIST)
         return dict(contact_address=context.preferredemail.email,
                     contact_method=TeamContactMethod.EXTERNAL_ADDRESS)
 
@@ -338,7 +339,6 @@ class TeamContactAddressView(LaunchpadFormView):
         email_set = getUtility(IEmailAddressSet)
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
-        welcome_message = data.get('welcome_message', None)
         
         if contact_method == TeamContactMethod.NONE:
             if context.preferredemail is not None:
@@ -351,9 +351,6 @@ class TeamContactAddressView(LaunchpadFormView):
                 "address.")
             context.setContactAddress(
                 email_set.getByEmail(mailing_list.address))
-            if (welcome_message is not None
-                and welcome_message != mailing_list.welcome_message):
-                mailing_list.welcome_message = welcome_message
         elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
             contact_address = data['contact_address']
             email = email_set.getByEmail(contact_address)
@@ -374,7 +371,44 @@ class TeamContactAddressView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+class TeamMailingListConfigurationView(LaunchpadFormView):
 
+    schema = ITeamMailingListConfigurationForm
+    label = "Mailing list configuration"
+    custom_widget(
+        'welcome_message', TextAreaWidget, width=72, height=10)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        print "CHANGE ACTION"
+        list_set = getUtility(IMailingListSet)
+        mailing_list = list_set.get(self.context.name)
+        welcome_message = data.get('welcome_message', None)
+        assert (mailing_list is not None 
+                and mailing_list.canBeContactMethod()), (
+            "Only an active mailing list can be configured.")
+
+        print "WELCOME %s" % welcome_message
+        if (welcome_message is not None
+            and welcome_message != mailing_list.welcome_message):
+            print "SETTING"
+            mailing_list.welcome_message = welcome_message
+
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """The initial value of welcome_message comes from the database.
+        
+        :return: A dictionary containing the current welcome message.
+        """
+        context = self.context
+        mailing_list = getUtility(IMailingListSet).get(context.name)
+        if mailing_list is not None:            
+            return dict(welcome_message=mailing_list.welcome_message)
+        else:
+            return {}
+        
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation
