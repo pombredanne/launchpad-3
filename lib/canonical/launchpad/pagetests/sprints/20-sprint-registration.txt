@@ -125,8 +125,8 @@ for exporting the list of attendees in CSV format to registered users.
 
 Unregistered and anonymous users cannot access the CSV report.
 
-  >>> admin_browser.open('http://launchpad.dev/sprints/ubz')
-  >>> admin_browser.getLink('Export attendees to CSV').click()
+  >>> user_browser.open('http://launchpad.dev/sprints/ubz')
+  >>> user_browser.getLink('Export attendees to CSV').click()
   Traceback (most recent call last):
   ...
   LinkNotFoundError
