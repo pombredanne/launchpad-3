@@ -105,19 +105,21 @@ class IPOTemplate(IRosettaStats):
         title=u"The translation template id.",
         required=True, readonly=True)
 
-    potemplatename = Choice(
-        title=_("Template Name"),
+    name = TextLine(
+        title=_("Template name"),
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True,
-        vocabulary="POTemplateName")
+        required=True)
 
-    name = TextLine(
-        title=_("Template name"),
-        readonly=True)
+    translationdomain = Text(
+        title=_("Template Name"),
+        description=_("The translation domain for a translation template. "
+            "Used with PO file format when generating MO files for inclusion "
+            "in language pack or MO tarball exports."),
+        required=False)
 
     description = Text(
         title=_("Description"),
@@ -413,21 +415,27 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageID(msgid, context=None):
-        """Creates in the database a new message set.
+    def createMessageSetFromMessageIDs(msgid_singular, msgid_plural,
+                                       context=None):
+        """Creates a new template message in the database.
 
-        As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
+        :param msgid_singular: A reference to a singular msgid.
+        :param msgid_plural: A reference to a plural msgid.  Can be None
+        if the message is not a plural message.
+        :param context: A context for the template message differentiating
+        it from other template messages with exactly the same `msgid`.
 
         Returns the newly created message set.
         """
 
-    def createMessageSetFromText(text, context=None):
-        """Creates in the database a new message set.
+    def createMessageSetFromText(singular_text, plural_text, context=None):
+        """Creates a new template message in the database using strings.
 
-        Similar to createMessageSetFromMessageID, but takes a text object
+        Similar to createMessageSetFromMessageID, but takes text objects
         (unicode or string) along with textual context, rather than a
-        message ID.
+        message IDs.
+
+        For non-plural messages, plural_text should be None.
 
         Returns the newly created message set.
         """
