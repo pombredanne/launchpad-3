@@ -86,6 +86,38 @@ class IPOTMsgSet(Interface):
         """Get TranslationMessages for the same msgid in different templates.
         """
 
+    def hasTranslationChangedInLaunchpad(language):
+        """Whether an imported translation differs from the current one.
+
+        :param language: language for which translations we are asking about.
+
+        There has to be an imported translation: if there isn't, this is
+        not a 'changed' translation, just a 'new' translation in Launchpad."""
+
+    def updateTranslationSet(language, submitter, new_translations, is_fuzzy,
+                             is_imported, lock_timestamp, ignore_errors=False,
+                             force_edition_rights=False):
+        """Update or create a translation message using `new_translations`.
+
+        :param language: language `new_translations` are in.
+        :param submitter: author of the translations.
+        :param new_translations: a dictionary of plural forms, with the
+            integer plural form number as the key and the translation as the
+            value.
+        :param is_fuzzy: Whether the translations are fuzzy.
+        :param is_imported: indicates whether this update is imported from a
+            packaged po file.
+        :param lock_timestamp: The timestamp when we checked the values we
+            want to update.
+        :param ignore_errors: A flag that controls whether the translations
+            should be stored even when an error is detected.
+        :param force_edition_rights: A flag that 'forces' handling this
+            submission as coming from an editor, even if `submitter` is not.
+
+        If there is an error with the translations and ignore_errors is not
+        True or it's not a fuzzy submit, raises gettextpo.error
+        """
+
     def flags():
         """Return a list of flags on this set."""
 

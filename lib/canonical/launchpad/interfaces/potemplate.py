@@ -114,12 +114,12 @@ class IPOTemplate(IRosettaStats):
             "translations based on the name."),
         required=True)
 
-    translationdomain = Text(
+    translation_domain = Text(
         title=_("Template Name"),
         description=_("The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "
             "in language pack or MO tarball exports."),
-        required=False)
+        required=True)
 
     description = Text(
         title=_("Description"),
@@ -247,18 +247,6 @@ class IPOTemplate(IRosettaStats):
     pofiles = Attribute(
         _('All `IPOFile` that exist for this template.'))
 
-    relatives_by_name = Attribute(
-        _('''
-            All `IPOTemplate` objects that have the same template name as
-            this one.
-            '''))
-
-    relatives_by_source = Attribute(
-        _('''All `IPOTemplate` objects that have the same source.
-            For example those that came from the same productseries or the
-            same source package.
-            '''))
-
     displayname = TextLine(
         title=_('The translation template brief name.'), required=True,
         readonly=True)
@@ -367,10 +355,6 @@ class IPOTemplate(IRosettaStats):
 
         Return None if there is no such POFile.
         """
-
-    def hasMessageID(msgid, context=None):
-        """Check whether a message set with the given message ID exists within
-        this template with given context."""
 
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
