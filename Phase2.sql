@@ -2,16 +2,17 @@
 
 BEGIN;
 
--- Merge POMsgSet into POSubmission
+-- Merge POMsgSet into POSubmission as new class TranslationMessage
 
-CREATE TABLE POSubmission_new(
+CREATE TABLE TranslationMessage(
 	id serial,
 	msgstr0 integer,
 	msgstr1 integer,
 	msgstr2 integer,
 	msgstr3 integer,
 	origin integer NOT NULL,
-	datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+	datecreated timestamp without time zone
+		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
 	person integer NOT NULL,
 	validationstatus integer DEFAULT 0 NOT NULL,
 	active boolean DEFAULT false NOT NULL,
@@ -32,28 +33,28 @@ CREATE TABLE POSubmission_new(
 	id3 integer,
 	commenttext text,
 
-	CONSTRAINT posubmission__reviewer__date_reviewed__valid CHECK ((reviewer IS NULL) = (date_reviewed IS NULL))
+	CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK ((reviewer IS NULL) = (date_reviewed IS NULL))
 );
 
--- Create POSubmission_news based each on 1 POMsgSet and up to 4 associated
+-- Create TranslationMessages based each on 1 POMsgSet and up to 4 associated
 -- POSubmissions (for the up to 4 plural forms that we support).
--- How do we choose which POSubmissions to bundle into one POSubmission_new?
+-- How do we choose which POSubmissions to bundle into one TranslationMessage?
 --
--- 1. All active POSubmissions for a POMsgSet form one POSubmission_new.
+-- 1. All active POSubmissions for a POMsgSet form one TranslationMessage.
 -- 2. All published POSubmissions for a message set are likewise bundled.
 -- 3. We bundle any combination of up to 4 POSubmissions that have the same
 --    POMsgSet, origin, person, and datecreated (and different pluralforms).
 --
 -- Active or published POSubmissions may be represented in more than one
--- POSubmission_new: once in the "bundle" they were submitted with and once as
--- part of the active/published POSubmission_new.
+-- TranslationMessage: once in the "bundle" they were submitted with and once
+-- as part of the active/published TranslationMessage.
 --
--- A POSubmission_new is thus active/published if the POSubmissions it combines
--- are all active/published.  The expression for this looks a bit odd because
--- in the outer join we use, their active/published flags must each be either
--- TRUE or NULL for the result to be TRUE.
+-- A TranslationMessage is thus active/published if the POSubmissions it
+-- combines are all active/published.  The expression for this looks a bit odd
+-- because in the outer join we use, their active/published flags must each be
+-- either TRUE or NULL for the result to be TRUE.
 
-INSERT INTO POSubmission_new(
+INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, origin, datecreated, person,
 	validationstatus, active, published, sequence, pofile, obsolete,
 	isfuzzy, potmsgset, date_reviewed, reviewer,
@@ -114,24 +115,24 @@ LEFT OUTER JOIN POSubmission AS s3 ON
 	 (s3.person = COALESCE(s0.person, s1.person, s2.person) AND
 	  s3.datecreated = COALESCE(s0.datecreated, s1.datecreated, s2.datecreated)))
 WHERE
-	id0 IS NOT NULL OR
-	id1 IS NOT NULL OR
-	id2 IS NOT NULL OR
-	id3 IS NOT NULL
+	s0.id IS NOT NULL OR
+	s1.id IS NOT NULL OR
+	s2.id IS NOT NULL OR
+	s3.id IS NOT NULL
 ;
 
 -- Update validationstatus: if any of the POSubmissions that are bundled needs
 -- validation, validationstatus should be 0 (UNKNOWN).  Otherwise, if any has
 -- an error, it should be 2 (UNKNOWNERROR).  Only if neither is the case can it
 -- be left at whatever the pluralform-0 POSubmission had for its status.
-UPDATE POSubmission_new
+UPDATE TranslationMessage
 SET validationstatus = 2
 FROM POSubmission Pos
 WHERE
 	Pos.pluralform > 0 AND
 	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
 	Pos.validationstatus = 2;
-UPDATE POSubmission_new
+UPDATE TranslationMessage
 SET validationstatus = 0
 FROM POSubmission Pos
 WHERE
@@ -149,53 +150,60 @@ DROP VIEW POExport;
 
 DROP TABLE POSubmission;
 DROP TABLE POMsgSet;
-ALTER TABLE ONLY POSubmission_new RENAME TO POSubmission;
 
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
 
--- Restore foreign-key constraints pointing to POSubmission
-ALTER TABLE ONLY POFileTranslator
-	ADD CONSTRAINT pofiletranslator__latest_posubmission__fk FOREIGN KEY (latest_posubmission) REFERENCES POSubmission(id) DEFERRABLE INITIALLY DEFERRED;
-
--- Restore foreign-key constraints pointing to POMsgSet
-ALTER TABLE POFile ADD COLUMN last_touched_posubmission integer;
+-- Restore foreign-key constraints previously pointing to POMsgSet
+ALTER TABLE POFile ADD COLUMN last_touched_message integer;
 ALTER TABLE POFile
-	ADD CONSTRAINT pofile__last_touched_posubmission__fkey FOREIGN KEY (last_touched_posubmission) REFERENCES POSubmission(id);
+	ADD CONSTRAINT pofile__last_touched_message__fkey FOREIGN KEY (last_touched_message) REFERENCES TranslationMessage(id);
 UPDATE POFile
-SET last_touched_posubmission = Pos.id
-FROM POSubmission Pos
+SET last_touched_message = Pos.id
+FROM TranslationMessage Pos
 WHERE last_touched_pomsgset = Pos.msgsetid;
 ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
 
--- Restore foreign-key constraints in new POSubmission table itself
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__person__fk FOREIGN KEY (person) REFERENCES person(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__msgstr0__fk FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__msgstr1__fk FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__msgstr2__fk FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__msgstr3__fk FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__reviewer__fk FOREIGN KEY (reviewer) REFERENCES person(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__pofile__fk FOREIGN KEY (pofile) REFERENCES pofile(id);
-ALTER TABLE ONLY POSubmission
-	ADD CONSTRAINT posubmission__potmsgset__fk FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
+-- Set up foreign-key constraints in TranslationMessage table itself
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__person__fk
+	FOREIGN KEY (person) REFERENCES person(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr0__fk
+	FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr1__fk
+	FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr2__fk
+	FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr3__fk
+	FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__reviewer__fk
+	FOREIGN KEY (reviewer) REFERENCES person(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__pofile__fk
+	FOREIGN KEY (pofile) REFERENCES pofile(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__potmsgset__fk
+	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
-CREATE UNIQUE INDEX posubmission__potmsgset__pofile__key ON POSubmission(potmsgset, pofile) WHERE active;
-CREATE INDEX posubmission__person__idx ON POSubmission(person);
-CREATE INDEX posubmission__pofile__sequence__idx ON POSubmission(pofile, sequence);
-CREATE INDEX posubmission__reviewer__idx ON POSubmission(reviewer);
-CREATE INDEX posubmission__sequence__idx ON POSubmission(sequence);
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__key
+	ON TranslationMessage(potmsgset, pofile) WHERE active;
+CREATE INDEX translationmessage__person__idx ON TranslationMessage(person);
+CREATE INDEX translationmessage__pofile__sequence__idx
+	ON TranslationMessage(pofile, sequence);
+CREATE INDEX translationmessage__reviewer__idx
+	ON TranslationMessage(reviewer);
+CREATE INDEX translationmessage__sequence__idx
+	ON TranslationMessage(sequence);
 
-CREATE INDEX posubmission__msgstr0__idx ON POSubmission(msgstr0);
-CREATE INDEX posubmission__msgstr1__idx ON POSubmission(msgstr1);
-CREATE INDEX posubmission__msgstr2__idx ON POSubmission(msgstr2);
-CREATE INDEX posubmission__msgstr3__idx ON POSubmission(msgstr3);
+CREATE INDEX translationmessage__msgstr0__idx ON TranslationMessage(msgstr0);
+CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
+CREATE INDEX translationmessage__msgstr2__idx ON TranslationMessage(msgstr2);
+CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 
 
 -- Merge POTemplateName into POTemplate
@@ -220,7 +228,7 @@ ALTER TABLE POTemplate
 	ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
 -- Merge POMsgIDSighting into POTMsgSet
-ALTER TABLE POTMsgSet ALTER COLUMN primemsgid RENAME TO msgid;
+ALTER TABLE POTMsgSet RENAME primemsgid TO msgid;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
 
 ALTER TABLE POTMsgSet
@@ -270,7 +278,7 @@ CREATE VIEW POExport(
 	msgid_plural
 	) AS
 SELECT
-	COALESCE(potmsgset.id::text, 'X'::text) || '.'::text || COALESCE(posubmission.id::text, 'X'::text) AS id,
+	COALESCE(potmsgset.id::text, 'X'::text) || '.'::text || COALESCE(translationmessage.id::text, 'X'::text) AS id,
 	potemplate.name,
 	potemplate.translationdomain,
 	potemplate.id AS potemplate,
@@ -291,28 +299,34 @@ SELECT
 	potmsgset.sourcecomment,
 	potmsgset.flagscomment,
 	potmsgset.filereferences,
-	posubmission."sequence" AS posequence,
-	posubmission.obsolete,
-	posubmission.isfuzzy,
-	posubmission.commenttext AS pocommenttext,
+	translationmessage."sequence" AS posequence,
+	translationmessage.obsolete,
+	translationmessage.isfuzzy,
+	translationmessage.commenttext AS pocommenttext,
 	potranslation0.translation AS translation0,
 	potranslation1.translation AS translation1,
 	potranslation2.translation AS translation2,
 	potranslation3.translation AS translation3,
-	posubmission.id AS activesubmission,
+	translationmessage.id AS activesubmission,
 	potmsgset.context,
 	msgid.msgid,
 	msgid_plural.msgid AS msgid_plural
 FROM potmsgset
 JOIN potemplate ON potemplate.id = potmsgset.potemplate
 JOIN pofile ON potemplate.id = pofile.potemplate
-LEFT JOIN posubmission ON potmsgset.id = posubmission.potmsgset AND posubmission.pofile = pofile.id AND posubmission.active
+LEFT JOIN TranslationMessage ON
+	potmsgset.id = translationmessage.potmsgset AND
+	translationmessage.pofile = pofile.id AND translationmessage.active
 LEFT JOIN pomsgid AS msgid ON msgid.id = potmsgset.msgid
 LEFT JOIN pomsgid AS msgid_plural ON msgid_plural.id = potmsgset.msgid_plural
-LEFT JOIN potranslation AS potranslation0 ON potranslation0.id = posubmission.msgstr0
-LEFT JOIN potranslation AS potranslation1 ON potranslation0.id = posubmission.msgstr1
-LEFT JOIN potranslation AS potranslation2 ON potranslation0.id = posubmission.msgstr2
-LEFT JOIN potranslation AS potranslation3 ON potranslation0.id = posubmission.msgstr3
+LEFT JOIN potranslation AS potranslation0 ON
+	potranslation0.id = translationmessage.msgstr0
+LEFT JOIN potranslation AS potranslation1 ON
+	potranslation0.id = translationmessage.msgstr1
+LEFT JOIN potranslation AS potranslation2 ON
+	potranslation0.id = translationmessage.msgstr2
+LEFT JOIN potranslation AS potranslation3 ON
+	potranslation0.id = translationmessage.msgstr3
 ;
 
 CREATE VIEW POTExport(
@@ -360,11 +374,11 @@ LEFT JOIN POMsgID AS msgid ON POTMsgSet.msgid = msgid.id
 LEFT JOIN POMsgID AS msgid_plural ON POTMsgSet.msgid_plural = msgid_plural.id;
 
 -- Clean up columns that were only for use during migration.
-ALTER TABLE POSubmission DROP COLUMN msgsetid;
-ALTER TABLE POSubmission DROP COLUMN id0;
-ALTER TABLE POSubmission DROP COLUMN id1;
-ALTER TABLE POSubmission DROP COLUMN id2;
-ALTER TABLE POSubmission DROP COLUMN id3;
+ALTER TABLE TranslationMessage DROP COLUMN msgsetid;
+ALTER TABLE TranslationMessage DROP COLUMN id0;
+ALTER TABLE TranslationMessage DROP COLUMN id1;
+ALTER TABLE TranslationMessage DROP COLUMN id2;
+ALTER TABLE TranslationMessage DROP COLUMN id3;
 
 -- Re-create POFileTranslator (replacing latest_posubmission)
 CREATE TABLE POFileTranslator (
