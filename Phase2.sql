@@ -91,36 +91,33 @@ LEFT OUTER JOIN POSubmission AS s0 ON
 	s0.pluralform = 0
 LEFT OUTER JOIN POSubmission AS s1 ON
 	s1.pomsgset = m.id AND
-	s0.pluralform = 1 AND
+	s1.pluralform = 1 AND
 	(s0.id IS NULL OR
 	 (s1.active AND s0.active) OR
 	 (s1.published AND s0.published) OR
-	 (s1.pomsgset = s0.pomsgset AND
-	  s1.origin = s0.origin AND
+	 (s1.person = s0.person AND
 	  s1.datecreated = s0.datecreated))
 LEFT OUTER JOIN POSubmission AS s2 ON
 	s2.pomsgset = m.id AND
-	s0.pluralform = 2 AND
+	s2.pluralform = 2 AND
 	((s0.id IS NULL AND s1.id IS NULL) OR
 	 (s2.active AND COALESCE(s0.active, s1.active)) OR
 	 (s2.published AND COALESCE(s0.published, s1.published)) OR
-	 (s2.pomsgset = COALESCE(s0.pomsgset, s1.pomsgset) AND
-	  s2.origin = COALESCE(s0.origin, s1.origin) AND
+	 (s2.person = COALESCE(s0.person, s1.person) AND
 	  s2.datecreated = COALESCE(s0.datecreated, s1.datecreated)))
 LEFT OUTER JOIN POSubmission AS s3 ON
 	s3.pomsgset = m.id AND
-	s0.pluralform = 3 AND
+	s3.pluralform = 3 AND
 	((s0.id IS NULL AND s1.id IS NULL AND s2.id IS NULL) OR
 	 (s3.active AND COALESCE(s0.active, s1.active, s2.active)) OR
 	 (s3.published AND COALESCE(s0.published, s1.published, s2.published)) OR
-	 (s3.pomsgset = COALESCE(s0.pomsgset, s1.pomsgset, s2.pomsgset) AND
-	  s3.origin = COALESCE(s0.origin, s1.origin, s2.origin) AND
+	 (s3.person = COALESCE(s0.person, s1.person, s2.person) AND
 	  s3.datecreated = COALESCE(s0.datecreated, s1.datecreated, s2.datecreated)))
 WHERE
-	s0.potranslation IS NOT NULL OR
-	s1.potranslation IS NOT NULL OR
-	s2.potranslation IS NOT NULL OR
-	s3.potranslation IS NOT NULL
+	id0 IS NOT NULL OR
+	id1 IS NOT NULL OR
+	id2 IS NOT NULL OR
+	id3 IS NOT NULL
 ;
 
 -- Update validationstatus: if any of the POSubmissions that are bundled needs

@@ -98,10 +98,9 @@ class IPOSubmission(Interface):
     """A submission of a translation to a PO file."""
 
     id = Attribute("The ID for this submission.")
-    msgstr0 = Attribute("Translation submitted for plural form 0 (if any)")
-    msgstr0 = Attribute("Translation submitted for plural form 1 (if any)")
-    msgstr0 = Attribute("Translation submitted for plural form 2 (if any)")
-    msgstr0 = Attribute("Translation submitted for plural form 3 (if any)")
+    pomsgset = Attribute("The PO message set for which is this submission.")
+    pluralform = Attribute("The # of pluralform that we are submitting.")
+    potranslation = Attribute("The translation that was submitted.")
     datecreated = Attribute("The date we saw this submission.")
     origin = Attribute("Where the submission originally came from.")
     person = Attribute("The owner of this submission, if we have one.")
