@@ -17,7 +17,7 @@
             <a tal:attributes ="href file/archive_url"
                tal:content="file/file_type_name" />
         </tal:sourcefiles>
-        <tal:binarypubs repeat="pub context/publishedBinaries">
+        <tal:binarypubs repeat="pub context/getPublishedBinaries">
             <tal:binaryfiles repeat="file pub/files">
               <a tal:attributes ="href file/archive_url"
                  tal:content="file/architecturetag" />

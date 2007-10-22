@@ -380,7 +380,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         dbName="removed_by", foreignKey="Person", default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
-    def publishedBinaries(self):
+    def getPublishedBinaries(self):
         """See ISourcePackagePublishingHistory."""
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
@@ -392,12 +392,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchRelease.distrorelease=%s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(
                     self.sourcepackagerelease,
                     self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
+                    self.archive,
                     PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
