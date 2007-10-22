@@ -27,8 +27,9 @@ Anne gets two email addresses.  One is her preferred address...
     >>> team_one, list_one = new_team('team-one', with_list=True)
     >>> anne.join(team_one)
     >>> bart.join(team_one)
-    >>> # No Privileges Person shows up as a team member because he created
-    >>> # the team (in the doctest infrastructure).
+
+    # No Privileges Person shows up as a team member because he created the
+    # team (in the doctest infrastructure).
     >>> sorted(member.displayname for member in team_one.allmembers)
     [u'Anne Person', u'Bart Person', u'No Privileges Person']
 
@@ -71,8 +72,9 @@ Indirect members can subscribe to a team's mailing list.  To illustrate this,
 we first create team-two as a subteam of team-one.
 
     >>> team_two = new_team('team-two')
-    >>> # Teams cannot join, they must use addMember.  We need salgado as the
-    >>> # reviewer for adding team-two to team-one.
+
+    # Teams cannot join, they must use addMember.  We need salgado as the
+    # reviewer for adding team-two to team-one.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> team_one.addMember(team_two, salgado, force_team_add=True)
@@ -293,8 +295,9 @@ list are dropped.
 
     >>> sorted(list_one.getAddresses())
     [u'bperson@example.org', u'iona.person@example.com']
-    >>> # Deactivation isn't complete until the list's status is transitioned
-    >>> # to INACTIVE.
+
+    # Deactivation isn't complete until the list's status is transitioned to
+    # INACTIVE.
     >>> list_one.deactivate()
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)

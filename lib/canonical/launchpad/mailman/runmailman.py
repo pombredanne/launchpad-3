@@ -31,6 +31,8 @@ def start_mailman():
 
     The client of start_mailman() is responsible for ensuring that
     stop_mailman() is called at the appropriate time.
+
+    The process will exit if Mailman fails to start successfully.
     """
     # We need the Mailman bin directory so we can run some of Mailman's
     # command line scripts.
