@@ -279,7 +279,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         PPA uploads are always auto-approved.
         Other uploads (to main archives) are only auto-approved if the
         distroseries is not FROZEN (note that we already performed the
-        IDistroSeries.canUploadToPocket check in the checkUpload base method). 
+        IDistroSeries.canUploadToPocket check in the checkUpload base method).
         """
         if upload.is_ppa:
             return True
