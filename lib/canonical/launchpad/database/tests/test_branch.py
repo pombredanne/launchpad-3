@@ -4,16 +4,19 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+import pytz
 import transaction
 from unittest import TestCase, TestLoader
 
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
-    CreateBugParams, IBugSet, ILaunchpadCelebrities,
-    InvalidBranchMergeProposal, IPersonSet, IProductSet, ISpecificationSet,
-    SpecificationDefinitionStatus, RevisionControlSystems)
+    BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
+    CannotDeleteBranch, CreateBugParams, IBranchSet, IBugSet,
+    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
+    InvalidBranchMergeProposal, PersonCreationRationale,
+    RevisionControlSystems, SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.product import ProductSet
@@ -22,6 +25,7 @@ from canonical.launchpad.database.revision import RevisionSet
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 
 class TestBranchDeletion(TestCase):
@@ -284,6 +288,92 @@ class BranchAddLandingTarget(TestCase):
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.dependent_branch, self.dependent)
         self.assertEqual(proposal.whiteboard, whiteboard)
+
+
+class BranchSorting(TestCase):
+    """Test cases for the sort_by option of BranchSet getBranch* methods."""
+
+    layer = LaunchpadZopelessLayer
+
+    def createPersonWithTwoBranches(self):
+        """Create a person and two branches that belong to that person."""
+        new_bod, email = getUtility(IPersonSet).createPersonAndEmail(
+            "test@example.com",
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        branch_set = getUtility(IBranchSet)
+        self.assertEqual(list(branch_set.getBranchesForPerson(new_bod)), [])
+
+        # We create a couple of branches for this person.
+        branch_a = branch_set.new(
+            BranchType.MIRRORED, "a", new_bod, new_bod, None,
+            "http://bzr.example.com/a")
+        branch_b = branch_set.new(
+            BranchType.MIRRORED, "b", new_bod, new_bod, None,
+            "http://bzr.example.com/b")
+        return new_bod, branch_a, branch_b
+
+    def test_sortByRecentChanges(self):
+        """Test the MOST/LEAST_RECENTLY_CHANGED_FIRST options."""
+        new_bod, branch_a, branch_b = self.createPersonWithTwoBranches()
+
+        # XXX 2007-10-22 MichaelHudson: Currently we (ab)use last_scanned as
+        # the date the branch was last changed.  1.1.11 will introduce a
+        # date_last_modified column, which this test will need to set
+        # instead.
+        UTC = pytz.timezone("UTC")
+
+        branch_a.last_scanned = datetime(year=2005, month=12, day=25, tzinfo=UTC)
+        branch_b.last_scanned = datetime(year=2006, month=12, day=25, tzinfo=UTC)
+
+        syncUpdate(branch_a)
+        syncUpdate(branch_b)
+
+        # XXX: 2007-10-22 MichaelHudson bug=154016: We have to check the ids
+        # because getBranchesForPerson queries the BranchWithSortKeys table.
+        # This can be rewritten more sensibly when we can get rid of
+        # BranchWithSortKeys.
+        branch_set = getUtility(IBranchSet)
+        self.assertEqual(
+            [b.id for b in branch_set.getBranchesForPerson(
+                new_bod,
+                sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)],
+            [branch_b.id, branch_a.id])
+        self.assertEqual(
+            [b.id for b in branch_set.getBranchesForPerson(
+                new_bod,
+                sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST)],
+            [branch_a.id, branch_b.id])
+
+    def test_sortByAge(self):
+        """Test the NEWEST_FIRST and OLDEST_FIRST options."""
+        new_bod, branch_a, branch_b = self.createPersonWithTwoBranches()
+
+        UTC = pytz.timezone("UTC")
+
+        # In the normal course of things, date_created is not writable...
+        removeSecurityProxy(branch_a).date_created = (
+            datetime(year=2005, month=12, day=25, tzinfo=UTC))
+        removeSecurityProxy(branch_b).date_created = (
+            datetime(year=2006, month=12, day=25, tzinfo=UTC))
+
+        syncUpdate(branch_a)
+        syncUpdate(branch_b)
+
+        # XXX: 2007-10-22 MichaelHudson bug=154016: We have to check the ids
+        # because getBranchesForPerson queries the BranchWithSortKeys table.
+        # This can be rewritten more sensibly when we can get rid of
+        # BranchWithSortKeys.
+        branch_set = getUtility(IBranchSet)
+        self.assertEqual(
+            [b.id for b in branch_set.getBranchesForPerson(
+                new_bod,
+                sort_by=BranchListingSort.NEWEST_FIRST)],
+            [branch_b.id, branch_a.id])
+        self.assertEqual(
+            [b.id for b in branch_set.getBranchesForPerson(
+                new_bod,
+                sort_by=BranchListingSort.OLDEST_FIRST)],
+            [branch_a.id, branch_b.id])
 
 
 def test_suite():
