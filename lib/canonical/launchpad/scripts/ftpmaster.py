@@ -1484,7 +1484,7 @@ class LpQueryDistro(LaunchpadScript):
                 "Action does not accept defined suite_name.")
 
     # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution. raising NotFoundError instead.
+    # IDistribution.
     def getSeriesByStatus(self, status):
         """Query context distribution for a distroseries in a given status.
 
@@ -1496,7 +1496,7 @@ class LpQueryDistro(LaunchpadScript):
         for series in self.location.distribution.serieses:
             if series.status == status:
                 return series
-        raise LaunchpadScriptFailure(
+        raise NotFoundError(
                 "Could not find a %s distroseries in %s"
                 % (status.name, self.location.distribution.name))
 
@@ -1505,13 +1505,16 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
+
         It may raise LaunchpadScriptFailure if a suite was passed in the
-        command-line.
-        See self.getSeriesByStatus for further information
+        command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.CURRENT)
+        try:
+            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
+        except NotFoundError, err:
+            raise LaunchpadScriptFailure(err)
+
         return series.name
 
     @property
@@ -1519,13 +1522,31 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
-        It may raise LaunchpadScriptFailure if a suite was passed in the
+
+        It may raise `LaunchpadScriptFailure` if a suite was passed in the
         command-line.
-        See self.getSeriesByStatus for further information
+
+        Return the first FROZEN distroseries found if there is no
+        DEVELOPMENT one available.
+
+        Raises `NotFoundError` if neither a CURRENT nor a FROZEN
+        candidate could be found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.DEVELOPMENT)
+        series = None
+        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
+                         DistroSeriesStatus.FROZEN)
+        for status in wanted_status:
+            try:
+                series = self.getSeriesByStatus(status)
+            except NotFoundError:
+                pass
+
+        if series is None:
+            raise LaunchpadScriptFailure(
+                'There is no DEVELOPMENT distroseries for %s' %
+                self.location.distribution.name)
+
         return series.name
 
     @property
