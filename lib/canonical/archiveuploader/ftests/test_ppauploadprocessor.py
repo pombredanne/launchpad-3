@@ -14,11 +14,10 @@ from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, IArchiveSet, ILaunchpadCelebrities)
+    ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
+    IPersonSet, PackageUploadStatus, PackagePublishingStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.mail import stub
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackagePublishingStatus, PackagePublishingPocket,
-    ArchivePurpose)
 
 
 class TestPPAUploadProcessor(TestUploadProcessorBase):
@@ -62,8 +61,11 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
 
     def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
+        # 'name16' it the owner of the PPA used in this test, therefore it's
+        # always notified, a 'default_recipient'.
         if not recipients:
             recipients = [self.name16_recipient]
+
         if not contents:
             contents = []
 
@@ -83,7 +85,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "Email recipients do not match exactly. Expected %s, got %s" %
                 (recipients, clean_recipients))
 
-        subject = "Subject: %s" % msg['Subject']
+        subject = "Subject: %s\n" % msg['Subject']
         body = subject + body
 
         for content in list(contents):
@@ -96,9 +98,15 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
 
         Email announcement is sent and package is on queue DONE even if
         the source is NEW (PPA Auto-Approves everything).
+
         Also test IDistribution.getPendingPublicationPPAs() and check if
         it returns the just-modified archive.
         """
+        #
+        # Step 1: Upload the source bar_1.0-1, start a new source series
+        # Ensure the 'new' source is auto-accepted, auto-published in
+        # 'main' component and the PPA in question is 'pending-publication'.
+        #
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -127,8 +135,11 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(pub_bar.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bar.component.name, 'main')
 
-        # Check the subsequent upload for component universe.
-        # It should be overridden to 'main' component.
+        #
+        # Step 2: Upload a new version of bar to component universe (see
+        # ../tests/data/suite/bar_1.0-10). It should be auto-accepted,
+        # auto-published and have its component overridden to 'main'.
+        #
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -147,7 +158,10 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(pub_bar_10.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bar_10.component.name, 'main')
 
-        # Check if a lower version upload will get rejected.
+        #
+        # Step 3: Check if a lower version upload gets rejected and the
+        # notification points to the right ancestry.
+        #
         upload_dir = self.queueUpload("bar_1.0-2", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -427,8 +441,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
             "Further error processing not possible because of a "
                 "critical previous error.\n"
-            "\n"
-            "-----BEGIN PGP SIGNED MESSAGE-----\n"
+            "\n-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
 
         self.assertEmail(contents)
@@ -449,8 +462,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "Unable to find distroseries: flangetrousers\n"
             "Further error processing not possible because of a "
                 "critical previous error.\n"
-            "\n"
-            "-----BEGIN PGP SIGNED MESSAGE-----\n"
+            "\n-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
         self.assertEmail(
             contents,

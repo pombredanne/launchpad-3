@@ -18,10 +18,9 @@ Distro Arch Release
 #      This needs many more tests to be effective.
 
 
-Distro Arch Releases can tell you about their published releases.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+== DistroArchSeries can tell you about their published releases ==
 
-Distro Arch Releases have a number of releases of any given binary
+DistroArchSeries has a number of releases of any given binary
 package in them. This can be due to various reasons such as uploads in
 progress, superseding in progress, or simply that there is more than
 one version spread across the pockets. getReleasedPackages lets us
@@ -31,21 +30,22 @@ interrogate this information.
    ...     print p.binarypackagerelease.binarypackagename.name
    pmount
 
+See more information about getReleasePackages below.
 
-DistroArchSeries class has a built-in method to return a single 
-dependency package candidate by its name as a PublishedPackage 
+DistroArchSeries class has a built-in method to return a single
+dependency package candidate by its name as a PublishedPackage
 instance:
 
    >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
    u'pmount'
 
-Since 'at' isn't available in our sampledata (not even published), 
+Since 'at' isn't available in our sampledata (not even published),
 None is returned:
 
    >>> hoary_i386.findDepCandidateByName("at") is None
    True
 
-Check the behaviour of the provided search method, which returns a
+Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 
    >>> results = hoary_i386.searchBinaryPackages(text='pmount')
@@ -125,3 +125,151 @@ Supersede current publication:
    >>> superseded_pmount.status.name, superseded_pmount.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 
+
+== Binary publishing lookups ==
+
+IDistroArchseries allows binary publishing lookup via
+getReleasedPackages method which returns a shortlist of
+IBinaryPackagePublishingHistory ordered by descending ID.
+
+In order to test its behavior we will create a bunch of sample
+publishing records with different (status, pocket, archive) in
+ubuntu/breezy-autotest/i386, which is empty:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...    IDistributionSet, IPersonSet, PackagePublishingPocket,
+    ...    PackagePublishingStatus)
+    >>> from canonical.launchpad.database.publishing import (
+    ...     SecureBinaryPackagePublishingHistory)
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> bt_i386 = breezy_autotest['i386']
+    >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
+
+We will use a 'at' binarypackage because it's not published yet in the
+architecture we want to test, this will help to make the tests as clear
+as possible.
+
+    >>> warty = ubuntu['warty']
+    >>> at_warty_i386 = warty['i386'].getBinaryPackage('at')
+    >>> sample_bpr = at_warty_i386.currentrelease.binarypackagerelease
+
+    >>> SecureBinaryPackagePublishingHistory.selectBy(
+    ...     distroarchseries=bt_i386, binarypackagerelease=sample_bpr).count()
+    0
+
+Create and collect several binary publishing records in a variety of
+states, pockets and archives:
+
+    >>> sample_pub_data = [
+    ...     (PackagePublishingStatus.PENDING, ubuntu.main_archive,
+    ...      PackagePublishingPocket.RELEASE),
+    ...     (PackagePublishingStatus.PUBLISHED, ubuntu.main_archive,
+    ...      PackagePublishingPocket.RELEASE),
+    ...     (PackagePublishingStatus.PENDING, ubuntu.main_archive,
+    ...      PackagePublishingPocket.UPDATES),
+    ...     (PackagePublishingStatus.PUBLISHED, ubuntu.main_archive,
+    ...      PackagePublishingPocket.PROPOSED),
+    ...     (PackagePublishingStatus.PENDING, cprov_archive,
+    ...      PackagePublishingPocket.RELEASE),
+    ...     (PackagePublishingStatus.PUBLISHED, cprov_archive,
+    ...      PackagePublishingPocket.RELEASE),
+    ...     (PackagePublishingStatus.PENDING, cprov_archive,
+    ...      PackagePublishingPocket.UPDATES),
+    ...     (PackagePublishingStatus.PUBLISHED, cprov_archive,
+    ...      PackagePublishingPocket.PROPOSED),
+    ...     ]
+    >>> sample_pub = []
+
+    >>> for status, archive, pocket in sample_pub_data:
+    ...     sample_pub.append(SecureBinaryPackagePublishingHistory(
+    ...          binarypackagerelease=sample_bpr,
+    ...          distroarchseries=bt_i386,
+    ...          component=sample_bpr.component,
+    ...          section=sample_bpr.section,
+    ...          priority=sample_bpr.priority,
+    ...          status=status,
+    ...          archive=archive,
+    ...          pocket=pocket))
+
+    >>> [pub_main_release_pending, pub_main_release_published,
+    ...  pub_main_updates_pending, pub_main_proposed_published,
+    ...  pub_ppa_release_pending, pub_ppa_release_published,
+    ...  pub_ppa_updates_pending, pub_ppa_proposed_published] = sample_pub
+
+    >>> def checkPubList(expected, given):
+    ...     """Check if the given publication list matches the expected one.
+    ...
+    ...     We have to check ID, because the lookup returns contents of
+    ...     IBinaryPackagePublishingHistory, a postgres view of
+    ...     SecureBinaryPackagePublishinghistory, where we created the records.
+    ...     The list order is also important.
+    ...     Return True if the lists matches, otherwise False.
+    ...     """
+    ...     return [p.id for p in expected] == [r.id for r in given]
+
+Looking for all PUBLISHED publications in main_archive and all
+pockets:
+
+    >>> all_published_main_pubs = [
+    ...     pub_main_proposed_published,
+    ...     pub_main_release_published,
+    ...     ]
+    >>> result = bt_i386.getReleasedPackages('at')
+    >>> checkPubList(all_published_main_pubs, result)
+    True
+
+Looking for all PUBLISHED or PENDING publications in main_archive and all
+pockets.
+
+    >>> all_main_pubs = [
+    ...     pub_main_proposed_published,
+    ...     pub_main_updates_pending,
+    ...     pub_main_release_published,
+    ...     pub_main_release_pending,
+    ...     ]
+    >>> result = bt_i386.getReleasedPackages('at', include_pending=True)
+    >>> checkPubList(all_main_pubs, result)
+    True
+
+Using 'pocket' filter:
+
+    >>> updates_main_pubs = [
+    ...     pub_main_updates_pending,
+    ...     ]
+
+    >>> result = bt_i386.getReleasedPackages(
+    ...     'at', include_pending=True,
+    ...     pocket=PackagePublishingPocket.UPDATES)
+
+    >>> checkPubList(updates_main_pubs, result)
+    True
+
+Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
+
+    >>> non_release_main_pubs = [
+    ...     pub_main_proposed_published,
+    ...     pub_main_updates_pending,
+    ...     ]
+
+    >>> result = bt_i386.getReleasedPackages(
+    ...     'at', include_pending=True,
+    ...     exclude_pocket=PackagePublishingPocket.RELEASE)
+
+    >>> checkPubList(non_release_main_pubs, result)
+    True
+
+Looking for all PUBLISHED or PENDING publications in cprov PPA and all
+pockets.
+
+    >>> all_ppa_pubs = [
+    ...     pub_ppa_proposed_published,
+    ...     pub_ppa_updates_pending,
+    ...     pub_ppa_release_published,
+    ...     pub_ppa_release_pending,
+    ...     ]
+    >>> result = bt_i386.getReleasedPackages(
+    ...    'at', include_pending=True, archive=cprov_archive)
+    >>> checkPubList(all_ppa_pubs, result)
+    True
