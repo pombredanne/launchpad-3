@@ -300,16 +300,15 @@ class BranchSorting(TestCase):
         new_bod, email = getUtility(IPersonSet).createPersonAndEmail(
             "test@example.com",
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        branch_set = getUtility(IBranchSet)
-        self.assertEqual(list(branch_set.getBranchesForPerson(new_bod)), [])
 
-        # We create a couple of branches for this person.
+        branch_set = getUtility(IBranchSet)
         branch_a = branch_set.new(
             BranchType.MIRRORED, "a", new_bod, new_bod, None,
             "http://bzr.example.com/a")
         branch_b = branch_set.new(
             BranchType.MIRRORED, "b", new_bod, new_bod, None,
             "http://bzr.example.com/b")
+
         return new_bod, branch_a, branch_b
 
     def test_sortByRecentChanges(self):
