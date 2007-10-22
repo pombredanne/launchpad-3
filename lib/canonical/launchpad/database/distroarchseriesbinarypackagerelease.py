@@ -91,7 +91,7 @@ class DistroArchSeriesBinaryPackageRelease:
             query += " AND status = %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
-            query, orderBy='-id')
+            query, orderBy=['-datecreated', '-id'])
 
     @property
     def publishing_history(self):
@@ -104,7 +104,7 @@ class DistroArchSeriesBinaryPackageRelease:
                     self.distroarchseries,
                     self.distribution.all_distro_archive_ids,
                     self.binarypackagerelease),
-            orderBy='-id')
+            orderBy=['-datecreated', '-id'])
 
     @property
     def pocket(self):

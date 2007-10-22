@@ -18,11 +18,11 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingPocket)
 from canonical.launchpad.scripts.ftests.test_ftpmaster import LocalLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
-from canonical.lp.dbschema import PackagePublishingPocket
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.

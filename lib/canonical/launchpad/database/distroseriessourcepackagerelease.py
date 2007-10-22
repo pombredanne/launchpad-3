@@ -105,7 +105,7 @@ class DistroSeriesSourcePackageRelease:
                     self.distroseries,
                     self.distroseries.distribution.all_distro_archive_ids,
                     self.sourcepackagerelease),
-            orderBy='-id')
+            orderBy=['-datecreated', '-id'])
 
     @property
     def builds(self):
@@ -193,7 +193,7 @@ class DistroSeriesSourcePackageRelease:
                         self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
-            orderBy='-id')
+            orderBy=['-datecreated', '-id'])
 
         return current
 
