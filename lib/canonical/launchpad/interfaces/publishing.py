@@ -11,9 +11,8 @@ __all__ = [
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
     'IBinaryPackagePublishingHistory',
-    'IPublishing',
-    'IArchivePublisher',
-    'IArchiveFilePublisher',
+    'ICanPublishPackages',
+    'IFilePublishing',
     'IArchiveSafePublisher',
     'NotInPool',
     'PackagePublishingPocket',
@@ -31,11 +30,30 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 #
-# Archive Publisher API and Exceptions
+# Exceptions
 #
 
-class IPublishing(Interface):
-    """Ability to publish associated publishing records."""
+
+class NotInPool(Exception):
+    """Raised when an attempt is made to remove a non-existent file."""
+
+
+class PoolFileOverwriteError(Exception):
+    """Raised when an attempt is made to overwrite a file in the pool.
+
+    The proposed file has different content as the one in pool.
+    This exception is unexpected and when it happens we keep the original
+    file in pool and print a warning in the publisher log. It probably
+    requires manual intervention in the archive.
+    """
+
+
+#
+# Base Interfaces
+#
+
+class ICanPublishPackages(Interface):
+    """Denotes the ability to publish associated publishing records."""
 
     def getPendingPublications(archive, pocket, is_careful):
         """Return the specific group of records to be published.
@@ -63,8 +81,22 @@ class IPublishing(Interface):
         getPendingPublications.
         """
 
-class IArchivePublisher(Interface):
-    """Ability to publish a publishing record."""
+
+class IArchiveSafePublisher(Interface):
+    """Safe Publication methods"""
+
+    def setPublished():
+        """Set a publishing record to published.
+
+        Basically set records to PUBLISHED status only when they
+        are PENDING and do not update datepublished value of already
+        published field when they were checked via 'careful'
+        publishing.
+        """
+
+
+class IPublishing(Interface):
+    """Base interface for all *Publishing classes"""
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
@@ -115,63 +147,14 @@ class IArchivePublisher(Interface):
         """
 
 
-class IArchiveFilePublisher(Interface):
-    """Ability to publish and archive file"""
+class IFilePublishing(Interface):
+    """Base interface for *FilePublishing classes"""
 
-    publishing_record = Attribute(
-        "Return the respective Source or Binary publishing record "
-        "(in the form of I{Source,Binary}PackagePublishingHistory).")
-
-    def publish(diskpool, log):
-        """Publish or ensure contents of this file in the archive.
-
-        Create symbolic link to files already present in different component
-        or add file from librarian if it's not present. Update the database
-        to represent the current archive state.
-        """
-
-
-class IArchiveSafePublisher(Interface):
-    """Safe Publication methods"""
-
-    def setPublished():
-        """Set a publishing record to published.
-
-        Basically set records to PUBLISHED status only when they
-        are PENDING and do not update datepublished value of already
-        published field when they were checked via 'careful'
-        publishing.
-        """
-
-
-class NotInPool(Exception):
-    """Raised when an attempt is made to remove a non-existent file."""
-
-
-class PoolFileOverwriteError(Exception):
-    """Raised when an attempt is made to overwrite a file in the pool.
-
-    The proposed file has different content as the one in pool.
-    This exception is unexpected and when it happens we keep the original
-    file in pool and print a warning in the publisher log. It probably
-    requires manual intervention in the archive.
-    """
-
-
-#
-# Source package publishing
-#
-
-class ISourcePackageFilePublishing(Interface):
-    """Source package release files and their publishing status"""
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
     distroseriesname = TextLine(
             title=_('Series name'), required=True, readonly=True,
-            )
-    sourcepackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
             )
     componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
@@ -185,20 +168,45 @@ class ISourcePackageFilePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-    sourcepackagepublishing = Int(
-            title=_('Sourcepackage publishing record id'), required=True,
-            readonly=True,
-            )
     libraryfilealias = Int(
-            title=_('Sourcepackage release file alias'), required=True,
+            title=_('Binarypackage file alias'), required=True,
             readonly=True,
             )
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
+    archive_url = Attribute('The on-archive URL for the published file.')
+
+    publishing_record = Attribute(
+        "Return the respective Source or Binary publishing record "
+        "(in the form of I{Source,Binary}PackagePublishingHistory).")
+
+    def publish(diskpool, log):
+        """Publish or ensure contents of this file in the archive.
+
+        Create symbolic link to files already present in different component
+        or add file from librarian if it's not present. Update the database
+        to represent the current archive state.
+        """
+
+#
+# Source package publishing
+#
+
+class ISourcePackageFilePublishing(IFilePublishing):
+    """Source package release files and their publishing status"""
+    file_type_name = Attribute(
+        "The uploaded file's type; one of 'orig', 'dsc', 'diff' or 'other'")
+    sourcepackagename = TextLine(
+            title=_('Binary package name'), required=True, readonly=True,
+            )
+    sourcepackagepublishing = Int(
+            title=_('Sourcepackage publishing record id'), required=True,
+            readonly=True,
+            )
 
 
-class ISecureSourcePackagePublishingHistory(Interface):
+class ISecureSourcePackagePublishingHistory(IPublishing):
     """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -312,26 +320,8 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 # Binary package publishing
 #
 
-class IBinaryPackageFilePublishing(Interface):
+class IBinaryPackageFilePublishing(IFilePublishing):
     """Binary package files and their publishing status"""
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-    distroseriesname = TextLine(
-            title=_('Series name'), required=True, readonly=True,
-            )
-    componentname = TextLine(
-            title=_('Component name'), required=True, readonly=True,
-            )
-    publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
-            )
-    pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
-            )
     # Note that it is really /source/ package name below, and not a
     # thinko; at least, that's what Celso tells me the code uses
     #   -- kiko, 2006-03-22
@@ -342,20 +332,13 @@ class IBinaryPackageFilePublishing(Interface):
             title=_('Binary Package publishing record id'), required=True,
             readonly=True,
             )
-    libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True,
-            readonly=True,
-            )
-    libraryfilealiasfilename = TextLine(
-            title=_('File name'), required=True, readonly=True,
-            )
     architecturetag = TextLine(
             title=_("Architecture tag. As per dpkg's use"), required=True,
             readonly=True,
             )
 
 
-class ISecureBinaryPackagePublishingHistory(Interface):
+class ISecureBinaryPackagePublishingHistory(IPublishing):
     """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
