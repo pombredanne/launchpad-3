@@ -1,5 +1,8 @@
 = Team Mailing Lists =
 
+XXX: Only the owner or administrator of a mailing list can edit the
+mailing list (ie. the welcome message).
+
 Teams may have at most one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.

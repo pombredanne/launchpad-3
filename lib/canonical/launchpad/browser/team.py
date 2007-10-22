@@ -122,7 +122,7 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @property
     def can_be_contact_method(self):
-        """See `MailingList.canByContactMethod`.
+        """See `MailingList.canBeContactMethod`.
         """
         mailing_list = self._getList() 
         return mailing_list and mailing_list.canBeContactMethod()
@@ -137,7 +137,9 @@ class TeamContactAddressView(LaunchpadFormView):
         radio button with a 'submit' button that allows the user to request
         the mailing list creation.
         """
-        return config.mailman.expose_hosted_mailing_lists
+        mailing_list = self._getList() 
+        return (config.mailman.expose_hosted_mailing_lists and
+                (not mailing_list or not mailing_list.canBeContactMethod()))
 
     @property
     def mailing_list_status_message(self):
