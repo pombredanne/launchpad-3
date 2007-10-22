@@ -110,7 +110,7 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
     IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
-    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
     ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
@@ -884,9 +884,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'editlanguages', 'polls', 'add_poll',
-             'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'editemail', 'configuremailinglist', 'editlanguages', 'polls',
+             'add_poll', 'joinleave', 'mentorships', 'reassign',
+             'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -966,12 +966,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def configuremailinglist(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
-        mailing_list = getUtility(IMailingListSet).get(context.name)
-        #enabled = (config.mailman.expose_hosted_mailing_lists
-        #           and mailing_list is not None
-        #           and mailing_list.canBeContactMethod()
-        #           and check_permission('launchpad.Edit', mailing_list))
-        enabled = True
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        enabled = (config.mailman.expose_hosted_mailing_lists
+                   and mailing_list is not None
+                   and mailing_list.canBeContactMethod()
+                   and check_permission('launchpad.Edit', mailing_list))
         summary = (
             'The welcome message for the mailing list associated with %s' %
             self.context.browsername)
