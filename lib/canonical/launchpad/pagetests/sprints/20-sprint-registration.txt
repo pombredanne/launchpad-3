@@ -1,3 +1,5 @@
+= Sprint Registration =
+
 It should be possible to register yourself to attend the sprint:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -110,9 +112,9 @@ And lets ensure Carlos is now listed:
   Sample Person
 
 In order to make it easy to organize a meeting, we provide a facility
-for exporting the list of attendees in CSV format.
+for exporting the list of attendees in CSV format to registered users.
 
-  >>> browser.open('http://launchpad.dev/sprints/ubz/+attendees-csv')
+  >>> browser.getLink('Export attendees to CSV').click()
   >>> print browser.headers['content-type']
   text/csv
   >>> print browser.contents
@@ -120,3 +122,16 @@ for exporting the list of attendees in CSV format.
   carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,UTC,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
   name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
   <BLANKLINE>
+
+Anonymous users cannot access the CSV report.
+
+  >>> anon_browser.open('http://launchpad.dev/sprints/ubz')
+  >>> anon_browser.getLink('Export attendees to CSV').click()
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  >>> anon_browser.open('http://launchpad.dev/sprints/ubz/+attendees-csv')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
