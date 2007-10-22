@@ -189,12 +189,12 @@ class PackageUpload(SQLBase):
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
-    def containsSource(self):
+    def contains_source(self):
         """See IPackageUpload."""
         return self.sources
 
     @cachedproperty
-    def containsBuild(self):
+    def contains_build(self):
         """See IPackageUpload."""
         return self.builds
 
@@ -204,25 +204,25 @@ class PackageUpload(SQLBase):
         return [custom.customformat for custom in self.customfiles]
 
     @cachedproperty
-    def containsInstaller(self):
+    def contains_installer(self):
         """See IPackageUpload."""
         return (PackageUploadCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
-    def containsTranslation(self):
+    def contains_translation(self):
         """See IPackageUpload."""
         return (PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
-    def containsUpgrader(self):
+    def contains_upgrader(self):
         """See IPackageUpload."""
         return (PackageUploadCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
     @cachedproperty
-    def containsDdtp(self):
+    def contains_ddtp(self):
         """See IPackageUpload."""
         return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
@@ -352,7 +352,7 @@ class PackageUpload(SQLBase):
         Component and section are only set where the file is a source upload.
         """
         files = []
-        if self.containsSource:
+        if self.contains_source:
             [source] = self.sources
             spr = source.sourcepackagerelease
             # Bail out early if this is an upload for the translations section.
@@ -414,10 +414,7 @@ class PackageUpload(SQLBase):
                 'ppa-upload-rejection.txt')
         else:
             rejection_template = get_email_template('upload-rejection.txt')
-        sender = format_address(config.uploader.default_sender_name,
-                                config.uploader.default_sender_address)
         self._sendMail(
-            sender,
             recipients,
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations)
@@ -435,69 +432,19 @@ class PackageUpload(SQLBase):
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
-        # announce message.
-
-        uploader_address = format_address(
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
+        # announcement message.
 
         if self.status == PackageUploadStatus.NEW:
             # This is an unknown upload.
             new_template = get_email_template('upload-new.txt')
             self._sendMail(
-                uploader_address,
                 recipients,
                 "%s is NEW" % self.changesfile.filename,
                 new_template % interpolations)
             return
 
-        if self.isPPA():
-            # PPA uploads receive an acceptance message.
-            accepted_template = get_email_template('ppa-upload-accepted.txt')
-            interpolations["STATUS"] = "[PPA %s] Accepted" % (
-                self.archive.owner.name)
-            subject = "[PPA %s] Accepted %s %s (%s)" % (
-                self.archive.owner.name, self.displayname,
-                self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations)
-            return
-
         # Every message sent from here onwards uses the accepted template.
         accepted_template = get_email_template('upload-accepted.txt')
-
-        # Auto-approved uploads to backports skips the announcement,
-        # they are usually processed with the sync policy.
-        if (self.pocket == PackagePublishingPocket.BACKPORTS
-            and self.status in (PackageUploadStatus.ACCEPTED,
-                                PackageUploadStatus.DONE)):
-            debug(self.logger, "Skipping announcement, it is a BACKPORT.")
-            subject = "Accepted %s %s (%s)" % (
-                self.displayname, self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations)
-            return
-
-        # Auto-approved binary uploads to security skips the announcement,
-        # they are usually processed with the security policy.
-        if (self.pocket == PackagePublishingPocket.SECURITY
-            and self.containsBuild):
-            debug(self.logger,
-                "Skipping announcement, it is a binary upload to SECURITY.")
-            subject = "Accepted %s %s (%s)" % (
-                self.displayname, self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations)
-            return
 
         # Unapproved uploads coming from an insecure policy only send
         # an acceptance message.
@@ -508,35 +455,62 @@ class PackageUpload(SQLBase):
             interpolations["STATUS"] = "Waiting for approval:"
             subject = "Waiting for approval: %s %s (%s)" % (
                 self.displayname, self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations)
+            self._sendMail(recipients, subject,
+                           accepted_template % interpolations)
+            return
+
+        if self.isPPA():
+            # PPA uploads receive an acceptance message.
+            accepted_template = get_email_template('ppa-upload-accepted.txt')
+            interpolations["STATUS"] = "[PPA %s] Accepted" % (
+                self.archive.owner.name)
+            subject = "[PPA %s] Accepted %s %s (%s)" % (
+                self.archive.owner.name, self.displayname,
+                self.displayversion, self.displayarchs)
+            self._sendMail(recipients, subject,
+                           accepted_template % interpolations)
+            return
+
+        # Auto-approved uploads to backports skips the announcement,
+        # they are usually processed with the sync policy.
+        if self.pocket == PackagePublishingPocket.BACKPORTS:
+            debug(self.logger, "Skipping announcement, it is a BACKPORT.")
+            subject = "Accepted %s %s (%s)" % (
+                self.displayname, self.displayversion, self.displayarchs)
+            self._sendMail(recipients, subject,
+                           accepted_template % interpolations)
+            return
+
+        # Auto-approved binary uploads to security skips the announcement,
+        # they are usually processed with the security policy.
+        if (self.pocket == PackagePublishingPocket.SECURITY
+            and self.contains_build):
+            debug(self.logger,
+                "Skipping announcement, it is a binary upload to SECURITY.")
+            subject = "Accepted %s %s (%s)" % (
+                self.displayname, self.displayversion, self.displayarchs)
+            self._sendMail(recipients, subject,
+                           accepted_template % interpolations)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         subject = "Accepted %s %s (%s)" % (
             self.displayname, self.displayversion, self.displayarchs)
-        self._sendMail(
-            uploader_address,
-            recipients,
-            subject,
-            accepted_template % interpolations)
+        self._sendMail(recipients, subject,
+                       accepted_template % interpolations)
         if announce_list:
-            sender = ""
             if not self.signing_key:
-                sender = uploader_address
+                from_addr = None
             else:
-                sender = guess_encoding(changes['changed-by'])
+                from_addr = guess_encoding(changes['changed-by'])
 
             announce_template = get_email_template('upload-announcement.txt')
             self._sendMail(
-                sender,
                 [str(announce_list)],
                 subject,
                 announce_template % interpolations,
+                from_addr=from_addr,
                 bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
         return
 
@@ -654,11 +628,13 @@ class PackageUpload(SQLBase):
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
-    def _sendMail(self, from_addr, to_addrs, subject, mail_text, bcc=None):
+    def _sendMail(self, to_addrs, subject, mail_text, from_addr=None,
+                  bcc=None):
         """Send an email to to_addrs with the given text and subject.
 
         :from_addr: The email address to be used as the sender.  Must be a
                     valid ASCII str instance or a unicode one.
+                    Defaults to the email for config.uploader.
         :to_addrs: A list of email addresses to be used as recipients.  Each
                    email must be a valid ASCII str instance or a unicode one.
         :subject: The email's subject.
@@ -667,6 +643,10 @@ class PackageUpload(SQLBase):
         :bcc: Optional email Blind Carbon Copy address(es).
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
+        if from_addr is None:
+            from_addr = format_address(
+                config.uploader.default_sender_name,
+                config.uploader.default_sender_address)
 
         # `simple_sendmail`, despite handling unicode message bodies, can't
         # cope with non-ascii sender/recipient addresses, so ascii_smash

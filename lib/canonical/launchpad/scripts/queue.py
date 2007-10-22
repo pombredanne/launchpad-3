@@ -262,9 +262,9 @@ class QueueAction:
         # We may discuss a more reasonable output format later
         # and avoid extra boring code. The IDRQ.displayname should
         # do should be enough.
-        if queue_item.containsSource:
+        if queue_item.contains_source:
             source_tag = 'S'
-        if queue_item.containsBuild:
+        if queue_item.contains_build:
             build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
@@ -685,12 +685,12 @@ class QueueActionAccept(QueueAction):
         'translations' ('laguage-pack-*' & 'language-support-*').
         """
         # Skip announcement for binary or mixed uploads.
-        if queue_item.containsBuild:
+        if queue_item.contains_build:
             return
 
         # Skip annoncement for source uploads targeted to 'translation'
         # section ('laguage-pack-*' & 'language-support-*')
-        if queue_item.containsSource:
+        if queue_item.contains_source:
             source = queue_item.sources[0]
             # XXX cprov 2007-02-28: instead of using the original section
             # we should be aware of pre-publication overrides when we
