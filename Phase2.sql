@@ -11,12 +11,12 @@ CREATE TABLE TranslationMessage(
 	msgstr2 integer,
 	msgstr3 integer,
 	origin integer NOT NULL,
-	datecreated timestamp without time zone
+	date_created timestamp without time zone
 		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
 	person integer NOT NULL,
 	validationstatus integer DEFAULT 0 NOT NULL,
-	active boolean DEFAULT false NOT NULL,
-	published boolean DEFAULT false NOT NULL,
+	is_current boolean DEFAULT false NOT NULL,
+	is_imported boolean DEFAULT false NOT NULL,
 
 	sequence integer NOT NULL,
 	pofile integer NOT NULL,
@@ -61,10 +61,10 @@ ALTER TABLE ONLY TranslationMessage
 	ADD CONSTRAINT translationmessage__potmsgset__fk
 	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
-CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__active__key
-	ON TranslationMessage(potmsgset, pofile) WHERE active;
-CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__published__key
-	ON TranslationMessage(potmsgset, pofile) WHERE published;
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
+	ON TranslationMessage(potmsgset, pofile) WHERE is_current;
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
+	ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
 CREATE INDEX translationmessage__person__idx ON TranslationMessage(person);
 CREATE INDEX translationmessage__pofile__sequence__idx
 	ON TranslationMessage(pofile, sequence);
@@ -115,8 +115,8 @@ CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, datecreated, person,
-	validationstatus, active, published, sequence, pofile, obsolete,
+	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
+	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
 	isfuzzy, potmsgset, date_reviewed, reviewer,
 	msgsetid, id0, id1, id2, id3, commenttext)
 SELECT
@@ -125,11 +125,11 @@ SELECT
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS datecreated,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
-	TRUE AS active,
-	TRUE AS published,
+	TRUE AS is_current,
+	TRUE AS is_imported,
 
 	m.sequence AS sequence,
 	m.pofile AS pofile,
@@ -176,8 +176,8 @@ WHERE
 
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, datecreated, person,
-	validationstatus, active, published, sequence, pofile, obsolete,
+	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
+	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
 	isfuzzy, potmsgset, date_reviewed, reviewer,
 	msgsetid, id0, id1, id2, id3, commenttext)
 SELECT
@@ -186,11 +186,11 @@ SELECT
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS datecreated,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
-	TRUE AS active,
-	FALSE AS published,
+	TRUE AS is_current,
+	FALSE AS is_imported,
 
 	m.sequence AS sequence,
 	m.pofile AS pofile,
@@ -234,8 +234,8 @@ WHERE
 
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, datecreated, person,
-	validationstatus, active, published, sequence, pofile, obsolete,
+	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
+	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
 	isfuzzy, potmsgset, date_reviewed, reviewer,
 	msgsetid, id0, id1, id2, id3, commenttext)
 SELECT
@@ -244,11 +244,11 @@ SELECT
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS datecreated,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
-	FALSE AS active,
-	TRUE AS published,
+	FALSE AS is_current,
+	TRUE AS is_imported,
 
 	m.sequence AS sequence,
 	m.pofile AS pofile,
@@ -289,8 +289,8 @@ WHERE
 
 -- Bundle POSubmissions that are not all published or active.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, origin, datecreated, person,
-	validationstatus, active, published, sequence, pofile, obsolete,
+	msgstr0, msgstr1, msgstr2, msgstr3, origin, date_created, person,
+	validationstatus, is_current, is_imported, sequence, pofile, obsolete,
 	isfuzzy, potmsgset, date_reviewed, reviewer,
 	msgsetid, id0, id1, id2, id3, commenttext)
 SELECT
@@ -299,11 +299,11 @@ SELECT
 	s2.potranslation AS msgstr2,
 	s3.potranslation AS msgstr3,
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS datecreated,
+	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated) AS date_created,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS person,
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
-	FALSE AS active,
-	FALSE AS published,
+	FALSE AS is_current,
+	FALSE AS is_imported,
 
 	m.sequence AS sequence,
 	m.pofile AS pofile,
@@ -416,7 +416,7 @@ ALTER TABLE POTemplate
 	ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
 -- Merge POMsgIDSighting into POTMsgSet
-ALTER TABLE POTMsgSet RENAME primemsgid TO msgid;
+ALTER TABLE POTMsgSet RENAME primemsgid TO msgid_singular;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
 
 ALTER TABLE POTMsgSet
@@ -460,9 +460,9 @@ CREATE VIEW POExport(
 	translation1,
 	translation2,
 	translation3,
-	activesubmission,
+	current_translation,
 	context,
-	msgid,
+	msgid_singular,
 	msgid_plural
 	) AS
 SELECT
@@ -495,17 +495,18 @@ SELECT
 	potranslation1.translation AS translation1,
 	potranslation2.translation AS translation2,
 	potranslation3.translation AS translation3,
-	translationmessage.id AS activesubmission,
+	translationmessage.id AS current_translation,
 	potmsgset.context,
-	msgid.msgid,
+	msgid_singular.msgid AS msgid_singular,
 	msgid_plural.msgid AS msgid_plural
 FROM potmsgset
 JOIN potemplate ON potemplate.id = potmsgset.potemplate
 JOIN pofile ON potemplate.id = pofile.potemplate
 LEFT JOIN TranslationMessage ON
 	potmsgset.id = translationmessage.potmsgset AND
-	translationmessage.pofile = pofile.id AND translationmessage.active
-LEFT JOIN pomsgid AS msgid ON msgid.id = potmsgset.msgid
+	translationmessage.pofile = pofile.id AND
+	translationmessage.is_current
+LEFT JOIN pomsgid AS msgid_singular ON msgid_singular.id = potmsgset.msgid_singular
 LEFT JOIN pomsgid AS msgid_plural ON msgid_plural.id = potmsgset.msgid_plural
 LEFT JOIN potranslation AS potranslation0 ON
 	potranslation0.id = translationmessage.msgstr0
@@ -534,7 +535,7 @@ CREATE VIEW POTExport(
 	flagscomment,
 	filereferences,
 	context,
-	msgid,
+	msgid_singular,
 	msgid_plural
 	) AS
 SELECT
@@ -554,11 +555,11 @@ SELECT
 	potmsgset.flagscomment,
 	potmsgset.filereferences,
 	potmsgset.context,
-	msgid.msgid,
+	msgid_singular.msgid AS msgid_singular,
 	msgid_plural.msgid AS msgid_plural
 FROM POTMsgSet
 JOIN potemplate ON potemplate.id = potmsgset.potemplate
-LEFT JOIN POMsgID AS msgid ON POTMsgSet.msgid = msgid.id
+LEFT JOIN POMsgID AS msgid_singular ON POTMsgSet.msgid_singular = msgid_singular.id
 LEFT JOIN POMsgID AS msgid_plural ON POTMsgSet.msgid_plural = msgid_plural.id;
 
 -- Clean up columns that were only for use during migration.
