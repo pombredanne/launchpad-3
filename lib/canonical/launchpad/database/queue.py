@@ -423,87 +423,63 @@ class PackageUpload(SQLBase):
             changes_lines, changes, summarystring):
         """Send a success email."""
 
-        def do_sendmail(message):
+        def do_sendmail(message, recipients=recipients, from_addr=None,
+                        bcc=None):
             """Perform substitutions on a template and send the email."""
-            body = message.template % message.template_dict()
-            self._sendMail(recipients, message.subject(), body)
+            body = message.template % message.__dict__
+            subject = "%s: %s %s (%s)" % (
+                message.STATUS, self.displayname, self.displayversion,
+                self.displayarchs)
+            if self.isPPA():
+                subject = "[PPA %s] " + subject
+            self._sendMail(recipients, subject, body, from_addr=from_addr,
+                           bcc=bcc)
 
-        class BaseMessage:
-            """Base message class for all notification messages."""
-            interpolations = {
-                "SUMMARY": summarystring,
-                "CHANGESFILE": guess_encoding("".join(changes_lines)),
-                "DISTRO": self.distroseries.distribution.title,
-                "ANNOUNCE": announce_list,
-                "STATUS": "Accepted",
-            }
-
-            name = self.displayname
-            version = self.displayversion
-            archs = self.displayarchs
-
-            def subject():
-                raise Exception("Must define subject method on subclass.")
-
-            def template_dict():
-                raise Exception(
-                    "Must define template_dict method on subclass.")
-
-        class NewMessage(BaseMessage):
+        class NewMessage:
             """New message."""
             template = get_email_template('upload-new.txt')
 
-            def __init__(self, filename):
-                self.filename = filename
+            STATUS = "New"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+            DISTRO = self.distroseries.distribution.title
+            ANNOUNCE = announce_list
 
-            def subject(self):
-                return "%s is NEW" % self.filename
-
-            def template_dict(self):
-                return self.interpolations
-
-        class UnapprovedMessage(BaseMessage):
+        class UnapprovedMessage:
             """Unapproved message."""
             template = get_email_template('upload-accepted.txt')
 
-            def subject(self):
-                return "Waiting for approval: %s %s (%s)" % (
-                    self.name, self.version, self.archs)
-
-            def template_dict(self):
-                template_dict = self.interpolations
-                template_dict["SUMMARY"] += (
+            STATUS = "Waiting for approval"
+            SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-                template_dict["STATUS"] = "Waiting for approval:"
-                return template_dict
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+            DISTRO = self.distroseries.distribution.title
+            ANNOUNCE = announce_list
 
-        class AcceptedMessage(BaseMessage):
+        class AcceptedMessage:
             """Accepted message."""
             template = get_email_template('upload-accepted.txt')
 
-            def subject(self):
-                return "Accepted %s %s (%s)" % (
-                    self.name, self.version, self.archs)
+            STATUS = "Accepted"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+            DISTRO = self.distroseries.distribution.title
+            ANNOUNCE = announce_list
 
-            def template_dict(self):
-                return self.interpolations
-
-        class PPAMessage(BaseMessage):
+        class PPAAcceptedMessage:
             """PPA accepted message."""
             template = get_email_template('ppa-upload-accepted.txt')
 
-            def __init__(self, owner_name):
-                self.owner_name = owner_name
+            STATUS = "Accepted"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
 
-            def subject(self):
-                return "[PPA %s] Accepted %s %s (%s)" % (
-                    self.owner_name, self.name, self.version, self.archs)
+        class AnnouncementMessage:
+            template = get_email_template('upload-announcement.txt')
 
-            def template_dict(self):
-                template_dict = self.interpolations
-                template_dict["STATUS"] = "[PPA %s] Accepted" % (
-                    self.owner_name)
-                return template_dict
+            STATUS = "Accepted"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
 
 
         # The template is ready.  The remainder of this function deals with
@@ -512,26 +488,26 @@ class PackageUpload(SQLBase):
 
         if self.status == PackageUploadStatus.NEW:
             # This is an unknown upload.
-            do_sendmail(NewMessage(self.changesfile.filename))
+            do_sendmail(NewMessage)
             return
 
         # Unapproved uploads coming from an insecure policy only send
         # an acceptance message.
         if self.status == PackageUploadStatus.UNAPPROVED:
             # Only send an acceptance message.
-            do_sendmail(UnapprovedMessage())
+            do_sendmail(UnapprovedMessage)
             return
 
         if self.isPPA():
             # PPA uploads receive an acceptance message.
-            do_sendmail(PPAMessage(self.archive.owner.name))
+            do_sendmail(PPAAcceptedMessage)
             return
 
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
             debug(self.logger, "Skipping announcement, it is a BACKPORT.")
-            do_sendmail(AcceptedMessage())
+            do_sendmail(AcceptedMessage)
             return
 
         # Auto-approved binary uploads to security skips the announcement,
@@ -540,12 +516,12 @@ class PackageUpload(SQLBase):
             and self.contains_build):
             debug(self.logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
-            do_sendmail(AcceptedMessage())
+            do_sendmail(AcceptedMessage)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
-        do_sendmail(AcceptedMessage())
+        do_sendmail(AcceptedMessage)
 
         if announce_list:
             if not self.signing_key:
@@ -553,20 +529,15 @@ class PackageUpload(SQLBase):
             else:
                 from_addr = guess_encoding(changes['changed-by'])
 
-            subject = "Accepted %s %s (%s)" % (
-                self.displayname, self.displayversion, self.displayarchs)
-            announce_template = get_email_template('upload-announcement.txt')
-            self._sendMail(
-                [str(announce_list)],
-                subject,
-                announce_template % BaseMessage.interpolations,
+            do_sendmail(
+                AnnouncementMessage,
+                recipients=[str(announce_list)],
                 from_addr=from_addr,
                 bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
-        return
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None):
-        """See `IDistroSeriesQueue`."""
+        """See `IPackageUpload`."""
 
         self.logger = logger
 

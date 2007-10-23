@@ -96,6 +96,9 @@ There is only one email generated:
   >>> notification['X-Katie']
   'Launchpad actually'
 
+  >>> notification['Subject']
+  'New: bar 1.0-1 (source)'
+
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
@@ -374,7 +377,7 @@ There is one email generated:
   'Celso Providelo <celso.providelo@canonical.com>'
 
   >>> notification['Subject']
-  'Accepted bar 1.0-4 (source)'
+  'Accepted: bar 1.0-4 (source)'
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -421,7 +424,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
-  ['Accepted bar 1.0-2 (source)', 'Accepted bar 1.0-2 (source)']
+  ['Accepted: bar 1.0-2 (source)', 'Accepted: bar 1.0-2 (source)']
 
   >>> [message['X-Katie'] for message in msgs]
   ['Launchpad actually', 'Launchpad actually']
@@ -472,7 +475,7 @@ One email generated:
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
   >>> notification['Subject']
-  'Accepted bar 1.0-2 (i386)'
+  'Accepted: bar 1.0-2 (i386)'
 
 
 Dry run uploads should not generate any emails.  Call do_accept with
