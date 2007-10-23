@@ -76,10 +76,41 @@ Policies can make decisions based on whether or not they want to
 approve an upload automatically (I.E. move it straight to ACCEPTED
 instead of UNAPPROVED)
 
-Uploads to the RELEASE pocket are approved by the insecure policy
+  >>> from canonical.launchpad.interfaces import (
+  ...     DistroSeriesStatus, IDistributionSet)
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+
+  >>> class FakeUpload:
+  ...   def __init__(self, ppa=False):
+  ...       self.is_ppa = ppa
+
+  >>> print hoary.status.name
+  DEVELOPMENT
+
+Uploads to the RELEASE pocket of not FROZEN distroseries are approved
+by the insecure policy:
 
   >>> insecure_policy.setDistroSeriesAndPocket('hoary')
-  >>> insecure_policy.autoApprove(None)
+  >>> insecure_policy.autoApprove(FakeUpload())
+  True
+
+  >>> insecure_policy.autoApprove(FakeUpload(ppa=True))
+  True
+
+When the distroseries is FROZEN the uploads should wait in UNAPPROVED queue:
+
+  >>> login('foo.bar@canonical.com')
+  >>> hoary.status = DistroSeriesStatus.FROZEN
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+
+  >>> insecure_policy.autoApprove(FakeUpload())
+  False
+
+PPA uploads continue to be auto-approved:
+
+  >>> insecure_policy.autoApprove(FakeUpload(ppa=True))
   True
 
 Reset the policy so that we can try again...
@@ -90,6 +121,11 @@ Reset the policy so that we can try again...
 Uploads to the UPDATES pocket are not auto-approved by the insecure policy
 
   >>> insecure_policy.setDistroSeriesAndPocket('hoary-updates')
-  >>> insecure_policy.autoApprove(None)
+  >>> insecure_policy.autoApprove(FakeUpload())
   False
 
+Despite of not being allowed yet (see UploadPolicy.checkUpload) PPA
+uploads to post-release pockets would also be auto-approved:
+
+  >>> insecure_policy.autoApprove(FakeUpload(ppa=True))
+  True

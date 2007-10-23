@@ -36,6 +36,8 @@ class ArchiveNavigation(Navigation):
     usedfor = IArchive
 
     def breadcrumb(self):
+        if self.context.purpose == ArchivePurpose.PPA:
+            return "PPA"
         return self.context.title
 
     @stepthrough('+build')

@@ -492,10 +492,13 @@ class BranchWithSortKeys(Branch):
         instead, we ask the view for the rows with the same ids as the
         branches returned by the generated query.
         """
+        tables = ['Branch']
+        if clauseTables is not None:
+            tables.extend(clauseTables)
         query = """BranchWithSortKeys.id IN
-                   (SELECT Branch.id FROM Branch WHERE %s)""" % (query,)
-        return super(BranchWithSortKeys, cls).select(
-            query, clauseTables=clauseTables, orderBy=orderBy)
+                   (SELECT Branch.id FROM %s WHERE %s)""" % (
+                ', '.join(tables), query)
+        return super(BranchWithSortKeys, cls).select(query, orderBy=orderBy)
 
 
 LISTING_SORT_TO_COLUMN = {
@@ -504,10 +507,10 @@ LISTING_SORT_TO_COLUMN = {
     BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
-    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: 'last_scanned',
-    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
-    BranchListingSort.NEWEST_FIRST: 'date_created',
-    BranchListingSort.OLDEST_FIRST: '-date_created',
+    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-last_scanned',
+    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'last_scanned',
+    BranchListingSort.NEWEST_FIRST: '-date_created',
+    BranchListingSort.OLDEST_FIRST: 'date_created',
     }
 
 
