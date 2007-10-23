@@ -185,6 +185,20 @@ class DriveSprint(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class Sprint(AuthorizationBase):
+    """An attendee, owner, or driver of a sprint."""
+    permission = 'launchpad.View'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
+                user in [attendance.attendee
+                         for attendance in self.obj.attendances] or
+                user.inTeam(admins))
+
+
 class EditSpecificationSubscription(AuthorizationBase):
     """The subscriber, and people related to the spec or the target of the
     spec can determine who is essential."""
