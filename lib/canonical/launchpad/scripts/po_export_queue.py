@@ -18,7 +18,7 @@ from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPOExportRequestSet, IPOTemplate,
-    ITranslationExporter, ITranslationFile)
+    ITranslationExporter, ITranslationFileData)
 from canonical.launchpad.mail import simple_sendmail
 
 
@@ -166,7 +166,7 @@ def process_request(person, objects, format, logger):
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
             last_template_name = template_name
-        translation_file_list.append(ITranslationFile(obj))
+        translation_file_list.append(ITranslationFileData(obj))
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(

@@ -169,11 +169,6 @@ class ITranslationMessage(Interface):
             "Whether this translation was obsolete in last imported file"),
         readonly=False, required=True)
 
-    was_complete_in_last_import = Bool(
-        title=_(
-            "Whether this translation was complete in last imported file"),
-        readonly=True, required=True)
-
     was_fuzzy_in_last_import = Bool(
         title=_(
             "Whether this imported translation must be checked before use it"
@@ -185,22 +180,8 @@ class ITranslationMessage(Interface):
         It must not be referenced by any other object.
         """
 
-    def setCurrent():
-        """Set the translation message as the used in Launchpad.
-
-        It will change previous current translation message for the same
-        `IPOTMsgSet` and `ILanguage`, if any, to be not current.
-        """
-
-    def setImported():
-        """Set the translation message as the one imported.
-
-        It will change previous imported translation message for the same
-        `IPOTMsgSet` and `ILanguage`, if any, to be not imported.
-        """
-
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
-    def makeHTMLId(description, for_potmsgset=None):
+    def makeHTMLID(description, for_potmsgset=None):
         """Unique identifier for self, suitable for use in HTML element ids.
 
         Constructs an identifier for use in HTML.  This identifier matches the
