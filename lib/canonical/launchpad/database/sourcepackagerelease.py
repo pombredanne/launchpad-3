@@ -23,17 +23,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingStatus,
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
-    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES, NotFoundError
-    )
+    ArchivePurpose, BugTaskSearchParams, BuildStatus, ILaunchpadCelebrities,
+    ISourcePackageRelease, ITranslationImportQueue, PackagePublishingStatus,
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
+    UNRESOLVED_BUGTASK_STATUSES, NotFoundError)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (

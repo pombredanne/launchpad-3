@@ -88,6 +88,10 @@ class POSubmissionSet:
         # A suggestion coming from a fuzzy pomsgset isn't relevant as a
         # suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
+        #
+        # If the translation template is not current (iscurrent IS FALSE) or
+        # its attached distribution or product is not using Launchpad
+        # Translations, we ignore all suggestions from that template.
 
         if stored_pomsgsets:
             # Fetch submissions attached to our POMsgSets.
@@ -99,7 +103,21 @@ class POSubmissionSet:
                 FROM POSubmission
                 JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
                 JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
-                WHERE %(one_of_ours)s
+                JOIN POTemplate ON
+                    POTMsgSet.potemplate = POTemplate.id AND
+                    POTemplate.iscurrent
+                LEFT JOIN ProductSeries ON
+                    POTemplate.productseries = ProductSeries.id
+                LEFT JOIN Product ON
+                    ProductSeries.product = Product.id
+                LEFT JOIN DistroRelease ON
+                    POTemplate.distrorelease = DistroRelease.id
+                LEFT JOIN Distribution ON
+                    DistroRelease.distribution = Distribution.id
+                WHERE
+                    %(one_of_ours)s AND
+                    (Product.official_rosetta OR
+                     Distribution.official_rosetta)
                 """ % parameters
 
             cur.execute(query)
@@ -133,11 +151,24 @@ class POSubmissionSet:
             FROM POMsgSet
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
             JOIN POFile ON POMsgSet.pofile = POFile.id
+            JOIN POTemplate ON
+                    POFile.potemplate = POTemplate.id AND
+                    POTemplate.iscurrent
+            LEFT JOIN ProductSeries ON
+                POTemplate.productseries = ProductSeries.id
+            LEFT JOIN Product ON
+                ProductSeries.product = Product.id
+            LEFT JOIN DistroRelease ON
+                POTemplate.distrorelease = DistroRelease.id
+            LEFT JOIN Distribution ON
+                DistroRelease.distribution = Distribution.id
             WHERE
                 POFile.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
                 NOT POMsgSet.isfuzzy AND
-                NOT %(one_of_ours)s
+                NOT %(one_of_ours)s AND
+                (Product.official_rosetta OR
+                 Distribution.official_rosetta)
             """ % parameters)
         cur.execute(
             "CREATE INDEX %(temp_table)s_idx ON %(temp_table)s(id)"

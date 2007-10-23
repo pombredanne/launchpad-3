@@ -23,10 +23,10 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugAttachmentSet, IBugBranch, IBugSet, IBugWatchSet, ICveSet,
-    IDistribution, IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
-    IProductSeries, IProductSeriesBugTask, ISourcePackage,
+    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBranch, IBugSet,
+    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IProduct, IProductSeries, IProductSeriesBugTask, ISourcePackage,
     IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
@@ -56,7 +56,7 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, DistroSeriesStatus
+from canonical.lp.dbschema import BugAttachmentType
 
 
 _bug_tag_query_template = """
@@ -163,8 +163,6 @@ class Bug(SQLBase):
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    externalrefs = SQLMultipleJoin(
-            'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')

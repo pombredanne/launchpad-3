@@ -28,8 +28,7 @@
       <tal:has_prod_translationgrp condition="product/translationgroup">
         <b>Translation group:</b><br />
         <a tal:content="product/translationgroup/title"
-           tal:attributes="href
-             string:/translations/groups/${product/translationgroup/name}/"
+           tal:attributes="href product/translationgroup/fmt:url"
              >Ubuntu Translation Group</a><br />
       </tal:has_prod_translationgrp>
       <tal:has_project condition="product/project"
@@ -40,8 +39,7 @@
         <tal:has_proj_translationgrp condition="project/translationgroup">
           <b>Project translation group:</b><br />
           <a tal:content="project/translationgroup/title"
-             tal:attributes="href
-                 string:/translations/groups/${project/translationgroup/name}/"
+             tal:attributes="href project/translationgroup/fmt:url"
                >Ubuntu Translation Group</a><br />
         </tal:has_proj_translationgrp>
       </tal:has_project>
@@ -65,12 +63,11 @@
     <b>Translation group:</b><br />
     <tal:block condition="distro/translationgroup">
       <a tal:content="distro/translationgroup/title"
-         tal:attributes="href
-           string:/translations/groups/${distro/translationgroup/name}/"
+         tal:attributes="href distro/translationgroup/fmt:url"
            >Distro Translation Group</a>
     </tal:block>
     <tal:block condition="not: distro/translationgroup">
-      <i>None selected</i>
+      <i>Not assigned</i>
     </tal:block>
     <br />
     </tal:block>

@@ -11,11 +11,9 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    BinaryPackageFileType, SourcePackageFileType)
-
 from canonical.launchpad.interfaces import (
-    IBinaryPackageFile, ISourcePackageReleaseFile)
+    BinaryPackageFileType, IBinaryPackageFile, ISourcePackageReleaseFile,
+    SourcePackageFileType)
 
 
 class BinaryPackageFile(SQLBase):

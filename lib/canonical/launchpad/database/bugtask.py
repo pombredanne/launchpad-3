@@ -62,6 +62,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
+    PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,)
 from canonical.launchpad.helpers import shortlist
@@ -70,7 +71,6 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     BugNominationStatus,
     BugTaskImportance,
-    PackagePublishingStatus,
     )
 
 

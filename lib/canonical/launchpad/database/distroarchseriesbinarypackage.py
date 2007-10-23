@@ -13,7 +13,6 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease
     )
@@ -27,7 +26,7 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory
     )
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackage,NotFoundError
+    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus
     )
 
 

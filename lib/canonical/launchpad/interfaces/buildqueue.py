@@ -88,6 +88,9 @@ class IBuildQueue(Interface):
     def getLogFileName():
         """Get the preferred filename for the buildlog of this build."""
 
+    def markAsBuilding(builder):
+        """Set this queue item to a 'building' state."""
+
     def updateBuild_IDLE(build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """Somehow the builder forgot about the build job.

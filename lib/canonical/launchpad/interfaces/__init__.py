@@ -29,7 +29,6 @@ from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.branchvisibilitypolicy import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
-from canonical.launchpad.interfaces.bugextref import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
 from canonical.launchpad.interfaces.bugcve import *
@@ -122,7 +121,6 @@ from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
-from canonical.launchpad.interfaces.rosetta import *
 from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
@@ -147,8 +145,9 @@ from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
-from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationfileformat import *
+from canonical.launchpad.interfaces.translationimporter import *
+from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *

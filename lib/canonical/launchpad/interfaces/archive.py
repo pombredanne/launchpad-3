@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ArchivePurpose',
     'IArchive',
     'IPPAActivateForm',
     'IArchiveSet',
@@ -16,6 +17,7 @@ from zope.schema import Bool, Choice, Int, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class IArchive(IHasOwner):
@@ -129,3 +131,43 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+class ArchivePurpose(DBEnumeratedType):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    PRIMARY = DBItem(1, """
+        Primary Archive
+
+        This is the primary Ubuntu archive.
+        """)
+
+    PPA = DBItem(2, """
+        PPA Archive
+
+        This is a Personal Package Archive.
+        """)
+
+    EMBARGOED = DBItem(3, """
+        Embargoed Archive
+
+        This is the archive for embargoed packages.
+        """)
+
+    PARTNER = DBItem(4, """
+        Partner Archive
+
+        This is the archive for partner packages.
+        """)
+
+    OBSOLETE = DBItem(5, """
+        Obsolete Archive
+
+        This is the archive for obsolete packages.
+        """)
+

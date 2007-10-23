@@ -10,12 +10,12 @@ __all__ = ['VPOExportSet', 'VPOExport']
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.database import POTemplate
 from canonical.launchpad.database import POFile
 from canonical.launchpad.database import Language
-from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
+from canonical.launchpad.interfaces import (
+    IVPOExportSet, IVPOExport, PackagePublishingStatus)
 
 class VPOExportSet:
     """Retrieve collections of VPOExport objects."""
@@ -143,11 +143,9 @@ class VPOExportSet:
             AND SourcePackageRelease.sourcepackagename =
                 POTemplate.sourcepackagename AND
             Component.name = %s AND
-            SourcePackagePublishingHistory.status != %s AND
+            SourcePackagePublishingHistory.dateremoved is NULL AND
             SourcePackagePublishingHistory.archive = %s
-            ''' % sqlvalues(component,
-                            PackagePublishingStatus.REMOVED,
-                            series.main_archive)
+            ''' % sqlvalues(component, series.main_archive)
 
         if languagepack is not None:
             where += ''' AND
@@ -202,11 +200,9 @@ class VPOExportSet:
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
                 Component.name = %s AND
-                SourcePackagePublishingHistory.status != %s AND
+                SourcePackagePublishingHistory.dateremoved is NULL AND
                 SourcePackagePublishingHistory.archive = %s
-                ''' % sqlvalues(component,
-                                PackagePublishingStatus.REMOVED,
-                                series.main_archive)
+                ''' % sqlvalues(component, series.main_archive)
 
         if languagepack is not None:
             where += ''' AND

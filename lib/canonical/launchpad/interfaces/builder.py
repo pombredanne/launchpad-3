@@ -123,6 +123,12 @@ class IBuilder(IHasOwner):
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
+    pocket_dependencies = Attribute("""
+        A dictionary of pocket to a tuple of pocket dependencies.
+
+        A dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+        """)
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.

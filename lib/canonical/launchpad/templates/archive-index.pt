@@ -12,7 +12,8 @@
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1>PPA Overview</h1>
+      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /></h2>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
@@ -34,10 +35,14 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <p>For more information about how to configure your system to
-        use packages from this PPA see
-        <a href="https://help.launchpad.net/PPAQuickStart"
-        >quick-start guide</a>.</p>
+      <h2>sources.list entries</h2>
+
+      <pre style="border: 1px solid gray; padding: 0.3em">
+deb <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /> ubuntu main
+deb-src <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /> ubuntu main</pre>
+
 
       <h2>Packages</h2>
 
@@ -61,13 +66,9 @@
         </ul>
       </div>
 
-      <p>Browse the archive in
-         <a tal:attributes="href context/archive_url"
-            tal:content="context/archive_url" />.</p>
-
       <div>
         <form name="package_search" action="" method="GET">
-           <label for="name"> Packages with name containing:</label>
+           <label for="name">Package name contains:</label>
            <input id="name" title="Package Name" size="20"
                   type="text" name="name_filter"
                   tal:attributes="value view/name_filter"/>
@@ -88,10 +89,9 @@
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
-            <th>Target</th>
-            <th>Pocket</th>
-            <th>Component</th>
+            <th>Series</th>
             <th>Section</th>
+            <th>Files</th>
           </tr>
         </thead>
         <tbody>
@@ -121,6 +121,14 @@
       You can view the current
       <a href="https://help.launchpad.net/PPATermsofUse"
       >Terms of Use</a> for the Launchpad PPA service.
+
+      <br />
+      <br />
+      For more information about how to configure your system to
+      use packages from this PPA see
+      <a href="https://help.launchpad.net/PPAQuickStart"
+      >quick-start guide</a>.
+
     </p>
 
   </body>

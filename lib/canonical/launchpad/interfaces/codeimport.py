@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
     ]
@@ -13,11 +14,41 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 
+from canonical.lazr import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root, RevisionControlSystems)
-from canonical.lp.dbschema import CodeImportReviewStatus
+
+
+class CodeImportReviewStatus(DBEnumeratedType):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = DBItem(1, """Pending Review
+
+        This code import request has recently been filed an has not
+        been reviewed yet.
+        """)
+
+    INVALID = DBItem(10, """Invalid
+
+        This code import will not be processed.
+        """)
+
+    REVIEWED = DBItem(20, """Reviewed
+
+        This code import has been approved and will be processed.
+        """)
+
+    SUSPENDED = DBItem(30, """Suspended
+
+        This code import has been approved, but it has been suspended
+        and is not processed.""")
 
 
 class ICodeImport(Interface):
@@ -63,7 +94,7 @@ class ICodeImport(Interface):
                       "code for, or None if there is no such series."))
 
     review_status = Choice(
-        title=_("Review Status"), vocabulary='CodeImportReviewStatus',
+        title=_("Review Status"), vocabulary=CodeImportReviewStatus,
         default=CodeImportReviewStatus.NEW,
         description=_("Before a code import is performed, it is reviewed."
             " Only reviewed imports are processed."))
@@ -108,6 +139,17 @@ class ICodeImport(Interface):
         "If the user did not specify an update interval, this is a default "
         "value selected by Launchpad adminstrators."))
 
+    def updateFromData(data, user):
+        """Modify attributes of the `CodeImport`.
+
+        Create a MODIFY `CodeImportEvent` if needed.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
@@ -121,8 +163,10 @@ class ICodeImportSet(Interface):
     # should be removed after the transition to the new code import system is
     # complete.
 
-    def newWithId(id, registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def newWithId(id, registrant, branch, rcs_type,
+            review_status=CodeImportReviewStatus.NEW,
+            date_last_successful=None,
+            svn_branch_url=None, cvs_root=None, cvs_module=None):
         """Create a new CodeImport with a specified database id."""
 
     def getAll():

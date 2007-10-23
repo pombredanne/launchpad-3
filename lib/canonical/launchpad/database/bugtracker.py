@@ -46,6 +46,8 @@ class BugTracker(SQLBase):
     contactdetails = StringCol(notNull=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
+    products = SQLMultipleJoin(
+        'Product', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 

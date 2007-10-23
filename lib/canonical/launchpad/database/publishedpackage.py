@@ -12,10 +12,8 @@ from canonical.database.sqlbase import SQLBase, quote, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
 from canonical.launchpad.interfaces import (
-    IPublishedPackage, IPublishedPackageSet)
+    IPublishedPackage, IPublishedPackageSet, PackagePublishingStatus)
 
 
 class PublishedPackage(SQLBase):
@@ -23,8 +21,10 @@ class PublishedPackage(SQLBase):
 
     implements(IPublishedPackage)
 
-    _table = 'PublishedPackageView'
+    _table = 'PublishedPackage'
 
+    archive = ForeignKey(
+        dbName='archive', foreignKey='Archive', immutable=True)
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution',
                               immutable=True)

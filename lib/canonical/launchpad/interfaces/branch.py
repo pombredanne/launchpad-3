@@ -11,6 +11,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
+    'BranchListingSort',
     'BranchType',
     'BranchTypeError',
     'CannotDeleteBranch',
@@ -19,7 +20,7 @@ __all__ = [
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
-    'IBranchLifecycleFilter',
+    'IBranchListingFilter',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'UICreatableBranchType',
@@ -729,7 +730,7 @@ class IBranchSet(Interface):
 
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches associated with person with appropriate lifecycle.
 
         XXX: thumper 2007-03-23:
@@ -757,11 +758,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesAuthoredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches authored by person with appropriate lifecycle.
 
         Only branches that are authored by the person are returned.
@@ -777,11 +781,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesRegisteredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None ):
+        visible_by_user=None, sort_by=None):
         """Branches registered by person with appropriate lifecycle.
 
         Only branches registered by the person but *NOT* authored by
@@ -798,11 +805,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesSubscribedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches subscribed by person with appropriate lifecycle.
 
         All branches where the person has subscribed to the branch
@@ -819,11 +829,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesForProduct(
         product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches associated with product with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -837,11 +850,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesForProject(
         project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches associated with project with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -855,6 +871,9 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getHostedBranchesForPerson(person):
@@ -899,9 +918,10 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
-# XXX: thumper 2007-07-23 bug=66950:
-# Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
-# are used only in browser/branchlisting.py.
+# XXX: TimPenhey 2007-07-23 bug=66950: The enumerations and interface
+# to do with branch listing/filtering/ordering are used only in
+# browser/branchlisting.py.
+
 class BranchLifecycleStatusFilter(EnumeratedType):
     """Branch Lifecycle Status Filter
 
@@ -927,8 +947,71 @@ class BranchLifecycleStatusFilter(EnumeratedType):
         """)
 
 
-class IBranchLifecycleFilter(Interface):
-    """A helper interface to render lifecycle filter choice."""
+class BranchListingSort(EnumeratedType):
+    """Choices for how to sort branch listings."""
+
+    # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
+    # that are not visible in the listing!
+
+    PRODUCT = Item("""
+        by project name
+
+        Sort branches by name of the project the branch is for.
+        """)
+
+    LIFECYCLE = Item("""
+        by lifecycle status
+
+        Sort branches by the lifecycle status.
+        """)
+
+    AUTHOR = Item("""
+        by author name
+
+        Sort branches by the display name of the author.
+        """)
+
+    NAME = Item("""
+        by branch name
+
+        Sort branches by the display name of the registrant.
+        """)
+
+    REGISTRANT = Item("""
+        by registrant name
+
+        Sort branches by the display name of the registrant.
+        """)
+
+    MOST_RECENTLY_CHANGED_FIRST = Item("""
+        most recently changed first
+
+        Sort branches from the most recently to the least recently
+        changed.
+        """)
+
+    LEAST_RECENTLY_CHANGED_FIRST = Item("""
+        least recently changed first
+
+        Sort branches from the least recently to the most recently
+        changed.
+        """)
+
+    NEWEST_FIRST = Item("""
+        newest first
+
+        Sort branches from newest to oldest.
+        """)
+
+    OLDEST_FIRST = Item("""
+        oldest first
+
+        Sort branches from oldest to newest.
+        """)
+
+
+class IBranchListingFilter(Interface):
+    """The schema for the branch listing filtering/ordering form."""
 
     # Stats and status attributes
     lifecycle = Choice(
@@ -942,3 +1025,8 @@ class IBranchLifecycleFilter(Interface):
         " Merged: integrated into mainline, of historical interest only."
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
+
+    sort_by = Choice(
+        title=_('ordered by'), vocabulary=BranchListingSort,
+        default=BranchListingSort.LIFECYCLE)
+

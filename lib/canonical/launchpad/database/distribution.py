@@ -61,15 +61,12 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingStatus,
-    PackageUploadStatus)
-
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IArchiveSet, IBuildSet, IDistribution, IDistributionSet,
-    IFAQTarget, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName, MirrorContent,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
+    IHasLogo, IHasMugshot, ILaunchpadCelebrities, IQuestionTarget,
+    ISourcePackageName, MirrorContent, PackagePublishingStatus,
+    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
@@ -167,7 +164,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
-    def archiveIdList(self, archive=None):
+    def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:
             return self.all_distro_archive_ids
@@ -674,12 +671,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id
-            """ % sqlvalues(self,
-                            self.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                SourcePackageName.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -702,12 +697,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id
-            """ % sqlvalues(self,
-                            self.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                SourcePackageName.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -735,10 +728,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(sourcepackagename, self,
-                            self.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
+                            self.all_distro_archive_ids),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))

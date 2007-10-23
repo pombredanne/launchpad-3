@@ -5,10 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'AdminRequestPeopleMergeView',
     'BaseListView',
     'BugContactPackageBugsSearchListingView',
-    'FinishedPeopleMergeRequestView',
     'FOAFSearchView',
     'PeopleListView',
     'PersonAddView',
@@ -68,8 +66,6 @@ __all__ = [
     'PersonView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
-    'RequestPeopleMergeMultipleEmailsView',
-    'RequestPeopleMergeView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
@@ -95,10 +91,6 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
-from zope.app.form.browser.add import AddView
-from zope.app.form.utility import setUpWidgets
-from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError)
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
@@ -114,19 +106,19 @@ from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, ICountry,
-    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
-    ITeamMembershipSet, ITeamReassignment, IPollSubset,
-    IPerson, ITeam, IPollSet, IAdminRequestPeopleMerge,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
-    GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
-    IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
-    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
-    PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation, SpecificationFilter)
+    BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
+    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
+    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
+    ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
+    NotFoundError, PersonCreationRationale, QuestionParticipation,
+    SpecificationFilter, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -139,7 +131,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
-from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 
 from canonical.launchpad.validators.email import valid_email
 
@@ -150,10 +142,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
-    ApplicationMenu, enabled_with_permission, Navigation, stepto,
-    stepthrough, smartquote, LaunchpadEditFormView, LaunchpadFormView,
-    action, custom_widget)
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, 
+    Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough, stepto)
 
 from canonical.launchpad import _
 
@@ -454,8 +445,8 @@ class PersonSetContextMenu(ContextMenu):
     usedfor = IPersonSet
 
     links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
-             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge',
-             'mergeaccounts']
+             'teamlist', 'ubunterolist', 'newteam', 'adminpeoplemerge',
+             'adminteammerge', 'mergeaccounts']
 
     def products(self):
         return Link('/projects/', 'View projects')
@@ -490,9 +481,14 @@ class PersonSetContextMenu(ContextMenu):
         return Link('+requestmerge', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
-    def adminrequestmerge(self):
-        text = 'Admin merge accounts'
-        return Link('+adminrequestmerge', text, icon='edit')
+    def adminpeoplemerge(self):
+        text = 'Admin merge people'
+        return Link('+adminpeoplemerge', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminteammerge(self):
+        text = 'Admin merge teams'
+        return Link('+adminteammerge', text, icon='edit')
 
 
 class PersonSOP(StructuralObjectPresentation):
@@ -613,8 +609,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     def softwarebugs(self):
         text = 'Show package report'
-        summary = ('A summary report for packages where %s is a bug '
-            'contact.' %self.context.displayname)
+        summary = ('A summary report for packages where %s is a bug contact.'
+                   % self.context.displayname)
         return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):
@@ -624,21 +620,21 @@ class PersonBugsMenu(ApplicationMenu):
 
     def subscribedbugs(self):
         text = 'List subscribed bugs'
-        summary = 'Lists bug reports %s is subscribed to.' % \
-            self.context.displayname
+        summary = ('Lists bug reports %s is subscribed to.'
+                   % self.context.displayname)
         return Link('+subscribedbugs', text, summary=summary)
 
     def mentoring(self):
         text = 'Mentoring offered'
-        summary = 'Lists bugs for which %s has offered to mentor someone.' % \
-            self.context.displayname
+        summary = ('Lists bugs for which %s has offered to mentor someone.'
+                   % self.context.displayname)
         enabled = self.context.mentoring_offers
         return Link('+mentoring', text, enabled=enabled, summary=summary)
 
     def commentedbugs(self):
         text = 'List commented bugs'
-        summary = 'Lists bug reports on which %s has commented.' % \
-            self.context.displayname
+        summary = ('Lists bug reports on which %s has commented.'
+                   % self.context.displayname)
         return Link('+commentedbugs', text, summary=summary)
 
 
@@ -766,7 +762,7 @@ class CommonMenuLinks:
 
     def show_ppa(self):
         target = '+archive'
-        text = 'Show Personal Package Archive'
+        text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         enable_link = (self.context.archive is not None)
         return Link(target, text, summary, icon='info', enabled=enable_link)
@@ -1408,8 +1404,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             # We must UTF-8 encode searchtext to play nicely with
             # urllib.urlencode, because it may contain non-ASCII characters.
             if extra_params.has_key("field.searchtext"):
-                extra_params["field.searchtext"] = \
-                    extra_params["field.searchtext"].encode("utf8")
+                extra_params["field.searchtext"] = (
+                    extra_params["field.searchtext"].encode("utf8"))
 
             params.update(extra_params)
 
@@ -2709,11 +2705,11 @@ class PersonEditEmailsView:
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id, \
-                "differing ids in emailaddress.person.id(%s,%d) == " \
-                "self.context.id(%s,%d) (%s)" % \
-                (emailaddress.person.name, emailaddress.person.id,
-                 self.context.name, self.context.id, emailaddress.email)
+        assert emailaddress.person.id == self.context.id, (
+                "differing ids in emailaddress.person.id(%s,%d) == "
+                "self.context.id(%s,%d) (%s)"
+                % (emailaddress.person.name, emailaddress.person.id,
+                   self.context.name, self.context.id, emailaddress.email))
 
         if emailaddress.status != EmailAddressStatus.VALIDATED:
             self.message = (
@@ -2721,202 +2717,6 @@ class PersonEditEmailsView:
             return
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
-
-
-class RequestPeopleMergeView(AddView):
-    """The view for the page where the user asks a merge of two accounts.
-
-    If the dupe account have only one email address we send a message to that
-    address and then redirect the user to other page saying that everything
-    went fine. Otherwise we redirect the user to another page where we list
-    all email addresses owned by the dupe account and the user selects which
-    of those (s)he wants to claim.
-    """
-
-    _nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        user = getUtility(ILaunchBag).user
-        dupeaccount = data['dupeaccount']
-        if dupeaccount == user:
-            # Please, don't try to merge you into yourself.
-            return
-
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
-        emails_count = emails.count()
-        if emails_count > 1:
-            # The dupe account have more than one email address. Must redirect
-            # the user to another page to ask which of those emails (s)he
-            # wants to claim.
-            self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
-            return
-
-        assert emails_count == 1
-        email = emails[0]
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(user, login, email.email,
-                                  LoginTokenType.ACCOUNTMERGE)
-
-        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.
-        import canonical.database.sqlbase
-        canonical.database.sqlbase.flush_database_updates()
-        token.sendMergeRequestEmail()
-        self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
-
-
-class AdminRequestPeopleMergeView(LaunchpadView):
-    """The view for the page where an admin can merge two accounts."""
-
-    def initialize(self):
-        self.errormessages = []
-        self.shouldShowConfirmationPage = False
-        setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
-
-    def processForm(self):
-        form = self.request.form
-        if 'continue' in form:
-            # get data from the form
-            self.dupe_account = self._getInputValue(self.dupe_account_widget)
-            self.target_account = self._getInputValue(
-                self.target_account_widget)
-            if self.errormessages:
-                return
-
-            if self.dupe_account == self.target_account:
-                self.errormessages.append(_(
-                    "You can't merge %s into itself."
-                    % self.dupe_account.name))
-                return
-
-            emailset = getUtility(IEmailAddressSet)
-            self.emails = emailset.getByPerson(self.dupe_account)
-            # display dupe_account email addresses and confirmation page
-            self.shouldShowConfirmationPage = True
-
-        elif 'merge' in form:
-            self._performMerge()
-            self.request.response.addInfoNotification(_(
-                'Merge completed successfully.'))
-            self.request.response.redirect(canonical_url(self.target_account))
-
-    def _getInputValue(self, widget):
-        name = self.request.get(widget.name)
-        try:
-            account = widget.getInputValue()
-        except WidgetInputError:
-            self.errormessages.append(_("You must choose an account."))
-            return
-        except ConversionError:
-            self.errormessages.append(_("%s is an invalid account." % name))
-            return
-        return account
-
-    def _performMerge(self):
-        personset = getUtility(IPersonSet)
-        emailset = getUtility(IEmailAddressSet)
-
-        dupe_name = self.request.form.get('dupe_name')
-        target_name = self.request.form.get('target_name')
-
-        self.dupe_account = personset.getByName(dupe_name)
-        self.target_account = personset.getByName(target_name)
-
-        emails = emailset.getByPerson(self.dupe_account)
-        if emails:
-            for email in emails:
-                # transfer all emails from dupe to targe account
-                email.person = self.target_account
-                email.status = EmailAddressStatus.NEW
-
-        getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
-
-
-class FinishedPeopleMergeRequestView(LaunchpadView):
-    """A simple view for a page where we only tell the user that we sent the
-    email with further instructions to complete the merge.
-
-    This view is used only when the dupe account has a single email address.
-    """
-    def initialize(self):
-        user = getUtility(ILaunchBag).user
-        try:
-            dupe_id = int(self.request.get('dupe'))
-        except (ValueError, TypeError):
-            self.request.response.redirect(canonical_url(user))
-            return
-
-        dupe_account = getUtility(IPersonSet).get(dupe_id)
-        results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-
-        result_count = results.count()
-        if not result_count:
-            # The user came back to visit this page with nothing to
-            # merge, so we redirect him away to somewhere useful.
-            self.request.response.redirect(canonical_url(user))
-            return
-        assert result_count == 1
-        self.dupe_email = results[0].email
-
-    def render(self):
-        if self.dupe_email:
-            return LaunchpadView.render(self)
-        else:
-            return ''
-
-
-class RequestPeopleMergeMultipleEmailsView:
-    """A view for the page where the user asks a merge and the dupe account
-    have more than one email address."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form_processed = False
-        self.dupe = None
-        self.notified_addresses = []
-
-    def processForm(self):
-        dupe = self.request.form.get('dupe')
-        if dupe is None:
-            # We just got redirected to this page and we don't have the dupe
-            # hidden field in request.form.
-            dupe = self.request.get('dupe')
-            if dupe is None:
-                return
-
-        self.dupe = getUtility(IPersonSet).get(int(dupe))
-        emailaddrset = getUtility(IEmailAddressSet)
-        self.dupeemails = emailaddrset.getByPerson(self.dupe)
-
-        if self.request.method != "POST":
-            return
-
-        self.form_processed = True
-        user = getUtility(ILaunchBag).user
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-
-        emails = self.request.form.get("selected")
-        if emails is not None:
-            # We can have multiple email adressess selected, and in this case
-            # emails will be a list. Otherwise it will be a string and we need
-            # to make a list with that value to use in the for loop.
-            if not isinstance(emails, list):
-                emails = [emails]
-
-            for email in emails:
-                emailaddress = emailaddrset.getByEmail(email)
-                assert emailaddress in self.dupeemails
-                token = logintokenset.new(
-                    user, login, emailaddress.email,
-                    LoginTokenType.ACCOUNTMERGE)
-                token.sendMergeRequestEmail()
-                self.notified_addresses.append(emailaddress.email)
 
 
 class TeamReassignmentView(ObjectReassignmentView):
@@ -3206,7 +3006,8 @@ class PersonBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3230,10 +3031,12 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
+    no_sort_by = (BranchListingSort.AUTHOR,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3241,21 +3044,24 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
+    no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
-    """View for branch listing for a subscribed's authored branches."""
+    """View for branch listing for a person's subscribed branches."""
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):

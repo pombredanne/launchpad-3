@@ -56,6 +56,12 @@ COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibi
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
 
+-- BranchWithSortKeys
+
+COMMENT ON VIEW BranchWithSortKeys IS 'A hack to allow the sorting of queries to Branch by human-meaningful keys in the face of limitations in SQLObject.  Will go away when we start using Storm.  This view has all the columns of Branch with three extra names joined on to it.';
+COMMENT ON COLUMN BranchWithSortKeys.product_name IS 'Branch.product.name';
+COMMENT ON COLUMN BranchWithSortKeys.author_name IS 'Branch.author.displayname';
+COMMENT ON COLUMN BranchWithSortKeys.owner_name IS 'Branch.owner.displayname';
 
 -- Bug
 
@@ -118,13 +124,6 @@ task to a bug watch. In other words, we are connecting the state of the task
 to the state of the bug in a different bug tracking system. To the best of
 our ability we\'ll try and keep the bug task syncronised with the state of
 the remote bug watch.';
-
-
--- BugExternalRef
-
-COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
-COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
-COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
 
 
 -- BugNotification
@@ -380,6 +379,12 @@ COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image 
 COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
+COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
+
+-- ProductLicense
+COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
+COMMENT ON COLUMN ProductLicense.product IS 'Foreign key to the product that has licenses associated with it.';
+COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in the License enumeration in product.py';
 
 -- ProductRelease
 
@@ -408,7 +413,7 @@ COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can appr
 COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
 gives the state of our efforts to import the upstream code from its revision
 control system and publish that in the baz revision control system. The
-allowed values are documented in dbschema.BazImportStatus.';
+allowed values are documented in ImportStatus.';
 COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
 by upstream for this product series. The value is defined in
 dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
@@ -817,9 +822,14 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket int
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+
+-- BinaryPackagePublishingHistory and PublishedPackage Views
+
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
-COMMENT ON VIEW PublishedPackageView IS
+COMMENT ON VIEW PublishedPackage IS
     'A very large view that brings together all the information about
     packages that are currently being published within a distribution. This
     view was designed for the page which shows packages published in the
@@ -1245,6 +1255,7 @@ COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that thi
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
 
 -- SecureSourcePackagePublishingHistory
+
 COMMENT ON TABLE SecureSourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
@@ -1261,6 +1272,11 @@ COMMENT ON COLUMN SecureSourcePackagePublishingHistory.dateremoved IS 'The date/
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+
+-- SourcePackagePublishingHistory View
+
 COMMENT ON VIEW SourcePackagePublishingHistory IS 'A view on SecureSourcePackagePublishingHistory that restricts access to embargoed entries';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
 

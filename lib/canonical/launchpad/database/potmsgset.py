@@ -97,16 +97,40 @@ class POTMsgSet(SQLBase):
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
-        return POSubmission.select('''
+        return POSubmission.select("""
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = POFile.id AND
-            POFile.language = %s AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %s AND
-            POSubmission.pluralform = %s AND
-            (POSubmission.active OR POSubmission.published)
-            ''' % sqlvalues(language, self.primemsgid_, pluralform),
-            clauseTables=['POTMsgSet', 'POMsgSet', 'POFile'],
+            POSubmission.id IN (
+                SELECT POSubmission.id
+                FROM
+                    POSubmission
+                    JOIN POMsgSet ON
+                        POSubmission.pomsgset = POMsgSet.id
+                    JOIN POFile ON
+                        POMsgSet.pofile = POFile.id AND
+                        POFile.language = %s
+                    JOIN POTMsgSet ON
+                        POMsgSet.potmsgset = POTMsgSet.id AND
+                        POTMsgSet.primemsgid = %s
+                    JOIN POTemplate ON
+                        POTMsgSet.potemplate = POTemplate.id AND
+                        POTemplate.iscurrent IS TRUE
+                    LEFT JOIN ProductSeries ON
+                        POTemplate.productseries = ProductSeries.id
+                    LEFT JOIN Product ON
+                        ProductSeries.product = Product.id
+                    LEFT JOIN DistroRelease ON
+                        POTemplate.distrorelease = DistroRelease.id
+                    LEFT JOIN Distribution ON
+                        DistroRelease.distribution = Distribution.id
+                WHERE
+                    POSubmission.pluralform = %s AND
+                    (POSubmission.active IS TRUE OR
+                     POSubmission.published IS TRUE) AND
+                    (Product.official_rosetta IS TRUE OR
+                     Distribution.official_rosetta IS TRUE)
+                )""" % sqlvalues(language, self.primemsgid_, pluralform),
+            clauseTables=['POMsgSet', 'POFile'],
             orderBy='-datecreated',
             prejoinClauseTables=['POMsgSet', 'POFile'],
             prejoins=['potranslation', 'person'])

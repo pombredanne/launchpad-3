@@ -30,9 +30,6 @@ from canonical.archiveuploader.tagfiles import parse_tagfile
 
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, BuildStatus, SourcePackageFormat)
-
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
@@ -46,7 +43,8 @@ from canonical.launchpad.database import (Distribution, DistroSeries,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IBinaryPackageNameSet, PersonCreationRationale)
+    BuildStatus, IPersonSet, IBinaryPackageNameSet, PersonCreationRationale,
+    PackagePublishingStatus, SourcePackageFormat)
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 

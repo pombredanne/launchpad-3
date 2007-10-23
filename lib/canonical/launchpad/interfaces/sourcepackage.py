@@ -7,14 +7,18 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
+    'SourcePackageFileType',
+    'SourcePackageFormat',
+    'SourcePackageRelationships',
+    'SourcePackageUrgency',
     ]
 
 from zope.interface import Attribute
 from zope.schema import Object
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class ISourcePackage(IBugTarget):
@@ -82,14 +86,6 @@ class ISourcePackage(IBugTarget):
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
 
-    potemplates = Attribute(
-        _("Return an iterator over this distroseries/sourcepackagename's "
-          "PO templates."))
-
-    currentpotemplates = Attribute(
-        _("Return an iterator over this distroseries/sourcepackagename's "
-          "PO templates that have the 'iscurrent' flag set'."))
-
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
@@ -122,3 +118,174 @@ class ISourcePackage(IBugTarget):
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
+
+
+class SourcePackageFileType(DBEnumeratedType):
+    """Source Package File Type
+
+    Launchpad tracks files associated with a source package release. These
+    files are stored on one of the inner servers, and a record is kept in
+    Launchpad's database of the file's name and location. This schema
+    documents the files we know about.
+    """
+
+    EBUILD = DBItem(1, """
+        Ebuild File
+
+        This is a Gentoo Ebuild, the core file that Gentoo uses as a source
+        package release. Typically this is a shell script that pulls in the
+        upstream tarballs, configures them and builds them into the
+        appropriate locations.  """)
+
+    SRPM = DBItem(2, """
+        Source RPM
+
+        This is a Source RPM, a normal RPM containing the needed source code
+        to build binary packages. It would include the Spec file as well as
+        all control and source code files.  """)
+
+    DSC = DBItem(3, """
+        DSC File
+
+        This is a DSC file containing the Ubuntu source package description,
+        which in turn lists the orig.tar.gz and diff.tar.gz files used to
+        make up the package.  """)
+
+    ORIG = DBItem(4, """
+        Orig Tarball
+
+        This file is an Ubuntu "orig" file, typically an upstream tarball or
+        other lightly-modified upstreamish thing.  """)
+
+    DIFF = DBItem(5, """
+        Diff File
+
+        This is an Ubuntu "diff" file, containing changes that need to be
+        made to upstream code for the packaging on Ubuntu. Typically this
+        diff creates additional directories with patches and documentation
+        used to build the binary packages for Ubuntu.  """)
+
+    TARBALL = DBItem(6, """
+        Tarball
+
+        This is a tarball, usually of a mixture of Ubuntu and upstream code,
+        used in the build process for this source package.  """)
+
+
+class SourcePackageFormat(DBEnumeratedType):
+    """Source Package Format
+
+    Launchpad supports distributions that use source packages in a variety
+    of source package formats. This schema documents the types of source
+    package format that we understand.
+    """
+
+    DPKG = DBItem(1, """
+        The DEB Format
+
+        This is the source package format used by Ubuntu, Debian, Linspire
+        and similar distributions.
+        """)
+
+    RPM = DBItem(2, """
+        The RPM Format
+
+        This is the format used by Red Hat, Mandrake, SUSE and other similar
+        distributions.
+        """)
+
+    EBUILD = DBItem(3, """
+        The Ebuild Format
+
+        This is the source package format used by Gentoo.
+        """)
+
+
+class SourcePackageRelationships(DBEnumeratedType):
+    """Source Package Relationships
+
+    Launchpad tracks many source packages. Some of these are related to one
+    another. For example, a source package in Ubuntu called "apache2" might
+    be related to a source package in Mandrake called "httpd". This schema
+    defines the relationships that Launchpad understands.
+    """
+
+    REPLACES = DBItem(1, """
+        Replaces
+
+        The subject source package was designed to replace the object source
+        package.  """)
+
+    REIMPLEMENTS = DBItem(2, """
+        Reimplements
+
+        The subject source package is a completely new packaging of the same
+        underlying products as the object package.  """)
+
+    SIMILARTO = DBItem(3, """
+        Similar To
+
+        The subject source package is similar, in that it packages software
+        that has similar functionality to the object package.  For example,
+        postfix and exim4 would be "similarto" one another.  """)
+
+    DERIVESFROM = DBItem(4, """
+        Derives From
+
+        The subject source package derives from and tracks the object source
+        package. This means that new uploads of the object package should
+        trigger a notification to the maintainer of the subject source
+        package.  """)
+
+    CORRESPONDSTO = DBItem(5, """
+        Corresponds To
+
+        The subject source package includes the same products as the object
+        source package, but for a different distribution. For example, the
+        "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
+        Hat.  """)
+
+
+class SourcePackageUrgency(DBEnumeratedType):
+    """Source Package Urgency
+
+    When a source package is released it is given an "urgency" which tells
+    distributions how important it is for them to consider bringing that
+    package into their archives. This schema defines the possible values
+    for source package urgency.
+    """
+
+    LOW = DBItem(1, """
+        Low Urgency
+
+        This source package release does not contain any significant or
+        important updates, it might be a cleanup or documentation update
+        fixing typos and speling errors, or simply a minor upstream
+        update.
+        """)
+
+    MEDIUM = DBItem(2, """
+        Medium Urgency
+
+        This package contains updates that are worth considering, such
+        as new upstream or packaging features, or significantly better
+        documentation.
+        """)
+
+    HIGH = DBItem(3, """
+        Very Urgent
+
+        This update contains updates that fix security problems or major
+        system stability problems with previous releases of the package.
+        Administrators should urgently evaluate the package for inclusion
+        in their archives.
+        """)
+
+    EMERGENCY = DBItem(4, """
+        Critically Urgent
+
+        This release contains critical security or stability fixes that
+        affect the integrity of systems using previous releases of the
+        source package, and should be installed in the archive as soon
+        as possible after appropriate review.
+        """)

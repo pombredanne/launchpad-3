@@ -19,13 +19,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
-    IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
+    IProjectSet, ISearchableByQuestionOwner, ImportStatus, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
-
-from canonical.lp.dbschema import ImportStatus
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
