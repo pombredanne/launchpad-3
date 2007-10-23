@@ -1,0 +1,58 @@
+#! /usr/bin/env python2.4
+
+"""Throw email messages into an mbox file.
+
+Because we must use Python 2.4, we can't use the wizzy new mailbox module, so
+just write messages to the file.
+"""
+
+import os
+import sys
+import smtpd
+import asyncore
+
+import itest_helper
+from email import message_from_string
+
+sys.path.insert(0, itest_helper.TOP)
+
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+execute_zcml_for_scripts()
+
+from canonical.config import config
+
+
+class Channel(smtpd.SMTPChannel):
+    """Add an SMTP EXIT function for quitting the process."""
+    def smtp_EXIT(self, arg):
+        raise asyncore.ExitNow
+
+
+class Server(smtpd.SMTPServer):
+    def __init__(self):
+        smtpd.SMTPServer.__init__(self, config.mailman.smtp, None)
+        self._mbox = open(sys.argv[1], 'w')
+
+    def handle_accept(self):
+        """Open our extended channel."""
+        conn, addr = self.accept()
+        Channel(self, conn, addr)
+
+    def process_message(self, peer, mailfrom, rcpttos, data):
+        """Shove the message into the mbox file."""
+        msg = message_from_string(data)
+        print >> self._mbox, msg
+        print >> self._mbox
+        self._mbox.flush()
+
+    def close(self):
+        """Close the mbox file."""
+        self._mbox.close()
+
+
+server = Server()
+try:
+    asyncore.loop()
+except asyncore.ExitNow:
+    asyncore.close_all()
+    server.close()

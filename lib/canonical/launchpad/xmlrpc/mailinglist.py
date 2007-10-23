@@ -11,12 +11,16 @@ __all__ = [
 from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests.mailinglists_helper import (
+    get_alternative_email, new_person)
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, MailingListStatus)
+    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
+    IMailingListAPIView, IMailingListSet, IPersonSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
+
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
@@ -102,7 +106,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return True
 
     def getMembershipInformation(self, teams):
-        """See `IMailingListAPIView.`."""
+        """See `IMailingListAPIView`."""
         listset = getUtility(IMailingListSet)
         emailset = getUtility(IEmailAddressSet)
         response = {}
@@ -134,3 +138,69 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return (email_address is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
+    def testStep(self, step):
+        """See `IMailingListAPIView`."""
+        listset = getUtility(IMailingListSet)
+        personset = getUtility(IPersonSet)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        experts = celebrities.mailing_list_experts
+        lpadmin = list(experts.allmembers)[0]
+        if step == '01-review-lists':
+            # Approve team one's list, but decline team two's list.  XXX A
+            # future branch will add mailing_list_experts.
+            list_one = listset.get('team-one')
+            list_one.review(lpadmin, MailingListStatus.APPROVED)
+            list_two = listset.get('team-two')
+            list_two.review(lpadmin, MailingListStatus.DECLINED)
+            return step
+        if step == '02-review-lists':
+            # Approve team three's list so that further tests can proceed.
+            list_one = listset.get('team-three')
+            list_one.review(lpadmin, MailingListStatus.APPROVED)
+            return step
+        if step == '02-deactivate-lists':
+            # At some point this will be possible to do through the web.
+            list_one = listset.get('team-three')
+            list_one.deactivate()
+            return step
+        if step == '03-modify-lists-A':
+            # At some point this will be possible to do through the web.
+            list_one = listset.get('team-one')
+            list_one.welcome_message = 'Greetings team one members!'
+            return step
+        if step == '03-modify-lists-B':
+            # At some point this will be possible to do through the web.
+            list_one = listset.get('team-one')
+            list_one.welcome_message = 'Saluations team one members!'
+            return step
+        if step == '04-setup-users-A':
+            team_one = personset.getByName('team-one')
+            list_one = listset.get('team-one')
+            # Subscribe Anne with her preferred address.
+            anne = new_person('Anne')
+            anne.join(team_one)
+            list_one.subscribe(removeSecurityProxy(anne))
+            # Subscribe Bart with his alternative address.
+            bart = new_person('Bart')
+            bart.join(team_one)
+            list_one.subscribe(removeSecurityProxy(bart),
+                               get_alternative_email(bart))
+            return step
+        if step == '04-setup-users-B':
+            team_one = personset.getByName('team-one')
+            list_one = listset.get('team-one')
+            # Subscribe Cris with her preferred address.
+            cris = new_person('Cris')
+            cris.join(team_one)
+            list_one.subscribe(removeSecurityProxy(cris))
+            # Subscribe Dirk with his preferred address.
+            dirk = new_person('Dirk')
+            dirk.join(team_one)
+            list_one.subscribe(removeSecurityProxy(dirk))
+            # Unsubscribe Bart.
+            bart = personset.getByName('bart')
+            list_one.unsubscribe(bart)
+            # Change Anne's email address to her alternative.
+            anne = personset.getByName('anne')
+            anne.setPreferredEmail(get_alternative_email(anne))
+            return step
