@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationFile, TranslationMessage)
+    TranslationFile, TranslationMessageData)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -187,7 +187,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started:
             return
 
-        message = TranslationMessage()
+        message = TranslationMessageData()
         message.msgid = name
         # CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
@@ -258,7 +258,7 @@ class PropertyFile:
         """Parse given content as a property file.
 
         Once the parse is done, self.messages has a list of the available
-        ITranslationMessages.
+        `ITranslationMessageData`s.
         """
 
         # .properties files are supposed to be unicode-escaped, but we know
@@ -388,7 +388,7 @@ class PropertyFile:
                     last_comment = None
                     ignore_comment = False
 
-                message = TranslationMessage()
+                message = TranslationMessageData()
                 message.msgid = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]

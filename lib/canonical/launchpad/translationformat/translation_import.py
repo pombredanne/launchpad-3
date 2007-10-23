@@ -31,7 +31,7 @@ from canonical.launchpad.translationformat.gettext_po_importer import (
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationMessage)
+    TranslationMessageData)
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -53,7 +53,7 @@ class ExistingPOFileInDatabase:
         self.is_active = active
 
         # Dict indexed by (msgid, context) containing active
-        # TranslationMessages: doing this for the speed.
+        # TranslationMessageDatas: doing this for the speed.
         self.messages = {}
         # Messages which have been seen in the file: messages which exist
         # in the database, but not in the import, will be expired.
@@ -120,7 +120,7 @@ class ExistingPOFileInDatabase:
             if (msgid, context) in look_at:
                 message = look_at[(msgid, context)]
             else:
-                message = TranslationMessage()
+                message = TranslationMessageData()
                 look_at[(msgid, context)] = message
 
                 message.msgid = msgid
@@ -153,7 +153,7 @@ class ExistingPOFileInDatabase:
         return unseen
 
     def _compareTwoMessages(self, msg1, msg2):
-        """Compare if two TranslationMessages msg1 and msg2 are the same.
+        """Compare if two TranslationMessageDatas msg1 and msg2 are the same.
 
         Compares fuzzy flags, msgid and msgid_plural, and all translations.
         Returns True when messages match, and False when they don't.
@@ -407,8 +407,9 @@ class TranslationImporter:
                     # Add the pomsgset to the list of pomsgsets with errors.
                     error = {
                         'pomsgset': pomsgset,
-                        'pomessage': format_exporter.exportTranslationMessage(
-                            message),
+                        'pomessage':
+                            format_exporter.exportTranslationMessageData(
+                                message),
                         'error-message': (
                             "The msgid_plural field has changed since the"
                             " last time this file was generated, please"
@@ -515,7 +516,7 @@ class TranslationImporter:
             except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': format_exporter.exportTranslationMessage(
+                    'pomessage': format_exporter.exportTranslationMessageData(
                         message),
                     'error-message': (
                         "This message was updated by someone else after you"
@@ -539,7 +540,7 @@ class TranslationImporter:
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': format_exporter.exportTranslationMessage(
+                    'pomessage': format_exporter.exportTranslationMessageData(
                         message),
                     'error-message': unicode(e)
                 }

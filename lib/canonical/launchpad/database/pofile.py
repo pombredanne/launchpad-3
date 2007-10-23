@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces import (
     TranslationValidationStatus, ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
@@ -1476,7 +1476,8 @@ class POFileToTranslationFileAdapter:
         return translation_header
 
     def _getMessages(self):
-        """Return a list of `ITranslationMessage` for the `IPOFile` adapted."""
+        """Return a list of `ITranslationMessageData` for the `IPOFile`
+        adapted."""
         pofile = self._pofile
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
@@ -1506,7 +1507,7 @@ class POFileToTranslationFileAdapter:
                     messages.append(msgset)
 
                 # Create new message set
-                msgset = TranslationMessage()
+                msgset = TranslationMessageData()
                 if row.potsequence > 0:
                     msgset.sequence = row.potsequence
                     msgset.is_obsolete = False
