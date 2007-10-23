@@ -27,22 +27,24 @@ class VPOExportSet:
         'language',
         'variant',
         'potsequence',
-        'posequence',
+        'was_in_last_import',
         'potheader',
         'poheader',
         'potopcomment',
         'pofuzzyheader',
-        'isfuzzy',
-        'activesubmission',
-        'msgidpluralform',
-        'translationpluralform',
+        'is_fuzzy',
+        'current_translation',
+        'msgid_singular',
+        'msgid_plural',
+        'translation0',
+        'translation1',
+        'translation2',
+        'translation3',
         'context',
-        'msgid',
-        'translation',
         'pocommenttext',
-        'sourcecomment',
-        'filereferences',
-        'flagscomment',
+        'source_comment',
+        'file_references',
+        'flags_comment',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -51,9 +53,6 @@ class VPOExportSet:
         'language',
         'variant',
         'potsequence',
-        'posequence',
-        'msgidpluralform',
-        'translationpluralform',
     ]
     sort_columns = ', '.join(
         ['POExport.' + name for name in sort_column_names])
@@ -120,12 +119,10 @@ class VPOExportSet:
 
         if date is not None:
             join += '''
-                  JOIN POMsgSet ON
-                    POMsgSet.pofile = POFile.id AND
-                    POMsgSet.date_reviewed > %s
-                  JOIN POSubmission ON
-                    POSubmission.pomsgset = POMsgset.id AND
-                    POSubmission.active IS TRUE''' % sqlvalues(date)
+                  JOIN TranslationMessage ON
+                    TranslationMessage.pofile = POFile.id AND
+                    TranslationMessage.date_reviewed > %s AND
+                    TranslationMessage.active IS TRUE''' % sqlvalues(date)
 
         if component is not None:
             join += '''
@@ -235,12 +232,10 @@ class VPOExportSet:
             join = [
                 'POFile ON POFile.id = POExport.pofile',
                 'POTemplate ON POFile.potemplate = POTemplate.id',
-                'POMsgSet ON '
-                    'POMsgSet.pofile = POFile.id AND '
-                    'POMsgSet.date_reviewed > %s' % sqlvalues(date),
-                'POSubmission ON '
-                    'POSubmission.pomsgset = POMsgSet.id AND '
-                    'POSubmission.active IS TRUE',
+                'TranslationMessage ON '
+                    'TranslationMessage.pofile = POFile.id AND '
+                    'TranslationMessage.date_reviewed > %s AND '
+                    'TranslationMessage.active IS TRUE' % sqlvalues(date),
             ]
             where = 'POTemplate.distrorelease = %s' % sqlvalues(series)
 
@@ -260,22 +255,24 @@ class VPOExport:
          language,
          self.variant,
          self.potsequence,
-         self.posequence,
+         self.was_in_last_import,
          self.potheader,
          self.poheader,
          self.potopcomment,
          self.pofuzzyheader,
-         self.isfuzzy,
-         self.activesubmission,
-         self.msgidpluralform,
-         self.translationpluralform,
+         self.is_fuzzy,
+         self.current_translation,
+         self.msgid_singular,
+         self.msgid_plural,
+         self.translation0,
+         self.translation1,
+         self.translation2,
+         self.translation3,
          self.context,
-         self.msgid,
-         self.translation,
          self.pocommenttext,
          self.sourcecomment,
-         self.filereferences,
-         self.flagscomment) = args
+         self.file_references,
+         self.flags_comment) = args
 
         self.potemplate = POTemplate.get(potemplate)
         self.language = Language.get(language)

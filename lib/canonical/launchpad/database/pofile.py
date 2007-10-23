@@ -1484,10 +1484,7 @@ class POFileToTranslationFileDataAdapter:
         # information.
         rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
 
-        potsequence = None
-        posequence = None
         messages = []
-        msgset = None
 
         for row in rows:
             assert row.pofile == pofile, 'Got a row for a different IPOFile.'
@@ -1496,94 +1493,36 @@ class POFileToTranslationFileDataAdapter:
             # file. (Messages which are in the PO template but not in the PO
             # file are untranslated, and messages which are not in the PO
             # template but in the PO file are obsolete.)
-            if row.posequence in (0, None) and row.potsequence == 0:
+            if row.potsequence == 0 and not row.was_in_last_import:
                 continue
 
-            # If the sequence number of either the PO template or the PO file
-            # has changed, we start a new message set.
-            if row.potsequence != potsequence or row.posequence != posequence:
-                if msgset is not None:
-                    # Output current message set before creating the new one.
-                    messages.append(msgset)
+            # Create new message set
+            msgset = TranslationMessageData()
+            msgset.is_obsolete = (row.potsequence == 0)
+            msgset.msgid_singular = row.msgid_singular
+            msgset.msgid_plural = row.msgid_plural
 
-                # Create new message set
-                msgset = TranslationMessageData()
-                if row.potsequence > 0:
-                    msgset.sequence = row.potsequence
-                    msgset.is_obsolete = False
-                elif row.posequence > 0:
-                    msgset.sequence = row.posequence
-                    msgset.is_obsolete = True
-                else:
-                    msgset.sequence = 0
-                    msgset.is_obsolete = True
+            forms = [
+                (0, row.translation0), (1, row.translation1),
+                (2, row.translation2), (3, row.translation3)]
+            max_forms = pofile.language.pluralforms
+            for (pluralform, translation) in forms[:max_forms]:
+                if translation is not None:
+                    msgset.addTranslation(pluralform, translation)
 
-            # Because of the way the database view works, message IDs and
-            # translations will appear multiple times. We see how many we've
-            # added already to check whether the message ID/translation in the
-            # current row are ones we need to add.
-            # Note that the translation plural forms can be greater than or
-            # equal to the translations available. This allows for
-            # non-contiguous plural form indices.
-            if (row.msgidpluralform == TranslationConstants.SINGULAR_FORM and
-                msgset.msgid is None):
-                msgset.msgid = row.msgid
-            elif (row.msgidpluralform == TranslationConstants.PLURAL_FORM and
-                msgset.msgid_plural is None):
-                msgset.msgid_plural = row.msgid
-            else:
-                # msgset.msgid or msgset.msgid_plural could be not None,
-                # because we don't need to set it again, thus, we only check
-                # that row.msgidpluralform is correct.
-                assert row.msgidpluralform in (
-                    TranslationConstants.SINGULAR_FORM,
-                    TranslationConstants.PLURAL_FORM), (
-                        'msgid plural form is not valid: %s.' %
-                            row.msgidpluralform)
+            msgset.context = row.context
+            msgset.comment = row.pocommenttext
+            msgset.source_comment = row.source_comment
+            msgset.file_references = row.filereferences
 
-            if (row.activesubmission is not None and
-                row.translationpluralform >= len(msgset.translations)):
-                # There is an active submission, the plural form is higher
-                # than the last imported plural form.
-
-                if (pofile.language.pluralforms is not None and
-                    row.translationpluralform >= pofile.language.pluralforms):
-                    # The plural form index is higher than the number of
-                    # plural form for this language, so we should ignore it.
-                    continue
-
-                msgset.addTranslation(
-                    row.translationpluralform, row.translation)
-
-            if row.context is not None and msgset.context is None:
-                msgset.context = row.context
-
-            if row.isfuzzy and 'fuzzy' not in msgset.flags:
-                msgset.flags.add('fuzzy')
-
-            if row.pocommenttext and not msgset.comment:
-                msgset.comment = row.pocommenttext
-
-            if row.sourcecomment and not msgset.source_comment:
-                msgset.source_comment = row.sourcecomment
-
-            if row.filereferences and not msgset.file_references:
-                msgset.file_references = row.filereferences
-
-            if row.flagscomment and not msgset.flags:
+            if row.flags_comment:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flagscomment.split(',')
                     if flag
                     ])
 
-            # Store sequences so we can detect later whether we changed the
-            # message.
-            potsequence = row.potsequence
-            posequence = row.posequence
-
-        # Once we've processed all the rows, store last message set.
-        if msgset is not None:
-            messages.append(msgset)
+            if row.is_fuzzy:
+                msgset.flags.add('fuzzy')
 
         return messages
