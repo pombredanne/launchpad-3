@@ -5,7 +5,7 @@ pillars (Projects, Project Groups and Distributions).
 
 XXX: Distributions can't yet be marked inactive, so this test won't
 cover that part of the change. See bug #156263 for more details.
-    -- kiko, 2008-10-23
+    -- kiko, 2007-10-23
 
     >>> def toggleProject(name):
     ...     admin_browser.open('http://launchpad.dev/%s' % name)
