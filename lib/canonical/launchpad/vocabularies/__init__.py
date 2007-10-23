@@ -19,6 +19,5 @@ The binding of name -> class is done in the configure.zcml
 
 """
 
-from canonical.launchpad.vocabularies.dbschema import *
 from canonical.launchpad.vocabularies.dbobjects import *
 from canonical.launchpad.vocabularies.timezones import *

@@ -132,7 +132,6 @@ given build record entry.
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.sourcepackagerelease.component.id
     >>> section = firefox_build.sourcepackagerelease.section.id
-    >>> from canonical.lp import dbschema
     >>> from canonical.launchpad.interfaces import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
