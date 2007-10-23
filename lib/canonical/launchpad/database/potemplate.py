@@ -7,7 +7,7 @@ __all__ = [
     'POTemplate',
     'POTemplateSet',
     'POTemplateSubset',
-    'POTemplateToTranslationFileAdapter',
+    'POTemplateToTranslationFileDataAdapter',
     ]
 
 import datetime
@@ -36,7 +36,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    ITranslationExporter, ITranslationFile, ITranslationImporter,
+    ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationConstants, TranslationFileFormat,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
@@ -452,7 +452,7 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        template_file = ITranslationFile(self)
+        template_file = ITranslationFileData(self)
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
 
@@ -471,10 +471,10 @@ class POTemplate(SQLBase, RosettaStats):
                 self.source_file_format))
 
         translation_files = [
-            ITranslationFile(pofile)
+            ITranslationFileData(pofile)
             for pofile in self.pofiles
             ]
-        translation_files.append(ITranslationFile(self))
+        translation_files.append(ITranslationFileData(self))
         return translation_format_exporter.exportTranslationFiles(
             translation_files)
 
@@ -958,9 +958,9 @@ class POTemplateSet:
                 ' not None.')
 
 
-class POTemplateToTranslationFileAdapter:
-    """Adapter from `IPOTemplate` to `ITranslationFile`."""
-    implements(ITranslationFile)
+class POTemplateToTranslationFileDataAdapter:
+    """Adapter from `IPOTemplate` to `ITranslationFileData`."""
+    implements(ITranslationFileData)
 
     def __init__(self, potemplate):
         self._potemplate = potemplate
@@ -968,17 +968,17 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def path(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.path
 
     @cachedproperty
     def translation_domain(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.potemplatename.translationdomain
 
     @property
     def is_template(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return True
 
     @property
@@ -988,7 +988,7 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def header(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.getHeader()
 
     def _getMessages(self):

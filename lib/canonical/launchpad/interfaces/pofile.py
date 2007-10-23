@@ -165,7 +165,7 @@ class IPOFile(IRosettaStats):
         """Return an iterator over Current `IPOMessageSets` in this PO file."""
 
     def getHeader():
-        """Return an `ITranslationHeader` representing its header."""
+        """Return an `ITranslationHeaderData` representing its header."""
 
     def getPOMsgSet(msgid_text, only_current=False, context=None):
         """Return the `IPOMsgSet` in this `IPOFile` by msgid_text or None.

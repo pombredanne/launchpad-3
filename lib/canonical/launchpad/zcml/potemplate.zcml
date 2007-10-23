@@ -25,8 +25,8 @@
 
     <adapter
         for="canonical.launchpad.interfaces.IPOTemplate"
-        provides="canonical.launchpad.interfaces.ITranslationFile"
-        factory="canonical.launchpad.database.POTemplateToTranslationFileAdapter" />
+        provides="canonical.launchpad.interfaces.ITranslationFileData"
+        factory="canonical.launchpad.database.POTemplateToTranslationFileDataAdapter" />
 
     <browser:navigation
         module="canonical.launchpad.browser"

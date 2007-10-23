@@ -5,19 +5,19 @@
 __metaclass__ = type
 
 __all__ = [
-    'TranslationFile',
+    'TranslationFileData',
     'TranslationMessageData',
     ]
 
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFile, ITranslationMessageData)
+    ITranslationFileData, ITranslationMessageData)
 
 
-class TranslationFile:
-    """See `ITranslationFile`."""
-    implements(ITranslationFile)
+class TranslationFileData:
+    """See `ITranslationFileData`."""
+    implements(ITranslationFileData)
 
     def __init__(self):
         self.header = None

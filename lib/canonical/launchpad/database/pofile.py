@@ -7,7 +7,7 @@ __all__ = [
     'POFile',
     'DummyPOFile',
     'POFileSet',
-    'POFileToTranslationFileAdapter',
+    'POFileToTranslationFileDataAdapter',
     'POFileTranslator',
     ]
 
@@ -38,7 +38,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
     IPOFileSet, IPOFileTranslator, IPOSubmissionSet, ITranslationExporter,
-    ITranslationFile, ITranslationImporter, IVPOExportSet,
+    ITranslationFileData, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
     RosettaImportStatus, TranslationConstants, TranslationFormatSyntaxError,
     TranslationFormatInvalidInputError, TranslationPermission,
@@ -978,7 +978,7 @@ class POFile(SQLBase, POFileMixIn):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.potemplate.source_file_format))
 
-        translation_file = ITranslationFile(self)
+        translation_file = ITranslationFileData(self)
         if (self.last_touched_pomsgset is not None and
             self.last_touched_pomsgset.reviewer is not None):
             # There is a translation reviewed, get its reviewer as the last
@@ -1402,9 +1402,9 @@ class POFileTranslator(SQLBase):
         notNull=False, default=None)
 
 
-class POFileToTranslationFileAdapter:
-    """Adapter from `IPOFile` to `ITranslationFile`."""
-    implements(ITranslationFile)
+class POFileToTranslationFileDataAdapter:
+    """Adapter from `IPOFile` to `ITranslationFileData`."""
+    implements(ITranslationFileData)
 
     def __init__(self, pofile):
         self._pofile = pofile
@@ -1412,17 +1412,17 @@ class POFileToTranslationFileAdapter:
 
     @cachedproperty
     def path(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._pofile.path
 
     @cachedproperty
     def translation_domain(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._pofile.potemplate.potemplatename.translationdomain
 
     @property
     def is_template(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return False
 
     @cachedproperty
@@ -1435,7 +1435,7 @@ class POFileToTranslationFileAdapter:
 
     @cachedproperty
     def header(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         template_header = self._pofile.potemplate.getHeader()
         translation_header = self._pofile.getHeader()
         # Update default fields based on its values in the template header.
