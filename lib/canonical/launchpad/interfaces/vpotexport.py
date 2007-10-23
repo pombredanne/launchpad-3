@@ -31,14 +31,16 @@ class IVPOTExport(Interface):
     header = Attribute("See IPOTemplate.header")
     languagepack = Attribute("See IPOTemplate.languagepack")
 
-    potmsgset = Attribute("See IPOTMsgSet.id")
-    sequence = Integer("See IPOTMsgSet.sequence")
-    comment_text = Text("See `IPOTMsgSet.commenttext`")
-    sourcecomment = Attribute("See IPOTMsgSet.sourcecomment")
-    flagscomment = Attribute("See IPOTMsgSet.flagscomment")
-    filereferences = Attribute("See IPOTMsgSet.filereferences")
+    potmsgset = Attribute(_("See `IPOTMsgSet.id`"))
+    sequence = Integer(_("See `IPOTMsgSet.sequence`"))
+    comment_text = Text(_("See `IPOTMsgSet.commenttext`"))
+    source_comment = Text(_("See `IPOTMsgSet.sourcecomment`"))
+    flags_comment = Text(_("See `IPOTMsgSet.flagscomment`"))
+    file_references = Text(_("See `IPOTMsgSet.filereferences`"))
 
-    comment_text = Attribute(_("See `ITranslationMessage.commenttext`"))
+    comment_text = Text(_("See `ITranslationMessage.commenttext`"))
 
     context = String(_("See `IPOTMsgSet.context`"))
-    msgid = Attribute("See IPOMsgID.pomsgid")
+    msgid_singular = Attribute(_("See `IPOMsgID.pomsgid`"))
+    msgid_plural = Attribute(_("See `IPOMsgID.pomsgid`"))
+
