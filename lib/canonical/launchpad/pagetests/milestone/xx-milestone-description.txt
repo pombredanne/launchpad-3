@@ -1,0 +1,101 @@
+= Milestone Description =
+
+Distribution and Product milestones have an optional description text.
+
+Let's make the sample user the owner of Ubuntu and alsa-utils for this test.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'name12'
+    >>> admin_browser.getControl('Change Registrant').click()
+
+    >>> admin_browser.open('http://launchpad.dev/alsa-utils/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'name12'
+    >>> admin_browser.getControl('Change Registrant').click()
+
+    >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')
+
+== Distribution Milestone Description ==
+
+We can set the description while creating a milestone for a Distribution.
+
+    >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Description').value = (
+    ...     "Description of first Ubuntu milestone.")
+    >>> test_browser.getControl('Add').click()
+
+The description appears on the milestone index page.
+
+    >>> test_browser.open('http://launchpad.dev/ubuntu/+milestone/milestone1')
+    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
+    ...     print extract_text(tag)
+    Description of first Ubuntu milestone.
+
+The description also appears on the milestone listing page.
+
+    >>> test_browser.open('http://launchpad.dev/ubuntu/+milestones')
+    >>> content = test_browser.contents
+    >>> milestone_tag = find_tag_by_id(content, 'milestone-milestone1')    
+    >>> for tag in milestone_tag.findAll(attrs={'class': 'description'}):
+    ...     print extract_text(tag)
+    Description of first Ubuntu milestone.
+
+We can edit the description after creating the milestone.
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone1/+edit')
+    >>> test_browser.getControl('Description').value = (
+    ...     "Modified description of first Ubuntu milestone.")
+    >>> test_browser.getControl('Change').click()
+
+And see that it is indeed modified on the milestone page.
+
+    >>> test_browser.open('http://launchpad.dev/ubuntu/+milestone/milestone1')
+    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
+    ...     print extract_text(tag)
+    Modified description of first Ubuntu milestone.
+
+
+== Product Milestone Description ==
+
+We can set the description while creating a milestone for a Product.
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Description').value = (
+    ...     "Description of first alsa-utils milestone.")
+    >>> test_browser.getControl('Add').click()
+
+The description appears on the milestone index page.
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1')
+    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
+    ...     print extract_text(tag)
+    Description of first alsa-utils milestone.
+
+The description also appears on the milestone listing page.
+
+    >>> test_browser.open('http://launchpad.dev/alsa-utils/+milestones')
+    >>> content = test_browser.contents
+    >>> milestone_tag = find_tag_by_id(content, 'milestone-milestone1')    
+    >>> for tag in milestone_tag.findAll(attrs={'class': 'description'}):
+    ...     print extract_text(tag)
+    Description of first alsa-utils milestone.
+
+We can edit the description after creating the milestone.
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+edit')
+    >>> test_browser.getControl('Description').value = (
+    ...     "Modified description of first alsa-utils milestone.")
+    >>> test_browser.getControl('Change').click()
+
+And see that it is indeed modified on the milestone page.
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1')
+    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
+    ...     print extract_text(tag)
+    Modified description of first alsa-utils milestone.

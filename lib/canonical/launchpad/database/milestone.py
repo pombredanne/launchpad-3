@@ -35,6 +35,7 @@ class Milestone(SQLBase):
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
+    description = StringCol(notNull=False, default=None)
 
     # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
@@ -132,6 +133,7 @@ class ProjectMilestone:
         self.visible = visible
         self.target = target
         self.series_target = None
+        self.description = None
 
     @property
     def specifications(self):

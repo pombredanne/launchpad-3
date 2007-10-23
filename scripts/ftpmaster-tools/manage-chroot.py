@@ -15,7 +15,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -23,7 +23,6 @@ from canonical.launchpad.scripts.ftpmaster import (
 
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import PackagePublishingPocket
 
 def main():
     parser = OptionParser()
@@ -67,11 +66,10 @@ def main():
 
     try:
         if options.series is not None:
-            series, pocket = distribution.getDistroSeriesAndPocket(
+            series, dummypocket = distribution.getDistroSeriesAndPocket(
                 options.series)
         else:
             series = distribution.currentseries
-            pocket = PackagePublishingPocket.RELEASE
     except NotFoundError, info:
         log.error("Series not found: %s" % info)
         return 1
@@ -82,9 +80,8 @@ def main():
         log.error(info)
         return 1
 
-    log.debug("Initialising ChrootManager for '%s/%s'"
-              % (dar.title, pocket.name))
-    chroot_manager = ChrootManager(dar, pocket, filepath=options.filepath)
+    log.debug("Initialising ChrootManager for '%s'" % (dar.title))
+    chroot_manager = ChrootManager(dar, filepath=options.filepath)
 
     if action in chroot_manager.allowed_actions:
         chroot_action = getattr(chroot_manager, action)

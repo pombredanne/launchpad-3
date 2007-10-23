@@ -14,7 +14,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
-
+from canonical.config import config
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
@@ -22,19 +22,16 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
-    IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet)
+    BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
+    ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
+    IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
+    PackagePublishingPriority, SourcePackageUrgency)
 
 from canonical.librarian.client import LibrarianClient
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket, SourcePackageUrgency,
-    BinaryPackageFormat, PackagePublishingPriority)
-
 
 class TestNativePublishingBase(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup creates a pool dir and setup librarian.

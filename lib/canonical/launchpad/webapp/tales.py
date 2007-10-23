@@ -30,9 +30,9 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
+    BuildStatus,
     IBug,
     IBugAttachment,
-    IBugExternalRef,
     IBugNomination,
     IBugSet,
     IHasIcon,
@@ -48,6 +48,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
@@ -340,7 +341,7 @@ class NoneFormatter:
         elif name in self.allowed_names:
             return ''
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
 
 class ObjectFormatterAPI:
@@ -452,7 +453,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
-    def icon(self):
+    def icon(self, rootsite=None):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
         if context is None:
@@ -461,7 +462,11 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
-            url = self.default_icon_resource(context)
+            if rootsite is None:
+                root_url = ''
+            else:
+                root_url = allvhosts.configs[rootsite].rooturl[:-1]
+            url = root_url + self.default_icon_resource(context)
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -516,12 +521,29 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    implements(ITraversable)
 
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
-    def icon(self):
-        # The icon displayed is dependent on the IBugTask.importance.
+    def traverse(self, name, furtherPath):
+        """Special-case traversal for icons with an optional rootsite."""
+        if name == 'icon':
+            return self.icon()
+        elif name.startswith('icon:'):
+            rootsite = name.split(':', 1)[1]
+            return self.icon(rootsite=rootsite)
+        elif name == 'badges':
+            return self.badges()
+        else:
+            return None
+
+    def icon(self, rootsite=None):
+        """Display the icon dependent on the IBugTask.importance."""
+        if rootsite is not None:
+            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+        else:
+            root_url = ''
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -530,11 +552,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "/@@/bug-%s" % importance
+            src = "%s/@@/bug-%s" % (root_url, importance)
         else:
             alt = ""
             title = ""
-            src = "/@@/bug"
+            src = "%s/@@/bug" % root_url
 
         return self.icon_template % (alt, title, src)
 
@@ -653,14 +675,14 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
-            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            dbschema.BuildStatus.BUILDING: "/@@/build-building",
-            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            BuildStatus.BUILDING: "/@@/build-building",
+            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
@@ -692,17 +714,42 @@ class BadgeDisplayAPI:
 
 
 class PersonFormatterAPI(ObjectFormatterExtendedAPI):
-    """Adapter for IPerson objects to a formatted string."""
+    """Adapter for `IPerson` objects to a formatted string."""
 
-    def link(self, extra_path):
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        """Special-case traversal for links with an optional rootsite."""
+        extra_path = '/'.join(reversed(furtherPath))
+        if name == 'link':
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name.startswith('link:'):
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            rootsite = name.split(':')[1]
+            return self.link(extra_path, rootsite=rootsite)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError(name)
+
+    def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person)
+        url = canonical_url(person, rootsite=rootsite)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        image_html = ObjectImageDisplayAPI(person).icon()
+        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
 
@@ -1636,6 +1683,8 @@ class FormattersAPI:
         """
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
+        text = text.replace(
+            "<<email address hidden>>", "<email address hidden>")
         return text
 
     def lower(self):
@@ -1835,8 +1884,7 @@ class GotoStructuralObject:
         """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
-            IBugNomination.providedBy(self.context) or
-            IBugExternalRef.providedBy(self.context)):
+            IBugNomination.providedBy(self.context)):
             return self.view.current_bugtask
         else:
             return self.context

@@ -22,11 +22,10 @@ import sha
 from zope.component import getUtility
 
 import canonical
-from canonical.lp.dbschema import (
-    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IRequestPreferredLanguages,
-    IRequestLocalLanguages, ITeam)
+    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
+    IRequestPreferredLanguages, IRequestLocalLanguages, ITeam,
+    SourcePackageFileType)
 
 
 def text_replaced(text, replacements, _cache={}):
