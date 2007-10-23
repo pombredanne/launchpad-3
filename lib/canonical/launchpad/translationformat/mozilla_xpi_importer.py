@@ -17,16 +17,16 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, ITranslationHeader, TranslationConstants,
+    ITranslationFormatImporter, ITranslationHeaderData, TranslationConstants,
     TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationFile, TranslationMessageData)
+    TranslationFileData, TranslationMessageData)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
 class MozillaHeader:
-    implements(ITranslationHeader)
+    implements(ITranslationHeaderData)
 
     def __init__(self, header_content):
         self._raw_content = header_content
@@ -42,16 +42,16 @@ class MozillaHeader:
         self.comment = None
 
     def getRawContent(self):
-        """See `ITranslationHeader.`"""
+        """See `ITranslationHeaderData`."""
         return self._raw_content
 
     def updateFromTemplateHeader(self, template_header):
-        """See `ITranslationHeader.`"""
+        """See `ITranslationHeaderData`."""
         # Nothing to do for this format.
         return
 
     def getLastTranslator(self):
-        """See `ITranslationHeader.`"""
+        """See `ITranslationHeaderData`."""
         name = None
         email = None
         for event, elem in cElementTree.iterparse(StringIO(self._raw_content)):
@@ -435,7 +435,7 @@ class MozillaXpiImporter:
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
-        self._translation_file = TranslationFile()
+        self._translation_file = TranslationFileData()
         self.basepath = translation_import_queue_entry.path
         self.productseries = translation_import_queue_entry.productseries
         self.distroseries = translation_import_queue_entry.distroseries
