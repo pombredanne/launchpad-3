@@ -62,12 +62,6 @@ class ExistingPOFileInDatabase:
         # Contains published but inactive translations.
         self.published = {}
 
-        # Contains non-published and inactive translations, indexed by
-        # (msgid, context) and then by plural form; eg.
-        # self.suggestions[("blah", "context")][1] is a list of suggestions
-        # for 1st plural form translations for "context"/"blah" message.
-        self.suggestions = {}
-
         # Pre-fill self.messages and self.published with data.
         self._fetchDBRows()
 
@@ -115,7 +109,7 @@ class ExistingPOFileInDatabase:
             elif published:
                 look_at = self.published
             else:
-                look_at = self.suggestions
+                continue
 
             if (msgid, context) in look_at:
                 message = look_at[(msgid, context)]
@@ -131,8 +125,6 @@ class ExistingPOFileInDatabase:
                 message.fuzzy = isfuzzy
             elif published:
                 message.fuzzy = publishedfuzzy
-            else:
-                message.fuzzy = False
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
