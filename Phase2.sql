@@ -29,8 +29,7 @@ CREATE TABLE TranslationMessage(
 	is_fuzzy boolean NOT NULL,
 	date_created timestamp without time zone
 		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-	date_reviewed timestamp without time zone,
-
+	date_reviewed timestamp without time zone, 
 	comment_text text,
 
 	-- For migration purposes: references to objects that constitute this
@@ -41,33 +40,11 @@ CREATE TABLE TranslationMessage(
 	id2 integer,
 	id3 integer,
 
-	CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK ((reviewer IS NULL) = (date_reviewed IS NULL))
+	CONSTRAINT translationmessage__reviewer__date_reviewed__valid
+		CHECK ((reviewer IS NULL) = (date_reviewed IS NULL)),
+	CONSTRAINT translationmessage__was_in_last_import__is_imported__valid
+		CHECK (is_imported OR NOT was_in_last_import)
 );
-
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__submitter__fk
-	FOREIGN KEY (submitter) REFERENCES Person(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr0__fk
-	FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr1__fk
-	FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr2__fk
-	FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr3__fk
-	FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__reviewer__fk
-	FOREIGN KEY (reviewer) REFERENCES Person(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__pofile__fk
-	FOREIGN KEY (pofile) REFERENCES pofile(id);
-ALTER TABLE ONLY TranslationMessage
-	ADD CONSTRAINT translationmessage__potmsgset__fk
-	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
 	ON TranslationMessage(potmsgset, pofile) WHERE is_current;
@@ -365,6 +342,32 @@ WHERE
 ;
 
 
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__submitter__fk
+	FOREIGN KEY (submitter) REFERENCES Person(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr0__fk
+	FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr1__fk
+	FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr2__fk
+	FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__msgstr3__fk
+	FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__reviewer__fk
+	FOREIGN KEY (reviewer) REFERENCES Person(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__pofile__fk
+	FOREIGN KEY (pofile) REFERENCES pofile(id);
+ALTER TABLE ONLY TranslationMessage
+	ADD CONSTRAINT translationmessage__potmsgset__fk
+	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
+
+
 -- Update validationstatus: if any of the POSubmissions that are bundled needs
 -- validation, validationstatus should be 0 (UNKNOWN).  Otherwise, if any has
 -- an error, it should be 2 (UNKNOWNERROR).  Only if neither is the case can it
@@ -547,10 +550,10 @@ CREATE VIEW POTExport(
 	languagepack,
 	potmsgset,
 	sequence,
-	commenttext,
-	sourcecomment,
-	flagscomment,
-	filereferences,
+	comment_text,
+	source_comment,
+	flags_comment,
+	file_references,
 	context,
 	msgid_singular,
 	msgid_plural
@@ -567,10 +570,10 @@ SELECT
 	potemplate.languagepack,
 	potmsgset.id AS potmsgset,
 	potmsgset."sequence",
-	potmsgset.commenttext,
-	potmsgset.sourcecomment,
-	potmsgset.flagscomment,
-	potmsgset.filereferences,
+	potmsgset.commenttext AS comment_text,
+	potmsgset.sourcecomment AS source_comment,
+	potmsgset.flagscomment AS flags_comment,
+	potmsgset.filereferences AS file_references,
 	potmsgset.context,
 	msgid_singular.msgid AS msgid_singular,
 	msgid_plural.msgid AS msgid_plural
@@ -610,10 +613,6 @@ ALTER TABLE POFileTranslator
 
 CREATE INDEX pofiletranslator__date_last_touched__idx
 	ON POFileTranslator(date_last_touched);
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator__person__pofile__key
-	UNIQUE (person, pofile);
-ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 
 -- Re-populate POFileTranslator
 INSERT INTO POFileTranslator (
@@ -622,6 +621,11 @@ INSERT INTO POFileTranslator (
 SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
 FROM TranslationMessage
 ORDER BY submitter, pofile, date_created DESC, id DESC;
+
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator__person__pofile__key
+	UNIQUE (person, pofile);
+ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 
 DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
