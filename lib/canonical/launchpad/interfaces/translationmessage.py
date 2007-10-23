@@ -1,17 +1,25 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool
+from zope.interface import Interface
+from zope.schema import Bool, Choice, Datetime, Int, List, Object, Text
+
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potranslation import IPOTranslation
 from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
 __all__ = [
-    'IPOSubmission',
-    'IPOSubmissionSet',
+    'ITranslationMessage',
     'RosettaTranslationOrigin',
-    'TranslationValidationStatus'
+    'TranslationConflict',
+    'TranslationValidationStatus',
     ]
+
+
+class TranslationConflict(Exception):
+    """Someone updated the translation we are trying to update."""
 
 
 class RosettaTranslationOrigin(DBEnumeratedType):
@@ -65,94 +73,145 @@ class TranslationValidationStatus(DBEnumeratedType):
         """)
 
 
-class IPOSubmissionSet(Interface):
-    """The set of submissions we have in our database."""
+class ITranslationMessage(Interface):
+    """A translation message in a translation file."""
 
-    def getPOSubmissionByID(id):
-        """Return the `IPOsubmission` with the given id, or None.
+    id = Int(
+        title=_("The ID for this translation message"),
+        readonly=True, required=True)
 
-        :param id: IPOSubmission.id
-        """
+    pofile = Object(
+        title=_("The translation file from where this translation comes"),
+        readonly=True, required=True, schema=IPOFile)
 
-    def getSubmissionsFor(stored_pomsgsets, dummy_pomsgsets):
-        """Retrieve submissions and suggestions for given `POMsgSet`s.
+    potmsgset = Object(
+        title=_("The template message that this translation is for"),
+        readonly=True, required=True)
 
-        Gets `POSubmission`s that are either attached to, or can serve as
-        translation suggestions for, any of the given `POMsgSet`s.  This is
-        used to populate caches of active/published submissions and applicable
-        suggestions.
+    date_created = Datetime(
+        title=_("The date we saw this submission first"),
+        readonly=True, required=True)
 
-        :param stored_pomsgsets: a list of `POMsgSet` objects that exist in
-            the database, for which submissions and suggestions should be
-            retrieved.  Can be freely combined with `dummy_pomsgsets`.
-        :param dummy_pomsgsets: a list of `DummyPOMsgSet` objects, for which
-            suggestions should be retrieved.  Can be freely combined with
-            `stored_pomsgsets`.
+    submitter = Object(
+        title=_("The submitter of this translation"),
+        readonly=True, required=True, schema=IPerson)
 
-        :return: a dict mapping each of the `POMsgSet`s to a list of
-            applicable `POSubmission`s.
-        """
-
-
-class IPOSubmission(Interface):
-    """A submission of a translation to a PO file."""
-
-    id = Attribute("The ID for this submission.")
-    msgstr0 = Attribute("Translation submitted for plural form 0 (if any)")
-    msgstr1 = Attribute("Translation submitted for plural form 1 (if any)")
-    msgstr2 = Attribute("Translation submitted for plural form 2 (if any)")
-    msgstr3 = Attribute("Translation submitted for plural form 3 (if any)")
-    origin = Attribute("Where the submission originally came from.")
-    datecreated = Attribute("The date we saw this submission.")
-    person = Attribute("The owner of this submission, if we have one.")
-    validationstatus = Attribute(
-        "The status of the validation of the translation.")
-
-    active = Bool(
-        title=_("Whether this submission is active."),
-        required=True)
-    published = Bool(
-        title=_("Whether this submission is published."),
-        required=True)
-
-    sequence = Attribute("The place of this submission's message in its PO "
-        "file's ordering.")
-    pofile = Attribute("The PO file this submission's message is associated "
-        "with.")
-    obsolete = Attribute("Whether this submission's message was marked as "
-        "obsolete in the PO file it came from.")
-    isfuzzy = Attribute("Whether this message was marked as fuzzy in the PO "
-        "file it came from.")
-    potmsgset = Attribute("The message in the template that this submission "
-        "translates.")
     date_reviewed = Datetime(
-        title=u'The date when this message was reviewed for last time.',
-        required=False)
+        title=_("The date when this message was reviewed for last time"),
+        readonly=False, required=False)
+
     reviewer = Object(
-        title=u'The person who did the review and accepted current active'
-              u'translations.',
-        required=False, schema=IPerson)
+        title=_(
+            "The person who did the review and accepted current translations"
+            ), readonly=False, required=False, schema=IPerson)
+
+    msgstr0 = Object(
+        title=_("Translation for plural form 0 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr1 = Object(
+        title=_("Translation for plural form 1 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr2 = Object(
+        title=_("Translation for plural form 2 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr3 = Object(
+        title=_("Translation for plural form 3 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    translations = List(
+        title=_("Translations for this message"),
+        description=_("""
+            All translations for this message, its number will depend on the
+            number of plural forms available for its language.
+            """), readonly=True, required=True)
+
+    comment_text = Text(
+        title=_("Text of translator comment from the PO file"),
+        readonly=False, required=False)
+
+    origin = Choice(
+        title=_("Where the submission originally came from"),
+        values=RosettaTranslationOrigin,
+        readonly=True, required=True)
+
+    validation_status = Choice(
+        title=_("The status of the validation of the translation"),
+        values=TranslationValidationStatus,
+        readonly=False, required=True)
+
+    is_current = Bool(
+        title=_("Whether this translation is being used in Launchpad"),
+        readonly=False, required=True)
+
+    is_complete = Bool(
+        title=_("Whether the translation has all needed plural forms or not"),
+        readonly=True, required=True)
+
+    is_fuzzy = Bool(
+        title=_("Whether this translation must be checked before use it"),
+        readonly=False, required=True)
+
+    is_imported = Bool(
+        title=_(
+            "Whether this translation is being used in latest imported file"),
+        readonly=False, required=True)
+
+    was_in_last_import = Bool(
+        title=_(
+            "Whether this translations was present in last imported file"),
+        readonly=False, required=True)
+
+    was_obsolete_in_last_import = Bool(
+        title=_(
+            "Whether this translation was obsolete in last imported file"),
+        readonly=False, required=True)
+
+    was_complete_in_last_import = Bool(
+        title=_(
+            "Whether this translation was complete in last imported file"),
+        readonly=True, required=True)
+
+    was_fuzzy_in_last_import = Bool(
+        title=_(
+            "Whether this imported translation must be checked before use it"
+            ), readonly=False, require=True)
 
     def destroySelf():
         """Remove this object.
 
-        It should not be referenced by any other object.
+        It must not be referenced by any other object.
         """
 
+    def setCurrent():
+        """Set the translation message as the used in Launchpad.
+
+        It will change previous current translation message for the same
+        `IPOTMsgSet` and `ILanguage`, if any, to be not current.
+        """
+
+    def setImported():
+        """Set the translation message as the one imported.
+
+        It will change previous imported translation message for the same
+        `IPOTMsgSet` and `ILanguage`, if any, to be not imported.
+        """
+
+    # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLId(description, for_potmsgset=None):
         """Unique identifier for self, suitable for use in HTML element ids.
 
         Constructs an identifier for use in HTML.  This identifier matches the
         format parsed by `BaseTranslationView`.
 
-        :description: a keyword to be embedded in the id string, e.g.
-        "suggestion" or "translation."  Must be suitable for use in an HTML
-        element id.
-
-        :for_potmsgset: the `POTMsgSet` that this is a suggestion or
-        translation for.  In the case of a suggestion, that will be a
-        different one than this submission's `POMsgSet` is attached to.  For a
-        translation, on the other hand, it *will* be that `POTMsgSet`.  If no
-        value is given, the latter is assumed.
+        :param description: a keyword to be embedded in the id string, e.g.
+            "suggestion" or "translation."  Must be suitable for use in an
+            HTML element id.
+        :param for_potmsgset: the `POTMsgSet` that this is a suggestion or
+            translation for.  In the case of a suggestion, that will be a
+            different one than this submission's `POMsgSet` is attached to.
+            For a translation, on the other hand, it *will* be that
+            `POTMsgSet`.  If no value is given, the latter is assumed.
         """
-
