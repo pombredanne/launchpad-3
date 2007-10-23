@@ -8064,8 +8064,8 @@ ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
 
 ALTER TABLE productlicense DISABLE TRIGGER ALL;
 
-INSERT INTO productlicense (id, product, license) VALUES (1, 1, 1);
-INSERT INTO productlicense (id, product, license) VALUES (2, 1, 2);
+INSERT INTO productlicense (id, product, license) VALUES (1, 1, 10);
+INSERT INTO productlicense (id, product, license) VALUES (2, 1, 20);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
