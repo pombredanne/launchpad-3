@@ -196,9 +196,19 @@
     />
 
   <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
+    />
+
+  <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     />
+
+  <vocabulary
+   name="TranslationPermission"
+   factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+   />
 
   <vocabulary
     name="UserTeamsParticipation"
