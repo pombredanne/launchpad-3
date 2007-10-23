@@ -8,6 +8,9 @@ __all__ = ('IVPOTExportSet', 'IVPOTExport')
 
 from zope.interface import Interface, Attribute
 
+from canonical.launchpad import _
+
+
 class IVPOTExportSet(Interface):
     """A collection of IVPOTExport-providing rows."""
 
@@ -18,8 +21,8 @@ class IVPOTExportSet(Interface):
 class IVPOTExport(Interface):
     """Database view for efficient POT exports."""
 
-    name = Attribute("See IPOTemplateName.name")
-    translationdomain = Attribute("See IPOTemplateName.translationdomain")
+    name = String(_("See `IPOTemplate.name`"))
+    translation_domain = String(_("See `IPOTemplate.translationdomain`"))
 
     potemplate = Attribute("See IPOTemplate")
     distroseries = Attribute("See IPOTemplate.distroseries")
@@ -29,15 +32,13 @@ class IVPOTExport(Interface):
     languagepack = Attribute("See IPOTemplate.languagepack")
 
     potmsgset = Attribute("See IPOTMsgSet.id")
-    sequence = Attribute("See IPOTMsgSet.sequence")
-    commenttext = Attribute("See IPOTMsgSet.commenttext")
+    sequence = Integer("See IPOTMsgSet.sequence")
+    comment_text = Text("See `IPOTMsgSet.commenttext`")
     sourcecomment = Attribute("See IPOTMsgSet.sourcecomment")
     flagscomment = Attribute("See IPOTMsgSet.flagscomment")
     filereferences = Attribute("See IPOTMsgSet.filereferences")
 
-    commenttext = Attribute("See IPOMsgSet.commenttext")
+    comment_text = Attribute(_("See `ITranslationMessage.commenttext`"))
 
-    pluralform = Attribute("See IPOMsgIDSighting.pluralform")
-
-    context = Attribute("See IPOTMsgSet.context")
+    context = String(_("See `IPOTMsgSet.context`"))
     msgid = Attribute("See IPOMsgID.pomsgid")

@@ -8,6 +8,9 @@ __all__ = ('IVPOExportSet', 'IVPOExport')
 
 from zope.interface import Interface, Attribute
 
+from canonical.launchpad import _
+
+
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
 
@@ -53,8 +56,8 @@ class IVPOExportSet(Interface):
 class IVPOExport(Interface):
     """Database view for efficient PO exports."""
 
-    name = Attribute("See IPOTemplateName.name")
-    translationdomain = Attribute("See IPOTemplateName.translationdomain")
+    name = String(_("See IPOTemplate.name"))
+    translation_domain = String(_("See IPOTemplate.translation_domain"))
 
     potemplate = Attribute("See IPOTemplate")
     distroseries = Attribute("See IPOTemplate.distroseries")
@@ -78,22 +81,23 @@ class IVPOExport(Interface):
     flagscomment = Attribute("See IPOTMsgSet.flagscomment")
     filereferences = Attribute("See IPOTMsgSet.filereferences")
 
-    pomsgset = Attribute("See IPOMsgSet.id")
-    posequence = Attribute("See IPOMsgSet.sequence")
-    iscomplete = Attribute("See IPOMsgSet.iscomplete")
-    obsolete = Attribute("See IPOMsgSet.obsolete")
-    isfuzzy = Attribute("See IPOMsgSet.isfuzzy")
-    pocommenttext = Attribute("See IPOMsgSet.commenttext")
+    current_translation = Attribute(_("See ITranslationMessage.id"))
+    was_in_last_import = Boolean(_(
+        "See ITranslationMessage.was_in_last_import"))
+    was_obsolete_in_last_import = Boolean(_(
+        "See ITranslationMessage.obsolete"))
+    is_fuzzy = Boolean(_("See ITranslationMessage.is_fuzzy"))
+    pocommenttext = Text(_("See ITranslationMessage.comment_text"))
 
-    msgidpluralform = Attribute("See IPOMsgIDSighting.pluralform")
+    translation0 = Text(_("Translated text for plural form 0"))
+    translation1 = Text(_("Translated text for plural form 1"))
+    translation2 = Text(_("Translated text for plural form 2"))
+    translation3 = Text(_("Translated text for plural form 3"))
 
-    translationpluralform = Attribute("See IPOSubmission.pluralform")
-    activesubmission = Attribute(
-        "See IPOSubmission.id and IPOSubmission.active")
+    msgid_singular = Attribute(_("Message identifier in singular form"))
+    msgid_singular = Attribute(_("Message identifier in singular form"))
 
-    context = Attribute("See IPOTMsgSet.context")
-    msgid = Attribute("See IPOMsgID.pomsgid")
+    context = String("See IPOTMsgSet.context")
 
-    translation = Attribute("See IPOTranslation.translation")
-
+    translation = Text("See IPOTranslation.translation")
 

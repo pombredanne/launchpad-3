@@ -65,11 +65,11 @@ class ITranslationFormatExporter(Interface):
             '''),
         required=True, readonly=True)
 
-    def exportTranslationMessage(translation_message):
+    def exportTranslationMessageData(translation_message):
         """Export the string for the given translation message.
 
-        :param translation_message: ITranslationMessage to export.
-        :return: Unicode string representing given ITranslationMessage.
+        :param translation_message: `ITranslationMessageData` to export.
+        :return: Unicode string representing given `ITranslationMessageData`.
         """
 
     def exportTranslationFiles(translation_file_list, ignore_obsolete=False,
