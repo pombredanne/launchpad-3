@@ -23,10 +23,9 @@ from canonical.launchpad.interfaces import (
     ISprint, ISprintSpecification, IStandardShipItRequest,
     IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
     ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator)
+    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
-from canonical.lp.dbschema import PackageUploadStatus
 
 
 class AuthorizationBase:
@@ -183,6 +182,20 @@ class DriveSprint(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.driver) or
+                user.inTeam(admins))
+
+
+class Sprint(AuthorizationBase):
+    """An attendee, owner, or driver of a sprint."""
+    permission = 'launchpad.View'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
+                user in [attendance.attendee
+                         for attendance in self.obj.attendances] or
                 user.inTeam(admins))
 
 

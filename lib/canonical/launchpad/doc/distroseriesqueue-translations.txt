@@ -8,8 +8,8 @@ uploaded into the system.
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
   ...     IComponentSet, IDistributionSet, IDistroSeriesSet,
-  ...     ISourcePackageNameSet)
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  ...     ISourcePackageNameSet, PackagePublishingPocket,
+  ...     PackagePublishingStatus)
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
@@ -18,9 +18,7 @@ uploaded into the system.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-  >>> from canonical.lp.dbschema import (
-  ... SourcePackageUrgency, PackagePublishingStatus,
-  ... PackagePublishingPocket)
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
   >>> from canonical.database.constants import UTC_NOW
 
   # Login as an admin.
@@ -123,7 +121,7 @@ queue:
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
@@ -259,8 +257,7 @@ For now we simply ignore translations for archives other than the
 Distribution archives (i.e. PPAs).
 
   >>> from canonical.launchpad.interfaces import (
-  ...    IPersonSet, IArchiveSet)
-  >>> from canonical.lp.dbschema import ArchivePurpose
+  ...    ArchivePurpose, IPersonSet, IArchiveSet)
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
   ...     purpose=ArchivePurpose.PPA,

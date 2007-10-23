@@ -89,7 +89,8 @@ class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'overview'
-    links = ['attendance', 'registration', 'edit', 'branding']
+    links = ['attendance', 'registration', 'attendee_export', 'edit',
+             'branding']
 
     def attendance(self):
         text = 'Register yourself'
@@ -100,6 +101,12 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Register someone else'
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.View')
+    def attendee_export(self):
+        text = 'Export attendees to CSV'
+        summary = 'Export attendee contact information to CSV format'
+        return Link('+attendees-csv', text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

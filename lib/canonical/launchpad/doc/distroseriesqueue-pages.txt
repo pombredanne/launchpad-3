@@ -43,7 +43,7 @@ A list of available actions in this queue:
 
 Let's instantiate the view for a specific queue:
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']

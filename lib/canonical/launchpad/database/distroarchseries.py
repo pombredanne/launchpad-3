@@ -19,7 +19,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchSeriesSet,
-    IBuildSet, IPublishing)
+    IBuildSet, ICanPublishPackages, PackagePublishingPocket,
+    PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
@@ -31,11 +32,9 @@ from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchSeries(SQLBase):
-    implements(IDistroArchSeries, IHasBuildRecords, IPublishing)
+    implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
     _table = 'DistroArchRelease'
     _defaultOrder = 'id'
 
@@ -139,7 +138,7 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See IDistroArchSeries."""
-        archives = self.distroseries.distribution.archiveIdList()
+        archives = self.distroseries.distribution.getArchiveIDList()
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -212,13 +211,13 @@ class DistroArchSeries(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = self.distroseries.distribution.archiveIdList(archive)
+        archives = self.distroseries.distribution.getArchiveIDList(archive)
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'],
-            orderBy=['id'])
+            orderBy=['-id'])
 
         return shortlist(published)
 
@@ -230,7 +229,7 @@ class DistroArchSeries(SQLBase):
             orderBy=['-id'])
 
     def getPendingPublications(self, archive, pocket, is_careful):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         queries = [
             "distroarchrelease = %s AND archive = %s"
             % sqlvalues(self, archive)
@@ -257,7 +256,7 @@ class DistroArchSeries(SQLBase):
         return publications
 
     def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 

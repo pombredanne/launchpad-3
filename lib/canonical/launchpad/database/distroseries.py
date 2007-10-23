@@ -64,16 +64,14 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries,
-    IDistroSeriesSet, IHasBuildRecords, IHasQueueItems,
-    IHasTranslationTemplates, ILibraryFileAliasSet,
-    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
+    IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
+    IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
+    IPublishedPackageSet, ICanPublishPackages, ISourcePackage, ISourcePackageName,
     ISourcePackageNameSet, LanguagePackType, NotFoundError,
-    SpecificationFilter, SpecificationSort, SpecificationImplementationStatus,
-    SpecificationGoalStatus)
-from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus)
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -81,7 +79,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates, IPublishing)
+        IHasTranslationTemplates, ICanPublishPackages)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -667,11 +665,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'])
+            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            orderBy=['-id'])
 
         return shortlist(published)
 
@@ -719,7 +718,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
         """See IDistroSeries."""
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
 
         clause = """
             SourcePackagePublishingHistory.sourcepackagerelease=
@@ -748,7 +747,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self, name=None, version=None, archtag=None, sourcename=None,
         orderBy=None, pocket=None, component=None, archive=None):
         """See IDistroSeries."""
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
 
         query = ["""
         BinaryPackagePublishingHistory.binarypackagerelease =
@@ -1058,7 +1057,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
         # Restrict result to given archives.
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
 
         default_clauses.append("""
         packageupload.archive IN %s""" % sqlvalues(archives))
@@ -1380,7 +1379,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         copy_active_translations(self, transaction, logger)
 
     def getPendingPublications(self, archive, pocket, is_careful):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         queries = ['distrorelease = %s' % sqlvalues(self)]
 
         # Query main archive for this distroseries
@@ -1411,7 +1410,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return publications
 
     def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See IPublishing."""
+        """See ICanPublishPackages."""
         log.debug("Publishing %s-%s" % (self.title, pocket.name))
         log.debug("Attempting to publish pending sources.")
 

@@ -17,10 +17,9 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IDistributionSet, NotFoundError, PackagePublishingStatus,
+    PackagePublishingPocket)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
 
 from contrib.glock import GlobalLock
 

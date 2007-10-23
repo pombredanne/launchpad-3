@@ -36,10 +36,9 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IHasBuildRecords, IHasTranslationTemplates, IQuestionTarget,
-    ISourcePackage, PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket, PackagePublishingStatus)
+    BuildStatus, ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
+    IQuestionTarget, PackagingType, PackagePublishingPocket,
+    PackagePublishingStatus, QUESTION_STATUS_DEFAULT_SEARCH)
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):

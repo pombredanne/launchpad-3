@@ -8,7 +8,9 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+
+from canonical.launchpad.interfaces import (
+    IDistroSeriesBinaryPackage, PackagePublishingStatus)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (

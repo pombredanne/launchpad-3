@@ -80,16 +80,16 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
-    IPerson, IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
+    DistroSeriesStatus, EmailAddressStatus, IBugTask, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
+    ILaunchBag, IMailingList, IMailingListSet, IMilestoneSet, IPerson,
+    IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
     ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
     MailingListStatus)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class BasePersonVocabulary:

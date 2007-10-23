@@ -517,7 +517,7 @@ an EnumCol for sqlobject.
 
 Test the 'lp:' namespace for presenting DBSchema items.
 
-    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> deb = BinaryPackageFormat.DEB.value
     >>> test_tales('deb/lp:BinaryPackageFormat', deb=deb)
     'Ubuntu Package'
@@ -552,7 +552,7 @@ matches a particular valid value for that DBSchema enum.
 This was going to be called 'enum-value', but Zope doesn't allow this.
 To be fixed upstream.
 
-    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> deb = BinaryPackageFormat.DEB
     >>> udeb = BinaryPackageFormat.UDEB
     >>> test_tales('deb/enumvalue:DEB', deb=deb)

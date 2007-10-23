@@ -45,11 +45,33 @@
           </a>
         </li>
       </ul>
-      <ul tal:condition="context/homepageurl">
+      <ul tal:define="
+        global sourceforge_url string:http://sourceforge.net/projects/${context/sourceforgeproject};
+        global freshmeat_url string:http://freshmeat.net/projects/${context/sourceforgeproject}"
+        tal:condition="
+            python:context.homepageurl and 
+                   context.homepageurl != sourceforge_url and 
+                   context.homepageurl != freshmeat_url">
         <li class="external link">
           <a tal:attributes="href context/homepageurl">
-            <strong>Visit the <tal:name replace="context/title" />
+            <strong><tal:name replace="context/title" />
             home page &raquo;</strong>
+          </a>
+        </li>
+      </ul>
+      <ul tal:condition="context/sourceforgeproject">
+        <li class="external link">
+          <a tal:attributes="href sourceforge_url">
+            <strong><tal:name replace="context/sourceforgeproject" />
+            Sourceforge page &raquo;</strong>
+          </a>
+        </li>
+      </ul>
+      <ul tal:condition="context/freshmeatproject">
+        <li class="external link">
+          <a tal:attributes="href freshmeat_url">
+            <strong><tal:name replace="context/freshmeatproject" />
+            Freshmeat page &raquo;</strong>
           </a>
         </li>
       </ul>

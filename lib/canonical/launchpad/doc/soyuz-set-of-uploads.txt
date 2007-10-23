@@ -135,7 +135,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
@@ -175,7 +175,7 @@ given upload into the published state, so here's a very simplistic publisher
   >>> from canonical.launchpad.database import (
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
-  >>> from canonical.lp.dbschema import PackagePublishingStatus as PPS
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus as PPS
   >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     srcs_to_publish = SPPH.select("""
@@ -470,7 +470,7 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
   >>> breezy.status = DistroSeriesStatus.CURRENT
   >>> syncUpdate(breezy)
   >>> transaction.commit()
@@ -519,9 +519,8 @@ found in i386/RELEASE, because it's the only one available.
   DEBUG   Initialising connection.
   ...
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
-  DEBUG   foo: (binary) exists in i386/RELEASE
+  DEBUG   foo-1.0-1 (binary) exists in i386/RELEASE
   ...
-
 
 Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
@@ -626,8 +625,8 @@ Check there's a SourcePackageRelease with no build.
 
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName, Build)
-  >>> from canonical.lp.dbschema import (
-  ...     BuildStatus, PackagePublishingPocket)
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id

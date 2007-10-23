@@ -9,8 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'vocab_factory',
-    'DistroSeriesStatusVocabulary',
-    'PackagePublishingPocketVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
     ]
@@ -23,8 +21,5 @@ from canonical.launchpad.interfaces import (
 
 # DB Schema Vocabularies
 
-DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
-PackagePublishingPocketVocabulary = vocab_factory(
-    dbschema.PackagePublishingPocket)
 TranslationFileFormatVocabulary = vocab_factory(TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(TranslationPermission)

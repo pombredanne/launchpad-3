@@ -63,13 +63,12 @@ from canonical.launchpad.interfaces import (
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
+    PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
-
-from canonical.lp.dbschema import PackagePublishingStatus
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,

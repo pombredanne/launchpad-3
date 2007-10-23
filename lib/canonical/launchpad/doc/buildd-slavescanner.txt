@@ -677,7 +677,6 @@ this case cleanly. We need to set the pocket to updates for this test as its
 uploading to warty.
 
   >>> bqItem10 = getUtility(IBuildSet).getByBuildID(6).createBuildQueueEntry()
-  >>> from canonical.lp import dbschema
 
 XXX: The pocket attribute is not intended to be changed in regular code, but
 for this test we want to change it on the fly. An alternative would be to add
@@ -685,7 +684,8 @@ new sample data for a build that can be uploaded with binary packages attached
 to it.
 
   >>> from zope.security.proxy import removeSecurityProxy
-  >>> removeSecurityProxy(bqItem10.build).pocket = dbschema.PackagePublishingPocket.UPDATES
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> removeSecurityProxy(bqItem10.build).pocket = PackagePublishingPocket.UPDATES
   >>> setupBuildQueue(bqItem10, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -696,7 +696,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-  >>> from canonical.lp.dbschema import BuildStatus
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> bqItem10.build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognise this build record as a
@@ -862,7 +862,8 @@ Create a totally bogus CHROOT
 
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> from canonical.launchpad.database import PocketChroot
-  >>> pocket = dbschema.PackagePublishingPocket.RELEASE
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> pocket = PackagePublishingPocket.RELEASE
   >>> chroot = LibraryFileAlias.get(1)
   >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=pocket, chroot=chroot)
@@ -934,7 +935,7 @@ are builds for now superseded source package releases in the queue.
 This involves subbing in a scarily large amount of crud, so here
 goes nothing.
 
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
   >>> class MockBG:
   ...     def firstAvailable(self, is_trusted=False):
@@ -1049,7 +1050,7 @@ Clean up before continuing:
 
 When there is no chroot it should not alter the buildstate:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> PocketChroot.selectBy(
   ...     distroarchseries=bqItem3.archseries,
   ...     pocket=PackagePublishingPocket.SECURITY).count()
@@ -1070,7 +1071,7 @@ Make a build in the security pocket:
   ...    'evolution').currentrelease.sourcepackagerelease
   >>> security_build = hoary_evo.createBuild(
   ...     distroarchseries=hoary_i386,
-  ...     pocket=dbschema.PackagePublishingPocket.SECURITY,
+  ...     pocket=PackagePublishingPocket.SECURITY,
   ...     processor=hoary_i386.default_processor,
   ...     archive=hoary_i386.main_archive)
   >>> security_bqItem = security_build.createBuildQueueEntry()
@@ -1113,7 +1114,7 @@ are dependent on the pocket that we are building in, such that:
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:
 
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
   >>> hoary_i386.distroseries.status = DistroSeriesStatus.FROZEN
 
 Now we can start a build in other pockets, and see what archives are
@@ -1123,7 +1124,7 @@ A build in the updates pocket:
 
   >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> removeSecurityProxy(bqItem3.build).pocket = (
-  ...     dbschema.PackagePublishingPocket.UPDATES)
+  ...     PackagePublishingPocket.UPDATES)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
@@ -1138,7 +1139,7 @@ A build in the proposed pocket:
 
   >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> removeSecurityProxy(bqItem3.build).pocket = (
-  ...     dbschema.PackagePublishingPocket.PROPOSED)
+  ...     PackagePublishingPocket.PROPOSED)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
@@ -1153,7 +1154,7 @@ A build in the security pocket:
 
   >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> removeSecurityProxy(bqItem3.build).pocket = (
-  ...     dbschema.PackagePublishingPocket.SECURITY)
+  ...     PackagePublishingPocket.SECURITY)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
@@ -1168,7 +1169,7 @@ A build in the backports pocket:
 
   >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> removeSecurityProxy(bqItem3.build).pocket = (
-  ...     dbschema.PackagePublishingPocket.BACKPORTS)
+  ...     PackagePublishingPocket.BACKPORTS)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)

@@ -32,14 +32,13 @@ from zope.component import getUtility
 from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet, IPersonSet)
+    DistroSeriesStatus, IBinaryPackageNameSet, IDistributionSet,
+    IBinaryPackageReleaseSet, ILaunchpadCelebrities, NotFoundError,
+    ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    DistroSeriesStatus)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
@@ -319,7 +318,7 @@ class ArchiveCruftChecker:
         """
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
-                "File does not exists:%s" % filename)
+                "File does not exist: %s" % filename)
         unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
