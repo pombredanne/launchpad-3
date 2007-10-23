@@ -280,7 +280,7 @@ has its data set up.
   [u'mozilla-firefox-1.0']
 
   >>> legal_archs = set(warty.architectures)
-  >>> [a.architecturetag for a in legal_archs]
+  >>> sorted([a.architecturetag for a in legal_archs], reverse=True)
   [u'i386', u'hppa']
 
 Restrict iceweasel targets to i386 and sparc, since the latter is not

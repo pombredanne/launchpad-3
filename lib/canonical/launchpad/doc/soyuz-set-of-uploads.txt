@@ -519,9 +519,8 @@ found in i386/RELEASE, because it's the only one available.
   DEBUG   Initialising connection.
   ...
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
-  DEBUG   foo-1.0-1: (binary) exists in i386/RELEASE
+  DEBUG   foo-1.0-1 (binary) exists in i386/RELEASE
   ...
-
 
 Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
