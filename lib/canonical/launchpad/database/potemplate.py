@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -944,7 +944,7 @@ class POTemplateToTranslationFileAdapter:
         return self._potemplate.getHeader()
 
     def _getMessages(self):
-        """Return a list of `ITranslationMessage`."""
+        """Return a list of `ITranslationMessageData`."""
         potemplate = self._potemplate
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
@@ -970,7 +970,7 @@ class POTemplateToTranslationFileAdapter:
                     messages.append(msgset)
 
                 # Create new message set
-                msgset = TranslationMessage()
+                msgset = TranslationMessageData()
                 msgset.sequence = row.sequence
                 msgset.obsolete = False
 

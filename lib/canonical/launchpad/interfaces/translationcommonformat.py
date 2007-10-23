@@ -11,7 +11,7 @@ __metaclass__ = type
 __all__ = [
     'ITranslationFile',
     'ITranslationHeader',
-    'ITranslationMessage',
+    'ITranslationMessageData',
     'TranslationImportExportBaseException',
     ]
 
@@ -89,7 +89,7 @@ class ITranslationHeader(Interface):
         """
 
 
-class ITranslationMessage(Interface):
+class ITranslationMessageData(Interface):
     """Translation message interface."""
 
     context = Text(
@@ -137,7 +137,7 @@ class ITranslationFile(Interface):
         required=True, schema=ITranslationHeader)
 
     messages = List(
-        title=u'ITranslationMessage objects included in the parsed file.',
+        title=u'ITranslationMessageData objects included in the parsed file.',
         required=True, readonly=True)
 
     path = TextLine(
