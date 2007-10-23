@@ -1495,12 +1495,12 @@ class POFileToTranslationFileAdapter:
             # file. (Messages which are in the PO template but not in the PO
             # file are untranslated, and messages which are not in the PO
             # template but in the PO file are obsolete.)
-            if row.posequence in (0, None) and row.potsequence == 0:
+            if row.potsequence == 0 and not row.was_in_last_import:
                 continue
 
             # If the sequence number of either the PO template or the PO file
             # has changed, we start a new message set.
-            if row.potsequence != potsequence or row.posequence != posequence:
+            if row.potsequence != potsequence:
                 if msgset is not None:
                     # Output current message set before creating the new one.
                     messages.append(msgset)

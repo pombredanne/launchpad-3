@@ -18,15 +18,25 @@ class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
     id = Attribute("""An identifier for this POTMsgSet""")
-
-    # The primary message ID is the same as the message ID with plural
-    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
-
-    context = Attribute(
+    context = Text(
         "String used to disambiguate messages with identical msgids.")
 
-    primemsgid_ID = Int(title=u'Key of primary msgid for this set.',
-        required=True, readonly=True)
+    msgid_singular = Object(
+        title=u"The singular msgid for this message.",
+        description=(u"A message ID along with the context uniquely identifies "
+                     u"the template message."),
+        required=True,
+        readonly=True,
+        schema=IPOMsgID)
+
+    msgid_plural = Object(
+        title=u"The plural msgid for this message.",
+        described=(u"Provides a plural msgid for the message. "
+                   u"If it's not a plural form message, this value"
+                   u"should be None."),
+        required=True,
+        readonly=True,
+        schema=IPOMsgID)
 
     sequence = Attribute("The ordering of this set within its file.")
 
@@ -40,58 +50,76 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
-    msgid = Field(
-        title=_("The singular id for this message."), readonly=True)
-
-    msgid_plural = Field(
-        title=_("The plural id for this message or None."), readonly=True)
-
-    singular_text = Field(
+    singular_text = Text(
         title=_("The singular text for this message."), readonly=True)
 
-    plural_text = Field(
+    plural_text = Text(
         title=_("The plural text for this message or None."), readonly=True)
 
-    def getCurrentSubmissions(language, pluralform):
-        """Return a selectresults for the submissions that are currently
-        published or active in any PO file for the same language and
-        prime msgid.
+    def getTranslationMessages(language):
+        """Return all the translation messages for this IPOTMsgSet.
+
+        :param language: language we want translations for.
+        """
+
+    def getDummyTranslationMessages(language):
+        """Return an iterator containing a single DummyTranslationMessage.
+
+        :param language: language we want a dummy translations for.
+
+        We should not already have a TranslationMessage for this language.
+        """
+
+    def getCurrentTranslation(language):
+        """Returns a TranslationMessage marked as being currently used."""
+
+    def getImportedTranslation(language):
+        """Returns a TranslationMessage as imported from the package."""
+
+    def getLocalTranslationMessages(language):
+        """Return all the local unused translation messages for this IPOTMsgSet.
+
+        :param language: language we want translations for.
+        """
+
+    def getExternalTranslationMessages(language):
+        """Get TranslationMessages for the same msgid in different templates.
+        """
+
+    def hasTranslationChangedInLaunchpad(language):
+        """Whether an imported translation differs from the current one.
+
+        :param language: language for which translations we are asking about.
+
+        There has to be an imported translation: if there isn't, this is
+        not a 'changed' translation, just a 'new' translation in Launchpad."""
+
+    def updateTranslationSet(language, submitter, new_translations, is_fuzzy,
+                             is_imported, lock_timestamp, ignore_errors=False,
+                             force_edition_rights=False):
+        """Update or create a translation message using `new_translations`.
+
+        :param language: language `new_translations` are in.
+        :param submitter: author of the translations.
+        :param new_translations: a dictionary of plural forms, with the
+            integer plural form number as the key and the translation as the
+            value.
+        :param is_fuzzy: Whether the translations are fuzzy.
+        :param is_imported: indicates whether this update is imported from a
+            packaged po file.
+        :param lock_timestamp: The timestamp when we checked the values we
+            want to update.
+        :param ignore_errors: A flag that controls whether the translations
+            should be stored even when an error is detected.
+        :param force_edition_rights: A flag that 'forces' handling this
+            submission as coming from an editor, even if `submitter` is not.
+
+        If there is an error with the translations and ignore_errors is not
+        True or it's not a fuzzy submit, raises gettextpo.error
         """
 
     def flags():
         """Return a list of flags on this set."""
-
-    def translationsForLanguage(language):
-        """Return an iterator over the active translation strings for this
-        set in the given language.
-        XXX very UI-specific, perhaps this should be elsewhere?
-        """
-
-    def getPOMsgSet(language, variant=None):
-        """Return the IPOMsgSet corresponding to this IPOTMsgSet or None.
-
-        :param language: The language associated with the IPOMsgSet that we
-            want.
-        :param variant: The language variant.
-        """
-
-    def getDummyPOMsgSet(language, variant=None):
-        """Return a Dummy IPOMsgSet corresponding to this IPOTMsgSet.
-
-        :param language: The language associated with the IPOMsgSet that we
-            want.
-        :param variant: The language variant.
-
-        We should not have already a POMsgSet for the given arguments.
-        """
-
-    def makeMessageIDSighting(text, pluralForm, update=False):
-        """Return a new message ID sighting that points back to us.
-
-        If one already exists, behaviour depends on 'update'; if update
-        is allowed, the existing one is 'touched' and returned.  If it
-        is not, then a KeyError is raised.
-        """
 
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' after doing some sanity checks and fixes.

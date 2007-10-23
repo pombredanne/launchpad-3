@@ -40,7 +40,10 @@ CREATE TABLE TranslationMessage(
 	id2 integer,
 	id3 integer,
 
-	CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK ((reviewer IS NULL) = (date_reviewed IS NULL))
+	CONSTRAINT translationmessage__reviewer__date_reviewed__valid
+		CHECK ((reviewer IS NULL) = (date_reviewed IS NULL)),
+	CONSTRAINT translationmessage__was_in_last_import__is_imported__valid
+		CHECK (is_imported OR NOT was_in_last_import)
 );
 
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
