@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     ITranslationHeader, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationFile, TranslationMessage)
+    TranslationFile, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
 
@@ -427,7 +427,7 @@ class POParser(object):
         self._pending_unichars = u''
         self._lineno = 0
         # Message specific variables.
-        self._message = TranslationMessage()
+        self._message = TranslationMessageData()
         self._message_lineno = self._lineno
         self._section = None
         self._plural_case = None
@@ -771,7 +771,7 @@ class POParser(object):
                     POSyntaxWarning(self._lineno, 'We got a second header.'))
 
             # Start a new message.
-            self._message = TranslationMessage()
+            self._message = TranslationMessageData()
             self._message_lineno = self._lineno
             self._section = None
             self._plural_case = None
