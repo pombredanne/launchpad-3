@@ -436,8 +436,9 @@ suggestions.
     >>> print entry.status.name
     IMPORTED
 
-So, we look in amazement, and notice that "second" message is indeed updated
-properly.
+Notice that "second" message is indeed updated properly.  We are making sure
+we don't get any problems with too many inactive suggestions for that
+one ("b-from-LP", "b-from-LP-two").
 
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz

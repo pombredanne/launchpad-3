@@ -109,6 +109,8 @@ class ExistingPOFileInDatabase:
             elif published:
                 look_at = self.published
             else:
+                # We don't care about non-active and non-published messages
+                # yet.  To be part of super-fast-imports-phase2.
                 continue
 
             if (msgid, context) in look_at:
@@ -125,6 +127,10 @@ class ExistingPOFileInDatabase:
                 message.fuzzy = isfuzzy
             elif published:
                 message.fuzzy = publishedfuzzy
+            else:
+                # We don't care about non-active and non-published messages
+                # yet.  To be part of super-fast-imports-phase2.
+                pass
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
