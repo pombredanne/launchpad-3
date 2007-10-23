@@ -665,7 +665,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
@@ -718,7 +718,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
         """See IDistroSeries."""
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
 
         clause = """
             SourcePackagePublishingHistory.sourcepackagerelease=
@@ -747,7 +747,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self, name=None, version=None, archtag=None, sourcename=None,
         orderBy=None, pocket=None, component=None, archive=None):
         """See IDistroSeries."""
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
 
         query = ["""
         BinaryPackagePublishingHistory.binarypackagerelease =
@@ -1057,7 +1057,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
         # Restrict result to given archives.
-        archives = self.distribution.archiveIdList(archive)
+        archives = self.distribution.getArchiveIDList(archive)
 
         default_clauses.append("""
         packageupload.archive IN %s""" % sqlvalues(archives))

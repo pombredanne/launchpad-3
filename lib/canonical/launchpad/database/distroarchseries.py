@@ -17,9 +17,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
+    IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchSeriesSet,
-    IBuildSet, ICanPublishPackages, PackagePublishingPocket, PackagePublishingStatus)
+    IBuildSet, ICanPublishPackages, PackagePublishingPocket,
+    PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
@@ -137,7 +138,7 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See IDistroArchSeries."""
-        archives = self.distroseries.distribution.archiveIdList()
+        archives = self.distroseries.distribution.getArchiveIDList()
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -210,7 +211,7 @@ class DistroArchSeries(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = self.distroseries.distribution.archiveIdList(archive)
+        archives = self.distroseries.distribution.getArchiveIDList(archive)
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = BinaryPackagePublishingHistory.select(

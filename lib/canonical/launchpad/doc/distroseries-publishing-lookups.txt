@@ -11,8 +11,6 @@ ubuntu/breezy-autotest, which is empty:
     >>> from canonical.launchpad.interfaces import (
     ...    IDistributionSet, IPersonSet, PackagePublishingPocket,
     ...    PackagePublishingStatus)
-    >>> from canonical.launchpad.database.publishing import (
-    ...     SecureSourcePackagePublishingHistory)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -22,68 +20,32 @@ We will use a 'cnews' sourcepackage because it's not published yet in
 the distroseries we want to test, this will help to make the tests as clear
 as possible.
 
-    >>> hoaryy = ubuntu['hoary']
-    >>> cnews_hoary = hoaryy.getSourcePackage('cnews')
+    >>> hoary = ubuntu['hoary']
+    >>> cnews_hoary = hoary.getSourcePackage('cnews')
     >>> sample_spr = cnews_hoary.currentrelease.sourcepackagerelease
+
+    >>> from canonical.launchpad.database.publishing import (
+    ...    SecureSourcePackagePublishingHistory)
 
     >>> SecureSourcePackagePublishingHistory.selectBy(
     ...     distroseries=breezy_autotest,
     ...     sourcepackagerelease=sample_spr).count()
     0
 
-XXX cprov 20071022: this framework to create sample publications is
-almost a full duplication of the one used in distroarchseries.txt. I
-would be nice if we could re-factor the differences and transform it
-in a collection of helper functions.
-
 Create and collect several binary publishing records in a variety of
 states, pockets and archives:
 
-    >>> sample_pub_data = [
-    ...     (PackagePublishingStatus.PENDING, ubuntu.main_archive,
-    ...      PackagePublishingPocket.RELEASE),
-    ...     (PackagePublishingStatus.PUBLISHED, ubuntu.main_archive,
-    ...      PackagePublishingPocket.RELEASE),
-    ...     (PackagePublishingStatus.PENDING, ubuntu.main_archive,
-    ...      PackagePublishingPocket.UPDATES),
-    ...     (PackagePublishingStatus.PUBLISHED, ubuntu.main_archive,
-    ...      PackagePublishingPocket.PROPOSED),
-    ...     (PackagePublishingStatus.PENDING, cprov_archive,
-    ...      PackagePublishingPocket.RELEASE),
-    ...     (PackagePublishingStatus.PUBLISHED, cprov_archive,
-    ...      PackagePublishingPocket.RELEASE),
-    ...     (PackagePublishingStatus.PENDING, cprov_archive,
-    ...      PackagePublishingPocket.UPDATES),
-    ...     (PackagePublishingStatus.PUBLISHED, cprov_archive,
-    ...      PackagePublishingPocket.PROPOSED),
-    ...     ]
-    >>> sample_pub = []
+    >>> from canonical.launchpad.ftests.soyuz import SoyuzTestHelper
 
-    >>> for status, archive, pocket in sample_pub_data:
-    ...     sample_pub.append(SecureSourcePackagePublishingHistory(
-    ...          sourcepackagerelease=sample_spr,
-    ...          distroseries=breezy_autotest,
-    ...          component=sample_spr.component,
-    ...          section=sample_spr.section,
-    ...          status=status,
-    ...          archive=archive,
-    ...          pocket=pocket))
+    >>> soyuz_helper = SoyuzTestHelper()
+    >>> sample_pub = soyuz_helper.createPublishingForDistroSeries(
+    ...      sample_spr, breezy_autotest)
 
     >>> [pub_main_release_pending, pub_main_release_published,
     ...  pub_main_updates_pending, pub_main_proposed_published,
     ...  pub_ppa_release_pending, pub_ppa_release_published,
     ...  pub_ppa_updates_pending, pub_ppa_proposed_published] = sample_pub
 
-    >>> def checkPubList(expected, given):
-    ...     """Check if the given publication list matches the expected one.
-    ...
-    ...     We have to check ID, because the lookup returns contents of
-    ...     IBinaryPackagePublishingHistory, a postgres view of
-    ...     SecureBinaryPackagePublishinghistory, where we created the records.
-    ...     The list order is also important.
-    ...     Return True if the lists matches, otherwise False.
-    ...     """
-    ...     return [p.id for p in expected] == [r.id for r in given]
 
 Looking for all PUBLISHED publications in main_archive and all
 pockets:
@@ -93,7 +55,7 @@ pockets:
     ...     pub_main_release_published,
     ...     ]
     >>> result = breezy_autotest.getPublishedReleases('cnews')
-    >>> checkPubList(all_published_main_pubs, result)
+    >>> soyuz_helper.checkPubList(all_published_main_pubs, result)
     True
 
 Looking for all PUBLISHED or PENDING publications in main_archive and all
@@ -107,7 +69,7 @@ pockets.
     ...     ]
     >>> result = breezy_autotest.getPublishedReleases(
     ...     'cnews', include_pending=True)
-    >>> checkPubList(all_main_pubs, result)
+    >>> soyuz_helper.checkPubList(all_main_pubs, result)
     True
 
 Using 'pocket' filter:
@@ -120,7 +82,7 @@ Using 'pocket' filter:
     ...     'cnews', include_pending=True,
     ...     pocket=PackagePublishingPocket.UPDATES)
 
-    >>> checkPubList(updates_main_pubs, result)
+    >>> soyuz_helper.checkPubList(updates_main_pubs, result)
     True
 
 Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
@@ -134,7 +96,7 @@ Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
     ...     'cnews', include_pending=True,
     ...     exclude_pocket=PackagePublishingPocket.RELEASE)
 
-    >>> checkPubList(non_release_main_pubs, result)
+    >>> soyuz_helper.checkPubList(non_release_main_pubs, result)
     True
 
 Looking for all PUBLISHED or PENDING publications in cprov PPA and all
@@ -148,6 +110,6 @@ pockets.
     ...     ]
     >>> result = breezy_autotest.getPublishedReleases(
     ...    'cnews', include_pending=True, archive=cprov_archive)
-    >>> checkPubList(all_ppa_pubs, result)
+    >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
     True
 

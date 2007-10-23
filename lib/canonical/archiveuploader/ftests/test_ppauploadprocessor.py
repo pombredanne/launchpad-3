@@ -137,15 +137,23 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
 
         #
         # Step 2: Upload a new version of bar to component universe (see
-        # ../tests/data/suite/bar_1.0-10). It should be auto-accepted,
-        # auto-published and have its component overridden to 'main'.
+        # changesfile encoded in the upload notification). It should be
+        # auto-accepted, auto-published and have its component overridden
+        # to 'main'.
         #
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
             "Subject: [PPA name16] Accepted bar 1.0-10 (source)",
-           "You are receiving this email because you are the uploader of "
+            "[PPA name16] Accepted:",
+            "OK: bar_1.0.orig.tar.gz",
+            "OK: bar_1.0-10.diff.gz",
+            "OK: bar_1.0-10.dsc",
+            "-> Component: main Section: devel",
+            "universe/devel optional bar_1.0-10.dsc",
+            "universe/devel optional bar_1.0-10.diff.gz",
+            "You are receiving this email because you are the uploader of "
                 "the above",
             "PPA package."
             ]
