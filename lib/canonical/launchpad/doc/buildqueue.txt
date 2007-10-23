@@ -83,21 +83,6 @@ of the build procedure (NOW - buildstart), it's mainly used in the UI.
  >>> bq.buildduration
  datetime.timedelta(...)
 
-Currently published component is provided via 'current_component'
-property, it looks over the publishing records and find the current
-publication of the source in question.
-
- >>> bq.current_component.name
- u'main'
-
-it is not necessary the same than the:
-
- >>> bq.build.sourcepackagerelease.component.name
- u'main'
-
-which is the component the source was originally uploaded to, before
-any overriding action.
-
 Some local properties inherited from related content classes:
 
  >>> bq.archseries.id == bq.build.distroarchseries.id
@@ -192,7 +177,7 @@ BuildQueueSet provides a method used in the builddmaster context to
 calculate retrieve every instance in given state for a set of
 distroarchseriess.
 
- >>> from canonical.lp.dbschema import BuildStatus
+ >>> from canonical.launchpad.interfaces import BuildStatus
  >>> state = BuildStatus.NEEDSBUILD
 
  >>> from canonical.launchpad.interfaces import IDistributionSet

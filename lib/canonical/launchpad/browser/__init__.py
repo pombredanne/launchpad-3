@@ -23,7 +23,6 @@ from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugcomment import *
-from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.bugmessage import *
 from canonical.launchpad.browser.bugnomination import *
@@ -33,7 +32,6 @@ from canonical.launchpad.browser.bugtarget import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.bugwatch import *
-from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeimport import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
@@ -53,6 +51,7 @@ from canonical.launchpad.browser.branding import *
 from canonical.launchpad.browser.faq import *
 from canonical.launchpad.browser.faqcollection import *
 from canonical.launchpad.browser.faqtarget import *
+from canonical.launchpad.browser.feeds import *
 from canonical.launchpad.browser.hwdb import *
 from canonical.launchpad.browser.hastranslationimports import *
 from canonical.launchpad.browser.karma import *
@@ -65,8 +64,10 @@ from canonical.launchpad.browser.mentoringoffer import *
 from canonical.launchpad.browser.marketing import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
+from canonical.launchpad.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.packaging import *
+from canonical.launchpad.browser.peoplemerge import *
 from canonical.launchpad.browser.person import *
 from canonical.launchpad.browser.pofile import *
 from canonical.launchpad.browser.poll import *
@@ -78,6 +79,7 @@ from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
+from canonical.launchpad.browser.publishing import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagerelease import *
@@ -103,5 +105,4 @@ from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
-from canonical.launchpad.browser.calendarwidgets import *
 from canonical.launchpad.browser.queue import *

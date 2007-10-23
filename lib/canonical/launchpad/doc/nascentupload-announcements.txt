@@ -50,8 +50,8 @@ For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
 address:
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> from canonical.launchpad.interfaces import (
+  ...     DistroSeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
@@ -161,12 +161,7 @@ override sync policy to allow binary uploads):
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  ...
-  DEBUG: above if files already exist in other distroseries.
-  ...
-  DEBUG: -- 
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
+  DEBUG: Not sending email, upload contains binaries.
 
 We simply ignore messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
@@ -505,6 +500,33 @@ Rejections with notify=False will also not generate any emails.
   >>> len(msgs)
   0
 
+The PackageUpload record created by NascentUpload will be in the NEW
+state if the package was not previously uploaded.  When accepted by an
+archive admin using the queue tool, the queue tool will call
+PackageUpload.notify() directly.  One of the arguments it can specify is
+dry_run, which when True will not send any emails.  It will also log at
+the INFO level what it /would/ have sent.
+
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> random_package_upload = hoary.getQueueItems()[0]
+  >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
+  DEBUG: Building recipients list.
+  ...
+  INFO: Would have sent a mail:
+  INFO:   Subject: Accepted: bar 1.0-2 (i386)
+  INFO:   Sender: Root <root@localhost>
+  INFO:   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  INFO:   Bcc: Root <root@localhost>
+  INFO:   Body:
+  INFO: Accepted:
+  INFO:  OK: bar_1.0-2_i386.deb
+  ...
+
+No emails generated:
+
+  >>> msgs = pop_notifications()
+  >>> len(msgs)
+  0
 
 Uploads with UTF-8 characters in email addresses in the changes file are 
 permitted, but converted to ASCII, which is a limitation of the mailer.

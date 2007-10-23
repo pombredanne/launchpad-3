@@ -1,7 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from canonical.launchpad.database.codeimport import *
+from canonical.launchpad.database.codeimportevent import *
+from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
+from canonical.launchpad.database.codeimportresult import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.pillar import *
@@ -24,7 +27,6 @@ from canonical.launchpad.database.bugmessage import *
 from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
-from canonical.launchpad.database.bugextref import *
 from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
@@ -99,7 +101,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
-from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.component import *

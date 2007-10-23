@@ -45,7 +45,7 @@ from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     BugTaskStatus, CreateBugParams, IBugActivitySet, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IEmailAddressSet, ILaunchpadCelebrities,
+    IBugSet, IEmailAddressSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IMessageSet, IPersonSet, NotFoundError,
     PersonCreationRationale)
 
@@ -344,6 +344,8 @@ class TrackerImporter:
         # The first comment is used as the bug description, so we pop
         # it off the list.
         date, userid, text = comments.pop(0)
+        # Add a link back to the original SourceForge bug report:
+        text = text + '\n\n[' + item.url + ']'
         msg = self.createMessage(item.title, date, userid, text)
         comments_by_date_and_user[(date, userid)] = msg
 
@@ -415,13 +417,6 @@ class TrackerImporter:
                 attach_type=attach_type,
                 title=attachment.title,
                 message=msg)
-
-        # create a back reference to the original SourceForge bug report
-        getUtility(IBugExternalRefSet).createBugExternalRef(
-            bug=bug,
-            url=item.url,
-            title='SF #%s' % item.item_id,
-            owner=self.bug_importer)
 
         # Make a note of the import in the activity log:
         getUtility(IBugActivitySet).new(

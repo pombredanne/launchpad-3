@@ -1,10 +1,9 @@
   <tr class="ppa_package_row">
-     <td tal:content="context/sourcepackagerelease/title"
-         >foo - 1.0</td>
+     <td tal:content="context/sourcepackagerelease/title">foo - 1.0</td>
      <td tal:condition="context/archive/owner/isTeam">
          <a id="uploader"
             tal:attributes="href context/sourcepackagerelease/dscsigningkey/owner/fmt:url"
-            tal:content="context/sourcepackagerelease/dscsigningkey/owner/name"/></td>
+            tal:content="context/sourcepackagerelease/dscsigningkey/owner/name"></a></td>
      <td tal:attributes="title context/datepublished/fmt:datetime"
          tal:content="context/datepublished/fmt:approximatedate"
          >2005-09-16</td>
@@ -12,7 +11,17 @@
          >PUBLISHED</td>
      <td tal:content="context/sourcepackagerelease/uploaddistroseries/name"
          >dapper</td>
-     <td tal:content="context/pocket/title">RELEASE</td>
-     <td tal:content="context/component/name">main</td>
      <td tal:content="context/section/name">base</td>
+     <td>
+        <tal:sourcefiles repeat="file context/files">
+            <a tal:attributes ="href file/archive_url"
+               tal:content="file/file_type_name" />
+        </tal:sourcefiles>
+        <tal:binarypubs repeat="pub context/publishedBinaries">
+            <tal:binaryfiles repeat="file pub/files">
+              <a tal:attributes ="href file/archive_url"
+                 tal:content="file/architecturetag" />
+            </tal:binaryfiles>
+        </tal:binarypubs>
+     </td>
   </tr>

@@ -7,445 +7,462 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
-  >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IBuildSet)
-  >>> from canonical.lp.dbschema import BuildStatus
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...    BuildStatus, IDistributionSet, IBuildSet)
 
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> warty = ubuntu['warty']
-  >>> hoary = ubuntu['hoary']
-  >>> breezy = ubuntu['breezy-autotest']
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> hoary = ubuntu['hoary']
+    >>> breezy = ubuntu['breezy-autotest']
 
 
 First up, can we get the builds out of the sample data?
 
-  >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
-  >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+    >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
+    >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
 
 Let's check the complex properties of a build object.
 
-  >>> firefox_build.distroseries.name
-  u'breezy-autotest'
+    >>> firefox_build.distroseries.name
+    u'breezy-autotest'
 
-  >>> firefox_build.title
-  u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest RELEASE'
+    >>> firefox_build.title
+    u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest RELEASE'
 
-  >>> firefox_build.was_built
-  True
+    >>> firefox_build.was_built
+    True
 
-  >>> firefox_build.buildlog = 34
-  >>> firefox_build.buildlog.http_url
-  'http://localhost:58000/34/evolution-2.2-test.pot'
+    >>> firefox_build.buildlog = 34
+    >>> firefox_build.buildlog.http_url
+    'http://localhost:58000/34/evolution-2.2-test.pot'
 
-  >>> firefox_build.changesfile
-  <LibraryFileAlias ...>
+    >>> firefox_build.changesfile
+    <LibraryFileAlias ...>
 
-  >>> firefox_build.calculated_buildstart
-  datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+    >>> firefox_build.calculated_buildstart
+    datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
-  >>> firefox_build.is_trusted
-  True
+    >>> firefox_build.is_trusted
+    True
+
+The currently published component is provided via the 'current_component'
+property.  It looks over the publishing records and finds the current
+publication of the source in question.
+
+    >>> firefox_build.current_component.name
+    u'main'
+
+It is not necessarily the same as:
+
+    >>> firefox_build.sourcepackagerelease.component.name
+    u'main'
+
+which is the component the source was originally uploaded to, before
+any overriding action.
+
 
 The build can report any corresponding uploads using the package_upload
 property:
 
-  >>> firefox_build.package_upload
-  <PackageUpload ...>
+    >>> firefox_build.package_upload
+    <PackageUpload ...>
 
-  Zope proxied package uploads do not give permission to see them if you
-  are not logged in, except for the status attribute.  Firefox's build
-  upload is in the NEW state:
+    Zope proxied package uploads do not give permission to see them if you
+    are not logged in, except for the status attribute.  Firefox's build
+    upload is in the NEW state:
 
-  >>> firefox_build.package_upload.status
-  <DBItem PackageUploadStatus.NEW, (0) New>
+    >>> firefox_build.package_upload.status
+    <DBItem PackageUploadStatus.NEW, (0) New>
 
 If the build does not have any uploads, None is returned:
 
-  >>> at_build = getUtility(IBuildSet).getByBuildID(20)
-  >>> print at_build.package_upload
-  None
+    >>> at_build = getUtility(IBuildSet).getByBuildID(20)
+    >>> print at_build.package_upload
+    None
 
 
 Test "retry" functionality:
 
-  >>> firefox_build.can_be_retried
-  False
+    >>> firefox_build.can_be_retried
+    False
 
-  >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
-  >>> frozen_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
-  >>> frozen_build.buildstate.title
-  'Failed to build'
-  >>> frozen_build.can_be_retried
-  False
+    >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> frozen_build.title
+    u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
+    >>> frozen_build.buildstate.title
+    'Failed to build'
+    >>> frozen_build.can_be_retried
+    False
 
-  >>> active_build = getUtility(IBuildSet).getByBuildID(17)
-  >>> active_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE'
-  >>> active_build.buildstate.title
-  'Failed to build'
-  >>> active_build.can_be_retried
-  True
-  >>> active_build.builder.name
-  u'bob'
+    >>> active_build = getUtility(IBuildSet).getByBuildID(17)
+    >>> active_build.title
+    u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE'
+    >>> active_build.buildstate.title
+    'Failed to build'
+    >>> active_build.can_be_retried
+    True
+    >>> active_build.builder.name
+    u'bob'
 
 Retry Build record in question:
 
-  >>> active_build.retry()
+    >>> active_build.retry()
 
 Build record has no history and is NEEDSBUILD:
 
-  >>> active_build.builder is None
-  True
+    >>> active_build.builder is None
+    True
 
-  >>> active_build.buildstate.value is 0
-  True
+    >>> active_build.buildstate.value is 0
+    True
 
-  >>> active_build.buildqueue_record is not None
-  True
+    >>> active_build.buildqueue_record is not None
+    True
 
 
 Initialise all the required arguments to create a binary package for a
 given build record entry.
 
-  >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
-  >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
-  >>> version = '0.0.1-demo'
-  >>> summary = 'Summmmmmmmary'
-  >>> description = 'Descripppppppption'
-  >>> from canonical.lp import dbschema
-  >>> binpackageformat = dbschema.BinaryPackageFormat.DEB
-  >>> component = firefox_build.sourcepackagerelease.component.id
-  >>> section = firefox_build.sourcepackagerelease.section.id
-  >>> priority = dbschema.PackagePublishingPriority.STANDARD
-  >>> shlibdeps = None
-  >>> depends = None
-  >>> recommends = None
-  >>> suggests = None
-  >>> conflicts = None
-  >>> replaces = None
-  >>> provides = None
-  >>> essential = False
-  >>> installedsize = 0
-  >>> architecturespecific = False
+    >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+    >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
+    >>> version = '0.0.1-demo'
+    >>> summary = 'Summmmmmmmary'
+    >>> description = 'Descripppppppption'
+    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> binpackageformat = BinaryPackageFormat.DEB
+    >>> component = firefox_build.sourcepackagerelease.component.id
+    >>> section = firefox_build.sourcepackagerelease.section.id
+    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> priority = PackagePublishingPriority.STANDARD
+    >>> shlibdeps = None
+    >>> depends = None
+    >>> recommends = None
+    >>> suggests = None
+    >>> conflicts = None
+    >>> replaces = None
+    >>> provides = None
+    >>> essential = False
+    >>> installedsize = 0
+    >>> architecturespecific = False
 
 Invoke createBinaryPackageRelease with all required arguments.
 
-  >>> bin = pmount_build.createBinaryPackageRelease(
-  ...                                 binarypackagename, version,
-  ...                                 summary, description,
-  ...                                 binpackageformat, component,
-  ...                                 section, priority, shlibdeps,
-  ...                                 depends, recommends, suggests,
-  ...                                 conflicts, replaces, provides,
-  ...                                 essential, installedsize,
-  ...                                 architecturespecific)
+    >>> bin = pmount_build.createBinaryPackageRelease(
+    ...                                 binarypackagename, version,
+    ...                                 summary, description,
+    ...                                 binpackageformat, component,
+    ...                                 section, priority, shlibdeps,
+    ...                                 depends, recommends, suggests,
+    ...                                 conflicts, replaces, provides,
+    ...                                 essential, installedsize,
+    ...                                 architecturespecific)
 
-  >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
-  >>> verifyObject(IBinaryPackageRelease, bin)
-  True
+    >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
+    >>> verifyObject(IBinaryPackageRelease, bin)
+    True
 
 
 Commit previous transaction, data we want to preserve:
 XXX: flush_database_updates() shouldn't be needed. This seems to be
 Bug 3989 -- StuarBishop 20060713
 
-  >>> flush_database_updates()
-  >>> transaction.commit()
+    >>> flush_database_updates()
+    >>> transaction.commit()
 
 Check binarypackages property:
 
-  >>> for b in pmount_build.binarypackages:
-  ...     b.version
-  u'0.0.1-demo'
-  u'0.1-1'
+    >>> for b in pmount_build.binarypackages:
+    ...     b.version
+    u'0.0.1-demo'
+    u'0.1-1'
 
 Emulate a huge list of binaries for 'pmount':
 
-  >>> bpnameset = getUtility(IBinaryPackageNameSet)
-  >>> for i in range(15):
-  ...     version = "%d" % i
-  ...     bpname = bpnameset.ensure("test-%d" % i).id
-  ...     b = pmount_build.createBinaryPackageRelease(
-  ...                                 bpname, version,
-  ...                                 summary, description,
-  ...                                 binpackageformat, component,
-  ...                                 section, priority, shlibdeps,
-  ...                                 depends, recommends, suggests,
-  ...                                 conflicts, replaces, provides,
-  ...                                 essential, installedsize,
-  ...                                 architecturespecific)
+    >>> bpnameset = getUtility(IBinaryPackageNameSet)
+    >>> for i in range(15):
+    ...     version = "%d" % i
+    ...     bpname = bpnameset.ensure("test-%d" % i).id
+    ...     b = pmount_build.createBinaryPackageRelease(
+    ...                                 bpname, version,
+    ...                                 summary, description,
+    ...                                 binpackageformat, component,
+    ...                                 section, priority, shlibdeps,
+    ...                                 depends, recommends, suggests,
+    ...                                 conflicts, replaces, provides,
+    ...                                 essential, installedsize,
+    ...                                 architecturespecific)
 
 
 Check if the property still working:
 
-  >>> len(pmount_build.binarypackages)
-  17
+    >>> len(pmount_build.binarypackages)
+    17
 
 Ensure the list is ordered by 'name'
 
-  >>> for b in pmount_build.binarypackages:
-  ...     b.name, b.version
-  (u'demo', u'0.0.1-demo')
-  (u'pmount', u'0.1-1')
-  (u'test-0', u'0')
-  (u'test-1', u'1')
-  (u'test-10', u'10')
-  (u'test-11', u'11')
-  (u'test-12', u'12')
-  (u'test-13', u'13')
-  (u'test-14', u'14')
-  (u'test-2', u'2')
-  (u'test-3', u'3')
-  (u'test-4', u'4')
-  (u'test-5', u'5')
-  (u'test-6', u'6')
-  (u'test-7', u'7')
-  (u'test-8', u'8')
-  (u'test-9', u'9')
+    >>> for b in pmount_build.binarypackages:
+    ...     b.name, b.version
+    (u'demo', u'0.0.1-demo')
+    (u'pmount', u'0.1-1')
+    (u'test-0', u'0')
+    (u'test-1', u'1')
+    (u'test-10', u'10')
+    (u'test-11', u'11')
+    (u'test-12', u'12')
+    (u'test-13', u'13')
+    (u'test-14', u'14')
+    (u'test-2', u'2')
+    (u'test-3', u'3')
+    (u'test-4', u'4')
+    (u'test-5', u'5')
+    (u'test-6', u'6')
+    (u'test-7', u'7')
+    (u'test-8', u'8')
+    (u'test-9', u'9')
 
 Rollback transaction to no disturb the other tests:
 
-  >>> transaction.abort()
+    >>> transaction.abort()
 
 
 
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
 
-  >>> bs = getUtility(IBuildSet)
+    >>> bs = getUtility(IBuildSet)
 
 We can find builds given a source package release and architecture tag.
 
-  >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  6
+    >>> bs.getBuildBySRAndArchtag(20,'i386').count()
+    6
 
 IHasBuildRecords uses a base method provided by IBuildSet,
 getBuildsByArchIds():
 
 It receives list of architectures IDs:
 
-  >>> arch_ids = [arch.id for arch in hoary.architectures]
-  >>> bs.getBuildsByArchIds(arch_ids).count()
-  5
+    >>> arch_ids = [arch.id for arch in hoary.architectures]
+    >>> bs.getBuildsByArchIds(arch_ids).count()
+    5
 
 It still working for empty list or None:
 
-  >>> bs.getBuildsByArchIds([]).count()
-  0
+    >>> bs.getBuildsByArchIds([]).count()
+    0
 
-  >>> bs.getBuildsByArchIds(None).count()
-  0
+    >>> bs.getBuildsByArchIds(None).count()
+    0
 
 Using build status, only the successfully built ones:
 
-  >>> bs.getBuildsByArchIds(arch_ids,
-  ...     status=BuildStatus.FULLYBUILT).count()
-  2
+    >>> bs.getBuildsByArchIds(arch_ids,
+    ...     status=BuildStatus.FULLYBUILT).count()
+    2
 
 Check the result content:
 
-  >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
-  ...     status=BuildStatus.FULLYBUILT)]
-  [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
-  of pmount 0.1-1 in ubuntu hoary RELEASE']
+    >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
+    ...     status=BuildStatus.FULLYBUILT)]
+    [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
+    of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
-  >>> bs.getBuildsByArchIds(arch_ids,
-  ...     status=BuildStatus.FULLYBUILT,
-  ...     name='pmo').count()
-  2
+    >>> bs.getBuildsByArchIds(arch_ids,
+    ...     status=BuildStatus.FULLYBUILT,
+    ...     name='pmo').count()
+    2
 
 Checking optional 'pocket' restriction:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
-  >>> bs.getBuildsByArchIds(arch_ids,
-  ...     pocket=PackagePublishingPocket.UPDATES).count()
-  0
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> bs.getBuildsByArchIds(arch_ids,
+    ...     pocket=PackagePublishingPocket.UPDATES).count()
+    0
 
-  >>> bs.getBuildsByArchIds(arch_ids,
-  ...     pocket=PackagePublishingPocket.RELEASE).count()
-  5
+    >>> bs.getBuildsByArchIds(arch_ids,
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    5
 
 getBuildsByArchIds will also return builds for archives other than the
 primary archive.
 
-  >>> arch_ids = [arch.id for arch in breezy.architectures]
-  >>> [(build.archive.purpose.name, build.title) for build in
-  ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
-  [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
+    >>> arch_ids = [arch.id for arch in breezy.architectures]
+    >>> [(build.archive.purpose.name, build.title) for build in
+    ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
+    [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
 
 We can find recent and pending builds for a given distroseries.
 
-  >>> hoary.getBuildRecords().count()
-  5
+    >>> hoary.getBuildRecords().count()
+    5
 
 Or for a given distroarchseries.
 
-  >>> hoaryi386 = hoary['i386']
-  >>> hoaryi386.title
-  u'The Hoary Hedgehog Release for i386 (x86)'
+    >>> hoaryi386 = hoary['i386']
+    >>> hoaryi386.title
+    u'The Hoary Hedgehog Release for i386 (x86)'
 
 Exercises IHasBuildRecords abilities for distroarchseriess
 
-  >>> hoaryi386.getBuildRecords().count()
-  5
+    >>> hoaryi386.getBuildRecords().count()
+    5
 
-  >>> hoaryi386.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-  2
+    >>> hoaryi386.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
+    2
 
-  >>> hoaryi386.getBuildRecords(name='pm').count()
-  2
+    >>> hoaryi386.getBuildRecords(name='pm').count()
+    2
 
-  >>> hoaryi386.getBuildRecords(
-  ...     pocket=PackagePublishingPocket.RELEASE).count()
-  5
+    >>> hoaryi386.getBuildRecords(
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    5
 
-  >>> hoaryi386.getBuildRecords(
-  ...     pocket=PackagePublishingPocket.UPDATES).count()
-  0
+    >>> hoaryi386.getBuildRecords(
+    ...     pocket=PackagePublishingPocket.UPDATES).count()
+    0
 
 
-Same for distroseriess:
+    Same for distroseriess:
 
-  >>> hoary.getBuildRecords().count()
-  5
+    >>> hoary.getBuildRecords().count()
+    5
 
-  >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-  2
+    >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
+    2
 
-  >>> hoary.getBuildRecords(name='pm').count()
-  2
+    >>> hoary.getBuildRecords(name='pm').count()
+    2
 
-  >>> hoary.getBuildRecords(
-  ...     pocket=PackagePublishingPocket.RELEASE).count()
-  5
+    >>> hoary.getBuildRecords(
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    5
 
-  >>> hoary.getBuildRecords(
-  ...     pocket=PackagePublishingPocket.UPDATES).count()
-  0
+    >>> hoary.getBuildRecords(
+    ...     pocket=PackagePublishingPocket.UPDATES).count()
+    0
 
 
 For sourcepackage:
 
-  >>> firefox = warty.getSourcePackage('mozilla-firefox')
+    >>> firefox = warty.getSourcePackage('mozilla-firefox')
 
-  >>> firefox.getBuildRecords().count()
-  10
+    >>> firefox.getBuildRecords().count()
+    10
 
-  >>> firefox.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-  8
+    >>> firefox.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
+    8
 
-  >>> firefox.getBuildRecords(
-  ...     pocket=PackagePublishingPocket.RELEASE).count()
-  10
+    >>> firefox.getBuildRecords(
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    10
 
-  >>> firefox.getBuildRecords(
-  ...     pocket=PackagePublishingPocket.UPDATES).count()
-  0
+    >>> firefox.getBuildRecords(
+    ...     pocket=PackagePublishingPocket.UPDATES).count()
+    0
 
 getBuildRecords will return builds for packages that are no longer currently
 published. "pmount" is published twice in hoary, one is PUBLISHED and the
 other is SUPERSEDED.  The published package does not have any builds but
 the superseded one does.
 
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
-  >>> hoary_pmount = removeSecurityProxy(hoary.getSourcePackage('pmount'))
-  >>> published_hoary_pmount = hoary_pmount._getPublishingHistory(
-  ...     include_status=[PackagePublishingStatus.PUBLISHED])
-  >>> published_hoary_pmount.count()
-  1
-  >>> published_hoary_pmount[0].sourcepackagerelease.builds.count()
-  0
-  >>> hoary_pmount.getBuildRecords().count()
-  6
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> hoary_pmount = removeSecurityProxy(hoary.getSourcePackage('pmount'))
+    >>> published_hoary_pmount = hoary_pmount._getPublishingHistory(
+    ...     include_status=[PackagePublishingStatus.PUBLISHED])
+    >>> published_hoary_pmount.count()
+    1
+    >>> published_hoary_pmount[0].sourcepackagerelease.builds.count()
+    0
+    >>> hoary_pmount.getBuildRecords().count()
+    6
 
 
 For a given distribution as well:
 
-  >>> ubuntu.getBuildRecords().count()
-  19
+    >>> ubuntu.getBuildRecords().count()
+    19
 
-  >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
-  >>> for l in L:
-  ...     print l.datebuilt, l.id, l.buildstate.value
-  2007-08-10 00:00:13+00:00 30 1
-  2007-08-09 23:59:59+00:00 29 1
-  2005-03-25 00:00:01+00:00 19 1
-  2005-03-25 00:00:01+00:00 16 1
-  2005-03-25 00:00:01+00:00 7 1
-  2004-09-27 11:57:13+00:00 18 1
-  2004-09-27 11:57:13+00:00 2 1
+    >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
+    >>> for l in L:
+    ...     print l.datebuilt, l.id, l.buildstate.value
+    2007-08-10 00:00:13+00:00 30 1
+    2007-08-09 23:59:59+00:00 29 1
+    2005-03-25 00:00:01+00:00 19 1
+    2005-03-25 00:00:01+00:00 16 1
+    2005-03-25 00:00:01+00:00 7 1
+    2004-09-27 11:57:13+00:00 18 1
+    2004-09-27 11:57:13+00:00 2 1
 
 Retrieve the current PENDING builds
 
-  >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.NEEDSBUILD)
-  >>> builds.count()
-  2
+    >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.NEEDSBUILD)
+    >>> builds.count()
+    2
 
 Note, by ordering the build by BuildQueue.lastscore, it already notice
 the existence of a new pending build, since retry already creates a
 new BuildQueue record:
 
-  >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.NEEDSBUILD)
-  >>> builds.count()
-  2
+    >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.NEEDSBUILD)
+    >>> builds.count()
+    2
 
 Note that they are ordered by DESC lastscore, as expected:
 
-  >>> for b in builds:
-  ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
-  (11, 0, 10)
-  (17, 0, 0)
+    >>> for b in builds:
+    ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
+    (11, 0, 10)
+    (17, 0, 0)
 
 Using the optional name argument to filter build results:
 
-  >>> builds = ubuntu.getBuildRecords(name='pm')
-  >>> builds.count()
-  5
-  >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
-  [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+    >>> builds = ubuntu.getBuildRecords(name='pm')
+    >>> builds.count()
+    5
+    >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
+    [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 
 or using optional pocket argument:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
-  >>> ubuntu.getBuildRecords(
-  ...    build_state=BuildStatus.NEEDSBUILD,
-  ...    pocket=PackagePublishingPocket.RELEASE).count()
-  2
+    >>> ubuntu.getBuildRecords(
+    ...    build_state=BuildStatus.NEEDSBUILD,
+    ...    pocket=PackagePublishingPocket.RELEASE).count()
+    2
 
-  >>> ubuntu.getBuildRecords(
-  ...    build_state=BuildStatus.NEEDSBUILD,
-  ...    pocket=PackagePublishingPocket.SECURITY).count()
-  0
+    >>> ubuntu.getBuildRecords(
+    ...    build_state=BuildStatus.NEEDSBUILD,
+    ...    pocket=PackagePublishingPocket.SECURITY).count()
+    0
 
 Check IHasBuildRecords when implemented by Builder:
 
-  >>> from canonical.launchpad.interfaces import IBuilderSet
-  >>> bob = getUtility(IBuilderSet)['bob']
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> bob = getUtility(IBuilderSet)['bob']
 
-  >>> bob_builds = bob.getBuildRecords()
-  >>> bob_builds.count()
-  17
+    >>> bob_builds = bob.getBuildRecords()
+    >>> bob_builds.count()
+    17
 
-  >>> bob_failed_builds = bob.getBuildRecords(
-  ...     build_state=BuildStatus.FAILEDTOBUILD)
-  >>> bob_failed_builds.count()
-  4
+    >>> bob_failed_builds = bob.getBuildRecords(
+    ...     build_state=BuildStatus.FAILEDTOBUILD)
+    >>> bob_failed_builds.count()
+    4
 
-  >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
-  >>> bob_pmount_builds.count()
-  5
+    >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
+    >>> bob_pmount_builds.count()
+    5
 
-  >>> bob_pmount_ok_builds = bob.getBuildRecords(
-  ...    build_state=BuildStatus.FULLYBUILT, name='pmount')
-  >>> bob_pmount_ok_builds.count()
-  4
+    >>> bob_pmount_ok_builds = bob.getBuildRecords(
+    ...    build_state=BuildStatus.FULLYBUILT, name='pmount')
+    >>> bob_pmount_ok_builds.count()
+    4
 
 
 == AssertionErrors in IBuild ==
@@ -453,22 +470,22 @@ Check IHasBuildRecords when implemented by Builder:
 Build records inserted by gina doesn't provide calculated_buildstart
 value, since they miss fields used in its calculation.
 
-  >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
-  >>> gina_build.title
-  u'i386 build of cnews cr.g7-37 in ubuntu warty RELEASE'
+    >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
+    >>> gina_build.title
+    u'i386 build of cnews cr.g7-37 in ubuntu warty RELEASE'
 
 even if IBuild.was_built return true:
 
-  >>> gina_build.was_built
-  True
+    >>> gina_build.was_built
+    True
 
 this method is protected by an assertion on valid buildduration and
 datebuilt, it makes the diagnosis of problems in current DB easier.
 
-  >>> gina_build.calculated_buildstart
-  Traceback (most recent call last):
-  ...
-  AssertionError: value is not suitable for this build record (10)
+    >>> gina_build.calculated_buildstart
+    Traceback (most recent call last):
+    ...
+    AssertionError: value is not suitable for this build record (10)
 
 
 Only builds in failed_states (FAILEDTOBUILD, MANUALDEPWAIT and
@@ -479,32 +496,32 @@ build for a released pocket.
 All those conditions are controlled by IBuild.can_be_retried() property
 (see above).
 
-  >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
 
-  >>> failed_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
+    >>> failed_build.title
+    u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
 
-  >>> failed_build.buildstate.name
-  'FAILEDTOBUILD'
+    >>> failed_build.buildstate.name
+    'FAILEDTOBUILD'
 
-  >>> failed_build.can_be_retried
-  False
+    >>> failed_build.can_be_retried
+    False
 
 Attempt to retry this build record will fail with an AssertionError:
 
-  >>> failed_build.retry()
-  Traceback (most recent call last):
-  ...
-  AssertionError: Build 9 can not be retried
+    >>> failed_build.retry()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Build 9 can not be retried
 
 Partner archive builds are an exception to this rule; they can be retried
 in the release pocket for a released distro.  Let's turn build 9 into a
 partner archive build:
 
-  >>> partner_archive = ubuntu.getArchiveByComponent('partner')
-  >>> removeSecurityProxy(failed_build).archive = partner_archive
+    >>> partner_archive = ubuntu.getArchiveByComponent('partner')
+    >>> removeSecurityProxy(failed_build).archive = partner_archive
 
 The build can now be re-tried:
 
-  >>> failed_build.can_be_retried
-  True
+    >>> failed_build.can_be_retried
+    True

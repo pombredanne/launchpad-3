@@ -22,10 +22,10 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.launchpad.interfaces import IComponentSet, pocketsuffix
+from canonical.launchpad.interfaces import (
+    ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.librarian.client import LibrarianClient
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -308,11 +308,11 @@ class Publisher(object):
         else:
             os.makedirs(source_index_basepath)
 
-        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='.source-index_',
-                                                dir=source_index_basepath)
+        fd_gz, temp_index_gz = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index-gz_')
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        fd, temp_index = tempfile.mkstemp(prefix='.source-index_',
-                                          dir=source_index_basepath)
+        fd, temp_index = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index_')
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -351,11 +351,10 @@ class Publisher(object):
             else:
                 os.makedirs(package_index_basepath)
 
-            temp_prefix = '.%s-index_' % arch_path
-            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix,
-                                                    dir=package_index_basepath)
-            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix,
-                                              dir=package_index_basepath)
+            fd_gz, temp_index_gz = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
+            fd, temp_index = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index_' % arch_path)
             package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
