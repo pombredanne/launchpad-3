@@ -25,7 +25,9 @@ class POTMsgSet(SQLBase):
     _table = 'POTMsgSet'
 
     context = StringCol(dbName='context', notNull=False)
-    primemsgid_ = ForeignKey(foreignKey='POMsgID', dbName='primemsgid',
+    msgid_singular = ForeignKey(foreignKey='POMsgID', dbName='msgid_singular',
+        notNull=True)
+    msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=True)
     sequence = IntCol(dbName='sequence', notNull=True)
     potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
@@ -35,104 +37,41 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    # XXX: JeroenVermeulen 2007-08-27: This field keeps track of a cached
-    # value for msgid_plural.  We couldn't use @cachedproperty there because
-    # @cachedproperty uses None for "not cached."  But for msgid_plural None
-    # is a plausible cacheable value, so that wouldn't work.  The "phase 2"
-    # Rosetta schema optimization will replace msgid_plural with a column, so
-    # this custom caching machinery will disappear.  If that weren't the case,
-    # we ought to extend @cachedproperty to support None as a value.
-    has_cached_msgid_plural = False
-
-    @property
-    def msgid(self):
-        """See IPOTMsgSet."""
-        return self.primemsgid_.msgid
-
-    @property
-    def msgid_plural(self):
-        """See IPOTMsgSet."""
-        if self.has_cached_msgid_plural:
-            return self.cached_msgid_plural
-
-        self.cached_msgid_plural = None
-
-        plural = POMsgID.selectOne('''
-            POMsgIDSighting.potmsgset = %s AND
-            POMsgIDSighting.pomsgid = POMsgID.id AND
-            POMsgIDSighting.pluralform = 1 AND
-            POMsgIDSighting.inlastrevision = TRUE
-            ''' % sqlvalues(self),
-            clauseTables=['POMsgIDSighting'])
-        if plural is not None:
-            self.cached_msgid_plural = plural.msgid
-
-        self.has_cached_msgid_plural = True
-        return self.cached_msgid_plural
-
     @property
     def singular_text(self):
-        """See IPOTMsgSet."""
+        """See `IPOTMsgSet`."""
         format_importer = getUtility(
             ITranslationImporter).getTranslationFormatImporter(
                 self.potemplate.source_file_format)
         if format_importer.uses_source_string_msgids:
             # This format uses English translations as the way to store the
             # singular_text.
-            pomsgset = self.getPOMsgSet('en')
-            if (pomsgset is not None and
-                pomsgset.active_texts[
-                    TranslationConstants.SINGULAR_FORM] is not None):
-                return pomsgset.active_texts[
-                    TranslationConstants.SINGULAR_FORM]
+            english_language = getUtility(ILanguageSet)['en']
+            translation_message = self.getCurrentTranslationMessage(
+                english_language)
+            if (translation_message is not None and
+                translation_message.msgstr0 is not None):
+                return translation_message.msgstr0.translation
 
-        # By default, singular text is the msgid.
-        return self.msgid
+        # By default, singular text is the msgid_singular.
+        return self.msgid_singular.msgid
 
     @property
     def plural_text(self):
-        """See IPOTMsgSet."""
-        return self.msgid_plural
+        """See `IPOTMsgSet`."""
+        return self.msgid_plural.msgid
 
-    def getCurrentSubmissions(self, language, pluralform):
-        """See IPOTMsgSet."""
-        return POSubmission.select("""
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = POFile.id AND
-            POSubmission.id IN (
-                SELECT POSubmission.id
-                FROM
-                    POSubmission
-                    JOIN POMsgSet ON
-                        POSubmission.pomsgset = POMsgSet.id
-                    JOIN POFile ON
-                        POMsgSet.pofile = POFile.id AND
-                        POFile.language = %s
-                    JOIN POTMsgSet ON
-                        POMsgSet.potmsgset = POTMsgSet.id AND
-                        POTMsgSet.primemsgid = %s
-                    JOIN POTemplate ON
-                        POTMsgSet.potemplate = POTemplate.id AND
-                        POTemplate.iscurrent IS TRUE
-                    LEFT JOIN ProductSeries ON
-                        POTemplate.productseries = ProductSeries.id
-                    LEFT JOIN Product ON
-                        ProductSeries.product = Product.id
-                    LEFT JOIN DistroRelease ON
-                        POTemplate.distrorelease = DistroRelease.id
-                    LEFT JOIN Distribution ON
-                        DistroRelease.distribution = Distribution.id
-                WHERE
-                    POSubmission.pluralform = %s AND
-                    (POSubmission.active IS TRUE OR
-                     POSubmission.published IS TRUE) AND
-                    (Product.official_rosetta IS TRUE OR
-                     Distribution.official_rosetta IS TRUE)
-                )""" % sqlvalues(language, self.primemsgid_, pluralform),
-            clauseTables=['POMsgSet', 'POFile'],
-            orderBy='-datecreated',
-            prejoinClauseTables=['POMsgSet', 'POFile'],
-            prejoins=['potranslation', 'person'])
+    def getCurrentTranslationMessage(self, language):
+        """See `IPOTMsgSet`."""
+        return TranslationMessage.selectOne("""
+            potmsgset = %s AND is_current IS TRUE AND language = %s
+            """ % sqlvalues(self, language))
+
+    def getImportedTranslationMessage(self, language):
+        """See `IPOTMsgSet`."""
+        return TranslationMessage.selectOne("""
+            potmsgset = %s AND is_imported IS TRUE AND language = %s
+            """ % sqlvalues(self, language))
 
     def flags(self):
         if self.flagscomment is None:
@@ -143,143 +82,276 @@ class POTMsgSet(SQLBase):
                     if flag != '']
 
 
-    def getPOMsgSet(self, language_code, variant=None):
-        """See IPOTMsgSet."""
-        if variant is None:
-            variantspec = 'IS NULL'
+    def getTranslationMessages(self, language):
+        # XXX: do we really need this one?
+        pass
+
+    def getLocalTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        return TranslationMessage.select("""
+            is_current IS NOT TRUE AND
+            is_imported IS NOT TRUE AND
+            potmsgset = %s AND
+            language = %s""" % sqlvalues(self, language))
+
+    def getExternalTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        pass
+
+    def hasTranslationChangedInLaunchpad(self, language):
+        """See `IPOTMsgSet`."""
+        imported_translation = self.getImportedTranslationMessage(language)
+        if (imported_translation is not None and
+            not imported_translation.is_current):
+            return True
         else:
-            variantspec = ('= %s' % quote(variant))
+            return False
 
-        return POMsgSet.selectOne('''
-            POMsgSet.potmsgset = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = Language.id AND
-            POFile.variant %s AND
-            Language.code = %s
-            ''' % (self.id,
-                   variantspec,
-                   quote(language_code)),
-            clauseTables=['POFile', 'Language'])
+    def _list_of_msgids(self):
+        """Return a list of [singular_text, plural_text] if the message
+        is using plural forms, or just [singular_text] if it's not.
+        """
+        original_texts = [self.singular_text]
+        if self.plural_text is not None:
+            original_texts.append(plural_text)
+        return original_texts
 
-    def getDummyPOMsgSet(self, language_code, variant=None):
-        """See IPOTMsgSet."""
-        # Make sure there's no existing POMsgSet for the given language and
-        # variant
-        if variant is None:
-            variantspec = 'IS NULL'
-        else:
-            variantspec = ('= %s' % quote(variant))
+    def _validate_translations(self, translations, fuzzy, ignore_errors):
+        """Validate all the `translations` and return a pair of
+        (validation_status, sanitized_translations).
+        """
+        # By default all translations are correct.
+        validation_status = TranslationValidationStatus.OK
 
-        existing_pomsgset = POMsgSet.selectOne('''
-            POMsgSet.potmsgset = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = Language.id AND
-            POFile.variant %s AND
-            Language.code = %s
-            ''' % (self.id,
-                   variantspec,
-                   quote(language_code)),
-            clauseTables=['POFile', 'Language'])
+        # Fix the trailing and leading whitespaces
+        sanitized_translations = {}
+        for index, value in translations.items():
+            sanitized_translations[index] = self.applySanityFixes(value)
 
-        pofile = self.potemplate.getPOFileByLang(language_code, variant)
-        if pofile is None:
-            pofile = self.potemplate.getDummyPOFile(language_code, variant)
+        # Cache the list of singular_text and plural_text
+        original_texts = self._list_of_msgids()
 
-        assert existing_pomsgset is None, (
-            "There is already a valid IPOMsgSet for the '%s' msgid on %s" % (
-                self.msgid, pofile.title))
-
-        return DummyPOMsgSet(pofile, self)
-
-    def translationsForLanguage(self, language):
-        # To start with, find the number of plural forms. We either want the
-        # number set for this specific pofile, or we fall back to the
-        # default for the language.
-
-        languages = getUtility(ILanguageSet)
+        # Validate the translation we got from the translation form
+        # to know if gettext is unhappy with the input.
         try:
-            pofile = self.potemplate.getPOFileByLang(language)
-        except KeyError:
-            pofile = None
-        pluralforms = languages[language].pluralforms
+            helpers.validate_translation(
+                original_texts, sanitized_translations, self.flags())
+        except gettextpo.error:
+            if fuzzy or ignore_errors:
+                # The translations are stored anyway, but we set them as
+                # broken.
+                validation_status = TranslationValidationStatus.UNKNOWNERROR
+            else:
+                # Check to know if there is any translation.
+                has_translations = False
+                for key in sanitized_translations.keys():
+                    if sanitized_translations[key] != '':
+                        has_translations = True
+                        break
 
-        # If we only have a msgid, we change pluralforms to 1, if it's a
-        # plural form, it will be the number defined in the pofile header.
-        if self.plural_text is None:
-            pluralforms = 1
+                if has_translations:
+                    # Partial translations cannot be stored unless the fuzzy
+                    # flag is set, the exception is raised again and handled
+                    # outside this method.
+                    raise
 
-        assert pluralforms != None, (
-                "Don't know the number of plural forms for this POT file!")
+        return (validation_status, sanitized_translations)
 
-        # if we have no po file, then return empty translations
-        if pofile is None:
-            return [None] * pluralforms
+    def _message_same_as_translations(self, message, translations):
+        """Compare a TranslationMessage `message` with a list of
+        translation strings `translations`.
 
-        # Find the sibling message set.
-        translation_set = POMsgSet.selectOne('''
-            POMsgSet.pofile = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d'''
-           % (pofile.id, self.primemsgid_.id),
-           clauseTables = ['POTMsgSet'])
+        If the number of translations is exactly the same, and they all
+        match, return True, otherwise return False.
+        """
+        # TranslationMessage.translations is a list of all possible
+        # plural form translations for this message, with None where
+        # there are no translations
+        for pluralform, text in enumerate(message.translations):
+            # if both have this plural form and they match, or
+            # if there is no plural form submitted and it's None in DB
+            if not((pluralform < len(translations) and
+                    text == translations[pluralform]) or
+                   pluralform >= len(translations) and text is None):
+                return False
+        return True
 
-        if translation_set is None:
-            return [None] * pluralforms
+    def _is_submission_empty(self, pofile, translations):
+        """Return True if all `translations` are None.
 
-        return translation_set.active_texts
+        It only checks the valid pluralforms.
+        """
+        for pluralform in range(pofile.language.pluralforms):
+            if (pluralform < len(translations) and
+                translations[pluralform] is not None):
+                return False
+        return True
 
-    def makeMessageIDSighting(self, text, pluralForm, update=False):
-        """See IPOTMsgSet."""
-        try:
-            messageID = POMsgID.byMsgid(text)
-        except SQLObjectNotFound:
-            messageID = POMsgID(msgid=text)
+    def updateTranslation(self, pofile, person, new_translations, fuzzy,
+                          is_imported, lock_timestamp, ignore_errors=False,
+                          force_edition_rights=False):
+        """See `IPOTMsgSet`."""
+        # Is the person allowed to edit translations?
+        is_editor = (force_edition_rights or
+                     pofile.canEditTranslations(person))
 
-        # Get current sighting so we can deactivate it, if needed.
-        current_sighting = POMsgIDSighting.selectOneBy(
-            potmsgset=self,
-            pluralform=pluralForm,
-            inlastrevision=True)
+        assert (is_imported or is_editor or pofile.canAddSuggestions(person)),
+            ('%s cannot add translations nor can add suggestions' % (
+                person.displayname))
 
-        existing = POMsgIDSighting.selectOneBy(
-            potmsgset=self,
-            pomsgid_=messageID,
-            pluralform=pluralForm)
+        # It makes no sense to have a "is_imported" submission from someone
+        # who is not an editor, so assert that
+        if is_imported and not is_editor:
+            raise AssertionError(
+                'Only an editor can submit is_imported translations.')
 
-        if (current_sighting is not None and
-            (existing is None or current_sighting != existing)):
-            assert update, (
-                "There is already a message ID sighting for this "
-                "message set, text, and plural form")
-            current_sighting.inlastrevision = False
-            # We need to flush this change to prevent that the new one
-            # that we are going to create conflicts with this due a race
-            # condition applying the changes to the DB.
-            current_sighting.syncUpdate()
+        # Sanitize and check that the translations are correct.
+        validation_status, sanitized_translations = (
+            self._validate_translations(new_translations, fuzzy, ignore_errors))
 
-        if pluralForm == TranslationConstants.SINGULAR_FORM:
-            # Update direct link to the singular form.
-            self.primemsgid_ = messageID
-        elif pluralForm == TranslationConstants.PLURAL_FORM:
-            # We may have had this cached, and it just changed.  Don't bother
-            # updating cached value, just note we need to re-fetch it.
-            self.has_cached_msgid_plural = False
+        # If the update is on the translation credits message, yet
+        # update is not is_imported, silently return
+        # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
+        if potmsgset.is_translation_credit and not is_imported:
+            return
 
-        if existing is None:
-            return POMsgIDSighting(
-                potmsgset=self,
-                pomsgid_=messageID,
-                datefirstseen=UTC_NOW,
-                datelastseen=UTC_NOW,
-                inlastrevision=True,
-                pluralform=pluralForm)
+        # And we allow changes to translations by default, we don't force
+        # submissions as suggestions.
+        force_suggestion = False
+
+        if not is_imported and not fuzzy and pofile.isNewerThan(lock_timestamp):
+            # Latest active submission in self is newer than 'lock_timestamp'
+            # and we try to change it.
+            force_suggestion = True
+
+        # Get a currently used and imported translation message.
+        current_translation = self.getCurrentTranslationMessage(pofile.language)
+        imported_translation = self.getImportedTranslationMessage(
+            pofile.language)
+
+        is_same_as_current = self._message_same_as_translations(
+            current_translation, sanitized_translations)
+        if not force_suggestion:
+            has_changed = is_same_as_current
         else:
-            existing.datelastseen = UTC_NOW
-            existing.inlastrevision = True
-            return existing
+            has_changed = False
+
+        # Try to find existing matching suggestion
+        if is_same_as_current:
+            matching_message = current_translation
+        elif self._message_same_as_translations(imported_translation,
+                                                sanitized_translations):
+            matching_message = imported_translation
+        else:
+            matching_message = TranslationMessage.selectOne(
+                """
+                """
+        # Create a new TranslationMessage if needed
+        
+        if is_imported:
+            origin = RosettaTranslationOrigin.SCM
+        else:
+            origin = RosettaTranslationOrigin.ROSETTAWEB
+        
+
+        # now loop through the translations and submit them one by one
+        for index in sanitized_translations.keys():
+            newtran = sanitized_translations[index]
+            # see if this affects completeness
+            if newtran is None:
+                complete = False
+            # make the new sighting or submission. note that this may not in
+            # fact create a whole new submission
+            if index < len(active_submissions):
+                old_active_submission = active_submissions[index]
+            else:
+                old_active_submission = None
+
+            new_submission = self._makeSubmission(
+                person=person,
+                text=newtran,
+                is_fuzzy=fuzzy,
+                pluralform=index,
+                published=published,
+                validation_status=validation_status,
+                force_edition_rights=is_editor,
+                force_suggestion=force_suggestion,
+                active_submission=old_active_submission)
+
+            if (new_submission != old_active_submission and
+                new_submission and new_submission.active):
+                has_changed = True
+                while index >= len(active_submissions):
+                    active_submissions.append(None)
+                active_submissions[index] = new_submission
+
+        if has_changed and is_editor:
+            if published:
+                # When update for a submission is published, nobody has
+                # actually reviewed the new submission in Launchpad, so
+                # we don't set the reviewer and date_reviewed
+                self.pofile.last_touched_pomsgset = self
+            else:
+                self.updateReviewerInfo(person)
+
+        if force_suggestion:
+            # We already stored the suggestions, so we don't have anything
+            # else to do. Raise a TranslationConflict exception to notify
+            # that the changes were saved as suggestions only.
+            raise TranslationConflict(
+                'The new translations were saved as suggestions to avoid '
+                'possible conflicts. Please review them.')
+
+        # We set the fuzzy flag first, and completeness flags as needed:
+        if is_editor:
+            if published:
+                self.publishedfuzzy = fuzzy
+                self.publishedcomplete = complete
+                if has_changed or self.isfuzzy:
+                    # If the upstream translation has changed or we don't have
+                    # a valid translation in Launchpad, then we need to update
+                    # the status flags because we can get some improved
+                    # information from upstream.
+                    matches = 0
+                    updated = 0
+                    for pluralform in range(self.pluralforms):
+                        active = active_submissions[pluralform]
+                        published = self.getPublishedSubmission(pluralform)
+                        if active:
+                            if published and active != published:
+                                updated += 1
+                            else:
+                                matches += 1
+                    if matches == self.pluralforms and self.publishedcomplete:
+                        # The active submission is exactly the same as the
+                        # published one, so the fuzzy and complete flags
+                        # should be also the same.
+                        self.isfuzzy = self.publishedfuzzy
+                        self.iscomplete = self.publishedcomplete
+                    if updated > 0:
+                        # There are some active translations different from
+                        # published ones, so the message has been updated
+                        self.isupdated = True
+                active_count = 0
+                for pluralform in range(self.pluralforms):
+                    if active_submissions[pluralform]:
+                        active_count += 1
+                self.iscomplete = (active_count == self.pluralforms)
+            else:
+                self.isfuzzy = fuzzy
+                self.iscomplete = complete
+                updated = 0
+                for pluralform in range(self.pluralforms):
+                    active = active_submissions[pluralform]
+                    published = self.getPublishedSubmission(pluralform)
+                    if active and published and active != published:
+                        updated += 1
+                if updated > 0:
+                    self.isupdated = True
+
 
     def applySanityFixes(self, text):
-        """See IPOTMsgSet."""
+        """See `IPOTMsgSet`."""
 
         # Fix the visual point that users copy & paste from the web interface.
         new_text = self.convertDotToSpace(text)
@@ -287,6 +359,12 @@ class POTMsgSet(SQLBase):
         new_text = self.normalizeNewLines(new_text)
         # And finally, set the same whitespaces at the start/end of the string.
         new_text = self.normalizeWhitespaces(new_text)
+        # Also, if it's an empty string, replace it with None.
+        # XXX: Until we figure out ResettingTranslations
+            if newtran == '':
+                newtran = None
+        if new_text == '':
+            new_text = None
 
         return new_text
 

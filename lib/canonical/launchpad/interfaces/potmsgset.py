@@ -56,10 +56,10 @@ class IPOTMsgSet(Interface):
     plural_text = Text(
         title=_("The plural text for this message or None."), readonly=True)
 
-    def getTranslationMessages(language):
+    def getTranslationMessages(language_code):
         """Return all the translation messages for this IPOTMsgSet.
 
-        :param language: language we want translations for.
+        :param language_code: language we want translations for.
         """
 
     def getDummyTranslationMessages(language):
@@ -70,10 +70,10 @@ class IPOTMsgSet(Interface):
         We should not already have a TranslationMessage for this language.
         """
 
-    def getCurrentTranslation(language):
+    def getCurrentTranslationMessage(language):
         """Returns a TranslationMessage marked as being currently used."""
 
-    def getImportedTranslation(language):
+    def getImportedTranslationMessage(language):
         """Returns a TranslationMessage as imported from the package."""
 
     def getLocalTranslationMessages(language):
@@ -94,12 +94,12 @@ class IPOTMsgSet(Interface):
         There has to be an imported translation: if there isn't, this is
         not a 'changed' translation, just a 'new' translation in Launchpad."""
 
-    def updateTranslationSet(language, submitter, new_translations, is_fuzzy,
-                             is_imported, lock_timestamp, ignore_errors=False,
-                             force_edition_rights=False):
+    def updateTranslation(pofile, submitter, new_translations, is_fuzzy,
+                          is_imported, lock_timestamp, ignore_errors=False,
+                          force_edition_rights=False):
         """Update or create a translation message using `new_translations`.
 
-        :param language: language `new_translations` are in.
+        :param pofile: a `POFile` to add `new_translations` to.
         :param submitter: author of the translations.
         :param new_translations: a dictionary of plural forms, with the
             integer plural form number as the key and the translation as the
@@ -122,13 +122,16 @@ class IPOTMsgSet(Interface):
         """Return a list of flags on this set."""
 
     def applySanityFixes(unicode_text):
-        """Return 'unicode_text' after doing some sanity checks and fixes.
+        """Return 'unicode_text' or None after doing some sanitization.
 
         The text is checked against the msgid using the following filters:
 
           self.convertDotToSpace
           self.normalizeWhitespaces
           self.normalizeNewLines
+
+        If the resulting string after these operations is an empty string,
+        it returns None.
 
         :param unicode_text: A unicode text that needs to be checked.
         """
