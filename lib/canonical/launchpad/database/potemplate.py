@@ -951,9 +951,7 @@ class POTemplateToTranslationFileDataAdapter:
         # information.
         rows = getUtility(IVPOTExportSet).get_potemplate_rows(potemplate)
 
-        sequence = None
         messages = []
-        msgset = None
 
         for row in rows:
             assert row.potemplate == potemplate, (
@@ -963,62 +961,26 @@ class POTemplateToTranslationFileDataAdapter:
             if row.sequence == 0:
                 continue
 
-            # If the sequence number changes, is a new message.
-            if row.sequence != sequence:
-                if msgset is not None:
-                    # Output current message set before creating the new one.
-                    messages.append(msgset)
+            # Create new message set
+            msgset = TranslationMessageData()
+            msgset.sequence = row.sequence
+            msgset.obsolete = False
+            msgset.msgid_singular = row.msgid_singular
+            msgset.msgid_plural = row.msgid_plural
+            msgset.context = row.context
+            msgset.comment = row.comment_text
+            msgset.source_comment = row.source_comment
+            msgset.file_references = row.file_references
 
-                # Create new message set
-                msgset = TranslationMessageData()
-                msgset.sequence = row.sequence
-                msgset.obsolete = False
-
-            # Because of the way the database view works, message IDs will
-            # appear multiple times. We see how many we've added already to
-            # check whether the message ID/translation in the current row are
-            # ones we need to add.
-            if (row.pluralform == TranslationConstants.SINGULAR_FORM and
-                msgset.msgid is None):
-                msgset.msgid = row.msgid
-            elif (row.pluralform == TranslationConstants.PLURAL_FORM and
-                msgset.msgid_plural is None):
-                msgset.msgid_plural = row.msgid
-            else:
-                # msgset.msgid or msgset.msgid_plural could be not None,
-                # because we don't need to set it again, thus, we only check
-                # that row.msgidpluralform is correct.
-                assert row.msgidpluralform in (
-                    TranslationConstants.SINGULAR_FORM,
-                    TranslationConstants.PLURAL_FORM), (
-                        'msgid plural form is not valid: %s.' %
-                            row.msgidpluralform)
-
-            if row.context is not None and msgset.context is None:
-                msgset.context = row.context
-
-            if row.commenttext and not msgset.comment:
-                msgset.comment = row.commenttext
-
-            if row.sourcecomment and not msgset.source_comment:
-                msgset.source_comment = row.sourcecomment
-
-            if row.filereferences and not msgset.file_references:
-                msgset.file_references = row.filereferences
-
-            if row.flagscomment and not msgset.flags:
-                msgset.flags = [
+            if row.flags_comment:
+                msgset.flags = set([
                     flag.strip()
                     for flag in row.flagscomment.split(',')
                     if flag
-                    ]
+                    ])
 
             # Store sequences so we can detect later whether we changed the
             # message.
             sequence = row.sequence
-
-        # Once we've processed all the rows, store last message set.
-        if msgset:
-            messages.append(msgset)
 
         return messages
