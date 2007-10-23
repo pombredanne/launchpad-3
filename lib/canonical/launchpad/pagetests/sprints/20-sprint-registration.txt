@@ -34,7 +34,7 @@ An attendance that starts after the end of the sprint is also an error:
   >>> browser.getControl('Starting At').value = '2010-01-10 10:30:00'
   >>> browser.getControl('Finishing At').value = '2010-07-10 22:11:00'
   >>> browser.getControl('Register').click()
-  
+
   >>> print browser.url
   http://launchpad.dev/sprints/ubz/+attend
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
@@ -48,7 +48,7 @@ error:
   >>> browser.getControl('Starting At').value = '1980-01-10 10:30:00'
   >>> browser.getControl('Finishing At').value = '1990-07-10 22:11:00'
   >>> browser.getControl('Register').click()
-  
+
   >>> print browser.url
   http://launchpad.dev/sprints/ubz/+attend
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
@@ -112,7 +112,8 @@ And lets ensure Carlos is now listed:
   Sample Person
 
 In order to make it easy to organize a meeting, we provide a facility
-for exporting the list of attendees in CSV format to registered users.
+for exporting the list of attendees in CSV format to registered users,
+drivers, owners, and admins.
 
   >>> browser.getLink('Export attendees to CSV').click()
   >>> print browser.headers['content-type']
@@ -122,6 +123,17 @@ for exporting the list of attendees in CSV format to registered users.
   carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,UTC,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
   name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
   <BLANKLINE>
+
+  >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> carlos_browser.open('http://launchpad.dev/sprints/ubz')
+  >>> carlos_browser.getLink('Export attendees to CSV').click()
+  >>> print browser.headers['content-type']
+  text/csv
+
+  >>> admin_browser.open('http://launchpad.dev/sprints/ubz')
+  >>> admin_browser.getLink('Export attendees to CSV').click()
+  >>> print browser.headers['content-type']
+  text/csv
 
 Unregistered and anonymous users cannot access the CSV report.
 
