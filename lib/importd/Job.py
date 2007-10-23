@@ -8,9 +8,9 @@ import shutil
 
 from twisted.spread import pb
 
-from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.interfaces import RevisionControlSystems
+from canonical.launchpad.interfaces import (
+    ImportStatus, RevisionControlSystems)
 from importd import JobStrategy
 from importd.bzrmanager import BzrManager
 

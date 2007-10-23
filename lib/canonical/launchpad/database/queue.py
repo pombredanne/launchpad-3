@@ -34,16 +34,16 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
-    IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
-    QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet)
+    ArchivePurpose, IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
+    IPackageUploadCustom, IPackageUploadQueue, IPackageUploadSet, IPersonSet,
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, PackageUploadCustomFormat, pocketsuffix,
+    QueueBuildAcceptError, QueueInconsistentStateError,
+    QueueStateWriteProtectedError, QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackageUploadCustomFormat, PackagePublishingPocket,
-    PackagePublishingStatus, SourcePackageFileType, ArchivePurpose)
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they

@@ -12,7 +12,11 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, Bugzilla, DebBugs, Mantis, Roundup, SourceForge, Trac)
+    Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
+    DebBugs, Mantis, Trac, Roundup, SourceForge)
+from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -46,7 +50,6 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     commit()
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     return getUtility(IBugTrackerSet).getByName(name)
-
 
 def read_test_file(name):
     """Return the contents of the test file named :name:
@@ -106,13 +109,65 @@ def convert_python_status(status, resolution):
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
 
+def set_bugwatch_error_type(bug_watch, error_type):
+    """Set the last_error_type field of a bug watch to a given error type."""
+    login('test@canonical.com')
+    bug_watch.remotestatus = None
+    bug_watch.last_error_type = error_type
+    bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    logout()
+
+class TestBrokenExternalBugTracker(ExternalBugTracker):
+    """A test version of ExternalBugTracker, designed to break."""
+
+    def __init__(self, baseurl):
+        self.baseurl = baseurl
+        self.initialize_remote_bugdb_error = None
+        self.get_remote_status_error = None
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """Raise the error specified in initialize_remote_bugdb_error.
+
+        If initialize_remote_bugdb_error is None, None will be returned.
+        See `ExternalBugTracker`.
+        """
+        if self.initialize_remote_bugdb_error:
+            # We have to special case BugTrackerConnectError as it takes
+            # two non-optional arguments.
+            if self.initialize_remote_bugdb_error is BugTrackerConnectError:
+                raise self.initialize_remote_bugdb_error(
+                    "http://example.com", "Testing")
+            else:
+                raise self.initialize_remote_bugdb_error("Testing")
+
+    def getRemoteStatus(self, bug_id):
+        """Raise the error specified in get_remote_status_error.
+
+        If get_remote_status_error is None, None will be returned.
+        See `ExternalBugTracker`.
+        """
+        if self.get_remote_status_error:
+            raise self.get_remote_status_error("Testing")
+
+    def convertRemoteStatus(self, status):
+        """Return UNKNOWN_REMOTE_STATUS.
+
+        This method exists to avoid tests from failing with
+        AttributeErrors.
+        """
+        return UNKNOWN_REMOTE_STATUS
+
+
 class TestBugzilla(Bugzilla):
     """Bugzilla ExternalSystem for use in tests.
 
     It overrides _getPage and _postPage, so that access to a real Bugzilla
     instance isn't needed.
     """
-
+    # We set the batch_query_threshold to zero so that only
+    # getRemoteBugBatch() is used to retrieve bugs, since getRemoteBug()
+    # calls getRemoteBugBatch() anyway.
+    batch_query_threshold = 0
     trace_calls = False
 
     version_file = 'gnome_bugzilla_version.xml'
@@ -264,8 +319,11 @@ class TestMantis(Mantis):
 
     def cleanCache(self):
         """Clean the csv_data cache."""
-        if self.__dict__.has_key('_csv_data_cached_value'):
-            del(self._csv_data_cached_value)
+        # Remove the self._csv_data_cached_value if it exists.
+        try:
+            del self._csv_data_cached_value
+        except AttributeError:
+            pass
 
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
