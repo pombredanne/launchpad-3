@@ -10,6 +10,8 @@ BEGIN;
 -- end.  This has been shown to improve performance quite radially in some
 -- cases.
 
+SELECT 'Creating TranslationMessage', statement_timestamp();	-- DEBUG
+
 CREATE TABLE TranslationMessage(
 	id serial,
 	msgstr0 integer,
@@ -38,32 +40,8 @@ CREATE TABLE TranslationMessage(
 	id0 integer,
 	id1 integer,
 	id2 integer,
-	id3 integer,
-
-	CONSTRAINT translationmessage__reviewer__date_reviewed__valid
-		CHECK ((reviewer IS NULL) = (date_reviewed IS NULL)),
-	CONSTRAINT translationmessage__was_in_last_import__is_imported__valid
-		CHECK (is_imported OR NOT was_in_last_import)
+	id3 integer
 );
-
-CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
-	ON TranslationMessage(potmsgset, pofile) WHERE is_current;
-CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
-	ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
-CREATE INDEX translationmessage__submitter__idx
-	ON TranslationMessage(submitter);
-CREATE INDEX translationmessage__reviewer__idx
-	ON TranslationMessage(reviewer);
--- TODO: Do we actually need indexes on was_in_last_import?
-CREATE INDEX translationmessage__pofile__was_in_last_import__idx
-	ON TranslationMessage(pofile, was_in_last_import);
-CREATE INDEX translationmessage__was_in_last_import__idx
-	ON TranslationMessage(was_in_last_import);
-
-CREATE INDEX translationmessage__msgstr0__idx ON TranslationMessage(msgstr0);
-CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
-CREATE INDEX translationmessage__msgstr2__idx ON TranslationMessage(msgstr2);
-CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 
 
 -- Create TranslationMessages based each on 1 POMsgSet and up to 4 associated
@@ -99,6 +77,8 @@ CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 -- We deal with the active/published problems in steps: we do bundling of
 -- active, published POSubmissions in one query, active but non-published ones
 -- in another and so on.
+
+SELECT 'Migrating active, published submissions', statement_timestamp();	-- DEBUG
 
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
@@ -161,6 +141,8 @@ WHERE
 	s3.published IS NOT FALSE
 ;
 
+SELECT 'Migrating active, non-published submissions', statement_timestamp();	-- DEBUG
+
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
@@ -181,8 +163,7 @@ SELECT
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
 	TRUE AS is_current,
 	FALSE AS is_imported,
-
-	(m.sequence > 0) AS was_in_last_import,
+	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
@@ -219,6 +200,8 @@ WHERE
 	NOT s2.published OR
 	NOT s3.published
 ;
+
+SELECT 'Migrating non-active, published submissions', statement_timestamp();	-- DEBUG
 
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
@@ -276,6 +259,8 @@ WHERE
 	NOT s0.active OR NOT s1.active OR NOT s2.active OR NOT s3.active
 ;
 
+SELECT 'Migrating non-active, non-published submissions', statement_timestamp();	-- DEBUG
+
 -- Bundle POSubmissions that are not all published or active (but are all by
 -- the same person and created at the same time).
 INSERT INTO TranslationMessage(
@@ -297,8 +282,7 @@ SELECT
 	COALESCE(s0.validationstatus, 1) AS validationstatus,
 	FALSE AS is_current,
 	FALSE AS is_imported,
-
-	(m.sequence > 0) AS was_in_last_import,
+	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
@@ -341,7 +325,64 @@ WHERE
 	 NOT s3.published)
 ;
 
+SELECT 'Patching up ValidationStatus', statement_timestamp();	-- DEBUG
 
+-- Update validationstatus: if any of the POSubmissions that are bundled needs
+-- validation, validationstatus should be 0 (UNKNOWN).  Otherwise, if any has
+-- an error, it should be 2 (UNKNOWNERROR).  Only if neither is the case can it
+-- be left at whatever the pluralform-0 POSubmission had for its status.
+UPDATE TranslationMessage
+SET validationstatus = 2
+FROM POSubmission Pos
+WHERE
+	Pos.pluralform > 0 AND
+	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
+	Pos.validationstatus = 2;
+UPDATE TranslationMessage
+SET validationstatus = 0
+FROM POSubmission Pos
+WHERE
+	Pos.pluralform > 0 AND
+	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
+	Pos.validationstatus = 0;
+
+
+SELECT 'Indexing TranslationMessage table', statement_timestamp();	-- DEBUG
+
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
+	ON TranslationMessage(potmsgset, pofile) WHERE is_current;
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
+	ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
+CREATE INDEX translationmessage__submitter__idx
+	ON TranslationMessage(submitter);
+CREATE INDEX translationmessage__reviewer__idx
+	ON TranslationMessage(reviewer);
+-- TODO: Do we actually need indexes on was_in_last_import?
+CREATE INDEX translationmessage__pofile__was_in_last_import__idx
+	ON TranslationMessage(pofile, was_in_last_import);
+CREATE INDEX translationmessage__was_in_last_import__idx
+	ON TranslationMessage(was_in_last_import);
+
+CREATE INDEX translationmessage__msgstr0__idx ON TranslationMessage(msgstr0);
+CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
+CREATE INDEX translationmessage__msgstr2__idx ON TranslationMessage(msgstr2);
+CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
+
+
+SELECT 'Adding constraints to TranslationMessage table', statement_timestamp();	-- DEBUG
+
+ALTER TABLE TranslationMessage
+	ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
+
+ALTER TABLE TranslationMessage
+	ADD CONSTRAINT translationmessage__reviewer__date_reviewed__valid
+	CHECK ((reviewer IS NULL) = (date_reviewed IS NULL));
+ALTER TABLE TranslationMessage
+	ADD CONSTRAINT translationmessage__was_in_last_import__is_imported__valid
+	CHECK (is_imported OR NOT was_in_last_import);
+ALTER TABLE TranslationMessage
+	ADD CONSTRAINT translationmessage__nonempty__valid
+	CHECK (COALESCE(msgstr0, msgstr1, msgstr2, msgstr3) IS NOT NULL);
 ALTER TABLE ONLY TranslationMessage
 	ADD CONSTRAINT translationmessage__submitter__fk
 	FOREIGN KEY (submitter) REFERENCES Person(id);
@@ -368,26 +409,6 @@ ALTER TABLE ONLY TranslationMessage
 	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
 
--- Update validationstatus: if any of the POSubmissions that are bundled needs
--- validation, validationstatus should be 0 (UNKNOWN).  Otherwise, if any has
--- an error, it should be 2 (UNKNOWNERROR).  Only if neither is the case can it
--- be left at whatever the pluralform-0 POSubmission had for its status.
-UPDATE TranslationMessage
-SET validationstatus = 2
-FROM POSubmission Pos
-WHERE
-	Pos.pluralform > 0 AND
-	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
-	Pos.validationstatus = 2;
-UPDATE TranslationMessage
-SET validationstatus = 0
-FROM POSubmission Pos
-WHERE
-	Pos.pluralform > 0 AND
-	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
-	Pos.validationstatus = 0;
-
-
 -- Redirect foreign-key constraints pointing to POMsgSet
 ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
 
@@ -397,8 +418,8 @@ DROP TABLE POFileTranslator;
 DROP TABLE POSubmission;
 DROP TABLE POMsgSet;
 
-ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
+
+SELECT 'Retiring POFile.last_touched_pomsgset', statement_timestamp();	-- DEBUG
 
 -- POFile.last_touched_pomsgset is no longer needed; instead POFile holds the
 -- person who last modified a TranslationMessage in the POFile and the date of
@@ -414,6 +435,9 @@ FROM TranslationMessage
 WHERE TranslationMessage.id = POFile.last_touched_pomsgset;
 
 ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
+
+
+SELECT 'Retiring POTemplateName', statement_timestamp();	-- DEBUG
 
 -- Merge POTemplateName into POTemplate
 ALTER TABLE POTemplate ADD COLUMN name text;
@@ -435,6 +459,9 @@ DROP TABLE POTemplateName;
 ALTER TABLE POTemplate
 	ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
+
+SELECT 'Retiring POMsgIDSighting', statement_timestamp();	-- DEBUG
+
 -- Merge POMsgIDSighting into POTMsgSet
 ALTER TABLE POTMsgSet RENAME primemsgid TO msgid_singular;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
@@ -448,6 +475,8 @@ FROM POMsgIDSighting sighting
 WHERE sighting.potmsgset = POTMsgSet.id AND pluralform = 1;
 
 DROP TABLE POMsgIDSighting;
+
+SELECT 'Restoring export views', statement_timestamp();	-- DEBUG
 
 -- Restore POExport view
 CREATE VIEW POExport(
@@ -582,12 +611,18 @@ JOIN potemplate ON potemplate.id = potmsgset.potemplate
 LEFT JOIN POMsgID AS msgid_singular ON POTMsgSet.msgid_singular = msgid_singular.id
 LEFT JOIN POMsgID AS msgid_plural ON POTMsgSet.msgid_plural = msgid_plural.id;
 
+
+SELECT 'Cleaning up TranslationMessage temp columns', statement_timestamp();	-- DEBUG
+
 -- Clean up columns that were only for use during migration.
 ALTER TABLE TranslationMessage DROP COLUMN msgsetid;
 ALTER TABLE TranslationMessage DROP COLUMN id0;
 ALTER TABLE TranslationMessage DROP COLUMN id1;
 ALTER TABLE TranslationMessage DROP COLUMN id2;
 ALTER TABLE TranslationMessage DROP COLUMN id3;
+
+
+SELECT 'Re-creating POFileTranslator', statement_timestamp();	-- DEBUG
 
 -- Re-create POFileTranslator (replacing latest_posubmission)
 CREATE TABLE POFileTranslator (
@@ -600,6 +635,15 @@ CREATE TABLE POFileTranslator (
 
 ALTER TABLE POFileTranslator
 	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
+
+-- Re-populate POFileTranslator
+INSERT INTO POFileTranslator (
+    person, pofile, latest_message, date_last_touched
+    )
+SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
+FROM TranslationMessage
+ORDER BY submitter, pofile, date_created DESC, id DESC;
+
 ALTER TABLE POFileTranslator
 	ADD CONSTRAINT pofiletranslator__latest_message__fk
 	FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
@@ -610,18 +654,8 @@ ALTER TABLE POFileTranslator
 ALTER TABLE POFileTranslator
 	ADD CONSTRAINT pofiletranslator__pofile__fk
 	FOREIGN KEY (pofile) REFERENCES POFile(id);
-
 CREATE INDEX pofiletranslator__date_last_touched__idx
 	ON POFileTranslator(date_last_touched);
-
--- Re-populate POFileTranslator
-INSERT INTO POFileTranslator (
-    person, pofile, latest_message, date_last_touched
-    )
-SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
-FROM TranslationMessage
-ORDER BY submitter, pofile, date_created DESC, id DESC;
-
 ALTER TABLE POFileTranslator
 	ADD CONSTRAINT pofiletranslator__person__pofile__key
 	UNIQUE (person, pofile);
@@ -702,6 +736,8 @@ CREATE TRIGGER mv_pofiletranslator_translationmessage
 	BEFORE INSERT OR DELETE OR UPDATE ON TranslationMessage
 	FOR EACH ROW
 	EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
+
+SELECT 'Completing', statement_timestamp();	-- DEBUG
 
 ROLLBACK;
 
