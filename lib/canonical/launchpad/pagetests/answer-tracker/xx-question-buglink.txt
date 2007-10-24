@@ -101,11 +101,10 @@ message is displayed:
     # This should use a private bug in our sample data.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import IBugSet, ILaunchBag
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> private_bug = getUtility(IBugSet).get(6)
-    >>> from canonical.launchpad.interfaces import ILaunchBag
     >>> private_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
     >>> flush_database_updates()
