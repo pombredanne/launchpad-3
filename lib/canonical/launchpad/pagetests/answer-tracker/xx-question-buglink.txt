@@ -105,7 +105,9 @@ message is displayed:
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> private_bug = getUtility(IBugSet).get(6)
-    >>> private_bug.private = 6
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> private_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> flush_database_updates()
     >>> logout()
 

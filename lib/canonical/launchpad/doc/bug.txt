@@ -104,7 +104,7 @@ private. A bug cannot be made private by an anonymous user.
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'private', 'launchpad.Edit')
+    ForbiddenAttribute: ('private', ...)
 
     >>> firefox_crashes.setPrivate(True, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
