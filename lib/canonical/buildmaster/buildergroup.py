@@ -20,7 +20,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.lp import dbschema
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
@@ -77,6 +76,7 @@ class BuilderGroup:
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
+            self.rescueBuilderIfLost(builder)
         # Catch only known exceptions.
         # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
         # disturbing in this context. We should spend sometime sanitizing the
@@ -88,11 +88,8 @@ class BuilderGroup:
             # however it's not producing anything 'readable' on
             # Builder.failurenotes. it need attention at some point.
             builder.failbuilder(repr(reason))
-            self.logger.debug("Builder on %s marked as failed due to: %r",
-                              builder.url, reason, exc_info=True)
-        else:
-            # Verify if the builder slave is working with sane information.
-            self.rescueBuilderIfLost(builder)
+            self.logger.warn("Builder on %s marked as failed due to: %r",
+                             builder.url, reason, exc_info=True)
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information doesn't match with DB.

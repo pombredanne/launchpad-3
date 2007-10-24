@@ -64,6 +64,11 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         return self.slave.abort()
   ...     def resetSlaveHost(self, logger):
   ...         pass
+  ...     def checkSlaveAlive(self):
+  ...         pass
+  ...     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
+  ...         pass
+
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
@@ -167,10 +172,31 @@ Then a lost slave in status 'WAITING':
 
 Both got rescued, as expected.
 
+Slave-scanner will deactivate a 'lost-building' builder that could not
+be aborted appropriately.
+
+  >>> import xmlrpclib
+  >>> class LostBuildingBrokenSlave:
+  ...     """A mock slave building bogus Build/BuildQueue IDs."""
+  ...     def status(self):
+  ...         return ('BuilderStatus.BUILDING', '1000-10000')
+  ...     def abort(self):
+  ...         raise xmlrpclib.Fault(8002, "Could not abort")
+
+  >>> lostbuilding_builder = MockBuilder('Lost Building Broken Slave',
+  ...                                    LostBuildingBrokenSlave())
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+
+  >>> buildergroup.updateBuilderStatus(lostbuilding_builder, hoary_i386)
+  WARNING:root:Builder on http://fake:0000 marked as failed due to: <Fault 8002: 'Could not abort'>
+  Traceback (most recent call last):
+  ...
+  Fault: <Fault 8002: 'Could not abort'>
 
 Let's create a bunch of mock slaves for testing the Builder State Handler:
 
-  >>> import xmlrpclib
   >>> class BrokenSlave:
   ...     """A mock slave that reports that it is broken."""
   ...     def status(self):
@@ -884,6 +910,10 @@ Because the sampledata builders are busy we issue and warning stating that.
   ...                                    dar.architecturetag)):
   ...     bm.addDistroArchSeries(dar)
   ...     bm.setupBuilders(dar)
+  WARNING:root.builders.x86:Builder on http://localhost:8221/ marked as failed due to: <socket.error ...>
+  Traceback (most recent call last):
+  ...
+  error: (111, 'Connection refused')
   WARNING:root.builders.x86:No builders are available
 
 Inspect private attribute _archseries contents. Remember

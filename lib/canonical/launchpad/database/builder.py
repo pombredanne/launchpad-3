@@ -25,13 +25,12 @@ from sqlobject import (
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
-    CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder,
-    IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords, NotFoundError,
+    ArchivePurpose, BuildDaemonError, BuildSlaveFailure, CannotBuild,
+    CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet,
+    IDistroArchSeriesSet, IHasBuildRecords, NotFoundError,
     PackagePublishingPocket, ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -350,7 +349,7 @@ class Builder(SQLBase):
             logger.info(message)
         except (xmlrpclib.Fault, socket.error), info:
             # Mark builder as 'failed'.
-            self._logger.debug(
+            logger.debug(
                 "Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder("Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
