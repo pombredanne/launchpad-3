@@ -1,29 +1,31 @@
-<div tal:attributes="id string:queue${context/id}-filelist">
+<ul tal:attributes="id string:queue${context/id}-filelist"
+    style="margin-top: 0; margin-bottom: 0;">
   <tal:source repeat="source context/sources">
-    <p tal:repeat="file source/sourcepackagerelease/files">
+    <li tal:repeat="file source/sourcepackagerelease/files">
        <a tal:attributes="href file/libraryfile/http_url"
           tal:content="file/libraryfile/filename"
         /> (<span tal:replace="
-              file/libraryfile/content/filesize/fmt:bytes" />)</p>
+              file/libraryfile/content/filesize/fmt:bytes" />)</li>
   </tal:source>
 
   <tal:build repeat="queuebuild context/builds">
     <tal:binary repeat="binary queuebuild/build/binarypackages">
-        <p tal:repeat="file binary/files">
-           <span tal:condition="binary/is_new"
-             >NEW</span> <a
+        <li tal:repeat="file binary/files">
+           <a
               tal:attributes="href file/libraryfile/http_url"
               tal:content="file/libraryfile/filename"
             /> (<span tal:replace="
-                   file/libraryfile/content/filesize/fmt:bytes" />)</p>
+                   file/libraryfile/content/filesize/fmt:bytes" />)
+                   <span style="color: red" tal:condition="binary/is_new">NEW</span>
+                   </li>
     </tal:binary>
   </tal:build>
 
   <tal:custom condition="context/customfiles">
-    <p tal:repeat="custom context/customfiles">
+    <li tal:repeat="custom context/customfiles">
        <a tal:attributes="href custom/libraryfilealias/http_url"
           tal:content="custom/libraryfilealias/filename"
         /> (<span tal:replace="
-               custom/libraryfilealias/content/filesize/fmt:bytes" />)</p>
+               custom/libraryfilealias/content/filesize/fmt:bytes" />)</li>
   </tal:custom>
-</div>
+</ul>
