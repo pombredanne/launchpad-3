@@ -468,7 +468,8 @@ def _copy_active_translations_as_update(child, transaction, logger):
         SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
         FROM POTemplate pt1, POTemplate pt2
         WHERE
-            pt1.potemplatename = pt2.potemplatename AND
+            pt1.name = pt2.name AND
+            pt1.translation_domain = pt2.translation_domain AND
             pt1.sourcepackagename = pt2.sourcepackagename AND
             pt1.distrorelease = %s AND
             pt2.distrorelease = %s

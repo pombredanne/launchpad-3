@@ -6,6 +6,7 @@ from zope.schema import Bool, Choice, Datetime, Int, List, Object, Text
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -86,7 +87,7 @@ class ITranslationMessage(Interface):
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
-        readonly=True, required=True)
+        readonly=True, required=True, schema=IPOTMsgSet)
 
     date_created = Datetime(
         title=_("The date we saw this submission first"),
@@ -172,7 +173,7 @@ class ITranslationMessage(Interface):
     was_fuzzy_in_last_import = Bool(
         title=_(
             "Whether this imported translation must be checked before use it"
-            ), readonly=False, require=True)
+            ), readonly=False, required=True)
 
     def destroySelf():
         """Remove this object.

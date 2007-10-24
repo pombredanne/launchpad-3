@@ -1485,10 +1485,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Distribution.official_rosetta IS TRUE
             ''' % sqlvalues(self),
             clauseTables = ['DistroRelease', 'Distribution'])
-        result = result.prejoin(['potemplatename'])
         return sorted(
             shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+            key=lambda x: (-x.priority, x.name))
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
