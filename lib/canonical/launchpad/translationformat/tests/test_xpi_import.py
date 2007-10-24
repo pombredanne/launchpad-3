@@ -13,8 +13,8 @@ from zope.component import getUtility
 import canonical.launchpad
 from canonical.database.sqlbase import commit, flush_database_caches
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
-    ITranslationImportQueue, RosettaImportStatus)
+    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImportQueue,
+    RosettaImportStatus)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer
@@ -76,11 +76,10 @@ class XpiTestCase(unittest.TestCase):
         # Get the Firefox template.
         firefox_product = getUtility(IProductSet).getByName('firefox')
         firefox_productseries = firefox_product.getSeries('trunk')
-        firefox_potemplatename = getUtility(IPOTemplateNameSet)['firefox']
         firefox_potemplate_subset = getUtility(IPOTemplateSet).getSubset(
             productseries=firefox_productseries)
         self.firefox_template = firefox_potemplate_subset.new(
-            potemplatename=firefox_potemplatename,
+            name='firefox',
             path='en-US.xpi',
             owner=self.importer)
         self.firefox_template = (
