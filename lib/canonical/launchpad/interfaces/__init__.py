@@ -103,7 +103,6 @@ from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
-from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potmsgset import *
 from canonical.launchpad.interfaces.potranslation import *

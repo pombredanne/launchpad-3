@@ -30,7 +30,6 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
