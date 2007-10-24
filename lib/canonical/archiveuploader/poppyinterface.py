@@ -61,6 +61,9 @@ class PoppyInterface:
         # same filesystem (non-atomic "rename").
         lockfile_path = os.path.join(self.targetpath, ".lock")
         self.lock = GlobalLock(lockfile_path)
+        # XXX cprov 20071024: We try to acquire the lock as soon as possible
+        # after creating the lockfile but are still open to a race.
+        # See bug #156795.
         self.lock.acquire(blocking=True)
 
         # Adjust lockfile permissions to allow the runner of process-upload
@@ -84,7 +87,7 @@ class PoppyInterface:
             # Move the session directory to the target directory.
             if os.path.exists(target_fsroot):
                 self.logger.warn("Targeted upload already present: %s" % path)
-                self.logger.warn("System clock skewed ?!.")
+                self.logger.warn("System clock skewed ?")
             else:
                 try:
                     shutil.move(fsroot, target_fsroot)
@@ -92,6 +95,8 @@ class PoppyInterface:
                     if not os.path.exists(target_fsroot):
                         raise
 
+            # XXX cprov 20071024: We should replace os.system call by os.chmod
+            # and fix the default permission value accordingly in poppy-upload
             if self.perms is not None:
                 os.system("chmod %s %s" % (self.perms, target_fsroot))
 
@@ -103,6 +108,8 @@ class PoppyInterface:
                 self.logger.debug("Running upload handler: %s" % cmd)
                 os.system(cmd)
         finally:
+            # We never delete the lockfile, this way the inode will be
+            # constant while the machine is up. See comment on 'acquire'
             self.lock.release(skip_delete=True)
 
         self.clients.pop(fsroot)
