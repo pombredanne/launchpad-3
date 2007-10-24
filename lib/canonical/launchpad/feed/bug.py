@@ -74,12 +74,24 @@ class BugsFeedBase(FeedBase):
 
     max_age = BUG_MAX_AGE
     rootsite = "bugs"
-    show_column = dict(
-        id = True,
-        title = True,
-        bugtargetdisplayname = True,
-        importance = True,
-        status = True)
+
+    def initialize(self):
+        """See `IFeed`."""
+        super(BugsFeedBase, self).initialize()
+        self.setupColumns()
+
+    def setupColumns(self):
+        """Set up the columns to be displayed in the feed.
+
+        This method may need to be overridden to customize the display for
+        different feeds.
+        """
+        self.show_column = dict(
+            id = True,
+            title = True,
+            bugtargetdisplayname = True,
+            importance = True,
+            status = True)
 
     @property
     def url(self):
@@ -163,11 +175,16 @@ class BugTargetBugsFeed(BugsFeedBase):
 
     usedfor = IBugTarget
     feedname = "latest-bugs"
-    # Make a copy o fthe inherited class variable, because the object is
-    # shared with all base classes.  If we mutated the object here without the
-    # copy, it would be mutated for all related classes.
-    show_column = BugsFeedBase.show_column.copy()
-    del show_column['bugtargetdisplayname']
+
+    def setupColumns(self):
+        """See `BugsFeedBase`.
+
+        Since this feed is for a specific IBugTarget it is redundant to
+        include the name in the output.
+        """
+        super(BugTargetBugsFeed, self).setupColumns()
+        if 'bugtargetdisplayname' in self.show_column:
+            del self.show_column['bugtargetdisplayname']
 
     @property
     def title(self):
