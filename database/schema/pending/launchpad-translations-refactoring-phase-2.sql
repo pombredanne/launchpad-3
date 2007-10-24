@@ -31,7 +31,7 @@ CREATE TABLE TranslationMessage(
 	is_fuzzy boolean NOT NULL,
 	date_created timestamp without time zone
 		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-	date_reviewed timestamp without time zone, 
+	date_reviewed timestamp without time zone,
 	comment_text text,
 
 	-- For migration purposes: references to objects that constitute this
@@ -52,6 +52,9 @@ CREATE TABLE TranslationMessage(
 -- 2. All published POSubmissions for a message set are likewise bundled.
 -- 3. We bundle any combination of up to 4 POSubmissions that have the same
 --    POMsgSet, person, and datecreated (and different pluralforms).
+--
+-- POMsgSets that have a reviewer but no POSubmissions are converted to
+-- TranslationMessages without any translations in them.
 --
 -- Active or published POSubmissions may be represented in more than one
 -- TranslationMessage: once in the "bundle" they were submitted with and once
@@ -325,6 +328,41 @@ WHERE
 	 NOT s3.published)
 ;
 
+
+SELECT 'Migrating POMsgSets without POSubmissions', statement_timestamp();	-- DEBUG
+
+INSERT INTO TranslationMessage(
+	pofile, potmsgset, origin, submitter, reviewer, validation_status,
+	is_current, is_imported, was_in_last_import,
+	was_obsolete_in_last_import, is_fuzzy, date_created, date_reviewed,
+	comment_text, msgsetid)
+SELECT
+	m.pofile AS pofile,
+	m.potmsgset AS potmsgset,
+	-- We're only converting these POMsgSets if they have a reviewer, so
+	-- origin must be ROSETTAWEB.
+	2 AS origin,
+	m.reviewer AS submitter,
+	m.reviewer AS reviewer,
+	-- Validation status is OK.
+	1 AS validation_status,
+	-- Empty translation messages only make sense where they're current.
+	TRUE AS is_current,
+	FALSE AS is_imported,
+	FALSE AS was_in_last_import,
+	m.obsolete AS was_obsolete_in_last_import,
+	m.isfuzzy AS is_fuzzy,
+	m.date_reviewed AS date_created,
+	m.date_reviewed AS date_reviewed,
+	m.commenttext AS comment_text,
+
+	m.id AS msgsetid
+FROM POMsgSet m
+LEFT OUTER JOIN POSubmission ON POSubmission.pomsgset = m.id
+WHERE POSubmission.id IS NULL AND reviewer IS NOT NULL
+;
+
+
 SELECT 'Patching up ValidationStatus', statement_timestamp();	-- DEBUG
 
 -- Update validation_status: if any of the POSubmissions that are bundled
@@ -369,6 +407,14 @@ CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
 CREATE INDEX translationmessage__msgstr2__idx ON TranslationMessage(msgstr2);
 CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 
+CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key
+	ON TranslationMessage(
+		pofile,
+		potmsgset,
+		COALESCE(msgstr0, -1),
+		COALESCE(msgstr1, -1),
+		COALESCE(msgstr2, -1),
+		COALESCE(msgstr3, -1));
 
 SELECT 'Adding constraints to TranslationMessage table', statement_timestamp();	-- DEBUG
 
@@ -382,33 +428,29 @@ ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__was_in_last_import__is_imported__valid
 	CHECK (is_imported OR NOT was_in_last_import);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__nonempty__valid
-	CHECK (COALESCE(msgstr0, msgstr1, msgstr2, msgstr3) IS NOT NULL);
-ALTER TABLE ONLY TranslationMessage
 	ADD CONSTRAINT translationmessage__submitter__fk
 	FOREIGN KEY (submitter) REFERENCES Person(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__msgstr0__fk
 	FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__msgstr1__fk
 	FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__msgstr2__fk
 	FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__msgstr3__fk
 	FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__reviewer__fk
 	FOREIGN KEY (reviewer) REFERENCES Person(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__pofile__fk
 	FOREIGN KEY (pofile) REFERENCES pofile(id);
-ALTER TABLE ONLY TranslationMessage
+ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__potmsgset__fk
 	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
-
 
 -- Redirect foreign-key constraints pointing to POMsgSet
 ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
