@@ -13,9 +13,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet,
-    MirrorStatus)
+    MirrorStatus, PackagePublishingPocket)
 from canonical.launchpad.mail import stub
-from canonical.lp.dbschema import PackagePublishingPocket
 
 from canonical.testing import LaunchpadFunctionalLayer
 
