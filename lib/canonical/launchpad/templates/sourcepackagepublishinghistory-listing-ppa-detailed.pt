@@ -24,7 +24,7 @@
       style="display: none">
     <td colspan="5">
       <span tal:condition="not: published_source_and_binary_files"
-         style="padding-left: 1em">No files yet published</span>
+         style="padding-left: 1em">No files published for this package.</span>
       <ul tal:repeat="file published_source_and_binary_files"
           style="margin-top: 0; margin-bottom: 0">
         <li><a tal:attributes ="href file/archive_url"
