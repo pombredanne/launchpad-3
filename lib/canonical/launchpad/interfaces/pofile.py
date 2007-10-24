@@ -253,7 +253,7 @@ class IPOFile(IRosettaStats):
     def expireAllTranslationMessages():
         """Set all translation messages as not being in last import.
 
-        The way to do that is to set `ITranslationMessage`.was_in_last_import
+        The way to do that is to set `ITranslationMessage`.is_imported
         to False.
         """
 
