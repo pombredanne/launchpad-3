@@ -72,7 +72,6 @@ from canonical.launchpad.browser.person import *
 from canonical.launchpad.browser.pofile import *
 from canonical.launchpad.browser.poll import *
 from canonical.launchpad.browser.potemplate import *
-from canonical.launchpad.browser.potemplatename import *
 from canonical.launchpad.browser.product import *
 from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.productseries import *

@@ -96,7 +96,6 @@
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="potemplate.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
