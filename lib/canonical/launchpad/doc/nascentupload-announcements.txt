@@ -50,8 +50,8 @@ For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
 address:
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> from canonical.launchpad.interfaces import (
+  ...     DistroSeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
@@ -95,6 +95,9 @@ There is only one email generated:
 
   >>> notification['X-Katie']
   'Launchpad actually'
+
+  >>> notification['Subject']
+  'New: bar 1.0-1 (source)'
 
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
@@ -295,6 +298,34 @@ the upload is waiting for approval:
   'Waiting for approval: bar 1.0-2 (source)'
 
 
+UNAPPROVED upload to BACKPORTS via insecure policy will send a notification
+saying they are waiting for approval:
+
+  >>> unapproved_backports_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distroseries=None)
+  >>> unapproved_backports_policy.setDistroSeriesAndPocket('hoary-backports')
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-3_valid/bar_1.0-3_source.changes'),
+  ...     unapproved_backports_policy, mock_logger_quiet)
+  >>> bar_src.process()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to UNAPPROVED
+  ...
+
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+
+  >>> notification['Subject']
+  'Waiting for approval: bar 1.0-3 (source)'
+
+
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
   >>> modified_sync_policy = getPolicy(
@@ -341,7 +372,7 @@ There is one email generated:
   'Celso Providelo <celso.providelo@canonical.com>'
 
   >>> notification['Subject']
-  'Accepted bar 1.0-4 (source)'
+  'Accepted: bar 1.0-4 (source)'
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -388,7 +419,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
-  ['Accepted bar 1.0-2 (source)', 'Accepted bar 1.0-2 (source)']
+  ['Accepted: bar 1.0-2 (source)', 'Accepted: bar 1.0-2 (source)']
 
   >>> [message['X-Katie'] for message in msgs]
   ['Launchpad actually', 'Launchpad actually']
@@ -439,7 +470,7 @@ One email generated:
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
   >>> notification['Subject']
-  'Accepted bar 1.0-2 (i386)'
+  'Accepted: bar 1.0-2 (i386)'
 
 
 Dry run uploads should not generate any emails.  Call do_accept with
@@ -476,13 +507,13 @@ PackageUpload.notify() directly.  One of the arguments it can specify is
 dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> random_package_upload = hoary.getQueueItems()[0]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   INFO: Would have sent a mail:
-  INFO:   Subject: Accepted bar 1.0-2 (i386)
+  INFO:   Subject: Accepted: bar 1.0-2 (i386)
   INFO:   Sender: Root <root@localhost>
   INFO:   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   INFO:   Bcc: Root <root@localhost>

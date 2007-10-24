@@ -12,12 +12,10 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackageRelease)
+    IDistroArchSeriesBinaryPackageRelease, PackagePublishingStatus)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -315,3 +313,14 @@ class DistroArchSeriesBinaryPackageRelease:
 
         return current
 
+    def delete(self, removed_by, removal_comment=None):
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
+        # Retrieve current publishing info
+        current = self.current_publishing_record
+        current = SecureBinaryPackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.DELETED
+        current.datesuperseded = UTC_NOW
+        current.removed_by = removed_by
+        current.removal_comment = removal_comment
+
+        return current

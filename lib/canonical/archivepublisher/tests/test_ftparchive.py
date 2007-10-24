@@ -16,15 +16,14 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingPocket)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
     FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IDistributionSet)
+    ILibraryFileAliasSet, IDistributionSet, PackagePublishingPriority,
+    PackagePublishingPocket)
 from canonical.librarian.client import LibrarianClient
 
 
@@ -43,7 +42,7 @@ def sanitize_feisty_apt_ftparchive_output(text):
 
 
 class TestFTPArchive(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)

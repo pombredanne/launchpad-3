@@ -9,6 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getQuestionLanguages
