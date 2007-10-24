@@ -65,9 +65,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    IBrowserFormNG, INotificationRequest, INotificationResponse,
-    UnexpectedFormData)
+    ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
+    IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
+    INotificationResponse, UnexpectedFormData)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -898,7 +898,6 @@ class ProtocolErrorResponse(LaunchpadBrowserResponse):
 
     def handleException(self, exception):
         "Presumably a ProtocolErrorException."
-
         status, headers = exception.status
         self.setStatus(exception.status)
         for header, value in exception.headers:
@@ -934,6 +933,7 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
             raise ProtocolErrorException(self.status, self.headers)
 
 class ProtocolErrorException(Exception):
+    implements(ILaunchpadProtocolError)
 
     def __init__(self, status, headers):
         self.status = status

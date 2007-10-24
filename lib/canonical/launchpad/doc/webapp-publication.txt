@@ -275,7 +275,7 @@ is done by the register_launchpad_request_publication_factories
 function called when the servers module is loaded.
 
 (We need to call it here once again, because the test layer clears out
-the registered factories.)
+the registered factories:)
 
     >>> from canonical.launchpad.webapp.servers import (
     ...     register_launchpad_request_publication_factories)
@@ -412,11 +412,28 @@ A request to an unknown host results in a 404 error.
     ProtocolErrorRequest
     ProtocolErrorPublication: status=404
 
+A request that uses the wrong method results in a 405 error. I'm going
+to temporarily bump up the log level so I don't have to show the
+405 error as an exception as well as an HTTP request.
+
+    >>> import logging
+    >>> logger = logging.getLogger('SiteError')
+    >>> old_level = logger.level
+    >>> logger.setLevel(logging.CRITICAL)
+
     >>> logout()
-    >>> http("GET /foo/bar HTTP/1.1\nHost: xmlrpc.launchpad.dev\nX-zope-handle-errors: False""")
+    >>> print http("GET /foo/bar HTTP/1.1\n"
+    ...            "Host: xmlrpc.launchpad.dev\n"
+    ...            "X-zope-handle-errors: False")
     HTTP/1.1 405 Method Not Allowed
     Allow: POST
+    ...
+    An error occured.
+    ...
 
+(A bit of cleanup so the test can continue:)
+
+    >>> logger.setLevel(old_level)
     >>> login(ANONYMOUS)
 
 == ILaunchpadBrowserApplicationRequest ==

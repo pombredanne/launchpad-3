@@ -129,6 +129,15 @@ class SystemErrorView:
         else:
             return self.index()
 
+class ProtocolErrorView(SystemErrorView):
+
+    def __call__(self):
+        """Set the appropriate status code and headers."""
+        exception = self.context
+        self.request.response.setStatus(exception.status)
+        for header, value in exception.headers.items():
+            self.request.response.setHeader(header, value)
+        return self.index()
 
 class NotFoundView(SystemErrorView):
 
