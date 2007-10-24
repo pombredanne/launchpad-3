@@ -9,7 +9,6 @@ __all__ = [
     'BinaryPublishingRecordView',
     ]
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
 from canonical.launchpad.webapp import LaunchpadView
@@ -73,7 +72,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
     __used_for__ = ISourcePackagePublishingHistory
 
-    @cachedproperty
+    @property
     def published_source_and_binary_files(self):
         """Return list of dicts describing all files published
            for a certain source publication.

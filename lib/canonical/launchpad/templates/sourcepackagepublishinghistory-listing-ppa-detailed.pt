@@ -19,10 +19,13 @@
      <td>
      </td>
   </tr>
-  <tr tal:attributes="id string:pub${context/id}" style="display: none">
+  <tr tal:attributes="id string:pub${context/id}"
+      tal:define="published_source_and_binary_files view/published_source_and_binary_files"
+      style="display: none">
     <td colspan="5">
-      <i tal:condition="not: view/published_source_and_binary_files">No files yet published</i>
-      <ul tal:repeat="file view/published_source_and_binary_files"
+      <span tal:condition="not: published_source_and_binary_files"
+         style="padding-left: 1em">No files yet published</span>
+      <ul tal:repeat="file published_source_and_binary_files"
           style="margin-top: 0; margin-bottom: 0">
         <li><a tal:attributes ="href file/archive_url"
                tal:content="string:${file/filename}"></a>
