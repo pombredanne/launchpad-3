@@ -19,7 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrity, ITranslationMessage, RosettaTranslationOrigin,
+    ILaunchpadCelebrities, ITranslationMessage, RosettaTranslationOrigin,
     TranslationValidationStatus)
 
 
@@ -57,7 +57,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.pofile = pofile
         self.potmsgset = potmsgset
         self.date_created = datetime.utcnow()
-        self.submitter = getUtility(ILaunchpadCelebrity).rosetta_expert
+        self.submitter = getUtility(ILaunchpadCelebrities).rosetta_expert
         self.date_reviewed = None
         self.reviewer = None
         self.msgstr0 = None

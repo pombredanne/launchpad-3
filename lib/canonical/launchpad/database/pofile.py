@@ -38,7 +38,7 @@ from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
-    IPOFileSet, IPOFileTranslator, IPOSubmissionSet, ITranslationExporter,
+    IPOFileSet, IPOFileTranslator, ITranslationExporter,
     ITranslationFileData, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
     RosettaImportStatus, TranslationConstants, TranslationFormatSyntaxError,
@@ -202,13 +202,14 @@ class POFileMixIn(RosettaStats):
                 dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
                 dummies[potmsgset] = dummy
 
-        cache = getUtility(IPOSubmissionSet).getSubmissionsFor(
-            result.values(), dummies.values())
+        # XXX: no cache yet
+        #cache = getUtility(IPOSubmissionSet).getSubmissionsFor(
+        #    result.values(), dummies.values())
 
         result.update(dummies)
 
-        for pomsgset in result.values():
-            pomsgset.initializeSubmissionsCaches(cache[pomsgset])
+        #for pomsgset in result.values():
+        #    pomsgset.initializeSubmissionsCaches(cache[pomsgset])
 
         return result
 
