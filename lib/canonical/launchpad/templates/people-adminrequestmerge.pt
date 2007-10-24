@@ -1,4 +1,3 @@
-<tal:do-this-first tal:content="view/processForm" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en"
@@ -6,68 +5,58 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Merge Launchpad accounts</h1>
-    </metal:heading>
+<body>
 
 <div metal:fill-slot="main">
 
-  <form action="" method="POST">
-    <tal:block tal:condition="not: view/shouldShowConfirmationPage" >
-
-      <p
-        tal:condition="view/errormessages"
-        tal:repeat="errors view/errormessages"
-        tal:content="structure errors"
-        class="error message"
-      />
-
-      <label>Duplicated Account:</label>
-      <br>
-        <span tal:replace="structure view/dupe_account_widget" />
-      <br>
-      <br>
-      <label>Target Account:</label>
-      <br>
-        <span tal:replace="structure view/target_account_widget" />
-      <br>
-      <br>
-      <input type="submit" name="continue" value="Continue" />
-    </tal:block>
-
-    <tal:block tal:condition="view/shouldShowConfirmationPage" > 
-      <h1>Admin interface to merge two accounts</h1>
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <tal:extra_info metal:fill-slot="extra_info">
+      <tal:confirmation-for-people
+        condition="view/should_confirm_email_reassignment">
         <p>Are you sure you want to merge
-        <strong tal:content="view/dupe_account/displayname">name12</strong>
-        (<strong tal:content="view/dupe_account/name">name12</strong>) 
-        into
-        <strong tal:content="view/target_account/displayname">name16</strong>
-        (<strong tal:content="view/target_account/name">name16</strong>)?
+          <strong tal:content="view/dupe_person/unique_displayname">
+            name12
+          </strong> into
+          <strong tal:content="view/target_person/unique_displayname">
+            name16
+          </strong>?
         </p>
-        The following email addresses are owned by 
-        <strong tal:content="view/dupe_account/displayname">name12</strong>
-        and are going to be transferred to 
-        <strong tal:content="view/target_account/displayname">name16</strong>:
-        <br>
-        <br>
-        <table>
-          <tr tal:repeat="email view/emails">
-            <td><strong tal:content="email/email"/>
-            </td>
-          </tr>
-        </table>
-        <br>
+        <div class="informational message">
+          The following email addresses are owned by 
+          <tal:dupe_displayname replace="view/dupe_person/displayname" />
+          and are going to be transferred to 
+          <tal:target_displayname replace="view/target_person/displayname" />:
+          <ul>
+            <li tal:repeat="email view/dupe_person_emails">
+              <strong tal:content="email/email"/>
+            </li>
+          </ul>
+          <tal:confirm-button 
+            replace="structure view/reassign_emails_and_merge_action/render" />
+        </div>
+      </tal:confirmation-for-people>
 
-        <input type="submit" name="cancel" value="Cancel" />
-        <input type="submit" name="merge" value="Merge" />
-
-        <input type="hidden" name="dupe_name" 
-               tal:attributes="value view/dupe_account/name" />
-        <input type="hidden" name="target_name" 
-               tal:attributes="value view/target_account/name" />
-    </tal:block>
-  </form>
+      <tal:confirmation-for-teams
+          condition="view/should_confirm_member_deactivation">
+        <p>Are you sure you want to merge
+          <strong tal:content="view/dupe_person/unique_displayname">
+            name12
+          </strong> into
+          <strong tal:content="view/target_person/unique_displayname">
+            name16
+          </strong>?
+        </p>
+        <div class="informational message">
+          <tal:dupe_name replace="view/dupe_person/displayname" /> has
+          <tal:member_count replace="view/dupe_person/activemembers/count" />
+          active members which will have to be deactivated before the teams
+          can be merged.
+          <tal:confirm-button 
+            replace="structure view/deactivate_members_and_merge_action/render" />
+        </div>
+      </tal:confirmation-for-teams>
+    </tal:extra_info>
+  </div>
 
 </div>
     

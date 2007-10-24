@@ -28,7 +28,7 @@
                         hits hitstimestamp activityscore activitytimestamp
                         displayname activity initial_message bug_branches
                         productinfestations packageinfestations watches
-                        externalrefs cves cve_links duplicates
+                        cves cve_links duplicates
                         attachments questions specifications followup_subject
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
@@ -122,9 +122,6 @@
       <browser:page
           name="+portlet-questions"
           template="../templates/bug-portlet-questions.pt" />
-      <browser:page
-          name="+portlet-reference"
-          template="../templates/bug-portlet-reference.pt" />
       <browser:page
           name="+portlet-duplicates"
           template="../templates/bug-portlet-duplicates.pt" />

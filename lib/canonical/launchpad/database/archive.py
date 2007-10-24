@@ -21,10 +21,9 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
-    IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet,
-    IDistributionSet)
+    ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
+    IBuildSet, IDistributionSet)
 from canonical.launchpad.webapp.url import urlappend
-from canonical.lp.dbschema import ArchivePurpose
 
 
 class Archive(SQLBase):
@@ -53,7 +52,7 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PPA:
-            return 'Personal Package Archive for %s' % self.owner.displayname
+            return 'PPA for %s' % self.owner.displayname
         return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property

@@ -135,9 +135,6 @@ constructed as an underscore-separated sequence of:
     msgset_130_es_suggestion_565_0
     msgset_130_es_suggestion_565_0_origin
     msgset_130_es_suggestion_565_0_radiobutton
-    msgset_130_es_suggestion_702_0
-    msgset_130_es_suggestion_702_0_origin
-    msgset_130_es_suggestion_702_0_radiobutton
     msgset_130_singular
 
 Radio buttons are grouped by their name attribute. The translate page shows

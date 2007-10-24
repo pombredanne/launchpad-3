@@ -21,14 +21,13 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.interfaces import (
-    IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords,
+    ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords,
     NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import ArchivePurpose
 
 
 class ArchiveNavigation(Navigation):
@@ -37,6 +36,8 @@ class ArchiveNavigation(Navigation):
     usedfor = IArchive
 
     def breadcrumb(self):
+        if self.context.purpose == ArchivePurpose.PPA:
+            return "PPA"
         return self.context.title
 
     @stepthrough('+build')

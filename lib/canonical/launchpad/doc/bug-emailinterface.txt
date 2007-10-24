@@ -962,18 +962,20 @@ user.
     Launchpad can't find the CVE "no-such-cve".
     ...
 
-=== affects, assignee, status, importance ===
+=== affects, assignee, status, importance, milestone ===
 
 affects $path [assignee $name|$email|nobody]
               [status $status]
               [importance $importance]
+              [milestone $milestone]
 
-XXX: This section should be split into four different sections, one for
-     each command. It used to be possible to write
-     'affects /foo status confirmed', but it's not anymore.  'affects',
-     'status', 'importance' and 'assignee' are different commands, and
-     they need to be on separate lines. There's no such thing as a sub
-     command anymore.  -- Bjorn Tillenius, 2006-04-06
+XXX: BjornTillenius 2006-04-06 GavinPanella 2007-10-18 bug=153343:
+     This section should be split into four different sections, one
+     for each command. It used to be possible to write 'affects /foo
+     status confirmed', but it's not anymore.  'affects', 'status',
+     'importance' and 'assignee' are different commands, and they need
+     to be on separate lines. There's no such thing as a sub command
+     anymore.
 
 Change the state of a bug in a specific context. $path can be of
 the following form:
@@ -1030,6 +1032,66 @@ commands. It's possible to have these sub commands on separate lines:
     CONFIRMED
     >>> print debian_task.assignee.displayname
     Sample Person
+
+A milestone can be assigned to the current task.
+
+    >>> firefox_task = [bugtask for bugtask in bug_four.bugtasks
+    ...                 if bugtask.pillar.name == 'firefox'][0]
+    >>> print firefox_task.milestone
+    None
+    >>> submit_commands(bug_four, 'milestone 1.0')
+    >>> print firefox_task.milestone.name
+    1.0
+    >>> submit_commands(bug_four, 'milestone -')
+    >>> print firefox_task.milestone
+    None
+
+Trying to set a milestone that does not exist elicits a helpful error
+message:
+
+    >>> submit_commands(bug_four, 'milestone 1.1')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        milestone 1.1
+    ...
+    The milestone 1.1 does not exist for Mozilla Firefox. Note that
+    milestones are not automatically created from emails; they must be
+    created on the website.
+    ...
+
+Attempting to set the milestone for a bug without sufficient
+permissions also elicits an error message:
+
+    >>> login('test@canonical.com')
+    >>> bug = new_firefox_bug()
+    >>> transaction.commit()
+
+    >>> login('no-priv@canonical.com')
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.pillar.title
+    Mozilla Firefox
+    >>> print bug.bugtasks[0].milestone
+    None
+    >>> submit_commands(bug, 'milestone 1.0')
+    >>> print bug.bugtasks[0].milestone
+    None
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        milestone 1.0
+    ...
+    You do not have permission to set the milestone for Mozilla Firefox.
+    Only owners, drivers and bug contacts may assign milestones.
+    ...
+
+    >>> login('test@canonical.com')
 
 Like the web UI, we can assign a bug to nobody.
 
@@ -1651,7 +1713,7 @@ The first part is the error message, explaining what went wrong.
     <BLANKLINE>
     --
     For more information about using Malone by e-mail, see
-    https://help.launchpad.net/UsingMaloneEmail
+    https://help.launchpad.net/BugTrackerEmailInterface
 
 The second part is the message that the user sent, which caused the
 error to happen.

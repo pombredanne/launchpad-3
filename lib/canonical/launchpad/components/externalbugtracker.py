@@ -8,6 +8,7 @@ import cgi
 import csv
 import os.path
 import re
+import socket
 import urllib
 import urllib2
 import urlparse
@@ -28,13 +29,12 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugWatchSet, IDistribution,
-    IExternalBugtracker, ILaunchpadCelebrities, IPersonSet,
-    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugWatchSet,
+    IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
+    IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
-
 
 #
 # Exceptions caught in scripts/checkwatches.py
@@ -90,7 +90,6 @@ class InvalidBugId(Exception):
 class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
-
 #
 # Helper function
 #
@@ -111,6 +110,20 @@ def get_external_bugtracker(bugtracker, version=None):
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
 
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (socket.timeout, BugWatchErrorType.TIMEOUT)]
+
+def get_bugwatcherrortype_for_error(error):
+    """Return the correct `BugWatchErrorType` for a given error."""
+    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
+        if isinstance(error, exc_type):
+            return bugwatcherrortype
+    else:
+        return None
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
@@ -222,34 +235,63 @@ class ExternalBugTracker:
 
         # Do things in a fixed order, mainly to help with testing.
         bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-        self.initializeRemoteBugDB(bug_ids_to_update)
+
+        try:
+            self.initializeRemoteBugDB(bug_ids_to_update)
+        except Exception, error:
+            # If the error is one recognised by BugWatchErrorType we
+            # record it against all the bugwatches that should have been
+            # updated before re-raising it.
+            errortype = get_bugwatcherrortype_for_error(error)
+            if errortype:
+                for bugwatch in bug_watches:
+                    bugwatch.last_error_type = errortype
+            raise
 
         # Again, fixed order here to help with testing.
         for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
+                # XXX: 2007-10-17 Graham Binns
+                #      This nested set of try:excepts isn't really
+                #      necessary and can be refactored out when bug
+                #      136391 is dealt with.
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
-                except InvalidBugId, error:
+                    error = None
+                except InvalidBugId:
+                    error = BugWatchErrorType.INVALID_BUG_ID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
+                    error = BugWatchErrorType.BUG_NOT_FOUND
                     log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
-                new_malone_status = self.convertRemoteStatus(new_remote_status)
+                new_malone_status = self.convertRemoteStatus(
+                    new_remote_status)
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
-                    bug_watch.updateStatus(new_remote_status, new_malone_status)
+                    bug_watch.last_error_type = error
+                    bug_watch.updateStatus(new_remote_status,
+                        new_malone_status)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
-            except:
+            except Exception, error:
                 # If something unexpected goes wrong, we shouldn't break the
                 # updating of the other bugs.
+
+                # We record errors against the bug watches where
+                # possible.
+                errortype = get_bugwatcherrortype_for_error(error)
+                if errortype:
+                    for bugwatch in bug_watches:
+                        bugwatch.last_error_type = errortype
+
                 log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                           exc_info=True)

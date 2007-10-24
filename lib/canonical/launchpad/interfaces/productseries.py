@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ImportStatus',
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
@@ -33,6 +34,69 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class ImportStatus(DBEnumeratedType):
+    """This schema describes the states that a SourceSource record can take
+    on."""
+
+    DONTSYNC = DBItem(1, """
+        Do Not Import
+
+        Launchpad will not attempt to make a Bazaar import.
+        """)
+
+    TESTING = DBItem(2, """
+        Testing
+
+        Launchpad has not yet attempted this import. The vcs-imports operator
+        will review the source details and either mark the series \"Do not
+        sync\", or perform a test import. If the test import is successful, a
+        public import will be created. After the public import completes, it
+        will be updated automatically.
+        """)
+
+    TESTFAILED = DBItem(3, """
+        Test Failed
+
+        The test import has failed. We will do further tests, and plan to
+        complete this import eventually, but it may take a long time. For more
+        details, you can ask on the launchpad-users@canonical.com mailing list
+        or on IRC in the #launchpad channel on irc.freenode.net.
+        """)
+
+    AUTOTESTED = DBItem(4, """
+        Test Successful
+
+        The test import was successful. The vcs-imports operator will lock the
+        source details for this series and perform a public Bazaar import.
+        """)
+
+    PROCESSING = DBItem(5, """
+        Processing
+
+        The public Bazaar import is being created. When it is complete, a
+        Bazaar branch will be published and updated automatically. The source
+        details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
+
+    SYNCING = DBItem(6, """
+        Online
+
+        The Bazaar import is published and automatically updated to reflect the
+        upstream revision control system. The source details for this series
+        are locked and can only be modified by vcs-imports members and
+        Launchpad administrators.
+        """)
+
+    STOPPED = DBItem(7, """
+        Stopped
+
+        The Bazaar import has been suspended and is no longer updated. The
+        source details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
 
 class RevisionControlSystems(DBEnumeratedType):
@@ -155,11 +219,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     release_files = Attribute("An iterator over the release files in this "
         "Series, sorted with latest release first.")
 
-    potemplates = Attribute(
-        _("Return an iterator over this series' PO templates."))
-    currentpotemplates = Attribute(
-        _("Return an iterator over this series' PO templates that "
-          "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
     specifications = Attribute("The specifications targeted to this "
@@ -336,15 +395,15 @@ class IProductSeriesSourceAdmin(Interface):
     def markTestFailed():
         """Mark this import as TESTFAILED.
 
-        See `dbschema.ImportStatus` for what this means.  This method also
-        clears timestamps and other ancillary data.
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
         """
 
     def markDontSync():
         """Mark this import as DONTSYNC.
 
-        See `dbschema.ImportStatus` for what this means.  This method also
-        clears timestamps and other ancillary data.
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
         """
 
     def deleteImport():

@@ -165,7 +165,6 @@ class IBug(IMessageTarget, ICanBeMentored):
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -409,9 +408,6 @@ class IBugDelta(Interface):
         "IBug's")
 
     # other things linked to the bug
-    external_reference = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "IBugExternalRefs.")
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")

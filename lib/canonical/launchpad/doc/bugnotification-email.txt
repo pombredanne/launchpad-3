@@ -308,65 +308,12 @@ edited:
          Assignee: Sample Person (name12) => (unassigned)
     -----------------------------
 
-= Adding and editing web links =
-
-Adding a web link can be seen as "editing" a bug.
-
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import IBugExternalRef
-    >>> class MockBugExtRef:
-    ...     implements(IBugExternalRef)
-    ...     def __init__(self, bug, url, title, owner):
-    ...         self.bug = bug
-    ...         self.url = url
-    ...         self.title = title
-    ...         self.owner = owner
-    >>> mock_ext_ref = MockBugExtRef(
-    ...     bug = edited_bug,
-    ...     url = "http://www.example.com/foo/bar",
-    ...     title = "some title",
-    ...     owner = sample_person.id)
-
-    >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     external_reference = {'new': mock_ext_ref})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Web link added: http://www.example.com/foo/bar
-    -----------------------------
-
-Editing a web link shows the previous link as "Removed" and the newly
-modified link as having been "Added" (though no actual "adding" or
-"deleting" is actually taking place in the database.)
-
-    >>> mock_ext_ref_edited = MockBugExtRef(
-    ...     bug = edited_bug,
-    ...     url = "http://www.example.com/foo/bar",
-    ...     title = "some better title",
-    ...     owner = sample_person.id)
-
-    >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     external_reference = {
-    ...         'old' : mock_ext_ref, 'new': mock_ext_ref_edited})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Web link removed: http://www.example.com/foo/bar
-    -----------------------------
-    ** Web link added: http://www.example.com/foo/bar
-    -----------------------------
-
 = Adding and editing bug watches =
 
 Here's an example that demonstrates the notification email that gets
 generated when a bug watch is added:
 
+    >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IBugWatch, IBugTrackerSet
     >>> bugtrackerset = getUtility(IBugTrackerSet)
 

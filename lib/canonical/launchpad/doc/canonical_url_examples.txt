@@ -180,10 +180,8 @@ An IProductRelease.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroSeriesBugTask, IBugWatchSet,
-    ...     IBugExternalRefSet)
-    >>> from canonical.launchpad.database import (
-    ...     BugWatchSet, BugExternalRefSet)
+    ...     IDistroSeriesBugTask, IBugWatchSet)
+    >>> from canonical.launchpad.database import BugWatchSet
 
 The IBugSet.
 
@@ -264,15 +262,6 @@ An IBugWatchSet.
     xxx bug_one_watches = BugWatchSet(bug=1)
     xxx canonical_url(bug_one_watches)
     u'http://launchpad.dev/bugs/1/watches'
-
-An IBugExternalRefSet.
-
-    This doesn't work, because BugExternalRefSet.bug is an int, not an
-    IBug object.
-
-    xxx bug_one_extrefs = BugExternalRefSet(bug=1)
-    xxx canonical_url(bug_one_extrefs)
-    u'http://launchpad.dev/bugs/1/references'
 
 An IBugComment.
 

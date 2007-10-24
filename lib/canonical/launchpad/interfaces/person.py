@@ -6,7 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
-    'IAdminRequestPeopleMerge',
+    'IAdminPeopleMergeSchema',
+    'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
@@ -630,6 +631,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("Preferred Email Address"),
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
+        readonly=True)
+
+    safe_email_or_blank = TextLine(
+        title=_("Safe email for display"),
+        description=_("The person's preferred email if they have"
+                      "one and do not choose to hide it. Otherwise"
+                      "the empty string."),
         readonly=True)
 
     preferredemail_sha1 = TextLine(
@@ -1353,8 +1361,24 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person):
-        """Merge a person into another."""
+    def merge(from_person, to_person, deactivate_members=False, user=None):
+        """Merge a person/team into another.
+
+        The old person/team (from_person) will be left as an atavism.
+
+        When merging two person entries, from_person can't have email
+        addresses associated with.
+
+        When merging teams, from_person must have no IMailingLists
+        associated with and no active members. If it has active members,
+        though, it's possible to have them deactivated before the merge by
+        passing deactivate_members=True. In that case the user who's
+        performing the merge must be provided as well.
+
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops. -- StuartBishop 20050812
+        """
 
     def getTranslatorsByLanguage(language):
         """Return the list of translators for the given language.
@@ -1374,18 +1398,30 @@ class IRequestPeopleMerge(Interface):
         description=_("The duplicated account you found in Launchpad"))
 
 
-class IAdminRequestPeopleMerge(Interface):
-    """The schema used by admin merge accounts page."""
+class IAdminPeopleMergeSchema(Interface):
+    """The schema used by the admin merge people page."""
 
-    dupe_account = Choice(
-        title=_('Duplicated Account'), required=True,
+    dupe_person = Choice(
+        title=_('Duplicated Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account found in Launchpad"))
+        description=_("The duplicated person found in Launchpad."))
 
-    target_account = Choice(
-        title=_('Account'), required=True,
+    target_person = Choice(
+        title=_('Target Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The account to be merged on"))
+        description=_("The person to be merged on."))
+
+
+class IAdminTeamMergeSchema(Interface):
+    """The schema used by the admin merge teams page."""
+
+    dupe_person = Choice(
+        title=_('Duplicated Team'), required=True, vocabulary='ValidTeam',
+        description=_("The duplicated team found in Launchpad."))
+
+    target_person = Choice(
+        title=_('Target Team'), required=True, vocabulary='ValidTeam',
+        description=_("The team to be merged on."))
 
 
 class IObjectReassignment(Interface):

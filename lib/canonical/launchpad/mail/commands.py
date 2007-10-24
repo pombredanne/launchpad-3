@@ -26,6 +26,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import BugTaskImportance
@@ -699,6 +700,55 @@ class AssigneeEmailCommand(EditEmailCommand):
         context.transitionToAssignee(attr_value)
 
 
+class MilestoneEmailCommand(EditEmailCommand):
+    """Sets the milestone for the bugtask."""
+
+    implements(IBugTaskEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        user = getUtility(ILaunchBag).user
+        milestone_name = self.string_args[0]
+
+        if milestone_name == '-':
+            # Remove milestone
+            return {self.name: None}
+        elif self._userCanEditMilestone(user, context):
+            milestone = context.pillar.getMilestone(milestone_name)
+            if milestone is None:
+                raise EmailProcessingError(
+                    "The milestone %s does not exist for %s. Note that "
+                    "milestones are not automatically created from emails; "
+                    "they must be created on the website." % (
+                        milestone_name, context.pillar.title))
+            else:
+                return {self.name: milestone}
+        else:
+            raise EmailProcessingError(
+                "You do not have permission to set the milestone for %s. "
+                "Only owners, drivers and bug contacts may assign "
+                "milestones." % (context.pillar.title,))
+
+    def _userCanEditMilestone(self, user, bugtask):
+        """Can the user edit the Milestone field?"""
+        # Adapted from BugTaskEditView.userCanEditMilestone.
+
+        # XXX: GavinPanella 2007-10-18 bug=154088: Consider
+        # refactoring this method and the userCanEditMilestone method
+        # on BugTaskEditView into a new method on IBugTask. This is
+        # non-trivial because check_permission cannot be used in a
+        # database class.
+
+        pillar = bugtask.pillar
+        bugcontact = pillar.bugcontact
+        if user is not None and bugcontact is not None:
+            if user.inTeam(bugcontact):
+                return True
+        return check_permission("launchpad.Edit", pillar)
+
+
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
 
@@ -838,6 +888,7 @@ class EmailCommands:
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
+        'milestone': MilestoneEmailCommand,
         'status': StatusEmailCommand,
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,
