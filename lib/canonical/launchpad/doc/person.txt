@@ -204,11 +204,16 @@ teams.
     >>> print not_a_person.password
     None
 
-We can even add members to our new team!
+The team owner is also added as an administrator of its team.
+
+    >>> [member.name for member in not_a_person.adminmembers]
+    [u'ddaa']
+
+And we can even add other members to our new team!
 
     >>> not_a_person.addMember(lifeless, reviewer=ddaa)
     >>> [member.name for member in not_a_person.activemembers]
-    [u'lifeless']
+    [u'ddaa', u'lifeless']
 
 This functionality is only available for non-team Person entries whose
 account_status is NOACCOUNT, though.

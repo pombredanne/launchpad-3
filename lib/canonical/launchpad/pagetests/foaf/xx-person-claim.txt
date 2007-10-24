@@ -2,7 +2,6 @@
 Alexander Limi was browsing through Launchpad and found a page for
 himself, even though he has never used Launchpad.
 
-    >>> browser = setupBrowser()
     >>> browser.open('http://launchpad.dev/~limi')
     >>> browser.url
     'http://launchpad.dev/~limi'
@@ -31,41 +30,38 @@ given email address is not associated with that profile.
 
     >>> browser.getControl('Email address').value = 'non@existent.org'
     >>> browser.getControl('E-mail Me').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('div', 'message'):
-    ...     print tag.renderContents()
-    We couldn't find this email address. Please try another one that could
+    >>> for msg in get_feedback_messages(browser):
+    ...     msg
+    u'There is 1 error.'
+    u"We couldn't find this email address. Please try another one that could
     possibly be associated with this profile. Note that this profile's
     name (limi) was generated based on the email address it's associated
-    with.
+    with."
 
 Then he tries with Sample Person's email address.
 
     >>> browser.getControl('Email address').value = 'test@canonical.com'
     >>> browser.getControl('E-mail Me').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('div', 'message'):
-    ...     print tag.renderContents()
-    This email address is associated with yet another Launchpad profile,
+    >>> for msg in get_feedback_messages(browser):
+    ...     msg
+    u'There is 1 error.'
+    u"This email address is associated with yet another Launchpad profile,
     which you seem to have used at some point. If that's the case, you can
-    <a href="/people/+requestmerge?field.dupeaccount=limi">combine this
-    profile with the other one</a> (you'll have to log in with the other
-    profile first, though). If that's not the case, please try with a
-    different email address.
+    combine this profile with the other one (you'll have to log in with the
+    other profile first, though). If that's not the case, please try with a
+    different email address."
 
 And once again he tries with an email address he found in Launchpad, but
 this one is associated with an unvalidated profile.
 
     >>> browser.getControl('Email address').value = 'morten@wtf.dk'
     >>> browser.getControl('E-mail Me').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('div', 'message'):
-    ...     print tag.renderContents()
-    Although this email address is not associated with this profile, it's
-    associated with yet another one. You can <a
-    href="http://launchpad.dev/~morten/+claim">claim that other
-    profile</a> and then later <a href="/people/+requestmerge">combine</a>
-    both of them into a single one.
+    >>> for msg in get_feedback_messages(browser):
+    ...     msg
+    u'There is 1 error.'
+    u"Although this email address is not associated with this profile, it's
+    associated with yet another one. You can claim that other profile and
+    then later combine both of them into a single one."
 
 Now he finally remembered his email address.
 
@@ -92,10 +88,9 @@ Now he finally remembered his email address.
 
     >>> browser.url
     'http://launchpad.dev/~limi'
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('div', 'informational message'):
-    ...     print tag.renderContents()
-    Profile claimed successfully
+    >>> for msg in get_feedback_messages(browser):
+    ...     msg
+    u'Profile claimed successfully'
 
 
 It's also possible that a person tries to claim an account that has a
@@ -138,8 +133,7 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
 
     >>> anon_browser.url
     'http://launchpad.dev/~spiv'
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for tag in soup('div', 'informational message'):
-    ...     print tag.renderContents()
-    Profile claimed successfully
+    >>> for msg in get_feedback_messages(anon_browser):
+    ...     msg
+    u'Profile claimed successfully'
 

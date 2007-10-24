@@ -742,6 +742,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def convertToTeam(team_owner):
         """Convert this person into a team owned by the given team_owner.
 
+        Also adds the given team owner as an administrator of the team.
+
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
         """

@@ -213,6 +213,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self.creation_rationale = None
         self.teamowner = team_owner
         alsoProvides(self, ITeam)
+        self.addMember(
+            team_owner, reviewer=team_owner, status=TeamMembershipStatus.ADMIN)
 
     # specification-related joins
     @property

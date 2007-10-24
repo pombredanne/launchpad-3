@@ -11,6 +11,8 @@ style widget) "speaks", i.e., its allowed values.
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> person_set = getUtility(IPersonSet)
+    >>> product_set = getUtility(IProductSet)
     >>> login('foo.bar@canonical.com')
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> launchbag.clear()
@@ -140,7 +142,7 @@ All the distributions that use Malone as their main bug tracker.
 
 All the teams the person is an active member of.
 
-    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> foo_bar = person_set.getByEmail('foo.bar@canonical.com')
     >>> person_active_membership = vocabulary_registry.get(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
@@ -156,10 +158,10 @@ All the teams the person is an active member of.
     ubuntu-team Ubuntu Team Ubuntu Team
     vcs-imports VCS imports VCS imports
 
-    >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
+    >>> launchpad_team = person_set.getByName('launchpad')
     >>> launchpad_team in person_active_membership
     True
-    >>> mirrors_admins = getUtility(IPersonSet).getByName('mirrors-admins')
+    >>> mirrors_admins = person_set.getByName('mirrors-admins')
     >>> mirrors_admins in person_active_membership
     False
 
@@ -190,7 +192,7 @@ All the teams the person is an active member of.
 This vocabulary contains all the teams a person participates in. Either
 through direct or indirect participations.
 
-    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person = person_set.getByName('name12')
     >>> [membership.team.name
     ...  for membership in sample_person.myactivememberships]
     [u'landscape-developers', u'name20']
@@ -226,8 +228,7 @@ vocabulary.
 If the context is a product, only the product's milestones are in the
 vocabulary.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox = product_set.getByName('firefox')
     >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
     >>> for term in firefox_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -746,8 +747,8 @@ product.
 
     >>> from canonical.launchpad.interfaces import IBranchSet
 
-    >>> firefox = getUtility(IProductSet)["firefox"]
-    >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
+    >>> firefox = product_set["firefox"]
+    >>> gnome_terminal = product_set["gnome-terminal"]
 
     >>> branch_vocabulary = vocabulary_registry.get(firefox, "Branch")
 
@@ -907,7 +908,7 @@ The ProductVocabulary does not list inactive products.
     >>> arch.value in product_vocabulary
     True
 
-    >>> arch_product = getUtility(IProductSet)['arch-mirrors']
+    >>> arch_product = product_set['arch-mirrors']
     >>> arch_product in product_vocabulary
     True
 
@@ -990,7 +991,7 @@ anything, as we only match against the beginning of an email address.
 A person with a single and unvalidated email address can be merged.
 
     >>> from canonical.launchpad.interfaces import PersonCreationRationale
-    >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
+    >>> fooperson, email = person_set.createPersonAndEmail(
     ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
     ...     name='foobaz', displayname='foo baz')
     >>> fooperson in vocab
@@ -1004,7 +1005,7 @@ But any person without a single email address can't.
 
 Any person that's already merged is not part of this vocabulary:
 
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov = person_set.getByName('cprov')
     >>> cprov in vocab
     True
 
@@ -1189,9 +1190,9 @@ text to match against the team name.  Still, you only get teams back.
 With the exception of all teams that have this team as a member and the
 team itself, all valid persons and teams are valid members.
 
-    >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> team2 = getUtility(IPersonSet).getByName('guadamen')
-    >>> person = getUtility(IPersonSet).getByName('name16')
+    >>> team = person_set.getByName('ubuntu-team')
+    >>> team2 = person_set.getByName('guadamen')
+    >>> person = person_set.getByName('name16')
 
 ValidTeamMember needs a context:
 
@@ -1246,10 +1247,13 @@ ValidTeamOwner needs a context.
     ...
     AssertionError: ...
 
-ValidTeamOwner's context must be a team.
+ValidTeamOwner's context must provide IPerson or IPersonSet.
 
-    >>> person = getUtility(IPersonSet).getByName('name16')
-    >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
+    >>> vocabulary_registry.get(team, "ValidTeamOwner")
+    <...ValidTeamOwnerVocabulary...
+    >>> vocabulary_registry.get(person_set, "ValidTeamOwner")
+    <...ValidTeamOwnerVocabulary...
+    >>> vocabulary_registry.get(firefox, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
     AssertionError: ...
@@ -1318,7 +1322,7 @@ Inactive projects and project groups are not available.
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
     Tomcat (Product) - class Product
-    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat = product_set.getByName('tomcat')
     >>> tomcat in vocab
     True
     >>> tomcat.active = False
@@ -1354,7 +1358,7 @@ heterogeneous.
 Inactive projects and project groups are not available.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat = product_set.getByName('tomcat')
     >>> tomcat in vocab
     True
     >>> tomcat.active = False
@@ -1377,7 +1381,7 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    >>> getUtility(IProductSet).getByName('tomcat').active = True
+    >>> product_set.getByName('tomcat').active = True
     >>> getUtility(IProjectSet).getByName('apache').active = True
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
@@ -1478,8 +1482,8 @@ context blueprint.
 First, we set up a product with three blueprints.
 
     >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> foobar_person = getUtility(IPersonSet).getByName('name16')
+    >>> evolution = product_set.getByName('evolution')
+    >>> foobar_person = person_set.getByName('name16')
     >>> foobar_person.displayname
     u'Foo Bar'
     >>> specset = getUtility(ISpecificationSet)

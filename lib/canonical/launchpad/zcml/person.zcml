@@ -105,6 +105,14 @@
   </browser:editform>
 
   <browser:page
+    name="+claimteam"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BeginTeamClaimView"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-claim-team.pt"
+    />
+
+  <browser:page
     name="+claim"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonClaimView"

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AdminRequestPeopleMergeView',
     'BaseListView',
+    'BeginTeamClaimView',
     'BugContactPackageBugsSearchListingView',
     'FinishedPeopleMergeRequestView',
     'FOAFSearchView',
@@ -116,19 +117,19 @@ from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, ICountry,
-    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
-    ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminRequestPeopleMerge,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
-    GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
-    IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
-    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
-    PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation)
+    AccountStatus, ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ICountry, IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet,
+    IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler,
+    UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
+    ITeamReassignment, IPollSubset, IPerson, ICalendarOwner, ITeam, IPollSet,
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
+    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
+    ILanguageSet, INewPerson, IRequestPreferredLanguages, IPersonClaim,
+    IPOTemplateSet, BugTaskStatus, BugTaskSearchParams, IBranchSet,
+    ITeamMembership, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType,
+    SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
+    TeamSubscriptionPolicy, PersonCreationRationale,
+    TeamMembershipRenewalPolicy, QuestionParticipation)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -1211,6 +1212,32 @@ class PersonClaimView(LaunchpadFormView):
             "for up to an hour or two.)"), email=email)
 
 
+class BeginTeamClaimView(PersonClaimView):
+    """Where you can claim an unvalidated profile turning it into a team.
+
+    This is actually just the first step, where you enter the email address
+    of the team and we email further instructions to that address.
+    """
+
+    schema = IPersonClaim
+
+    @action(_("Continue"), name="confirm")
+    def confirm_action(self, action, data):
+        email = data['emailaddress']
+        token = getUtility(ILoginTokenSet).new(
+            requester=self.user, requesteremail=None, email=email,
+            tokentype=LoginTokenType.TEAMCLAIM)
+        token.sendClaimTeamEmail()
+        self.request.response.addInfoNotification(_(
+            "A confirmation message has been sent to '%(email)s'. "
+            "Follow the instructions in that message to finish claiming this "
+            "team. "
+            "(If the above address is from a mailing list, it may be "
+            "necessary to talk with one of its admins to accept the message "
+            "from Launchpad so that you can finish the process.)"),
+            email=email)
+
+
 class RedirectToEditLanguagesView(LaunchpadView):
     """Redirect the logged in user to his +editlanguages page.
 
@@ -1764,6 +1791,25 @@ class PersonView(LaunchpadView):
         for contrib in self.contributions:
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
+
+    @cachedproperty
+    def context_is_probably_a_team(self):
+        """Return True if we have any indication that context is a team.
+
+        For now, all we do is check whether or not any email associated with
+        our context contains the '@lists.' string as that's a very good
+        indication this is a team which was automatically created.
+
+        This can only be used when the context is an automatically created
+        profile (account_status == NOACCOUNT).
+        """
+        assert self.context.account_status == AccountStatus.NOACCOUNT, (
+            "This can only be used when the context has no account.")
+        emails = getUtility(IEmailAddressSet).getByPerson(self.context)
+        for email in emails:
+            if '@lists.' in email.email:
+                return True
+        return False
 
     @property
     def subscription_policy_description(self):
