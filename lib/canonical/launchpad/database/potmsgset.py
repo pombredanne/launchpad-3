@@ -94,7 +94,28 @@ class POTMsgSet(SQLBase):
 
     def getExternalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        pass
+        return TranslationMessage.select(
+            """id in (
+              SELECT DISTINCT ON (msgstr0) TranslationMessage.id
+                 FROM TranslationMessage
+                 LEFT JOIN POTMsgSet ON
+                   TranslationMessage.potmsgset = POTMsgSet.id
+                 LEFT JOIN POFile ON
+                   POFile.potemplate = POTMsgSet.potemplate
+                 WHERE
+                   is_current IS TRUE AND
+                   -- Fuzzy are not really 'used in'
+                   is_fuzzy IS NOT TRUE AND
+                   -- Exclude ourselves
+                   potmsgset != %s AND
+                   POTMsgSet.msgid_singular=%s AND
+                   POFile.language = %s AND
+                   -- Exclude untranslated (deactivation) messages
+                   (msgstr0 IS NOT NULL AND msgstr1 IS NOT NULL AND
+                    msgstr2 IS NOT NULL AND msgstr3 IS NOT NULL)
+                 ORDER BY TranslationMessage.date_created DESC
+              )""" %
+            sqlvalues(self, self.msgid_singular, language))
 
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""
