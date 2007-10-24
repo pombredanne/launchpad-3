@@ -192,26 +192,14 @@ class IPOFile(IRosettaStats):
         Raise NotFoundError if it does not exist.
         """
 
-    def getPOTMsgSetTranslated(slice=None):
-        """Get pot message sets that are translated in this PO file.
+    def getPOTMsgSetTranslated():
+        """Get pot messages that are translated for this translation file."""
 
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
+    def getPOTMsgSetFuzzy():
+        """Get pot message sets with a translation that must be checked."""
 
-    def getPOTMsgSetFuzzy(slice=None):
-        """Get pot message sets that have POMsgSet.fuzzy set in this PO file.
-
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
-
-    def getPOTMsgSetUntranslated(slice=None):
-        """Get pot message sets that are untranslated in this PO file.
-
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
+    def getPOTMsgSetUntranslated():
+        """Get pot message sets that are untranslated for this file."""
 
     def getPOTMsgSetWithNewSuggestions():
         """Get pot message sets with suggestions submitted after last review.

@@ -275,10 +275,6 @@ class POFile(SQLBase, POFileMixIn):
                                 default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    last_touched_pomsgset = ForeignKey(
-        foreignKey='POMsgSet', dbName='last_touched_pomsgset',
-        notNull=False, default=None)
-
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
 
@@ -471,72 +467,61 @@ class POFile(SQLBase, POFileMixIn):
             orderBy='sequence',
             clauseTables = ['POTMsgSet']))
 
-    def getPOTMsgSetTranslated(self, slice=None):
+    def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        # A POT set is translated only if the PO message set has
-        # POMsgSet.iscomplete = TRUE.
-        results = POTMsgSet.select('''
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence > 0 AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POMsgSet.pofile = %s AND
-            POMsgSet.isfuzzy = FALSE AND
-            POMsgSet.iscomplete = TRUE
-            ''' % sqlvalues(self.potemplate.id, self.id),
-            clauseTables=['POMsgSet'],
+        query = ['POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate)]
+        query.append('POTMsgSet.sequence > 0')
+        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
+        query.append('TranslationMessage.pofile = %s' % sqlvalues(self))
+        query.append('NOT TranslationMessage.is_fuzzy')
+        for plural_form in range(self.language.pluralforms):
+            query.append(
+                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
+
+        return POTMsgSet.select(
+            ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
 
-        if slice is not None:
-            results = results[slice]
-
-        return results
-
-    def getPOTMsgSetFuzzy(self, slice=None):
+    def getPOTMsgSetFuzzy(self):
         """See `IPOFile`."""
-        results = POTMsgSet.select('''
+        return POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POMsgSet.pofile = %s AND
-            POMsgSet.isfuzzy = TRUE
-            ''' % sqlvalues(self.potemplate.id, self.id),
-            clauseTables=['POMsgSet'],
-            orderBy='POTmsgSet.sequence')
+            TranslationMessage.potmsgset = POTMsgSet.id AND
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.is_fuzzy
+            ''' % sqlvalues(self.potemplate, self),
+            clauseTables=['TranslationMessage'], orderBy='POTmsgSet.sequence')
 
-        if slice is not None:
-            results = results[slice]
-
-        return results
-
-    def getPOTMsgSetUntranslated(self, slice=None):
+    def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
-        # A POT set is not translated if the PO message set have
-        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
-        #
-        # Use a subselect to allow the LEFT OUTER JOIN
+        incomplete_check = []
+        for plural_form in range(self.language.pluralforms):
+            incomplete_check.append(
+                'TranslationMessage.msgstr%d IS NULL' % plural_form)
+
+        # We use a subselect to allow the LEFT OUTER JOIN
         query = """POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
-            LEFT OUTER JOIN POMsgSet ON
-                POTMsgSet.id = POMsgSet.potmsgset AND
-                POMsgSet.pofile = %s
+            LEFT OUTER JOIN TranslationMessage ON
+                TranslationMessage.potmsgset = POTMsgSet.id AND
+                TranslationMessage.pofile = %s AND
+                TranslationMessage.is_current IS TRUE
             WHERE
-                 ((POMsgSet.isfuzzy = FALSE AND POMsgSet.iscomplete = FALSE) OR
-                  POMsgSet.id IS NULL) AND
-                 POTMsgSet.sequence > 0 AND
-                 POTMsgSet.potemplate = %s
-            ORDER BY POTMsgSet.sequence)""" % sqlvalues(self.id, self.potemplate.id)
-        results = POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
-
-        if slice is not None:
-            results = results[slice]
-
-        return results
+                POTMsgSet.sequence > 0 AND
+                POTMsgSet.potemplate = %s AND
+                (TranslationMessage.id IS NULL OR
+                 (NOT TranslationMessage.is_fuzzy AND (%s))))
+            """ % tuple(
+                sqlvalues(self, self.potemplate) +
+                (' OR '.join(incomplete_check),))
+        return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
-        # A POT set has "new" suggestions if there is a POMsgSet with
-        # submissions after active translation was reviewed
+        # A POT set has "new" suggestions if there is a non current
+        # TranslationMessage newer than the current reviewed one.
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
@@ -605,11 +590,11 @@ class POFile(SQLBase, POFileMixIn):
 
     def hasMessageID(self, messageID):
         """See `IPOFile`."""
-        results = POMsgSet.select('''
-            POMsgSet.pofile = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d''' % (self.id, messageID.id))
-        return results.count() > 0
+        return TranslationMessage.select("""
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.potmsgset = POTMsgSet.id AND
+            POTMsgSet.msgid_singular = %s""" % sqlvalues(
+                self, messageID)).count() > 0
 
     def messageCount(self):
         """See `IRosettaStats`."""
@@ -634,11 +619,13 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def fuzzy_count(self):
         """See `IPOFile`."""
-        return POMsgSet.select("""
-            pofile = %s AND
-            isfuzzy IS TRUE AND
-            sequence > 0
-            """ % sqlvalues(self.id)).count()
+        return TranslationMessage.select("""
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.is_fuzzy AND
+            TranslationMessage.is_current AND
+            TranslationMessage.potmsgset = POTMsgSet.id AND
+            POTMsgSet.sequence > 0
+            """ % sqlvalues(self), clauseTables=['POTMsgSet']).count()
 
     def expireAllMessages(self):
         """See `IPOFile`."""
@@ -653,76 +640,68 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
-    def updateStatistics(self, tested=False):
+    def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
         flush_database_updates()
-        current = POMsgSet.select('''
-            POMsgSet.pofile = %d AND
-            POMsgSet.sequence > 0 AND
-            POMsgSet.publishedfuzzy = FALSE AND
-            POMsgSet.publishedcomplete = TRUE AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.sequence > 0
-            ''' % self.id, clauseTables=['POTMsgSet']).count()
 
-        updates = POMsgSet.select('''
-            POMsgSet.pofile = %s AND
-            POMsgSet.sequence > 0 AND
-            POMsgSet.isfuzzy = FALSE AND
-            POMsgSet.iscomplete = TRUE AND
-            POMsgSet.publishedfuzzy = FALSE AND
-            POMsgSet.publishedcomplete = TRUE AND
-            POMsgSet.isupdated = TRUE AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.sequence > 0
-            ''' % sqlvalues(self.id),
-            clauseTables=['POTMsgSet']).count()
+        # Get the number of translations that we got from imports.
+        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
+        query.append('TranslationMessage.is_imported')
+        query.append('NOT TranslationMessage.was_fuzzy_in_last_import')
+        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
+        query.append('POTMsgSet.sequence > 0')
+        for plural_form in range(self.language.pluralforms):
+            query.append(
+                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
 
-        if tested:
-            updates_from_first_principles = POMsgSet.select('''
-                POMsgSet.pofile = %s AND
-                POMsgSet.sequence > 0 AND
-                POMsgSet.isfuzzy = FALSE AND
-                POMsgSet.iscomplete = TRUE AND
-                POMsgSet.publishedfuzzy = FALSE AND
-                POMsgSet.publishedcomplete = TRUE AND
-                POMsgSet.potmsgset = POTMsgSet.id AND
-                POTMsgSet.sequence > 0 AND
-                active_submission.pomsgset = POMsgSet.id AND
-                active_submission.active IS TRUE AND
-                published_submission.pomsgset = POMsgSet.id AND
-                published_submission.published IS TRUE AND
-                active_submission.pluralform = published_submission.pluralform
-                AND
-                active_submission.datecreated > published_submission.datecreated
-                ''' % sqlvalues(self.id),
-                clauseTables=['POTMsgSet',
-                              'POSubmission AS active_submission',
-                              'POSubmission AS published_submission']).count()
-            if updates != updates_from_first_principles:
-                raise AssertionError('Failure in update statistics.')
+        current = TranslationMessage.select(
+            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
 
-        rosetta = POMsgSet.select('''
-            POMsgSet.pofile = %d AND
-            POMsgSet.isfuzzy = FALSE AND
-            POMsgSet.iscomplete = TRUE AND
-            ( POMsgSet.sequence < 1 OR
-              POMsgSet.publishedcomplete = FALSE OR
-              POMsgSet.publishedfuzzy=TRUE ) AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.sequence > 0
-            ''' % self.id,
-            clauseTables=['POTMsgSet']).count()
+        # Get the number of translations that we have updated from what we got
+        # from imports.
+        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
+        query.append('TranslationMessage.is_imported')
+        query.append('NOT TranslationMessage.is_current')
+        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
+        query.append('POTMsgSet.sequence > 0')
+        updates = TranslationMessage.select(
+            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
 
-        unreviewed = POMsgSet.select('''
-            POMsgSet.pofile = %s AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            (POSubmission.datecreated > POMsgSet.date_reviewed OR
-             (POMsgSet.date_reviewed IS NULL AND
-              POSubmission.active IS NOT TRUE))
-            ''' % sqlvalues(self),
-            clauseTables=['POSubmission']).count()
+        # Get the number of new translations in Launchpad that imported ones
+        # were not translated.
+
+        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
+        query.append('NOT TranslationMessage.is_fuzzy')
+        for plural_form in range(self.language.pluralforms):
+            query.append(
+                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
+        query.append('''NOT EXISTS (
+            SELECT TranslationMessage.id
+            FROM TranslationMessage AS imported
+            WHERE
+                imported.potmsgset = TranslationMessage.potmsgset AND
+                imported.pofile = TranslationMessage.pofile AND
+                imported.is_imported IS TRUE''')
+        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
+        query.append('POTMsgSet.sequence > 0')
+        rosetta = TranslationMessage.select(
+            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+
+        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
+        query = ['NOT TranslationMessage.is_current']
+        query.append('''EXISTS (
+            SELECT TranslationMessage.id
+            FROM TranslationMessage AS current
+            WHERE
+                current.potmsgset = TranslationMessage.potmsgset AND
+                current.pofile = TranslationMessage.pofile AND
+                current.is_current IS TRUE AND
+                (current.date_reviewed IS NULL OR
+                 current.date_reviewed < TranslationMessage.date_created)
+            ''')
+        unreviewed = TranslationMessage.select(
+            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
 
         self.currentcount = current
         self.updatescount = updates
@@ -1495,7 +1474,7 @@ class POFileToTranslationFileDataAdapter:
             # file. (Messages which are in the PO template but not in the PO
             # file are untranslated, and messages which are not in the PO
             # template but in the PO file are obsolete.)
-            if row.potsequence == 0 and not row.was_in_last_import:
+            if row.potsequence == 0 and not row.is_imported:
                 continue
 
             # Create new message set

@@ -317,10 +317,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getPOFileByPath(self, path):
         """See `IPOTemplate`."""
-        return POFile.selectOne("""
-            POFile.potemplate = %s AND
-            POFile.path = %s
-            """ % sqlvalues(self.id, path))
+        return POFile.selectOneBy(potemplate=self, path=path)
 
     def getPOFileByLang(self, language_code, variant=None):
         """See `IPOTemplate`."""
@@ -739,9 +736,9 @@ class POTemplateSubset:
             titlestr += self.productseries.displayname
         return titlestr
 
-    def new(self, potemplatename, path, owner):
+    def new(self, name, path, owner):
         """See `IPOTemplateSubset`."""
-        return POTemplate(potemplatename=potemplatename,
+        return POTemplate(name=name,
                           sourcepackagename=self.sourcepackagename,
                           distroseries=self.distroseries,
                           productseries=self.productseries,
@@ -752,10 +749,7 @@ class POTemplateSubset:
         """See `IPOTemplateSubset`."""
         queries = [self.query]
         clausetables = list(self.clausetables)
-
-        queries.append('POTemplate.potemplatename = POTemplateName.id')
-        queries.append('POTemplateName.name = %s' % sqlvalues(name))
-        clausetables.append('POTemplateName')
+        queries.append('POTemplate.name = %s' % sqlvalues(name))
 
         return POTemplate.selectOne(' AND '.join(queries),
             clauseTables=clausetables)
@@ -765,10 +759,8 @@ class POTemplateSubset:
         queries = [self.query]
         clausetables = list(self.clausetables)
 
-        queries.append('POTemplate.potemplatename = POTemplateName.id')
-        queries.append('POTemplateName.translationdomain = %s' %
-            sqlvalues(translation_domain))
-        clausetables.append('POTemplateName')
+        queries.append('POTemplate.translation_domain = %s' % sqlvalues(
+            translation_domain))
 
         return POTemplate.selectOne(' AND '.join(queries),
             clauseTables=clausetables)
@@ -833,17 +825,12 @@ class POTemplateSet:
         """See `IPOTemplateSet`."""
         values = ",".join(sqlvalues(*ids))
         return POTemplate.select("POTemplate.id in (%s)" % values,
-            prejoins=["potemplatename", "productseries",
-                      "distroseries", "sourcepackagename"],
+            prejoins=["productseries", "distroseries", "sourcepackagename"],
             orderBy=["POTemplate.id"])
 
     def getAllByName(self, name):
         """See `IPOTemplateSet`."""
-        return helpers.shortlist(POTemplate.select(
-            'POTemplate.potemplatename = POTemplateName.id AND'
-            ' POTemplateName.name = %s' % sqlvalues(name),
-            clauseTables=['POTemplateName'],
-            orderBy=['POTemplateName.name', 'POTemplate.id']))
+        return POTemplate.selectBy(name=name, orderBy=['name', 'id'])
 
     def getAllOrderByDateLastUpdated(self):
         """See `IPOTemplateSet`."""
@@ -926,7 +913,7 @@ class POTemplateToTranslationFileDataAdapter:
     @cachedproperty
     def translation_domain(self):
         """See `ITranslationFileData`."""
-        return self._potemplate.potemplatename.translationdomain
+        return self._potemplate.translation_domain
 
     @property
     def is_template(self):

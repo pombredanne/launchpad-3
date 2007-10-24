@@ -11,8 +11,6 @@ Test that the security setup for IPOTemplateSet is working
 This method will return all IPOTemplate that have a given name.
 
   >>> evolution_templates = potemplate_set.getAllByName('evolution-2.2')
-  >>> len(evolution_templates)
-  2
   >>> titles = [potemplate.title
   ...           for potemplate in evolution_templates
   ...          ]
