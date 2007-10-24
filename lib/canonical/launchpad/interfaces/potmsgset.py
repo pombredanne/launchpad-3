@@ -1,8 +1,9 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Field, Int
+from zope.schema import Text, Object
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IPOMsgID
 
 __metaclass__ = type
 
@@ -18,7 +19,7 @@ class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
     id = Attribute("""An identifier for this POTMsgSet""")
-    context = Text(
+    context = Attribute(
         "String used to disambiguate messages with identical msgids.")
 
     msgid_singular = Object(
@@ -31,9 +32,9 @@ class IPOTMsgSet(Interface):
 
     msgid_plural = Object(
         title=u"The plural msgid for this message.",
-        described=(u"Provides a plural msgid for the message. "
-                   u"If it's not a plural form message, this value"
-                   u"should be None."),
+        description=(u"Provides a plural msgid for the message. "
+                     u"If it's not a plural form message, this value"
+                     u"should be None."),
         required=True,
         readonly=True,
         schema=IPOMsgID)
