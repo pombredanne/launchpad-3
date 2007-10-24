@@ -7,6 +7,10 @@ __metaclass__ = type
 __all__ = ('IVPOTExportSet', 'IVPOTExport')
 
 from zope.interface import Interface, Attribute
+from zope.schema import Int, Text
+
+from canonical.launchpad import _
+
 
 class IVPOTExportSet(Interface):
     """A collection of IVPOTExport-providing rows."""
@@ -18,8 +22,13 @@ class IVPOTExportSet(Interface):
 class IVPOTExport(Interface):
     """Database view for efficient POT exports."""
 
-    name = Attribute("See IPOTemplateName.name")
-    translationdomain = Attribute("See IPOTemplateName.translationdomain")
+    name = Text(
+        title=u"See `IPOTemplate`.name",
+        required=True, readonly=True)
+
+    translation_domain = Text(
+        title=u"See `IPOTemplate`.translationdomain",
+        required=True, readonly=True)
 
     potemplate = Attribute("See IPOTemplate")
     distroseries = Attribute("See IPOTemplate.distroseries")
@@ -28,16 +37,36 @@ class IVPOTExport(Interface):
     header = Attribute("See IPOTemplate.header")
     languagepack = Attribute("See IPOTemplate.languagepack")
 
-    potmsgset = Attribute("See IPOTMsgSet.id")
-    sequence = Attribute("See IPOTMsgSet.sequence")
-    commenttext = Attribute("See IPOTMsgSet.commenttext")
-    sourcecomment = Attribute("See IPOTMsgSet.sourcecomment")
-    flagscomment = Attribute("See IPOTMsgSet.flagscomment")
-    filereferences = Attribute("See IPOTMsgSet.filereferences")
+    potmsgset = Attribute(_("See `IPOTMsgSet.id`"))
 
-    commenttext = Attribute("See IPOMsgSet.commenttext")
+    sequence = Int(
+        title=u"See `IPOTMsgSet`.sequence",
+        required=False, readonly=True)
 
-    pluralform = Attribute("See IPOMsgIDSighting.pluralform")
+    comment_text = Text(
+        title=u"See `IPOTMsgSet`.commenttext",
+        required=False, readonly=True)
 
-    context = Attribute("See IPOTMsgSet.context")
-    msgid = Attribute("See IPOMsgID.pomsgid")
+    source_comment = Text(
+        title=u"See `IPOTMsgSet`.sourcecomment",
+        required=False, readonly=True)
+
+    flags_comment = Text(
+        title=u"See `IPOTMsgSet`.flagscomment",
+        required=False, readonly=True)
+
+    file_references = Text(
+        title=u"See `IPOTMsgSet.filereferences`",
+        required=False, readonly=True)
+
+    comment_text = Text(
+        title=u"See `ITranslationMessage.commenttext`",
+        required=False, readonly=True)
+
+    context = Text(
+        title=u"See `IPOTMsgSet`.context",
+        required=False, readonly=True)
+
+    msgid_singular = Attribute(_("See `IPOMsgID.pomsgid`"))
+    msgid_plural = Attribute(_("See `IPOMsgID.pomsgid`"))
+

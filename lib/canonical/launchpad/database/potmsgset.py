@@ -57,7 +57,10 @@ class POTMsgSet(SQLBase):
     @property
     def plural_text(self):
         """See `IPOTMsgSet`."""
-        return self.msgid_plural.msgid
+        if self.msgid_plural is None:
+            return None
+        else:
+            return self.msgid_plural.msgid
 
     def getCurrentTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
@@ -231,9 +234,9 @@ class POTMsgSet(SQLBase):
                      pofile.canEditTranslations(submitter))
 
         assert (is_imported or is_editor or
-                pofile.canAddSuggestions(submitter)),
-            ('%s cannot add translations nor can add suggestions' % (
-                submitter.displayname))
+                pofile.canAddSuggestions(submitter)), (
+                  '%s cannot add translations nor can add suggestions' % (
+                    submitter.displayname))
 
         # It makes no sense to have an "is_imported" submission from someone
         # who is not an editor, so assert that.
@@ -361,8 +364,6 @@ class POTMsgSet(SQLBase):
                     matching_message.reviewer = submitter
                     matching_message.date_reviewed = UTC_NOW
 
-
-
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
 
@@ -374,8 +375,6 @@ class POTMsgSet(SQLBase):
         new_text = self.normalizeWhitespaces(new_text)
         # Also, if it's an empty string, replace it with None.
         # XXX: Until we figure out ResettingTranslations
-            if newtran == '':
-                newtran = None
         if new_text == '':
             new_text = None
 

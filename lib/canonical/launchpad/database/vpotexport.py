@@ -22,13 +22,13 @@ class VPOTExportSet:
         'potemplate',
         'sequence',
         'header',
-        'pluralform',
         'context',
-        'msgid',
-        'commenttext',
-        'sourcecomment',
-        'filereferences',
-        'flagscomment',
+        'msgid_singular',
+        'msgid_plural',
+        'comment_text',
+        'source_comment',
+        'file_references',
+        'flags_comment',
     ]
     columns = ', '.join(['POTExport.' + name for name in column_names])
 
@@ -36,7 +36,6 @@ class VPOTExportSet:
         'potemplate',
         'sequence',
         'potmsgset',
-        'pluralform',
     ]
     sort_columns = ', '.join(
         ['POTExport.' + name for name in sort_column_names])
@@ -81,13 +80,13 @@ class VPOTExport:
         (potemplate,
          self.sequence,
          self.header,
-         self.pluralform,
          self.context,
-         self.msgid,
-         self.commenttext,
-         self.sourcecomment,
-         self.filereferences,
-         self.flagscomment) = args
+         self.msgid_singular,
+         self.msgid_plural,
+         self.comment_text,
+         self.source_comment,
+         self.file_references,
+         self.flags_comment) = args
 
         self.potemplate = POTemplate.get(potemplate)
 

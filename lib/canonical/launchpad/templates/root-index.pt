@@ -104,10 +104,23 @@
           </ul>
         </div>
     </div><!--main-->
-    <p metal:fill-slot="help">
+    <div metal:fill-slot="help">
+      <p>
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
-    </p>
+      </p>
+      <p>
+      You can browse our dedicated help site, <a
+      href="https://help.launchpad.net/">help.launchpad.net</a>, for a
+      complete set of documents about Launchpad 
+      </p>
+      <p>
+      You can also find help on the <a
+      href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
+      users mailing list</a> or online via IRC, on <a
+      href="http://freenode.net/">Freenode</a>, channel #launchpad.
+      </p>
+    </div>
   </body>
 </html>
 <!-- 1-0 inprogress Needs images and marketing material -->

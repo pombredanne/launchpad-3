@@ -276,8 +276,14 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
 
-        Additionally, we only auto-approve if the distroseries is not FROZEN.
+        PPA uploads are always auto-approved.
+        Other uploads (to main archives) are only auto-approved if the
+        distroseries is not FROZEN (note that we already performed the
+        IDistroSeries.canUploadToPocket check in the checkUpload base method).
         """
+        if upload.is_ppa:
+            return True
+
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distroseries.status !=
                 DistroSeriesStatus.FROZEN):

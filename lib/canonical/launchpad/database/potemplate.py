@@ -7,7 +7,7 @@ __all__ = [
     'POTemplate',
     'POTemplateSet',
     'POTemplateSubset',
-    'POTemplateToTranslationFileAdapter',
+    'POTemplateToTranslationFileDataAdapter',
     ]
 
 import datetime
@@ -36,13 +36,13 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    ITranslationExporter, ITranslationFile, ITranslationImporter,
+    ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationConstants, TranslationFileFormat,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -408,7 +408,7 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        template_file = ITranslationFile(self)
+        template_file = ITranslationFileData(self)
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
 
@@ -427,10 +427,10 @@ class POTemplate(SQLBase, RosettaStats):
                 self.source_file_format))
 
         translation_files = [
-            ITranslationFile(pofile)
+            ITranslationFileData(pofile)
             for pofile in self.pofiles
             ]
-        translation_files.append(ITranslationFile(self))
+        translation_files.append(ITranslationFileData(self))
         return translation_format_exporter.exportTranslationFiles(
             translation_files)
 
@@ -910,9 +910,9 @@ class POTemplateSet:
                 ' not None.')
 
 
-class POTemplateToTranslationFileAdapter:
-    """Adapter from `IPOTemplate` to `ITranslationFile`."""
-    implements(ITranslationFile)
+class POTemplateToTranslationFileDataAdapter:
+    """Adapter from `IPOTemplate` to `ITranslationFileData`."""
+    implements(ITranslationFileData)
 
     def __init__(self, potemplate):
         self._potemplate = potemplate
@@ -920,17 +920,17 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def path(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.path
 
     @cachedproperty
     def translation_domain(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.potemplatename.translationdomain
 
     @property
     def is_template(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return True
 
     @property
@@ -940,20 +940,18 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def header(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.getHeader()
 
     def _getMessages(self):
-        """Return a list of `ITranslationMessage`."""
+        """Return a list of `ITranslationMessageData`."""
         potemplate = self._potemplate
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
         # information.
         rows = getUtility(IVPOTExportSet).get_potemplate_rows(potemplate)
 
-        sequence = None
         messages = []
-        msgset = None
 
         for row in rows:
             assert row.potemplate == potemplate, (
@@ -963,62 +961,26 @@ class POTemplateToTranslationFileAdapter:
             if row.sequence == 0:
                 continue
 
-            # If the sequence number changes, is a new message.
-            if row.sequence != sequence:
-                if msgset is not None:
-                    # Output current message set before creating the new one.
-                    messages.append(msgset)
+            # Create new message set
+            msgset = TranslationMessageData()
+            msgset.sequence = row.sequence
+            msgset.obsolete = False
+            msgset.msgid_singular = row.msgid_singular
+            msgset.msgid_plural = row.msgid_plural
+            msgset.context = row.context
+            msgset.comment = row.comment_text
+            msgset.source_comment = row.source_comment
+            msgset.file_references = row.file_references
 
-                # Create new message set
-                msgset = TranslationMessage()
-                msgset.sequence = row.sequence
-                msgset.obsolete = False
-
-            # Because of the way the database view works, message IDs will
-            # appear multiple times. We see how many we've added already to
-            # check whether the message ID/translation in the current row are
-            # ones we need to add.
-            if (row.pluralform == TranslationConstants.SINGULAR_FORM and
-                msgset.msgid is None):
-                msgset.msgid = row.msgid
-            elif (row.pluralform == TranslationConstants.PLURAL_FORM and
-                msgset.msgid_plural is None):
-                msgset.msgid_plural = row.msgid
-            else:
-                # msgset.msgid or msgset.msgid_plural could be not None,
-                # because we don't need to set it again, thus, we only check
-                # that row.msgidpluralform is correct.
-                assert row.msgidpluralform in (
-                    TranslationConstants.SINGULAR_FORM,
-                    TranslationConstants.PLURAL_FORM), (
-                        'msgid plural form is not valid: %s.' %
-                            row.msgidpluralform)
-
-            if row.context is not None and msgset.context is None:
-                msgset.context = row.context
-
-            if row.commenttext and not msgset.comment:
-                msgset.comment = row.commenttext
-
-            if row.sourcecomment and not msgset.source_comment:
-                msgset.source_comment = row.sourcecomment
-
-            if row.filereferences and not msgset.file_references:
-                msgset.file_references = row.filereferences
-
-            if row.flagscomment and not msgset.flags:
-                msgset.flags = [
+            if row.flags_comment:
+                msgset.flags = set([
                     flag.strip()
                     for flag in row.flagscomment.split(',')
                     if flag
-                    ]
+                    ])
 
             # Store sequences so we can detect later whether we changed the
             # message.
             sequence = row.sequence
-
-        # Once we've processed all the rows, store last message set.
-        if msgset:
-            messages.append(msgset)
 
         return messages

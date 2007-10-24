@@ -464,7 +464,8 @@ $$;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
 
-
+-- XXX CarlosPerelloMarin 2007-10-24: This function is not needed anymore,
+-- once we stop using patch-88 series.
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_posubmission() RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
 DECLARE
@@ -546,7 +547,8 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION mv_pofiletranslator_posubmission() IS
     'Trigger maintaining the POFileTranslator table';
 
-
+-- XXX CarlosPerelloMarin 2007-10-24: This function is not needed anymore,
+-- once we stop using patch-88 series.
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_pomsgset() RETURNS TRIGGER
 VOLATILE SECURITY INVOKER AS $$
 BEGIN
@@ -566,6 +568,75 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION mv_pofiletranslator_pomsgset() IS
     'Trigger enforing no POMsgSet deletions or POMsgSet.pofile changes';
 
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
+RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+DECLARE
+    v_pofile INTEGER;
+    v_trash_old BOOLEAN;
+BEGIN
+    -- If we are deleting a row, we need to remove the existing
+    -- POFileTranslator row and reinsert the historical data if it exists.
+    -- We also treat UPDATEs that change the key (submitter, pofile) the same
+    -- as deletes. UPDATEs that don't change these columns are treated like
+    -- INSERTs below.
+    IF TG_OP = 'INSERT' THEN
+        v_trash_old := FALSE;
+    ELSIF TG_OP = 'DELETE' THEN
+        v_trash_old := TRUE;
+    ELSE -- UPDATE
+        v_trash_old = (
+            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
+            );
+    END IF;
+
+    IF v_trash_old THEN
+
+        -- Delete the old record.
+        DELETE FROM POFileTranslator
+        WHERE POFileTranslator.latest_message = OLD.latest_message;
+
+        -- Insert a past record if there is one.
+        INSERT INTO POFileTranslator (
+            person, pofile, latest_message, date_last_touched
+            )
+        SELECT DISTINCT ON (submitter, pofile)
+            submitter, pofile, id, date_created
+        FROM TranslationMessage
+        WHERE pofile = OLD.pofile AND person = OLD.submitter
+        ORDER BY person, pofile, date_created DESC, id DESC;
+
+        -- No NEW with DELETE, so we can short circuit and leave.
+        IF TG_OP = 'DELETE' THEN
+            RETURN NULL; -- Ignored because this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- Standard 'upsert' loop to avoid race conditions.
+    LOOP
+        UPDATE POFileTranslator
+        SET
+            date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+            latest_message = NEW.id
+        WHERE person = NEW.submitter AND pofile = NEW.pofile;
+        IF found THEN
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        END IF;
+
+        BEGIN
+            INSERT INTO POFileTranslator (person, pofile, latest_message)
+            VALUES (NEW.submitter, NEW.pofile, NEW.id);
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_translationmessage() IS
+    'Trigger maintaining the POFileTranslator table';
 
 CREATE OR REPLACE FUNCTION person_sort_key(displayname text, name text)
 RETURNS text

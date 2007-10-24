@@ -163,7 +163,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
-    def archiveIdList(self, archive=None):
+    def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:
             return self.all_distro_archive_ids
