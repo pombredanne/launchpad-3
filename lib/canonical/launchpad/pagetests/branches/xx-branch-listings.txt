@@ -185,7 +185,7 @@ there might be branches.
 
     >>> browser.open('http://code.launchpad.dev/'
     ...   '~no-priv?field.lifecycle=Mature')
-    >>> browser.getControl('Show branches with status of').displayValue
+    >>> browser.getControl(name='field.lifecycle').displayValue
     ['Mature']
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print message.renderContents()
