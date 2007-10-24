@@ -159,15 +159,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         self._SO_set_is_imported(value)
 
-    def _get_was_in_last_import(self):
-        """Override getter for was_in_last_import.
-
-        When the message is not imported makes no sense to use this flag.
-        """
-        assert self.is_imported, ('The message is not imported')
-
-        return self._SO_get_was_in_last_import()
-
     def _get_was_obsolete_in_last_import(self):
         """Override getter for was_obsolete_in_last_import.
 
