@@ -31,7 +31,7 @@ These are parsed into webapp.vhost.allvhosts.
     >>> for confname, vhost in sorted(allvhosts.configs.items()):
     ...     print confname, '@', vhost.hostname
     ...     print 'rooturl:', vhost.rooturl
-    ...     print 'althosts:', ', '.join(vhost.althostnames)
+    ...     print 'althosts:', (', '.join(vhost.althostnames))
     ...     print '----'
     answers @ answers.launchpad.dev
     rooturl: http://answers.launchpad.dev/
@@ -47,6 +47,10 @@ These are parsed into webapp.vhost.allvhosts.
     ----
     code @ code.launchpad.dev
     rooturl: http://code.launchpad.dev/
+    althosts:
+    ----
+    feeds @ feeds.launchpad.dev
+    rooturl: http://feeds.launchpad.dev/
     althosts:
     ----
     mainsite @ launchpad.dev
@@ -71,7 +75,7 @@ These are parsed into webapp.vhost.allvhosts.
     ----
     translations @ translations.launchpad.dev
     rooturl: http://translations.launchpad.dev/
-    althosts:
+    althosts: 
     ----
     xmlrpc @ xmlrpc.launchpad.dev
     rooturl: http://launchpad.dev/
@@ -92,6 +96,7 @@ request is headed to one of the officialy-used Launchpad host name:
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
+    feeds.launchpad.dev
     launchpad.dev
     localhost
     openid.launchpad.dev
@@ -201,7 +206,7 @@ error:
     >>> requestfactory, publicationfactory = factory()
     Traceback (most recent call last):
       ...
-    AssertionError: the request was declined by this factory.
+    AssertionError: This factory declined the request.
 
 The factory accepts a port parameter that will restrict the handled
 requests to request to a particular port.
@@ -288,7 +293,24 @@ the registered factories.)
     ...     environment = {'HTTP_HOST': host,
     ...                    'REQUEST_METHOD': method,
     ...                    'SERVER_PORT': port,
-    ...            lication, ProtocolErrorPublication):
+    ...                    'CONTENT_TYPE': mime_type}
+    ...     launchpad_factory = factoryRegistry.lookup(
+    ...         method, mime_type, environment)
+    ...     request_factory, publication_factory = launchpad_factory()
+    ...     request = request_factory(StringIO(in_stream), environment)
+    ...     # Since Launchpad doesn't use ZODB, we use None here.
+    ...     publication = publication_factory(None)
+    ...     return request, publication
+
+    >>> from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+    >>> def print_request_and_publication(host='localhost', port=None,
+    ...                                   method='GET', mime_type='text/html'):
+    ...     """Helper giving short names for the request and publication."""
+    ...     request, publication = get_request_and_publication(
+    ...         host, port, method, mime_type)
+    ...     print type(request).__name__.split('.')[-1]
+    ...     publication_classname = type(publication).__name__.split('.')[-1]
+    ...     if isinstance(publication, ProtocolErrorPublication):
     ...	        print "%s: status=%d" % (
     ...		    publication_classname, publication.status)
     ...		for name, value in publication.headers.items():
@@ -392,7 +414,10 @@ A request to an unknown host results in a 404 error.
 
     >>> logout()
     >>> http("GET /foo/bar HTTP/1.1\nHost: xmlrpc.launchpad.dev\nX-zope-handle-errors: False""")
-    HTTP/1.1 404 Not Found    
+    HTTP/1.1 405 Method Not Allowed
+    Allow: POST
+
+    >>> login(ANONYMOUS)
 
 == ILaunchpadBrowserApplicationRequest ==
 
@@ -576,7 +601,7 @@ returned as part of HEAD requests. (Again this is handled by the
 afterCall() publication hook.)
 
     >>> txn = transaction.begin()
-    >>> request, publication = get_request_and_publication('HEAD')
+    >>> request, publication = get_request_and_publication(method='HEAD')
     >>> response = request.response
     >>> response.setResult('Content that will disappear.')
     >>> publication.afterCall(request, None)
@@ -586,7 +611,7 @@ afterCall() publication hook.)
 In other cases, like a GET, the body would be unchanged.
 
     >>> txn = transaction.begin()
-    >>> request, publication = get_request_and_publication('GET')
+    >>> request, publication = get_request_and_publication(method='GET')
     >>> response = request.response
     >>> response.setResult('Some boring content.')
     >>> publication.afterCall(request, None)
