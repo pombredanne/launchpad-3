@@ -198,15 +198,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 self.pofile.language.englishname))
 
         msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
-        result = [None] * plural_forms
-        for plural_form in range(len(msgstrs)):
-            if (plural_form < plural_forms and
-                msgstrs[plural_form] is not None):
-                # We only care about the translations that are inside the
-                # range of plural forms used in its language.
-                result[plural_form] = msgstrs[plural_form].translation
-
-        return result
+        # Return translations for no more plural forms than the POFile knows.
+        return [msgstr.translation for msgstr in msgstrs[:pluralforms]]
 
     @cachedproperty
     def is_complete(self):
