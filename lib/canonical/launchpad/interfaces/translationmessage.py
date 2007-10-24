@@ -130,10 +130,6 @@ class ITranslationMessage(Interface):
             number of plural forms available for its language.
             """), readonly=True, required=True)
 
-    flags_comment = Text(
-        title=_("Text of flags comment from the translation file"),
-        readonly=False, required=False)
-
     comment_text = Text(
         title=_("Text of translator comment from the translation file"),
         readonly=False, required=False)

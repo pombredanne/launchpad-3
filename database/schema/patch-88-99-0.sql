@@ -30,7 +30,6 @@ CREATE TABLE TranslationMessage(
 	is_current boolean DEFAULT false NOT NULL,
 	is_fuzzy boolean NOT NULL,
 	is_imported boolean DEFAULT false NOT NULL,
-	was_in_last_import boolean NOT NULL,
 	was_obsolete_in_last_import boolean NOT NULL,
     was_fuzzy_in_last_import boolean NOT NULL,
 
@@ -87,7 +86,7 @@ CREATE TABLE TranslationMessage(
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+	was_obsolete_in_last_import, was_fuzzy_in_last_import,
     is_fuzzy, date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
 SELECT
@@ -103,7 +102,6 @@ SELECT
 	COALESCE(s0.validationstatus, 1) AS validation_status,
 	TRUE AS is_current,
 	TRUE AS is_imported,
-	(m.sequence > 0) AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
@@ -151,7 +149,7 @@ WHERE
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+	was_obsolete_in_last_import, was_fuzzy_in_last_import,
     is_fuzzy, date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
 SELECT
@@ -167,7 +165,6 @@ SELECT
 	COALESCE(s0.validationstatus, 1) AS validation_status,
 	TRUE AS is_current,
 	FALSE AS is_imported,
-	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
@@ -212,7 +209,7 @@ WHERE
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+	was_obsolete_in_last_import, was_fuzzy_in_last_import,
     is_fuzzy, date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
 SELECT
@@ -229,7 +226,6 @@ SELECT
 	FALSE AS is_current,
 	TRUE AS is_imported,
 
-	(m.sequence > 0) AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
@@ -272,7 +268,7 @@ WHERE
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+	was_obsolete_in_last_import, was_fuzzy_in_last_import,
     is_fuzzy, date_created, date_reviewed, comment_text,
     msgsetid, id0, id1, id2, id3)
 SELECT
@@ -288,7 +284,6 @@ SELECT
 	COALESCE(s0.validationstatus, 1) AS validation_status,
 	FALSE AS is_current,
 	FALSE AS is_imported,
-	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
@@ -337,7 +332,7 @@ WHERE
 
 INSERT INTO TranslationMessage(
 	pofile, potmsgset, origin, submitter, reviewer, validation_status,
-	is_current, is_imported, was_in_last_import,
+	is_current, is_imported,
 	was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
     date_created, date_reviewed, comment_text, msgsetid)
 SELECT
@@ -353,7 +348,6 @@ SELECT
 	-- Empty translation messages only make sense where they're current.
 	TRUE AS is_current,
 	FALSE AS is_imported,
-	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
@@ -401,11 +395,6 @@ CREATE INDEX translationmessage__submitter__idx
 	ON TranslationMessage(submitter);
 CREATE INDEX translationmessage__reviewer__idx
 	ON TranslationMessage(reviewer);
--- TODO: Do we actually need indexes on was_in_last_import?
-CREATE INDEX translationmessage__pofile__was_in_last_import__idx
-	ON TranslationMessage(pofile, was_in_last_import);
-CREATE INDEX translationmessage__was_in_last_import__idx
-	ON TranslationMessage(was_in_last_import);
 
 CREATE INDEX translationmessage__msgstr0__idx ON TranslationMessage(msgstr0);
 CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
@@ -429,9 +418,6 @@ ALTER TABLE TranslationMessage
 ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__reviewer__date_reviewed__valid
 	CHECK ((reviewer IS NULL) = (date_reviewed IS NULL));
-ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__was_in_last_import__is_imported__valid
-	CHECK (is_imported OR NOT was_in_last_import);
 ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__submitter__fk
 	FOREIGN KEY (submitter) REFERENCES Person(id);
@@ -558,7 +544,6 @@ CREATE VIEW POExport(
 	sourcecomment,
 	flagscomment,
 	filereferences,
-	was_in_last_import,
 	was_obsolete_in_last_import,
     was_fuzzy_in_last_import,
 	is_fuzzy,
@@ -594,7 +579,6 @@ SELECT
 	potmsgset.sourcecomment,
 	potmsgset.flagscomment,
 	potmsgset.filereferences,
-	translationmessage.was_in_last_import AS was_in_last_import,
 	translationmessage.was_obsolete_in_last_import,
     translationmessage.was_fuzzy_in_last_import,
 	translationmessage.is_fuzzy,
