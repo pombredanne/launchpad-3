@@ -153,6 +153,11 @@
         </tbody>
       </table>
 
+      <p tal:condition="view/user_can_retry_build">
+          Use the 'Retry build' link in the Actions menu if you wish to
+          retry your build.
+      </p>
+
     </div>
   </body>
 </html>

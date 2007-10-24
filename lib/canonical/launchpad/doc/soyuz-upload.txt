@@ -432,7 +432,7 @@ as NEW
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, QueueInconsistentStateError)
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
 
 Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
@@ -531,7 +531,7 @@ These packages must now be in the publishing history. Let's check it.
 
   >>> from canonical.launchpad.database import (
   ...    SecureSourcePackagePublishingHistory as SSPPH)
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> package_names.sort()
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
@@ -666,7 +666,7 @@ Check the publishing history again
   ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
   ...    print pub.status.name, pub.component.name, pub.pocket.name
-  PENDINGREMOVAL main RELEASE
+  SUPERSEDED main RELEASE
   PUBLISHED universe RELEASE
 
 Check if the package was moved properly to the component 'universe':

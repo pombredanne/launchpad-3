@@ -200,7 +200,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
 
-    def archiveIdList(archive=None):
+    def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
         If the archive param is supplied, just its ID will be returned in

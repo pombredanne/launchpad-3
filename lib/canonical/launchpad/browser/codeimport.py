@@ -11,6 +11,7 @@ __all__ = [
 
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import CodeImportReviewStatus
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -43,7 +44,7 @@ class CodeImportSetView(LaunchpadView):
         """See `LaunchpadView.initialize`."""
         status_field = Choice(
             __name__='status', title=_("Review Status"),
-            vocabulary='CodeImportReviewStatus', required=False)
+            vocabulary=CodeImportReviewStatus, required=False)
         self.status_widget = CustomWidgetFactory(ReviewStatusDropdownWidget)
         setUpWidget(self, 'status',  status_field, IInputWidget)
 

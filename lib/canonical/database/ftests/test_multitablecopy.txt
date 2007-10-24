@@ -565,7 +565,7 @@ whether they point to an inert or a non-inert row in the first table.
     2   2
 
 
-== Batch Preparation Callbacks ==
+== Pouring Callbacks ==
 
 All of the real work in a MultiTableCopy happens during the pour() call.  That
 is not always convenient: sometimes you'll want to be able to run some code of
@@ -573,14 +573,30 @@ your own while the pouring is being done.  One reason might be debugging; or
 another good reason is to ensure referential integrity if the tables you're
 pouring to have been changed while the multi-table-copy was in progress.
 
-MultiTableCopy's extract() method lets you specify a callback to do all this.
-The callback will be called at the beginning of every batch of data that is
-poured.  It runs in the same transaction as the pouring of that batch, and its
-run time counts towards the batch's time budget.  It receives parameters
-describing the source and holding tables, as well as size, lowest id, and
-exclusive upper-bound id of the batch being poured.
+MultiTableCopy's extract() method lets you specify callbacks to do all this:
 
-    >>> def textual_callback(
+"Pre-pouring" callbacks are invoked just before pouring each table.  This can
+be useful to make last-moment changes to your holding table based on things
+that may have happened while pouring previous tables.
+
+A pre-pouring callback receives as arguments the name of the holding table
+being poured from and the name of the source table that data is being poured
+back into.
+
+    >>> def textual_prepour(holding_table, source_table):
+    ...     print "Pouring textual"
+
+    >>> def numeric_prepour(holding_table, source_table):
+    ...     print "Pouring numeric"
+
+"Batch preparation" callbacks will be called at the beginning of every batch
+of data that is poured.  Each invocation runs in the same transaction as the
+pouring of that batch, and its run time counts towards the batch's time
+budget.  It receives parameters describing the source and holding tables, as
+well as size, lowest id, and exclusive upper-bound id of the batch being
+poured.
+
+    >>> def textual_batch(
     ...     holding_table, source_table, batch_size, lowest_id, highest_id):
     ...     """Print information about each batch of textual being poured."""
     ...     print "Pouring text from %s to %s" % (
@@ -588,12 +604,14 @@ exclusive upper-bound id of the batch being poured.
 
     >>> copier = MultiTableCopy(
     ...     'test', ['textual', 'numeric'], minimum_batch_size=1)
-    >>> copier.extract('textual', batch_pouring_callback=textual_callback)
+    >>> copier.extract(
+    ...     'textual', pre_pouring_callback=textual_prepour,
+    ...     batch_pouring_callback=textual_batch)
 
 It follows that the callback is tied to a specific table.  We can register
 other callbacks on other tables.
 
-    >>> def numeric_callback(
+    >>> def numeric_batch(
     ...     holding_table, source_table, batch_size, lowest_id, highest_id):
     ...     """Print information about each batch of numeric being poured."""
     ...     print "Pouring numbers from %s to %s" % (
@@ -601,16 +619,19 @@ other callbacks on other tables.
 
     >>> copier.extract(
     ...     'numeric', joins=['textual'],
-    ...     batch_pouring_callback=numeric_callback)
+    ...     pre_pouring_callback=numeric_prepour,
+    ...     batch_pouring_callback=numeric_batch)
 
 The callbacks are called only while pouring, once per batch.
 
     >>> copier.pour(ztm)
-    Pouring text from "temp_textual_holding_test" to textual
+    Pouring textual
     Pouring text from "temp_textual_holding_test" to textual
     ...
+    Pouring numeric
     Pouring numbers from "temp_numeric_holding_test" to numeric
-    Pouring numbers from "temp_numeric_holding_test" to numeric
+    ...
+
 
 == Cleanup ==
 

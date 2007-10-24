@@ -9,12 +9,12 @@
   <!-- SourcePackagePublishingHistory -->
   <content class="canonical.launchpad.database.SourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
-    <allow interface="canonical.launchpad.interfaces.IArchivePublisher" />
   </content>
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
-    permission="zope.Public">
+    permission="zope.Public"
+    class="canonical.launchpad.browser.SourcePublishingRecordView">
     <browser:page
       name="+listing-compact"
       template="../templates/sourcepackagepublishinghistory-listing-compact.pt"
@@ -27,13 +27,16 @@
       name="+listing-ppa-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
       />
+    <browser:page
+      name="+record-details"
+      template="../templates/packagepublishing-details.pt"
+      />
   </browser:pages>
 
   <!-- SourcePackageFilePublishing -->
   <content class="canonical.launchpad.database.SourcePackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing" />
-    <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
     <!-- XXX cprov 2006-06-14: Missing security adapter. -->
   </content>
 
