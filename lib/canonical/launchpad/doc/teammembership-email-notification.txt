@@ -100,9 +100,6 @@ and team admins.
     The membership status of Robert Collins (lifeless) in the team Ubuntu
     Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
     Proposed to Declined.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
     >>> member_notification['To']
     'robertc@robertcollins.net'
@@ -113,9 +110,6 @@ and team admins.
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 
 The same goes for approving a proposed member.
@@ -149,11 +143,8 @@ The same goes for approving a proposed member.
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
     <BLANKLINE>
-    Regards,
-    The Launchpad team
-    <BLANKLINE>
-    Comment:
-    This is a nice guy; I like him
+    Mark Shuttleworth said:
+     This is a nice guy; I like him
 
     >>> print member_notification['To']
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
@@ -167,11 +158,8 @@ The same goes for approving a proposed member.
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
     Approved.
     <BLANKLINE>
-    Regards,
-    The Launchpad team
-    <BLANKLINE>
-    Comment:
-    This is a nice guy; I like him
+    Mark Shuttleworth said:
+     This is a nice guy; I like him
 
 The same for deactivating a membership.
 
@@ -193,9 +181,6 @@ The same for deactivating a membership.
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
     Deactivated.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
     >>> member_notification['To']
     'daf@canonical.com'
@@ -206,9 +191,6 @@ The same for deactivating a membership.
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 
 == Adding new members ==
@@ -302,11 +284,8 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
-    Regards,
-    The Launchpad team
-    <BLANKLINE>
-    Comment:
-    Of course I want to be part of ubuntu!
+    Mark Shuttleworth said:
+     Of course I want to be part of ubuntu!
 
     >>> print member_notification['To']
     mark@hbd.com,karl@canonical.com
@@ -317,11 +296,8 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
-    Regards,
-    The Launchpad team
-    <BLANKLINE>
-    Comment:
-    Of course I want to be part of ubuntu!
+    Mark Shuttleworth said:
+     Of course I want to be part of ubuntu!
 
 Similarly, a notification is sent if the invitation is declined.
 
@@ -350,11 +326,8 @@ Similarly, a notification is sent if the invitation is declined.
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
     <BLANKLINE>
-    Regards,
-    The Launchpad team
-    <BLANKLINE>
-    Comment:
-    Landscape has nothing to do with ubuntu, unfortunately.
+    Mark Shuttleworth said:
+     Landscape has nothing to do with ubuntu, unfortunately.
 
     >>> print member_notification['To']
     test@canonical.com,guilherme.salgado@canonical.com
@@ -364,11 +337,8 @@ Similarly, a notification is sent if the invitation is declined.
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
     <BLANKLINE>
-    Regards,
-    The Launchpad team
-    <BLANKLINE>
-    Comment:
-    Landscape has nothing to do with ubuntu, unfortunately.
+    Mark Shuttleworth said:
+     Landscape has nothing to do with ubuntu, unfortunately.
 
 It's also possible to forcibly add a team as a member of another one, by
 passing force_team_add=True to the addMember() method.
@@ -795,9 +765,6 @@ sent to the team administrators.
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
     (ubuntu-team) was changed by the user himself from Administrator to
     Approved.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 
 Deactivating the membership of a team also generates notifications for the
@@ -825,7 +792,5 @@ sense to the members of the team reading it.
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
     (sabdfl) from Approved to Deactivated.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
+
 

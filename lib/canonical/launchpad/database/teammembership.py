@@ -306,7 +306,8 @@ class TeamMembership(SQLBase):
             reviewer_name = 'the user himself'
 
         if self.reviewercomment:
-            comment = ("Comment:\n%s\n\n" % self.reviewercomment.strip())
+            comment = ("\n%s said:\n %s\n" %
+                       (reviewer.displayname, self.reviewercomment.strip()))
         else:
             comment = ""
 
