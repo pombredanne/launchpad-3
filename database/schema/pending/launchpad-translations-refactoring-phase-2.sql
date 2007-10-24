@@ -14,25 +14,25 @@ SELECT 'Creating TranslationMessage', statement_timestamp();	-- DEBUG
 
 CREATE TABLE TranslationMessage(
 	id serial,
+	pofile integer NOT NULL,
+	potmsgset integer NOT NULL,
+	date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+	submitter integer NOT NULL,
+	date_reviewed timestamp without time zone, 
+	reviewer integer,
 	msgstr0 integer,
 	msgstr1 integer,
 	msgstr2 integer,
 	msgstr3 integer,
-	pofile integer NOT NULL,
-	potmsgset integer NOT NULL,
+	comment_text text,
 	origin integer NOT NULL,
-	submitter integer NOT NULL,
-	reviewer integer,
 	validation_status integer DEFAULT 0 NOT NULL,
 	is_current boolean DEFAULT false NOT NULL,
+	is_fuzzy boolean NOT NULL,
 	is_imported boolean DEFAULT false NOT NULL,
 	was_in_last_import boolean NOT NULL,
 	was_obsolete_in_last_import boolean NOT NULL,
-	is_fuzzy boolean NOT NULL,
-	date_created timestamp without time zone
-		DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-	date_reviewed timestamp without time zone,
-	comment_text text,
+    was_fuzzy_in_last_import boolean NOT NULL,
 
 	-- For migration purposes: references to objects that constitute this
 	-- TranslationMessage.  Will be dropped later on.
@@ -87,8 +87,8 @@ SELECT 'Migrating active, published submissions', statement_timestamp();	-- DEBU
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
-	date_created, date_reviewed, comment_text,
+	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+    is_fuzzy, date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
@@ -105,6 +105,7 @@ SELECT
 	TRUE AS is_imported,
 	(m.sequence > 0) AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
+    m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
 		AS date_created,
@@ -210,8 +211,8 @@ SELECT 'Migrating non-active, published submissions', statement_timestamp();	-- 
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
-	date_created, date_reviewed, comment_text,
+	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+    is_fuzzy, date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
@@ -229,6 +230,7 @@ SELECT
 
 	(m.sequence > 0) AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
+    m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
 		AS date_created,
@@ -269,9 +271,9 @@ SELECT 'Migrating non-active, non-published submissions', statement_timestamp();
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
-	date_created, date_reviewed, comment_text,
-	msgsetid, id0, id1, id2, id3)
+	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+    is_fuzzy, date_created, date_reviewed, comment_text,
+    msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
 	s1.potranslation AS msgstr1,
@@ -287,6 +289,7 @@ SELECT
 	FALSE AS is_imported,
 	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
+    m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
 		AS date_created,
@@ -553,6 +556,7 @@ CREATE VIEW POExport(
 	filereferences,
 	was_in_last_import,
 	was_obsolete_in_last_import,
+    was_fuzzy_in_last_import,
 	is_fuzzy,
 	pocommenttext,
 	translation0,
@@ -588,6 +592,7 @@ SELECT
 	potmsgset.filereferences,
 	translationmessage.was_in_last_import AS was_in_last_import,
 	translationmessage.was_obsolete_in_last_import,
+    translationmessage.was_fuzzy_in_last_import,
 	translationmessage.is_fuzzy,
 	translationmessage.comment_text AS pocommenttext,
 	potranslation0.translation AS translation0,
@@ -683,8 +688,6 @@ CREATE TABLE POFileTranslator (
 	date_last_touched timestamp without time zone
 		DEFAULT timezone('UTC'::text, now()) NOT NULL);
 
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
 
 -- Re-populate POFileTranslator
 INSERT INTO POFileTranslator (
@@ -694,6 +697,8 @@ SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
 FROM TranslationMessage
 ORDER BY submitter, pofile, date_created DESC, id DESC;
 
+ALTER TABLE POFileTranslator
+	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
 ALTER TABLE POFileTranslator
 	ADD CONSTRAINT pofiletranslator__latest_message__fk
 	FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
