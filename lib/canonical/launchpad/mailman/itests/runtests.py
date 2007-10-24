@@ -15,6 +15,8 @@ perform all the tests for that step.
 import os
 import sys
 import shutil
+import doctest
+import unittest
 import traceback
 import itest_helper
 
@@ -23,61 +25,88 @@ from operator import itemgetter
 sys.path.insert(0, itest_helper.TOP)
 sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from Mailman.mm_cfg import QUEUE_DIR
+
 execute_zcml_for_scripts()
 itest_helper.create_transaction_manager()
 
+DOCTEST_FLAGS = (doctest.ELLIPSIS |
+                 doctest.NORMALIZE_WHITESPACE |
+                 doctest.REPORT_NDIFF)
+
+
+def integrationTestSetUp(test):
+    """Common set up for the integration tests."""
+    cursor().execute("""
+    CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
+    'team-one', 'team-two', 'team-three',
+    'anne', 'bart', 'cris', 'dirk'
+    );
+
+    DELETE FROM MailingListSubscription
+    WHERE person in (SELECT id FROM DeathRow);
+
+    DELETE FROM EmailAddress
+    WHERE person in (SELECT id FROM DeathRow);
+
+    DELETE FROM TeamMembership
+    WHERE team IN (SELECT id FROM DeathRow);
+
+    DELETE FROM TeamParticipation
+    WHERE team IN (SELECT id FROM DeathRow);
+
+    DELETE FROM MailingList
+    WHERE team IN (SELECT id FROM DeathRow);
+
+    DELETE FROM WikiName
+    WHERE person IN (SELECT id FROM DeathRow);
+
+    DELETE FROM Person
+    WHERE id IN (SELECT id FROM DeathRow);
+    """)
+    itest_helper.transactionmgr.commit()
+    # Now delete any mailing lists still hanging around.  We don't care if
+    # this fails because it means the list doesn't exist.
+    for team_name in ('team-one', 'team-two', 'team-three'):
+        try:
+            itest_helper.run_mailman('./rmlist', '-a', team_name)
+        except itest_helper.IntegrationTestFailure:
+            pass
+    # Clear out any qfiles hanging around from a previous run.
+    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == '.pck':
+                os.remove(os.path.join(dirpath, filename))
+
 
 def find_tests():
-    """Search for all tests.
+    """Search for doctests.
 
-    This is a generator, returning 2-tuples of the tests to run, in order.
-    The tuple contains the test's full path and the file's short name for
-    display during the test run.
+    Return a unittest.TestSuite object.
     """
-    tests = []
+    suite = unittest.TestSuite()
     for filename in os.listdir(itest_helper.HERE):
-        if os.path.splitext(filename)[1] <> '.py':
+        if os.path.splitext(filename)[1] != '.txt':
             continue
-        try:
-            index = int(filename[:2])
-        except (ValueError, IndexError):
-            continue
-        path = os.path.join(itest_helper.HERE, filename)
-        tests.append((index, path, filename))
-    for index, path, filename in sorted(tests, key=itemgetter(0)):
-        yield path, filename
+        test = doctest.DocFileSuite(
+            filename,
+            setUp=integrationTestSetUp,
+            optionflags=DOCTEST_FLAGS)
+        suite.addTest(test)
+    return suite
 
 
-def real_main():
-    """Search for all sub-tests and run them in order.
+def run_tests():
+    """Run all the integration doctests.
 
-    Returns an exit code, which is passed to sys.exit().
+    Return True if there were failures or errors, otherwise False.
     """
-
-    for path, filename in find_tests():
-        print 'WORKING:', filename,
-        sys.stdout.flush()
-        namespace = {}
-        execfile(path, namespace)
-        main = namespace['main']
-        try:
-            main()
-        except itest_helper.IntegrationTestFailure, error:
-            print 'FAILED:', error
-            return 1
-        except itest_helper.IntegrationTestTimeout:
-            print 'TIMEOUT!'
-            traceback.print_exc()
-            return 1
-        except Exception:
-            print
-            traceback.print_exc()
-            return 1
-        else:
-            print 'PASSED'
-
-    return 0
+    suite = find_tests()
+    runner = unittest.TextTestRunner()
+    results = runner.run(suite)
+    return bool(results.failures or results.errors)
 
 
 def main():
@@ -90,7 +119,7 @@ def main():
     dst_path = os.path.join(itest_helper.MAILMAN_BIN, 'mmhelper.py')
     shutil.copyfile(src_path, dst_path)
     try:
-        return real_main()
+        return run_tests()
     finally:
         os.remove(dst_path)
 

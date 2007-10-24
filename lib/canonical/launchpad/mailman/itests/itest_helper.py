@@ -29,7 +29,9 @@ def auth(user, password):
     return 'Basic ' + base64.encodestring('%s:%s' % (user, password))
 
 
-def poll(function):
+# XXX Fix this to poll for 'Has Mailman Done Something', which separates the
+# polling from 'Check if it's done what we expect'.
+def poll(function, timeout_msg=None, success_msg=None):
     """Standard loop for checking something for a while."""
     # Keep calling the poll function until it returns True or we've waited
     # longer than 20 seconds.  Using the default Mailman polling frequency,
@@ -37,8 +39,10 @@ def poll(function):
     until = datetime.datetime.now() + datetime.timedelta(seconds=20)
     while datetime.datetime.now() < until:
         if function():
-            return
-    raise IntegrationTestTimeout('Timed out before success')
+            return success_msg
+    if timeout_msg is None:
+        return 'Timed out before success'
+    return timeout_msg
 
 
 def run_mailman(*args):

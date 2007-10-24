@@ -1,0 +1,94 @@
+= Creating mailing lists =
+
+When a Launchpad user creates a mailing list for a team, and that mailing list
+is approved by a special 'mailing list expert', Mailman will eventually notice
+this and create the mailing list itself.
+
+First, No Privileges Person will create a new team, called 'Team One' through
+the web.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'team-one'
+    >>> browser.getControl('Display Name').value = 'Team One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.title
+    'Team One in Launchpad'
+
+To request a mailing list, No Privileges Person navigates to the 'Change
+contact address' page and registers their application for a mailing list.
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+At this point, Mailman has still not created the mailing list.
+
+    >>> def check_lists():
+    ...     """Poll function looking for expected active mailing lists."""
+    ...     stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
+    ...     team_names = sorted(stdout.splitlines())
+    ...     # Use a containment test instead of equality so that sample data
+    ...     # is ignored.
+    ...     return 'team-one' in team_names
+
+    >>> itest_helper.poll(check_lists, "Team One's list does not exist")
+    "Team One's list does not exist"
+
+
+== Approved requests ==
+
+In order for Mailman to create the mailing list, a Launchpad 'mailing list
+expert' must approve the application.  This cannot currently be done through
+the web, so we'll go behind the scenes to do this.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
+
+    >>> list_set = getUtility(IMailingListSet)
+    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> lpadmin = list(experts.allmembers)[0]
+    >>> list_one = list_set.get('team-one')
+    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
+    >>> itest_helper.transactionmgr.commit()
+
+    >>> itest_helper.poll(check_lists, success_msg="Team One's list exists")
+    "Team One's list exists"
+
+
+= Declined requests ==
+
+Now, No Privileges Person creates another team, and requests a mailing list
+for this new team.
+
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'team-two'
+    >>> browser.getControl('Display Name').value = 'Team Two'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+This time, however, the mailing list expert declines the application for a new
+mailing list.
+
+    >>> list_two = list_set.get('team-two')
+    >>> list_two.review(lpadmin, MailingListStatus.DECLINED)
+    >>> itest_helper.transactionmgr.commit()
+
+    >>> def check_lists():
+    ...     """Poll function looking for expected active mailing lists."""
+    ...     stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
+    ...     team_names = sorted(stdout.splitlines())
+    ...     # Use a containment test instead of equality so that sample data
+    ...     # is ignored.
+    ...     return 'team-two' not in team_names
+
+    >>> itest_helper.poll(check_lists,
+    ...     success_msg="Team Two's list does not exist")
+    "Team Two's list does not exist"
