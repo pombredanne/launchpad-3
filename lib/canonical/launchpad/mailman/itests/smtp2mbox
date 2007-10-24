@@ -2,6 +2,10 @@
 
 """Throw email messages into an mbox file.
 
+This starts an SMTP server listening on a port that the Mailman integration
+tests will send their messages to.  It is started in tests that need to check
+end-to-end message delivery, using fork/exec.
+
 Because we must use Python 2.4, we can't use the wizzy new mailbox module, so
 just write messages to the file.
 """

@@ -538,15 +538,6 @@ class IMailingListAPIView(Interface):
             owned by a Launchpad member.
         """
 
-    def testStep(step):
-        """Perform the indicated step for testing purposes only.
-
-        This method exists solely to support Launchpad-Mailman integration
-        testing.  It is purposefully underdocumented; see the implementation
-        for details.  Because this is only used from the private XMLRPC port,
-        there's no need to further protect this method.
-        """
-
 
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""

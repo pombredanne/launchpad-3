@@ -15,12 +15,13 @@ from Mailman.mm_cfg import QUEUE_DIR
 def main():
     # Start by cleaning up the Launchpad database.
     cursor().execute("""
-    DELETE FROM MailingListSubscription;
-
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'team-one', 'team-two', 'team-three',
     'anne', 'bart', 'cris', 'dirk'
     );
+
+    DELETE FROM MailingListSubscription
+    WHERE person in (SELECT id FROM DeathRow);
 
     DELETE FROM EmailAddress
     WHERE person in (SELECT id FROM DeathRow);

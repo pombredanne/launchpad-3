@@ -15,8 +15,6 @@ TOP = os.path.normpath(os.path.join(HERE, '../../../..'))
 MAILMAN_BIN = os.path.normpath(os.path.join(
     os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
 
-XMLRPC_URL = 'http://xmlrpc.launchpad.dev:8087/mailinglists'
-
 
 class IntegrationTestFailure(Exception):
     """An integration test failed."""
