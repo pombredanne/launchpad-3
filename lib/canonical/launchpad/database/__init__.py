@@ -32,7 +32,6 @@ from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
-from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
 from canonical.launchpad.database.potemplate import *
 from canonical.launchpad.database.potmsgset import *
