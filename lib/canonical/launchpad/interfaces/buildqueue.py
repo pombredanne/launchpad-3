@@ -45,9 +45,6 @@ class IBuildQueue(Interface):
     files = Attribute(
         "Collection of files related to the ISourcePackageRelease "
         "releated to this job.")
-    current_component = Attribute(
-        "Component where the ISourcePackageRelease releated to "
-        "this job got published in.")
     urgency = Attribute(
         "Urgency of the ISourcePackageRelease releated to this job.")
     archhintlist = Attribute(
@@ -89,6 +86,9 @@ class IBuildQueue(Interface):
 
     def getLogFileName():
         """Get the preferred filename for the buildlog of this build."""
+
+    def markAsBuilding(builder):
+        """Set this queue item to a 'building' state."""
 
     def updateBuild_IDLE(build_id, build_status, logtail,
                          filemap, dependencies, logger):

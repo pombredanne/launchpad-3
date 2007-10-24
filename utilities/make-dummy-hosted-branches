@@ -1,0 +1,51 @@
+#!/usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+"""Create dummy Bazaar branches for all HOSTED branches in the database.
+
+The Launchpad sample data includes a number of HOSTED branches that users can
+branch from, push to and view on the website. However, some of these things
+will break if we are missing the actual Bazaar branches, so we have a script
+to create them.
+
+NOTE: This script will delete any existing sample data branches, so that the
+sample data on the filesystem is consistent with the sample data in the
+database.
+"""
+
+import _pythonpath
+
+import os
+import shutil
+import sys
+import tempfile
+
+from zope.component import getUtility
+
+from canonical.codehosting.tests.helpers import make_bazaar_branch_and_tree
+from canonical.config import config
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database import Branch
+from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.lp import initZopeless
+
+
+def main(argv):
+    os.environ['BZR_HOME'] = tempfile.mkdtemp()
+    if os.path.exists(config.codehosting.branches_root):
+        shutil.rmtree(config.codehosting.branches_root)
+    execute_zcml_for_scripts()
+    ztm = initZopeless()
+    try:
+        branches = Branch.select(
+            "Branch.branch_type = %s" % sqlvalues(BranchType.HOSTED))
+        for branch in branches:
+            make_bazaar_branch_and_tree(branch)
+    finally:
+        ztm.abort()
+    print "Created %d branches based on sample data." % len(list(branches))
+
+
+if __name__ == '__main__':
+    main(sys.argv)

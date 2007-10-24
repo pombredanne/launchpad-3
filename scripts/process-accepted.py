@@ -14,7 +14,8 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackageUploadStatus)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.processaccepted import close_bugs
@@ -22,7 +23,6 @@ from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import PackageUploadStatus
 
 def main():
     # Parse command-line arguments

@@ -30,7 +30,7 @@
     but they might not be used until the package is published.
   </p>
 
-  <dl id="publishings" tal:condition="view/published_by_pocket">
+  <dl id="publishing_history" tal:condition="view/published_by_pocket">
     <tal:block repeat="pocket view/published_by_pocket">
       <tal:block condition="pocket/packages">
         <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>

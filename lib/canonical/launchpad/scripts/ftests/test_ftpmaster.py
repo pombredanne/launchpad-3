@@ -16,12 +16,12 @@ from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet, ISectionSet)
+    IDistributionSet, IComponentSet, ISectionSet, PackagePublishingPocket,
+    PackagePublishingPriority)
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
     ArchiveCruftCheckerError)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority)
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
@@ -41,8 +41,9 @@ def removeTestArchive():
     shutil.rmtree("/var/tmp/archive/")
 
 
-class MockLogger:
+class LocalLogger(FakeLogger):
     """Local log facility """
+
     def __init__(self):
         self.logs = []
 
@@ -52,27 +53,18 @@ class MockLogger:
         self.logs = []
         return content
 
-    def debug(self, txt):
-        self.logs.append("DEBUG: %s" % txt)
-
-    def info(self, txt):
-        self.logs.append("INFO: %s" % txt)
-
-    def error(self, txt):
-        self.logs.append("ERROR: %s" % txt)
-
-    def warn(self, txt):
-        self.logs.append("WARN: %s" % txt)
+    def message(self, prefix, *stuff, **kw):
+        self.logs.append("%s %s" % (prefix, ' '.join(stuff)))
 
 
 class TestArchiveOverrider(LaunchpadZopelessTestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment and retrieve useful instances."""
         LaunchpadZopelessTestCase.setUp(self)
-        self.log = MockLogger()
+        self.log = LocalLogger()
 
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.hoary = self.ubuntu['hoary']
@@ -247,10 +239,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/base' source overridden")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'mozilla-firefox/main/base' source overridden")
 
     def test_processSourceChange_with_changed_archive(self):
         """Check processSourceChange method call with an archive change.
@@ -280,10 +272,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'mozilla-firefox' source isn't published in hoary")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "ERROR 'mozilla-firefox' source isn't published in hoary")
 
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.
@@ -300,11 +292,11 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processBinaryChange('pmount')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
-            "INFO: 'pmount/universe/editors/IMPORTANT' binary "
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
+            "INFO 'pmount/universe/editors/IMPORTANT' binary "
                 "overridden in hoary/i386")
 
     def test_processBinaryChange_with_changed_archive(self):
@@ -334,10 +326,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processBinaryChange('evolution')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'evolution' binary not found.")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "ERROR 'evolution' binary not found.")
 
     def test_processChildrenChange_success(self):
         """processChildrenChanges, modify the source and its binary children.
@@ -355,16 +347,16 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processChildrenChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'mozilla-firefox/main/base/IMPORTANT' "
                 "binary overridden in warty/i386\n"
-            "INFO: 'mozilla-firefox/main/base/EXTRA' "
+            "INFO 'mozilla-firefox/main/base/EXTRA' "
                 "binary overridden in warty/hppa\n"
-            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+            "INFO 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/hppa\n"
-            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+            "INFO 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
@@ -380,10 +372,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processChildrenChange('pmount')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'pmount' source isn't published in warty")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "ERROR 'pmount' source isn't published in warty")
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
@@ -393,15 +385,15 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer.processChildrenChange('pmount')
         self.assertEqual(
             self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "WARN: 'pmount' has no binaries published in hoary")
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "WARNING 'pmount' has no binaries published in hoary")
 
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment.
@@ -409,7 +401,7 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
         Retrieve useful instances and create a test archive.
         """
         LaunchpadZopelessTestCase.setUp(self)
-        self.log = MockLogger()
+        self.log = LocalLogger()
 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
