@@ -338,7 +338,7 @@ Check the email recipient for displayname containing special chars,
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1.0-4 (source)
+  DEBUG       Subject: Accepted: bar 1.0-4 (source)
   DEBUG       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
@@ -362,7 +362,7 @@ changer and the distroseries changes maillisting.
   DEBUG   Changes file is unsigned, adding changer as recipient
   DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
   DEBUG   Sent a mail:
-  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Subject: Accepted: bar 1.0-5 (source)
   DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
   DEBUG    Announcing to breezy-changes@ubuntu.com
@@ -370,7 +370,7 @@ changer and the distroseries changes maillisting.
   DEBUG    Thank you for your contribution to Ubuntu Test.
   ...
   DEBUG    Sent a mail:
-  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Subject: Accepted: bar 1.0-5 (source)
   DEBUG       Recipients: breezy-changes@ubuntu.com
   ...
   <BLANKLINE>
@@ -422,7 +422,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1:1.0-7 (source)
+  DEBUG       Subject: Accepted: bar 1:1.0-7 (source)
   ...
 
   >>> expect_okays('bar_1.0-8', upload_policy='sync')
@@ -431,7 +431,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1:1.0-8 (source)
+  DEBUG       Subject: Accepted: bar 1:1.0-8 (source)
   ...
 
 == Pocket Version Consistency ==

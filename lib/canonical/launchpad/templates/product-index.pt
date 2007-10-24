@@ -7,6 +7,10 @@
 
 <div metal:fill-slot="main">
 
+  <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
+    This project is currently inactive <a href="+review">(change this)</a>
+  </p>
+
   <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of project</h1>
 
