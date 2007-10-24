@@ -65,14 +65,16 @@ class POTMsgSet(SQLBase):
     def getCurrentTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
         return TranslationMessage.selectOne("""
-            potmsgset = %s AND is_current IS TRUE AND language = %s
-            """ % sqlvalues(self, language))
+            potmsgset = %s AND is_current IS TRUE AND POFile.language = %s
+            AND pofile = POFile.id
+            """ % sqlvalues(self, language), clauseTables=['POFile'])
 
     def getImportedTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
         return TranslationMessage.selectOne("""
-            potmsgset = %s AND is_imported IS TRUE AND language = %s
-            """ % sqlvalues(self, language))
+            potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
+            AND pofile = POFile.id
+            """ % sqlvalues(self, language), clauseTables=['POFile'])
 
     def flags(self):
         if self.flagscomment is None:
@@ -93,7 +95,9 @@ class POTMsgSet(SQLBase):
             is_current IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
-            language = %s""" % sqlvalues(self, language))
+            POFile.language = %s AND pofile=POFile.id""" %
+                                         sqlvalues(self, language),
+                                         clauseTables=['POFile'])
 
     def getExternalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
