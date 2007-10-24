@@ -102,7 +102,7 @@ class MockRootFolder:
 def setUpMockRootFolder():
     """Install a mock ZODB in the ZopePublication root."""
 
-    # Fake a root folder to keep Z3 ZODB dependancies happy
+    # Fake a root folder to keep Z3 ZODB dependencies happy.
     fs = FunctionalTestSetup()
     if not fs.connection:
         fs.connection = fs.db.open()
