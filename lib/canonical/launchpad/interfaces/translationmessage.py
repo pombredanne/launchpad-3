@@ -90,7 +90,7 @@ class ITranslationMessage(Interface):
         readonly=True, required=True, schema=IPOTMsgSet)
 
     date_created = Datetime(
-        title=_("The date we saw this submission first"),
+        title=_("The date we saw this translation first"),
         readonly=True, required=True)
 
     submitter = Object(
@@ -130,7 +130,7 @@ class ITranslationMessage(Interface):
             """), readonly=True, required=True)
 
     comment_text = Text(
-        title=_("Text of translator comment from the PO file"),
+        title=_("Text of translator comment from the translation file"),
         readonly=False, required=False)
 
     origin = Choice(

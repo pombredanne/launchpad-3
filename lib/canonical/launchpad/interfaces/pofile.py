@@ -387,15 +387,15 @@ class IPOFileTranslator(Interface):
     """Represents contributions from people to POFiles."""
 
     person = Object(
-        title=_('The Person this record represents.'), required=True,
+        title=_('The Person this record represents'), required=True,
         schema=IPerson)
 
     pofile = Object(
-        title=_('The `IPOFile` modified by the translator.'), required=True,
+        title=_('The `IPOFile` modified by the translator'), required=True,
         schema=IPOFile)
 
     latest_translation_message = Attribute(
         _("Latest translation message added to the translation file."))
 
     date_last_touched = Datetime(
-        title=_('When was added latest `IPOSubmission`.'), required=True)
+        title=_('When was added latest translation message'), required=True)

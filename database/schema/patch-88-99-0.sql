@@ -517,6 +517,8 @@ ALTER TABLE POTemplate
 
 -- SELECT 'Retiring POMsgIDSighting', statement_timestamp();	-- DEBUG
 
+-- Remove unused fields.
+ALTER TABLE POTMsgSet DROP alternative_msgid;
 -- Merge POMsgIDSighting into POTMsgSet
 ALTER TABLE POTMsgSet RENAME primemsgid TO msgid_singular;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
@@ -720,74 +722,6 @@ ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 
 DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
-
-CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
-	RETURNS TRIGGER AS $$
-DECLARE
-    v_pofile INTEGER;
-    v_trash_old BOOLEAN;
-BEGIN
-    -- If we are deleting a row, we need to remove the existing
-    -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (submitter, pofile) the same
-    -- as deletes. UPDATEs that don't change these columns are treated like
-    -- INSERTs below.
-    IF TG_OP = 'INSERT' THEN
-        v_trash_old := FALSE;
-    ELSIF TG_OP = 'DELETE' THEN
-        v_trash_old := TRUE;
-    ELSE -- UPDATE
-        v_trash_old = (
-            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
-            );
-    END IF;
-
-    IF v_trash_old THEN
-
-        -- Delete the old record.
-        DELETE FROM POFileTranslator
-        WHERE POFileTranslator.latest_message = OLD.latest_message;
-
-        -- Insert a past record if there is one.
-        INSERT INTO POFileTranslator (
-            person, pofile, latest_message, date_last_touched
-            )
-        SELECT DISTINCT ON (submitter, pofile)
-            submitter, pofile, id, date_created
-        FROM TranslationMessage
-        WHERE pofile = OLD.pofile AND person = OLD.submitter
-        ORDER BY person, pofile, date_created DESC, id DESC;
-
-        -- No NEW with DELETE, so we can short circuit and leave.
-        IF TG_OP = 'DELETE' THEN
-            RETURN NULL; -- Ignored because this is an AFTER trigger
-        END IF;
-    END IF;
-
-    -- Standard 'upsert' loop to avoid race conditions.
-    LOOP
-        UPDATE POFileTranslator
-        SET
-            date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
-            latest_message = NEW.id
-        WHERE person = NEW.submitter AND pofile = NEW.pofile;
-        IF found THEN
-            RETURN NULL; -- Return value ignored as this is an AFTER trigger
-        END IF;
-
-        BEGIN
-            INSERT INTO POFileTranslator (person, pofile, latest_message)
-            VALUES (NEW.submitter, NEW.pofile, NEW.id);
-            RETURN NULL; -- Return value ignored as this is an AFTER trigger
-        EXCEPTION WHEN unique_violation THEN
-            -- do nothing
-        END;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION mv_pofiletranslator_translationmessage() IS
-    'Trigger maintaining the POFileTranslator table';
 
 CREATE TRIGGER mv_pofiletranslator_translationmessage
 	BEFORE INSERT OR DELETE OR UPDATE ON TranslationMessage
