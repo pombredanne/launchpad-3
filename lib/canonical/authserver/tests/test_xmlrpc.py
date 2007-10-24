@@ -80,25 +80,25 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
-        markDict = self.server.getUser('mark@hbd.com')
-        self.assertEqual('Mark Shuttleworth', markDict['displayname'])
-        self.assertEqual(['mark@hbd.com'], markDict['emailaddresses'])
-        self.assert_(markDict.has_key('id'))
-        self.assert_(markDict.has_key('salt'))
+        mark_dict = self.server.getUser('mark@hbd.com')
+        self.assertEqual('Mark Shuttleworth', mark_dict['displayname'])
+        self.assertEqual(['mark@hbd.com'], mark_dict['emailaddresses'])
+        self.assert_(mark_dict.has_key('id'))
+        self.assert_(mark_dict.has_key('salt'))
 
         # Check that the salt is base64 encoded
         # FIXME: This is a pretty weak test, because this particular salt is ''
         #        (the sample data specifies no pw for Mark)
-        markDict['salt'].decode('base64')  # Should raise no errors
+        mark_dict['salt'].decode('base64')  # Should raise no errors
 
         # Check that the failure case (no such user) returns {}
-        emptyDict = self.server.getUser('invalid@email')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.getUser('invalid@email')
+        self.assertEqual({}, empty_dict)
 
     def test_authUser(self):
         # Check that the failure case (no such user or bad passwd) returns {}
-        emptyDict = self.server.authUser('invalid@email', '')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, empty_dict)
 
         # Authenticate a user. This requires two queries - one to retrieve
         # the salt, the other to do the actual auth. This way the auth
@@ -117,8 +117,8 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
     def test_authUser2(self):
         # Check that the failure case (no such user or bad passwd) returns {}
-        emptyDict = self.server.authUser('invalid@email', '')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, empty_dict)
 
         # Authenticate a user. This requires two queries - one to retrieve
         # the salt, the other to do the actual auth. This way the auth
@@ -143,22 +143,22 @@ class XMLRPCv2TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
-        markDict = self.server.getUser('mark@hbd.com')
-        self.assertEqual('Mark Shuttleworth', markDict['displayname'])
-        self.assertEqual(['mark@hbd.com'], markDict['emailaddresses'])
-        self.assert_(markDict.has_key('id'))
+        mark_dict = self.server.getUser('mark@hbd.com')
+        self.assertEqual('Mark Shuttleworth', mark_dict['displayname'])
+        self.assertEqual(['mark@hbd.com'], mark_dict['emailaddresses'])
+        self.assert_(mark_dict.has_key('id'))
 
         # Check specifically that there's no 'salt' entry in the user dict.
-        self.failIf(markDict.has_key('salt'))
+        self.failIf(mark_dict.has_key('salt'))
 
         # Check that the failure case (no such user) returns {}
-        emptyDict = self.server.getUser('invalid@email')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.getUser('invalid@email')
+        self.assertEqual({}, empty_dict)
 
     def test_authUser(self):
         # Check that the failure case (no such user or bad passwd) returns {}
-        emptyDict = self.server.authUser('invalid@email', '')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, empty_dict)
 
         result = self.server.authUser('test@canonical.com', 'test')
         self.failUnlessEqual(result['displayname'], 'Sample Person')
