@@ -102,10 +102,6 @@ def _copy_active_translations_to_new_series(
     # original POTMsgSet's potemplate.
     copier.extract('POTMsgSet', ['POTemplate'], 'POTMsgSet.sequence > 0')
 
-    # Copy POMsgIDSightings, substituting their potmsgset foreign keys with
-    # references to the child's POTMsgSets (again, done by MultiTableCopy).
-    copier.extract('POMsgIDSighting', ['POTMsgSet'])
-
     # Copy POFiles, making them refer to the child's copied POTemplates.
     copier.extract('POFile', ['POTemplate'])
 
@@ -295,7 +291,7 @@ def _prepare_translationmessage_batch(
             COALESCE(holding.msgstr3, -1) = COALESCE(tm.msgstr3, -1)
         """ % (holding_table, batch_clause))
 
-    # Deactivate POSubmissions we're about to replace with better ones
+    # Deactivate translation messages we're about to replace with better ones
     # from the parent.
     cur.execute("""
         UPDATE TranslationMessage AS tm
@@ -456,7 +452,7 @@ def _copy_active_translations_as_update(child, transaction, logger):
     original_reset_setting = transaction.reset_after_transaction
     transaction.reset_after_transaction = False
     full_name = "%s_%s" % (child.distribution.name, child.name)
-    tables = ['POFile', 'POMsgSet', 'POSubmission']
+    tables = ['POFile', 'TranslationMessage']
     copier = MultiTableCopy(
         full_name, tables, restartable=False, logger=logger)
 
@@ -512,30 +508,25 @@ def _copy_active_translations_as_update(child, transaction, logger):
 
     holding_tables = {
         'pofile': copier.getHoldingTableName('POFile'),
-        'pomsgset': copier.getHoldingTableName('POMsgSet'),
-        'posubmission': copier.getHoldingTableName('POSubmission'),
+        'translationmessage': copier.getHoldingTableName('TranslationMessage')
         }
 
     query_parameters = {
         'pofile_holding_table': holding_tables['pofile'],
-        'pomsgset_holding_table': holding_tables['pomsgset'],
-        'posubmission_holding_table': holding_tables['posubmission'],
+        'translationmessage_holding_table':
+            holding_tables['translationmessage'],
         }
 
     # Prepare data from a series of translation-related tables to be merged
     # back into their original tables.  This is broken down into "chapters"
-    # for the POFile, POMsgSet, and POSubmission tables (in that order) to
-    # keep this function to a managable size.
+    # for the POFile and TranslationMessage tables in order to keep this
+    # function to a managable size.
     _prepare_pofile_merge(copier, transaction, query_parameters)
     transaction.commit()
     transaction.begin()
 
-    _prepare_pomsgset_merge(
+    _prepare_translationmessage_merge(
         copier, transaction, query_parameters, holding_tables, logger)
-    transaction.commit()
-    transaction.begin()
-
-    _prepare_posubmission_merge(copier, transaction, holding_tables, logger)
     transaction.commit()
     transaction.begin()
 
@@ -557,11 +548,11 @@ def _copy_active_translations_as_update(child, transaction, logger):
         DELETE FROM %(pofile_holding_table)s AS holding
         USING POFile
         WHERE holding.id = POFile.id""" % query_parameters)
-    logger.info("Filtering out inert POMsgSets")
+    logger.info("Filtering out inert TranslationMessages")
     cur.execute("""
-        DELETE FROM %(pomsgset_holding_table)s AS holding
-        USING POMsgSet
-        WHERE holding.new_id = POMsgSet.id""" % query_parameters)
+        DELETE FROM %(translationmessage_holding_table)s AS holding
+        USING TranslationMessage
+        WHERE holding.new_id = TranslationMessage.id""" % query_parameters)
     transaction.commit()
     transaction.begin()
     cur = cursor()
@@ -627,8 +618,7 @@ def copy_active_translations(child_series, transaction, logger):
         return
 
     translation_tables = [
-        'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
-        'POMsgSet', 'POSubmission'
+        'POTemplate', 'POTMsgSet', 'POFile', 'TranslationMessage'
         ]
 
     full_name = "%s_%s" % (child_series.distribution.name, child_series.name)
@@ -642,8 +632,6 @@ def copy_active_translations(child_series, transaction, logger):
         # Incremental copy of updates from parent distroseries
         _copy_active_translations_as_update(child_series, transaction, logger)
 
-    # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
-    # POFile.last_touched_pomsgset for POFiles that had POMsgSets and/or
-    # POSubmissions copied in.
-
+    # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up date_changed and
+    # lasttranslator for POFiles that had TranslationMessages copied in.
 
