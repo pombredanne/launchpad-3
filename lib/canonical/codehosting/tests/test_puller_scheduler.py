@@ -1,23 +1,44 @@
 import logging
 import os
-import shutil
-import tempfile
 import unittest
 
-import bzrlib
+from bzrlib.branch import Branch
+from bzrlib.urlutils import local_path_to_url
 
-from canonical.config import config
+from twisted.internet import defer, error
+from twisted.protocols.basic import NetstringParseError
+from twisted.python import failure
+from twisted.trial.unittest import TestCase as TrialTestCase
+
+from canonical.codehosting.puller import scheduler
+from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.launchpad.interfaces import BranchType
-from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.puller.branchtomirror import BranchToMirror
-from canonical.codehosting.tests.helpers import create_branch
-from canonical.codehosting.puller import jobmanager
-from canonical.authserver.client.branchstatus import BranchStatusClient
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
-from canonical.testing import LaunchpadFunctionalLayer, reset_logging
+from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
-class TestJobManager(unittest.TestCase):
+class FakeBranchStatusClient:
+
+    def __init__(self, branch_queues=None):
+        self.branch_queues = branch_queues
+        self.calls = []
+
+    def getBranchPullQueue(self, branch_type):
+        return defer.succeed(self.branch_queues[branch_type])
+
+    def startMirroring(self, branch_id):
+        self.calls.append(('startMirroring', branch_id))
+        return defer.succeed(None)
+
+    def mirrorComplete(self, branch_id, revision_id):
+        self.calls.append(('mirrorComplete', branch_id, revision_id))
+        return defer.succeed(None)
+
+    def mirrorFailed(self, branch_id, revision_id):
+        self.calls.append(('mirrorFailed', branch_id, revision_id))
+        return defer.succeed(None)
+
+
+class TestJobScheduler(unittest.TestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
@@ -32,28 +53,21 @@ class TestJobManager(unittest.TestCase):
         return FakeBranchStatusClient(
             {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
 
-    def testEmptyAddBranches(self):
-        fakeclient = self.makeFakeClient([], [], [])
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        manager.addBranches(fakeclient)
-        self.assertEqual([], manager.branches_to_mirror)
-
-    def testSingleAddBranches(self):
-        # Get a list of branches and ensure that it can add a branch object.
-        expected_branch = BranchToMirror(
-            src='managersingle',
-            dest=config.supermirror.branchesdest + '/00/00/00/00',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        fakeclient = self.makeFakeClient(
-            [(0, 'managersingle', u'name//trunk')], [], [])
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        manager.addBranches(fakeclient)
-        self.assertEqual([expected_branch], manager.branches_to_mirror)
+    def makeJobScheduler(self, branch_type, branch_tuples):
+        if branch_type == BranchType.HOSTED:
+            client = self.makeFakeClient(branch_tuples, [], [])
+        elif branch_type == BranchType.MIRRORED:
+            client = self.makeFakeClient([], branch_tuples, [])
+        elif branch_type == BranchType.IMPORTED:
+            client = self.makeFakeClient([], [], branch_tuples)
+        else:
+            self.fail("Unknown branch type: %r" % (branch_type,))
+        return scheduler.JobScheduler(
+            client, logging.getLogger(), branch_type)
 
     def testManagerCreatesLocks(self):
         try:
-            manager = jobmanager.JobManager(BranchType.HOSTED)
+            manager = self.makeJobScheduler(BranchType.HOSTED, [])
             manager.lockfilename = self.masterlock
             manager.lock()
             self.failUnless(os.path.exists(self.masterlock))
@@ -63,12 +77,12 @@ class TestJobManager(unittest.TestCase):
 
     def testManagerEnforcesLocks(self):
         try:
-            manager = jobmanager.JobManager(BranchType.HOSTED)
+            manager = self.makeJobScheduler(BranchType.HOSTED, [])
             manager.lockfilename = self.masterlock
             manager.lock()
-            anothermanager = jobmanager.JobManager(BranchType.HOSTED)
+            anothermanager = self.makeJobScheduler(BranchType.HOSTED, [])
             anothermanager.lockfilename = self.masterlock
-            self.assertRaises(jobmanager.LockError, anothermanager.lock)
+            self.assertRaises(scheduler.LockError, anothermanager.lock)
             self.failUnless(os.path.exists(self.masterlock))
             manager.unlock()
         finally:
@@ -78,138 +92,264 @@ class TestJobManager(unittest.TestCase):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
 
-    def testImportAddBranches(self):
-        client = self.makeFakeClient(
-            [], [],
-            [(14, 'http://escudero.ubuntu.com:680/0000000e',
-              'vcs-imports//main')])
-        import_manager = jobmanager.JobManager(BranchType.IMPORTED)
-        import_manager.addBranches(client)
-        expected_branch = BranchToMirror(
-            src='http://escudero.ubuntu.com:680/0000000e',
-            dest=config.supermirror.branchesdest + '/00/00/00/0e',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        self.assertEqual(import_manager.branches_to_mirror, [expected_branch])
-        branch_types = [branch.branch_type
-                        for branch in import_manager.branches_to_mirror]
-        self.assertEqual(branch_types, [BranchType.IMPORTED])
 
-    def testUploadAddBranches(self):
-        client = self.makeFakeClient(
-            [(25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed')],
-            [], [])
-        upload_manager = jobmanager.JobManager(BranchType.HOSTED)
-        upload_manager.addBranches(client)
-        expected_branch = BranchToMirror(
-            src='/tmp/sftp-test/branches/00/00/00/19',
-            dest=config.supermirror.branchesdest + '/00/00/00/19',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        self.assertEqual(upload_manager.branches_to_mirror, [expected_branch])
-        branch_types = [branch.branch_type
-                        for branch in upload_manager.branches_to_mirror]
-        self.assertEqual(branch_types, [BranchType.HOSTED])
+class TestPullerMasterProtocol(TrialTestCase):
+    """Tests for the process protocol used by the job manager."""
 
-    def testMirrorAddBranches(self):
-        client = self.makeFakeClient(
-            [],
-            [(15, 'http://example.com/gnome-terminal/main', u'name12//main')],
-            [])
-        mirror_manager = jobmanager.JobManager(BranchType.MIRRORED)
-        mirror_manager.addBranches(client)
-        expected_branch = BranchToMirror(
-            src='http://example.com/gnome-terminal/main',
-            dest=config.supermirror.branchesdest + '/00/00/00/0f',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        self.assertEqual(mirror_manager.branches_to_mirror, [expected_branch])
-        branch_types = [branch.branch_type
-                        for branch in mirror_manager.branches_to_mirror]
-        self.assertEqual(branch_types, [BranchType.MIRRORED])
+    class StubPullerListener:
+        """Stub listener object that records calls."""
+
+        def __init__(self):
+            self.calls = []
+
+        def startMirroring(self):
+            self.calls.append('startMirroring')
+
+        def mirrorSucceeded(self, last_revision):
+            self.calls.append(('mirrorSucceeded', last_revision))
+
+        def mirrorFailed(self, message, oops):
+            self.calls.append(('mirrorFailed', message, oops))
 
 
-class TestJobManagerInLaunchpad(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+    class StubTransport:
+        """Stub transport that implements the minimum for a ProcessProtocol.
 
-    testdir = None
+        We're manually feeding data to the protocol, so we don't need a real
+        transport.
+        """
+
+        def __init__(self):
+            self.calls = []
+
+        def loseConnection(self):
+            self.calls.append('loseConnection')
+
+        def signalProcess(self, signal_name):
+            self.calls.append(('signalProcess', signal_name))
+
 
     def setUp(self):
-        self.test_dir = tempfile.mkdtemp()
-        # Change the HOME environment variable in order to ignore existing
-        # user config files.
-        os.environ.update({'HOME': self.test_dir})
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
+        self.arbitrary_branch_id = 1
+        self.listener = self.StubPullerListener()
+        self.termination_deferred = defer.Deferred()
+        self.protocol = scheduler.PullerMasterProtocol(
+            self.termination_deferred, self.listener)
+        self.protocol.transport = self.StubTransport()
 
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        self.authserver.tearDown()
+    def convertToNetstring(self, string):
+        return '%d:%s,' % (len(string), string)
 
-    def _getBranchDir(self, branchname):
-        return os.path.join(self.test_dir, branchname)
+    def sendToProtocol(self, *arguments):
+        for argument in arguments:
+            self.protocol.outReceived(self.convertToNetstring(str(argument)))
 
-    def assertMirrored(self, branch_to_mirror):
-        """Assert that branch_to_mirror's source and destinations have the same
-        revisions.
+    def test_startMirroring(self):
+        """Receiving a startMirroring message notifies the listener."""
+        self.sendToProtocol('startMirroring', 0)
+        self.assertEqual(['startMirroring'], self.listener.calls)
 
-        :param branch_to_mirror: a BranchToMirror instance.
+    def test_mirrorSucceeded(self):
+        """Receiving a mirrorSucceeded message notifies the listener."""
+        self.sendToProtocol('startMirroring', 0)
+        self.listener.calls = []
+        self.sendToProtocol('mirrorSucceeded', 1, 1234)
+        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+
+    def test_mirrorFailed(self):
+        """Receiving a mirrorFailed message notifies the listener."""
+        self.sendToProtocol('startMirroring', 0)
+        self.listener.calls = []
+        self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
+        self.assertEqual(
+            [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
+
+    def test_processTermination(self):
+        """The protocol fires a Deferred when it is terminated."""
+        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+        return self.termination_deferred
+
+    def test_deferredWaitsForListener(self):
+        """If the process terminates while we are waiting """
+
+    def test_terminatesWithError(self):
+        """When the child process terminates with an unexpected error, raise
+        an error that includes the contents of stderr and the exit condition.
         """
-        source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source)
-        dest_branch = bzrlib.branch.Branch.open(branch_to_mirror.dest)
-        self.assertEqual(source_branch.last_revision(),
-                         dest_branch.last_revision())
 
-    def testJobRunner(self):
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        self.assertEqual(len(manager.branches_to_mirror), 0)
+        def check_failure(failure):
+            self.assertEqual('error message', failure.error)
+            return failure
 
-        client = BranchStatusClient()
-        branches = [
-            self._makeBranch("brancha", 1, client),
-            self._makeBranch("branchb", 2, client),
-            self._makeBranch("branchc", 3, client),
-            self._makeBranch("branchd", 4, client),
-            self._makeBranch("branche", 5, client)]
+        self.termination_deferred.addErrback(check_failure)
 
-        manager.branches_to_mirror.extend(branches)
+        self.protocol.errReceived('error ')
+        self.protocol.errReceived('message')
+        self.protocol.processEnded(
+            failure.Failure(error.ProcessTerminated(exitCode=1)))
 
-        manager.run(logging.getLogger())
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
 
-        self.assertEqual(len(manager.branches_to_mirror), 0)
-        for branch in branches:
-            self.assertMirrored(branch)
-
-    def _makeBranch(self, relative_dir, target, branch_status_client,
-                    unique_name=None):
-        """Given a relative directory, make a strawman branch and return it.
-
-        @param relativedir - The directory to make the branch
-        @output BranchToMirror - A branch object representing the strawman
-                                    branch
+    def test_stderrFailsProcess(self):
+        """If the process prints to stderr, then the Deferred fires an
+        errback, even if it terminated successfully.
         """
-        branch_dir = os.path.join(self.test_dir, relative_dir)
-        create_branch(branch_dir)
-        if target == None:
-            target_dir = None
-        else:
-            target_dir = os.path.join(
-                self.test_dir, branch_id_to_path(target))
-        return BranchToMirror(
-                branch_dir, target_dir, branch_status_client, target,
-                unique_name, branch_type=None)
+
+        def check_failure(failure):
+            self.assertEqual('error message', failure.error)
+            return failure
+
+        self.termination_deferred.addErrback(check_failure)
+
+        self.protocol.errReceived('error ')
+        self.protocol.errReceived('message')
+        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+
+        return self.termination_deferred
+
+    def test_unrecognizedMessage(self):
+        """The protocol notifies the listener when it receives an unrecognized
+        message.
+        """
+        self.protocol.outReceived(self.convertToNetstring('foo'))
+
+        def check_failure(exception):
+            self.assertEqual(
+                [('signalProcess', 'KILL')], self.protocol.transport.calls)
+            self.assertTrue('foo' in str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, scheduler.BadMessage)
+
+        return deferred.addCallback(check_failure)
+
+    def test_invalidNetstring(self):
+        """The protocol terminates the session if it receives an unparsable
+        netstring.
+        """
+        self.protocol.outReceived('foo')
+
+        def check_failure(exception):
+            self.assertEqual(
+                ['loseConnection', ('signalProcess', 'KILL')],
+                self.protocol.transport.calls)
+            self.assertTrue('foo' in str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, NetstringParseError)
+
+        return deferred.addCallback(check_failure)
 
 
-class FakeBranchStatusClient:
-    """A dummy branch status client implementation for testing getBranches()"""
+class TestPullerMaster(TrialTestCase):
 
-    def __init__(self, branch_queues):
-        self.branch_queues = branch_queues
+    def setUp(self):
+        self.status_client = FakeBranchStatusClient()
+        self.arbitrary_branch_id = 1
+        self.eventHandler = scheduler.PullerMaster(
+            self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
+            BranchType.HOSTED, logging.getLogger(), self.status_client)
 
-    def getBranchPullQueue(self, branch_type):
-        return self.branch_queues[branch_type]
+    def test_startMirroring(self):
+        deferred = self.eventHandler.startMirroring()
+
+        def checkMirrorStarted(ignored):
+            self.assertEqual(
+                [('startMirroring', self.arbitrary_branch_id)],
+                self.status_client.calls)
+
+        return deferred.addCallback(checkMirrorStarted)
+
+    def test_mirrorComplete(self):
+        arbitrary_revision_id = 'rev1'
+        deferred = self.eventHandler.startMirroring()
+
+        def mirrorSucceeded(ignored):
+            self.status_client.calls = []
+            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
+        deferred.addCallback(mirrorSucceeded)
+
+        def checkMirrorCompleted(ignored):
+            self.assertEqual(
+                [('mirrorComplete', self.arbitrary_branch_id,
+                  arbitrary_revision_id)],
+                self.status_client.calls)
+        return deferred.addCallback(checkMirrorCompleted)
+
+    def test_mirrorFailed(self):
+        arbitrary_error_message = 'failed'
+
+        deferred = self.eventHandler.startMirroring()
+
+        def mirrorFailed(ignored):
+            self.status_client.calls = []
+            return self.eventHandler.mirrorFailed(
+                arbitrary_error_message, 'oops')
+        deferred.addCallback(mirrorFailed)
+
+        def checkMirrorFailed(ignored):
+            self.assertEqual(
+                [('mirrorFailed', self.arbitrary_branch_id,
+                  arbitrary_error_message)],
+                self.status_client.calls)
+        return deferred.addCallback(checkMirrorFailed)
+
+
+class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
+    """Tests for the puller master that launch sub-processes."""
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        BranchTestCase.setUp(self)
+        self.db_branch = self.makeBranch(BranchType.HOSTED)
+        self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
+        self.client = FakeBranchStatusClient()
+
+    def run(self, result):
+        # We want to use Trial's run() method so we can return Deferreds.
+        return TrialTestCase.run(self, result)
+
+    def _dumpError(self, failure):
+        # XXX: JonathanLange 2007-10-17: It would be nice if we didn't have to
+        # do this manually, and instead the test automatically gave us the
+        # full error.
+        error = getattr(failure, 'error', 'No stderr stored.')
+        print error
+        return failure
+
+    def test_mirror(self):
+        """Actually mirror a branch using a worker sub-process.
+
+        This test actually launches a worker process and makes sure that it
+        runs successfully and that we report the successful run.
+        """
+        revision_id = self.bzr_tree.branch.last_revision()
+        puller_master = scheduler.PullerMaster(
+            self.db_branch.id, local_path_to_url('src-branch'),
+            self.db_branch.unique_name, self.db_branch.branch_type,
+            logging.getLogger(), self.client)
+        puller_master.destination_url = os.path.abspath('dest-branch')
+        deferred = puller_master.mirror().addErrback(self._dumpError)
+
+        def check_authserver_called(ignored):
+            self.assertEqual(
+                [('startMirroring', self.db_branch.id),
+                 ('mirrorComplete', self.db_branch.id, revision_id)],
+                self.client.calls)
+            return ignored
+        deferred.addCallback(check_authserver_called)
+
+        def check_branch_mirrored(ignored):
+            self.assertEqual(
+                revision_id,
+                Branch.open(puller_master.destination_url).last_revision())
+            return ignored
+        deferred.addCallback(check_branch_mirrored)
+
+        return deferred
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

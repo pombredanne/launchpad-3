@@ -29,13 +29,13 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    PackagingType, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, NotFoundError, RevisionControlSystems)
-from canonical.lp.dbschema import (
-    ImportStatus, SpecificationSort,
-    SpecificationGoalStatus, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus)
+    IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
+    IProductSeriesSourceAdmin, NotFoundError, PackagingType,
+    RevisionControlSystems, SpecificationSort, SpecificationGoalStatus,
+    SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus)
 
 
 class NoImportBranchError(Exception):
@@ -59,7 +59,9 @@ class DatePublishedSyncError(Exception):
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     HasTranslationImportsMixin):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSourceAdmin)
+    implements(
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -167,18 +169,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if self.user_branch is not None:
             return self.user_branch
         return self.import_branch
-
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(productseries=self)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(productseries=self, iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -324,9 +314,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
+                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                                  SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -424,8 +414,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         elif self.rcstype == RevisionControlSystems.SVN:
             self.syncinterval = datetime.timedelta(hours=6)
         else:
-            raise AssertionError('Unknown default sync interval for rcs type: %s'
-                                 % self.rcstype.title)
+            raise AssertionError(
+                'Unknown default sync interval for rcs type: %s'
+                % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def markTestFailed(self):
@@ -526,10 +517,48 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
-    def newMilestone(self, name, dateexpected=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
-        return Milestone(name=name, dateexpected=dateexpected,
-                         product=self.product, productseries=self)
+        return Milestone(
+            name=name, dateexpected=dateexpected, description=description,
+            product=self.product, productseries=self)
+
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(productseries=self)
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            iscurrent IS TRUE AND
+            ProductSeries.product = Product.id AND
+            Product.official_rosetta IS TRUE
+            ''' % sqlvalues(self),
+            clauseTables = ['ProductSeries', 'Product'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            ProductSeries.product = Product.id AND
+            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
+            ''' % sqlvalues(self),
+            clauseTables = ['ProductSeries', 'Product'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
 
 class ProductSeriesSet:
@@ -556,10 +585,6 @@ class ProductSeriesSet:
         query = self.composeQueryString(text, importstatus)
         return ProductSeries.select(
             query, distinct=True, clauseTables=['Product', 'Project'])
-
-    def importcount(self, status=None):
-        """See `IProductSeriesSet`."""
-        return self.searchImports(importstatus=status).count()
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.

@@ -27,15 +27,19 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, QueueInconsistentStateError)
+    ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
+    ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
+    PackagePublishingPocket, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
-from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class FatalUploadError(Exception):
     """A fatal error occurred processing the upload; processing aborted."""
+
+
+class EarlyReturnUploadError(Exception):
+    """An error occurred that prevented further error collection."""
 
 
 class NascentUpload:
@@ -125,9 +129,9 @@ class NascentUpload:
         # We need to process changesfile addresses at this point because
         # we depend on an already initialised policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
-        self.run_and_collect_errors(self.changes.processAddresses)
+        self.run_and_reject_on_error(self.changes.processAddresses)
 
-        self.run_and_collect_errors(self.changes.processFiles)
+        self.run_and_reject_on_error(self.changes.processFiles)
 
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
@@ -169,13 +173,7 @@ class NascentUpload:
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
-            # XXX cprov 2007-06-11: temporally disabling 'auto-overrides' for
-            # PPAs, because users can't perform post-publications overrides
-            # by themselves yet. It's better to assume that they will get
-            # the attributes right when packaging the source then to block
-            # them on immutable state.
-            if not self.is_ppa:
-                self.find_and_apply_overrides()
+            self.find_and_apply_overrides()
 
         signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
@@ -394,6 +392,13 @@ class NascentUpload:
             else:
                 raise AssertionError("Unknown error occurred: %s" % str(error))
 
+    def run_and_reject_on_error(self, callable):
+        """Run given callable and raise EarlyReturnUploadError on errors."""
+        self.run_and_collect_errors(callable)
+        if self.is_rejected:
+            raise EarlyReturnUploadError(
+                "An error occurred that prevented further processing.")
+
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
@@ -552,10 +557,10 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
-            archive = self.policy.archive
-            if not self.is_ppa:
-                # We must check all the archives as the archive on the upload
-                # may have been overridden on previous uploads.
+
+            if self.is_ppa:
+                archive = self.policy.archive
+            else:
                 archive = None
             candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
@@ -594,11 +599,12 @@ class NascentUpload:
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
-        archive = self.policy.archive
-        if not self.is_ppa:
-            # We must check all the archives as the archive on the upload
-            # may have been overridden on previous uploads.
+
+        if self.is_ppa:
+            archive = self.policy.archive
+        else:
             archive = None
+
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
                 binary_name, include_pending=True, pocket=pocket,
@@ -661,8 +667,9 @@ class NascentUpload:
 
         Override target component and section.
         """
-        self.logger.debug("%s: (source) exists in %s" % (
-            uploaded_file.package, override.pocket.name))
+        self.logger.debug("%s (source) exists in %s" % (
+            override.sourcepackagerelease.title,
+            override.pocket.name))
 
         uploaded_file.component_name = override.component.name
         uploaded_file.section_name = override.section.name
@@ -672,8 +679,9 @@ class NascentUpload:
 
         Override target component, section and priority.
         """
-        self.logger.debug("%s: (binary) exists in %s/%s" % (
-            uploaded_file.package, override.distroarchseries.architecturetag,
+        self.logger.debug("%s (binary) exists in %s/%s" % (
+            override.binarypackagerelease.title,
+            override.distroarchseries.architecturetag,
             override.pocket.name))
 
         uploaded_file.component_name = override.component.name
@@ -707,7 +715,9 @@ class NascentUpload:
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    if not self.is_ppa:
+                    if self.is_ppa:
+                        uploaded_file.component_name = 'main'
+                    else:
                         self.logger.debug(
                             "%s: (source) NEW" % (uploaded_file.package))
                         uploaded_file.new = True
@@ -738,7 +748,9 @@ class NascentUpload:
                     if ancestry is not None:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
-                    if not self.is_ppa:
+                    if self.is_ppa:
+                        uploaded_file.component_name = 'main'
+                    else:
                         self.logger.debug(
                             "%s: (binary) NEW" % (uploaded_file.package))
                         uploaded_file.new = True
@@ -909,12 +921,6 @@ class NascentUpload:
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
-        # PPA uploads are Auto-Accepted by default
-        if self.is_ppa:
-            self.logger.debug("Setting it to ACCEPTED")
-            self.queue_root.setAccepted()
-            return
-
         if not self.is_new:
             # if it is known (already overridden properly), move it to
             # ACCEPTED state automatically
@@ -930,6 +936,9 @@ class NascentUpload:
                     (self.queue_root.customfiles.count() == 0)):
                     self.logger.debug("Creating PENDING publishing record.")
                     self.queue_root.realiseUpload()
+                    # Do not even try to close bugs for PPA uploads
+                    if self.is_ppa:
+                        return
                     # Closing bugs.
                     changesfile_object = open(self.changes.filepath, 'r')
                     close_bugs_for_queue_item(

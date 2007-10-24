@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html 
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal">
+
+    <title tal:content="view/title">Recently opened bugs</title>
+
+    <id tal:content="view/url">http://feeds.launchpad.net/bugs/</id>
+    <link rel="self" tal:attributes="href view/url" />
+    <link rel="alternate" tal:attributes="href view/site_url" />
+    <logo tal:condition="view/logo"
+          tal:content="view/logo" />
+    <icon tal:condition="view/icon"
+          tal:content="view/icon" />
+    <updated tal:condition="view/date_updated"
+             tal:content="view/date_updated">2007-05-26T12:45:01Z</updated>
+    <entry tal:repeat="entry view/getItems">
+       <metal:entry metal:use-macro="entry/@@feed-entry-atom/feed-entry" />
+    </entry>
+</feed>

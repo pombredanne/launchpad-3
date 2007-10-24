@@ -23,10 +23,27 @@
         set_attributes="date_last_modified"/>
   </content>
 
+  <content class="canonical.launchpad.database.BranchWithSortKeys">
+    <require
+        permission="launchpad.View"
+        interface="canonical.launchpad.interfaces.IBranch"
+        />
+    <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IBranch"
+        />
+  </content>
+
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       factory="canonical.launchpad.browser.BranchSOP"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.BranchBadges"
       />
 
     <browser:menus
@@ -133,6 +150,14 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-delete.pt" />
+
+  <browser:page
+      name="+mirror-status"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchMirrorStatusView"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branch-mirror-status.pt" />
 
   <browser:page
       name="+reassign"
