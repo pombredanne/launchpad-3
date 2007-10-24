@@ -151,8 +151,8 @@ WHERE
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
 	submitter, reviewer, validation_status, is_current, is_imported,
-	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
-	date_created, date_reviewed, comment_text,
+	was_in_last_import, was_obsolete_in_last_import, was_fuzzy_in_last_import,
+    is_fuzzy, date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
 SELECT
 	s0.potranslation AS msgstr0,
@@ -169,6 +169,7 @@ SELECT
 	FALSE AS is_imported,
 	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
+    m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
 		AS date_created,
@@ -337,8 +338,8 @@ WHERE
 INSERT INTO TranslationMessage(
 	pofile, potmsgset, origin, submitter, reviewer, validation_status,
 	is_current, is_imported, was_in_last_import,
-	was_obsolete_in_last_import, is_fuzzy, date_created, date_reviewed,
-	comment_text, msgsetid)
+	was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
+    date_created, date_reviewed, comment_text, msgsetid)
 SELECT
 	m.pofile AS pofile,
 	m.potmsgset AS potmsgset,
@@ -354,6 +355,7 @@ SELECT
 	FALSE AS is_imported,
 	FALSE AS was_in_last_import,
 	m.obsolete AS was_obsolete_in_last_import,
+    m.publishedfuzzy AS was_fuzzy_in_last_import,
 	m.isfuzzy AS is_fuzzy,
 	m.date_reviewed AS date_created,
 	m.date_reviewed AS date_reviewed,
