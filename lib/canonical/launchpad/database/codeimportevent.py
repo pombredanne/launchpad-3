@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'CodeImportEvent',
     'CodeImportEventSet',
+    'CodeImportEventToken',
     ]
 
 
@@ -19,7 +20,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportEventDataType, CodeImportEventType, ICodeImportEvent,
-    ICodeImportEventSet, RevisionControlSystems)
+    ICodeImportEventSet, ICodeImportEventToken, RevisionControlSystems)
 
 
 class CodeImportEvent(SQLBase):
@@ -90,6 +91,26 @@ class CodeImportEventSet:
         self._recordSnapshot(event, code_import)
         return event
 
+    def beginModify(self, code_import):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None
+        items = list(self._iterItemsForSnapshot(code_import))
+        return CodeImportEventToken(items)
+
+    def newModify(self, code_import, person, token):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None
+        assert person is not None
+        assert token is not None
+        items = self._findModifications(code_import, token)
+        if items is None:
+            return None
+        event = CodeImportEvent(
+            event_type=CodeImportEventType.MODIFY,
+            code_import=code_import, person=person)
+        self._recordItems(event, items)
+        return event
+
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""
         self._recordItems(event, self._iterItemsForSnapshot(code_import))
@@ -138,6 +159,53 @@ class CodeImportEventSet:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))
 
+    def _findModifications(self, code_import, token):
+        """Find modifications made to the code import.
+
+        If no change was found, return None. Otherwise return a list of items
+        that describe the old and new state of the modified code import.
+
+        :param code_import: CodeImport object that was presumably modified.
+
+        :param token: Token returned by a call to _makeModificationToken
+            before the code import was modified.
+        :return: Set of items that can be passed to _recordItems, or None.
+        """
+        old_dict = dict(token.items)
+        new_dict = dict(self._iterItemsForSnapshot(code_import))
+
+        assert old_dict['CODE_IMPORT'] == new_dict['CODE_IMPORT'], (
+            "Token was produced from a different CodeImport object: "
+            "id in token = %s, id of code_import = %s"
+            % (old_dict['CODE_IMPORT'], new_dict['CODE_IMPORT']))
+
+        # The set of keys are not identical if the rcstype changed.
+        all_keys = set(old_dict.keys()).union(set(new_dict.keys()))
+
+        items = set()
+        has_changes = False
+        for key in all_keys:
+            old_value = old_dict.get(key)
+            new_value = new_dict.get(key)
+
+            # Record current value for this key.
+            items.add((key, new_value))
+
+            if old_value != new_value:
+                # Value has changed. Record previous value as well as current.
+                has_changes = True
+                items.add(('OLD_' + key, old_value))
+
+        if has_changes:
+            return items
+        else:
+            return None
 
 
+class CodeImportEventToken:
+    """See `ICodeImportEventToken`."""
 
+    implements(ICodeImportEventToken)
+
+    def __init__(self, items):
+        self.items = items

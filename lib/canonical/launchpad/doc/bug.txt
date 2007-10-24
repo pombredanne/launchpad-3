@@ -104,7 +104,12 @@ private. A bug cannot be made private by an anonymous user.
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'private', 'launchpad.Edit')
+    ForbiddenAttribute: ('private', ...)
+
+    >>> firefox_crashes.setPrivate(True, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'setPrivate', 'launchpad.Edit')
 
 We have to be logged in, so let's do that:
 
@@ -113,7 +118,7 @@ We have to be logged in, so let's do that:
 There are currently no people subscribed to this bug:
 
     >>> print firefox_crashes.subscriptions.count()
-    0 
+    0
 
 The rule with private bugs is that only direct subscribers can view the
 bug after it's been marked private. So, if Sample Person is to mark the
@@ -133,7 +138,8 @@ Now we can mark bug #6 private:
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
-    >>> firefox_crashes.private = True
+    >>> firefox_crashes.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
     ...     ["id", "title", "private"])
@@ -194,7 +200,8 @@ and set it private (as Foo Bar again who, of course, is an admin.)
 And again, let's fake setting the bug private:
 
     >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
-    >>> blackhole_trash_folder.private = True
+    >>> blackhole_trash_folder.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
     ...     ["id", "title", "private"])
@@ -363,12 +370,27 @@ them, e.g. IDistroSeries and ISourcePackage.
     Traceback (most recent call last):
       ...
     NotImplementedError: A new bug cannot be filed directly...
-    >>> params = CreateBugParams
+    >>> params = CreateBugParams(
     ...     owner=current_user(), title="test", comment="test")
     >>> ubuntu_warty_firefox.createBug(params)
     Traceback (most recent call last):
       ...
     NotImplementedError: A new bug cannot be filed directly...
+
+
+== Prevent reporter from being subscribed to filed bugs ==
+
+If necessary, subscriber_reporter may be specified when creating a bug,
+to prevent the reporter from being subscribed to the bug. This is useful
+when importing bugs.
+
+    >>> params = CreateBugParams(
+    ...     owner=current_user(), title="test", comment="test",
+    ...     subscribe_reporter=False)
+    >>> bug = ubuntu.createBug(params)
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
 
 == Date Last Updated ==
 
@@ -496,7 +518,8 @@ Changing bug visibility.
 
     >>> firefox_bug.private
     False
-    >>> firefox_bug.private = True
+    >>> firefox_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
     >>> bug_visibility_changed = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["private"])

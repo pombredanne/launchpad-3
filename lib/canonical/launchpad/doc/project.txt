@@ -108,7 +108,7 @@ ordered by their names.
 We should be able to generate filtered lists of specs on a project.
 
  >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 
@@ -227,9 +227,15 @@ Rosetta officially.
   >>> netapplet.official_rosetta
   False
 
-Even if it has resources to translate.
+And thus, it doesn't have any translatable series.
 
   >>> len(netapplet.translatable_series)
+  0
+
+Even if it has resources to translate.
+
+  >>> sum([len(series.getTranslationTemplates())
+  ...      for series in netapplet.serieses])
   1
 
 

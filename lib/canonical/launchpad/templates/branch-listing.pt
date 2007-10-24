@@ -4,23 +4,29 @@
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/request/URL">
-    <label tal:attributes="for context/view/widgets/lifecycle/name">
-    Show branches with status of</label>
-    <div tal:replace="structure context/view/widgets/lifecycle"/>
+    <label for="field.lifecycle">
+      Branches with status:
+    </label>
+    <tal:widgets repeat="widget context/view/widgets"
+                 replace="structure widget" />
     <noscript>
       <input type="submit" value="Filter"/>
     </noscript>
   </form>
 
 <script type="text/javascript">
-function submit_filter()
-{
-  var f = document.getElementById('filter_form');
-  f.submit()
+function submit_filter() {
+  getElement('filter_form').submit();
 }
 
-var field = document.getElementById('field.lifecycle');
-field.onchange = submit_filter;
+function hookUpFilterSubmission () {
+  connect('field.lifecycle', 'onchange', submit_filter);
+  if (getElement('field.sort_by')) {
+    connect('field.sort_by', 'onchange', submit_filter);
+  }
+}
+
+registerLaunchpadFunction(hookUpFilterSubmission);
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">
@@ -57,10 +63,7 @@ field.onchange = submit_filter;
              tal:content="branch/name/fmt:shorten/30">
                Name
           </a>
-          <img src="/@@/private" alt="private" title="Private"
-               tal:condition="branch/private"/>
-          <img src="/@@/bug" alt="bug" title="Related to a bug"
-               tal:condition="branch/bugbranches"/>
+          <tal:badges replace="structure branch/badges:small"/>
         </td>
         <td tal:condition="context/show_column/author|nothing">
           <a tal:condition="branch/author"

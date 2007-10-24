@@ -34,7 +34,7 @@ from zope.app.content_types import guess_content_type
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     BugTaskStatus, CreateBugParams, IBugActivitySet,
-    IBugAttachmentSet, IBugExternalRefSet, IBugSet, IBugTrackerSet,
+    IBugAttachmentSet, IBugSet, IBugTrackerSet,
     IBugWatchSet, ICveSet, IEmailAddressSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IMessageSet, IPersonSet, NoBugTrackerFound,
     PersonCreationRationale)
@@ -265,7 +265,7 @@ class BugImporter:
             private=private or security_related,
             security_related=security_related,
             owner=owner))
-        bug.private = private
+        bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
 
@@ -281,19 +281,12 @@ class BugImporter:
             self.createAttachments(bug, msg, commentnode)
 
         # set up bug
-        bug.private = get_value(bugnode, 'private') == 'True'
+        bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
         bug.security_related = get_value(bugnode, 'security_related') == 'True'
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:
             bug.description = description
-
-        for urlnode in get_all(bugnode, 'urls/url'):
-            getUtility(IBugExternalRefSet).createBugExternalRef(
-                bug=bug,
-                url=urlnode.get('href'),
-                title=get_text(urlnode),
-                owner=bug.owner)
 
         for cvenode in get_all(bugnode, 'cves/cve'):
             cve = getUtility(ICveSet)[get_text(cvenode)]

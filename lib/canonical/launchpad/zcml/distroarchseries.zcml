@@ -10,7 +10,7 @@
     <content class="canonical.launchpad.database.DistroArchSeries">
         <allow interface="canonical.launchpad.interfaces.IDistroArchSeries"/>
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-        <allow interface="canonical.launchpad.interfaces.IPublishing"/>
+        <allow interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IDistroArchSeries"/>

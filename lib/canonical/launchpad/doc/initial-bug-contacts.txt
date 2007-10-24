@@ -305,7 +305,9 @@ The Ubuntu Gnome team was subscribed to the bug:
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package.
 
-    >>> bug_one_in_ubuntu_firefox.bug.private = True
+    >>> bug_one_in_ubuntu_firefox.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
 
 So, if Martin Pitt becomes a bug contact for ubuntu mozilla-firefox:
 

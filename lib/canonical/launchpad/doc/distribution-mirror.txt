@@ -8,8 +8,7 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
     ...     IDistroArchSeriesSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorStatus)
-    >>> from canonical.lp.dbschema import (
+    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorStatus,
     ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)

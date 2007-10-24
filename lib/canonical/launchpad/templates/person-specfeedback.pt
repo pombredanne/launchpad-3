@@ -9,10 +9,6 @@
   <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
   <h1>Feature feedback requests</h1>
 </metal:heading>
