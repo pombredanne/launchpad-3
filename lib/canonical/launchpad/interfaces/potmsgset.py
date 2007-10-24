@@ -1,5 +1,10 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+from zope.interface import Interface, Attribute
+from zope.schema import Object, Text
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import IPOMsgID
 __metaclass__ = type
 
 __all__ = [
@@ -21,6 +26,7 @@ class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
     id = Attribute("""An identifier for this POTMsgSet""")
+
     context = Text(
         title=_(
             "String used to disambiguate messages with identical msgids."),

@@ -14,9 +14,7 @@ from canonical.launchpad.interfaces import (
     TranslationConstants)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
-from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.launchpad.database.posubmission import POSubmission
+from canonical.launchpad.database.translationmessage import TranslationMessage
 
 
 class POTMsgSet(SQLBase):
@@ -59,7 +57,10 @@ class POTMsgSet(SQLBase):
     @property
     def plural_text(self):
         """See `IPOTMsgSet`."""
-        return self.msgid_plural.msgid
+        if self.msgid_plural is None:
+            return None
+        else:
+            return self.msgid_plural.msgid
 
     def getCurrentTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
@@ -116,17 +117,35 @@ class POTMsgSet(SQLBase):
             original_texts.append(plural_text)
         return original_texts
 
-    def _validate_translations(self, translations, fuzzy, ignore_errors):
-        """Validate all the `translations` and return a pair of
-        (validation_status, sanitized_translations).
+    def _sanitizeTranslations(self, translations, pluralforms):
+        """Sanitize `translations` using self.applySanityFixes.
+
+        If there is no certain pluralform in `translations`, set it to None.
+        If there are `translations` with greater pluralforms than allowed,
+        sanitize and keep them.
         """
-        # By default all translations are correct.
-        validation_status = TranslationValidationStatus.OK
 
         # Fix the trailing and leading whitespaces
         sanitized_translations = {}
-        for index, value in translations.items():
-            sanitized_translations[index] = self.applySanityFixes(value)
+        for pluralform in range(pluralforms):
+            if pluralform in translations:
+                sanitized_translations[pluralform] = self.applySanityFixes(
+                    translations[pluralform])
+            else:
+                sanitized_translations[pluralform] = None
+        # Unneeded plural forms are stored as well (needed since we may
+        # have incorrect plural form data, so we can just reactivate them
+        # once we fix the plural information for the language)
+        for index, value in translations:
+            if index not in sanitized_translations:
+                sanitized_translations[index] = self.applySanityFixes(value)
+
+        return sanitized_translations
+
+    def _validate_translations(self, translations, fuzzy, ignore_errors):
+        """Validate all the `translations` and return a validation_status."""
+        # By default all translations are correct.
+        validation_status = TranslationValidationStatus.OK
 
         # Cache the list of singular_text and plural_text
         original_texts = self._list_of_msgids()
@@ -135,7 +154,7 @@ class POTMsgSet(SQLBase):
         # to know if gettext is unhappy with the input.
         try:
             helpers.validate_translation(
-                original_texts, sanitized_translations, self.flags())
+                original_texts, translations, self.flags())
         except gettextpo.error:
             if fuzzy or ignore_errors:
                 # The translations are stored anyway, but we set them as
@@ -144,8 +163,8 @@ class POTMsgSet(SQLBase):
             else:
                 # Check to know if there is any translation.
                 has_translations = False
-                for key in sanitized_translations.keys():
-                    if sanitized_translations[key] != '':
+                for key in translations.keys():
+                    if translations[key] is not None:
                         has_translations = True
                         break
 
@@ -155,200 +174,174 @@ class POTMsgSet(SQLBase):
                     # outside this method.
                     raise
 
-        return (validation_status, sanitized_translations)
+        return validation_status
 
-    def _message_same_as_translations(self, message, translations):
-        """Compare a TranslationMessage `message` with a list of
-        translation strings `translations`.
+    def _findPOTranslations(self, translations):
+        """Find all POTranslation records for passed `translations`."""
+        potranslations = {}
+        for pluralform, translation in translations.items():
+            if translation is None:
+                potranslations[pluralform] = None
+            else:
+                # Find or create a POTranslation for the specified text
+                try:
+                    potranslations[pluralform] = (
+                        POTranslation.byTranslation(translation))
+                except SQLObjectNotFound:
+                    potranslations[pluralform] = (
+                        POTranslation(translation=translation))
+        return potranslations
 
-        If the number of translations is exactly the same, and they all
-        match, return True, otherwise return False.
-        """
-        # TranslationMessage.translations is a list of all possible
-        # plural form translations for this message, with None where
-        # there are no translations
-        for pluralform, text in enumerate(message.translations):
-            # if both have this plural form and they match, or
-            # if there is no plural form submitted and it's None in DB
-            if not((pluralform < len(translations) and
-                    text == translations[pluralform]) or
-                   pluralform >= len(translations) and text is None):
-                return False
-        return True
+    def _findTranslationMessage(self, language, potranslations, pluralforms):
+        """Find a message for this language exactly matching given
+        `translations` strings comparing only `pluralforms` of them."""
+        query='potmsgset=%s AND language=%s' % sqlvalues(self, language)
+        for pluralform in range(pluralforms):
+            if potranslations[pluralform] is None:
+                query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
+            else:
+                query += ' AND msgstr%s=%s' % (
+                    sqlvalues(pluralform, potranslations[pluralform]))
+        return TranslationMessage.selectOne(query)
 
-    def _is_submission_empty(self, pofile, translations):
-        """Return True if all `translations` are None.
-
-        It only checks the valid pluralforms.
-        """
-        for pluralform in range(pofile.language.pluralforms):
-            if (pluralform < len(translations) and
-                translations[pluralform] is not None):
-                return False
-        return True
-
-    def updateTranslation(self, pofile, person, new_translations, fuzzy,
+    def updateTranslation(self, pofile, submitter, new_translations, fuzzy,
                           is_imported, lock_timestamp, ignore_errors=False,
                           force_edition_rights=False):
         """See `IPOTMsgSet`."""
-        # Is the person allowed to edit translations?
+        # Is the submitter allowed to edit translations?
         is_editor = (force_edition_rights or
-                     pofile.canEditTranslations(person))
+                     pofile.canEditTranslations(submitter))
 
         assert (is_imported or is_editor or
-                pofile.canAddSuggestions(person)), (
-                   '%s cannot add translations nor can add suggestions' % (
-                        person.displayname))
+                pofile.canAddSuggestions(submitter)),
+            ('%s cannot add translations nor can add suggestions' % (
+                submitter.displayname))
 
-        # It makes no sense to have a "is_imported" submission from someone
-        # who is not an editor, so assert that
+        # It makes no sense to have an "is_imported" submission from someone
+        # who is not an editor, so assert that.
         if is_imported and not is_editor:
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
 
-        # Sanitize and check that the translations are correct.
-        validation_status, sanitized_translations = (
-            self._validate_translations(new_translations, fuzzy, ignore_errors))
+        assert pofile.language.plural_forms is not None, (
+            "Don't know the number of plural forms for %s language." % (
+                self.pofile.language.englishname))
 
         # If the update is on the translation credits message, yet
-        # update is not is_imported, silently return
+        # update is not is_imported, silently return.
         # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
         if potmsgset.is_translation_credit and not is_imported:
             return
 
-        # And we allow changes to translations by default, we don't force
-        # submissions as suggestions.
-        force_suggestion = False
+        # Sanitize translations
+        sanitized_translations = self._sanitizeTranslations(
+            pofile.language.plural_forms, new_translations)
+        # Check that the translations are correct.
+        validation_status = self._validate_translations(sanitized_translations,
+                                                        is_fuzzy, ignore_errors)
 
+        # If not an editor, default to submitting a suggestion only.
+        just_a_suggestion = not is_editor
+        warn_about_lock_timestamp = False
+
+        # Our current submission is newer than 'lock_timestamp'
+        # and we try to change it, so just add a suggestion.
         if not is_imported and not fuzzy and pofile.isNewerThan(lock_timestamp):
-            # Latest active submission in self is newer than 'lock_timestamp'
-            # and we try to change it.
-            force_suggestion = True
+            just_a_suggestion = True
+            warn_about_lock_timestamp = True
 
-        # Get a currently used and imported translation message.
-        current_translation = self.getCurrentTranslationMessage(pofile.language)
-        imported_translation = self.getImportedTranslationMessage(
-            pofile.language)
+        # Find all POTranslation records for strings we need.
+        potranslations = self._findPOTranslations(sanitized_translations)
 
-        is_same_as_current = self._message_same_as_translations(
-            current_translation, sanitized_translations)
-        if not force_suggestion:
-            has_changed = is_same_as_current
-        else:
-            has_changed = False
+        # Find an existing TranslationMessage with exactly the same set
+        # of translations.  None if there is no such message and needs to be
+        # created.
+        matching_message = self._findTranslationMessage(
+            pofile.language, potranslations, pofile.plural_forms)
 
-        # Try to find existing matching suggestion
-        if is_same_as_current:
-            matching_message = current_translation
-        elif self._message_same_as_translations(imported_translation,
-                                                sanitized_translations):
-            matching_message = imported_translation
-        else:
-            matching_message = TranslationMessage.selectOne(
-                """
-                """
-        # Create a new TranslationMessage if needed
+        # Whether we are creating a new message.
+        new_message_created = False
 
-        if is_imported:
-            origin = RosettaTranslationOrigin.SCM
-        else:
-            origin = RosettaTranslationOrigin.ROSETTAWEB
+        # If it's not a suggestion, it'll be made current.
+        is_current = not just_a_suggestion
 
-        # now loop through the translations and submit them one by one
-        for index in sanitized_translations.keys():
-            newtran = sanitized_translations[index]
-            # see if this affects completeness
-            if newtran is None:
-                complete = False
-            # make the new sighting or submission. note that this may not in
-            # fact create a whole new submission
-            if index < len(active_submissions):
-                old_active_submission = active_submissions[index]
+        if matching_message is None:
+            new_message_created = True
+
+            # A current one has changed if we are creating a new one.
+            has_changed = is_current
+            # Create a new one.
+            if is_imported:
+                origin = RosettaTranslationOrigin.SCM
             else:
-                old_active_submission = None
+                origin = RosettaTranslationOrigin.ROSETTAWEB
 
-            new_submission = self._makeSubmission(
-                person=person,
-                text=newtran,
-                is_fuzzy=fuzzy,
-                pluralform=index,
-                published=published,
-                validation_status=validation_status,
-                force_edition_rights=is_editor,
-                force_suggestion=force_suggestion,
-                active_submission=old_active_submission)
+            matching_message = TranslationMessage(
+                potmsgset=self,
+                pofile=pofile,
+                origin=origin,
+                submitter=submitter,
+                msgstr0=potranslations[0],
+                msgstr1=potranslations[1],
+                msgstr2=potranslations[2],
+                msgstr3=potranslations[3],
+                validation_status=validation_status)
 
-            if (new_submission != old_active_submission and
-                new_submission and new_submission.active):
+            if just_a_suggestion:
+                # Adds suggestion karma: editors get their translations
+                # automatically approved, so they get 'reviewer' karma instead.
+                submitter.assignKarma(
+                    'translationsuggestionadded',
+                    product=self.potemplate.product,
+                    distribution=self.potemplate.distribution,
+                    sourcepackagename=self.potemplate.sourcepackagename)
+
+        else:
+            # A current one is also changing if the matching one is not current.
+            if not matching_message.is_current:
                 has_changed = True
-                while index >= len(active_submissions):
-                    active_submissions.append(None)
-                active_submissions[index] = new_submission
+            # Also update validation status if needed
+            matching_message.validation_status = validation_status
 
-        if has_changed and is_editor:
-            if published:
-                # When update for a submission is published, nobody has
-                # actually reviewed the new submission in Launchpad, so
-                # we don't set the reviewer and date_reviewed
-                self.pofile.last_touched_pomsgset = self
+        if just_a_suggestion:
+            if not matching_message.is_current:
+                matching_message.is_fuzzy = is_fuzzy
+            if warn_about_lock_timestamp:
+                raise TranslationConflict(
+                    'The new translations were saved as suggestions to avoid '
+                    'possible conflicts. Please review them.')
+        else: # It's current submission and submitter is an editor.
+
+            # Set message as current only if it validates ok.
+            if (has_changed and (matching_message.validation_status ==
+                                 TranslationValidationStatus.OK)):
+                matching_message.is_current = True
+                pofile.lasttranslator = submitter
+                pofile.date_changed = UTC_NOW
+
+            if is_imported:
+                matching_message.is_imported = True
             else:
-                self.updateReviewerInfo(person)
-
-        if force_suggestion:
-            # We already stored the suggestions, so we don't have anything
-            # else to do. Raise a TranslationConflict exception to notify
-            # that the changes were saved as suggestions only.
-            raise TranslationConflict(
-                'The new translations were saved as suggestions to avoid '
-                'possible conflicts. Please review them.')
-
-        # We set the fuzzy flag first, and completeness flags as needed:
-        if is_editor:
-            if published:
-                self.publishedfuzzy = fuzzy
-                self.publishedcomplete = complete
-                if has_changed or self.isfuzzy:
-                    # If the upstream translation has changed or we don't have
-                    # a valid translation in Launchpad, then we need to update
-                    # the status flags because we can get some improved
-                    # information from upstream.
-                    matches = 0
-                    updated = 0
-                    for pluralform in range(self.pluralforms):
-                        active = active_submissions[pluralform]
-                        published = self.getPublishedSubmission(pluralform)
-                        if active:
-                            if published and active != published:
-                                updated += 1
-                            else:
-                                matches += 1
-                    if matches == self.pluralforms and self.publishedcomplete:
-                        # The active submission is exactly the same as the
-                        # published one, so the fuzzy and complete flags
-                        # should be also the same.
-                        self.isfuzzy = self.publishedfuzzy
-                        self.iscomplete = self.publishedcomplete
-                    if updated > 0:
-                        # There are some active translations different from
-                        # published ones, so the message has been updated
-                        self.isupdated = True
-                active_count = 0
-                for pluralform in range(self.pluralforms):
-                    if active_submissions[pluralform]:
-                        active_count += 1
-                self.iscomplete = (active_count == self.pluralforms)
-            else:
-                self.isfuzzy = fuzzy
-                self.iscomplete = complete
-                updated = 0
-                for pluralform in range(self.pluralforms):
-                    active = active_submissions[pluralform]
-                    published = self.getPublishedSubmission(pluralform)
-                    if active and published and active != published:
-                        updated += 1
-                if updated > 0:
-                    self.isupdated = True
-
+                if (new_message and
+                    (matching_message.origin ==
+                     RosettaTranslationOrigin.ROSETTAWEB)):
+                    # The submitted translation came from our UI, we give
+                    # give karma to the submitter of that translation.
+                    matching_message.submitter.assignKarma(
+                        'translationsuggestionapproved',
+                        product=self.potemplate.product,
+                        distribution=self.potemplate.distribution,
+                        sourcepackagename=self.potemplate.sourcepackagename)
+                if (has_changed and matching_message.submitter != submitter):
+                    # A reviewer activated someone else's translation.
+                    submitter.assignKarma(
+                        'translationreview',
+                        product=self.potemplate.product,
+                        distribution=self.potemplate.distribution,
+                        sourcepackagename=self.potemplate.sourcepackagename)
+                if has_changed:
+                    matching_message.reviewer = submitter
+                    matching_message.date_reviewed = UTC_NOW
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
