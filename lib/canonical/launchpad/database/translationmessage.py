@@ -192,7 +192,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
-        plural_forms = self.pofile.pluralforms
+        plural_forms = self.pofile.language.pluralforms
         assert plural_forms is not None, (
             "Don't know the number of plural forms for %s language." % (
                 self.pofile.language.englishname))
@@ -204,4 +204,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def is_complete(self):
         """See `ITranslationMessage`."""
+        if self.msgstr0 is None:
+            # No translation for default form (plural form zero).  Incomplete.
+            return False
+        if self.potmsgset.msgid_plural is None:
+            # No plural form needed.  Form zero is enough.
+            return True
         return None not in self.translations
+
