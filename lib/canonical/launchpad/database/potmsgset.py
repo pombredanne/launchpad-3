@@ -364,6 +364,8 @@ class POTMsgSet(SQLBase):
                     matching_message.reviewer = submitter
                     matching_message.date_reviewed = UTC_NOW
 
+        return matching_message
+
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
 

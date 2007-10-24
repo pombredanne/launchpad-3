@@ -129,6 +129,10 @@ class ITranslationMessage(Interface):
             number of plural forms available for its language.
             """), readonly=True, required=True)
 
+    flags_comment = Text(
+        title=_("Text of flags comment from the translation file"),
+        readonly=False, required=False)
+
     comment_text = Text(
         title=_("Text of translator comment from the translation file"),
         readonly=False, required=False)
@@ -158,11 +162,6 @@ class ITranslationMessage(Interface):
     is_imported = Bool(
         title=_(
             "Whether this translation is being used in latest imported file"),
-        readonly=False, required=True)
-
-    was_in_last_import = Bool(
-        title=_(
-            "Whether this translations was present in last imported file"),
         readonly=False, required=True)
 
     was_obsolete_in_last_import = Bool(
