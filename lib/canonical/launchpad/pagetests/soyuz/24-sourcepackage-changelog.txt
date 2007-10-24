@@ -74,8 +74,9 @@ although the version link will point to the same page we're already on.
 
   >>> print find_tag_by_id(
   ...     user_browser.contents, 'alsa-utils_1.0.9a-4ubuntu1')
-  <pre ... id="alsa-utils_1.0.9a-4ubuntu1">
-    alsa-utils (1.0.9a-4ubuntu1) ...
+  <pre ... id="alsa-utils_1.0.9a-4ubuntu1">alsa-utils (1.0.9a-4ubuntu1) ...
+  <BLANKLINE>
+  ...
    <a href="/bugs/10" title="another test bug">LP: #10</a>
    <a href="/bugs/999" title="No such bug">LP: #999</a>
    LP: #badid
