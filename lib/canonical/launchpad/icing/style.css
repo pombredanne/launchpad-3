@@ -897,10 +897,10 @@ a conditional comment in main-template.pt to work around the above rule. */
   margin: 0; /* neutralizes UA list item indenting */
   padding: 1px 0; /* works around a bug that makes items taller in WinIE */
 }
-#actions a {
+#actions a, #actions strong {
   background: url(action.png) 4px center no-repeat;
   display: block; /* makes the clickable area equal to the highlighted area */
-  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */ 
+  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */
 }
 #actions a:hover {background-color: #fff; text-decoration: underline;}
 .check,

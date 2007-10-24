@@ -20,10 +20,8 @@ from canonical.archivepublisher.publishing import (
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, IPersonSet)
-from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
-    PackagePublishingStatus)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
+    IPersonSet, PackagePublishingPocket, PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
@@ -494,34 +492,46 @@ class TestPublisher(TestNativePublishingBase):
         """Test the careful domination procedure.
 
         Check if it works on a development series.
-        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        A SUPERSEDED or DELETED published source should have its
+        scheduleddeletiondate set.
         """
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(
+        superseded_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(superseded_source.scheduleddeletiondate is None)
+        deleted_source = self.getPubSource(
+            status=PackagePublishingStatus.DELETED)
+        self.assertTrue(deleted_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
-        # Retrieve the publishing record again otherwise it would remain
-        # unchanged since domination procedure purges caches and does
-        # other bad things for sqlobject.
+        # Retrieve the publishing record again since the transaction was
+        # committed.
         from canonical.launchpad.database.publishing import (
             SourcePackagePublishingHistory)
-        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
+        superseded_source = SourcePackagePublishingHistory.get(
+            superseded_source.id)
+        deleted_source = SourcePackagePublishingHistory.get(
+            deleted_source.id)
 
-        # Publishing record got scheduled for removal
+        # Publishing records got scheduled for removal
         self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+            superseded_source.status, PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(superseded_source.scheduleddeletiondate is not None)
+        self.assertEqual(
+            deleted_source.status, PackagePublishingStatus.DELETED)
+        self.assertTrue(deleted_source.scheduleddeletiondate is not None)
 
     def testCarefulDominationOnObsoleteSeries(self):
         """Test the careful domination procedure.
 
         Check if it works on a obsolete series.
-        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        A SUPERSEDED published source should be have its scheduleddeletiondate
+        set.
         """
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
@@ -532,6 +542,7 @@ class TestPublisher(TestNativePublishingBase):
 
         pub_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
@@ -543,7 +554,8 @@ class TestPublisher(TestNativePublishingBase):
 
         # Publishing record got scheduled for removal.
         self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+            pub_source.status, PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is not None)
 
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):
@@ -713,7 +725,7 @@ class TestPublisher(TestNativePublishingBase):
         # See above.
         gz_sources_sha256_line = release_contents[sha256_header_index + 6]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
-            
+
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.

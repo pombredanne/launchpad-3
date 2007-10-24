@@ -375,6 +375,23 @@ class BugTaskCreationStep(AlsoAffectsStep):
         if extracted_bug:
             assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
+            # Display a notification, if another bug is already linked
+            # to the same external bug.
+            other_bugs_already_watching = [
+                bug for bug in extracted_bugtracker.getBugsWatching(
+                    extracted_bug)
+                if bug != self.context.bug]
+            # Simply add one notification per bug to simplify the
+            # implementation; most of the time it will be only one bug.
+            for other_bug in other_bugs_already_watching:
+                self.request.response.addInfoNotification(
+                    '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links'
+                    ' to the added bug watch'
+                    ' (%(bugtracker_name)s #%(remote_bug)s).',
+                    bug_url=canonical_url(other_bug), bug_id=other_bug.id,
+                    bugtracker_name=extracted_bugtracker.name,
+                    remote_bug=extracted_bug)
+
             # Make sure that we don't add duplicate bug watches.
             bug_watch = task_added.bug.getBugWatch(
                 extracted_bugtracker, extracted_bug)

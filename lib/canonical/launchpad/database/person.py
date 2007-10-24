@@ -38,27 +38,26 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskImportance, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    SpecificationSort)
-
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
-    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
-    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
-    ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
-    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    AccountStatus, ArchivePurpose, BugTaskSearchParams,
+    BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID,
+    IJabberIDSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    ILoginTokenSet, IMailingListSet, INACTIVE_ACCOUNT_STATUSES,
+    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
+    ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey, ISSHKeySet,
+    ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
+    LoginTokenType, PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus,
+    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES)
+
+from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
@@ -102,7 +101,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -192,8 +191,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
-    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                          default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
@@ -648,12 +645,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             L.append(package_counts)
 
         return L
-
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(title=self.browsername,
-                                     revision=0)
-        return self.calendar
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
@@ -1185,6 +1176,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
+    def deactivateAllMembers(self, comment, reviewer):
+        """Deactivate all members of this team."""
+        assert self.isTeam(), "This method is only available for teams."
+        assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
+            "Only Launchpad admins can deactivate all members of a team")
+        for membership in self.getActiveMemberships():
+            membership.setStatus(
+                TeamMembershipStatus.DEACTIVATED, reviewer, comment)
+
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -1599,6 +1599,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            getUtility(IHWSubmissionSet).setOwnership(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -1645,6 +1646,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
+        getUtility(IHWSubmissionSet).setOwnership(email)
         # Now we update our cache of the preferredemail
         setattr(self, '_preferredemail_cached', email)
 
@@ -1662,6 +1664,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return emails[0]
         else:
             return None
+
+    @property
+    def safe_email_or_blank(self):
+        """See `IPerson`."""
+        if ((self.preferredemail is not None) and
+            not(self.hide_email_addresses)):
+            return self.preferredemail.email
+        else:
+            return ''
 
     @property
     def preferredemail_sha1(self):
@@ -1764,7 +1775,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
-                  FROM sourcepackagerelease
+                  FROM sourcepackagerelease, archive
                  WHERE %s
               ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
                        dateuploaded DESC
@@ -1773,7 +1784,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         return SourcePackageRelease.select(
             query,
-            clauseTables=['Archive'],
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
@@ -2109,30 +2119,25 @@ class PersonSet:
 
 
     def merge(self, from_person, to_person):
-        """Merge a person into another.
-
-        The old user (from_person) will be left as an atavism
-
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops -- StuartBishop 20050812
-        """
+        """See `IPersonSet`."""
         # Sanity checks
-        if ITeam.providedBy(from_person):
-            raise TypeError('Got a team as from_person.')
-        if ITeam.providedBy(to_person):
-            raise TypeError('Got a team as to_person.')
         if not IPerson.providedBy(from_person):
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
+        assert getUtility(IMailingListSet).get(from_person.name) is None, (
+            "Can't merge teams which have mailing lists into other teams.")
 
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         flush_database_updates()
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise ValueError('from_person still has email addresses.')
+            raise AssertionError('from_person still has email addresses.')
+
+        if from_person.isTeam() and from_person.allmembers.count() > 0:
+            raise AssertionError(
+                "Only teams without active members can be merged")
 
         # Get a database cursor.
         cur = cursor()
@@ -2151,9 +2156,11 @@ class PersonSet:
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
             ('karmatotalcache', 'person'),
-            # We don't merge teams, so the poll table can be ignored
+            # Polls are not carried over when merging teams.
             ('poll', 'team'),
-            # We don't merge teams, so the mailinglist table can be ignored
+            # We can safely ignore the mailinglist table as there's a sanity
+            # check above which prevents teams with associated mailing lists
+            # from being merged.
             ('mailinglist', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two accounts
@@ -2595,11 +2602,11 @@ class PersonSet:
         cur.execute(
             'SELECT team, status FROM TeamMembership WHERE person = %s '
             'AND status IN (%s,%s)'
-            % sqlvalues(from_person.id, approved, admin))
+            % sqlvalues(from_person, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
                         'AND team = %s'
-                        % sqlvalues(to_person.id, team_id))
+                        % sqlvalues(to_person, team_id))
             result = cur.fetchone()
             if result:
                 current_status = result[0]
@@ -2608,7 +2615,7 @@ class PersonSet:
                 # team, so may only need to change its status.
                 cur.execute(
                     'DELETE FROM TeamMembership WHERE person = %s '
-                    'AND team = %s' % sqlvalues(from_person.id, team_id))
+                    'AND team = %s' % sqlvalues(from_person, team_id))
 
                 if current_status == admin.value:
                     # to_person is already an administrator of this team, no
@@ -2621,31 +2628,30 @@ class PersonSet:
                 assert status in (approved.value, admin.value)
                 cur.execute(
                     'UPDATE TeamMembership SET status = %s WHERE person = %s '
-                    'AND team = %s' % sqlvalues(
-                        status, to_person.id, team_id))
+                    'AND team = %s' % sqlvalues(status, to_person, team_id))
             else:
                 # to_person is not a member of this team. just change
                 # from_person with to_person in the membership record.
                 cur.execute(
                     'UPDATE TeamMembership SET person = %s WHERE person = %s '
                     'AND team = %s'
-                    % sqlvalues(to_person.id, from_person.id, team_id))
+                    % sqlvalues(to_person, from_person, team_id))
 
         cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
-                    'AND person != team' % sqlvalues(from_person.id))
+                    'AND person != team' % sqlvalues(from_person))
         for team_id in cur.fetchall():
             cur.execute(
                 'SELECT team FROM TeamParticipation WHERE person = %s '
-                'AND team = %s' % sqlvalues(to_person.id, team_id))
+                'AND team = %s' % sqlvalues(to_person, team_id))
             if not cur.fetchone():
                 cur.execute(
                     'UPDATE TeamParticipation SET person = %s WHERE '
                     'person = %s AND team = %s'
-                    % sqlvalues(to_person.id, from_person.id, team_id))
+                    % sqlvalues(to_person, from_person, team_id))
             else:
                 cur.execute(
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
-                    'team = %s' % sqlvalues(from_person.id, team_id))
+                    'team = %s' % sqlvalues(from_person, team_id))
 
         # Flag the account as merged
         cur.execute('''
@@ -2662,7 +2668,7 @@ class PersonSet:
                         % sqlvalues(name))
             i += 1
         cur.execute("UPDATE Person SET name = %s WHERE id = %s"
-                    % sqlvalues(name, from_person.id))
+                    % sqlvalues(name, from_person))
 
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.

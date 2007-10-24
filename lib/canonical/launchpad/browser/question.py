@@ -1224,9 +1224,8 @@ class QuestionContextMenu(ContextMenu):
     def linkfaq(self):
         """Link for This is a FAQ."""
         text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ.'
-        can_give_answer = self.context.can_give_answer
-        return Link('+linkfaq', text, summary, enabled=can_give_answer)
+        summary = 'Answer this question using a FAQ, or add one as a comment.'
+        return Link('+linkfaq', text, summary)
 
 
 class QuestionSetContextMenu(ContextMenu):
