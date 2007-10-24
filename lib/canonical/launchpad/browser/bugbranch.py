@@ -68,7 +68,6 @@ class BugBranchEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
     @action('Delete', name='delete')
-
     def delete_action(self, action, data):
         notify(SQLObjectDeletedEvent(self.context, user=self.user))
         self.context.destroySelf()
