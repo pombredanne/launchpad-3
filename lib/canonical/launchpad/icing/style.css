@@ -666,7 +666,6 @@ border. */
   background-position: bottom left;
   margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
-  top: -15px; /*- reduces logo~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
