@@ -213,9 +213,9 @@ class POTMsgSet(SQLBase):
                      pofile.canEditTranslations(submitter))
 
         assert (is_imported or is_editor or
-                pofile.canAddSuggestions(submitter)),
-            ('%s cannot add translations nor can add suggestions' % (
-                submitter.displayname))
+                pofile.canAddSuggestions(submitter)), (
+                  '%s cannot add translations nor can add suggestions' % (
+                    submitter.displayname))
 
         # It makes no sense to have an "is_imported" submission from someone
         # who is not an editor, so assert that.
@@ -354,8 +354,6 @@ class POTMsgSet(SQLBase):
         new_text = self.normalizeWhitespaces(new_text)
         # Also, if it's an empty string, replace it with None.
         # XXX: Until we figure out ResettingTranslations
-            if newtran == '':
-                newtran = None
         if new_text == '':
             new_text = None
 
