@@ -425,16 +425,23 @@ SELECT 'Retiring POFile.last_touched_pomsgset', statement_timestamp();	-- DEBUG
 -- person who last modified a TranslationMessage in the POFile and the date of
 -- the change.  There was already a column for the last translator, but it was
 -- not maintained.
-ALTER TABLE POFile ADD COLUMN date_created timestamp without time zone;
+ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
+ALTER TABLE POFile ADD COLUMN date_changed timestamp without time zone;
 
 UPDATE POFile
 SET
-	date_created = TranslationMessage.date_created,
-	lasttranslator = TranslationMessage.submitter
-FROM TranslationMessage
-WHERE TranslationMessage.id = POFile.last_touched_pomsgset;
-
-ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
+	date_changed = Latest.latest_change_date,
+	lasttranslator = Latest.submitter
+FROM (
+	SELECT DISTINCT ON (pofile)
+		pofile,
+		greatest(date_created, date_reviewed) AS latest_change_date,
+		submitter
+	FROM TranslationMessage
+	ORDER BY pofile, latest_change_date DESC
+	) AS Latest
+WHERE
+	Latest.pofile = POFile.id;
 
 
 SELECT 'Retiring POTemplateName', statement_timestamp();	-- DEBUG
