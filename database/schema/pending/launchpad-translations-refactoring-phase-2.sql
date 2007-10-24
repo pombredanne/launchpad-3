@@ -23,7 +23,7 @@ CREATE TABLE TranslationMessage(
 	origin integer NOT NULL,
 	submitter integer NOT NULL,
 	reviewer integer,
-	validationstatus integer DEFAULT 0 NOT NULL,
+	validation_status integer DEFAULT 0 NOT NULL,
 	is_current boolean DEFAULT false NOT NULL,
 	is_imported boolean DEFAULT false NOT NULL,
 	was_in_last_import boolean NOT NULL,
@@ -83,7 +83,7 @@ SELECT 'Migrating active, published submissions', statement_timestamp();	-- DEBU
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validationstatus, is_current, is_imported,
+	submitter, reviewer, validation_status, is_current, is_imported,
 	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
 	date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
@@ -97,7 +97,7 @@ SELECT
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
 	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validationstatus,
+	COALESCE(s0.validationstatus, 1) AS validation_status,
 	TRUE AS is_current,
 	TRUE AS is_imported,
 	(m.sequence > 0) AS was_in_last_import,
@@ -146,7 +146,7 @@ SELECT 'Migrating active, non-published submissions', statement_timestamp();	-- 
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validationstatus, is_current, is_imported,
+	submitter, reviewer, validation_status, is_current, is_imported,
 	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
 	date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
@@ -160,7 +160,7 @@ SELECT
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
 	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validationstatus,
+	COALESCE(s0.validationstatus, 1) AS validation_status,
 	TRUE AS is_current,
 	FALSE AS is_imported,
 	FALSE AS was_in_last_import,
@@ -206,7 +206,7 @@ SELECT 'Migrating non-active, published submissions', statement_timestamp();	-- 
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validationstatus, is_current, is_imported,
+	submitter, reviewer, validation_status, is_current, is_imported,
 	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
 	date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
@@ -220,7 +220,7 @@ SELECT
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
 	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validationstatus,
+	COALESCE(s0.validationstatus, 1) AS validation_status,
 	FALSE AS is_current,
 	TRUE AS is_imported,
 
@@ -265,7 +265,7 @@ SELECT 'Migrating non-active, non-published submissions', statement_timestamp();
 -- the same person and created at the same time).
 INSERT INTO TranslationMessage(
 	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validationstatus, is_current, is_imported,
+	submitter, reviewer, validation_status, is_current, is_imported,
 	was_in_last_import, was_obsolete_in_last_import, is_fuzzy,
 	date_created, date_reviewed, comment_text,
 	msgsetid, id0, id1, id2, id3)
@@ -279,7 +279,7 @@ SELECT
 	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
 	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
 	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validationstatus,
+	COALESCE(s0.validationstatus, 1) AS validation_status,
 	FALSE AS is_current,
 	FALSE AS is_imported,
 	FALSE AS was_in_last_import,
@@ -327,19 +327,20 @@ WHERE
 
 SELECT 'Patching up ValidationStatus', statement_timestamp();	-- DEBUG
 
--- Update validationstatus: if any of the POSubmissions that are bundled needs
--- validation, validationstatus should be 0 (UNKNOWN).  Otherwise, if any has
--- an error, it should be 2 (UNKNOWNERROR).  Only if neither is the case can it
--- be left at whatever the pluralform-0 POSubmission had for its status.
+-- Update validation_status: if any of the POSubmissions that are bundled
+-- needs validation, validation_status should be 0 (UNKNOWN).  Otherwise, if
+-- any has an error, it should be 2 (UNKNOWNERROR).  Only if neither is the
+-- case can it be left at whatever the pluralform-0 POSubmission had for its
+-- status.
 UPDATE TranslationMessage
-SET validationstatus = 2
+SET validation_status = 2
 FROM POSubmission Pos
 WHERE
 	Pos.pluralform > 0 AND
 	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
 	Pos.validationstatus = 2;
 UPDATE TranslationMessage
-SET validationstatus = 0
+SET validation_status = 0
 FROM POSubmission Pos
 WHERE
 	Pos.pluralform > 0 AND
