@@ -106,8 +106,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         foreignKey='POTranslation', dbName='msgstr2', notNull=True)
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
-    flags_comment = StringCol(
-        dbName='flags_comment', notNull=False, default=None)
     comment_text = StringCol(
         dbName='commenttext', notNull=False, default=None)
     origin = EnumCol(
