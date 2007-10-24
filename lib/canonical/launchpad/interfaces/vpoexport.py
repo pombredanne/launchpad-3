@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ('IVPOExportSet', 'IVPOExport')
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Text
 
 from canonical.launchpad import _
 
@@ -56,8 +57,13 @@ class IVPOExportSet(Interface):
 class IVPOExport(Interface):
     """Database view for efficient PO exports."""
 
-    name = String(_("See IPOTemplate.name"))
-    translation_domain = String(_("See IPOTemplate.translation_domain"))
+    name = Text(
+        title=u"See IPOTemplate.name",
+        readonly=True, required=True)
+
+    translation_domain = Text(
+        title=u"See IPOTemplate.translation_domain",
+        readonly=True, required=True)
 
     potemplate = Attribute("See IPOTemplate")
     distroseries = Attribute("See IPOTemplate.distroseries")
@@ -82,22 +88,42 @@ class IVPOExport(Interface):
     filereferences = Attribute("See IPOTMsgSet.filereferences")
 
     current_translation = Attribute(_("See ITranslationMessage.id"))
-    was_in_last_import = Boolean(_(
-        "See ITranslationMessage.was_in_last_import"))
-    was_obsolete_in_last_import = Boolean(_(
-        "See ITranslationMessage.obsolete"))
-    is_fuzzy = Boolean(_("See ITranslationMessage.is_fuzzy"))
-    pocommenttext = Text(_("See ITranslationMessage.comment_text"))
 
-    translation0 = Text(_("Translated text for plural form 0"))
-    translation1 = Text(_("Translated text for plural form 1"))
-    translation2 = Text(_("Translated text for plural form 2"))
-    translation3 = Text(_("Translated text for plural form 3"))
+    was_in_last_import = Bool(
+        title=u"See ITranslationMessage.was_in_last_import",
+        readonly=True, required=False)
+
+    was_obsolete_in_last_import = Bool(
+        title=u"See ITranslationMessage.was_obsolete_in_last_import",
+        readonly=True, required=False)
+
+    was_fuzzy_in_last_import = Bool(
+        title=u"See ITranslationMessage.was_fuzzy_in_last_import",
+        readonly=True, required=False)
+
+    is_fuzzy = Bool(
+        title=u"See ITranslationMessage.is_fuzzy",
+        readonly=True, required=False)
+
+    pocommenttext = Text(
+        title=u"See ITranslationMessage.comment_text",
+        readonly=True, required=False)
+
+    msgstr0 = Text(
+        title=u"See ITranslationMessage.msgstr0",
+        readonly=True, required=False)
+    msgstr1 = Text(
+        title=u"See ITranslationMessage.msgstr1",
+        readonly=True, required=False)
+    msgstr2 = Text(
+        title=u"See ITranslationMessage.msgstr2",
+        readonly=True, required=False)
+    msgstr3 = Text(
+        title=u"See ITranslationMessage.msgstr3",
+        readonly=True, required=False)
 
     msgid_singular = Attribute(_("Message identifier in singular form"))
-    msgid_singular = Attribute(_("Message identifier in singular form"))
+    msgid_plural = Attribute(_("Message identifier in singular form"))
 
-    context = String("See IPOTMsgSet.context")
-
-    translation = Text("See IPOTranslation.translation")
-
+    context = Text(
+        title=u"See IPOTMsgSet.context", readonly=True, required=False)

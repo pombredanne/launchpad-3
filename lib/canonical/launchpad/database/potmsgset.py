@@ -195,9 +195,10 @@ class POTMsgSet(SQLBase):
         is_editor = (force_edition_rights or
                      pofile.canEditTranslations(person))
 
-        assert (is_imported or is_editor or pofile.canAddSuggestions(person)),
-            ('%s cannot add translations nor can add suggestions' % (
-                person.displayname))
+        assert (is_imported or is_editor or
+                pofile.canAddSuggestions(person)), (
+                   '%s cannot add translations nor can add suggestions' % (
+                        person.displayname))
 
         # It makes no sense to have a "is_imported" submission from someone
         # who is not an editor, so assert that
@@ -247,12 +248,11 @@ class POTMsgSet(SQLBase):
                 """
                 """
         # Create a new TranslationMessage if needed
-        
+
         if is_imported:
             origin = RosettaTranslationOrigin.SCM
         else:
             origin = RosettaTranslationOrigin.ROSETTAWEB
-        
 
         # now loop through the translations and submit them one by one
         for index in sanitized_translations.keys():

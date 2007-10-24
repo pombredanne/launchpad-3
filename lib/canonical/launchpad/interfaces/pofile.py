@@ -386,11 +386,6 @@ class IPOFileSet(Interface):
 class IPOFileTranslator(Interface):
     """Represents contributions from people to POFiles."""
 
-    # We need this here because ITranslationMessage needs to use IPOFile
-    # interface too.
-    from canonical.launchpad.interfaces.translationmessage import (
-        ITranslationMessage)
-
     person = Object(
         title=_('The Person this record represents.'), required=True,
         schema=IPerson)
@@ -399,9 +394,8 @@ class IPOFileTranslator(Interface):
         title=_('The `IPOFile` modified by the translator.'), required=True,
         schema=IPOFile)
 
-    latest_translation_message = Object(
-        title=_("Latest translation message added to the translation file."),
-        readonly=False, required=True, schema=ITranslationMessage)
+    latest_translation_message = Attribute(
+        _("Latest translation message added to the translation file."))
 
     date_last_touched = Datetime(
         title=_('When was added latest `IPOSubmission`.'), required=True)

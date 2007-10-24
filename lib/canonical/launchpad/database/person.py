@@ -1561,7 +1561,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query.append('POFile.language = Language.id')
         query.append("Language.code != 'en'")
         history = POFileTranslator.select(
-            ' AND '.join(query)
+            ' AND '.join(query),
             prejoins=[
                 'pofile.potemplate',
                 'laatest_translation_message',

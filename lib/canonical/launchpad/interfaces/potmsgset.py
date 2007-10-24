@@ -1,15 +1,18 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Field, Int
-from canonical.launchpad import _
-
 __metaclass__ = type
 
 __all__ = [
     'IPOTMsgSet',
     'BrokenTextError',
     ]
+
+from zope.interface import Interface, Attribute
+from zope.schema import Object, Text
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.pomsgid import IPOMsgID
+
 
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
@@ -19,24 +22,23 @@ class IPOTMsgSet(Interface):
 
     id = Attribute("""An identifier for this POTMsgSet""")
     context = Text(
-        "String used to disambiguate messages with identical msgids.")
+        title=_(
+            "String used to disambiguate messages with identical msgids."),
+        readonly=True, required=False)
 
     msgid_singular = Object(
-        title=u"The singular msgid for this message.",
-        description=(u"A message ID along with the context uniquely identifies "
-                     u"the template message."),
-        required=True,
-        readonly=True,
-        schema=IPOMsgID)
+        title=_("The singular msgid for this message."),
+        description=_("""
+            A message ID along with the context uniquely identifies the
+            template message.
+            """), readonly=True, required=True, schema=IPOMsgID)
 
     msgid_plural = Object(
-        title=u"The plural msgid for this message.",
-        described=(u"Provides a plural msgid for the message. "
-                   u"If it's not a plural form message, this value"
-                   u"should be None."),
-        required=True,
-        readonly=True,
-        schema=IPOMsgID)
+        title=_("The plural msgid for this message."),
+        description=_("""
+            Provides a plural msgid for the message. If it's not a plural
+            form message, this value should be None.
+            """), readonly=True, required=False, schema=IPOMsgID)
 
     sequence = Attribute("The ordering of this set within its file.")
 
