@@ -72,7 +72,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_complete = False
         self.is_fuzzy = False
         self.is_imported = False
-        self.was_in_last_import = False
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         self.was_fuzzy_in_last_import = False
@@ -107,6 +106,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         foreignKey='POTranslation', dbName='msgstr2', notNull=True)
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
+    flags_comment = StringCol(
+        dbName='flags_comment', notNull=False, default=None)
     comment_text = StringCol(
         dbName='commenttext', notNull=False, default=None)
     origin = EnumCol(
@@ -117,8 +118,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     is_current = BoolCol(dbName='is_current', notNull=True, default=False)
     is_fuzzy = BoolCol(dbName='is_fuzzy', notNull=True, default=False)
     is_imported = BoolCol(dbName='is_imported', notNull=True, default=False)
-    was_in_last_import = BoolCol(
-        dbName='was_in_last_import', notNull=True, default=False)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True)
     was_fuzzy_in_last_import = BoolCol(
