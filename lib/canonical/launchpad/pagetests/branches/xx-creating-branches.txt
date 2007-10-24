@@ -71,6 +71,7 @@ Branch URLs are required for mirrored branches.
     >>> print_details_table(browser)
     Project: Redfish
     Location: http://example.com/mirrored-branch
+    Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
 
 == Creating a remote branch ==

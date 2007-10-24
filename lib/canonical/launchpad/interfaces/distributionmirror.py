@@ -2,11 +2,18 @@
 
 __metaclass__ = type
 
-__all__ = ['IDistributionMirror', 'IMirrorDistroArchSeries',
-           'IMirrorDistroSeriesSource', 'IMirrorProbeRecord',
-           'IDistributionMirrorSet', 'IMirrorCDImageDistroSeries',
-           'PROBE_INTERVAL', 'UnableToFetchCDImageFileList',
-           'MirrorContent', 'MirrorSpeed', 'MirrorStatus']
+__all__ = [
+'IDistributionMirror',
+'IMirrorDistroArchSeries',
+'IMirrorDistroSeriesSource',
+'IMirrorProbeRecord',
+'IDistributionMirrorSet',
+'IMirrorCDImageDistroSeries',
+'PROBE_INTERVAL',
+'UnableToFetchCDImageFileList',
+'MirrorContent',
+'MirrorSpeed',
+'MirrorStatus']
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute

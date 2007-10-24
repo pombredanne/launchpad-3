@@ -40,5 +40,23 @@
 
 </div>
 
+<div metal:fill-slot="help">
+  <p>
+  Releases represent new public versions of the project; in general,
+  they imply a new tarball of source code is made available for the
+  project. They are often marked by public announcements of the new
+  version that include a list of changes and fixes in it.
+  </p>
+  <p>
+  If you are the owner of this project, series or release, you can add files
+  for a release by <a href="+adddownloadfile">adding files for download</a>.
+  </p>
+  <p>
+  Files are downloadable at <a tal:attributes="href
+  string:${context/productseries/product/fmt:url}/+download">the project download area</a>.
+  </p>
+</div>
+
+
 </body>
 </html>

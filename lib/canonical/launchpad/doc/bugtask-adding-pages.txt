@@ -400,6 +400,28 @@ the bug watch's status later.
     >>> alsa_task.importance.title
     'Unknown'
 
+If the same bug watch is added to another bug, the bug watch will be
+added, but a notification is shown to the user informing him that
+another bug links to the same bug.
+
+    >>> bug_five = getUtility(IBugSet).get(5)
+    >>> bug_five_task = bug_five.bugtasks[0]
+    >>> add_task_view = get_and_setup_view(
+    ...     bug_five_task, '+choose-affected-product', form)
+    SQLObjectCreatedEvent: <BugWatch at ...>
+    SQLObjectCreatedEvent: <BugTask at ...>
+
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+bug/5'
+
+    >>> for notification in add_task_view.request.response.notifications:
+    ...     print notification.message
+    <a href="...">Bug #4</a> also links to the added bug watch
+    (gnome-bugzilla #84).
+
+    >>> for bugwatch in bug_five.watches:
+    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
+    GnomeGBug GTracker: 84
 
 There's a property for easily retrieving the target for use on the
 confirmation page.

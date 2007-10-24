@@ -42,8 +42,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
-    ILaunchpadCelebrities, IPublishedPackageSet, MirrorContent, NotFoundError)
+    DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
+    IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
+    MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -63,7 +64,6 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class DistributionNavigation(

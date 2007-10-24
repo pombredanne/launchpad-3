@@ -87,7 +87,6 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue,
     NotFoundError,
     )
-from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_name, canonical_url,
@@ -306,11 +305,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
-    def calendar(self):
-        target = 'calendar'
-        text = 'Calendar'
-        return Link(target, text)
-
 
 class MaloneContextMenu(ContextMenu):
     # XXX mpt 2006-03-27: No longer visible on Bugs front page.
@@ -489,23 +483,23 @@ class LaunchpadRootNavigation(Navigation):
         if name == 'bazaar' and IXMLRPCRequest.providedBy(self.request):
             return getUtility(IBazaarApplication)
 
-        try:
-            # account for common typing mistakes
-            if canonical_name(name) != name:
-                if self.request.method == 'POST':
-                    raise POSTToNonCanonicalURL
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
-            else:
-                return getUtility(IPillarNameSet)[name]
-        except NotFoundError:
-            return None
+        # account for common typing mistakes
+        if canonical_name(name) != name:
+            if self.request.method == 'POST':
+                raise POSTToNonCanonicalURL
+            return self.redirectSubTree(
+                canonical_url(self.context) + canonical_name(name),
+                status=301)
 
-    @stepto('calendar')
-    def calendar(self):
-        # XXX SteveAlexander 2005-10-06: permission=launchpad.AnyPerson
-        return MergedCalendar()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        user = getUtility(ILaunchBag).user
+        ignore_inactive = True
+        if user and user.inTeam(admins):
+            # Admins should be able to access deactivated projects too
+            ignore_inactive = False
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=ignore_inactive)
+        return pillar
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect:
