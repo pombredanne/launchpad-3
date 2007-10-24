@@ -103,11 +103,23 @@ possibilities for the user.
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> question = ubuntu.newQuestion(
     ...     no_priv, 'Unable to boot installer',
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())
+    >>> question_id = question.id
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+    # We need to refetch the question, since a new transaction was started.
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> question = getUtility(IQuestionSet).get(question_id)
 
     # Define an helper to change the question status easily.
     >>> def setQuestionStatus(question, new_status):
@@ -347,7 +359,6 @@ interpretation is that it is a comment.
 The general mail processor delegates all emails to the
 config.answertracker.email_domain to the AnswerTrackerHandler.
 
-    >>> from canonical.config import config
     >>> raw_msg = """From: test@canonical.com
     ... X-Original-To: question1@answers.launchpad.net
     ... Subject: A new comment
@@ -356,7 +367,6 @@ config.answertracker.email_domain to the AnswerTrackerHandler.
     ...
     ... This is a new comment.
     ... """
-    >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> from canonical.launchpad.mail import stub
 
     # Clear email queue of outgoing notifications.
