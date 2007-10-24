@@ -20,9 +20,13 @@
             interface="canonical.launchpad.interfaces.ITranslationMessage" />
     </content>
 
+    <!-- XXX: Commented until we start migrating view code.
     <content class="canonical.launchpad.browser.POMsgSetSuggestions">
-      <allow interface="canonical.launchpad.interfaces.IPOMsgSetSuggestions" />
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
+            />
     </content>
+    -->
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationMessage"
@@ -31,8 +35,8 @@
         />
 
     <browser:menus
-        module="canonical.launchpad.browser.translationmessage"
-        classes="TranslationMessageFacets TranslationMessageAppMenus"
+        module="canonical.launchpad.browser.pomsgset"
+        classes="POMsgSetFacets POMsgSetAppMenus"
         />
 
     <browser:defaultView
@@ -42,7 +46,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ITranslationMessage"
-        class="canonical.launchpad.browser.TranslationMessageIndexView"
+        class="canonical.launchpad.browser.POMsgSetIndexView"
         permission="zope.Public"
         name="+index"
         attribute="__call__"
@@ -60,16 +64,16 @@
         name="+translate"
         for="canonical.launchpad.interfaces.ITranslationMessage"
         permission="zope.Public"
-        template="../templates/translationmessage-translate.pt"
-        class="canonical.launchpad.browser.TranslationMessagePageView"
+        template="../templates/pomsgset-translate.pt"
+        class="canonical.launchpad.browser.POMsgSetPageView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
         name="+display"
-        for="canonical.launchpad.interfaces.IPOMsgSetSuggestions"
+        for="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
         permission="launchpad.AnyPerson"
-        template="../templates/translationmessage-suggestions.pt"
+        template="../templates/pomsgset-suggestions.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 

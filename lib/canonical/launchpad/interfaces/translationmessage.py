@@ -1,6 +1,6 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, List, Object, Text
 
 from canonical.launchpad import _
@@ -13,6 +13,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 __metaclass__ = type
 __all__ = [
     'ITranslationMessage',
+    'ITranslationMessageSuggestions',
     'RosettaTranslationOrigin',
     'TranslationConflict',
     'TranslationValidationStatus',
@@ -197,3 +198,21 @@ class ITranslationMessage(Interface):
             For a translation, on the other hand, it *will* be that
             `POTMsgSet`.  If no value is given, the latter is assumed.
         """
+
+
+# XXX CarlosPerelloMarin 20071024: We will need to migrate this once we start
+# touching view classes.
+class ITranslationMessageSuggestions(Interface):
+    """Suggested `ITranslationMessage`s for a `POTMsgSet`.
+
+    When displaying `POTMsgSet`s in `POMsgSetView` we display different types
+    of suggestions: non-reviewer translations, translations that occur in
+    other contexts, and translations in alternate languages. See
+    `POMsgSetView._buildSuggestions` for details.
+    """
+    title = Attribute("The name displayed next to the suggestion, "
+                      "indicating where it came from.")
+    submissions = Attribute("An iterable of POSubmission objects")
+    user_is_official_translator = Bool(
+        title=(u'Whether the user is an official translator.'),
+        required=True)

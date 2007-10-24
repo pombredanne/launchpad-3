@@ -31,7 +31,7 @@ class TranslationMessageMixIn:
     """
 
     def makeHTMLID(self, suffix=None):
-        """See `IPOMsgSet`."""
+        """See `ITranslationMessage`."""
         elements = [self.pofile.language.code]
         if suffix is not None:
             elements.append(suffix)

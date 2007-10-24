@@ -15,7 +15,7 @@
         />
       <require
         permission="launchpad.Admin"
-        set_attributes="potemplatename productseries distroseries
+        set_attributes="name productseries distroseries
                         sourcepackagename sourcepackageversion
                         binarypackagename languagepack path header
                         iscurrent from_sourcepackagename date_last_updated
@@ -106,7 +106,7 @@
         label="Administer PO template"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
-        fields="potemplatename name description header iscurrent owner
+        fields="name description header iscurrent owner
                 productseries distroseries sourcepackagename
                 from_sourcepackagename sourcepackageversion binarypackagename
                 languagepack path source_file_format priority
