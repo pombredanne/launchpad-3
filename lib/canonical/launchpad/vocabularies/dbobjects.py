@@ -73,9 +73,9 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.launchpad.database import (
     Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, MailingList, Milestone, Person, PillarName,
-    Processor, ProcessorFamily, Product, ProductRelease, ProductSeries,
-    Project, SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
+    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
+    SourcePackageRelease, Specification, Sprint, TranslationGroup)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (

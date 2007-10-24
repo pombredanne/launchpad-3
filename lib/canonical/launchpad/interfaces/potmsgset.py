@@ -1,10 +1,11 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Object, Text
+from zope.interface import Attribute, Interface
+from zope.schema import Field, Int, Object, Text
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IPOMsgID
+from canonical.launchpad.interfaces.pomsgid import IPOMsgID
+
 __metaclass__ = type
 
 __all__ = [
@@ -28,9 +29,7 @@ class IPOTMsgSet(Interface):
     id = Attribute("""An identifier for this POTMsgSet""")
 
     context = Text(
-        title=_(
-            "String used to disambiguate messages with identical msgids."),
-        readonly=True, required=False)
+        title=u"String used to disambiguate messages with identical msgids.")
 
     msgid_singular = Object(
         title=_("The singular msgid for this message."),
@@ -40,11 +39,13 @@ class IPOTMsgSet(Interface):
             """), readonly=True, required=True, schema=IPOMsgID)
 
     msgid_plural = Object(
-        title=_("The plural msgid for this message."),
-        description=_("""
-            Provides a plural msgid for the message. If it's not a plural
-            form message, this value should be None.
-            """), readonly=True, required=False, schema=IPOMsgID)
+        title=u"The plural msgid for this message.",
+        description=(u"Provides a plural msgid for the message. "
+                     u"If it's not a plural form message, this value"
+                     u"should be None."),
+        required=True,
+        readonly=True,
+        schema=IPOMsgID)
 
     sequence = Attribute("The ordering of this set within its file.")
 
