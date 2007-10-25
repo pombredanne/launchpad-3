@@ -64,7 +64,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.msgstr1 = None
         self.msgstr2 = None
         self.msgstr3 = None
-        self.translations = [None] * self.pofile.pluralforms
+        self.translations = [None] * self.pofile.language.pluralforms
         self.comment_text = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
@@ -180,7 +180,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
-        plural_forms = self.pofile.language.pluralforms
+        if self.potmsgset.msgid_plural is None:
+            # This message is a singular message.
+            plural_forms = 1
+        else:
+            # It's a plural form.
+            plural_forms = self.pofile.language.pluralforms
+
         assert plural_forms is not None, (
             "Don't know the number of plural forms for %s language." % (
                 self.pofile.language.englishname))

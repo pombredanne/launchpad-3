@@ -71,12 +71,12 @@ class IPOTMsgSet(Interface):
         :param language_code: language we want translations for.
         """
 
-    def getDummyTranslationMessages(language):
-        """Return an iterator containing a single DummyTranslationMessage.
+    def getCurrentDummyTranslationMessage(language):
+        """Return a DummyTranslationMessage for this message language.
 
         :param language: language we want a dummy translations for.
 
-        We should not already have a TranslationMessage for this language.
+        We must not have already a TranslationMessage for this language.
         """
 
     def getCurrentTranslationMessage(language):

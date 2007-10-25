@@ -62,6 +62,14 @@ Get Spanish translation
 Get the set of POTMsgSets that are untranslated.
 
     >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
+    >>> for potmsgset in potmsgsets:
+    ...     translation_message = potmsgset.getCurrentTranslationMessage(
+    ...         pofile.language)
+    ...     if translation_message is None:
+    ...         translation_message = (
+    ...             potmsgset.getCurrentDummyTranslationMessage(
+    ...                 pofile.language))
+    ...     print translation_message.translations
     >>> len(potmsgsets)
     13
 
@@ -217,7 +225,8 @@ But the unprivileged account should not.
 And if he tries to update translations, the system blocks such
 breakage.
 
-    >>> pomsgset = pofile_es.getPOMsgSet(u'evolution addressbook')
+    >>> pomsgset = pofile_es.getCurrentTranslationMessage(
+    ...     u'evolution addressbook')
     >>> fuzzy = False
     >>> published = False
     >>> lock_timestamp = None

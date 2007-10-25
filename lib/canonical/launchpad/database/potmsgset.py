@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
-from canonical.launchpad.database.translationmessage import TranslationMessage
+from canonical.launchpad.database.translationmessage import (
+    DummyTranslationMessage, TranslationMessage)
 
 
 class POTMsgSet(SQLBase):
@@ -67,6 +68,14 @@ class POTMsgSet(SQLBase):
             return None
         else:
             return self.msgid_plural.msgid
+
+    def getCurrentDummyTranslationMessage(self, language):
+        """See `IPOTMsgSet`."""
+        assert self.getCurrentTranslationMessage(language) is None, (
+            'There is already a translation message in our database.')
+
+        pofile = self.potemplate.getPOFileByLang(language.code)
+        return DummyTranslationMessage(pofile, self)
 
     def getCurrentTranslationMessage(self, language):
         """See `IPOTMsgSet`."""

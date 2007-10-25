@@ -174,14 +174,15 @@ class IPOFile(IRosettaStats):
         :return: The `ITranslationMessage` for `msgid_text` or None.
         """
 
-    def getCurrentTranslationMessagesForPOTMsgSets(potmsgsets):
-        """Return mapping between potmsgsets and `ITranslationMessage`.
+    def getCurrentTranslationMessageFromPOTMsgSet(potmsgset,
+                                                 ignore_obsolete=False):
+        """Return mapping between potmsgset and `ITranslationMessage`.
 
-        :param potmsgsets: A list of `IPOTMsgSet`.
-        :return: A dictionary.  Any POTMsgSets in potmsgsets that have no
-            translation in pofile yet will come with matching DummyPOMsgSets.
-            Both dummy and pre-existing POMsgSets will have their submissions
-            caches populated.
+        :param potmsgset: An `IPOTMsgSet`.
+        :param ignore_obsolete: Whether we should ignore obsolete messages
+            when looking for the current translation message.
+        :return: The translation message for this translation file and the
+            given potmsgset or None.
         """
 
     def __getitem__(msgid_text):
@@ -249,13 +250,6 @@ class IPOFile(IRosettaStats):
 
     def canAddSuggestions(person):
         """Whether the given person is able to add new suggestions."""
-
-    def expireAllTranslationMessages():
-        """Set all translation messages as not being in last import.
-
-        The way to do that is to set `ITranslationMessage`.is_imported
-        to False.
-        """
 
     def getStatistics():
         """Summarize this file's cached translation statistics.

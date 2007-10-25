@@ -313,6 +313,14 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
+    @property
+    def is_cached_export_valid(self):
+        """See `IPOFile`."""
+        if self.exportfile is None:
+            return False
+
+        return self.exporttime >= self.date_updated
+
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""
         msgid = potmsgset.singular_text
@@ -401,16 +409,18 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
-    def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
+    def getCurrentTranslationMessageFromPOTMsgSet(self, potmsgset,
+                                                  ignore_obsolete=False):
         """See `IPOFile`."""
-        if potmsgset is None or (only_current and potmsgset.sequence <= 0):
+        if potmsgset is None or (ignore_obsolete and potmsgset.sequence <= 0):
             # There is no IPOTMsgSet for this id.
             return None
 
         return POMsgSet.selectOneBy(
             potmsgset=potmsgset, pofile=self)
 
-    def getPOMsgSet(self, key, only_current=False, context=None):
+    def getCurrentTranslationMessage(self, msgid_text, context=None,
+                                     only_current=False):
         """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
@@ -456,11 +466,12 @@ class POFile(SQLBase, POFileMixIn):
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
-        pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
-        if pomsgset is None:
+        translation_message = self.getCurrentTranslationMessage(
+            msgid_text, ignore_obsolete=True)
+        if translation_message is None:
             raise NotFoundError(msgid_text)
         else:
-            return pomsgset
+            return translation_message
 
     def getPOMsgSetsNotInTemplate(self):
         """See `IPOFile`."""
@@ -500,10 +511,15 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
-        incomplete_check = []
-        for plural_form in range(self.language.pluralforms):
-            incomplete_check.append(
+        incomplete_check = ['TranslationMessage.msgstr0 IS NULL']
+        # Plural forms only matter if we are in a message with a msgid_plural.
+        incomplete_plurals_check = ['FALSE']
+        for plural_form in range(self.language.pluralforms)[1:]:
+            incomplete_plurals_check.append(
                 'TranslationMessage.msgstr%d IS NULL' % plural_form)
+        incomplete_check.append(
+            '(POTMsgSet.msgid_plural IS NOT NULL AND (%s))' % ' OR '.join(
+                incomplete_plurals_check))
 
         # We use a subselect to allow the LEFT OUTER JOIN
         query = """POTMsgSet.id IN (
@@ -631,11 +647,6 @@ class POFile(SQLBase, POFileMixIn):
             TranslationMessage.potmsgset = POTMsgSet.id AND
             POTMsgSet.sequence > 0
             """ % sqlvalues(self), clauseTables=['POTMsgSet']).count()
-
-    def expireAllMessages(self):
-        """See `IPOFile`."""
-        for msgset in self.currentMessageSets():
-            msgset.sequence = 0
 
     def getStatistics(self):
         """See `IPOFile`."""
@@ -903,18 +914,6 @@ class POFile(SQLBase, POFileMixIn):
         # Now we update the statistics after this new import
         self.updateStatistics()
 
-    def validExportCache(self):
-        """See `IPOFile`."""
-        if self.exportfile is None:
-            return False
-
-        if self.last_touched_pomsgset is None:
-            # There are no translations at all, we invalidate the cache just
-            # in case.
-            return False
-
-        return not self.last_touched_pomsgset.isNewerThan(self.exporttime)
-
     def updateExportCache(self, contents):
         """See `IPOFile`."""
         alias_set = getUtility(ILibraryFileAliasSet)
@@ -942,7 +941,7 @@ class POFile(SQLBase, POFileMixIn):
         # to the database while the export transaction is in progress, and the
         # export would not include those translations. However, we want to be
         # able to compare the export time to other datetime object within the
-        # same transaction -- e.g. in a call to validExportCache(). This is
+        # same transaction -- e.g. in is_cached_export_valid. This is
         # why we call .sync() -- it turns the UTC_NOW reference into an
         # equivalent datetime object.
         self.exporttime = UTC_NOW
@@ -994,7 +993,7 @@ class POFile(SQLBase, POFileMixIn):
 
     def export(self, ignore_obsolete=False):
         """See `IPOFile`."""
-        if self.validExportCache() and not ignore_obsolete:
+        if self.is_cached_export_valid and not ignore_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
             try:
@@ -1053,7 +1052,7 @@ class DummyPOFile(POFileMixIn):
         self.fuzzyheader = False
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
-        self.date_updated  = datetime.datetime.now(UTC)
+        self.date_changed  = datetime.datetime.now(UTC)
         self.license = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
@@ -1071,13 +1070,13 @@ class DummyPOFile(POFileMixIn):
         self.from_sourcepackagename = None
         self.translation_messages = None
 
-
     def __getitem__(self, msgid_text):
-        pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
-        if pomsgset is None:
+        translation_message = self.getCurrentTranslationMesssage(
+            msgid_text, ignore_obsolete=True)
+        if translation_message is None:
             raise NotFoundError(msgid_text)
         else:
-            return pomsgset
+            return translation_message
 
     def __iter__(self):
         """See `IPOFile`."""
@@ -1108,6 +1107,11 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
 
+    @property
+    def is_cached_export_valid(self):
+        """See `IPOFile`."""
+        return False
+
     def canEditTranslations(self, person):
         """See `IPOFile`."""
         return _can_edit_translations(self, person)
@@ -1116,38 +1120,42 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return _can_add_suggestions(self, person)
 
-    def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
+    def getCurrentTranslationMessageFromPOTMsgSet(self, potmsgset,
+                                                  ignore_obsolete=False):
         """See `IPOFile`."""
-        if potmsgset is None or (only_current and potmsgset.sequence <= 0):
+        if potmsgset is None or (ignore_obsolete and potmsgset.sequence <= 0):
             # There is no IPOTMsgSet for this id.
             return None
 
         return DummyPOMsgSet(self, potmsgset)
 
-    def getPOMsgSet(self, key, only_current=False, context=None):
+    def getCurrentTranslationMessage(self, msgid_text, context=None,
+                                     ignore_obsolete=False):
         """See `IPOFile`."""
-        query = 'potemplate = %s' % sqlvalues(self.potemplate)
+        query = 'potemplate = %d' % sqlvalues(self.potemplate)
         if only_current:
             query += ' AND sequence > 0'
 
-        if isinstance(key, POTMsgSet):
-            potmsgset = key
+        if not isinstance(key, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode or POTMsgSet.)"
+                % type(key))
+
+        # Find a message ID with the given text.
+        try:
+            pomsgid = POMsgID.byMsgid(key)
+        except SQLObjectNotFound:
+            return None
+
+        # Find a message set with the given message ID.
+
+        if context is not None:
+            query += ' AND context=%s' % sqlvalues(context)
         else:
-            # Find a message ID with the given text.
-            try:
-                pomsgid = POMsgID.byMsgid(key)
-            except SQLObjectNotFound:
-                return None
+            query += ' AND context IS NULL'
 
-            # Find a message set with the given message ID.
-
-            if context is not None:
-                query += ' AND context=%s' % sqlvalues(context)
-            else:
-                query += ' AND context IS NULL'
-
-            potmsgset = POTMsgSet.selectOne(query +
-                (' AND primemsgid = %s' % sqlvalues(pomsgid)))
+        potmsgset = POTMsgSet.selectOne(query +
+            (' AND primemsgid = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
@@ -1247,10 +1255,6 @@ class DummyPOFile(POFileMixIn):
         """See `IRosettaStats`."""
         return 100.0
 
-    def validExportCache(self):
-        """See `IPOFile`."""
-        return False
-
     def updateExportCache(self, contents):
         """See `IPOFile`."""
         raise NotImplementedError
@@ -1276,10 +1280,6 @@ class DummyPOFile(POFileMixIn):
         raise NotImplementedError
 
     def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def expireAllMessages(self):
         """See `IPOFile`."""
         raise NotImplementedError
 
