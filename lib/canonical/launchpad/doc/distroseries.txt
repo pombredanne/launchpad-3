@@ -557,7 +557,7 @@ and child distro series.
    >>> def compare_translations(orig_distroseries, dest_distroseries):
    ...
    ...     sortkey = lambda template: (
-   ...         template.potemplatename.name, template.sourcepackagename.name)
+   ...         template.name, template.sourcepackagename.name)
    ...
    ...     orig_templates = sorted(
    ...         orig_distroseries.getCurrentTranslationTemplates(),
