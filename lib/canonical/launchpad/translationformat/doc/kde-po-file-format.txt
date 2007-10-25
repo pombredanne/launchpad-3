@@ -114,6 +114,7 @@ Importing this file works, but the format is set to Gettext PO.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     PO format
 
@@ -154,6 +155,7 @@ to KDE PO format.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
@@ -213,6 +215,7 @@ support.
     ...                                     pofile=firefox_serbian_pofile)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
@@ -384,6 +387,7 @@ Importing this template works and the format is recognized as a KDE PO format.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
@@ -391,7 +395,7 @@ Message with context is properly split into msgid and context fields.
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Message', context='Context')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     Message
     >>> print potmsgset.context
     Context
@@ -423,23 +427,28 @@ We can also import a translated file with message contexts:
     ...                                     pofile=firefox_serbian_pofile)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
 
 We can get the first translation by specifying 'Context' for the context:
 
-    >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     key=u'Message', context=u'Context')
-    >>> print pomsgset.active_texts
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     firefox_serbian_pofile.language)
+    >>> print current.translations
     [u'First translation']
 
 And if we ask for a message with context 'Different Context', we get the
 other message and its translation:
 
-    >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     key=u'Message', context=u'Different Context')
-    >>> print pomsgset.active_texts
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     firefox_serbian_pofile.language)
+    >>> print current.translations
     [u'Second translation']
 
 === Export ===
