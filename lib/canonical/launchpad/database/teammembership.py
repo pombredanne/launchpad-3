@@ -313,6 +313,7 @@ class TeamMembership(SQLBase):
 
         replacements = {
             'member_name': member.unique_displayname,
+            'member_greeting_name': member.displayname,
             'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,

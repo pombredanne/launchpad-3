@@ -106,7 +106,7 @@ and team admins.
     >>> member_notification['Subject']
     'Launchpad: Membership change: lifeless in ubuntu-team'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
+    Hello Robert Collins,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
@@ -138,7 +138,7 @@ The same goes for approving a proposed member.
     >>> admins_notification['Subject']
     'Launchpad: daf added to ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
+    Hello Dafydd Harries,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
@@ -187,7 +187,7 @@ The same for deactivating a membership.
     >>> member_notification['Subject']
     'Launchpad: Membership change: daf in ubuntu-team'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
+    Hello Dafydd Harries,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
