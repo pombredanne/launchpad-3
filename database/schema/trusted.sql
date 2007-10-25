@@ -573,7 +573,7 @@ CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
 RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
 DECLARE
-    v_pofile INTEGER;
+    v_old_entry INTEGER;
     v_trash_old BOOLEAN;
 BEGIN
     -- If we are deleting a row, we need to remove the existing
@@ -592,20 +592,28 @@ BEGIN
     END IF;
 
     IF v_trash_old THEN
+        -- Was this somebody's most-recently-changed message?
+        SELECT INTO v_old_entry id FROM POFileTranslator
+        WHERE latest_message = OLD.id;
 
-        -- Delete the old record.
-        DELETE FROM POFileTranslator
-        WHERE POFileTranslator.latest_message = OLD.id;
+        IF v_old_entry IS NOT NULL THEN
+            -- Delete the old record.
+            DELETE FROM POFileTranslator
+            WHERE POFileTranslator.id = v_old_entry;
 
-        -- Insert a past record if there is one.
-        INSERT INTO POFileTranslator (
-            person, pofile, latest_message, date_last_touched
-            )
-        SELECT DISTINCT ON (submitter, pofile)
-            submitter, pofile, id, date_created
-        FROM TranslationMessage
-        WHERE pofile = OLD.pofile AND person = OLD.submitter
-        ORDER BY person, pofile, date_created DESC, id DESC;
+            -- Insert a past record if there is one.
+            INSERT INTO POFileTranslator (
+                person, pofile, latest_message, date_last_touched
+                )
+            SELECT DISTINCT ON (person, pofile)
+                submitter AS person,
+                pofile,
+                id,
+                greatest(date_created, date_reviewed)
+            FROM TranslationMessage
+            WHERE pofile = OLD.pofile AND submitter = OLD.submitter
+            ORDER BY submitter, pofile, date_created DESC, id DESC;
+        END IF;
 
         -- No NEW with DELETE, so we can short circuit and leave.
         IF TG_OP = 'DELETE' THEN
