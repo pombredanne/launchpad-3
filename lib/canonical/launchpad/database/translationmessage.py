@@ -214,3 +214,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return True
         return None not in self.translations
 
+    @property
+    def is_empty(self):
+        """See `ITranslationMessage`."""
+        for translation in self.translations:
+            if translation is not None:
+                # There is at least one translation.
+                return False
+        # We found no translations in this translation_message
+        return True

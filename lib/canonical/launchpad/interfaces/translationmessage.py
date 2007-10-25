@@ -171,6 +171,10 @@ class ITranslationMessage(Interface):
             "Whether this imported translation must be checked before use it"
             ), readonly=False, default=False, required=True)
 
+    is_empty = Bool(
+        title=_("Whether this message has any translation"),
+        readonly=True, required=True)
+
     def destroySelf():
         """Remove this object.
 

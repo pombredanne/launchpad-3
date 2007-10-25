@@ -597,15 +597,16 @@ So adding an empty one produces that...
     >>> new_translation_message = potmsgset.updateTranslation(
     ...     translation_message.pofile, person, {0: ''}, is_fuzzy=False,
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_updates()
     >>> print new_translation_message.translations
     [None]
     >>> print new_translation_message.date_reviewed
     None
+    >>> new_translation_message.is_empty
+    True
 
 ... the cache remains valid.
 
-    # We need to sync the changed objects for the same reason as before.
-    >>> translation_message.sync()
     >>> pofile.is_cached_export_valid
     True
 
@@ -613,21 +614,29 @@ When we actually update untranslated pomsgset with a new translation,
 cache is invalidated, but for the new imported translation, date_reviewed is
 not set.
 
-    >>> new_tm = translation_message.potmsgset.updateTranslation(
-    ...     translation_message.pofile, person, {0: 'Foo.'}, is_fuzzy=False,
-    ...     is_published=True, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_tm = new_translation_message.potmsgset.updateTranslation(
+    ...     new_translation_message.pofile, person, {0: 'Foo.'},
+    ...     is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_updates()
     >>> new_tm == translation_message
     False
     >>> print new_tm.translations
+    [u'Foo.']
     >>> print new_tm.date_reviewed
     None
+    >>> new_tm.is_empty
+    False
 
     # We need to sync the changed objects for the same reason as before.
-    >>> new_tm.sync()
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
     >>> pofile.is_cached_export_valid
     False
-    >>> prin pofile.lasttranslator.name
-    >>> new_tm.submitter.name
+    >>> print pofile.lasttranslator.name
+    carlos
+    >>> print new_tm.submitter.name
+    sabdfl
 
 Exporting a pofile regenerates the cache.
 

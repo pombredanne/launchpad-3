@@ -368,7 +368,8 @@ class POTMsgSet(SQLBase):
             if is_imported:
                 current_message = self.getCurrentTranslationMessage(
                     pofile.language)
-                if not current_message or current_message.is_imported:
+                if (current_message is None or current_message.is_imported or
+                    current_message.is_empty):
                     matching_message.is_current = True
             else:
                 current_message = self.getCurrentTranslationMessage(
