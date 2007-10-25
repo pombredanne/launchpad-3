@@ -279,7 +279,8 @@ class POFile(SQLBase, POFileMixIn):
         dbName='from_sourcepackagename', notNull=False, default=None)
 
     # joins
-    pomsgsets = SQLMultipleJoin('POMsgSet', joinColumn='pofile')
+    translation_messages = SQLMultipleJoin(
+        'TranslationMessage', joinColumn='pofile')
 
     @property
     def title(self):
@@ -1062,7 +1063,7 @@ class DummyPOFile(POFileMixIn):
         self.last_touched_pomsgset = None
         self.contributors = []
         self.from_sourcepackagename = None
-        self.pomsgsets = None
+        self.translation_messages = None
 
 
     def __getitem__(self, msgid_text):

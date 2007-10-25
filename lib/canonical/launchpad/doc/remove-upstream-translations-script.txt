@@ -42,7 +42,6 @@ We can remove all translations from a concrete potemplate.
     DEBUG   Removed 0 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
@@ -76,7 +75,6 @@ Or with a concrete language.
     DEBUG   Removed 0 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
@@ -102,7 +100,6 @@ Or even with a concrete IPOTemplateName.
     >>> print output
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
@@ -132,10 +129,8 @@ And it also works for products!
     >>> print output
     DEBUG   Processing Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
     DEBUG   Removed 6 submissions
-    DEBUG   After some removals, latest reviewer changed from Diogo Matsubara to Rosetta Administrators 
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
     DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Carlos Perelló Marín to Rosetta Administrators 
     DEBUG   Removed 18 submissions in total.
     <BLANKLINE>
 
