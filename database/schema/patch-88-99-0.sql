@@ -523,93 +523,86 @@ DROP TABLE POMsgIDSighting;
 
 -- Restore POExport view
 CREATE VIEW POExport(
-	id,
-	name,
-	translation_domain,
-	potemplate,
-	productseries,
-	sourcepackagename,
-	distrorelease,
-	potheader,
-	languagepack,
-	pofile,
-	language,
-	variant,
-	potopcomment,
-	poheader,
-	pofuzzyheader,
-	potmsgset,
-	potsequence,
-	potcommenttext,
-	source_comment,
-	flags_comment,
-	file_references,
-	was_obsolete_in_last_import,
-    was_fuzzy_in_last_import,
-	is_fuzzy,
-	pocommenttext,
-	translation0,
-	translation1,
-	translation2,
-	translation3,
-	is_current,
-    is_published,
-	context,
-	msgid_singular,
-	msgid_plural
-	) AS
+    id,
+    productseries,
+    sourcepackagename,
+    distrorelease,
+    potemplate,
+    template_header,
+    languagepack,
+    pofile,
+    language,
+    variant,
+    translation_file_comment,
+    translation_header,
+    is_translation_header_fuzzy,
+    sequence,
+    potmsgset,
+    "comment",
+    source_comment,
+    file_references,
+    flags_comment,
+    context,
+    msgid_singular,
+    msgid_plural,
+    is_fuzzy,
+    is_current,
+    is_imported,
+    translation0,
+    translation1,
+    translation2,
+    translation3
+    ) AS
 SELECT
-	COALESCE(potmsgset.id::text, 'X'::text) || '.'::text || COALESCE(translationmessage.id::text, 'X'::text) AS id,
-	potemplate.name,
-	potemplate.translation_domain,
-	potemplate.id AS potemplate,
-	potemplate.productseries,
-	potemplate.sourcepackagename,
-	potemplate.distrorelease,
-	potemplate."header" AS potheader,
-	potemplate.languagepack,
-	pofile.id AS pofile,
-	pofile."language",
-	pofile.variant,
-	pofile.topcomment AS potopcomment,
-	pofile."header" AS poheader,
-	pofile.fuzzyheader AS pofuzzyheader,
-	potmsgset.id AS potmsgset,
-	potmsgset."sequence" AS potsequence,
-	potmsgset.commenttext AS potcommenttext,
-	potmsgset.sourcecomment AS source_comment,
-	potmsgset.flagscomment AS flags_comment,
-	potmsgset.filereferences AS file_references,
-	translationmessage.was_obsolete_in_last_import,
-    translationmessage.was_fuzzy_in_last_import,
-	translationmessage.is_fuzzy,
-	translationmessage.comment_text AS pocommenttext,
-	potranslation0.translation AS translation0,
-	potranslation1.translation AS translation1,
-	potranslation2.translation AS translation2,
-	potranslation3.translation AS translation3,
-	translationmessage.id AS current_translation,
-	potmsgset.context,
-	msgid_singular.msgid AS msgid_singular,
-	msgid_plural.msgid AS msgid_plural
-FROM potmsgset
-JOIN potemplate ON potemplate.id = potmsgset.potemplate
-JOIN pofile ON potemplate.id = pofile.potemplate
-LEFT JOIN TranslationMessage ON
-	potmsgset.id = translationmessage.potmsgset AND
-	translationmessage.pofile = pofile.id AND
-	translationmessage.is_current
-LEFT JOIN pomsgid AS msgid_singular ON msgid_singular.id = potmsgset.msgid_singular
-LEFT JOIN pomsgid AS msgid_plural ON msgid_plural.id = potmsgset.msgid_plural
-LEFT JOIN potranslation AS potranslation0 ON
-	potranslation0.id = translationmessage.msgstr0
-LEFT JOIN potranslation AS potranslation1 ON
-	potranslation0.id = translationmessage.msgstr1
-LEFT JOIN potranslation AS potranslation2 ON
-	potranslation0.id = translationmessage.msgstr2
-LEFT JOIN potranslation AS potranslation3 ON
-	potranslation0.id = translationmessage.msgstr3
-;
+    COALESCE(potmsgset.id::text, 'X'::text) || '.'::text || COALESCE(translationmessage.id::text, 'X'::text) AS id,
+    potemplate.productseries,
+    potemplate.sourcepackagename,
+    potemplate.distrorelease,
+    potemplate.id AS potemplate,
+    potemplate."header" AS template_theader,
+    potemplate.languagepack,
+    pofile.id AS pofile,
+    pofile."language",
+    pofile.variant,
+    pofile.topcomment AS translation_file_comment,
+    pofile."header" AS translation_header,
+    pofile.fuzzyheader AS is_translation_header_fuzzy,
+    potmsgset."sequence",
+    potmsgset.id AS potmsgset,
+    potmsgset.commenttext AS "comment",
+    potmsgset.sourcecomment AS source_comment,
+    potmsgset.filereferences AS file_references,
+    potmsgset.flagscomment AS flags_comment,
+    potmsgset.context,
+    msgid_singular.msgid AS msgid_singular,
+    msgid_plural.msgid AS msgid_plural,
+    translationmessage.is_fuzzy,
+    translationmessage.is_current,
+    translationmessage.is_imported,
+    potranslation0.translation AS translation0,
+    potranslation1.translation AS translation1,
+    potranslation2.translation AS translation2,
+    potranslation3.translation AS translation3
+FROM
+    potmsgset
+        JOIN potemplate ON potemplate.id = potmsgset.potemplate
+        JOIN pofile ON potemplate.id = pofile.potemplate
+        LEFT JOIN TranslationMessage ON
+            potmsgset.id = translationmessage.potmsgset AND
+            translationmessage.pofile = pofile.id AND
+            translationmessage.is_current IS TRUE
+        LEFT JOIN pomsgid AS msgid_singular ON
+            msgid_singular.id = potmsgset.msgid_singular
+        LEFT JOIN pomsgid AS msgid_plural ON
+            msgid_plural.id = potmsgset.msgid_plural
+        LEFT JOIN potranslation AS potranslation0 ON
+            potranslation0.id = translationmessage.msgstr0
+        LEFT JOIN potranslation AS potranslation1 ON
+            potranslation0.id = translationmessage.msgstr1
+        LEFT JOIN potranslation AS potranslation2 ON
+            potranslation0.id = translationmessage.msgstr2
+        LEFT JOIN potranslation AS potranslation3 ON
+            potranslation0.id = translationmessage.msgstr3;
 
 CREATE VIEW POTExport(
 	id,

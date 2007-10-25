@@ -1,20 +1,22 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Database class for Rosetta PO export view."""
+"""Database class to handle translation export view."""
 
 __metaclass__ = type
 
-__all__ = ['VPOExportSet', 'VPOExport']
+__all__ = [
+    'VPOExportSet',
+    'VPOExport'
+    ]
 
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-
-from canonical.launchpad.database import POTemplate
-from canonical.launchpad.database import POFile
 from canonical.launchpad.database import Language
-from canonical.launchpad.interfaces import (
-    IVPOExportSet, IVPOExport, PackagePublishingStatus)
+from canonical.launchpad.database import POFile
+from canonical.launchpad.database import POTemplate
+from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
+
 
 class VPOExportSet:
     """Retrieve collections of VPOExport objects."""
@@ -23,27 +25,28 @@ class VPOExportSet:
 
     column_names = [
         'potemplate',
+        'template_header',
         'pofile',
         'language',
         'variant',
-        'potsequence',
-        'potheader',
-        'poheader',
-        'potopcomment',
-        'pofuzzyheader',
-        'is_fuzzy',
-        'current_translation',
+        'translation_file_comment',
+        'translation_header',
+        'is_translation_header_fuzzy',
+        'sequence',
+        'comment',
+        'source_comment',
+        'file_references',
+        'flags_comment',
+        'context',
         'msgid_singular',
         'msgid_plural',
+        'is_fuzzy',
+        'is_current',
+        'is_imported',
         'translation0',
         'translation1',
         'translation2',
         'translation3',
-        'context',
-        'pocommenttext',
-        'source_comment',
-        'file_references',
-        'flags_comment',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -51,7 +54,8 @@ class VPOExportSet:
         'potemplate',
         'language',
         'variant',
-        'potsequence',
+        'sequence',
+        'id',
     ]
     sort_columns = ', '.join(
         ['POExport.' + name for name in sort_column_names])
@@ -142,9 +146,8 @@ class VPOExportSet:
             SourcePackagePublishingHistory.archive = %s
             ''' % sqlvalues(component, series.main_archive)
 
-        if languagepack is not None:
-            where += ''' AND
-                POTemplate.languagepack = %s''' % sqlvalues(languagepack)
+        if languagepack:
+            where += ' AND POTemplate.languagepack'
 
         return join + where
 
@@ -199,9 +202,8 @@ class VPOExportSet:
                 SourcePackagePublishingHistory.archive = %s
                 ''' % sqlvalues(component, series.main_archive)
 
-        if languagepack is not None:
-            where += ''' AND
-                POTemplate.languagepack = %s''' % sqlvalues(languagepack)
+        if languagepack:
+            where += ' AND POTemplate.languagepack'
 
         cur = cursor()
         cur.execute(join + where)
@@ -225,7 +227,7 @@ class VPOExportSet:
 
         if date is None:
             join = None
-            where = ('distrorelease = %s AND languagepack = True' %
+            where = ('distrorelease = %s AND languagepack' %
                     sqlvalues(series.id))
         else:
             join = [
@@ -250,27 +252,28 @@ class VPOExport:
 
     def __init__(self, *args):
         (potemplate,
+         self.template_header,
          pofile,
          language,
          self.variant,
-         self.potsequence,
-         self.potheader,
-         self.poheader,
-         self.potopcomment,
-         self.pofuzzyheader,
-         self.is_fuzzy,
-         self.current_translation,
+         self.translation_file_comment,
+         self.translation_header,
+         self.is_translation_header_fuzzy,
+         self.sequence,
+         self.comment,
+         self.source_comment,
+         self.file_references,
+         self.flags_comment,
+         self.context,
          self.msgid_singular,
          self.msgid_plural,
+         self.is_fuzzy,
+         self.is_current,
+         self.is_imported,
          self.translation0,
          self.translation1,
          self.translation2,
-         self.translation3,
-         self.context,
-         self.pocommenttext,
-         self.source_comment,
-         self.file_references,
-         self.flags_comment) = args
+         self.translation3) = args
 
         self.potemplate = POTemplate.get(potemplate)
         self.language = Language.get(language)
@@ -281,8 +284,7 @@ class VPOExport:
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
                 self.msgid_singular)
             if potmsgset and potmsgset.is_translation_credit:
-                self.translation = self.pofile.prepareTranslationCredits(
+                # Translation credits doesn't have plural forms so we only
+                # update the singular one.
+                self.translation0 = self.pofile.prepareTranslationCredits(
                     potmsgset)
-                self.activesubmission = True
-                self.translationpluralform = 0
-
