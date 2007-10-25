@@ -88,14 +88,15 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getUniquePublishedBinaries(name=None, version=None, status=None,
+    def getPublishedOnDiskBinaries(name=None, version=None, status=None,
                                    distroarchseries=None, exact_match=False):
         """Unique `IBinaryPackagePublishingHistory` target to this archive.
 
-        In spite of getAllPublishedBinaries method, this method only return
+        In spite of getAllPublishedBinaries method, this method only returns
         distinct binary publications inside this Archive, i.e, it excludes
         architecture-independent publication for other architetures than the
-        nominatedarchindep.
+        nominatedarchindep. In few words it represents the binary files
+        published in the archive disk pool.
 
         :param: name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
@@ -164,6 +165,9 @@ class IArchiveSet(Interface):
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
+
+    def getPPAByDistributionAndOwnerName(distribution, name):
+        """Return a single PPA the given (distribution, name) pair."""
 
     def getByDistroPurpose(distribution, purpose):
         """Return the IArchive with the given distribution and purpose."""

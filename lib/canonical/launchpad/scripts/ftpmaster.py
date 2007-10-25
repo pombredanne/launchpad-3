@@ -1591,18 +1591,14 @@ class PackageRemover(SoyuzScript):
             raise SoyuzScriptError(
                 "Invalid launchpad usename: %s" % self.options.user)
 
-        removables = []
         if self.options.binaryonly:
-            binary_pubs = self.findBinaries(packagename)
-            removables.extend([b for b in binary_pubs])
+            removables = list(self.findBinaries(packagename))
         elif self.options.sourceonly:
-            source_pub = self.findSource(packagename)
-            removables.append(source_pub)
+            removables = [self.findSource(packagename)]
         else:
             source_pub = self.findSource(packagename)
-            binary_pubs = source_pub.publishedBinaries()
-            removables.append(source_pub)
-            removables.extend([b for b in binary_pubs])
+            removables = [source_pub]
+            removables.extend(source_pub.publishedBinaries())
 
         self.logger.info("Removing candidates:")
         for removable in removables:

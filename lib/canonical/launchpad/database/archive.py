@@ -266,7 +266,7 @@ class Archive(SQLBase):
 
         return all_binaries
 
-    def getUniquePublishedBinaries(self, name=None, version=None, status=None,
+    def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, exact_match=False):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
@@ -317,7 +317,7 @@ class Archive(SQLBase):
     @property
     def number_of_binaries(self):
         """See `IArchive`."""
-        return self.getUniquePublishedBinaries().count()
+        return self.getPublishedOnDiskBinaries().count()
 
     @property
     def binaries_size(self):
@@ -371,6 +371,17 @@ class ArchiveSet:
     def get(self, archive_id):
         """See `IArchiveSet`."""
         return Archive.get(archive_id)
+
+    def getPPAByDistributionAndOwnerName(self, distribution, name):
+        """See `IArchiveSet`"""
+        query = """
+            Archive.purpose = %s AND
+            Archive.distribution = %s AND
+            Person.id = Archive.owner AND
+            Person.name = %s
+        """ % sqlvalues(ArchivePurpose.PPA, distribution, name)
+
+        return Archive.selectOne(query, clauseTables=['Person'])
 
     def getByDistroPurpose(self, distribution, purpose):
         """See `IArchiveSet`."""

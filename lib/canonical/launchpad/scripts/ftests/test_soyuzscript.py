@@ -77,12 +77,12 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         soyuz = self.getSoyuz()
         src = soyuz.findSource('pmount')
         self.assertEqual(
-            src.title, 'pmount 0.1-2 (source) in ubuntu hoary')
+            src.displayname, 'pmount 0.1-2 in hoary')
 
         soyuz = self.getSoyuz(suite='hoary', component='main')
         src = soyuz.findSource('pmount')
         self.assertEqual(
-            src.title, 'pmount 0.1-2 (source) in ubuntu hoary')
+            src.displayname, 'pmount 0.1-2 in hoary')
 
         soyuz = self.getSoyuz()
         self.assertRaises(SoyuzScriptError, soyuz.findSource, 'marvin')
@@ -105,7 +105,7 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
 
         binaries = soyuz.findBinaries('pmount')
         self.assertEqual(len(binaries), 2)
-        binary_names = set([b.name for b in binaries])
+        binary_names = set([b.binarypackagerelease.name for b in binaries])
         self.assertEqual(list(binary_names), ['pmount'])
 
         self.assertRaises(SoyuzScriptError, soyuz.findBinaries, 'marvin')

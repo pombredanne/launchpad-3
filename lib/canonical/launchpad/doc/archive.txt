@@ -40,7 +40,7 @@ returning I{Source, Binary}PackagePublishingHistory objects.
   >>> cprov_archive.getPublishedSources().count()
   3
 
-  >>> cprov_archive.getUniquePublishedBinaries().count()
+  >>> cprov_archive.getPublishedOnDiskBinaries().count()
   3
 
   >>> cprov_archive.getAllPublishedBinaries().count()
@@ -53,7 +53,7 @@ This lookup also supports optional filters:
  * 'version': exact version string matching;
  * 'status': a item or a list of PackagePublishingStatus.
 
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
   >>> active_status = [PackagePublishingStatus.PENDING,
   ...                  PackagePublishingStatus.PUBLISHED]
@@ -154,7 +154,7 @@ Combining 'name' and 'distroseries' filters:
 
 === Binary publication lookups ===
 
-'getUniquePublishedBinaries' returns only unique publications, i.e., it
+'getPublishedOnDiskBinaries' returns only unique publications, i.e., it
 excludes architecture-independent duplications which is necessary for
 having correct publication counters and archive size.
 
@@ -178,11 +178,11 @@ published for all available architectures, i386 & hppa:
   pmount-0.1-1 (False) -> hppa
   pmount-0.1-1 (False) -> i386
 
-'getUniquePublishedBinaries' automatically filters multiple publications of
+'getPublishedOnDiskBinaries' automatically filters multiple publications of
 'pmount' considering only the publication to the 'nominatedarchindep'
 (defined for each distroseries).
 
-  >>> unique_cprov_bin_pubs = cprov_archive.getUniquePublishedBinaries()
+  >>> unique_cprov_bin_pubs = cprov_archive.getPublishedOnDiskBinaries()
 
   >>> check_bin_pubs(unique_cprov_bin_pubs)
   mozilla-firefox-1.0 (True) -> i386
@@ -191,11 +191,11 @@ published for all available architectures, i386 & hppa:
 
 'name' filter supporting partial string matching and 'not-found':
 
-  >>> cprov_archive.getUniquePublishedBinaries(name='pmou').count()
+  >>> cprov_archive.getPublishedOnDiskBinaries(name='pmou').count()
   1
   >>> cprov_archive.getAllPublishedBinaries(name='pmou').count()
   2
-  >>> cprov_archive.getUniquePublishedBinaries(name='foo').count()
+  >>> cprov_archive.getPublishedOnDiskBinaries(name='foo').count()
   0
   >>> cprov_archive.getAllPublishedBinaries(name='foo').count()
   0
@@ -208,16 +208,16 @@ Combining 'name' filter and 'exact_match' flag:
   >>> cprov_archive.getAllPublishedBinaries(
   ...      name='pmount', exact_match=True).count()
   2
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      name='pmou', exact_match=True).count()
   0
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      name='pmount', exact_match=True).count()
   1
 
 It's possible to associate 'name' and 'version' filters:
 
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      name='moz', version='1.0').count()
   2
 
@@ -225,7 +225,7 @@ It's possible to associate 'name' and 'version' filters:
   ...      name='moz', version='1.0').count()
   2
 
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      name='moz', version='666').count()
   0
 
@@ -242,7 +242,7 @@ filter is not passed too.
   ...
   AssertionError: 'version' can be only used when name is set
 
-  >>> moz_version_lookup = cprov_archive.getUniquePublishedBinaries(
+  >>> moz_version_lookup = cprov_archive.getPublishedOnDiskBinaries(
   ...      version='1.0')
   Traceback (most recent call last):
   ...
@@ -250,7 +250,7 @@ filter is not passed too.
 
 Both methods support 'status' filter:
 
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      status=PackagePublishingStatus.PUBLISHED).count()
   3
 
@@ -258,7 +258,7 @@ Both methods support 'status' filter:
   ...      status=PackagePublishingStatus.PUBLISHED).count()
   4
 
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      status=active_status).count()
   3
 
@@ -266,7 +266,7 @@ Both methods support 'status' filter:
   ...      status=active_status).count()
   4
 
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      status=inactive_status).count()
   0
 
@@ -286,23 +286,23 @@ Using 'distroarchseries' filter:
   ...      distroarchseries=warty_hppa).count()
   2
 
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      distroarchseries=warty_i386).count()
   2
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      distroarchseries=warty_hppa).count()
   1
 
   >>> cprov_archive.getAllPublishedBinaries(
   ...      distroarchseries=[warty_i386, warty_hppa]).count()
   4
-  >>> cprov_archive.getUniquePublishedBinaries(
+  >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      distroarchseries=[warty_i386, warty_hppa]).count()
   3
 
 Associating 'name' and 'status' filters:
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
   ...      name='pmount', status=active_status)
   >>> status_lookup.count()
   1
@@ -312,7 +312,7 @@ Associating 'name' and 'status' filters:
   >>> status_lookup.count()
   2
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
   ...      name='foo', status=active_status)
   >>> status_lookup.count()
   0
@@ -324,7 +324,7 @@ Associating 'name' and 'status' filters:
 
 Associating 'name', 'version' and 'status' filters:
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
   ...      name='pmount', version='0.1-1', status=active_status)
   >>> status_lookup.count()
   1
@@ -334,7 +334,7 @@ Associating 'name', 'version' and 'status' filters:
   >>> status_lookup.count()
   2
 
-  >>> status_lookup = cprov_archive.getUniquePublishedBinaries(
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
   ...      name='pmount', version='666', status=active_status)
   >>> status_lookup.count()
   0
@@ -570,7 +570,6 @@ and an ArchivePurpose:
   >>> partner_archive.description
   u'Partner archive'
 
-
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
@@ -609,6 +608,21 @@ to publish to the RELEASE pocket no matter what state the distroseries is in.
   >>> getUtility(IArchiveSet).getByDistroPurpose(
   ...     ubuntutest, ArchivePurpose.PRIMARY).allowUpdatesToReleasePocket()
   False
+
+getPPAByDistributionAndOwnerName method allow PPA lookups based on a
+distribution and a person name. This method is used in
+`PackageLocation` to provide a homogeneous way to refer to a Location
+(archive, distribution, distroseries, pocket).
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
+    ...     ubuntu, 'cprov')
+    True
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl.archive == archive_set.getPPAByDistributionAndOwnerName(
+    ...     ubuntu, 'sabdfl')
+    True
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:

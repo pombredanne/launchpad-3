@@ -474,7 +474,6 @@ To get all milestones of a given distro we have the .all_milestones property.
 `IDistribution` provides a series of methods to lookup PPAs:
 
  * getAllPPAs
- * getPPAByOwnerName
  * searchPPAs
  * getPendingAcceptancePPAs
  * getPendingPublicationPPAs
@@ -495,19 +494,6 @@ the distribution in question:
 
     >>> [archive.owner.name for archive in debian.getAllPPAs()]
     []
-
-=== Getting PPA by owner name ===
-
-getPPAByOwnerName method allow PPA lookups based on a distribution and
-a person name. This method is used in `PackageLocation` to provide a
-homogeneous way to refer to a Location (archive, distribution,
-distroseries, pocket).
-
-    >>> cprov.archive == ubuntu.getPPAByOwnerName('cprov')
-    True
-
-    >>> sabdfl.archive == ubuntu.getPPAByOwnerName('sabdfl')
-    True
 
 === Searching PPAs ===
 

@@ -919,20 +919,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
 
+    # XXX cprov 20071024:  move this API to IArchiveSet, Distribution is
+    # already too long and complicated.
     def getAllPPAs(self):
         """See `IDistribution`"""
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
-
-    def getPPAByOwnerName(self, name):
-        """See `IDistribution`"""
-        query = """
-            Archive.purpose = %s AND
-            Archive.distribution = %s AND
-            Person.id = Archive.owner AND
-            Person.name = %s
-        """ % sqlvalues(ArchivePurpose.PPA, self, name)
-        return Archive.selectOne(query, clauseTables=['Person'])
 
     def searchPPAs(self, text=None, show_inactive=False):
         """See `IDistribution`."""

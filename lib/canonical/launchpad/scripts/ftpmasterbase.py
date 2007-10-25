@@ -16,8 +16,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, IDistributionSet, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, IArchiveSet, IComponentSet, IDistributionSet,
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
@@ -50,14 +50,14 @@ class PackageLocation:
                 "Could not find distribution %s" % err)
 
         if archive_owner_name is not None:
-            ppa = self.distribution.getPPAByOwnerName(
-                name=archive_owner_name)
+            ppa = getUtility(IArchiveSet).getPPAByDistributionAndOwnerName(
+                self.distribution, archive_owner_name)
             if ppa is None:
                 raise PackageLocationError(
                     "Could not find a PPA for %s" % archive_owner_name)
             self.archives = [ppa]
         else:
-            self.archives = [a for a in self.distribution.all_distro_archives]
+            self.archives = list(self.distribution.all_distro_archives)
 
         if suite_name is not None:
             try:
