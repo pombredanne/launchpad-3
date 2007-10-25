@@ -109,6 +109,11 @@ If there isn't one, that should return None.
    >>> print SourcePackageRelease.get(20).productrelease
    None
 
+Check that the uploaded changesfile works:
+
+   >>> commercial = SourcePackageRelease.get(36)
+   >>> commercial.upload_changesfile.http_url
+   'http://.../commercialpackage_1.0-1_source.changes'
 
 Check ISourcePackageRelease.override() behaviour:
 

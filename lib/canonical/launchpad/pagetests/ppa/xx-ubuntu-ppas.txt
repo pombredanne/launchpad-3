@@ -74,39 +74,54 @@ In the three sample data PPAs, only one matches the search string "Celso".
 
 == Owner's PPA pages ==
 
-In the table rows, the "Owner" is a clickable link to his PPA page.
+Let's start by adding an extra package to Celso's archive:
+
+    >>> import transaction
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
+    >>> logout()
+    >>> transaction.commit()
+    >>> flush_database_updates()
+
+And now on to the page itself. In the table rows, the "Owner" is a
+clickable link to his PPA page:
 
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
     'PPA for Celso Providelo'
 
+Let's see his sources.list entries:
+
+    >>> results = find_tag_by_id(browser.contents, 'sources-list-entries')
+    >>> text = extract_text(results)
+    >>> print text
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb-src http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+and the select control that lets you update them:
+
+    >>> print find_tag_by_id(browser.contents, 'series-widget-div')
+    <div id="series-widget-div">
+    ...
+        <select id="field.series" name="field.series" size="1" onchange="updateSeries(this);">
+            <option value="breezy-autotest">Breezy Badger Autotest</option>
+            <option value="warty">The Warty Warthog Release</option>
+        </select>
+    ...
+
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
 
-    >>> results = find_tag_by_id(browser.contents,'package_counters')
+    >>> results = find_tag_by_id(browser.contents, 'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    3 source packages
+    4 source packages
     (9.5 MiB)
     3 binary packages
     (3 bytes)
-    Estimated archive size:
-    9.5 MiB
-
-Just quickly check if the singular form of this section is handled
-properly.
-
-    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
-    >>> anon_browser.title
-    'PPA for Mark Shuttleworth'
-
-    >>> results = find_tag_by_id(anon_browser.contents,'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    1 source package
-    (9.5 MiB)
-    1 binary package
-    (0 bytes)
     Estimated archive size:
     9.5 MiB
 
@@ -124,7 +139,7 @@ The headings:
     <table class="listing sortable" id="packages_list">
     <thead>
     <tr>
-    <th>Source</th>
+    <th colspan="2">Source</th>
     <th>Published</th>
     <th>Status</th>
     <th>Series</th>
@@ -137,6 +152,11 @@ The data:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
+    commercialpackage - 1.0-1
+    (changes)
+    Pending
+    breezy-autotest
+    devel
     pmount - 0.1-1
     2007-07-09
     Published
@@ -173,6 +193,32 @@ Searching for the package "iceweasel" show's that Celso is providing this.
     1
 
 
+== Single-publication PPAs ==
+
+Just quickly check if the singular form of this section is handled
+properly.
+
+    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
+    >>> anon_browser.title
+    'PPA for Mark Shuttleworth'
+
+    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
+    >>> text = extract_text(results)
+    >>> print text
+    1 source package
+    (9.5 MiB)
+    1 binary package
+    (0 bytes)
+    Estimated archive size:
+    9.5 MiB
+
+Mark has sources only published in one archive, so he has no
+series-widget-div control to update them:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'series-widget-div')
+    None
+
+
 == Other Distribution PPAs ==
 
 PPAs are targeted to a specific distribution and currently we only
@@ -202,13 +248,10 @@ by name16 (Foo Bar) who is a member - the signer is presented as the uploader
 in the list.
 
     >>> from canonical.launchpad.ftests.ppa import publishToTeamPPA
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> publishToTeamPPA(team_name="ubuntu-team")
     >>> logout()
-    >>> import transaction
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Access ubuntu-team's PPA page:
@@ -221,7 +264,7 @@ The package row headings show an Uploader column:
     <table class="listing sortable" id="packages_list">
     <thead>
     <tr>
-    <th>Source</th>
+    <th colspan="2">Source</th>
     <th>Uploader</th>
     <th>Published</th>
     <th>Status</th>
@@ -248,7 +291,7 @@ Links from files go to their on-archive locations:
 
 The uploader name is linkified to that user's home page:
 
-    >>> browser.getLink(id="uploader").click()
+    >>> browser.getLink(url="~name16").click()
     >>> browser.url
     'http://launchpad.dev/~name16'
 

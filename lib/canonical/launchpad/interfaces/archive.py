@@ -55,6 +55,8 @@ class IArchive(IHasOwner):
 
     title = Attribute("Archive Title.")
 
+    series_with_sources = Attribute(
+        "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
