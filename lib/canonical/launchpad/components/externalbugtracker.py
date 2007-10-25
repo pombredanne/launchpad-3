@@ -262,6 +262,8 @@ class ExternalBugTracker:
                 #      136391 is dealt with.
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
+                    new_malone_status = self.convertRemoteStatus(
+                        new_remote_status)
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
@@ -270,10 +272,6 @@ class ExternalBugTracker:
                     error = BugWatchErrorType.BUG_NOT_FOUND
                     log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
-
-                if new_remote_status is not None:
-                    new_malone_status = self.convertRemoteStatus(
-                        new_remote_status)
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
@@ -462,6 +460,13 @@ class Bugzilla(ExternalBugTracker):
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
+        # XXX: GavinPanella 2007-10-25 bug=153532: The modification of
+        # self.remote_bug_status later on is a side-effect that should
+        # really not be in this method, but for the fact that
+        # getRemoteStatus needs it at other times. Perhaps
+        # getRemoteBug and getRemoteBugBatch could return RemoteBug
+        # objects which have status properties that would replace
+        # getRemoteStatus.
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
             data = {'download_type' : 'browser',
