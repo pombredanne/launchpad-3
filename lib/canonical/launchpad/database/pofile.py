@@ -1474,12 +1474,12 @@ class POFileToTranslationFileDataAdapter:
             # file. (Messages which are in the PO template but not in the PO
             # file are untranslated, and messages which are not in the PO
             # template but in the PO file are obsolete.)
-            if row.potsequence == 0 and not row.is_imported:
+            if row.sequence == 0 and not row.is_imported:
                 continue
 
             # Create new message set
             msgset = TranslationMessageData()
-            msgset.is_obsolete = (row.potsequence == 0)
+            msgset.is_obsolete = (row.sequence == 0)
             msgset.msgid_singular = row.msgid_singular
             msgset.msgid_plural = row.msgid_plural
 

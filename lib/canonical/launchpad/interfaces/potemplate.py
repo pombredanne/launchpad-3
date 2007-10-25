@@ -247,6 +247,15 @@ class IPOTemplate(IRosettaStats):
     pofiles = Attribute(
         _('All `IPOFile` that exist for this template.'))
 
+    relatives_by_name = Attribute(
+        _('All `IPOTemplate` objects that have the same name asa this one.'))
+
+    relatives_by_source = Attribute(
+        _('''All `IPOTemplate` objects that have the same source.
+            For example those that came from the same productseries or the
+            same source package.
+            '''))
+
     displayname = TextLine(
         title=_('The translation template brief name.'), required=True,
         readonly=True)

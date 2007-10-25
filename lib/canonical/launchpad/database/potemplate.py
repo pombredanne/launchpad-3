@@ -20,7 +20,7 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -37,8 +37,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
-    TranslationConstants, TranslationFileFormat,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    TranslationFileFormat, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessageData
@@ -205,6 +205,33 @@ class POTemplate(SQLBase, RosettaStats):
             # for products, use the "most restrictive permission" between
             # project and product.
             return self.productseries.product.aggregatetranslationpermission
+
+    @property
+    def relatives_by_name(self):
+        """See `IPOTemplate`."""
+        return POTemplate.select(
+            'id <> %s AND name = %s AND iscurrent' % sqlvalues(
+                self, self.name), orderBy=['datecreated'])
+
+    @property
+    def relatives_by_source(self):
+        """See `IPOTemplate`."""
+        if self.productseries is not None:
+            return POTemplate.select(
+                'id <> %s AND productseries = %s AND iscurrent' % sqlvalues(
+                    self, self.productseries), orderBy=['name'])
+        elif (self.distroseries is not None and
+              self.sourcepackagename is not None):
+            return POTemplate.select('''
+                id <> %s AND
+                distrorelease = %s AND
+                sourcepackagename = %s AND
+                iscurrent
+                ''' % sqlvalues(
+                    self, self.distroseries, self.sourcepackagename),
+                orderBy=['name'])
+        else:
+            raise AssertionError('Unknown POTemplate source.')
 
     @property
     def language_count(self):
@@ -954,7 +981,7 @@ class POTemplateToTranslationFileDataAdapter:
             msgset.msgid_singular = row.msgid_singular
             msgset.msgid_plural = row.msgid_plural
             msgset.context = row.context
-            msgset.comment = row.comment_text
+            msgset.comment = row.comment
             msgset.source_comment = row.source_comment
             msgset.file_references = row.file_references
 
