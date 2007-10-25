@@ -595,7 +595,7 @@ BEGIN
 
         -- Delete the old record.
         DELETE FROM POFileTranslator
-        WHERE POFileTranslator.latest_message = OLD.latest_message;
+        WHERE POFileTranslator.latest_message = OLD.id;
 
         -- Insert a past record if there is one.
         INSERT INTO POFileTranslator (
