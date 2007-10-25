@@ -12,6 +12,7 @@ from subprocess import Popen, PIPE
 
 __all__ = [
     'HERE',
+    'IntegrationTestFailure',
     'MAILMAN_BIN',
     'TOP',
     'create_transaction_manager',
@@ -30,6 +31,10 @@ MAILMAN_BIN = os.path.normpath(os.path.join(
     os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
 
 MAX_CYCLES = 2
+
+
+class IntegrationTestFailure(Exception):
+    """An error occurred in the integration test framework."""
 
 
 def auth(user, password):

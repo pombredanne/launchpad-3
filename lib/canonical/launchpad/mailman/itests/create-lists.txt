@@ -27,9 +27,8 @@ contact address' page and registers their application for a mailing list.
 At this point, Mailman has still not created the mailing list.
 
     >>> itest_helper.wait_for_mailman()
-    >>> stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
-    >>> sorted(line for line in stdout.splitlines()
-    ...        if line.startswith('itest-'))
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
 
 
@@ -51,9 +50,7 @@ the web, so we'll go behind the scenes to do this.
     >>> itest_helper.transactionmgr.commit()
 
     >>> itest_helper.wait_for_mailman()
-    >>> stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
-    >>> sorted(line for line in stdout.splitlines()
-    ...        if line.startswith('itest-'))
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
 
@@ -80,7 +77,5 @@ mailing list.
     >>> itest_helper.transactionmgr.commit()
 
     >>> itest_helper.wait_for_mailman()
-    >>> stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
-    >>> sorted(line for line in stdout.splitlines()
-    ...        if line.startswith('itest-'))
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

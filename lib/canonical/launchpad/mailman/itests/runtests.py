@@ -14,8 +14,10 @@ perform all the tests for that step.
 
 import os
 import sys
+import errno
 import shutil
 import doctest
+import optparse
 import unittest
 import traceback
 import itest_helper
@@ -27,7 +29,7 @@ sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from Mailman.mm_cfg import QUEUE_DIR
+from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
 
 execute_zcml_for_scripts()
 itest_helper.create_transaction_manager()
@@ -37,7 +39,7 @@ DOCTEST_FLAGS = (doctest.ELLIPSIS |
                  doctest.REPORT_NDIFF)
 
 
-def integrationTestSetUp(test):
+def integrationTestCleanUp(test):
     """Common set up for the integration tests."""
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
@@ -68,12 +70,19 @@ def integrationTestSetUp(test):
     """)
     itest_helper.transactionmgr.commit()
     # Now delete any mailing lists still hanging around.  We don't care if
-    # this fails because it means the list doesn't exist.
+    # this fails because it means the list doesn't exist.  While we're at it,
+    # remove any related archived backup files.
     for team_name in ('itest-one', 'itest-two', 'itest-three'):
         try:
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
             pass
+        backup_file = os.path.join(VAR_PREFIX, 'backups', '%s.tgz' % team_name)
+        try:
+            os.remove(backup_file)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
     # Clear out any qfiles hanging around from a previous run.
     for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
         for filename in filenames:
@@ -81,47 +90,69 @@ def integrationTestSetUp(test):
                 os.remove(os.path.join(dirpath, filename))
 
 
+
 def find_tests():
     """Search for doctests.
 
     Return a unittest.TestSuite object.
     """
+    # Ensure we start with a clean world.
+    integrationTestCleanUp(None)
     suite = unittest.TestSuite()
     for filename in os.listdir(itest_helper.HERE):
         if os.path.splitext(filename)[1] != '.txt':
             continue
         test = doctest.DocFileSuite(
             filename,
-            setUp=integrationTestSetUp,
+            tearDown=integrationTestCleanUp,
             optionflags=DOCTEST_FLAGS)
         suite.addTest(test)
     return suite
 
 
-def run_tests():
+def v_callback(option, opt, value, parser):
+    if opt in ('-q', '--quiet'):
+        delta = -1
+    elif opt in ('-v', '--verbose'):
+        delta = 1
+    else:
+        delta = 0
+    dest = getattr(parser.values, option.dest)
+    setattr(parser.values, option.dest, max(0, dest + delta))
+
+
+def parseargs():
+    parser = optparse.OptionParser(usage=_("""\
+%prog [options]
+
+Run the Launchpad/Mailman integration test suite."""))
+    parser.set_defaults(verbosity=2)
+    parser.add_option('-v', '--verbose',
+                      action='callback', callback=v_callback,
+                      dest='verbosity', help=_("""\
+Increase verbosity by 1, which defaults to %default.  Use -q to reduce
+verbosity.  -v and -q options accumulate."""))
+    parser.add_option('-q', '--quiet',
+                      action='callback', callback=v_callback,
+                      dest='verbosity', help=_("""\
+Reduce verbosity by 1 (but not below 0)."""))
+    opts, args = parser.parse_args()
+    return parser, opts, args
+
+
+def main():
     """Run all the integration doctests.
 
     Return True if there were failures or errors, otherwise False.
     """
+    parser, opts, args = parseargs()
+    if args:
+        parser.error('Unexpected arguments')
+
     suite = find_tests()
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=opts.verbosity)
     results = runner.run(suite)
     return bool(results.failures or results.errors)
-
-
-def main():
-    """A main function with cleanup protection."""
-    # Several of the tests require a bin/withlist helper to print useful
-    # information about mailing lists.  Mailman requires the withlist script
-    # to be in its bin directory or on sys.path.  Hacking the latter in the
-    # subprocess is tricky, so it's easier to just copy the file in place.
-    src_path = os.path.join(itest_helper.HERE, 'mmhelper.py')
-    dst_path = os.path.join(itest_helper.MAILMAN_BIN, 'mmhelper.py')
-    shutil.copyfile(src_path, dst_path)
-    try:
-        return run_tests()
-    finally:
-        os.remove(dst_path)
 
 
 if __name__ == '__main__':
