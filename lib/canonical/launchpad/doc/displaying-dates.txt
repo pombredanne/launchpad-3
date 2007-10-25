@@ -54,66 +54,66 @@ timestamp.
 
 A time that is very close to the present will be displayed in seconds:
 
-   >>> t = fixed_time + timedelta(0, 5, 0)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   'in 5 seconds'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   True
-   >>> t = fixed_time_utc - timedelta(0, 5, 0)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   '5 seconds ago'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   True
+    >>> t = fixed_time + timedelta(0, 5, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    'in 5 seconds'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
+    >>> t = fixed_time_utc - timedelta(0, 5, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    '5 seconds ago'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
 
 Further out we expect minutes:
 
-   >>> t = fixed_time_utc + timedelta(0, 75, 0)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   'in 1 minutes'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   True
-   >>> t = fixed_time_utc - timedelta(0, 75, 0)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   '1 minutes ago'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   True
+    >>> t = fixed_time_utc + timedelta(0, 75, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    'in 1 minutes'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
+    >>> t = fixed_time_utc - timedelta(0, 75, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    '1 minutes ago'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
 
 Further out we expect hours:
 
-   >>> t = fixed_time_utc + timedelta(0, 3635, 0)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   'in 1 hours'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   True
-   >>> t = fixed_time_utc - timedelta(0, 3635, 0)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   '1 hours ago'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   True
+    >>> t = fixed_time_utc + timedelta(0, 3635, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    'in 1 hours'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
+    >>> t = fixed_time_utc - timedelta(0, 3635, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    '1 hours ago'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
 
 And if the approximate date is more than a day away, we expect the date. We
 also expect the fmt:displaydate to change form, and become "on yyyy-mm-dd".
 
-   >>> t = datetime(2004, 1, 13, 15, 35)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   '2004-01-13'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   False
-   >>> test_tales('t/testfmt:displaydate', t=t)
-   'on 2004-01-13'
-   >>> t = datetime(2015, 1, 13, 15, 35)
-   >>> test_tales('t/testfmt:approximatedate', t=t)
-   '2015-01-13'
-   >>> print test_tales('t/testfmt:approximatedate', t=t) == \
-   ...     test_tales('t/testfmt:displaydate', t=t)
-   False
-   >>> test_tales('t/testfmt:displaydate', t=t)
-   'on 2015-01-13'
+    >>> t = datetime(2004, 1, 13, 15, 35)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    '2004-01-13'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    False
+    >>> test_tales('t/testfmt:displaydate', t=t)
+    'on 2004-01-13'
+    >>> t = datetime(2015, 1, 13, 15, 35)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    '2015-01-13'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    False
+    >>> test_tales('t/testfmt:displaydate', t=t)
+    'on 2015-01-13'
 
