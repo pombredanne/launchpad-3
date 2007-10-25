@@ -876,20 +876,16 @@ class DateTimeFormatterAPI:
         minutes = (delta.seconds - (3600*hours)) / 60
         seconds = delta.seconds % 60
         result = ''
-        comma = ''
         if future:
             result += 'in '
         if days != 0:
             result += '%d days' % days
-            comma = ', '
-        if days == 0 and hours != 0:
-            result += '%s%d hours' % (comma, hours)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes != 0:
-            result += '%s%d minutes' % (comma, minutes)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes == 0:
-            result += '%s%d seconds' % (comma, seconds)
+        elif hours != 0:
+            result += '%d hours' % hours
+        elif minutes != 0:
+            result += '%d minutes' % minutes
+        else:
+            result += '%d seconds' % seconds
         if not future:
             result += ' ago'
         return result
