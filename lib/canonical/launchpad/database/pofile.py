@@ -240,6 +240,10 @@ class POFile(SQLBase, POFileMixIn):
                                 dbName='lasttranslator',
                                 notNull=False,
                                 default=None)
+
+    date_changed = UtcDateTimeCol(
+        dbName='date_changed', notNull=True, default=UTC_NOW)
+
     license = IntCol(dbName='license',
                      notNull=False,
                      default=None)
@@ -1048,6 +1052,8 @@ class DummyPOFile(POFileMixIn):
         self.header = None
         self.fuzzyheader = False
         self.lasttranslator = None
+        UTC = pytz.timezone('UTC')
+        self.date_updated  = datetime.datetime.now(UTC)
         self.license = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
@@ -1059,7 +1065,7 @@ class DummyPOFile(POFileMixIn):
 
         self.path = u'unknown'
         self.exportfile = None
-        self.datecreated = None
+        self.datecreated = datetime.datetime.now(UTC)
         self.last_touched_pomsgset = None
         self.contributors = []
         self.from_sourcepackagename = None
@@ -1424,11 +1430,8 @@ class POFileToTranslationFileDataAdapter:
         # Update default fields based on its values in the template header.
         translation_header.updateFromTemplateHeader(template_header)
         date_reviewed = None
-        if self._pofile.last_touched_pomsgset is not None:
-            # There is at least one translation available.
-            date_reviewed = self._pofile.last_touched_pomsgset.date_reviewed
-
-        translation_header.translation_revision_date = date_reviewed
+        translation_header.translation_revision_date = (
+            self._pofile.date_changed)
 
         translation_header.comment = self._pofile.topcomment
 
@@ -1494,14 +1497,14 @@ class POFileToTranslationFileDataAdapter:
                     msgset.addTranslation(pluralform, translation)
 
             msgset.context = row.context
-            msgset.comment = row.pocommenttext
+            msgset.comment = row.comment
             msgset.source_comment = row.source_comment
-            msgset.file_references = row.filereferences
+            msgset.file_references = row.file_references
 
             if row.flags_comment:
                 msgset.flags = set([
                     flag.strip()
-                    for flag in row.flagscomment.split(',')
+                    for flag in row.flags_comment.split(',')
                     if flag
                     ])
 
