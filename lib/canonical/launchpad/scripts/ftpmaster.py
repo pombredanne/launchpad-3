@@ -43,7 +43,7 @@ from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.scripts.ftpmasterbase import (
-    PackageLocation, PackageLocationError, SoyuzScript, SoyuzScriptError)
+    build_package_location, PackageLocationError, SoyuzScript, SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -1239,11 +1239,12 @@ class PackageCopier(LaunchpadScript):
         """
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
-        from_location = PackageLocation(
+        from_location = build_package_location(
             self.options.from_distribution_name, self.options.from_suite)
+
         # from_distribution_name intentionally used here as we currently
         # only support moving within the same distro:
-        to_location = PackageLocation(
+        to_location = build_package_location(
             self.options.from_distribution_name, self.options.to_suite)
 
         if from_location == to_location:
@@ -1405,7 +1406,7 @@ class LpQueryDistro(LaunchpadScript):
         LaunchpadScriptFailure.
         """
         try:
-            self.location = PackageLocation(
+            self.location = build_package_location(
                 distribution_name=self.options.distribution_name,
                 suite_name=self.options.suite_name)
         except PackageLocationError, err:
@@ -1550,7 +1551,12 @@ class PackageRemover(SoyuzScript):
     success_message = (
         "The archive will be updated in the next publishing cycle.")
 
-    def addExtraSoyuzOptions(self):
+    def add_my_options(self):
+        """Adding local options."""
+        # XXX cprov 20071025: we need a hook for loading SoyuzScript default
+        # options automatically. This is ugly.
+        SoyuzScript.add_my_options(self)
+
         # Mode options.
         self.parser.add_option("-b", "--binary", dest="binaryonly",
                                default=False, action="store_true",
@@ -1591,13 +1597,14 @@ class PackageRemover(SoyuzScript):
             raise SoyuzScriptError(
                 "Invalid launchpad usename: %s" % self.options.user)
 
+        removables = []
         if self.options.binaryonly:
-            removables = list(self.findBinaries(packagename))
+            removables.extend(self.findLatestPublishedBinaries(packagename))
         elif self.options.sourceonly:
-            removables = [self.findSource(packagename)]
+            removables.append(self.findLatestPublishedSource(packagename))
         else:
-            source_pub = self.findSource(packagename)
-            removables = [source_pub]
+            source_pub = self.findLatestPublishedSource(packagename)
+            removables.append(source_pub)
             removables.extend(source_pub.publishedBinaries())
 
         self.logger.info("Removing candidates:")

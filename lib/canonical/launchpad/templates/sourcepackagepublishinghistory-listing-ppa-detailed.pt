@@ -9,7 +9,7 @@
          >2005-09-16</td>
      <td tal:content="context/status/title"
          >PUBLISHED</td>
-     <td tal:content="context/sourcepackagerelease/uploaddistroseries/name"
+     <td tal:content="context/distroseries/name"
          >dapper</td>
      <td tal:content="context/section/name">base</td>
      <td>

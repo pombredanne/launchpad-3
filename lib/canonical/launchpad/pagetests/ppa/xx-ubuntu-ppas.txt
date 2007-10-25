@@ -138,12 +138,12 @@ The data:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    pmount - 0.1-1
+    cdrkit - 1.0
     2007-07-09
     Published
-    hoary
+    breezy-autotest
     editors
-    i386
+    dsc
     iceweasel - 1.0
     2007-07-09
     Published
@@ -152,12 +152,12 @@ The data:
     orig
     dsc
     i386
-    cdrkit - 1.0
+    pmount - 0.1-1
     2007-07-09
     Published
-    breezy-autotest
+    warty
     editors
-    dsc
+
 
 == Searching an archive ==
 

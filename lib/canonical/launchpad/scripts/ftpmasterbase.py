@@ -11,6 +11,7 @@ __all__ = [
     'PackageLocation',
     'SoyuzScriptError',
     'SoyuzScript',
+    'build_package_location',
     ]
 
 from zope.component import getUtility
@@ -22,8 +23,74 @@ from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 
-class PackageLocationError(Exception):
+class SoyuzScriptError(Exception):
+    """Raised when a soyuz script failed.
+
+    The textual content should explain the error.
+    """
+
+
+class PackageLocationError(SoyuzScriptError):
     """Raised when something went wrong when building PackageLocation."""
+
+
+def build_package_location(distribution_name, suite=None, purpose=None,
+                           person_name=None):
+    """Convenience function to build PackageLocation objects."""
+
+    # XXX: we need a way to specify exactly what location we want
+    # through strings in the commandline. Until we do, we will end up
+    # with this horrible set of self-excluding options that make sense
+    # to nobody. Perhaps:
+    #   - ppa.launchpad.net/cprov/ubuntu/warty
+    #   - archive.ubuntu.com/ubuntu-security/hoary
+    #   - security.ubuntu.com/ubuntu/hoary
+    #   - archive.canonical.com/gutsy
+    #                                           -- kiko, 2007-10-24
+
+    try:
+        distribution = getUtility(IDistributionSet)[distribution_name]
+    except NotFoundError, err:
+        raise PackageLocationError(
+            "Could not find distribution %s" % err)
+
+    if purpose == ArchivePurpose.PPA:
+        assert person_name is not None, (
+            "person_name should be passed for PPA archives.")
+        archive = getUtility(IArchiveSet).getPPAByDistributionAndOwnerName(
+            distribution, person_name)
+        if archive is None:
+            raise PackageLocationError(
+                "Could not find a PPA for %s" % person_name)
+        if distribution != archive.distribution:
+            raise PackageLocationError(
+                "The specified archive is not for distribution %s"
+                % distribution_name)
+    elif purpose == ArchivePurpose.PARTNER:
+        assert person_name is None, (
+            "person_name shoudn't be passed for PARTNER archive.")
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution, purpose)
+        if archive is None:
+            raise PackageLocationError(
+                "Could not find %s archive for %s" % (
+                purpose.title, distribution_name))
+    else:
+        assert person_name is None, (
+            "person_name shoudn't be passed when purpose is omitted.")
+        archive = distribution.main_archive
+
+    if suite is not None:
+        try:
+            distroseries, pocket = distribution.getDistroSeriesAndPocket(suite)
+        except NotFoundError, err:
+            raise PackageLocationError(
+                "Could not find suite %s" % err)
+    else:
+        distroseries = distribution.currentseries
+        pocket = PackagePublishingPocket.RELEASE
+
+    return PackageLocation(archive, distribution, distroseries, pocket)
 
 
 class PackageLocation:
@@ -32,69 +99,29 @@ class PackageLocation:
     It groups distribution, distroseries and pocket in a way they
     can be easily manipulated and compared.
     """
+    archive = None
     distribution = None
     distroseries = None
     pocket = None
-    archives = None
 
-    def __init__(self, distribution_name, suite_name, archive_owner_name=None):
-        """Initialize the PackageLocation from the given parameters.
-
-        Build Launchpad objects and expand suite_name into distroseries and
-        pocket.
-        """
-        try:
-            self.distribution = getUtility(IDistributionSet)[distribution_name]
-        except NotFoundError, err:
-            raise PackageLocationError(
-                "Could not find distribution %s" % err)
-
-        if archive_owner_name is not None:
-            ppa = getUtility(IArchiveSet).getPPAByDistributionAndOwnerName(
-                self.distribution, archive_owner_name)
-            if ppa is None:
-                raise PackageLocationError(
-                    "Could not find a PPA for %s" % archive_owner_name)
-            self.archives = [ppa]
-        else:
-            self.archives = list(self.distribution.all_distro_archives)
-
-        if suite_name is not None:
-            try:
-                suite = self.distribution.getDistroSeriesAndPocket(suite_name)
-            except NotFoundError, err:
-                raise PackageLocationError(
-                    "Could not find suite %s" % err)
-            else:
-                self.distroseries, self.pocket = suite
-        else:
-            self.distroseries = self.distribution.currentseries
-            self.pocket = PackagePublishingPocket.RELEASE
+    def __init__(self, archive, distribution, distroseries, pocket):
+        """Initialize the PackageLocation from the given parameters."""
+        self.archive = archive
+        self.distribution = distribution
+        self.distroseries = distroseries
+        self.pocket = pocket
 
     def __eq__(self, other):
         if (self.distribution == other.distribution and
-            self.archives == other.archives and
+            self.archive == other.archive and
             self.distroseries == other.distroseries and
             self.pocket == other.pocket):
             return True
         return False
 
     def __str__(self):
-        first_archive = self.archives[0]
-        if first_archive.purpose != ArchivePurpose.PPA:
-            return '%s/%s/%s' % (self.distribution.name,
-                                 self.distroseries.name, self.pocket.name)
-        else:
-            return '%s-ppa/%s/%s/%s' % (
-                first_archive.owner.name, self.distribution.name,
-                self.distroseries.name, self.pocket.name)
-
-
-class SoyuzScriptError(Exception):
-    """Raised when a soyuz script failed.
-
-    The textual content should explain the error.
-    """
+        return '%s: %s-%s' % (self.archive.title,
+                             self.distroseries.name, self.pocket.name)
 
 
 class SoyuzScript(LaunchpadScript):
@@ -116,19 +143,16 @@ class SoyuzScript(LaunchpadScript):
      * `usage`: string describing the expected command-line format;
      * `description`: string describing the tool;
      * `success_message`: string to be presented on successful runs;
-     * `addExtraSoyuzOption`: a method to include extra command-line options;
      * `mainTask`: a method to actually perform a specific task.
 
     See `add_my_options` contexts for the default `SoyuzScript`
     command-line options.
     """
+    location = None
     success_message = "Done."
 
     def add_my_options(self):
-        """Adds SoyuzScript default options.
-
-        Also adds the callsite options defined via self.addExtraSoyuzOptions.
-        """
+        """Adds SoyuzScript default options."""
         self.parser.add_option(
             '-n', '--dry-run', dest='dryrun', default=False,
             action='store_true', help='Do not commit changes.')
@@ -148,11 +172,6 @@ class SoyuzScript(LaunchpadScript):
             action='store', help='Suite name.')
 
         self.parser.add_option(
-            '-p', '--ppa', dest='archive_owner_name', default=None,
-            action='store',
-            help='Archive owner name in case of PPA operations')
-
-        self.parser.add_option(
             "-a", "--architecture", dest="architecture", default=None,
             help="Architecture tag.")
 
@@ -165,14 +184,14 @@ class SoyuzScript(LaunchpadScript):
             "-c", "--component", dest="component", default=None,
             help="Component name.")
 
-        self.addExtraSoyuzOptions()
+        self.parser.add_option(
+            '-p', '--ppa', dest='archive_owner_name', action='store',
+            help='Archive owner name in case of PPA operations')
 
-    def addExtraSoyuzOptions(self):
-        """Hook to allow command-line customization.
-
-        Similar to `LaunchpadScript.add_my_options`.
-        """
-        pass
+        self.parser.add_option(
+            '-j', '--partner', dest='partner_archive', default=False,
+            action='store_true',
+            help='Specify partner archive')
 
     def _validatePublishing(self, currently_published):
         """Validate the given publishing record.
@@ -199,32 +218,27 @@ class SoyuzScript(LaunchpadScript):
                 currently_published.displayname,
                 desired_component.name.upper()))
 
-    def findSource(self, name):
-        """Return a suitable `DistroSeriesSourcePackageRelease`."""
+    def findLatestPublishedSource(self, name):
+        """Return a suitable `SourcePackagePublishingHistory`."""
         assert self.location is not None, 'Undefined location.'
 
-        target_source_publication = None
-        for archive in self.location.archives:
-            published_sources = archive.getPublishedSources(
-                name=name, version=self.options.version,
-                status=PackagePublishingStatus.PUBLISHED,
-                distroseries=self.location.distroseries,
-                exact_match=True)
-            if published_sources.count() > 0:
-                target_source_publication = published_sources[0]
-                break
+        published_sources = self.location.archive.getPublishedSources(
+            name=name, version=self.options.version,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=self.location.distroseries,
+            exact_match=True)
 
-        if target_source_publication is None:
+        if not published_sources:
             raise SoyuzScriptError(
                 "Could not find source '%s/%s' in %s" % (
                 name, self.options.version, self.location))
 
-        self._validatePublishing(target_source_publication)
+        latest_source = published_sources[0]
+        self._validatePublishing(latest_source)
+        return latest_source
 
-        return target_source_publication
-
-    def findBinaries(self, name):
-        """Build a list of suitable `DistroArchSeriesBinaryPackageRelease`.
+    def findLatestPublishedBinaries(self, name):
+        """Build a list of suitable `BinaryPackagePublishingHistory`.
 
         Try to find a group of binary package release matching the current
         context. 'architecture' or 'version', if passed via command-line,
@@ -243,23 +257,20 @@ class SoyuzScript(LaunchpadScript):
                 raise SoyuzScriptError(err)
 
         for architecture in architectures:
-            binarypackage = architecture.getBinaryPackage(name)
-            if binarypackage is None:
+            binaries = self.location.archive.getAllPublishedBinaries(
+                    name=name, version=self.options.version,
+                    status=PackagePublishingStatus.PUBLISHED,
+                    distroarchseries=architecture,
+                    exact_match=True)
+            if not binaries:
                 continue
-
-            if self.options.version is None:
-                target_binary = binarypackage.currentrelease
-            else:
-                target_binary = binarypackage[self.options.version]
-            if target_binary is None:
-                continue
+            binary = binaries[0]
             try:
-                self._validatePublishing(
-                    target_binary.current_publishing_record)
+                self._validatePublishing(binary)
             except SoyuzScriptError, err:
                 self.logger.warn(err)
             else:
-                target_binaries.append(target_binary.current_publishing_record)
+                target_binaries.append(binary)
 
         if not target_binaries:
             raise SoyuzScriptError(
@@ -303,12 +314,21 @@ class SoyuzScript(LaunchpadScript):
         """Setup `PackageLocation` for context distribution and suite."""
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
-        try:
-            self.location = PackageLocation(
-                self.options.distribution_name, self.options.suite,
+        if self.options.partner_archive:
+            self.location = build_package_location(
+                self.options.distribution_name,
+                self.options.suite,
+                ArchivePurpose.PARTNER)
+        elif self.options.archive_owner_name:
+            self.location = build_package_location(
+                self.options.distribution_name,
+                self.options.suite,
+                ArchivePurpose.PPA,
                 self.options.archive_owner_name)
-        except PackageLocationError, err:
-            raise SoyuzScriptError(err)
+        else:
+            self.location = build_package_location(
+                self.options.distribution_name,
+                self.options.suite)
 
     def _finishProcedure(self):
         """Script finalization procedure.
@@ -352,3 +372,6 @@ class SoyuzScript(LaunchpadScript):
     def mainTask(self):
         """Main task to be performed by the script"""
         raise NotImplementedError
+
+
+
