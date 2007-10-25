@@ -410,7 +410,7 @@ The method getPOTMsgSetByMsgIDText returns a message without context if
 no context is specified.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.msgid_singular.msgid
     bar
     >>> print potmsgset.context
     None
@@ -419,7 +419,7 @@ The method getPOTMsgSetByMsgIDText returns a message with empty context
 if empty context is specified, and not the message with None context.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar', context=u'')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.msgid_singular.msgid
     bar
     >>> potmsgset.context
     u''
