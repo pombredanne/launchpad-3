@@ -92,7 +92,7 @@ class POBasicTestCase(unittest.TestCase):
             '%smsgid "foo\\"bar\\nbaz\\\\xyzzy"\nmsgstr"z"\n' % (
                 DEFAULT_HEADER))
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, 'foo"bar\nbaz\\xyzzy')
+        self.assertEqual(messages[0].msgid_singular, 'foo"bar\nbaz\\xyzzy')
 
     # Lalo doesn't agree with this test
     # def badEscapeTest(self):
