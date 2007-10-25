@@ -51,7 +51,6 @@ timestamp.
     >>> ztapi.provideAdapter(
     ...     datetime, IPathAdapter, TestDateTimeFormatterAPI, 'testfmt')
 
-
 A time that is very close to the present will be displayed in seconds:
 
     >>> t = fixed_time + timedelta(0, 5, 0)
