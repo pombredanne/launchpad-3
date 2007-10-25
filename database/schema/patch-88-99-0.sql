@@ -605,49 +605,45 @@ FROM
             potranslation0.id = translationmessage.msgstr3;
 
 CREATE VIEW POTExport(
-	id,
-	name,
-	translation_domain,
-	potemplate,
-	productseries,
-	sourcepackagename,
-	distrorelease,
-	header,
-	languagepack,
-	potmsgset,
-	sequence,
-	comment_text,
-	source_comment,
-	flags_comment,
-	file_references,
-	context,
-	msgid_singular,
-	msgid_plural
-	) AS
+    id,
+    productseries,
+    sourcepackagename,
+    distrorelease,
+    potemplate,
+    template_header,
+    languagepack,
+    sequence,
+    potmsgset,
+    "comment",
+    source_comment,
+    file_references,
+    flags_comment,
+    context,
+    msgid_singular,
+    msgid_plural
+    ) AS
 SELECT
-	COALESCE(potmsgset.id::text, 'X'::text) AS id,
-	potemplate.name,
-	potemplate.translation_domain,
-	potemplate.id AS potemplate,
-	potemplate.productseries,
-	potemplate.sourcepackagename,
-	potemplate.distrorelease,
-	potemplate."header",
-	potemplate.languagepack,
-	potmsgset.id AS potmsgset,
-	potmsgset."sequence",
-	potmsgset.commenttext AS comment_text,
-	potmsgset.sourcecomment AS source_comment,
-	potmsgset.flagscomment AS flags_comment,
-	potmsgset.filereferences AS file_references,
-	potmsgset.context,
-	msgid_singular.msgid AS msgid_singular,
-	msgid_plural.msgid AS msgid_plural
-FROM POTMsgSet
-JOIN potemplate ON potemplate.id = potmsgset.potemplate
-LEFT JOIN POMsgID AS msgid_singular ON POTMsgSet.msgid_singular = msgid_singular.id
-LEFT JOIN POMsgID AS msgid_plural ON POTMsgSet.msgid_plural = msgid_plural.id;
-
+    COALESCE(potmsgset.id::text, 'X'::text) AS id,
+    potemplate.productseries,
+    potemplate.sourcepackagename,
+    potemplate.distrorelease,
+    potemplate.id AS potemplate,
+    potemplate."header" AS template_header,
+    potemplate.languagepack,
+    potmsgset."sequence",
+    potmsgset.id AS potmsgset,
+    potmsgset.commenttext AS "comment",
+    potmsgset.sourcecomment AS source_comment,
+    potmsgset.filereferences AS file_references,
+    potmsgset.flagscomment AS flags_comment,
+    potmsgset.context,
+    msgid_singular.msgid AS msgid_singular,
+    msgid_plural.msgid AS msgid_plural
+FROM
+    POTMsgSet
+    JOIN potemplate ON potemplate.id = potmsgset.potemplate
+    LEFT JOIN POMsgID AS msgid_singular ON POTMsgSet.msgid_singular = msgid_singular.id
+    LEFT JOIN POMsgID AS msgid_plural ON POTMsgSet.msgid_plural = msgid_plural.id;
 
 -- SELECT 'Cleaning up TranslationMessage temp columns', statement_timestamp();	-- DEBUG
 
