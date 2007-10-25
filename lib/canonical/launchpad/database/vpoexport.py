@@ -268,7 +268,7 @@ class VPOExport:
          self.translation3,
          self.context,
          self.pocommenttext,
-         self.sourcecomment,
+         self.source_comment,
          self.file_references,
          self.flags_comment) = args
 
@@ -278,7 +278,8 @@ class VPOExport:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(self.msgid)
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+                self.msgid_singular)
             if potmsgset and potmsgset.is_translation_credit:
                 self.translation = self.pofile.prepareTranslationCredits(
                     potmsgset)

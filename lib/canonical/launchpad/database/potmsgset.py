@@ -483,9 +483,9 @@ class POTMsgSet(SQLBase):
     @property
     def hide_translations_from_anonymous(self):
         """See `IPOTMsgSet`."""
-        # primemsgid_.msgid is pre-joined everywhere where
+        # msgid_singular.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
-        return self.primemsgid_.msgid in [
+        return self.msgid_singular.msgid in [
             u'translation-credits',
             u'translator-credits',
             u'translator_credits',
@@ -496,19 +496,19 @@ class POTMsgSet(SQLBase):
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
-        # primemsgid_.msgid is pre-joined everywhere where
+        # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
-        regular_credits = self.primemsgid_.msgid in [
+        regular_credits = self.msgid_singular.msgid in [
             u'translation-credits',
             u'translator-credits',
             u'translator_credits' ]
-        old_kde_credits = self.primemsgid_.msgid in [
+        old_kde_credits = self.msgid_singular.msgid in [
             u'_: EMAIL OF TRANSLATORS\nYour emails',
             u'_: NAME OF TRANSLATORS\nYour names'
             ]
-        kde_credits = ((self.primemsgid_.msgid == u'Your emails' and
+        kde_credits = ((self.msgid_singular.msgid == u'Your emails' and
                         self.context == u'EMAIL OF TRANSLATORS') or
-                       (self.primemsgid_.msgid == u'Your names' and
+                       (self.msgid_singular.msgid == u'Your names' and
                         self.context == u'NAME OF TRANSLATORS'))
         return (regular_credits or old_kde_credits or kde_credits)
 
