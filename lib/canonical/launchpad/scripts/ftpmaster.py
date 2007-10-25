@@ -1387,7 +1387,7 @@ class LpQueryDistro(LaunchpadScript):
             '-d', '--distribution', dest='distribution_name',
             default='ubuntu', help='Context distribution name.')
         self.parser.add_option(
-            '-s', '--suite', dest='suite_name', default=None,
+            '-s', '--suite', dest='suite', default=None,
             help='Context suite name.')
 
     def main(self):
@@ -1408,7 +1408,7 @@ class LpQueryDistro(LaunchpadScript):
         try:
             self.location = build_package_location(
                 distribution_name=self.options.distribution_name,
-                suite_name=self.options.suite_name)
+                suite=self.options.suite)
         except PackageLocationError, err:
             raise LaunchpadScriptFailure(err)
 
@@ -1464,9 +1464,9 @@ class LpQueryDistro(LaunchpadScript):
         i.e, passing an arbitrary 'suite' and asking for the CURRENT suite
         in the context distribution.
         """
-        if self.options.suite_name is not None:
+        if self.options.suite is not None:
             raise LaunchpadScriptFailure(
-                "Action does not accept defined suite_name.")
+                "Action does not accept defined suite.")
 
     # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
     # IDistribution. raising NotFoundError instead.
