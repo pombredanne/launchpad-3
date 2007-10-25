@@ -107,7 +107,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
     comment_text = StringCol(
-        dbName='commenttext', notNull=False, default=None)
+        dbName='comment_text', notNull=False, default=None)
     origin = EnumCol(
         dbName='origin', notNull=True, schema=RosettaTranslationOrigin)
     validation_status = EnumCol(

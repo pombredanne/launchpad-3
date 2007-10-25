@@ -89,10 +89,6 @@ class IVPOExport(Interface):
 
     current_translation = Attribute(_("See ITranslationMessage.id"))
 
-    was_in_last_import = Bool(
-        title=u"See ITranslationMessage.was_in_last_import",
-        readonly=True, required=False)
-
     was_obsolete_in_last_import = Bool(
         title=u"See ITranslationMessage.was_obsolete_in_last_import",
         readonly=True, required=False)
