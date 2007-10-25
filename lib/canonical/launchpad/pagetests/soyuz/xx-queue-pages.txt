@@ -1,19 +1,20 @@
-Queue pages were designed to offer the ability to perform
+Queue pages are designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroSeriess.
 Setup a browser as the upload manager:
 
 Change ubuntu's upload manager to be carlos:
 
-  >>> admin_browser.open("http://localhost/ubuntu")
+  >>> admin_browser.open("http://launchpad.dev/ubuntu")
   >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
   >>> admin_browser.getControl("Change").click()
 
-We are at "Distribution Overview" page, let's check the stored values:
+We are at "Distribution Overview" page, let's see that carlos is now the
+upload manager:
 
   >>> admin_browser.url
-  'http://localhost/ubuntu'
+  'http://launchpad.dev/ubuntu'
   >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value
   'carlos'
@@ -33,8 +34,8 @@ queue page itself:
   ...
   Unauthorized: ...
 
-Check if anonymous actions fails:
-(This POST is made by-hand since the UI would never allow it.)
+Anonymous action will fail:
+(This POST is made by hand since the UI would never allow it.)
 
   >>> print http(r"""
   ... POST /ubuntu/breezy-autotest/+queue HTTP/1.1
@@ -47,7 +48,7 @@ Check if anonymous actions fails:
   Application error.  Unauthenticated user POSTing to page that requires authentication.
 
 
-Non-admin (sample person) attempts to act on queue items fails:
+Non-admin (sample person) attempts to act on the queue items will fail:
 
   >>> print http(r"""
   ... POST /ubuntu/breezy-autotest/+queue HTTP/1.1
@@ -60,7 +61,7 @@ Non-admin (sample person) attempts to act on queue items fails:
   ...You do not have permission to act on queue items...
 
 
-Check if non-admin are denied to see UNAPPROVED queue:
+Non-admins are denied access to the UNAPPROVED queue:
 
   >>> user_browser.open(
   ...     "http://localhost/ubuntu/breezy-autotest/"
@@ -69,7 +70,7 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ...
   Unauthorized: User don't have permission to see this queue.
 
-Page access denied also for empty queues (bug #74965):
+Page access is also denied for empty queues (bug #74965):
 
   >>> user_browser.open(
   ...     "http://localhost/distros/ubuntu/warty/"
@@ -78,7 +79,7 @@ Page access denied also for empty queues (bug #74965):
   ...
   Unauthorized: User don't have permission to see this queue.
 
-Allow access from upload managers and admins:
+Access is allowed for upload managers and admins:
 
   >>> upload_manager_browser = setupBrowser(
   ...       auth="Basic carlos@canonical.com:test")
@@ -98,8 +99,8 @@ Allow access from upload managers and admins:
   >>> admin_browser.contents
   '...Unapproved...'
 
-Visualise current queue, by default the NEW queue, only requires
-normal user auth:
+Viewing the current queue, by default the NEW queue, only requires
+normal user authorisation:
 
   >>> user_browser.open(
   ...     "http://localhost/ubuntu/breezy-autotest/+queue")
@@ -127,19 +128,19 @@ clicked item:
 
   >>> filelist = find_tag_by_id(user_browser.contents, 'queue4-filelist')
 
-It contains a list of files related to the queue item clicked followed
+It contains a list of files related to the queue item clicked, followed
 by its size, one file per line:
 
   >>> print extract_text(filelist)
   alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
 
-And each filename links to its respective librarian URL:
+Each filename links to its respective librarian URL:
 
   >>> print filelist.find('a')
   <a href="http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc">alsa-utils_1.0.9a-4ubuntu1.dsc</a>
 
 On binary queue items we also present the stamp 'NEW' for files never
-published in the archive (it helps archive-admins when reviewing
+published in the archive (it helps archive admins when reviewing
 candidates):
 
   >>> filelist = find_tag_by_id(user_browser.contents, 'queue2-filelist')
@@ -150,15 +151,17 @@ XXX cprov 20070726: we should extend the test when we are able to
 probe javascripts events.
 
 
-Inspect the ACCEPTED queue
+== Accepting items ==
+
+Inspect the ACCEPTED queue:
 
   >>> user_browser.getControl(name="queue_state").displayValue=['Accepted']
   >>> user_browser.getControl("Update").click()
   >>> user_browser.contents
   '...The Accepted queue...is empty...'
 
-Now we act on the queue, which requires admin or upload_manager.  First,
-we need to fake librarian files so that email notifications work:
+Now we act on the queue, which requires admin or upload_manager permission.
+First, we need to add fake librarian files so that email notifications work:
 
   >>> from canonical.archiveuploader.tests import insertFakeChangesFile
   >>> insertFakeChangesFile(52)
@@ -178,7 +181,7 @@ Go back to the "new" queue and accept an item:
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
-Accepting queue items results in an email to the uploader and possibly an
+Accepting queue items results in an email to the uploader and (usually) an
 email to the distroseries' announcement list (see
 nascentupload-announcements.txt).
 
@@ -191,16 +194,19 @@ nascentupload-announcements.txt).
   >>> announcement['To']
   'autotest_changes@ubuntu.com'
 
-Force duplicated action submit on a queue item and check if the system
-recognises it.
+Forcing a duplicated submission on a queue item is recognised:
 
   >>> upload_manager_browser.reload()
   >>> message = 'FAILED: alsa-utils (Queue item already accepted)'
   >>> message in upload_manager_browser.contents
   True
 
+No emails are sent in this case:
 
-Breeze past the unaccepted queue to ensure admin can see it
+  >>> len(stub.test_emails)
+  0
+
+Breeze past the unaccepted queue to ensure an admin can see it:
 
   >>> upload_manager_browser.getControl(
   ...    name="queue_state").displayValue=['Accepted']
@@ -208,7 +214,7 @@ Breeze past the unaccepted queue to ensure admin can see it
   >>> upload_manager_browser.contents
   '...netapplet...'
 
-Check if the item was moved to the correct place, the ACCEPTED queue:
+The item is moved to the ACCEPTED queue:
 
   >>> upload_manager_browser.getControl(
   ...    name="queue_state").displayValue=['Accepted']
@@ -216,7 +222,7 @@ Check if the item was moved to the correct place, the ACCEPTED queue:
   >>> upload_manager_browser.contents
   '...alsa-utils...'
 
-Go back to the "new" queue, and check our item has gone:
+Going back to the "new" queue, we can see our item has gone:
 
   >>> upload_manager_browser.getControl(
   ...    name="queue_state").displayValue=['New']
@@ -224,7 +230,10 @@ Go back to the "new" queue, and check our item has gone:
   >>> 'alsa-utils' in admin_browser.contents
   False
 
-Rejecting items.
+
+== Rejecting items ==
+
+Reject netapplet:
 
   >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['3']
   >>> upload_manager_browser.getControl(name="Reject").click()
@@ -252,7 +261,8 @@ Use the text filter to inspect the NEW queue:
   >>> 'mozilla-firefox (i386)' in user_browser.contents
   False
 
-Checking UnexpectedFormData on unknown queue_state values (bug #51959)
+An UnexpectedFormData error is raised for unknown queue_state values
+(bug #51959).
 
   >>> user_browser.handleErrors = False
   >>> user_browser.open(
