@@ -201,6 +201,7 @@ class _ZopelessConnectionDescriptor(object):
         assert tid in self.transactions, (
             "Deactivating a non-active connection descriptor for this thread.")
         self.transactions[tid]._connection.close()
+        self.transactions[tid]._makeObsolete()
         del self.transactions[tid]
 
     def __get__(self, inst, cls=None):
