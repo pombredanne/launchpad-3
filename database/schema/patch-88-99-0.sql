@@ -582,7 +582,7 @@ SELECT
     pofile.fuzzyheader AS is_translation_header_fuzzy,
     potmsgset."sequence",
     potmsgset.id AS potmsgset,
-    potmsgset.commenttext AS "comment",
+    translationmessage.comment_text AS "comment",
     potmsgset.sourcecomment AS source_comment,
     potmsgset.filereferences AS file_references,
     potmsgset.flagscomment AS flags_comment,
@@ -611,11 +611,11 @@ FROM
         LEFT JOIN potranslation AS potranslation0 ON
             potranslation0.id = translationmessage.msgstr0
         LEFT JOIN potranslation AS potranslation1 ON
-            potranslation0.id = translationmessage.msgstr1
+            potranslation1.id = translationmessage.msgstr1
         LEFT JOIN potranslation AS potranslation2 ON
-            potranslation0.id = translationmessage.msgstr2
+            potranslation2.id = translationmessage.msgstr2
         LEFT JOIN potranslation AS potranslation3 ON
-            potranslation0.id = translationmessage.msgstr3;
+            potranslation3.id = translationmessage.msgstr3;
 
 CREATE VIEW POTExport(
     id,
