@@ -142,7 +142,7 @@ class POTMsgSet(SQLBase):
     def isTranslationNewerThan(self, language, timestamp):
         """See `IPOTMsgSet`."""
         current = self.getCurrentTranslationMessage(language)
-        if not current:
+        if current is None:
             return False
         date_updated = current.date_created
         if (current.date_reviewed is not None and
@@ -169,11 +169,10 @@ class POTMsgSet(SQLBase):
         If there are `translations` with greater pluralforms than allowed,
         sanitize and keep them.
         """
-
         # Fix the trailing and leading whitespaces
         sanitized_translations = {}
         for pluralform in range(pluralforms):
-            if pluralform in translations:
+            if pluralform < len(translations):
                 sanitized_translations[pluralform] = self.applySanityFixes(
                     translations[pluralform])
             else:
@@ -349,11 +348,19 @@ class POTMsgSet(SQLBase):
                     sourcepackagename=self.potemplate.sourcepackagename)
 
         else:
-            # A current one is also changing if the matching one is not current.
-            if not matching_message.is_current:
-                has_changed = True
             # Also update validation status if needed
             matching_message.validation_status = validation_status
+
+        if not just_a_suggestion:
+            if is_imported:
+                current_message = self.getCurrentTranslationMessage(
+                    pofile.language)
+                if not current_message or current_message.is_imported:
+                    matching_message.is_current = True
+            else:
+                current_message = self.getCurrentTranslationMessage(
+                    pofile.language)
+                matching_message.is_current = is_current
 
         if just_a_suggestion:
             if not matching_message.is_current:
@@ -363,11 +370,11 @@ class POTMsgSet(SQLBase):
                     'The new translations were saved as suggestions to avoid '
                     'possible conflicts. Please review them.')
         else: # It's current submission and submitter is an editor.
+            matching_message.is_fuzzy = is_fuzzy
 
             # Set message as current only if it validates ok.
             if (has_changed and (matching_message.validation_status ==
                                  TranslationValidationStatus.OK)):
-                matching_message.is_current = True
                 pofile.lasttranslator = submitter
                 pofile.date_changed = UTC_NOW
 

@@ -184,10 +184,15 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         assert plural_forms is not None, (
             "Don't know the number of plural forms for %s language." % (
                 self.pofile.language.englishname))
-
         msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
+        translations = []
         # Return translations for no more plural forms than the POFile knows.
-        return [msgstr.translation for msgstr in msgstrs[:pluralforms]]
+        for msgstr in msgstrs[:plural_forms]:
+            if msgstr is None:
+                translations.append(None)
+            else:
+                translations.append(msgstr.translation)
+        return translations
 
     @cachedproperty
     def is_complete(self):

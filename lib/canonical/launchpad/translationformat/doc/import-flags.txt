@@ -14,6 +14,8 @@ We'll be going through usual steps of the PO file lifetime:
 == Helper imports ==
 
     >>> from zope.app import datetimeutils
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IPersonSet,
@@ -103,11 +105,11 @@ And lets define a nice printout function for PO files.
     ...         imported_fuzzy = fuzzy = ''
     ...         imported_translation = translation = None
     ...         if imported is not None:
-    ...		    imported_translation = imported.msgstr0
-    ...             if imported.is_fuzzy:
+    ...		    imported_translation = imported.msgstr0.translation
+    ...             if imported.was_fuzzy_in_last_import:
     ...                 imported_fuzzy = 'yes'
     ...         if current is not None:
-    ...		    translation = current.msgstr0
+    ...		    translation = current.msgstr0.translation
     ...             if current.is_fuzzy:
     ...                 fuzzy = 'yes'
     ...         print "% 2d. %-18s %-18s %-4s %-18s %-4s *" % (
@@ -170,6 +172,7 @@ be able to import translations later on.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Usually, the first import we get is published (i.e. coming from a
 package upload in Ubuntu).
@@ -205,6 +208,7 @@ package upload in Ubuntu).
     ...                                     pofile=firefox_serbian)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 When this file is imported, we notice that all the messages are
 imported as expected: active translation is set to the same published
@@ -261,6 +265,7 @@ from the "fourth" message, and the "fifth" message is newly translated.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Again, PO file in the database reflects the changes: translations for
 "second", "fourth" and "fifth" are updated (and now different from
@@ -318,6 +323,7 @@ a fuzzy flag is removed from the "fourth" message, and both "fifth" and
     ...                                     published=True)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 We can see that the published fuzzy flag has been removed from the
 "fourth" message in the database, and that translations for "fifth"
@@ -379,6 +385,7 @@ a new translation.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 We can see that "third" message has fuzzy flag removed from the active
 translation (but not from the published one), "fourth" is reverted to
@@ -436,6 +443,7 @@ suggestions.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Notice that "second" message is indeed updated properly.  We are making sure
 we don't get any problems with too many inactive suggestions for that
