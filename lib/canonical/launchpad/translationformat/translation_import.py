@@ -337,10 +337,16 @@ class TranslationImporter:
 
         count = 0
 
-        if self.pofile is not None:
-            pofile_in_db = ExistingPOFileInDatabase(
-                self.pofile,
-                is_imported=translation_import_queue_entry.is_published)
+        if self.pofile is not None or english_pofile is not None:
+            if self.pofile is None:
+                last_translator = translation_import_queue_entry.importer
+                pofile_in_db = ExistingPOFileInDatabase(
+                    english_pofile,
+                    is_imported=translation_import_queue_entry.is_published)
+            else:
+                pofile_in_db = ExistingPOFileInDatabase(
+                    self.pofile,
+                    is_imported=translation_import_queue_entry.is_published)
         errors = []
         for message in translation_file.messages:
             if not message.msgid_singular:
@@ -348,7 +354,7 @@ class TranslationImporter:
                 # message.
                 continue
 
-            if self.pofile is not None:
+            if self.pofile is not None or english_pofile is not None:
                 # Mark this message as seen in the import
                 pofile_in_db.markMessageAsSeen(message)
                 if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
@@ -411,6 +417,8 @@ class TranslationImporter:
                 flags_comment = u""
             flags_comment += u", ".join(message.flags)
 
+            use_pofile = self.pofile
+
             if self.pofile is None:
                 # The import is a translation template file
                 potmsgset.sequence = count
@@ -429,6 +437,8 @@ class TranslationImporter:
                 is_editor = True
                 last_translator = translation_import_queue_entry.importer
                 lock_timestamp = None
+                if english_pofile is not None:
+                    use_pofile = english_pofile
             else:
                 # The import is a translation file.
 
@@ -446,7 +456,7 @@ class TranslationImporter:
 
 
             # Store translations
-            if self.pofile is None and english_pofile is None:
+            if use_pofile is None:
                 # It's neither an IPOFile nor an IPOTemplate that needs to
                 # store English strings in an IPOFile.
                 continue
@@ -461,7 +471,7 @@ class TranslationImporter:
 
             try:
                 translation_message = potmsgset.updateTranslation(
-                    self.pofile, last_translator, message.translations,
+                    use_pofile, last_translator, message.translations,
                     fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, force_edition_rights=is_editor)
             except TranslationConflict:
@@ -475,7 +485,7 @@ class TranslationImporter:
                         " got the translation file. This translation is now"
                         " stored as a suggestion, if you want to set it as"
                         " the used one, go to %s/+translate and approve"
-                        " it." % canonical_url(self.pofile))
+                        " it." % canonical_url(use_pofile))
                 }
 
                 errors.append(error)
@@ -485,7 +495,7 @@ class TranslationImporter:
                 # this time asking to store it as a translation with
                 # errors.
                 translation_message = potmsgset.updateTranslation(
-                    self.pofile, last_translator, message.translations,
+                    use_pofile, last_translator, message.translations,
                     fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, ignore_errors=True,
                     force_edition_rights=is_editor)
@@ -493,7 +503,7 @@ class TranslationImporter:
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
                     'potmsgset': potmsgset,
-                    'pofile': self.pofile,
+                    'pofile': use_pofile,
                     'pomessage': format_exporter.exportTranslationMessageData(
                         message),
                     'error-message': unicode(e)
@@ -510,14 +520,14 @@ class TranslationImporter:
 
 
         # Finally, lets expire messages which we have not seen in the new upload
-        if self.pofile is not None:
+        if use_pofile is not None:
             unseen = pofile_in_db.getUnseenMessages()
             for unseen_message in unseen:
                 (msgid, context) = unseen_message
                 potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
                     msgid, context=context)
                 translation_message = potmsgset.getCurrentTranslationMessage(
-                    self.pofile.language)
+                    use_pofile.language)
                 if translation_message is not None:
                     translation_message.was_obsolete_in_last_import = True
                     translation_message.is_current = False
