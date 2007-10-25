@@ -252,31 +252,35 @@ class ExternalBugTracker:
         for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
+                new_remote_status = None
+                new_malone_status = None
+                error = None
+
                 # XXX: 2007-10-17 Graham Binns
                 #      This nested set of try:excepts isn't really
                 #      necessary and can be refactored out when bug
                 #      136391 is dealt with.
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
-                    error = None
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
-                    new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
                     log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
-                    new_remote_status = UNKNOWN_REMOTE_STATUS
-                new_malone_status = self.convertRemoteStatus(
-                    new_remote_status)
+
+                if new_remote_status is not None:
+                    new_malone_status = self.convertRemoteStatus(
+                        new_remote_status)
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = error
-                    bug_watch.updateStatus(new_remote_status,
-                        new_malone_status)
+                    if new_malone_status is not None:
+                        bug_watch.updateStatus(new_remote_status,
+                                               new_malone_status)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
