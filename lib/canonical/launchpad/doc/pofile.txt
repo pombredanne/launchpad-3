@@ -484,36 +484,39 @@ Now, just to be sure that this entry doesn't exist yet:
 Is time to create it.
 
     >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(msgid)
-    >>> translation_message = pofile_sr.createTranslationMessageFromPOTMsgSet(
-    ...     potmsgset)
+    >>> translations = {0: u''}
+    >>> is_fuzzy = False
+    >>> is_imported = False
+    >>> lock_timestamp = datetime.datetime.now(UTC)
+    >>> translation_message = potmsgset.updateTranslation(
+    ...     pofile_sr, rosetta_experts, translations, is_fuzzy, is_imported,
+    ...     lock_timestamp)
 
 As we can see, is the msgid we were looking for.
 
-    >>> print pomsgset.potmsgset.msgid_singular
+    >>> print translation_message.potmsgset.msgid_singular.msgid
     Found %i invalid file.
-    >>> print pofile_sr.language.id
-    358
-    >>> print pomsgset.language.id
-    358
+    >>> print pofile_sr.language.code
+    sr
+    >>> print translation_message.pofile.language.code
+    sr
 
 This entry is in fact one that is not used anymore, that means, its sequence
 is zero.
 
-    >>> pomsgset.potmsgset.sequence
+    >>> translation_message.potmsgset.sequence
     0
 
-Also, as we just created it, it shouldn't have any translation.
+Also, we created it without translations.
 
-    >>> pomsgset.active_texts
-    [None, None, None]
-    >>> pomsgset.published_texts
+    >>> translation_message.translations
     [None, None, None]
 
 
-== export and validExportCache ==
+== export and is_cached_export_valid ==
 
 The export method is used to get a .po file from our database rows. It's
-strongly related with validExportCache, which drives whether the export
+strongly related with is_cached_export_valid, which drives whether the export
 should be a full export from our database or just return an already
 cached value.
 
@@ -531,7 +534,7 @@ export.
 
 However, it would be old, so it doesn't have a valid cache.
 
-    >>> pofile.validExportCache()
+    >>> pofile.is_cached_export_valid
     False
 
 Now ask it to export itself.
@@ -551,7 +554,7 @@ Now ask it to export itself.
 
 Because the PO file has been exported, it will have updated the cache.
 
-    >>> pofile.validExportCache()
+    >>> pofile.is_cached_export_valid
     True
 
 Which is different than previous one:
@@ -564,8 +567,8 @@ Which is different than previous one:
     # and for any new stuff we do, lets commit a transaction.
     >>> transaction.commit()
 
-validExportCache method detects any translation change done in the IPOFile and
-invalidates the cache.
+is_exported_cache_valid attribute detects any translation change done
+in the IPOFile and invalidates the cache.
 
     # We can see current value before we do a change, so we are completely sure
     # that the exported file includes the modification.
@@ -576,47 +579,55 @@ invalidates the cache.
     msgstr ""
     ...
 
-    # Let's update a translation to the PO file.
+Let's submit a translation to the PO file. This is going to be an empty
+translation submission.
+
     >>> from canonical.launchpad.database import Person
     >>> person = Person.get(1)
     >>> msgid = u"Failed to authenticate with LDAP server."
-    >>> msgset = pofile.getPOMsgSet(msgid)
-    >>> print msgset.active_texts
-    [None]
 
-If we update it with the same untranslated message, the cache is not
-invalidated.
+Right now, there is no translation existing for this message.
 
-    >>> msgset.updateTranslationSet(person, {0: ''}, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print msgset.active_texts
-    [None]
-    >>> print msgset.date_reviewed
+    >>> print pofile.getCurrentTranslationMessage(msgid)
     None
 
+So adding an empty one produces that...
+
+    >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
+    >>> new_translation_message = potmsgset.updateTranslation(
+    ...     translation_message.pofile, person, {0: ''}, is_fuzzy=False,
+    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    >>> print new_translation_message.translations
+    [None]
+    >>> print new_translation_message.date_reviewed
+    None
+
+... the cache remains valid.
+
     # We need to sync the changed objects for the same reason as before.
-    >>> msgset.sync()
-    >>> pofile.validExportCache()
+    >>> translation_message.sync()
+    >>> pofile.is_cached_export_valid
     True
 
 When we actually update untranslated pomsgset with a new translation,
-cache is invalidated, but for published submissions, date_reviewed is
-not updated.
+cache is invalidated, but for the new imported translation, date_reviewed is
+not set.
 
-    >>> msgset.updateTranslationSet(person, {0: 'Foo.'}, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print msgset.active_texts
-    [u'Foo.']
-    >>> print msgset.date_reviewed
+    >>> new_tm = translation_message.potmsgset.updateTranslation(
+    ...     translation_message.pofile, person, {0: 'Foo.'}, is_fuzzy=False,
+    ...     is_published=True, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_tm == translation_message
+    False
+    >>> print new_tm.translations
+    >>> print new_tm.date_reviewed
     None
-    >>> txt = msgset.active_texts[0]
 
     # We need to sync the changed objects for the same reason as before.
-    >>> msgset.sync()
-    >>> pofile.validExportCache()
+    >>> new_tm.sync()
+    >>> pofile.is_cached_export_valid
     False
-    >>> pofile.last_touched_pomsgset==msgset
-    True
+    >>> prin pofile.lasttranslator.name
+    >>> new_tm.submitter.name
 
 Exporting a pofile regenerates the cache.
 
@@ -625,13 +636,14 @@ Exporting a pofile regenerates the cache.
     True
 
     # And we can see that it's applied in the exported file.
-    >>> print export.decode('UTF-8')
+    XXXXXXXXXXXXX
+    >>> export.decode('UTF-8')
     #...
     #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
     msgstr "Foo."
     ...
-    >>> pofile.validExportCache()
+    >>> pofile.is_cached_export_valid
     True
 
 Setting a new translation directly through Launchpad (not-published)
@@ -670,7 +682,7 @@ translation.
     ...
     >>> old_cached_file_id != pofile.exportfile.id
     True
-    >>> pofile.validExportCache()
+    >>> pofile.is_cached_export_valid
     True
 
 There is a corner case in the way we check that the cached export is valid.
@@ -688,18 +700,14 @@ This tests two specific things:
     >>> empty_pofile = pofile.potemplate.newPOFile('cy')
     >>> empty_pofile.last_touched_pomsgset is None
     True
-    >>> empty_pofile.validExportCache()
+    >>> empty_pofile.is_cached_export_valid
     False
 
     # There is something exported.
     >>> len(empty_pofile.export()) > 0
     True
 
-XXX DaniloSegan 20070115: we're currently unable to track cache status
-for empty PO files, since this is similar to case of a single deactivated
-translation.
-
-    >>> empty_pofile.validExportCache()
+    >>> empty_pofile.is_cached_export_valid
     False
 
 Also, the export is robust enough to handle a situation where Librarian is not
@@ -712,7 +720,7 @@ available.
 At this point, librarian is not available, but the export is still working.
 
     >>> pofile = POFile.get(1)
-    >>> pofile.validExportCache()
+    >>> pofile.is_cached_export_valid
     True
     >>> old_cached_file_id = pofile.exportfile.id
     >>> len(pofile.export()) > 0
@@ -734,13 +742,13 @@ updated.
 Even when we there is no cached file, the export will work and will not be
 stored due the problem with Librarian.
 
-    >>> pofile.invalidateCache()
+    >>> pofile.is_cached_export_valid()
     >>> len(pofile.export()) > 0
     WARNING:root:Error uploading a cached file into librarian
     ...
     UploadFailed: (111, 'Connection refused')
     True
-    >>> pofile.validExportCache()
+    >>> pofile.is_cached_export_valid()
     False
 
     # We restore now Librarian
