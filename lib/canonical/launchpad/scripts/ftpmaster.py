@@ -1605,7 +1605,7 @@ class PackageRemover(SoyuzScript):
         else:
             source_pub = self.findLatestPublishedSource(packagename)
             removables.append(source_pub)
-            removables.extend(source_pub.publishedBinaries())
+            removables.extend(source_pub.getPublishedBinaries())
 
         self.logger.info("Removing candidates:")
         for removable in removables:

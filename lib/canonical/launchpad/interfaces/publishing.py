@@ -302,11 +302,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
 
-    def publishedBinaries():
+    def getPublishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeriess in this DistroSeries, ordered by
+        record for DistroArchSeries in this DistroSeries, ordered by
         architecturetag.
         """
 

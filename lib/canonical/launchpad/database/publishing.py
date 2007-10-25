@@ -133,6 +133,8 @@ class SourcePackageFilePublishing(FilePublishingBase):
             return "dsc"
         if ".diff." in fn:
             return "diff"
+        if fn.endswith(".tar.gz"):
+            return "tar"
         return "other"
 
 
@@ -219,7 +221,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     status = EnumCol(schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='SourcePackageRelease',
                               dbName='supersededby', default=None)
@@ -397,7 +399,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         dbName="removed_by", foreignKey="Person", default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
-    def publishedBinaries(self):
+    def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
@@ -411,8 +413,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             DistroArchRelease.distrorelease=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
-                            self.archive, PackagePublishingStatus.PUBLISHED)
+            """ % sqlvalues(
+                    self.sourcepackagerelease,
+                    self.distroseries,
+                    self.archive,
+                    PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
                    'DistroArchRelease.architecturetag']

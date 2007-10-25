@@ -1,5 +1,9 @@
   <tr class="ppa_package_row">
-     <td tal:content="context/sourcepackagerelease/title">foo - 1.0</td>
+     <td><a href="#"
+            tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img 
+                src="/@@/treeCollapsed" alt=""
+                tal:attributes="id string:pub${context/id}-arrow" /></a><span 
+        tal:content="context/sourcepackagerelease/title">foo - 1.0</span></td>
      <td tal:condition="context/archive/owner/isTeam">
          <a id="uploader"
             tal:attributes="href context/sourcepackagerelease/dscsigningkey/owner/fmt:url"
@@ -13,15 +17,19 @@
          >dapper</td>
      <td tal:content="context/section/name">base</td>
      <td>
-        <tal:sourcefiles repeat="file context/files">
-            <a tal:attributes ="href file/archive_url"
-               tal:content="file/file_type_name" />
-        </tal:sourcefiles>
-        <tal:binarypubs repeat="pub context/publishedBinaries">
-            <tal:binaryfiles repeat="file pub/files">
-              <a tal:attributes ="href file/archive_url"
-                 tal:content="file/architecturetag" />
-            </tal:binaryfiles>
-        </tal:binarypubs>
      </td>
+  </tr>
+  <tr tal:attributes="id string:pub${context/id}"
+      tal:define="published_source_and_binary_files view/published_source_and_binary_files"
+      style="display: none">
+    <td colspan="5">
+      <span tal:condition="not: published_source_and_binary_files"
+         style="padding-left: 1em">No files published for this package.</span>
+      <ul tal:repeat="file published_source_and_binary_files"
+          style="margin-top: 0; margin-bottom: 0">
+        <li><a tal:attributes ="href file/archive_url"
+               tal:content="string:${file/filename}"></a>
+                (<span tal:content="file/filesize/fmt:bytes" />)</li>
+      </ul>
+    </td>
   </tr>

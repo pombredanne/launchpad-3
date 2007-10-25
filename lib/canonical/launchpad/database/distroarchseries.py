@@ -138,7 +138,7 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See IDistroArchSeries."""
-        archives = self.distroseries.distribution.archiveIdList()
+        archives = self.distroseries.distribution.getArchiveIDList()
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -211,13 +211,13 @@ class DistroArchSeries(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = self.distroseries.distribution.archiveIdList(archive)
+        archives = self.distroseries.distribution.getArchiveIDList(archive)
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'],
-            orderBy=['id'])
+            orderBy=['-id'])
 
         return shortlist(published)
 

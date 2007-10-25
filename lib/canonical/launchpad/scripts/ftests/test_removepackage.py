@@ -374,7 +374,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         src_pub = cprov_ppa.getPublishedSources(
             name='pmount', version='0.1-1', exact_match=True)[0]
-        bin_pubs = src_pub.publishedBinaries()
+        bin_pubs = src_pub.getPublishedBinaries()
         src_pub_id = src_pub.id
         bin_pub_ids = [p.id for p in bin_pubs]
 
