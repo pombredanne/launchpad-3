@@ -71,13 +71,13 @@ Further out we expect minutes:
 
     >>> t = fixed_time_utc + timedelta(0, 75, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    'in 1 minutes'
+    'in 1 minute'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True
     >>> t = fixed_time_utc - timedelta(0, 75, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    '1 minutes ago'
+    '1 minute ago'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True
@@ -86,13 +86,13 @@ Further out we expect hours:
 
     >>> t = fixed_time_utc + timedelta(0, 3635, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    'in 1 hours'
+    'in 1 hour'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True
     >>> t = fixed_time_utc - timedelta(0, 3635, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    '1 hours ago'
+    '1 hour ago'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True

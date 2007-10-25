@@ -879,13 +879,22 @@ class DateTimeFormatterAPI:
         if future:
             result += 'in '
         if days != 0:
-            result += '%d days' % days
+            amount = days
+            unit = 'day'
         elif hours != 0:
-            result += '%d hours' % hours
+            amount = hours
+            unit = 'hour'
         elif minutes != 0:
-            result += '%d minutes' % minutes
+            amount = minutes
+            unit = 'minute'
         else:
-            result += '%d seconds' % seconds
+            amount = seconds
+            unit = 'second'
+        if amount > 1:
+            s = 's'
+        else:
+            s = ''
+        result += '%s %s%s' % (amount, unit, s)
         if not future:
             result += ' ago'
         return result
