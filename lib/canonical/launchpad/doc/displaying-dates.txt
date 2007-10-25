@@ -67,11 +67,12 @@ A time that is very close to the present will be displayed in seconds:
     ...        test_tales('t/testfmt:displaydate', t=t))
     True
 
-Further out we expect minutes:
+Further out we expect minutes.  Note that for singular units (e.g. "1
+minute"), we present the singular unit:
 
-    >>> t = fixed_time_utc + timedelta(0, 75, 0)
+    >>> t = fixed_time_utc + timedelta(0, 185, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    'in 1 minute'
+    'in 3 minutes'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True
