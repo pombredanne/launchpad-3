@@ -961,7 +961,7 @@ class POTemplateToTranslationFileDataAdapter:
             if row.flags_comment:
                 msgset.flags = set([
                     flag.strip()
-                    for flag in row.flagscomment.split(',')
+                    for flag in row.flags_comment.split(',')
                     if flag
                     ])
 
