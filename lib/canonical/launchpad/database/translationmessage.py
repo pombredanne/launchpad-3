@@ -117,7 +117,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     is_fuzzy = BoolCol(dbName='is_fuzzy', notNull=True, default=False)
     is_imported = BoolCol(dbName='is_imported', notNull=True, default=False)
     was_obsolete_in_last_import = BoolCol(
-        dbName='was_obsolete_in_last_import', notNull=True)
+        dbName='was_obsolete_in_last_import', notNull=True, default=False)
     was_fuzzy_in_last_import = BoolCol(
         dbName='was_fuzzy_in_last_import', notNull=True, default=False)
 

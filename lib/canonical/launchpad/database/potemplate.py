@@ -586,6 +586,7 @@ class POTemplate(SQLBase, RosettaStats):
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             msgid_singular = POMsgID(msgid=singular_text)
+            msgid_plural = None
         else:
             assert not self.hasMessageID(msgid_singular, context), (
                 "There is already a message set for this template, file and"
@@ -762,9 +763,10 @@ class POTemplateSubset:
             titlestr += self.productseries.displayname
         return titlestr
 
-    def new(self, name, path, owner):
+    def new(self, name, translation_domain, path, owner):
         """See `IPOTemplateSubset`."""
         return POTemplate(name=name,
+                          translation_domain=translation_domain,
                           sourcepackagename=self.sourcepackagename,
                           distroseries=self.distroseries,
                           productseries=self.productseries,

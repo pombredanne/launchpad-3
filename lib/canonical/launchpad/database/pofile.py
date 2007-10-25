@@ -682,7 +682,7 @@ class POFile(SQLBase, POFileMixIn):
             WHERE
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE''')
+                imported.is_imported IS TRUE)''')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -698,7 +698,7 @@ class POFile(SQLBase, POFileMixIn):
                 current.pofile = TranslationMessage.pofile AND
                 current.is_current IS TRUE AND
                 (current.date_reviewed IS NULL OR
-                 current.date_reviewed < TranslationMessage.date_created)
+                 current.date_reviewed < TranslationMessage.date_created))
             ''')
         unreviewed = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()
@@ -812,8 +812,9 @@ class POFile(SQLBase, POFileMixIn):
         flush_database_updates()
 
         # Prepare the mail notification.
-        msgsets_imported = POMsgSet.select(
-            'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
+        msgsets_imported = TranslationMessage.select(
+            'was_obsolete_in_last_import IS FALSE AND pofile=%s' %
+            (sqlvalues(self.id))).count()
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -836,13 +837,13 @@ class POFile(SQLBase, POFileMixIn):
             # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
-                pomsgset = error['pomsgset']
+                pofile = error['pofile']
+                potmsgset = error['potmsgset']
                 pomessage = error['pomessage']
                 error_message = error['error-message']
-                errorsdetails = '%s%d.  [msg %d]\n"%s":\n\n%s\n\n' % (
+                errorsdetails = '%s%d.  [msg ??]\n"%s":\n\n%s\n\n' % (
                     errorsdetails,
-                    pomsgset.potmsgset.sequence,
-                    pomsgset.sequence,
+                    potmsgset.sequence,
                     error_message,
                     pomessage)
 

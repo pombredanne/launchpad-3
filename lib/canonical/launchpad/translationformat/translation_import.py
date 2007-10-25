@@ -71,7 +71,7 @@ class ExistingPOFileInDatabase:
             POMsgId.msgid AS msgid,
             POMsgID_Plural.msgid AS msgid_plural,
             context,
-            msgstr0, msgstr1, msgstr2, msgstr3,
+            pt0.translation, pt1.translation, pt2.translation, pt3.translation,
             date_reviewed,
             is_fuzzy,
             is_current,
@@ -81,15 +81,20 @@ class ExistingPOFileInDatabase:
               TranslationMessage.pofile=POFile.id
             JOIN POTMsgSet ON
               POTMsgSet.id=TranslationMessage.potmsgset
-            JOIN POTranslation ON
-              POTranslation.id=TranslationMessage.potranslation
+            JOIN POTranslation pt0 ON
+              pt0.id=TranslationMessage.msgstr0
+            JOIN POTranslation pt1 ON
+              pt1.id=TranslationMessage.msgstr1
+            JOIN POTranslation pt2 ON
+              pt2.id=TranslationMessage.msgstr2
+            JOIN POTranslation pt3 ON
+              pt3.id=TranslationMessage.msgstr3
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE POFile.id=%s AND
                 is_current or is_imported
-          ORDER BY pluralform
           '''
         cur = cursor()
         cur.execute(sql % sqlvalues(self.pofile))
@@ -112,7 +117,7 @@ class ExistingPOFileInDatabase:
                 message = TranslationMessageData()
                 look_at[(msgid, context)] = message
 
-                message.msgid = msgid
+                message.msgid_singular = msgid
                 message.context = context
                 message.msgid_plural = msgid_plural
 
@@ -124,7 +129,7 @@ class ExistingPOFileInDatabase:
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
-        self.seen.add((message.msgid, message.context))
+        self.seen.add((message.msgid_singular, message.context))
 
     def getUnseenMessages(self):
         """Return a set of messages present in the database but not seen
@@ -134,7 +139,7 @@ class ExistingPOFileInDatabase:
         for (msgid, context) in self.messages:
             if (msgid, context) not in self.seen:
                 unseen.add((msgid, context))
-        for (msgid, context) in self.published:
+        for (msgid, context) in self.imported:
             if ((msgid, context) not in self.messages and
                 (msgid, context) not in self.seen):
                 unseen.add((msgid, context))
@@ -163,7 +168,7 @@ class ExistingPOFileInDatabase:
         """Check whether this message is already translated in exactly
         the same way.
         """
-        (msgid, context) = (message.msgid, message.context)
+        (msgid, context) = (message.msgid_singular, message.context)
         if (msgid, context) in self.messages:
             msg_in_db = self.messages[(msgid, context)]
             return self._compareTwoMessages(msg_in_db, message)
@@ -175,7 +180,7 @@ class ExistingPOFileInDatabase:
         'is_imported' translation, and thus needs no changing if we are
         submitting an imported update.
         """
-        (msgid, context) = (message.msgid, message.context)
+        (msgid, context) = (message.msgid_singular, message.context)
         if ((msgid, context) in self.imported) and self.is_imported:
             msg_in_db = self.imported[(msgid, context)]
             return self._compareTwoMessages(msg_in_db, message)
@@ -338,7 +343,7 @@ class TranslationImporter:
                 is_imported=translation_import_queue_entry.is_published)
         errors = []
         for message in translation_file.messages:
-            if not message.msgid:
+            if not message.msgid_singular:
                 # The message has no msgid, we ignore it and jump to next
                 # message.
                 continue
@@ -352,13 +357,13 @@ class TranslationImporter:
 
             # Add the msgid.
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-                message.msgid, context=message.context)
+                message.msgid_singular, context=message.context)
 
             if potmsgset is None:
                 # It's the first time we see this msgid, we need to create the
                 # IPOTMsgSet for it.
                 potmsgset = self.potemplate.createMessageSetFromText(
-                    message.msgid, message.msgid_plural,
+                    message.msgid_singular, message.msgid_plural,
                     context=message.context)
 
             # If msgid_plural for this plural form is different from existing
@@ -454,8 +459,8 @@ class TranslationImporter:
                 translations[index] = message.translations[index]
 
             try:
-                translation_message = potmsgset.updateTranslationSet(
-                    pofile, last_translator, message.translations,
+                translation_message = potmsgset.updateTranslation(
+                    self.pofile, last_translator, message.translations,
                     fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, force_edition_rights=is_editor)
             except TranslationConflict:
@@ -469,7 +474,7 @@ class TranslationImporter:
                         " got the translation file. This translation is now"
                         " stored as a suggestion, if you want to set it as"
                         " the used one, go to %s/+translate and approve"
-                        " it." % canonical_url(pomsgset))
+                        " it." % canonical_url(self.pofile))
                 }
 
                 errors.append(error)
@@ -478,8 +483,8 @@ class TranslationImporter:
                 # We got an error, so we submit the translation again but
                 # this time asking to store it as a translation with
                 # errors.
-                translation_message = potmsgset.updateTranslationSet(
-                    pofile, last_translator, message.translations,
+                translation_message = potmsgset.updateTranslation(
+                    self.pofile, last_translator, message.translations,
                     fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, ignore_errors=True,
                     force_edition_rights=is_editor)
@@ -497,7 +502,7 @@ class TranslationImporter:
 
             translation_message.flags_comment = flags_comment
             translation_message.comment_text = message.comment
-            if is_imported:
+            if translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
                 translation_message.was_fuzzy_in_last_import = fuzzy

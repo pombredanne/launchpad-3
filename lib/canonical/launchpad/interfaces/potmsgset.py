@@ -86,7 +86,9 @@ class IPOTMsgSet(Interface):
         """Returns a TranslationMessage as imported from the package."""
 
     def getLocalTranslationMessages(language):
-        """Return all the local unused translation messages for this IPOTMsgSet.
+        """Returns all the local unused translation messages for the POTMsgSet.
+        Unused are those which are not current or imported, and local are
+        those which are directly attached to this POTMsgSet.
 
         :param language: language we want translations for.
         """
@@ -101,7 +103,18 @@ class IPOTMsgSet(Interface):
         :param language: language for which translations we are asking about.
 
         There has to be an imported translation: if there isn't, this is
-        not a 'changed' translation, just a 'new' translation in Launchpad."""
+        not a 'changed' translation, just a 'new' translation in Launchpad.
+        """
+
+    def isTranslationNewerThan(language, timestamp):
+        """Whether a current translation is newer than the `timestamp`.
+
+        :param language: language for which translations we are asking about.
+        :param timestamp: a timestamp we are comparing to.
+
+        Returns True if there is a current and newer translation, and False
+        otherwise.
+        """
 
     def updateTranslation(pofile, submitter, new_translations, is_fuzzy,
                           is_imported, lock_timestamp, ignore_errors=False,
@@ -125,6 +138,8 @@ class IPOTMsgSet(Interface):
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
+
+        Returns a modified or newly created translation message.
         """
 
     def flags():

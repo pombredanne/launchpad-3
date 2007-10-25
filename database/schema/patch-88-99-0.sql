@@ -13,33 +13,33 @@ SET client_min_messages=ERROR;
 -- SELECT 'Creating TranslationMessage', statement_timestamp();	-- DEBUG
 
 CREATE TABLE TranslationMessage(
-	id serial,
-	pofile integer NOT NULL,
-	potmsgset integer NOT NULL,
-	date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-	submitter integer NOT NULL,
-	date_reviewed timestamp without time zone, 
-	reviewer integer,
-	msgstr0 integer,
-	msgstr1 integer,
-	msgstr2 integer,
-	msgstr3 integer,
-	comment_text text,
-	origin integer NOT NULL,
-	validation_status integer DEFAULT 0 NOT NULL,
-	is_current boolean DEFAULT false NOT NULL,
-	is_fuzzy boolean NOT NULL,
-	is_imported boolean DEFAULT false NOT NULL,
-	was_obsolete_in_last_import boolean NOT NULL,
-    was_fuzzy_in_last_import boolean NOT NULL,
+    id serial,
+    pofile integer NOT NULL,
+    potmsgset integer NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    submitter integer NOT NULL,
+    date_reviewed timestamp without time zone, 
+    reviewer integer,
+    msgstr0 integer,
+    msgstr1 integer,
+    msgstr2 integer,
+    msgstr3 integer,
+    comment_text text,
+    origin integer NOT NULL,
+    validation_status integer DEFAULT 0 NOT NULL,
+    is_current boolean DEFAULT false NOT NULL,
+    is_fuzzy boolean DEFAULT false NOT NULL,
+    is_imported boolean DEFAULT false NOT NULL,
+    was_obsolete_in_last_import boolean DEFAULT false NOT NULL,
+    was_fuzzy_in_last_import boolean DEFAULT false NOT NULL,
 
-	-- For migration purposes: references to objects that constitute this
-	-- TranslationMessage.  Will be dropped later on.
-	msgsetid integer,
-	id0 integer,
-	id1 integer,
-	id2 integer,
-	id3 integer
+    -- For migration purposes: references to objects that constitute this
+    -- TranslationMessage.  Will be dropped later on.
+    msgsetid integer,
+    id0 integer,
+    id1 integer,
+    id2 integer,
+    id3 integer
 );
 
 

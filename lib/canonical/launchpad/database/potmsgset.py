@@ -3,17 +3,23 @@
 __metaclass__ = type
 __all__ = ['POTMsgSet']
 
+import gettextpo
+
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
+from canonical.launchpad import helpers
+
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
-    TranslationConstants)
+    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
+    TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
+from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import TranslationMessage
 
 
@@ -133,6 +139,20 @@ class POTMsgSet(SQLBase):
         else:
             return False
 
+    def isTranslationNewerThan(self, language, timestamp):
+        """See `IPOTMsgSet`."""
+        current = self.getCurrentTranslationMessage(language)
+        if not current:
+            return False
+        date_updated = current.date_created
+        if (current.date_reviewed is not None and
+            current.date_reviewed > date_updated):
+            date_updated = current.date_reviewed
+        if date_updated is not None and date_updated > timestamp:
+            return True
+        else:
+            return False
+
     def _list_of_msgids(self):
         """Return a list of [singular_text, plural_text] if the message
         is using plural forms, or just [singular_text] if it's not.
@@ -161,7 +181,7 @@ class POTMsgSet(SQLBase):
         # Unneeded plural forms are stored as well (needed since we may
         # have incorrect plural form data, so we can just reactivate them
         # once we fix the plural information for the language)
-        for index, value in translations:
+        for index, value in enumerate(translations):
             if index not in sanitized_translations:
                 sanitized_translations[index] = self.applySanityFixes(value)
 
@@ -204,10 +224,11 @@ class POTMsgSet(SQLBase):
     def _findPOTranslations(self, translations):
         """Find all POTranslation records for passed `translations`."""
         potranslations = {}
-        for pluralform, translation in translations.items():
-            if translation is None:
-                potranslations[pluralform] = None
-            else:
+        # Set all POTranslations we can have (up to 4)
+        for pluralform in range(4):
+            if (pluralform in translations and
+                translations[pluralform] is not None):
+                translation = translations[pluralform]
                 # Find or create a POTranslation for the specified text
                 try:
                     potranslations[pluralform] = (
@@ -215,21 +236,24 @@ class POTMsgSet(SQLBase):
                 except SQLObjectNotFound:
                     potranslations[pluralform] = (
                         POTranslation(translation=translation))
+            else:
+                potranslations[pluralform] = None
         return potranslations
 
     def _findTranslationMessage(self, language, potranslations, pluralforms):
         """Find a message for this language exactly matching given
         `translations` strings comparing only `pluralforms` of them."""
-        query='potmsgset=%s AND language=%s' % sqlvalues(self, language)
+        query=('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s'
+               % sqlvalues(self, language))
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
                 query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
             else:
                 query += ' AND msgstr%s=%s' % (
                     sqlvalues(pluralform, potranslations[pluralform]))
-        return TranslationMessage.selectOne(query)
+        return TranslationMessage.selectOne(query, clauseTables=['POFile'])
 
-    def updateTranslation(self, pofile, submitter, new_translations, fuzzy,
+    def updateTranslation(self, pofile, submitter, new_translations, is_fuzzy,
                           is_imported, lock_timestamp, ignore_errors=False,
                           force_edition_rights=False):
         """See `IPOTMsgSet`."""
@@ -248,19 +272,19 @@ class POTMsgSet(SQLBase):
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
 
-        assert pofile.language.plural_forms is not None, (
+        assert pofile.language.pluralforms is not None, (
             "Don't know the number of plural forms for %s language." % (
-                self.pofile.language.englishname))
+                pofile.language.englishname))
 
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
         # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
-        if potmsgset.is_translation_credit and not is_imported:
+        if self.is_translation_credit and not is_imported:
             return
 
         # Sanitize translations
         sanitized_translations = self._sanitizeTranslations(
-            pofile.language.plural_forms, new_translations)
+            new_translations, pofile.language.pluralforms)
         # Check that the translations are correct.
         validation_status = self._validate_translations(sanitized_translations,
                                                         is_fuzzy, ignore_errors)
@@ -271,7 +295,8 @@ class POTMsgSet(SQLBase):
 
         # Our current submission is newer than 'lock_timestamp'
         # and we try to change it, so just add a suggestion.
-        if not is_imported and not fuzzy and pofile.isNewerThan(lock_timestamp):
+        if (not is_imported and not is_fuzzy and
+            self.isTranslationNewerThan(pofile.language, lock_timestamp)):
             just_a_suggestion = True
             warn_about_lock_timestamp = True
 
@@ -282,13 +307,15 @@ class POTMsgSet(SQLBase):
         # of translations.  None if there is no such message and needs to be
         # created.
         matching_message = self._findTranslationMessage(
-            pofile.language, potranslations, pofile.plural_forms)
+            pofile.language, potranslations, pofile.language.pluralforms)
 
         # Whether we are creating a new message.
         new_message_created = False
 
         # If it's not a suggestion, it'll be made current.
         is_current = not just_a_suggestion
+
+        has_changed = False
 
         if matching_message is None:
             new_message_created = True
@@ -347,7 +374,7 @@ class POTMsgSet(SQLBase):
             if is_imported:
                 matching_message.is_imported = True
             else:
-                if (new_message and
+                if (new_message_created and
                     (matching_message.origin ==
                      RosettaTranslationOrigin.ROSETTAWEB)):
                     # The submitted translation came from our UI, we give

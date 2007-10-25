@@ -146,7 +146,7 @@ class ITranslationMessage(Interface):
 
     is_current = Bool(
         title=_("Whether this translation is being used in Launchpad"),
-        readonly=False, required=True)
+        readonly=False, default=False, required=True)
 
     is_complete = Bool(
         title=_("Whether the translation has all needed plural forms or not"),
@@ -154,22 +154,22 @@ class ITranslationMessage(Interface):
 
     is_fuzzy = Bool(
         title=_("Whether this translation must be checked before use it"),
-        readonly=False, required=True)
+        readonly=False, default=False, required=True)
 
     is_imported = Bool(
         title=_(
             "Whether this translation is being used in latest imported file"),
-        readonly=False, required=True)
+        readonly=False, default=False, required=True)
 
     was_obsolete_in_last_import = Bool(
         title=_(
             "Whether this translation was obsolete in last imported file"),
-        readonly=False, required=True)
+        readonly=False, default=False, required=True)
 
     was_fuzzy_in_last_import = Bool(
         title=_(
             "Whether this imported translation must be checked before use it"
-            ), readonly=False, required=True)
+            ), readonly=False, default=False, required=True)
 
     def destroySelf():
         """Remove this object.
