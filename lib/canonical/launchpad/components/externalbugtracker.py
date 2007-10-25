@@ -304,11 +304,13 @@ class Bugzilla(ExternalBugTracker):
     """A class that deals with communications with a remote Bugzilla system."""
 
     implements(IExternalBugtracker)
+    batch_query_threshold = 0 # Always use the batch method.
 
     def __init__(self, bugtracker, version=None):
         ExternalBugTracker.__init__(self, bugtracker)
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
+        self.remote_bug_status = {}
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -497,7 +499,6 @@ class Bugzilla(ExternalBugTracker):
             raise UnparseableBugData('Failed to parse XML description for '
                 '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
 
-        self.remote_bug_status = {}
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
             # We use manual iteration to pick up id_tags instead of
