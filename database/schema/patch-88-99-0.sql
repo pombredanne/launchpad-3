@@ -698,7 +698,7 @@ DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
 
 CREATE TRIGGER mv_pofiletranslator_translationmessage
-	BEFORE INSERT OR DELETE OR UPDATE ON TranslationMessage
+	AFTER INSERT OR DELETE OR UPDATE ON TranslationMessage
 	FOR EACH ROW
 	EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
