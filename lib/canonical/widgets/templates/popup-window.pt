@@ -89,6 +89,8 @@
                   No results found for keyword '<span tal:replace="request/search" />'.
               </tal:no-items>
             </tal:has-search>
+            <tal:extra-bottom condition="view/extra_bottom|nothing"
+                              tal:replace="structure view/extra_bottom" />
         </div>
     </body>
 </html>
