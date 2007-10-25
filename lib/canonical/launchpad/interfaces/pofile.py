@@ -33,6 +33,9 @@ class ZeroLengthPOExportError(Exception):
 class IPOFile(IRosettaStats):
     """A translation file."""
 
+    id = Int(
+        title=_('The translation file id.'), required=True, readonly=True)
+
     potemplate = Object(
         title=_('The translation file template.'),
         required=True, readonly=True, schema=IPOTemplate)

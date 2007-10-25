@@ -265,6 +265,10 @@ class POTMsgSet(SQLBase):
                           is_imported, lock_timestamp, ignore_errors=False,
                           force_edition_rights=False):
         """See `IPOTMsgSet`."""
+        assert self.potemplate == pofile.potemplate, (
+            "The template for the translation file and this message doesn't"
+            " match.")
+
         # Is the submitter allowed to edit translations?
         is_editor = (force_edition_rights or
                      pofile.canEditTranslations(submitter))

@@ -953,19 +953,15 @@ class POFile(SQLBase, POFileMixIn):
                 self.potemplate.source_file_format))
 
         translation_file = ITranslationFileData(self)
-        if (self.last_touched_pomsgset is not None and
-            self.last_touched_pomsgset.reviewer is not None):
-            # There is a translation reviewed, get its reviewer as the last
-            # translator.
-            reviewer = self.last_touched_pomsgset.reviewer
-            if reviewer.preferredemail is None:
+        if (self.lasttranslator is not None):
+            if self.lasttranslator.preferredemail is None:
                 # We are supposed to have always a valid email address, but
                 # with removed accounts that's not true anymore so we just set
                 # it to 'Unknown' to note we don't know it.
                 email = 'Unknown'
             else:
-                email = reviewer.preferredemail.email
-            displayname = reviewer.displayname
+                email = self.lasttranslator.preferredemail.email
+            displayname = self.lasttranslator.displayname
             translation_file.header.setLastTranslator(email, name=displayname)
 
         # Get the export file.
@@ -1498,5 +1494,7 @@ class POFileToTranslationFileDataAdapter:
 
             if row.is_fuzzy:
                 msgset.flags.add('fuzzy')
+
+            messages.append(msgset)
 
         return messages

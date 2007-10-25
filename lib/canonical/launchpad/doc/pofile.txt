@@ -221,9 +221,9 @@ breakage.
     ...     u'evolution addressbook')
     >>> is_fuzzy = False
     >>> is_imported = False
-    >>> lock_timestamp = None
+    >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(
-    ...     pofile, no_priv, [u'foo'], is_fuzzy, is_imported, lock_timestamp)
+    ...     pofile_es, no_priv, [u'foo'], is_fuzzy, is_imported, lock_timestamp)
     Traceback (most recent call last):
     ...
     AssertionError: No Privileges Person cannot add translations nor can...
@@ -457,8 +457,8 @@ that as not bein complete too.
     13
 
     >>> for potmsgset in untranslated_potmsgset:
-    ...     pomsgset = potmsgset.getPOMsgSet(
-    ...         pofile_es.language.code, pofile_es.variant)
+    ...     pomsgset = potmsgset.getCurrentTranslationMessage(
+    ...         pofile_es.language)
     ...     assert (pomsgset is None or
     ...             (pomsgset.iscomplete == False and
     ...              pomsgset.isfuzzy == False))
@@ -478,17 +478,18 @@ And the msgid we are looking for.
 
 Now, just to be sure that this entry doesn't exist yet:
 
-    >>> pofile_sr.getPOMsgSet(msgid) is None
+    >>> pofile_sr.getCurrentTranslationMessage(msgid) is None
     True
 
 Is time to create it.
 
     >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(msgid)
-    >>> pomsgset = pofile_sr.createMessageSetFromMessageSet(potmsgset)
+    >>> translation_message = pofile_sr.createTranslationMessageFromPOTMsgSet(
+    ...     potmsgset)
 
 As we can see, is the msgid we were looking for.
 
-    >>> print pomsgset.potmsgset.msgid
+    >>> print pomsgset.potmsgset.msgid_singular
     Found %i invalid file.
     >>> print pofile_sr.language.id
     358
@@ -660,7 +661,8 @@ translation.
     True
 
     # And we can see that it's applied in the exported file.
-    >>> print export.decode('UTF-8')
+    XXXXXXXXXXXX
+    >>> export.decode('UTF-8')
     #...
     #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
