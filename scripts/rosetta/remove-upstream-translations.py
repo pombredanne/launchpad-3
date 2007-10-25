@@ -12,6 +12,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
@@ -95,11 +96,11 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
                         active_changed = True
                     message.destroySelf()
                     pofile_items_deleted += 1
-                # Fix the flags that depend on translations.  We modified
-                # the IPOMsgSet and we should leave it in a consistent state.
-                message.updateFlags()
                 if active_changed:
-                    message.updateReviewerInfo(rosetta_expert)
+                    message.pofile.date_changed = UTC_NOW
+                    message.pofile.lasttranslator = rosetta_expert
+                    message.reviewer = rosetta_expert
+                    message.date_reviewed = UTC_NOW
 
             items_deleted += pofile_items_deleted
             logger_object.debug(
@@ -111,6 +112,7 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
     # that we removed.
     logger_object.debug(
         'Removed %d submissions in total.' % items_deleted)
+
 
 def main(argv):
     options = parse_options(argv[1:])
