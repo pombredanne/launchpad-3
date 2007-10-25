@@ -967,13 +967,15 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+mailinglist'
         text = 'Configure mailing list'
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        enabled = (config.mailman.expose_hosted_mailing_lists
-                   and mailing_list is not None
-                   and mailing_list.canBeContactMethod()
-                   and check_permission('launchpad.Edit', mailing_list))
+        enabled = config.mailman.expose_hosted_mailing_lists
+        if mailing_list:
+            enabled = (enabled and
+                       check_permission('launchpad.Edit', mailing_list))
+        else:
+            enabled = (enabled and
+                       check_permission('launchpad.Admin', self.context))
         summary = (
-            'The welcome message for the mailing list associated with %s' %
-            self.context.browsername)
+            'The mailing list associated with %s' % self.context.browsername)
         return Link(target, text, summary, enabled=enabled, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

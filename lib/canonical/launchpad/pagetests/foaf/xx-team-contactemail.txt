@@ -77,13 +77,11 @@ Follow the token link, to confirm the new email address.
 To change that to a hosted mailing list, we first need to request the
 mailing list to be activated.
 
-    >>> description = 'The Launchpad mailing list for this team - '
-    >>> browser.getControl(description).disabled
-    True
-    >>> browser.getControl(description).selected = True
-    Traceback (most recent call last):
-    ...
-    AttributeError: item is disabled
+    >>> browser.getLink('Configure mailing list').click()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team currently has no mailing list. You may apply for one and
+    make it your team's contact address once it's approved.
 
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
@@ -92,6 +90,9 @@ mailing list to be activated.
     ...     print msg
     Mailing list requested and queued for approval.
 
+A brief behind-the-scenes peek verifies that the mailing list was
+created (do we really need this in a page test?)
+    
     # We don't use getUtility(IMailingListSet) here because we want
     # non-security-proxied objects so that we can call syncUpdate on them
     # and change their status at our discretion.
@@ -101,15 +102,10 @@ mailing list to be activated.
     >>> mailing_list.status
     <...MailingListStatus.REGISTERED...>
 
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0Another e-mail address']
-    >>> browser.getControl('The Launchpad mailing list').disabled
-    True
+    >>> browser.getLink('Configure mailing list').click()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Not available because the application for a mailing list is pending
-    approval.
+    The application for a mailing list for this team is pending approval.
 
 Once the mailing list is requested, the button to request its activation is
 not shown anymore.
@@ -137,8 +133,9 @@ we'll ask the user to contact a Launchpad admin.
     LookupError: ...
     >>> for msg in get_feedback_messages(browser):
     ...     print extract_text(msg)
-    Not available because the application for a mailing list has been
-    declined. Please contact a Launchpad administrator for further assistance.
+    The application for a mailing list for this team has been
+    declined. Please contact a Launchpad administrator for further
+    assistance.
 
     # Here we manually change its status back to REGISTERED so that we can
     # move on testing as if it wasn't declined.
@@ -149,7 +146,7 @@ Any time before the mailing list is approved, the application can be
 cancelled (and then re-requested afterwards).
 
     >>> browser.getLink('Overview').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Cancel Application').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
@@ -162,7 +159,7 @@ cancelled (and then re-requested afterwards).
     >>> import transaction
     >>> transaction.commit()
 
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
@@ -188,7 +185,7 @@ users, so we'll simulate it here by directly accessing our database code.
 
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Not available because mailing list is being constructed.
+    This team's mailing list is being constructed.
 
     >>> mailing_list.startConstructing()
     >>> mailing_list.syncUpdate()
@@ -226,8 +223,11 @@ the team's contact address.
     ...
     LookupError: ...
 
-    >>> browser.getControl('The Launchpad mailing list').disabled
-    False
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list is not set as the team contact address.
+    
+    >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
@@ -235,28 +235,13 @@ the team's contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
-Once the mailing list is active, its configuration action is
-available:
-
-    >>> browser.getLink('Configure mailing list') is None
-    False
-
-It remains available even if the mailing list is not the team's
-contact address.
-
-    >>> browser.getControl('Each member individually').selected = True
-    >>> browser.getControl('Change').click()
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0Each member individually']
-    >>> browser.getLink('Configure mailing list') is None
-    False
-
 == Customizing the welcome message ==
 
 A project with a mailing list can have a custom welcome message. The
 welcome message is customizable whether or not the mailing list is
 currently the team's contact address.
+
+    >>> browser.getLink('Change contact address').click()
 
     >>> browser.getLink('Configure mailing list').click()
 
@@ -269,6 +254,11 @@ currently the team's contact address.
 However, when the mailing list is not the team's contact address, the
 mailing list configuration screen displays an informative message:
 
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Each user individually').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Configure mailing list').click()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     This team's mailing list is not set as the team contact address.
