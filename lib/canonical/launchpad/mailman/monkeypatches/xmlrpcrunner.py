@@ -94,7 +94,7 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Launchpad exception: %s', error)
             return
         if actions:
-            syslog('xmlrpc', 'Received actions for these lists: %s',
+            syslog('xmlrpc', 'Received these actions: %s',
                    COMMASPACE.join(actions.keys()))
         else:
             return
