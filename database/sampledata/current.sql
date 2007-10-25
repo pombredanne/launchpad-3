@@ -4051,7 +4051,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, 0, NULL);
+', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, 0, '2007-10-25 12:16:11.273895');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the evolution package.

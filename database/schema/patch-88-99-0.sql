@@ -443,12 +443,11 @@ ALTER TABLE TranslationMessage
 	ADD CONSTRAINT translationmessage__potmsgset__fk
 	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
--- Redirect foreign-key constraints pointing to POMsgSet
 ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
 
 DROP VIEW POExport;
+DROP VIEW POTExport;
 DROP TABLE POFileTranslator;
-
 DROP TABLE POSubmission;
 DROP TABLE POMsgSet;
 
@@ -460,7 +459,9 @@ DROP TABLE POMsgSet;
 -- the change.  There was already a column for the last translator, but it was
 -- not maintained.
 ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
-ALTER TABLE POFile ADD COLUMN date_changed timestamp without time zone;
+ALTER TABLE POFile
+	ADD COLUMN date_changed timestamp without time zone
+	DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone);
 
 UPDATE POFile
 SET
@@ -477,6 +478,10 @@ FROM (
 WHERE
 	Latest.pofile = POFile.id;
 
+-- POFiles without TranslationMessages have creation date as change date.
+UPDATE POFile SET date_changed = datecreated WHERE date_changed IS NULL;
+
+ALTER TABLE POFile ALTER COLUMN date_changed SET NOT NULL;
 
 -- SELECT 'Retiring POTemplateName', statement_timestamp();	-- DEBUG
 
@@ -489,12 +494,19 @@ SET name = ptn.name, translation_domain = ptn.translationdomain
 FROM POTemplateName ptn
 WHERE potemplatename = ptn.id;
 
+ALTER TABLE POTemplate DROP COLUMN potemplatename;
+
+CREATE UNIQUE INDEX potemplate__distrorelease__name__key
+	ON POTemplate(distrorelease, sourcepackagename, name);
+
+CREATE UNIQUE INDEX potemplate__productseries__name__key
+	ON POTemplate(productseries, name);
+
+CREATE INDEX potemplate__name__idx ON POTemplate(name);
+
 ALTER TABLE POTemplate ALTER name SET NOT NULL;
 ALTER TABLE POTemplate ALTER translation_domain SET NOT NULL;
 
-DROP VIEW POTExport;
-
-ALTER TABLE POTemplate DROP COLUMN potemplatename;
 DROP TABLE POTemplateName;
 
 ALTER TABLE POTemplate
@@ -518,6 +530,7 @@ FROM POMsgIDSighting sighting
 WHERE sighting.potmsgset = POTMsgSet.id AND pluralform = 1;
 
 DROP TABLE POMsgIDSighting;
+
 
 -- SELECT 'Restoring export views', statement_timestamp();	-- DEBUG
 
@@ -704,5 +717,5 @@ CREATE TRIGGER mv_pofiletranslator_translationmessage
 
 -- SELECT 'Completing', statement_timestamp();	-- DEBUG
 
--- ROLLBACK;
+-- ROLLBACK;	-- DEBUG
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
