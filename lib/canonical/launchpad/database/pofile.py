@@ -1408,7 +1408,7 @@ class POFileToTranslationFileDataAdapter:
 
     @cachedproperty
     def language_code(self):
-        """See `ITraslationFile`."""
+        """See `ITranslationFile`."""
         if self.is_template:
             return None
 

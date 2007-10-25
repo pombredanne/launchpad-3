@@ -2197,7 +2197,6 @@ class PersonTranslationView(LaunchpadView):
         # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
         # to pofile.potemplate.displayname, it would be ideal to also
         # prejoin inside translation_history:
-        #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
         #   potemplate.distroseries
