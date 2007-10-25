@@ -91,7 +91,6 @@ deb-src <a tal:attributes="href context/archive_url"
             <th>Status</th>
             <th>Series</th>
             <th>Section</th>
-            <th>Files</th>
           </tr>
         </thead>
         <tbody>

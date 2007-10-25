@@ -111,7 +111,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
@@ -145,7 +145,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted bar 1.0-10 (source)",
+            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)",
             "[PPA name16] Accepted:",
             "OK: bar_1.0.orig.tar.gz",
             "OK: bar_1.0-10.diff.gz",
@@ -258,7 +258,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         queue_items = hoary.getQueueItems(
@@ -287,7 +287,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA ubuntu-team] Accepted bar 1.0-1 (source)"]
+            "Subject: [PPA ubuntu-team] Accepted: bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(

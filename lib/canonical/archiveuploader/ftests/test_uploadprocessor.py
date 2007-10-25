@@ -640,7 +640,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check it is accepted and the section is converted to misc.
         contents = [
-            "Subject: bar_1.0-1_source.changes is NEW",
+            "Subject: New: bar 1.0-1 (source)",
             ]
         self.assertEmail(contents=contents, recipients=[])
 
