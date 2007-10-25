@@ -410,6 +410,16 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.rosettaCount()
 
+    def unreviewedCount(self, language=None):
+        """See `IRosettaStats`."""
+        if language is None:
+            return 0
+        pofile = self.getPOFileByLang(language)
+        if pofile is None:
+            return 0
+        else:
+            pofile.unreviewedCount()
+
     def hasMessageID(self, messageID, context=None):
         """See `IPOTemplate`."""
         results = POTMsgSet.selectBy(potemplate=self, msgid_singular=messageID,
@@ -555,10 +565,10 @@ class POTemplate(SQLBase, RosettaStats):
         language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, owner=requester)
 
-    def createMessageSetFromMessageID(self, msgid_singular, msgid_plural,
-                                      context=None):
+    def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
+                                  context=None):
         """See `IPOTemplate`."""
-        messageSet = POTMsgSet(
+        return POTMsgSet(
             context=context,
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
@@ -568,7 +578,6 @@ class POTemplate(SQLBase, RosettaStats):
             filereferences=None,
             sourcecomment=None,
             flagscomment=None)
-        return messageSet
 
     def createMessageSetFromText(self, singular_text, plural_text,
                                  context=None):

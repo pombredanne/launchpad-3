@@ -408,8 +408,8 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageIDs(msgid_singular, msgid_plural,
-                                       context=None):
+    def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
+                                  context=None):
         """Creates a new template message in the database.
 
         :param msgid_singular: A reference to a singular msgid.
@@ -417,8 +417,7 @@ class IPOTemplate(IRosettaStats):
         if the message is not a plural message.
         :param context: A context for the template message differentiating
         it from other template messages with exactly the same `msgid`.
-
-        Returns the newly created message set.
+        :return: The newly created message set.
         """
 
     def createMessageSetFromText(singular_text, plural_text, context=None):

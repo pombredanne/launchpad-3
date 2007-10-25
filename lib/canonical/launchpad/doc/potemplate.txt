@@ -129,12 +129,27 @@ But if we give the empty string or None, we get nothing
   >>> potemplatesubset.getClosestPOTemplate('') is None
   True
 
+
 = POTemplate =
 
-Check that we can get IPOFile based on its path.
+POTemplate is an object with all strings that must be translated for a
+concrete context.
 
-  >>> from canonical.launchpad.database import POTemplate
-  >>> potemplate = POTemplate.get(1)
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.interfaces import IPOTemplate
+    >>> potemplate = POTemplate.get(1)
+
+It implements the IPOTemplate interface.
+
+    >>> verifyObject(IPOTemplate, potemplate)
+    True
+
+
+== getPOFileByPath ==
+
+We can get an IPOFile inside a templage based on its path.
+
   >>> pofile = potemplate.getPOFileByPath('es.po')
   >>> print pofile.title
   Spanish (es) translation of evolution-2.2 in Evolution trunk
