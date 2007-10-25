@@ -998,4 +998,7 @@ class POTemplateToTranslationFileDataAdapter:
             # message.
             sequence = row.sequence
 
+            # Store the message.
+            messages.append(msgset)
+
         return messages
