@@ -6,10 +6,6 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-import zope.exceptions
-import zope.app.publication.interfaces
-import zope.publisher.interfaces.browser
-import zope.app.traversing.interfaces
 from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
@@ -33,11 +29,13 @@ __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
+    'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
     'IBreadcrumb',
     'ICrowd',
+    'IFeedsApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -88,23 +86,24 @@ class ILaunchpadCelebrities(Interface):
     Celebrities are SQLBase instances that have a well known name.
     """
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The Ubuntu Distribution.")
-    debian = Attribute("The Debian Distribution.")
-    rosetta_expert = Attribute("The Rosetta Experts team.")
-    vcs_imports = Attribute("The 'vcs-imports' team.")
     bazaar_expert = Attribute("The Bazaar Experts team.")
-    debbugs = Attribute("The Debian Bug Tracker")
-    sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
-    shipit_admin = Attribute("The ShipIt Administrators.")
-    launchpad_developers = Attribute("The Launchpad development team.")
-    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
-    bug_watch_updater = Attribute("The Bug Watch Updater.")
     bug_importer = Attribute("The bug importer.")
-    launchpad = Attribute("The Launchpad project.")
+    bug_watch_updater = Attribute("The Bug Watch Updater.")
+    debbugs = Attribute("The Debian Bug Tracker")
+    debian = Attribute("The Debian Distribution.")
     janitor = Attribute("The Launchpad Janitor.")
+    launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
+    launchpad_developers = Attribute("The Launchpad development team.")
+    mailing_list_experts = Attribute("The Mailing List Experts team.")
+    rosetta_expert = Attribute("The Rosetta Experts team.")
+    shipit_admin = Attribute("The ShipIt Administrators.")
+    sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
 
 
 class ICrowd(Interface):
@@ -134,7 +133,6 @@ class IMaloneApplication(ILaunchpadApplication):
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Launchpad")
     projects_with_bugs_count = Attribute("The number of products and "
         "distributions which have bugs in Launchpad.")
@@ -198,7 +196,13 @@ class IOpenIdApplication(ILaunchpadApplication):
 class IPrivateApplication(ILaunchpadApplication):
     """Launchpad private XML-RPC application root."""
 
+    authserver = Attribute("""Old Authserver API end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
 
 
 class IAuthApplication(Interface):
@@ -221,6 +225,11 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+
+class IFeedsApplication(ILaunchpadApplication):
+    """Launchpad Feeds application root."""
+
 
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""

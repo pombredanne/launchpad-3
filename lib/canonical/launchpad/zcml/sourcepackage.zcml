@@ -9,6 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getQuestionLanguages
@@ -195,6 +196,8 @@
   <browser:page
     for="canonical.launchpad.interfaces.ISourcePackage"
     name="+export"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     permission="launchpad.AnyPerson"
     template="../templates/sourcepackage-export.pt"
     class="canonical.launchpad.browser.SourcePackageTranslationsExportView"

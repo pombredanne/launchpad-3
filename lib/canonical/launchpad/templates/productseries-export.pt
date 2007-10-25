@@ -14,7 +14,7 @@
     </tal:title>
   </h1>
 
-  <div tal:condition="context/potemplates">
+  <div tal:condition="view/uses_translations">
     <p>
       This will export <em>all</em> translations for the
       <tal:name replace="context/name">trunk</tal:name> product series.  They
@@ -48,7 +48,8 @@
     </form>
   </div>
 
-  <p tal:condition="not: context/potemplates" class="informational message">
+  <p tal:condition="not: view/uses_translations"
+     class="informational message">
     This product series does not have any translation files available for
     download.
   </p>

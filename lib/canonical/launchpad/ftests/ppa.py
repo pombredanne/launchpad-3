@@ -11,8 +11,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.publishing import SecureSourcePackagePublishingHistory
 from canonical.launchpad.database.sourcepackagerelease import SourcePackageRelease
 from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, IPersonSet, ISourcePackageNameSet)
-from canonical.lp.dbschema import PackagePublishingStatus, PackagePublishingPocket
+    IComponentSet, IDistributionSet, IPersonSet, ISourcePackageNameSet,
+    PackagePublishingStatus, PackagePublishingPocket)
 
 
 def publishToTeamPPA(team_name=None, distroseries_name=None, sourcepackage_name=None,

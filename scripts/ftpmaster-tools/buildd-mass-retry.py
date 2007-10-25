@@ -17,14 +17,12 @@ import sys
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    BuildStatus, IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, BuildStatus)
 
 
 def main():

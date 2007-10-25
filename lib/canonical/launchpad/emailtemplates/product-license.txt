@@ -1,0 +1,18 @@
+Please review this project's licenses.
+
+User: %(user_browsername)s (%(user_name)s)
+
+
+Project Name: %(product_name)s
+
+
+Project Summary:
+%(product_summary)s
+
+
+Licenses:
+%(license_titles)s
+
+
+License info:
+%(license_info)s

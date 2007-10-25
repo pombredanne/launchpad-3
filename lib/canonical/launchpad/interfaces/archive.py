@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ArchivePurpose',
     'IArchive',
     'IPPAActivateForm',
     'IArchiveSet',
@@ -15,6 +16,7 @@ from zope.schema import Bool, Choice, Int, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class IArchive(IHasOwner):
@@ -98,13 +100,11 @@ class IPPAActivateForm(Interface):
     description = Text(
         title=_("PPA contents description"), required=False,
         description=_(
-        "A short description of contents and goals of this PPA. This text "
-        "will be presented in the PPA page and will also allow other users "
-        "to find your PPA in their searches. URLs are allowed and will "
+        "A short description of this PPA. This text URLs are allowed and will "
         "be rendered as links."))
 
     accepted = Bool(
-        title=_("I accept the PPA Terms of Service."),
+        title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
 
 
@@ -130,3 +130,43 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+class ArchivePurpose(DBEnumeratedType):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    PRIMARY = DBItem(1, """
+        Primary Archive
+
+        This is the primary Ubuntu archive.
+        """)
+
+    PPA = DBItem(2, """
+        PPA Archive
+
+        This is a Personal Package Archive.
+        """)
+
+    EMBARGOED = DBItem(3, """
+        Embargoed Archive
+
+        This is the archive for embargoed packages.
+        """)
+
+    PARTNER = DBItem(4, """
+        Partner Archive
+
+        This is the archive for partner packages.
+        """)
+
+    OBSOLETE = DBItem(5, """
+        Obsolete Archive
+
+        This is the archive for obsolete packages.
+        """)
+

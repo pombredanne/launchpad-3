@@ -302,5 +302,7 @@ class ILoginTokenSet(Interface):
 class IGPGKeyValidationForm(Interface):
     """The schema used by ILoginToken's +validategpg form."""
 
-    signed_text = Text(title=_('Signed text'), required=True)
+    text_signature = Text(
+        title=_('Signed text'), required=True,
+        description=_('The validation text, signed with your key.'))
 

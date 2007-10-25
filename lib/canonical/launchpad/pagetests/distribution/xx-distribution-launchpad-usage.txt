@@ -10,60 +10,67 @@ distribution officially uses Launchpad.
     Answers
     Bug tracking
     Translations
-    
-The usage flags can only be set by an Launchpad administrator by 
-using the 'Define Launchpad usage' action.
 
-    >>> anon_browser.getLink('Define Launchpad usage')
+Unprivileged Launchpad users cannot access the page for changing these details.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu')
+    >>> user_browser.getLink('Change distribution details')
     Traceback (most recent call last):
       ...
-    LinkNotFound...    
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/+launchpad')
-    Traceback (most recent call last):
-      ...
-    Unauthorized...
-    
-(Even the registrant doesn't have permission to this page.)
-
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/ubuntu/+launchpad')
+    LinkNotFound...
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+edit')
     Traceback (most recent call last):
       ...
     Unauthorized...
 
-Any Launchpad administrator can switch the checkboxes to change the official 
-usage of each application:
+The distribution's registrant can access the page, but even he/she can't change
+the usage.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> registrant = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    >>> registrant.open('http://launchpad.dev/ubuntu/+edit')
+    >>> print registrant.url
+    http://launchpad.dev/ubuntu/+edit
+
+    >>> print registrant.getControl(name='field.official_rosetta').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+    >>> print registrant.getControl(name='field.official_malone').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+    >>> print registrant.getControl(name='field.official_answers').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+A Launchpad administrator, however, can see the controls.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu')
-    >>> admin_browser.getLink('Define Launchpad usage').click()
+    >>> admin_browser.getLink('Change distribution details').click()
     >>> print admin_browser.title
-    Launchpad usage by Ubuntu Linux
-      
-    >>> print admin_browser.getControl(
-    ...     'Translations for this distribution are done in Launchpad').selected
+    Change distribution details
+    >>> print admin_browser.getControl(name='field.official_rosetta').value
     True
-    >>> print admin_browser.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected
+    >>> print admin_browser.getControl(name='field.official_malone').value
     True
-    >>> print admin_browser.getControl(
-    ...     'People can ask questions in Launchpad Answers').selected
+    >>> print admin_browser.getControl(name='field.official_answers').value
     True
      
-Foo Bar can edit the values as well. Afterwards he gets redirected to
-the distribution index page:
+And if the admin changes the settings, the changes show up on the distribution
+Overview page.
 
-    >>> admin_browser.getControl(
-    ...     'Translations for this distribution are done in ' +
-    ...     'Launchpad').selected = False
-    >>> admin_browser.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected \
-    ...     = False
-    >>> admin_browser.getControl(
-    ...     'People can ask questions in Launchpad Answers').selected = False
+    >>> admin_browser.getControl(name='field.official_rosetta').value = False
+    >>> admin_browser.getControl(name='field.official_malone').value = False
+    >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
 
-On the distribution page, the new usage was updated.
-    
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu
     >>> content = find_main_content(admin_browser.contents)
     >>> label_cell = content.find('th', text='Uses Launchpad for:')
     >>> print extract_text(label_cell.findNext())
