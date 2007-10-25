@@ -503,6 +503,9 @@ Cleanup in preparation for the next test:
 
   >>> buildergroup.updateBuild(bqItem6)
   WARNING:root:***** bob has failed *****
+
+  >>> from canonical.launchpad.ftests import sync
+  >>> sync(a_builder)
   >>> a_builder.failnotes
   u'Builder returned BUILDERFAIL when asked for its status'
 
