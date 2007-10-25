@@ -1399,7 +1399,7 @@ class POFileToTranslationFileDataAdapter:
     @cachedproperty
     def translation_domain(self):
         """See `ITranslationFileData`."""
-        return self._pofile.potemplate.potemplatename.translationdomain
+        return self._pofile.potemplate.translation_domain
 
     @property
     def is_template(self):

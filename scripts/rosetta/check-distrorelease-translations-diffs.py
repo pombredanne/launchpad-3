@@ -36,10 +36,10 @@ def compare_translations(orig_distrorelease, dest_distrorelease):
 
     orig_templates = sorted(
         orig_distrorelease.potemplates,
-        key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
+        key=lambda x: (x.name, x.sourcepackagename.name))
     dest_templates = sorted(
         dest_distrorelease.potemplates,
-        key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
+        key=lambda x: (x.name, x.sourcepackagename.name))
 
     for i in range(len(orig_templates)):
         old_template = orig_templates[i]

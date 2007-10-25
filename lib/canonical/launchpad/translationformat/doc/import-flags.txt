@@ -126,11 +126,10 @@ carlos@canonical.com.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> firefox_potemplatename = getUtility(IPOTemplateNameSet)['firefox']
     >>> firefox_potsubset = POTemplateSubset(productseries=firefox_trunk)
 
     >>> firefox_potemplate = firefox_potsubset.new(
-    ...     potemplatename=firefox_potemplatename,
+    ...     name='firefox',
     ...     path='po/firefox.pot',
     ...     owner=carlos)
 

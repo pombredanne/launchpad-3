@@ -84,7 +84,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
         return sorted(pofiles + dummies,
                       key=lambda x: (-x.potemplate.priority,
-                                     x.potemplate.potemplatename.name,
+                                     x.potemplate.name,
                                      x.potemplate.id))
 
     @property

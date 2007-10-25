@@ -75,7 +75,6 @@ We are creating a new potemplate for Firefox product.
     >>> release.productseries.product.name
     u'firefox'
     >>> series = release.productseries
-    >>> potemplatename = getUtility(IPOTemplateNameSet)['firefox']
     >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
@@ -86,7 +85,7 @@ Here's the person who'll be doing the import.
 And this is the POTemplate where the import will be done.
 
     >>> potemplate = subset.new(
-    ...     potemplatename=potemplatename,
+    ...     name='firefox',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
