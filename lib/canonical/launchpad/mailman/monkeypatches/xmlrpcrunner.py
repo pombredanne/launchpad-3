@@ -79,6 +79,7 @@ class XMLRPCRunner(Runner):
         """
         self._check_list_actions()
         self._get_subscriptions()
+        syslog('xmlrpc', 'completed oneloop')
         # Snooze for a while.
         return 0
 

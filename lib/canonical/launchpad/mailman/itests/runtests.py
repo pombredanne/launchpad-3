@@ -41,7 +41,7 @@ def integrationTestSetUp(test):
     """Common set up for the integration tests."""
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
-    'team-one', 'team-two', 'team-three',
+    'itest-one', 'itest-two', 'itest-three',
     'anne', 'bart', 'cris', 'dirk'
     );
 
@@ -69,7 +69,7 @@ def integrationTestSetUp(test):
     itest_helper.transactionmgr.commit()
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.
-    for team_name in ('team-one', 'team-two', 'team-three'):
+    for team_name in ('itest-one', 'itest-two', 'itest-three'):
         try:
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
