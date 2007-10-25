@@ -13,7 +13,7 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 
 from canonical.lp.dbschema import BugTrackerType
 
@@ -111,6 +111,8 @@ class BugTrackerSet:
         # turn https to http, and raise an exception elsewhere
         schema, rest = urllib.splittype(baseurl)
         if schema not in ['http', 'https']:
+            if (schema is None) and (rest[0:2] != '//'):
+                baseurl = 'http://' + baseurl
             return baseurl
         if schema == 'https':
             schema = 'http'
@@ -130,8 +132,10 @@ class BugTrackerSet:
         """
         http_schemas = ['http', 'https']
         url_schema, rest = urllib.splittype(base_url)
-        if url_schema in http_schemas:
+        if (url_schema in http_schemas) or (url_schema is None):
             possible_schemas = http_schemas
+            if rest[0:2] != '//':
+                rest = '//' + rest
         else:
             # This else-clause is here since we have no strict
             # requirement that bug trackers have to have http URLs.
@@ -146,8 +150,12 @@ class BugTrackerSet:
                 alternative_urls.append(url + '/')
         # Make sure that the original URL is always first, to make the
         # common case require less db queries.
-        alternative_urls.remove(base_url)
-        return [base_url] + alternative_urls
+        # But skip that if we know the url_schema is not present, in
+        # which case one of the alternatives is our best bet.
+        if url_schema is not None:
+            alternative_urls.remove(base_url)
+            alternative_urls.insert(0, base_url)
+        return alternative_urls
 
     def queryByBaseURL(self, baseurl):
         """See IBugTrackerSet."""
@@ -155,6 +163,11 @@ class BugTrackerSet:
             bugtracker = BugTracker.selectOneBy(baseurl=url)
             if bugtracker is not None:
                 return bugtracker
+        # If we didn't find the exact URL but there is
+        # a substring match, use that instead.
+        for bugtracker in BugTracker.select(
+            "baseurl LIKE '%%' || %s || '%%'" % quote_like(baseurl), limit=1):
+            return bugtracker
         return None
 
     def search(self):

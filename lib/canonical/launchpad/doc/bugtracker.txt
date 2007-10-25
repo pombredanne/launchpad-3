@@ -84,6 +84,14 @@ It's necessary to specify the exact URL, differences in the schema
     >>> mozilla_bugzilla.baseurl
     u'https://bugzilla.mozilla.org/'
 
+If the exact bugtracker isn't found but a the url searched for
+is a substring of an existing bugtracker, we use the first match.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'zilla.mozilla.org')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
 If no bug tracker can be found None is returned.
 
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
