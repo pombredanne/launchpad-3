@@ -173,10 +173,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPOTemplate(self, name):
         """See IProductSeries."""
         return POTemplate.selectOne(
-            "POTemplate.productseries = %s AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['POTemplateName'])
+            "productseries = %s AND name = %s" % sqlvalues(self.id, name))
 
     @property
     def title(self):

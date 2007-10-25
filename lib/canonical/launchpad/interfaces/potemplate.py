@@ -465,7 +465,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(potemplatename, title, contents, owner):
+    def new(name, title, contents, owner):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):

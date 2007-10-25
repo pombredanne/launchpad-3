@@ -736,8 +736,6 @@ object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
 
-object_potemplatenames = ContextDisplayName('Template names for %s')
-
 object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextTitle('Translation templates for %s')
@@ -903,14 +901,6 @@ potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
-
-potemplatename_add = 'Add a new template name to Launchpad'
-
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
-
-potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
-
-potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a project in Launchpad'
 
