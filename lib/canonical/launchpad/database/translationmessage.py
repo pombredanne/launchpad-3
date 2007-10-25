@@ -64,7 +64,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.msgstr1 = None
         self.msgstr2 = None
         self.msgstr3 = None
-        self.translations = [None] * self.pofile.language.pluralforms
         self.comment_text = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
@@ -75,6 +74,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         self.was_fuzzy_in_last_import = False
+        if self.potmsgset.msgid_plural is None:
+            self.translations = [None]
+        else:
+            self.translations = [None] * self.pofile.language.pluralforms
 
     def destroySelf(self):
         """See `ITranslationMessage`."""

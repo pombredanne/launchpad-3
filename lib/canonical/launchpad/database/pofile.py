@@ -426,43 +426,31 @@ class POFile(SQLBase, POFileMixIn):
         if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(key, unicode):
+        if not isinstance(msgid_text, unicode):
             raise AssertionError(
                 "Can't index with type %s. (Must be unicode or POTMsgSet.)"
-                % type(key))
+                % type(msgid_text))
 
         # Find a message ID with the given text.
         try:
-            pomsgid = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(msgid_text)
         except SQLObjectNotFound:
             return None
 
         # Find a message set with the given message ID.
-
         if context is not None:
             query += ' AND context=%s' % sqlvalues(context)
         else:
             query += ' AND context IS NULL'
 
         potmsgset = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %s' % sqlvalues(pomsgid)))
+            (' AND msgid_singular = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
             return None
 
-        result = POMsgSet.selectOneBy(potmsgset=potmsgset, pofile=self)
-
-        # Check that language has been initialized correctly.
-        # XXX: JeroenVermeulen 2007-07-03, until language column in database
-        # is initialized, accept null values here.
-        has_language = (result is not None and result.language is not None)
-        if has_language and result.language != self.language:
-            raise AssertionError(
-                "POFile in language %d contains POMsgSet in language %d"
-                % (self.language, result.language))
-
-        return result
+        return TranslationMessage.selectOneBy(potmsgset=potmsgset, pofile=self)
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
@@ -1136,14 +1124,14 @@ class DummyPOFile(POFileMixIn):
         if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(key, unicode):
+        if not isinstance(msgid_text, unicode):
             raise AssertionError(
                 "Can't index with type %s. (Must be unicode or POTMsgSet.)"
-                % type(key))
+                % type(msgid_text))
 
         # Find a message ID with the given text.
         try:
-            pomsgid = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(msgid_text)
         except SQLObjectNotFound:
             return None
 
@@ -1155,7 +1143,7 @@ class DummyPOFile(POFileMixIn):
             query += ' AND context IS NULL'
 
         potmsgset = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %s' % sqlvalues(pomsgid)))
+            (' AND msgid_singular = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
