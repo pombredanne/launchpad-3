@@ -168,7 +168,7 @@ class POTMsgSet(SQLBase):
         """
         original_texts = [self.singular_text]
         if self.plural_text is not None:
-            original_texts.append(plural_text)
+            original_texts.append(self.plural_text)
         return original_texts
 
     def _sanitizeTranslations(self, translations, pluralforms):

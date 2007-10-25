@@ -347,6 +347,7 @@ class TranslationImporter:
                 # The message has no msgid, we ignore it and jump to next
                 # message.
                 continue
+
             if self.pofile is not None:
                 # Mark this message as seen in the import
                 pofile_in_db.markMessageAsSeen(message)
@@ -369,7 +370,7 @@ class TranslationImporter:
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
             if (message.msgid_plural and self.pofile is not None and
-                (message.msgid_plural != potmsgset.msgid_plural)):
+                (message.msgid_plural != potmsgset.msgid_plural.msgid)):
                 # The PO file wants to change the plural msgid from the PO
                 # template, that's broken and not usual, so we raise an
                 # exception to log the issue. It needs to be fixed

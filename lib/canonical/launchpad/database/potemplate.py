@@ -584,25 +584,25 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         try:
             msgid_singular = POMsgID.byMsgid(singular_text)
-            msgid_plural = None
-            if plural_text is not None:
-                try:
-                    msgid_plural = POMsgID.byMsgid(plural_text)
-                except SQLObjectNotFound:
-                    msgid_plural = POMsgID(msgid=singular_text)
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             msgid_singular = POMsgID(msgid=singular_text)
-            msgid_plural = None
         else:
             assert not self.hasMessageID(msgid_singular, context), (
                 "There is already a message set for this template, file and"
                 " primary msgid and context '%r'" % context)
 
-        return self.createMessageSetFromMessageID(msgid_singular, msgid_plural,
-                                                  context)
+        msgid_plural = None
+        if plural_text is not None:
+            try:
+                msgid_plural = POMsgID.byMsgid(plural_text)
+            except SQLObjectNotFound:
+                msgid_plural = POMsgID(msgid=plural_text)
+
+        return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
+                                              context)
 
     def invalidateCache(self):
         """See `IPOTemplate`."""
