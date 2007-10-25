@@ -365,7 +365,7 @@ def _prepare_translationmessage_merge(
         """
     copier.extract(
         'TranslationMessage', joins=['POFile'],
-        where=where_clause, inert_where=have_better,
+        where_clause=where_clause, inert_where=have_better,
         external_joins=['POTMsgSet', 'POFile', 'Language'],
         pre_pouring_callback=prepare_translationmessage_pouring,
         batch_pouring_callback=_prepare_translationmessage_batch)
@@ -490,12 +490,11 @@ def _copy_active_translations_as_update(child, transaction, logger):
         WHERE
             ptms1.potemplate = temp_equiv_template.id AND
             ptms2.potemplate = temp_equiv_template.new_id AND
-            (ptms1.alternative_msgid = ptms2.alternative_msgid OR
-             (ptms1.alternative_msgid IS NULL AND
-              ptms2.alternative_msgid IS NULL AND
-              ptms1.primemsgid = ptms2.primemsgid AND
-              (ptms1.context = ptms2.context OR
-               (ptms1.context IS NULL AND ptms2.context IS NULL))))
+            ptms1.msgid_singular = ptms2.msgid_singular AND
+            (ptms1.msgid_plural = ptms2.msgid_plural OR
+             (ptms1.msgid_plural IS NULL AND ptms2.msgid_plural IS NULL)) AND
+            (ptms1.context = ptms2.context OR
+             (ptms1.context IS NULL AND ptms2.context IS NULL))
         """)
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_potmsgset_pkey "
