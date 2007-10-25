@@ -12,7 +12,8 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import datadir
+from canonical.archiveuploader.tests import (
+    datadir, insertFakeChangesFile)
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
@@ -82,11 +83,7 @@ class TestQueueTool(TestQueueBase):
         # the /wrong/ changes file for the package in the upload queue,
         # but that doesn't matter as only email addresses are parsed out
         # of it.
-        changes_file_obj = open(
-            datadir('ed-0.2-21/ed_0.2-21_source.changes'), 'r')
-        self.test_changes_file = changes_file_obj.read()
-        changes_file_obj.close()
-        fillLibrarianFile(1, content=self.test_changes_file)
+        insertFakeChangesFile(1)
         TestQueueBase.setUp(self)
 
     def tearDown(self):
@@ -498,7 +495,7 @@ class TestQueueTool(TestQueueBase):
         """
         # An additional librarian file is needed for queue item with ID 1
         # because in the sample data it points to library file alias 52.
-        fillLibrarianFile(52, content=self.test_changes_file)
+        insertFakeChangesFile(52)
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 

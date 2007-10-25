@@ -157,7 +157,13 @@ Inspect the ACCEPTED queue
   >>> user_browser.contents
   '...The Accepted queue...is empty...'
 
-Now we act on the queue, which requires admin or upload_manager
+Now we act on the queue, which requires admin or upload_manager.  First,
+we need to fake librarian files so that email notifications work:
+
+  >>> from canonical.archiveuploader.tests import insertFakeChangesFile
+  >>> insertFakeChangesFile(52)
+  >>> insertFakeChangesFile(1)
+
 Go back to the "new" queue and accept an item:
 
   >>> upload_manager_browser.open(
@@ -171,6 +177,19 @@ Go back to the "new" queue and accept an item:
   ...netapplet...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
+
+Accepting queue items results in an email to the uploader and possibly an
+email to the distroseries' announcement list (see
+nascentupload-announcements.txt).
+
+  >>> from canonical.launchpad.mail import stub
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> [notification, announcement] = pop_notifications()
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+
+  >>> announcement['To']
+  'autotest_changes@ubuntu.com'
 
 Force duplicated action submit on a queue item and check if the system
 recognises it.
@@ -216,6 +235,11 @@ Rejecting items.
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
+One rejection email is generated:
+
+  >>> [rejection] = pop_notifications()
+  >>> rejection['Subject']
+  'netapplet-1.0.0.tar.gz rejected'
 
 Use the text filter to inspect the NEW queue:
 
@@ -237,3 +261,8 @@ Checking UnexpectedFormData on unknown queue_state values (bug #51959)
   Traceback (most recent call last):
   ...
   UnexpectedFormData: No suitable status found for value "8"
+
+Clean up:
+  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> cleanupLibrarianFiles()
+

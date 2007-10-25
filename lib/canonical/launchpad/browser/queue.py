@@ -154,6 +154,7 @@ class QueueItemsView(LaunchpadView):
                                (queue_item.displayname, info))
             else:
                 success.append('OK: %s' % queue_item.displayname)
+                queue_item.notify(announce_list=self.context.changeslist)
 
             queue_item.syncUpdate()
 
