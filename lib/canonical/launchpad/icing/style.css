@@ -688,9 +688,6 @@ border. */
   margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
 }
-body.freeform #mainarea {top: 0;}
-* html #mainarea {top: 0;}
-body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #mainarea div.v {
   position: relative;
   width: 100%;
