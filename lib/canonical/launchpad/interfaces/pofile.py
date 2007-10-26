@@ -178,7 +178,7 @@ class IPOFile(IRosettaStats):
         """
 
     def getCurrentTranslationMessageFromPOTMsgSet(potmsgset,
-                                                 ignore_obsolete=False):
+                                                  ignore_obsolete=False):
         """Return mapping between potmsgset and `ITranslationMessage`.
 
         :param potmsgset: An `IPOTMsgSet`.
