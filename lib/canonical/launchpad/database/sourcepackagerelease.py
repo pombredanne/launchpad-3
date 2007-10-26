@@ -29,10 +29,14 @@ from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
     ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackagePublishingStatus, SourcePackageFileType, SourcePackageFormat,
-    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES, NotFoundError)
+    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
+    UNRESOLVED_BUGTASK_STATUSES)
+
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.queue import (
+    PackageUpload)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.scripts.queue import QueueActionError
@@ -366,6 +370,29 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+
+    @property
+    def upload_changesfile(self):
+        """See ISourcePackageRelease."""
+        clauseTables = [
+            'PackageUpload',
+            'PackageUploadSource',
+            ]
+        query = """
+        PackageUpload.id = PackageUploadSource.packageupload AND
+        PackageUpload.distrorelease = %s AND
+        PackageUploadSource.sourcepackagerelease = %s AND
+        PackageUpload.status = %s
+        """ % sqlvalues(self.uploaddistroseries, self,
+                        PackageUploadStatus.DONE)
+        queue_record = PackageUpload.selectOne(
+            query, clauseTables=clauseTables)
+
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
 
     @property
     def change_summary(self):

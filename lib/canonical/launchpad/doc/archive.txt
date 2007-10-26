@@ -31,6 +31,10 @@ Useful properties:
   >>> cprov_archive.archive_url
   u'http://ppa.launchpad.dev/cprov/ubuntu'
 
+Inquire what Distribution Series this archive has published sources to:
+
+  >>> [s.name for s in cprov_archive.series_with_sources]
+  [u'breezy-autotest', u'warty']
 
 == Published Source and Binary Lookup ==
 

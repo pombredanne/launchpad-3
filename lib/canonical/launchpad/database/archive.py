@@ -17,7 +17,7 @@ from zope.interface import implements
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote_like
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
@@ -55,6 +55,18 @@ class Archive(SQLBase):
         if self.purpose == ArchivePurpose.PPA:
             return 'PPA for %s' % self.owner.displayname
         return '%s for %s' % (self.purpose.title, self.distribution.title)
+
+    @property
+    def series_with_sources(self):
+        """See `IArchive`."""
+        cur = cursor()
+        q = """SELECT DISTINCT distrorelease FROM
+                      SourcePackagePublishingHistory WHERE
+                      SourcePackagePublishingHistory.archive = %s"""
+        cur.execute(q % self.id)
+        published_series_ids = [int(row[0]) for row in cur.fetchall()]
+        return [s for s in self.distribution.serieses if s.id in
+                published_series_ids]
 
     @property
     def archive_url(self):
