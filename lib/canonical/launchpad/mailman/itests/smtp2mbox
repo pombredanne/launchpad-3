@@ -46,7 +46,10 @@ class Server(smtpd.SMTPServer):
 
 def handle_signal(*ignore):
     """Handle signal sent by parent to kill the process."""
-    # Why is killing an asyncore loop so painful?
+    # Why is killing an asyncore loop so painful?  There appears to be no way
+    # to do this cleanly without either reimplementing asyncore.loop() as Zope
+    # does, or getting an "uncaptured python exception" deep inside asyncore.
+    # For simplicity's sake I can live with that annoying non-fatal error.
     asyncore.socket_map.clear()
 
 
