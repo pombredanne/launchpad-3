@@ -240,13 +240,11 @@ list configuration screen displays an informative message:
     ...     print msg
     This team's mailing list is not set as the team contact address.
 
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl('The Launchpad mailing list').selected = True
-    >>> browser.getControl('Change').click()
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0The Launchpad mailing list for this team - landscape-developers@lists.launchpad.net']
+The mailing list configuration screen makes it easy to set the team
+contact address directly, rather than going to the contact address
+screen:
 
+    >>> browser.getControl('Set mailing list as contact address').click()
     >>> browser.getLink('Configure mailing list').click()
     >>> get_feedback_messages(browser)
     []
