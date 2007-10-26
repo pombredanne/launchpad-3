@@ -6,34 +6,30 @@
 
 <facet facet="translations">
 
-    <content class="canonical.launchpad.database.POMsgSet">
-      <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
-      <require
-        permission="launchpad.Edit"
-        set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
+    <content class="canonical.launchpad.database.TranslationMessage">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessage" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ITranslationMessage" />
     </content>
 
-    <!-- Dummy PO Msg Set -->
-    <content class="canonical.launchpad.database.DummyPOMsgSet">
-      <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
-      <require
-        permission="launchpad.Edit"
-        set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
+    <!-- Dummy Translation Message. It's a read only class. -->
+    <content class="canonical.launchpad.database.DummyTranslationMessage">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessage" />
     </content>
 
+    <!-- XXX: Commented until we start migrating view code.
     <content class="canonical.launchpad.browser.POMsgSetSuggestions">
-      <allow interface="canonical.launchpad.interfaces.IPOMsgSetSuggestions" />
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
+            />
     </content>
-
-    <adapter
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      for="canonical.launchpad.interfaces.IPOMsgSet"
-      factory="canonical.launchpad.browser.POMsgSetSOP"
-      permission="zope.Public"
-      />
+    -->
 
     <browser:url
-        for="canonical.launchpad.interfaces.IPOMsgSet"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
         path_expression="string:${potmsgset/sequence}"
         attribute_to_parent="pofile"
         />
@@ -44,12 +40,12 @@
         />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IPOMsgSet"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
         name="+index"
         layer="canonical.launchpad.layers.TranslationsLayer" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IPOMsgSet"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
         class="canonical.launchpad.browser.POMsgSetIndexView"
         permission="zope.Public"
         name="+index"
@@ -59,15 +55,14 @@
 
     <browser:page
         name="+translate"
-        for="canonical.launchpad.interfaces.IPOMsgSet"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
         class="canonical.launchpad.browser.TranslateRedirectView"
         permission="zope.Public"
         />
 
     <browser:page
         name="+translate"
-        facet="translations"
-        for="canonical.launchpad.interfaces.IPOMsgSet"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
         permission="zope.Public"
         template="../templates/pomsgset-translate.pt"
         class="canonical.launchpad.browser.POMsgSetPageView"
@@ -76,7 +71,7 @@
 
     <browser:page
         name="+display"
-        for="canonical.launchpad.interfaces.IPOMsgSetSuggestions"
+        for="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-suggestions.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"

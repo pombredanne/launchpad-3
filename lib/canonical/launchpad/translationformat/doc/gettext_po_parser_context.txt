@@ -8,11 +8,11 @@ and they are usually translated differently.
 == Helper imports ==
 
     >>> from zope.app import datetimeutils
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ...     ITranslationImportQueue)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -43,13 +43,21 @@ This is a function for importing a pofile or potemplate from a string,
 printing out the import status after import is done.
 
     >>> def import_pofile_or_potemplate(file_contents, person, series,
-    ...                                 pofile=None, potemplate=None):
+    ...                                 pofile=None, potemplate=None,
+    ...                                 published=True):
+    ...     """Import a `POFile` or `POTemplate` from the string.
+    ...
+    ...	    If pofile is None, it imports a potemplate.
+    ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
+    ...	    """
     ...     translation_import_queue = getUtility(ITranslationImportQueue)
     ...     if pofile:
     ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, True, person,
+    ...             pofile.path, file_contents, published, person,
     ...             productseries=series, pofile=pofile)
     ...     else:
+    ...         # A POTemplate can only be published, so setting
+    ...         # the published flag makes no difference.
     ...         entry = translation_import_queue.addOrUpdateEntry(
     ...             potemplate.path, file_contents, True, person,
     ...             productseries=series, potemplate=potemplate)
@@ -60,7 +68,7 @@ printing out the import status after import is done.
     ...         pofile.importFromQueue(FakeLogger())
     ...     else:
     ...         potemplate.importFromQueue(FakeLogger())
-    ...     print entry.status.name
+    ...     return entry
 
 == Import PO templates ==
 
@@ -70,25 +78,21 @@ Login as an admin to be able to do changes to the import queue.
 
 We are creating a new potemplate for Firefox product.
 
-    >>> from canonical.launchpad.database import ProductRelease
-    >>> release = ProductRelease.get(3)
-    >>> release.productseries.product.name
-    u'firefox'
-    >>> series = release.productseries
-    >>> potemplatename = getUtility(IPOTemplateNameSet)['firefox']
-    >>> subset = POTemplateSubset(productseries=series)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> firefox_potsubset = POTemplateSubset(productseries=firefox_trunk)
 
 Here's the person who'll be doing the import.
 
-    >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByEmail('carlos@canonical.com')
+    >>> carlos = getUtility(IPersonSet).getByEmail('carlos@canonical.com')
 
 And this is the POTemplate where the import will be done.
 
-    >>> potemplate = subset.new(
-    ...     potemplatename=potemplatename,
+    >>> potemplate = firefox_potsubset.new(
+    ...     name='firefox',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
-    ...     owner=person)
+    ...     owner=carlos)
 
 We've got a template with two pairs of messages with duplicated msgids.
 In the first pair of messages, there is context added using 'msgctxt'
@@ -129,15 +133,18 @@ the same message in gettext, and we have to use msgctxt on one of them).
 
 This file can now be correctly imported:
 
-    >>> import_pofile_or_potemplate(potemplate_contents, person, series,
-    ...                             potemplate=potemplate)
+    >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
+    ...                                     firefox_trunk,
+    ...                                     potemplate=potemplate)
+    >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches() # replace date SQL constant with real date
 
 The method getPOTMsgSetByMsgIDText returns a message without context if
 no context is specified.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     bar
     >>> print potmsgset.context
     None
@@ -153,7 +160,7 @@ To get a message with a context, we pass a context parameter.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar',
     ...                                                context=u'context')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     bar
     >>> print potmsgset.context
     context
@@ -162,13 +169,13 @@ It also works for plural form messages.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
     ...                                                context=u'First message')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     %d file
     >>> print potmsgset.context
     First message
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
     ...                                                context=u'Second message')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     %d file
     >>> print potmsgset.context
     Second message
@@ -195,10 +202,12 @@ context differences fails.
 
 Importing this file fails because of conflicting messages.
 
-    >>> import_pofile_or_potemplate(potemplate_contents, person, series,
-    ...                             potemplate=potemplate)
+    >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
+    ...                                     firefox_trunk,
+    ...                                     potemplate=potemplate)
     WARNING We got an error import...
     ...duplicate msgid...
+    >>> print entry.status.name
     FAILED
 
 == Importing PO files ==
@@ -239,40 +248,49 @@ We can also import POFile with context messages.
 
 Importing this file succeeds.
 
-    >>> import_pofile_or_potemplate(pofile_contents, person, series,
-    ...                             pofile=pofile)
+    >>> entry = import_pofile_or_potemplate(pofile_contents, carlos,
+    ...                                     firefox_trunk, pofile=pofile)
+    >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches() # replace date SQL constant with real date
 
 If we don't pass context to POFile.getPOMsgSet method, we get the translation
 for the message without a context.
 
-    >>> pomsgset = pofile.getPOMsgSet(key=u'bar')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'bar')
+    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> print current.translations
     [u'bar with no context']
 
 If we pass the context parameter to getPOMsgSet, we get the translation for
 a message with context.
 
-    >>> pomsgset = pofile.getPOMsgSet(key=u'bar', context=u'context')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'bar',
+    ...                                                context=u'context')
+    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> print current.translations
     [u'bar with context']
 
 If message has a context, you cannot get it without specifying the context:
 
-    >>> pomsgset = pofile.getPOMsgSet(key=u'%d file')
-    >>> print pomsgset
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'%file')
+    >>> print potmsgset
     None
 
 If you specify context, it actually works.
 
-    >>> pomsgset = pofile.getPOMsgSet(key=u'%d file', context=u'First message')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'%d file',
+    ...                                                context=u'First message')
+    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> print current.translations
     [u'Translation %d']
 
 And for messages with plural forms, it gets all the translations.
 
-    >>> pomsgset = pofile.getPOMsgSet(key=u'%d file', context=u'Second message')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'%d file', context=u'Second message')
+    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> print current.translations
     [u'%d translation', u'%d translationes', u'%d translations']
 
 == Export ==
@@ -322,21 +340,23 @@ And a Serbian PO file is exported using regular export_pofile call.
 It's different from the imported file only in a few headers.
 
     >>> pofile = potemplate.getPOFileByLang('sr')
-    >>> print pofile.uncachedExport()
+    >>> # XXX DaniloSegan: '...' doesn't seem to work with unicode name
+    >>> # of "Carlos Perelló Marín"
+    >>> print pofile.uncachedExport().decode('UTF-8')
     msgid ""
     msgstr ""
     "Project-Id-Version: PACKAGE VERSION\n"
     "Report-Msgid-Bugs-To: \n"
     "POT-Creation-Date: 2004-07-11 16:16+0900\n"
-    "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-    "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    "PO-Revision-Date: ...\n"
+    "Last-Translator: Carlos...\n"
     "Language-Team: LANGUAGE <LL@li.org>\n"
     "MIME-Version: 1.0\n"
     "Content-Type: text/plain; charset=UTF-8\n"
     "Content-Transfer-Encoding: 8bit\n"
     "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
     "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-    "X-Launchpad-Export-Date: ...-...-... ...:...+...\n"
+    "X-Launchpad-Export-Date: ...\n"
     "X-Generator: Launchpad (build ...)\n"
     "Language: Serbian\n"
     <BLANKLINE>
@@ -385,15 +405,18 @@ not same.
 
 This file can now be correctly imported:
 
-    >>> import_pofile_or_potemplate(potemplate_contents, person, series,
-    ...                             potemplate=potemplate)
+    >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
+    ...                                     firefox_trunk,
+    ...                                     potemplate=potemplate)
+    >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches() # replace date SQL constant with real date
 
 The method getPOTMsgSetByMsgIDText returns a message without context if
 no context is specified.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     bar
     >>> print potmsgset.context
     None
@@ -402,7 +425,7 @@ The method getPOTMsgSetByMsgIDText returns a message with empty context
 if empty context is specified, and not the message with None context.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar', context=u'')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     bar
     >>> potmsgset.context
     u''

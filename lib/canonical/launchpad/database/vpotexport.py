@@ -1,17 +1,20 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Database class for Rosetta POT export view."""
+"""Database class to handle translation template export view."""
 
 __metaclass__ = type
 
-__all__ = ['VPOTExportSet', 'VPOTExport']
+__all__ = [
+    'VPOTExportSet',
+    'VPOTExport'
+    ]
 
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-
 from canonical.launchpad.database import POTemplate
 from canonical.launchpad.interfaces import IVPOTExportSet, IVPOTExport
+
 
 class VPOTExportSet:
     """Retrieve collections of VPOTExport objects."""
@@ -20,15 +23,15 @@ class VPOTExportSet:
 
     column_names = [
         'potemplate',
+        'template_header',
         'sequence',
-        'header',
-        'pluralform',
+        'comment',
+        'source_comment',
+        'file_references',
+        'flags_comment',
         'context',
-        'msgid',
-        'commenttext',
-        'sourcecomment',
-        'filereferences',
-        'flagscomment',
+        'msgid_singular',
+        'msgid_plural',
     ]
     columns = ', '.join(['POTExport.' + name for name in column_names])
 
@@ -36,7 +39,6 @@ class VPOTExportSet:
         'potemplate',
         'sequence',
         'potmsgset',
-        'pluralform',
     ]
     sort_columns = ', '.join(
         ['POTExport.' + name for name in sort_column_names])
@@ -79,15 +81,15 @@ class VPOTExport:
 
     def __init__(self, *args):
         (potemplate,
+         self.template_header,
          self.sequence,
-         self.header,
-         self.pluralform,
+         self.comment,
+         self.source_comment,
+         self.file_references,
+         self.flags_comment,
          self.context,
-         self.msgid,
-         self.commenttext,
-         self.sourcecomment,
-         self.filereferences,
-         self.flagscomment) = args
+         self.msgid_singular,
+         self.msgid_plural) = args
 
         self.potemplate = POTemplate.get(potemplate)
 

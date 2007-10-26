@@ -15,3 +15,4 @@ class TranslationConstants:
     TAB_CHAR_ESCAPED = '<code>' + r'\[tab]' + '</code>'
     NO_BREAK_SPACE_CHAR = '<code>[nbsp]</code>'
     NO_BREAK_SPACE_CHAR_ESCAPED = '<code>' + r'\[nbsp]' + '</code>'
+    MAX_NUM_PLURAL_FORMS = 4

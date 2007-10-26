@@ -18,6 +18,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_caches, flush_database_updates)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
@@ -456,7 +458,6 @@ Supersede current publication:
 
 We need to flush cached values.
 
-   >>> from canonical.database.sqlbase import flush_database_updates
    >>> flush_database_updates()
 
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
@@ -558,7 +559,7 @@ and child distro series.
    >>> def compare_translations(orig_distroseries, dest_distroseries):
    ...
    ...     sortkey = lambda template: (
-   ...         template.potemplatename.name, template.sourcepackagename.name)
+   ...         template.name, template.sourcepackagename.name)
    ...
    ...     orig_templates = sorted(
    ...         orig_distroseries.getCurrentTranslationTemplates(),
@@ -648,7 +649,7 @@ the most recent.
     >>> def add_messageset_to_template(potemplate, sequence, msgid, context):
     ...     """Add a message set to the given `POTemplate`."""
     ...     context_msg = potemplate.createMessageSetFromText(
-    ...         msgid, context)
+    ...         msgid, None, context=context)
     ...     context_msg = removeSecurityProxy(context_msg)
     ...     context_msg.sequence = sequence
     ...     potemplate.invalidateCache()
@@ -656,10 +657,9 @@ the most recent.
 
     >>> def add_translation(pofile, potmsgset, translation):
     ...     """Set translation for given message set in given `POFile`."""
-    ...     pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
-    ...     pomsgset.updateTranslationSet(
-    ...         carlos, { 0: translation }, fuzzy=False, published=False,
-    ...         lock_timestamp=now())
+    ...     potmsgset.updateTranslation(
+    ...         pofile, carlos, { 0: translation }, is_fuzzy=False,
+    ...         is_imported=False, lock_timestamp=now())
 
     >>> context_msg = add_messageset_to_template(
     ...     potemplate_hoary, 100, u"A contexted message", None)
@@ -686,25 +686,26 @@ the most recent.
 
 Carlos also updates a regular string in the parent release.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
-    >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+    >>> dummy = potmsgset_hoary.updateTranslation(
+    ...     pofile_es_hoary, carlos, { 0: u'hoary updated string' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
 
 And another update in a string that was previously untranslated.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
-    >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'empty string translated' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(u'has ')
+    >>> dummy = potmsgset_hoary.updateTranslation(
+    ...     pofile_es_hoary, carlos, { 0: u'empty string translated' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
 
 Update a string in the child release.
 
-    >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(
+    >>> potmsgset_humpy = potemplate_humpy.getPOTMsgSetByMsgIDText(
     ...     u'current addressbook folder')
-    >>> pomsgset_humpy.updateTranslationSet(
-    ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> dummy = potmsgset_humpy.updateTranslation(
+    ...     pofile_es_humpy, carlos, { 0: u'humpy updated string' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
 
 These are the respective expected numbers of translated messages, messages
 whose translations have changed in Launchpad, ones that are newly translated
@@ -740,6 +741,7 @@ category of message is called rosettaCount.
 When we compare the full translations for hoary and humpy, we see the changes
 we just made, as well as the differences between the messages-with-context.
 
+    >>> flush_database_caches()
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
     <BLANKLINE>
@@ -838,11 +840,11 @@ parent distroseries for that same message.  So even if someone now translates
 the same messages in Hoary as well, Humpy will retain its own translations
 of those string when we next migrate updates.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(
+    >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(
     ...     u'current addressbook folder')
-    >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> dummy = potmsgset_hoary.updateTranslation(
+    ...     pofile_es_hoary, carlos, { 0: u'second hoary updated string' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
     >>> print compare_translations(hoary, humpy)

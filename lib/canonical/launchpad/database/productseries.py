@@ -173,10 +173,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPOTemplate(self, name):
         """See IProductSeries."""
         return POTemplate.selectOne(
-            "POTemplate.productseries = %s AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['POTemplateName'])
+            "productseries = %s AND name = %s" % sqlvalues(self.id, name))
 
     @property
     def title(self):
@@ -526,10 +523,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(productseries=self)
-        result = result.prejoin(['potemplatename'])
         return sorted(
             shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+            key=lambda x: (-x.priority, x.name))
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -541,10 +537,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.official_rosetta IS TRUE
             ''' % sqlvalues(self),
             clauseTables = ['ProductSeries', 'Product'])
-        result = result.prejoin(['potemplatename'])
         return sorted(
             shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+            key=lambda x: (-x.priority, x.name))
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -555,10 +550,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
             clauseTables = ['ProductSeries', 'Product'])
-        result = result.prejoin(['potemplatename'])
         return sorted(
             shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+            key=lambda x: (-x.priority, x.name))
 
 
 class ProductSeriesSet:

@@ -27,9 +27,9 @@ http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#MO-Files
 == exportTranslationFiles() ==
 
 With exportTranslationFiles method, we can get a compiled .po file from a
-TranslationFile.
+TranslationFileData.
 
-To get a TranslationFile, we use the GettextPOImporter class.
+To get a TranslationFileData, we use the GettextPOImporter class.
 
     >>> parser = POParser()
     >>> file_content = '''

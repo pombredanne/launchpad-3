@@ -40,9 +40,10 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.potemplate import (
     POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
-    UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILaunchBag, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
-    IPOSubmissionSet, TranslationConflict)
+    UnexpectedFormData, ITranslationMessage, TranslationConstants,
+    NotFoundError, ILaunchBag, IPOFileAlternativeLanguage,
+    ITranslationMessageSuggestions,
+    TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
@@ -292,7 +293,7 @@ class CustomDropdownWidget(DropdownWidget):
 # Standard UI classes
 #
 class POMsgSetFacets(POTemplateFacets):
-    usedfor = IPOMsgSet
+    usedfor = ITranslationMessage
 
     def __init__(self, context):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
@@ -305,7 +306,7 @@ class POMsgSetSOP(POTemplateSOP):
 
 
 class POMsgSetAppMenus(ApplicationMenu):
-    usedfor = IPOMsgSet
+    usedfor = ITranslationMessage
     facet = 'translations'
     links = ['overview', 'translate', 'upload', 'download']
 
@@ -358,10 +359,11 @@ def _getSuggestionFromFormId(form_id):
     # Extract the suggestion ID.
     suggestion_id = int(expr_match.group(3))
 
-    posubmissionset = getUtility(IPOSubmissionSet)
-    suggestion = posubmissionset.getPOSubmissionByID(suggestion_id)
+    # XXX Enable this again once browser code is migrated.
+    #posubmissionset = getUtility(IPOSubmissionSet)
+    #suggestion = posubmissionset.getPOSubmissionByID(suggestion_id)
 
-    return suggestion.potranslation.translation
+    #return suggestion.potranslation.translation
 
 
 class BaseTranslationView(LaunchpadView):
@@ -1372,7 +1374,7 @@ class POMsgSetZoomedView(POMsgSetView):
 class POMsgSetSuggestions:
     """See `IPOMsgSetSuggestions`."""
 
-    implements(IPOMsgSetSuggestions)
+    implements(ITranslationMessageSuggestions)
 
     def isFromSamePOFile(self, submission):
         """Return if submission is from the same PO file as a POMsgSet."""

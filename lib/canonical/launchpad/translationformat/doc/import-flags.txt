@@ -14,9 +14,11 @@ We'll be going through usual steps of the PO file lifetime:
 == Helper imports ==
 
     >>> from zope.app import datetimeutils
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
+    ...     ILaunchpadCelebrities, IPersonSet,
     ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
@@ -48,6 +50,7 @@ Here's a fake logger to capture any errors that happen.
 To ease the pain of importing many files during testing, lets introduce
 a helper function to import either a PO file or a PO template from the string
 with the contents of the file.
+
 
     >>> def import_pofile_or_potemplate(file_contents, person, series,
     ...                                 pofile=None, potemplate=None,
@@ -95,27 +98,27 @@ And lets define a nice printout function for PO files.
     ...         "no", "msgid", "translation", "fuz", "published", "pfuz")
     ...     for potmsgset in pofile.potemplate.getPOTMsgSets():
     ...         msgid = potmsgset.singular_text
-    ...         pomsgset = pofile.getPOMsgSetFromPOTMsgSet(potmsgset)
-    ...         publishedfuzzy = fuzzy = ''
-    ...         published = translation = None
-    ...         if pomsgset is not None:
-    ...             active_texts = pomsgset.active_texts
-    ...             published_texts = pomsgset.published_texts
-    ...             if len(active_texts) > 0:
-    ...                 translation = active_texts[0]
-    ...             if len(published_texts) > 0:
-    ...                 published = published_texts[0]
-    ...             if pomsgset.publishedfuzzy:
-    ...                 publishedfuzzy = 'yes'
-    ...             if pomsgset.isfuzzy:
+    ...         current = potmsgset.getCurrentTranslationMessage(
+    ...             pofile.language)
+    ...         imported = potmsgset.getImportedTranslationMessage(
+    ...             pofile.language)
+    ...         imported_fuzzy = fuzzy = ''
+    ...         imported_translation = translation = None
+    ...         if imported is not None:
+    ...		    imported_translation = imported.msgstr0.translation
+    ...             if imported.was_fuzzy_in_last_import:
+    ...                 imported_fuzzy = 'yes'
+    ...         if current is not None:
+    ...		    translation = current.msgstr0.translation
+    ...             if current.is_fuzzy:
     ...                 fuzzy = 'yes'
     ...         print "% 2d. %-18s %-18s %-4s %-18s %-4s *" % (
     ...             potmsgset.sequence,
     ...             strip_to_length(msgid),
     ...             strip_to_length(translation),
     ...             strip_to_length(fuzzy, 4),
-    ...             strip_to_length(published),
-    ...             strip_to_length(publishedfuzzy, 4))
+    ...             strip_to_length(imported_translation),
+    ...             strip_to_length(imported_fuzzy, 4))
 
 
 We'll be doing all our imports into Firefox trunk as
@@ -126,11 +129,11 @@ carlos@canonical.com.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> firefox_potemplatename = getUtility(IPOTemplateNameSet)['firefox']
     >>> firefox_potsubset = POTemplateSubset(productseries=firefox_trunk)
 
     >>> firefox_potemplate = firefox_potsubset.new(
-    ...     potemplatename=firefox_potemplatename,
+    ...     name='firefox',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=carlos)
 
@@ -169,6 +172,7 @@ be able to import translations later on.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Usually, the first import we get is published (i.e. coming from a
 package upload in Ubuntu).
@@ -204,6 +208,7 @@ package upload in Ubuntu).
     ...                                     pofile=firefox_serbian)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 When this file is imported, we notice that all the messages are
 imported as expected: active translation is set to the same published
@@ -260,6 +265,7 @@ from the "fourth" message, and the "fifth" message is newly translated.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Again, PO file in the database reflects the changes: translations for
 "second", "fourth" and "fifth" are updated (and now different from
@@ -317,6 +323,7 @@ a fuzzy flag is removed from the "fourth" message, and both "fifth" and
     ...                                     published=True)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 We can see that the published fuzzy flag has been removed from the
 "fourth" message in the database, and that translations for "fifth"
@@ -378,6 +385,7 @@ a new translation.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 We can see that "third" message has fuzzy flag removed from the active
 translation (but not from the published one), "fourth" is reverted to
@@ -435,6 +443,7 @@ suggestions.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Notice that "second" message is indeed updated properly.  We are making sure
 we don't get any problems with too many inactive suggestions for that

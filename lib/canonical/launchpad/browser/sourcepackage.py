@@ -148,10 +148,6 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
-    def templates(self):
-        return Link('+potemplatenames', 'Edit template names', icon='edit')
-
 
 class SourcePackageTranslationsExportView(BaseExportView):
     """Request tarball export of all translations for source package.
@@ -269,11 +265,6 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def potemplatenames(self):
-        potemplates = self.context.getTranslationTemplates()
-        potemplatenames = set([p.potemplatename for p in potemplates])
-        return sorted(potemplatenames, key=lambda item: item.name)
 
     def searchName(self):
         return False

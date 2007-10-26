@@ -39,7 +39,6 @@ __all__ = [
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'person_team_participations_vocabulary_factory',
-    'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
     'ProductReleaseVocabulary',
@@ -74,9 +73,9 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.launchpad.database import (
     Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, MailingList, Milestone, Person, PillarName, POTemplateName,
-    Processor, ProcessorFamily, Product, ProductRelease, ProductSeries,
-    Project, SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
+    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
+    SourcePackageRelease, Specification, Sprint, TranslationGroup)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -1373,16 +1372,6 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                 orderBy=self._orderBy
                 )
         return objs
-
-
-class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
-
-    displayname = 'Select a POTemplate'
-    _table = POTemplateName
-    _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):

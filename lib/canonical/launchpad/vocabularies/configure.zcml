@@ -166,11 +166,6 @@
     />
 
   <vocabulary
-    name="POTemplateName"
-    factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
-    />
-
-  <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
     />
