@@ -9,16 +9,15 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
-    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
+    RosettaTranslationOrigin, TranslationConflict,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)

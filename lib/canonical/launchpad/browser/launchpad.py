@@ -84,7 +84,6 @@ from canonical.launchpad.interfaces import (
     IStructuralHeaderPresentation,
     ITranslationGroupSet,
     ITranslationImportQueue,
-    NotFoundError,
     )
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,

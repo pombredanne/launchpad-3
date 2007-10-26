@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
     PersonCreationRationale, RosettaImportStatus, TranslationConflict,
-    TranslationConstants, TranslationFileFormat)
+    TranslationFileFormat)
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
