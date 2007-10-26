@@ -78,7 +78,7 @@ def make_browser():
     return browser
 
 
-def wait_for_mailman(log_name='xmlrpc'):
+def wait_for_mailman():
     """Wait for Mailman to Do Something based on an XMLRPC response."""
     # Import this here because sys.path won't be set up properly when this
     # module is imported.
@@ -93,7 +93,7 @@ def wait_for_mailman(log_name='xmlrpc'):
     # of changes.  Mailman's XMLRPCRunner will always print a message to its
     # log file when it talks to Launchpad, so two cycles ensures that the
     # operaton triggered by the transaction commit has actually been handled.
-    log_file = os.path.join(mm_cfg.LOG_DIR, log_name)
+    log_file = os.path.join(mm_cfg.LOG_DIR, 'xmlrpc')
     last_mtime = os.stat(log_file).st_mtime
     until = datetime.datetime.now() + datetime.timedelta(seconds=30)
     cycle = 0
@@ -156,3 +156,47 @@ class SMTPServer:
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
+
+
+def get_size(path):
+    """Return the size of a file, or -1 if it doesn't exist."""
+    try:
+        return os.stat(path).st_size
+    except OSError, error:
+        if error.errno == errno.ENOENT:
+            # Return -1 when the file does not exist, so it always
+            # compares less than an existing but empty file.
+            return -1
+        # Some other error occurred.
+        raise
+
+
+class LogWatcher:
+    """Watch a log file and wait until it has grown in size.
+
+    Use this instead of wait_for_mailman() when watching a log file that isn't
+    guaranteed to grow or even exist (such as logs/vette).
+    """
+    def __init__(self, log_file):
+        # Import this here since sys.path isn't set up properly when this
+        # module is imported.
+        from Mailman.mm_cfg import LOG_DIR
+        self._log_path = os.path.join(LOG_DIR, log_file)
+        self._last_size = get_size(self._log_path)
+
+    def wait_for_growth(self):
+        """Wait for a while, or until the file has grown."""
+        until = datetime.datetime.now() + datetime.timedelta(seconds=30)
+        while True:
+            size = get_size(self._log_path)
+            if size > self._last_size:
+                # Return None on success for doctest convenience.
+                self._last_size = size
+                return None
+            if datetime.datetime.now() > until:
+                return 'Timed out'
+            time.sleep(0.1)
+
+    def resync(self):
+        """Re-sync the file size so that we can watch it again."""
+        self._last_size = get_size(self._log_path)
