@@ -1499,9 +1499,9 @@ class POFileToTranslationFileAdapter:
             if row.posequence in (0, None) and row.potsequence == 0:
                 continue
 
-            # XXX CarlosPerelloMarin 20071026: Due a bug in our POTExport
-            # view, we need to leave out pomsgidsightings which have its
-            # 'inlastrevision' flag set to False because are not current
+            # XXX CarlosPerelloMarin 2007-10-26 bug=157540: Due a bug in our
+            # POTExport view, we need to leave out pomsgidsightings which have
+            # its 'inlastrevision' flag set to False because are not current
             # anymore so we don't need them on export time. See bug #157528
             # for more information.
             messageID = POMsgID.byMsgid(row.msgid)
