@@ -197,7 +197,12 @@ class _ZopelessConnectionDescriptor(object):
 
     def _deactivate(self):
         """Deactivate SQLBase._connection for the current thread."""
-        del self.transactions[thread.get_ident()]
+        tid = thread.get_ident()
+        assert tid in self.transactions, (
+            "Deactivating a non-active connection descriptor for this thread.")
+        self.transactions[tid]._connection.close()
+        self.transactions[tid]._makeObsolete()
+        del self.transactions[tid]
 
     def __get__(self, inst, cls=None):
         """Return Transaction object for this thread (if it exists) or None."""

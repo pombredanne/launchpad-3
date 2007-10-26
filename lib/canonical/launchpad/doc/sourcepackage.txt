@@ -270,7 +270,7 @@ number linkification just below.
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
     >>> print spr_view.changelog
-    pmount (<a href="../../../hoary/+source/pmount/0.1-1">0.1-1</a>) hoary; urgency=low
+    pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)

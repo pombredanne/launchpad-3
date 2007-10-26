@@ -227,10 +227,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_processSourceChange_success(self):
         """Check processSourceChange method call.
 
-        It simply wraps changeOverride method on
-        IDistroSeriesSourcePackageRelease, which is already tested in place.
-        Inspect the log to verify if the correct source was picked and correct
-        arguments was passed.
+        It simply wraps changeOverride method on `IArchivePublisher`, which is
+        already tested in place. Inspect the log to verify if the correct
+        source was picked and correct arguments was passed.
         """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
@@ -280,10 +279,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.
 
-        It simply wraps changeOverride method on
-        IDistroArchSeriesBinaryPackage, which is already tested in place.
-        Inspect the log messages, check if the correct binary was picked
-        and correct argument was passed.
+        It simply wraps changeOverride method on `IArchivePublisher`, which
+        is already tested in place. Inspect the log messages, check if the
+        correct binary was picked and correct argument was passed.
         """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',

@@ -1,4 +1,5 @@
-<div tal:attributes="id string:queue${context/id}-iconlist">
+<div tal:attributes="id string:queue${context/id}-iconlist"
+     style="white-space: nowrap">
   <img tal:condition="context/contains_source"
        alt="[Source]" src="/@@/package-source" title="Source"/>
   <img tal:condition="context/contains_build"
