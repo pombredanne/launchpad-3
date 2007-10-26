@@ -131,6 +131,22 @@ Raises NotFoundError for following conditions:
     ...
     NotFoundError: 'Unknown package: 1234'
 
+Packages only published in PPAs will not be found in the Ubuntu archive.
+Here, 'at' is published in sabdfl's PPA only:
+
+    >>> from canonical.launchpad.ftests.ppa import publishToTeamPPA
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> ubuntutest = distroset.getByName("ubuntutest")
+    >>> publishToTeamPPA(team_name='cprov', team_member_name='cprov',
+    ...     sourcepackage_name='at', sourcepackage_version='0.00',
+    ...     binarypackage_version='3.14156',
+    ...     distroseries_name='hoary-test',
+    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
+    >>> name_tuple = ubuntutest.guessPackageNames('at')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package at not published in ubuntutest'
+
 It also raises NotFoundError on distributions with no series:
 
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
@@ -505,7 +521,7 @@ active/inactive (whether the PPA contains or not valid publications):
 There is only one 'active' PPA:
 
     >>> cprov.archive.getPublishedSources().count()
-    3
+    4
     >>> sabdfl.archive.getPublishedSources().count()
     1
     >>> no_priv.archive.getPublishedSources().count()
