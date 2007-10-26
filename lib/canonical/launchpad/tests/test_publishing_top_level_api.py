@@ -8,7 +8,7 @@ from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
 
-class TestIPublishingAPI(TestNativePublishingBase):
+class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
     def _createLinkedPublication(self, name, pocket):
         """Create and return a linked pair of source and binary publications."""
@@ -105,6 +105,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self._publish(pocket=pocket)
 
         # source and binary PUBLISHED in database.
+        pub_source.sync()
+        pub_bin.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
 
@@ -199,7 +201,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroSeries(self):
         """Source publishing record lookup for a unstable DistroSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly
+        Check if the ICanPublishPackages.getPendingPublications() works properly
         for a DistroSeries when it is still in development, 'unreleased'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
@@ -233,7 +235,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForStableDistroSeries(self):
         """Source publishing record lookup for a stable/released DistroSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly
+        Check if the ICanPublishPackages.getPendingPublications() works properly
         for a DistroSeries when it is not in development anymore, i.e.,
         'released'.
         """
@@ -268,7 +270,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroSeries(self):
         """Source publishing record lookup for a frozen DistroSeries.
 
-        Check if the IPublishing.getPendingPubliations() works properly
+        Check if the ICanPublishPackages.getPendingPubliations() works properly
         for a DistroSeries when it is in FROZEN state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
@@ -305,7 +307,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroArchSeries(self):
         """Binary publishing record lookup for a unstable DistroArchSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly
+        Check if the ICanPublishPackages.getPendingPublications() works properly
         for a DistroArchSeries when it is still in DEVELOPMENT, i.e.,
         'unstable'.
         """
@@ -341,7 +343,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForStableDistroArchSeries(self):
         """Binary publishing record lookup for stable/released DistroArchSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly for
+        Check if the ICanPublishPackages.getPendingPublications() works properly for
         a DistroArchSeries when it is not in development anymore, i.e.,
         'released'.
         """
@@ -375,7 +377,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroArchSeries(self):
         """Binary publishing record lookup for a frozen DistroArchSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly for
+        Check if the ICanPublishPackages.getPendingPublications() works properly for
         a DistroArchSeries when it is frozen state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (

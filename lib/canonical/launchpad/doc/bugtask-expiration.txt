@@ -125,10 +125,6 @@ expired. The other bugs do not meet one of the preconditions.
     no_replys    True     61  Incomplete  False     False  False  True
     recent       True     31  Incomplete  False     False  False  False
 
-    # Flush the caches so that the bugtasks defined above get
-    # their content from the modified DB.
-    >>> flush_database_caches()
-
 
 == findExpirableBugTasks() Part 2 ==
 
@@ -164,6 +160,10 @@ will be displayed.
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
 
+    # Sync the bugs and bugtasks defined above with their modified DB values.
+    >>> for bugtask in bugtasks:
+    ...     sync(bugtask)
+    ...     sync(bugtask.bug)
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
     >>> summarize_bugtasks(expirable_bugtasks)
@@ -239,9 +239,10 @@ its database changes as the user set config.malone.expiration_dbuser.
     >>> process.returncode
     0
 
-    # Flush the caches so that the bugtasks defined above get
-    # their content from the modified DB.
-    >>> flush_database_caches()
+    # Sync the bugs and bugtasks defined above with their modified DB values.
+    >>> for bugtask in bugtasks:
+    ...     sync(bugtask)
+    ...     sync(bugtask.bug)
 
 
 == After the script has run ==

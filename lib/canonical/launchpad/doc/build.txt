@@ -236,7 +236,7 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
     >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-    6
+    5
 
 IHasBuildRecords uses a base method provided by IBuildSet,
 getBuildsByArchIds():
@@ -265,7 +265,7 @@ Check the result content:
 
     >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
     ...     status=BuildStatus.FULLYBUILT)]
-    [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
+    [u'hppa build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
     of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
@@ -309,17 +309,17 @@ Or for a given distroarchseries.
 Exercises IHasBuildRecords abilities for distroarchseriess
 
     >>> hoaryi386.getBuildRecords().count()
-    5
+    4
 
     >>> hoaryi386.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-    2
+    1
 
     >>> hoaryi386.getBuildRecords(name='pm').count()
-    2
+    1
 
     >>> hoaryi386.getBuildRecords(
     ...     pocket=PackagePublishingPocket.RELEASE).count()
-    5
+    4
 
     >>> hoaryi386.getBuildRecords(
     ...     pocket=PackagePublishingPocket.UPDATES).count()

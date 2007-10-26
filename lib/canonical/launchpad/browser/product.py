@@ -489,11 +489,15 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', ]
+             'all', 'register', 'register_team']
 
     def register(self):
         text = 'Register a project'
         return Link('+new', text, icon='add')
+
+    def register_team(self):
+        text = 'Register a team'
+        return Link('/people/+newteam', text, icon='add')
 
     def all(self):
         text = 'List all projects'
@@ -523,6 +527,33 @@ class ProductView(LaunchpadView):
     def initialize(self):
         self.product = self.context
         self.status_message = None
+
+    @property
+    def freshmeat_url(self):
+        if self.context.freshmeatproject:
+            return "http://freshmeat.net/projects/%s" % self.context.freshmeatproject
+        return None
+
+    @property
+    def sourceforge_url(self):
+        if self.context.sourceforgeproject:
+            return "http://sourceforge.net/projects/%s" % self.context.sourceforgeproject
+        return None
+
+    @property
+    def has_external_links(self):
+        return (self.context.homepageurl or
+                self.context.sourceforgeproject or
+                self.context.freshmeatproject or
+                self.context.wikiurl or
+                self.context.screenshotsurl or
+                self.context.downloadurl)
+
+    @property
+    def should_display_homepage(self):
+        return (self.context.homepageurl and 
+                self.context.homepageurl not in 
+                    [self.freshmeat_url, self.sourceforge_url])
 
     @cachedproperty
     def uses_translations(self):

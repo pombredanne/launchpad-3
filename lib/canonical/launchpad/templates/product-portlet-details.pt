@@ -79,5 +79,20 @@
         <tal:none condition="not:bugtracker">None specified</tal:none>
       </td>
     </tr>
+    <tr>
+      <th>Licenses:</th>
+      <td>
+        <ul tal:repeat="license context/licenses">
+          <li tal:content="license/title">GPL</li>
+        </ul>
+        <tal:none condition="not:context/licenses">None specified</tal:none>
+        <div class="description" 
+             tal:content="structure context/license_info/fmt:text-to-html" />
+      </td>
+    </tr>
+    <tr tal:condition="context/programminglang">
+      <th>Languages:</th>
+      <td id="product-languages" tal:content="context/programminglang" />
+    </tr>
   </tbody>
 </table>
