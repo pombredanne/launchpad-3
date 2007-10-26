@@ -501,3 +501,86 @@ Launchpad for translations.
     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
     >>> len(wiki_submissions)
     0
+
+
+== latest_change_date ==
+
+With latest_change_date we are able to know when was last time updated
+the message.
+
+It works for messages without plural forms.
+
+    >>> pomsgset_translated.potmsgset.msgid_plural is None
+    True
+    >>> print pomsgset_translated.latest_change_date
+    2007-01-24 19:16:06.386519+00:00
+
+Is newer or equal than the translation is use.
+
+    >>> (pomsgset_translated.latest_change_date >=
+    ...  pomsgset_translated.getActiveSubmission(0).datecreated)
+    True
+
+And, in this case, given that is a review time, it matches it.
+
+    >>> pomsgset_translated.latest_change_date == (
+    ...     pomsgset_translated.date_reviewed)
+    True
+
+And with messages with plural forms.
+
+    >>> pofile_es = upstream_evo.getPOFileByLang('es')
+    >>> pomsgset_with_plurals = pofile_es.getPOMsgSet(u'%d contact')
+    >>> pomsgset_with_plurals.potmsgset.msgid_plural is None
+    False
+
+It's always newer than when all existing translations were created...
+
+    >>> for plural_form in range(pomsgset_with_plurals.pluralforms):
+    ...     active_submission = pomsgset_with_plurals.getActiveSubmission(
+    ...         plural_form)
+    ...     assert (
+    ...         pomsgset_with_plurals.latest_change_date >=
+    ...         active_submission.datecreated), (
+    ...             'latest_change_date is older than plural form'
+    ...             ' %d datecreated' % active_submission.datecreated)
+
+... or equal when was it reviewed.
+
+    >>> print pomsgset_with_plurals.date_reviewed
+    2005-10-11 20:18:55.981500+00:00
+    >>> pomsgset_with_plurals.latest_change_date == (
+    ...     pomsgset_with_plurals.date_reviewed)
+    True
+
+There is some cases, when we don't have a date_reviewed.
+
+    >>> pomsgset_with_plurals.date_reviewed = None
+    >>> pomsgset_with_plurals.reviewer = None
+
+but the field is still not None.
+
+    >>> print pomsgset_with_plurals.latest_change_date
+    2005-04-07 13:19:17.601068+00:00
+
+Even when we miss some plural forms.
+
+    # Remove the active submission for the plural form 1.
+    >>> pomsgset_with_plurals.setActiveSubmission(1, None)
+
+We still get a latest_change_date.
+
+    >>> print pomsgset_with_plurals.latest_change_date
+    2005-04-07 13:19:17.601068+00:00
+
+Except when there is no active translations...
+
+    >>> pomsgset_with_plurals.setActiveSubmission(0, None)
+
+    # We know there are no more active submissions because we only have
+    # two plural forms and both have been disabled.
+    >>> pomsgset_with_plurals.pluralforms
+    2
+
+    >>> print pomsgset_with_plurals.latest_change_date
+    None
