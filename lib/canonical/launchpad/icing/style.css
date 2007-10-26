@@ -629,11 +629,33 @@ body.pillarindex table#applications th {padding-left: 0;}
 /* Other page types have a global search field. */
 #globalsearch {
   float: right;
+  /* XXX: This font-size is currently redundant with the 10pt defined for
+     "html", but it is important for the layout of the heading, so we will
+     want to set it explicitly when we decide to stop overriding the font size
+     set by the user-agent. -- DavidAllouche 2007-10-27. */
+  font-size: 10px;
+  /* Additional margin-top, since all the elements in the "#globalsearch" and
+     "#structuralobject" have pixel sizes, the bottom of the "#globalsearch"
+     box is aligned with the baseline of "#structuralobjectheading .main".
+
+     That assumes sans-serif is set to Bitstream Vera Sans, which is the
+     default for Firefox on Ubuntu.*/
   margin-top: 15px;
+  /* The "#globalsearch" margin-bottom serves two purposes:
+
+     1. In wide windows, when the "#structuralobject .main" text does not
+        wrap, it provides 2px (with default Firefox/Ubuntu fonts) of extra
+        spacing between the heading and the "#mainarea".
+
+     2. In narrow windows, the "#globalsearch" can wrap around and be just
+        above the "#mainarea". This margin provides the needed visual
+        separation. */
+  margin-bottom: 8px;
 }
-#globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
+  /* The top position aligns the search image nicely with the text input. This
+     relies on Firefox/Ubuntu default settings. */
   top: 6px;
   border: 0;
   width: 20px;
@@ -661,16 +683,28 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   float: left;
   width: 70%;
 }
-/* Structural headings contain an icon, maybe an intro, and a main heading. */
+/* Structural headings contain an icon, maybe an intro, and a main heading. 
+
+   The icon size (when present) is 64x64, and is floated left. The left
+   margins (3px on the icon, 70px on .intro and .main) provides 3px of
+   horizontal spacing on each side of the icon. */
 #structuralobjectheading img {
   float: left;
-  margin: 0 0 0 3px;
+  margin: 0;
+  margin-right: 3px;
+  /* Large negative margin-bottom, so the presence or absence of the image
+     will not affect the positioning of the #mainarea. */
+  margin-bottom: -32px;  
 }
 #structuralobjectheading .intro {
   margin: 2px 0 0 70px;
   font-size: 12px;
 }
 #structuralobjectheading .main {
+  /* No bottom spacing here. If this does not wrap around, the spacing with
+     "#mainarea" is provided by the margin-botom of "#globalsearch". If this
+     does wrap around, we do not want spacing in addition to the font's
+     descent. */
   font-weight: bold;
   margin: 1px 0 0 70px;
   font-size: 24px;
