@@ -911,6 +911,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
 
+    # XXX cprov 20071024:  move this API to IArchiveSet, Distribution is
+    # already too long and complicated.
     def getAllPPAs(self):
         """See `IDistribution`"""
         return Archive.selectBy(

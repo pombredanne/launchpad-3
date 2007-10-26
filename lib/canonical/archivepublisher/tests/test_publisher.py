@@ -60,6 +60,7 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
         self.layer.txn.commit()
 
+        pub_source.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
@@ -152,6 +153,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(force_publishing=False)
         self.layer.txn.commit()
 
+        pub_source.sync()
+        pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('hoary-test', 'RELEASE')], publisher.dirty_pockets)
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
@@ -182,6 +185,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(force_publishing=False)
         self.layer.txn.commit()
 
+        pub_source.sync()
+        pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'UPDATES')], publisher.dirty_pockets)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
@@ -280,6 +285,7 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
         self.layer.txn.commit()
 
+        pub_source.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)

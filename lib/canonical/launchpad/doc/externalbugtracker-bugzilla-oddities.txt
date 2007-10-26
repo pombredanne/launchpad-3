@@ -33,8 +33,8 @@ instance here:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: RESOLVED FIXED
     123543: ASSIGNED
-    42: UNKNOWN
-    42: UNKNOWN
+    42: FUBAR
+    42: FUBAR
 
 
 Bugzilla prior to 2.11
@@ -66,7 +66,7 @@ We support them just fine:
     (local bugs: 1).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    2000: UNKNOWN
+    2000: RESOLVED FIXED
     123543: ASSIGNED
     42: RESOLVED FIXED
     42: RESOLVED FIXED
@@ -105,8 +105,8 @@ Yet everything still works as expected:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: ASSIGNED
     123543: RESOLVED FIXED
-    42: UNKNOWN
-    42: UNKNOWN
+    42: RESOLVED FIXED
+    42: RESOLVED FIXED
 
 
 Broken Bugzillas
