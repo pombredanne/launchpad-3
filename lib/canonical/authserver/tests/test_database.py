@@ -9,6 +9,9 @@ import datetime
 
 import pytz
 import transaction
+
+from twisted.web.xmlrpc import Fault
+
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
@@ -18,6 +21,7 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.database import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from canonical.launchpad.interfaces import (
     BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
     IProductSet, IWikiNameSet)
@@ -28,8 +32,9 @@ from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
     IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 from canonical.authserver.database import (
-    DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
-    DatabaseBranchDetailsStorage)
+    DatabaseBranchDetailsStorage, DatabaseUserDetailsStorage,
+    DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -395,16 +400,42 @@ class HostedBranchStorageTest(DatabaseTest):
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(
-            1, 'sabdfl', 'no-such-product', 'foo')
-        self.assertEqual(branchID, '')
+        try:
+            storage._createBranchInteraction(
+                1, 'sabdfl', 'no-such-product', 'foo')
+        except Fault, e:
+            self.assertEquals(e.faultCode, NOT_FOUND_FAULT_CODE)
+            self.assertEquals(e.faultString,
+                              "Product 'no-such-product' not found.")
+        else:
+            self.fail("Creating a branch for a non-existant product did "
+                      "not fail.")
 
     def test_createBranch_other_user(self):
+        # Test that creating a branch with an invalid name fails.
+        storage = DatabaseUserDetailsStorageV2(None)
+        try:
+            storage._createBranchInteraction(
+                1, 'no-priv', 'firefox', 'foo')
+        except Fault, e:
+            self.assertEquals(e.faultCode, PERMISSION_DENIED_FAULT_CODE)
+            # self.assertEquals(e.faultString, "") XXX make this sensible...
+        else:
+            self.fail("Creating a branch in another user's directory did "
+                      "not fail.")
+
+    def test_createBranch_bad_name(self):
         # Test that creating a branch under another user's directory fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(
-            1, 'no-priv', 'firefox', 'foo')
-        self.assertEqual(branchID, '')
+        try:
+            storage._createBranchInteraction(
+                12, 'name12', 'firefox', 'invalide name!')
+        except Fault, e:
+            self.assertEquals(e.faultCode, PERMISSION_DENIED_FAULT_CODE)
+            self.assertEquals(e.faultString,
+                              BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+        else:
+            self.fail("Creating a branch with an invalid name did not fail.")
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)

@@ -5,6 +5,7 @@ __all__ = [
     'Branch',
     'BranchSet',
     'BranchWithSortKeys',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
@@ -519,6 +520,11 @@ DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
 
 
+BRANCH_NAME_VALIDATION_ERROR_MESSAGE = (
+    "Branch names must start with a number or letter.  The characters +, -, "
+    "_ and @ are also allowed after the first character.")
+
+
 class BranchSet:
     """The set of all branches."""
 
@@ -693,9 +699,7 @@ class BranchSet:
         pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
         if not re.match(pat, name):
             raise LaunchpadValidationError(
-                "Branch names must start with a number or letter.  The "
-                "characters +, -, _ and @ are also allowed after the first "
-                "character.")
+                BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,

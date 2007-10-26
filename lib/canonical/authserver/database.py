@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
@@ -32,9 +33,14 @@ from canonical.authserver.interfaces import (
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
+from twisted.web.xmlrpc import Fault
 
 UTC = pytz.timezone('UTC')
 
+# I borrow the numbers from HTTP only for familiarity, there's nothing
+# deep here.
+PERMISSION_DENIED_FAULT_CODE = 403
+NOT_FOUND_FAULT_CODE = 404
 
 def utf8(x):
     if isinstance(x, unicode):
@@ -356,7 +362,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             product = getUtility(IProductSet).getByName(productName)
             if product is None:
-                return ''
+                raise Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Product %r not found." % productName)
 
         person_set = getUtility(IPersonSet)
         owner = person_set.getByName(personName)
@@ -366,8 +374,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branch = branch_set.new(
                 BranchType.HOSTED, branchName, requester, owner,
                 product, None, None, author=requester)
-        except BranchCreationException:
-            return ''
+        except (BranchCreationException, LaunchpadValidationError), e:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
         else:
             return branch.id
 
