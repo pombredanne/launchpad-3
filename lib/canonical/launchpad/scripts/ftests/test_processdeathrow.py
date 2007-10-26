@@ -23,8 +23,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.database import SecureSourcePackagePublishingHistory
-from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -133,7 +133,7 @@ class TestProcessDeathRow(TestCase):
         pubrec_ids = []
         for pubrec in pubrecs:
             sspph = SecureSourcePackagePublishingHistory.get(pubrec.id)
-            sspph.status = PackagePublishingStatus.PENDINGREMOVAL
+            sspph.status = PackagePublishingStatus.SUPERSEDED
             sspph.dateremoved = None
             sspph.scheduleddeletiondate = datetime.datetime(
                 1999, 1, 1, tzinfo=pytz.timezone('UTC'))
@@ -148,29 +148,48 @@ class TestProcessDeathRow(TestCase):
                 sspph.status, status, "ID %s -> %s (expected %s)" % (
                 sspph.id, sspph.status.title, status.title))
 
+    def probeRemoved(self, pubrec_ids):
+        """Check if all source publishing records were removed."""
+        right_now = datetime.datetime.now(pytz.timezone('UTC'))
+        for pubrec_id in pubrec_ids:
+            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            self.assertTrue(
+                sspph.dateremoved < right_now,
+                "ID %s -> not removed" % (sspph.id))
+
+    def probeNotRemoved(self, pubrec_ids):
+        """Check if all source publishing records were not removed."""
+        for pubrec_id in pubrec_ids:
+            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            self.assertTrue(
+                sspph.dateremoved is None,
+                "ID %s -> removed" % (sspph.id))
+
     def testDryRun(self):
         """Test we don't delete the file or change the db in dry run mode."""
         self.runDeathRow(["-n"])
-
         self.assertTrue(os.path.exists(self.primary_package_path))
         self.assertTrue(os.path.exists(self.ppa_package_path))
 
         self.probePublishingStatus(
-            self.primary_pubrec_ids, PackagePublishingStatus.PENDINGREMOVAL)
+            self.primary_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
+        self.probeNotRemoved(self.primary_pubrec_ids)
         self.probePublishingStatus(
-            self.ppa_pubrec_ids, PackagePublishingStatus.PENDINGREMOVAL)
+            self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
+        self.probeNotRemoved(self.ppa_pubrec_ids)
 
     def testWetRun(self):
         """Test we do delete the file and change the db in wet run mode."""
         self.runDeathRow([])
-
         self.assertFalse(os.path.exists(self.primary_package_path))
         self.assertTrue(os.path.exists(self.ppa_package_path))
 
         self.probePublishingStatus(
-            self.primary_pubrec_ids, PackagePublishingStatus.REMOVED)
+            self.primary_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
+        self.probeRemoved(self.primary_pubrec_ids)
         self.probePublishingStatus(
-            self.ppa_pubrec_ids, PackagePublishingStatus.PENDINGREMOVAL)
+            self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
+        self.probeNotRemoved(self.ppa_pubrec_ids)
 
     def testPPARun(self):
         """Test we only work upon PPA."""
@@ -180,11 +199,11 @@ class TestProcessDeathRow(TestCase):
         self.assertFalse(os.path.exists(self.ppa_package_path))
 
         self.probePublishingStatus(
-            self.primary_pubrec_ids, PackagePublishingStatus.PENDINGREMOVAL)
+            self.primary_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
+        self.probeNotRemoved(self.primary_pubrec_ids)
         self.probePublishingStatus(
-            self.ppa_pubrec_ids, PackagePublishingStatus.REMOVED)
-
-
+            self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
+        self.probeRemoved(self.ppa_pubrec_ids)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

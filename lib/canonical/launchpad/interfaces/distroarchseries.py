@@ -59,14 +59,12 @@ class IDistroArchSeries(IHasOwner):
         """Update the cached binary package count for this distro arch
         series.
         """
-    def getPocketChroot(pocket=None):
+    def getPocketChroot():
         """Return the PocketChroot for this distroarchseries and given pocket.
-
-        The pocket defaults to the RELEASE pocket.
         """
 
-    def getChroot(pocket=None, default=None):
-        """Return the Chroot for this distroarchseries and given pocket.
+    def getChroot(default=None):
+        """Return the Chroot for this distroarchseries.
 
         It uses getPocketChroot and if not found returns 'default'.
         """
@@ -82,22 +80,23 @@ class IDistroArchSeries(IHasOwner):
                             exclude_pocket=None, archive=None):
         """Get the publishing records for the given binary package name.
 
-        The 'name' passed in should either be a BinaryPackageName instance
-        or else a string which will be looked up as a BinaryPackageName.
+        :param: binary_name: should either be a `BinaryPackageName` instance
+            or else a string which will be looked up as a `BinaryPackageName`;
+        :param: pocket: optional `PackagePublishingPocket` filter, if it is not
+            specified, we look in all pockets.
+        :param: exclude_pocket: optional negative `PackagePublishingPocket`
+            filter, if it is specified exclude results matching that pocket.
+        :param: include_pending: optionally return also the pending publication
+            records, those packages that will get published in the next publisher
+            run (it's only useful when we need to know if a given package is
+            known during a publisher run, mostly in pre-upload checks)
+        :param: archive: optional IArchive filter, if is not specified, consider
+            publication in the main_archives, otherwise respect the given value.
+
         If the BinaryPackageName cannot be found, NotFoundError will be
         raised.
 
-        If pocket is not specified, we look in all pockets.
-
-        if exclude pocket is specified exclude results matching that pocket.
-
-        If 'include_pending' is True, we return also the pending publication
-        records, those packages that will get published in the next publisher
-        run (it's only useful when we need to know if a given package is
-        known during a publisher run, mostly in pre-upload checks)
-
-        If 'archive' is not specified consider publication in the main_archive,
-        otherwise respect the given value.
+        :return: a `shortlist` of `IBinaryPackagePublishingHistory` records.
         """
 
     def __getitem__(name):

@@ -1,3 +1,5 @@
+= Authentication of Emails =
+
 When an email arrives in Launchpad the user who sent it needs to be
 authenticated. This is done by authenticateEmail:
 
@@ -151,8 +153,8 @@ signed.
     >>> print IPerson(principal).displayname
     Sample Person
 
-IWeaklyAuthenticatedPrinipal
-----------------------------
+
+== IWeaklyAuthenticatedPrinipal ==
 
 It's a huge difference to signing an email with a key that is associated
 with the authenticated Person, and signing it with a key that isn't

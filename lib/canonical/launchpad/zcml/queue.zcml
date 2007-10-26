@@ -20,9 +20,9 @@
           attributes="id distroseries pocket changesfile
                       signing_key archive sources builds customfiles
                       datecreated sourcepackagerelease
-                      containsSource containsBuild
-                      containsTranslation containsInstaller containsUpgrader
-                      containsDdtp displayname displayarchs displayversion
+                      contains_source contains_build
+                      contains_translation contains_installer contains_upgrader
+                      contains_ddtp displayname displayarchs displayversion
                       isPPA"
           />
       <require

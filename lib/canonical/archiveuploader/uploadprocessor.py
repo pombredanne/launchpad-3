@@ -49,16 +49,16 @@ __metaclass__ = type
 
 import os
 import shutil
+import stat
 
 from zope.component import getUtility
 
 from canonical.archiveuploader.nascentupload import (
-    NascentUpload, FatalUploadError)
+    NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, NotFoundError)
-from canonical.lp.dbschema import ArchivePurpose
+    ArchivePurpose, IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -184,12 +184,18 @@ class UploadProcessor:
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
-        fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
+        lockfile_path = os.path.join(fsroot, ".lock")
+        fsroot_lock = GlobalLock(lockfile_path)
+        # see client_done_hook method in poppyinterface.py.
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+        os.chmod(lockfile_path, mode | stat.S_IWGRP)
+
         try:
             fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
-            fsroot_lock.release()
+            # Skip lockfile deletion, see similar code in poppyinterface.py.
+            fsroot_lock.release(skip_delete=True)
 
         dir_names = [dir_name for dir_name in dir_names if
                      os.path.isdir(os.path.join(fsroot, dir_name))]
@@ -295,6 +301,12 @@ class UploadProcessor:
                                exc_info=True)
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except EarlyReturnUploadError:
+                # An error occurred that prevented further error collection,
+                # add this fact to the list of errors.
+                upload.reject(
+                    "Further error processing not possible because of "
+                    "a critical previous error.")
             except Exception, e:
                 # In case of unexpected unhandled exception, we'll
                 # *try* to reject the upload. This may fail and cause

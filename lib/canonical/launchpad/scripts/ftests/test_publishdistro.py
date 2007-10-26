@@ -15,10 +15,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, IPersonSet)
+    ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet,
+    PackagePublishingStatus)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus)
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
@@ -186,7 +185,7 @@ class TestPublishDistro(TestNativePublishingBase):
         rc, out, err = self.runPublishDistro(
             ['-A', '-s', 'hoary-test-updates', '-s', 'hoary-test-backports'])
 
-        self.assertEqual(0, rc)
+        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
         # Check "Release" files
         release_path = "%s/hoary-test-updates/Release" % self.config.distsroot

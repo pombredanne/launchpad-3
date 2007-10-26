@@ -20,10 +20,10 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    CannotBuild, BuildSlaveFailure, IBuildQueueSet, IBuildSet
-    )
+    ArchivePurpose, BuildStatus, BuildSlaveFailure, CannotBuild,
+    IBuildQueueSet, IBuildSet, PackagePublishingPocket,
+    PackagePublishingStatus)
 
-from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.buildd.utils import notes
@@ -73,6 +73,7 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     instance.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
+
     assert hint_string, 'Missing arch_hint_list'
 
     legal_arch_tags = set(arch.architecturetag
@@ -140,11 +141,10 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHSERIES across available pockets
-        for pocket in dbschema.PackagePublishingPocket.items:
-            if distroarchseries.getChroot(pocket):
-                # Fill out the contents
-                self._archserieses.setdefault(distroarchseries, {})
+        # Is there a chroot for this archseries?
+        if distroarchseries.getChroot():
+            # Fill out the contents.
+            self._archserieses.setdefault(distroarchseries, {})
 
     def setupBuilders(self, archseries):
         """Setting up a group of builder slaves for a given DistroArchSeries.
@@ -233,7 +233,7 @@ class BuilddMaster:
         for pubrec in sources_published:
             # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
             # should be modeled as DistroArchSeries.ppa_supported.
-            if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
+            if pubrec.archive.purpose == ArchivePurpose.PPA:
                 ppa_archtags = ('i386', 'amd64')
                 local_archs = [
                     distro_arch_series for distro_arch_series in legal_archs
@@ -249,34 +249,39 @@ class BuilddMaster:
         self.commit()
 
     def _createMissingBuildsForPublication(self, pubrec, build_archs):
+        """Create new Build record for the requested archseries.
+
+        It verifies if the requested build is already inserted before
+        creating a new one.
+        The Build record is created for the archseries 'default_processor'.
+        """
         header = ("build record %s-%s for '%s' " %
                   (pubrec.sourcepackagerelease.name,
                    pubrec.sourcepackagerelease.version,
                    pubrec.sourcepackagerelease.architecturehintlist))
-        assert pubrec.sourcepackagerelease.architecturehintlist, (
-            'Empty architecture hint list')
+
         for archseries in build_archs:
+            # Dismiss if there is no processor available for the
+            # archseries in question.
             if not archseries.processors:
                 self._logger.debug(
                     "No processors defined for %s: skipping %s"
                     % (archseries.title, header))
-                return
+                continue
+            # Dismiss if build is already present for this
+            # distroarchseries.
             if pubrec.sourcepackagerelease.getBuildByArch(
                 archseries, pubrec.archive):
-                # verify this build isn't already present for this
-                # distroarchseries
                 continue
-
+            # Create new Build record.
             self._logger.debug(
                 header + "Creating %s (%s)"
                 % (archseries.architecturetag, pubrec.pocket.title))
-
             pubrec.sourcepackagerelease.createBuild(
                 distroarchseries=archseries,
                 pocket=pubrec.pocket,
                 processor=archseries.default_processor,
                 archive=pubrec.archive)
-
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
@@ -405,7 +410,7 @@ class BuilddMaster:
         """
         # Get the missing dependency fields
         arch_ids = [arch.id for arch in self._archserieses]
-        status = dbschema.BuildStatus.MANUALDEPWAIT
+        status = BuildStatus.MANUALDEPWAIT
         bqset = getUtility(IBuildSet)
         candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
         # XXX cprov 2006-02-27: IBuildSet.getBuildsByArch API is evil,
@@ -450,7 +455,7 @@ class BuilddMaster:
         # Get the current build job candidates
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=BuildStatus.NEEDSBUILD)
         if not candidates:
             return
 
@@ -493,7 +498,7 @@ class BuilddMaster:
         """
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=BuildStatus.NEEDSBUILD)
         if not candidates:
             return {}
 
@@ -533,7 +538,7 @@ class BuilddMaster:
             # or removed) as SUPERSEDED.
             spr = build_candidate.build.sourcepackagerelease
             if (spr.publishings and spr.publishings[0].status <=
-                dbschema.PackagePublishingStatus.PUBLISHED):
+                PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
                 self.commit()
             else:
@@ -541,7 +546,7 @@ class BuilddMaster:
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (build_candidate.build.id, build_candidate.id))
                 build_candidate.build.buildstate = (
-                    dbschema.BuildStatus.SUPERSEDED)
+                    BuildStatus.SUPERSEDED)
                 build_candidate.destroySelf()
 
         self.commit()

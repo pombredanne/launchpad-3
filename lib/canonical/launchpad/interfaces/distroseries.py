@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroSeriesStatus',
     'IDistroSeries',
     'IDistroSeriesSet',
     ]
@@ -23,6 +24,72 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+class DistroSeriesStatus(DBEnumeratedType):
+    """Distribution Release Status
+
+    A DistroSeries (warty, hoary, or grumpy for example) changes state
+    throughout its development. This schema describes the level of
+    development of the distroseries. The typical sequence for a
+    distroseries is to progress from experimental to development to
+    frozen to current to supported to obsolete, in a linear fashion.
+    """
+
+    EXPERIMENTAL = DBItem(1, """
+        Experimental
+
+        This distroseries contains code that is far from active
+        release planning or management. Typically, distroseriess
+        that are beyond the current "development" release will be
+        marked as "experimental". We create those so that people
+        have a place to upload code which is expected to be part
+        of that distant future release, but which we do not want
+        to interfere with the current development release.
+        """)
+
+    DEVELOPMENT = DBItem(2, """
+        Active Development
+
+        The distroseries that is under active current development
+        will be tagged as "development". Typically there is only
+        one active development release at a time. When that freezes
+        and releases, the next release along switches from "experimental"
+        to "development".
+        """)
+
+    FROZEN = DBItem(3, """
+        Pre-release Freeze
+
+        When a distroseries is near to release the administrators
+        will freeze it, which typically means that new package uploads
+        require significant review before being accepted into the
+        release.
+        """)
+
+    CURRENT = DBItem(4, """
+        Current Stable Release
+
+        This is the latest stable release. Normally there will only
+        be one of these for a given distribution.
+        """)
+
+    SUPPORTED = DBItem(5, """
+        Supported
+
+        This distroseries is still supported, but it is no longer
+        the current stable release. In Ubuntu we normally support
+        a distroseries for 2 years from release.
+        """)
+
+    OBSOLETE = DBItem(6, """
+        Obsolete
+
+        This distroseries is no longer supported, it is considered
+        obsolete and should not be used on production systems.
+        """)
+
 
 class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
@@ -61,7 +128,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     sections = Attribute("The series sections.")
     status = Choice(
         title=_("Status"), required=True,
-        vocabulary='DistroSeriesStatus')
+        vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
     parentseries = Choice(
         title=_("Parent series"),
@@ -90,9 +157,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=True
         )
     binarycount = Attribute("Binary Packages Counter")
-    potemplates = Attribute("The set of potemplates in the series")
-    currentpotemplates = Attribute("The set of potemplates in the series "
-        "with the iscurrent flag set")
+
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("The architectures in this series.")
@@ -396,7 +461,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getSourcePackagePublishing(status, pocket, component=None,
                                    archive=None):
-        """Return a selectResult of ISourcePackagePublishing.
+        """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
@@ -453,7 +518,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     def initialiseFromParent():

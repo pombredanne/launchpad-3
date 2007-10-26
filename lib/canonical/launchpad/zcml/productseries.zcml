@@ -8,7 +8,10 @@
     <!-- This is class ProductSeries -->
     <content class="canonical.launchpad.database.ProductSeries">
         <allow interface="canonical.launchpad.interfaces.IProductSeries" />
-        <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+        <allow
+            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+        <allow
+            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary user_branch
@@ -218,7 +221,7 @@
       schema="canonical.launchpad.interfaces.IMilestone"
       class="canonical.launchpad.browser.milestone.MilestoneAddView"
       facet="overview"
-      fields="name dateexpected"
+      fields="name dateexpected description"
       keyword_arguments="name dateexpected"
       permission="launchpad.Edit"
       template="../templates/milestone-add.pt"
@@ -330,6 +333,8 @@
 
   <browser:page
     name="+export"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     for="canonical.launchpad.interfaces.IProductSeries"
     permission="launchpad.AnyPerson"
     template="../templates/productseries-export.pt"

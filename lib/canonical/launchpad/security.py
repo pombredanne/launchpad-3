@@ -23,10 +23,9 @@ from canonical.launchpad.interfaces import (
     ISprint, ISprintSpecification, IStandardShipItRequest,
     IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
     ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator)
+    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
-from canonical.lp.dbschema import PackageUploadStatus
 
 
 class AuthorizationBase:
@@ -186,6 +185,20 @@ class DriveSprint(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class Sprint(AuthorizationBase):
+    """An attendee, owner, or driver of a sprint."""
+    permission = 'launchpad.View'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
+                user in [attendance.attendee
+                         for attendance in self.obj.attendances] or
+                user.inTeam(admins))
+
+
 class EditSpecificationSubscription(AuthorizationBase):
     """The subscriber, and people related to the spec or the target of the
     spec can determine who is essential."""
@@ -208,6 +221,34 @@ class EditSpecificationSubscription(AuthorizationBase):
                 user.inTeam(self.obj.specification.drafter) or
                 user.inTeam(self.obj.specification.approver) or
                 user.inTeam(admins))
+
+
+class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
+    """Base class that allow access to Rosetta experts and Launchpad admins.
+    """
+
+    def checkAuthenticated(self, user):
+        """Allow Launchpad's admins and Rosetta experts edit all fields."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_expert))
+
+
+class AdminProductTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProduct` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owners are
+        able to change translation settings for a product.
+        """
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_expert))
+
 
 class AdminSeriesByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -626,17 +667,6 @@ class UseApiDoc(AuthorizationBase):
         return True
 
 
-class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
-    """Base class that allow access to Rosetta experts and Launchpad admins.
-    """
-
-    def checkAuthenticated(self, user):
-        """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        admins = getUtility(ILaunchpadCelebrities).admin
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-        return user.inTeam(admins) or user.inTeam(rosetta_experts)
-
-
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     """Base class that allows only the Launchpad admins and Bazaar
     experts."""
@@ -680,6 +710,16 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     system to members of ~vcs-imports and Launchpad admins.
     """
     permission = 'launchpad.View'
+    usedfor = ICodeImport
+
+
+class EditCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can edit the object view of a CodeImport.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
     usedfor = ICodeImport
 
 

@@ -52,6 +52,11 @@
           </tr>
 
           <tr>
+            <th>Component:</th>
+            <td tal:content="context/current_component/name"/>
+          </tr>
+
+          <tr>
             <th>Status:</th>
             <td>
               <span tal:replace="context/buildstate/title" />
@@ -147,6 +152,11 @@
 
         </tbody>
       </table>
+
+      <p tal:condition="view/user_can_retry_build">
+          Use the 'Retry build' link in the Actions menu if you wish to
+          retry your build.
+      </p>
 
     </div>
   </body>

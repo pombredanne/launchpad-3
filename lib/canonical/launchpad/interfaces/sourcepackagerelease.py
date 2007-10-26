@@ -12,8 +12,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket)
+from canonical.launchpad.interfaces import BuildStatus
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -129,15 +128,10 @@ class ISourcePackageRelease(Interface):
     def getBuildByArch(distroarchseries, archive):
         """Return build for the given distroarchseries/archive.
 
-        This will look first for published builds in the given
-        distroarchseries. It uses the publishing tables to return a build,
-        even if the build is from another distroarchseries, so long as the
-        binaries are published in the distroarchseries given.
+        It looks for a build in any state registered *directly* for the
+        given distroarchseries and archive.
 
-        If no published build is located, it will then look for a build in
-        any state registered directly against this distroarchseries.
-
-        Return None if not found.
+        Returns None if a suitable build could not be found.
         """
 
     def override(component=None, section=None, urgency=None):

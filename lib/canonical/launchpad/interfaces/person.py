@@ -6,7 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
-    'IAdminRequestPeopleMerge',
+    'IAdminPeopleMergeSchema',
+    'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
@@ -15,11 +16,13 @@ __all__ = [
     'IPersonSet',
     'IPerson',
     'IRequestPeopleMerge',
+    'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
     'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
@@ -34,7 +37,7 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -299,7 +302,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subjected to approval by one of
+        All subscriptions for this team are subject to approval by one of
         the team's administrators.
         """)
 
@@ -580,12 +583,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "including subteams.")
     adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
+    expired_member_count = Attribute("Number of EXPIRED members.")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
+    proposed_member_count = Attribute("Number of PROPOSED members")
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
+    inactive_member_count = Attribute("Number of inactive members")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    deactivated_member_count = Attribute("Number of deactivated members")
     invited_members = Attribute("List of members with INVITED status")
+    invited_member_count = Attribute("Number of members with INVITED status")
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
@@ -623,6 +631,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("Preferred Email Address"),
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
+        readonly=True)
+
+    safe_email_or_blank = TextLine(
+        title=_("Safe email for display"),
+        description=_("The person's preferred email if they have"
+                      "one and do not choose to hide it. Otherwise"
+                      "the empty string."),
         readonly=True)
 
     preferredemail_sha1 = TextLine(
@@ -790,8 +805,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             'open_inprogress': The number of open bugs that ar In Progress.
         """
 
+    def setContactAddress(email):
+        """Set the given email address as this team's contact address.
+
+        This method must be used only for teams.
+        """
+
     def setPreferredEmail(email):
-        """Set the given email address as this person's preferred one."""
+        """Set the given email address as this person's preferred one.
+
+        This method must be used only for people, not teams.
+        """
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
@@ -1337,8 +1361,24 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person):
-        """Merge a person into another."""
+    def merge(from_person, to_person, deactivate_members=False, user=None):
+        """Merge a person/team into another.
+
+        The old person/team (from_person) will be left as an atavism.
+
+        When merging two person entries, from_person can't have email
+        addresses associated with.
+
+        When merging teams, from_person must have no IMailingLists
+        associated with and no active members. If it has active members,
+        though, it's possible to have them deactivated before the merge by
+        passing deactivate_members=True. In that case the user who's
+        performing the merge must be provided as well.
+
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops. -- StuartBishop 20050812
+        """
 
     def getTranslatorsByLanguage(language):
         """Return the list of translators for the given language.
@@ -1358,18 +1398,30 @@ class IRequestPeopleMerge(Interface):
         description=_("The duplicated account you found in Launchpad"))
 
 
-class IAdminRequestPeopleMerge(Interface):
-    """The schema used by admin merge accounts page."""
+class IAdminPeopleMergeSchema(Interface):
+    """The schema used by the admin merge people page."""
 
-    dupe_account = Choice(
-        title=_('Duplicated Account'), required=True,
+    dupe_person = Choice(
+        title=_('Duplicated Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account found in Launchpad"))
+        description=_("The duplicated person found in Launchpad."))
 
-    target_account = Choice(
-        title=_('Account'), required=True,
+    target_person = Choice(
+        title=_('Target Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The account to be merged on"))
+        description=_("The person to be merged on."))
+
+
+class IAdminTeamMergeSchema(Interface):
+    """The schema used by the admin merge teams page."""
+
+    dupe_person = Choice(
+        title=_('Duplicated Team'), required=True, vocabulary='ValidTeam',
+        description=_("The duplicated team found in Launchpad."))
+
+    target_person = Choice(
+        title=_('Target Team'), required=True, vocabulary='ValidTeam',
+        description=_("The team to be merged on."))
 
 
 class IObjectReassignment(Interface):
@@ -1401,6 +1453,41 @@ class ITeamCreation(ITeam):
             "the team creation, a new message will be sent to this address "
             "with instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class TeamContactMethod(EnumeratedType):
+    """The method used by Launchpad to contact a given team."""
+
+    HOSTED_LIST = Item("""
+        The Launchpad mailing list for this team
+
+        Notifications directed to this team are sent to its Launchpad-hosted
+        mailing list.
+        """)
+
+    NONE = Item("""
+        Each member individually
+
+        Notifications directed to this team will be sent to each of its
+        members.
+        """)
+
+    EXTERNAL_ADDRESS = Item("""
+        Another e-mail address
+
+        Notifications directed to this team are sent to the contact address
+        specified.
+        """)
+
+
+class ITeamContactAddressForm(Interface):
+
+    contact_address = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False)
+
+    contact_method = Choice(
+        title=_("How do people contact these team's members?"),
+        required=True, vocabulary=TeamContactMethod)
 
 
 class JoinNotAllowed(Exception):
