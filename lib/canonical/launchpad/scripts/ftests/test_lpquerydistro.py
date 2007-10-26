@@ -102,7 +102,7 @@ class TestLpQueryDistroScript(unittest.TestCase):
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
         self.assertEqual(
-            err.strip(), 'ERROR   Action does not accept defined suite_name.')
+            err.strip(), 'ERROR   Action does not accept defined suite.')
 
 
 class TestLpQueryDistro(LaunchpadZopelessTestCase):

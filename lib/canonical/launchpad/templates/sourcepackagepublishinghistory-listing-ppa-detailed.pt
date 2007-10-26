@@ -1,19 +1,22 @@
   <tr class="ppa_package_row">
-     <td><a href="#"
+     <td style="white-space: nowrap"><a href="#"
             tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img 
                 src="/@@/treeCollapsed" alt=""
                 tal:attributes="id string:pub${context/id}-arrow" /></a><span 
         tal:content="context/sourcepackagerelease/title">foo - 1.0</span></td>
+     <td>
+          <a tal:condition="context/sourcepackagerelease/upload_changesfile"
+             tal:attributes="href context/sourcepackagerelease/upload_changesfile/http_url">(changes)</a>
+     </td>
      <td tal:condition="context/archive/owner/isTeam">
-         <a id="uploader"
-            tal:attributes="href context/sourcepackagerelease/dscsigningkey/owner/fmt:url"
+         <a tal:attributes="href context/sourcepackagerelease/dscsigningkey/owner/fmt:url"
             tal:content="context/sourcepackagerelease/dscsigningkey/owner/name"></a></td>
      <td tal:attributes="title context/datepublished/fmt:datetime"
          tal:content="context/datepublished/fmt:approximatedate"
          >2005-09-16</td>
      <td tal:content="context/status/title"
          >PUBLISHED</td>
-     <td tal:content="context/sourcepackagerelease/uploaddistroseries/name"
+     <td tal:content="context/distroseries/name"
          >dapper</td>
      <td tal:content="context/section/name">base</td>
      <td>
