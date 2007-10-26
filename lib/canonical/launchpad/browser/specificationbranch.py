@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'SpecificationBranchStatusView',
+    'SpecificationBranchBranchInlineEditView',
     ]
 
 from canonical.launchpad import _
@@ -21,16 +22,41 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     field_names = ['summary']
     label = _('Edit specification branch summary')
 
-    next_url = None
+    def initialize(self):
+        self.specification = self.context.specification
+        super(SpecificationBranchStatusView, self).initialize()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.specification)
 
     @action(_('Change Summary'), name='change')
     def change_action(self, action, data):
-        self.next_url = canonical_url(self.context.specification)
         self.updateContextFromData(data)
 
     @action(_('Delete Link'), name='delete')
     def delete_action(self, action, data):
-        self.next_url = canonical_url(self.context.specification)
         self.context.destroySelf()
 
 
+class SpecificationBranchBranchInlineEditView(SpecificationBranchStatusView):
+    """Inline edit view for specification branch details."""
+
+    initial_focus_widget = None
+    label = None
+
+    def initialize(self):
+        self.branch = self.context.branch
+        super(SpecificationBranchBranchInlineEditView, self).initialize()
+
+    @property
+    def prefix(self):
+        return "field%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/+branch-edit" % canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.branch)

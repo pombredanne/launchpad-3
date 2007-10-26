@@ -147,4 +147,55 @@
   </tal:bug-tasks>
 
 </metal:branch-bug-links>
+
+<metal:spec-bug-links define-macro="spec-branch-links">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the spec branch links
+    The following variables define what is shown and are optional.
+      show_whiteboard - show the whiteboard for the specification branch
+      show_edit - show the edit form
+  </tal:comment>
+
+  <tal:spec-tasks repeat="spec_branch branch/spec_links">
+    <div tal:define="has_edit_permission spec_branch/required:launchpad.AnyPerson;
+                     show_edit show_edit|nothing;
+                     show_edit python: show_edit and has_edit_permission;
+                     spec spec_branch/specification;
+                     ">
+      <div class="spec-branch-summary">
+      <tal:link replace="structure spec/fmt:link" />
+      (<span tal:attributes="class string:specpriority${spec/priority/name}"
+             tal:content="spec/priority/title">High</span>)
+       <tal:show-edit condition="show_edit|nothing">
+         -
+         <a tal:attributes="href spec_branch/fmt:url;
+                            onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
+         edit <img src="/@@/expand"/></a>
+       </tal:show-edit>
+       <tal:show-whiteboard condition="show_whiteboard|nothing">
+         <dl tal:condition="spec_branch/summary"
+             tal:attributes="id string:specbranch${spec_branch/id}-summary">
+           <dd>
+             <tal:summary content="structure spec_branch/summary/fmt:text-to-html">
+               The spec link summary.
+             </tal:summary>
+           </dd>
+         </dl>
+       </tal:show-whiteboard>
+       </div>
+       <div tal:condition="show_edit|nothing"
+            tal:attributes="id string:specbranch${spec_branch/id}"
+            style="display: none"
+            >
+         <dl><dd>
+         <tal:edit-form replace="structure spec_branch/@@+branch-edit"/>
+       </dd></dl>
+       </div>
+    </div>
+  </tal:spec-tasks>
+
+</metal:spec-bug-links>
+
 </tal:root>

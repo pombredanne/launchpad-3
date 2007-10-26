@@ -30,6 +30,14 @@
         permission="launchpad.AnyPerson"
         template="../templates/specificationbranch-status.pt" />
 
+    <browser:page
+        name="+branch-edit"
+        for="canonical.launchpad.interfaces.ISpecificationBranch"
+        class="canonical.launchpad.browser.SpecificationBranchBranchInlineEditView"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugbranch-inline-edit.pt" />
+
   </facet>
 
   <!-- SpecificationBranchSet -->

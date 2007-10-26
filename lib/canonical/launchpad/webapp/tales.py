@@ -769,6 +769,22 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
                 '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
 
 
+class SpecificationFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for ISpecification objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
+        """
+        spec = self._context
+        url = canonical_url(spec)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        image_html = SpecificationImageDisplayAPI(spec).icon()
+        return ('<a href="%s">%s&nbsp;%s</a>' % (
+                url, image_html, spec.title))
+
+
 class BugFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBug objects to a formatted string."""
 

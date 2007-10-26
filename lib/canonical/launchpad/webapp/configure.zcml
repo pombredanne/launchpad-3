@@ -280,6 +280,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
