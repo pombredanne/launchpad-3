@@ -49,7 +49,8 @@ Because the mailing list is active, there is no archived backup file.
 Deactivation is not yet exposed in the web interface, so we'll simulate what
 that would do.
 
-    >>> list_one = list_set.get('itest-one')
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
     >>> list_one.deactivate()
     >>> itest_helper.transactionmgr.commit()
     >>> itest_helper.wait_for_mailman()

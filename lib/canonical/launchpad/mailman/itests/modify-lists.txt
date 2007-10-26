@@ -51,7 +51,8 @@ what that is on the Mailman side.
 Also, because the welcome message can't currently be set through the web after
 the list is created, let's simulate what that would do.
 
-    >>> list_one = list_set.get('itest-one')
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
     >>> list_one.welcome_message = 'Salutations team one members!'
     >>> itest_helper.transactionmgr.commit()
     >>> itest_helper.wait_for_mailman()

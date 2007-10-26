@@ -69,7 +69,8 @@ Add Cris and Dirk as members, change Anne's preferred email address, and
 unsubscribe Bart from the mailing list.
 
     >>> team_one = person_set.getByName('itest-one')
-    >>> list_one = list_set.get('itest-one')
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
 
     # Subscribe Cris with her preferred address.
     >>> cris = new_person('Cris')
@@ -86,7 +87,7 @@ unsubscribe Bart from the mailing list.
     >>> list_one.unsubscribe(bart)
 
     # Change Anne's email address to her alternative.
-    >>> anne = person_set.getByName('anne')
+    >>> sync(anne)
     >>> anne.setPreferredEmail(get_alternative_email(anne))
     >>> itest_helper.transactionmgr.commit()
     >>> itest_helper.wait_for_mailman()
