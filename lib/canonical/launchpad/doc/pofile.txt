@@ -906,18 +906,26 @@ Non-editor can only submit a new suggestion on untranslated message.
     >>> print evolution_es.unreviewedCount()
     2
 
-    >>> pomsgset = evolution_es.getPOMsgSet(u'evolution minicard')
+    >>> potmsgset = evolution_es.potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution minicard')
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
 
     # Make sure this entry is unreviewed and untranslated
-    >>> print pomsgset.date_reviewed
+    >>> print current
     None
-    >>> pomsgset.active_texts
-    [None]
 
-    >>> pomsgset.updateTranslationSet(noneditor, {0: 'translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset.active_texts
-    [None]
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, noneditor, {0: u'translation'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches() # Store modification dates in database
+    >>> print new_translation.translations
+    [u'translation']
+    >>> new_translation.is_current
+    False
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current
+    None
+
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     3
     >>> stats = evolution_es.updateStatistics()
@@ -927,9 +935,12 @@ Non-editor can only submit a new suggestion on untranslated message.
 A privileged translator can approve this same suggestion by submitting
 it himself.
 
-    >>> pomsgset.updateTranslationSet(editor, {0: 'translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset.active_texts
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, editor, {0: u'translation'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches() # Store modification dates in database
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current.translations
     [u'translation']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     2

@@ -534,14 +534,18 @@ class POFile(SQLBase, POFileMixIn):
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POMsgSet.pofile = %s AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            (POSubmission.datecreated > POMsgSet.date_reviewed OR
-             (POMsgSet.date_reviewed IS NULL AND
-              POSubmission.active IS NOT TRUE))
+            TranslationMessage.potmsgset = POTMsgSet.id AND
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.date_created > COALESCE(
+                (SELECT current.date_reviewed
+                    FROM TranslationMessage current
+                    WHERE current.potmsgset = POTMsgSet.id AND
+                          current.pofile = TranslationMessage.pofile AND
+                          current.is_current IS TRUE
+                    LIMIT 1),
+                TIMESTAMP '1970-01-01 00:00:00')
             ''' % sqlvalues(self.potemplate, self),
-            clauseTables=['POMsgSet', 'POSubmission'],
+            clauseTables=['TranslationMessage'],
             orderBy='POTmsgSet.sequence',
             distinct=True)
 
@@ -662,17 +666,10 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get the number of translations that we have updated from what we got
         # from imports.
-        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query.append('TranslationMessage.is_imported')
-        query.append('NOT TranslationMessage.is_current')
-        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
-        query.append('POTMsgSet.sequence > 0')
-        updates = TranslationMessage.select(
-            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+        updates = self.getPOTMsgSetChangedInLaunchpad().count()
 
         # Get the number of new translations in Launchpad that imported ones
         # were not translated.
-
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
         query.append('NOT TranslationMessage.is_fuzzy')
         for plural_form in range(self.language.pluralforms):
@@ -690,20 +687,7 @@ class POFile(SQLBase, POFileMixIn):
         rosetta = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()
 
-        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query = ['NOT TranslationMessage.is_current']
-        query.append('''EXISTS (
-            SELECT TranslationMessage.id
-            FROM TranslationMessage AS current
-            WHERE
-                current.potmsgset = TranslationMessage.potmsgset AND
-                current.pofile = TranslationMessage.pofile AND
-                current.is_current IS TRUE AND
-                (current.date_reviewed IS NULL OR
-                 current.date_reviewed < TranslationMessage.date_created))
-            ''')
-        unreviewed = TranslationMessage.select(
-            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+        unreviewed = self.getPOTMsgSetWithNewSuggestions().count()
 
         self.currentcount = current
         self.updatescount = updates
