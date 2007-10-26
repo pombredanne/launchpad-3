@@ -94,7 +94,7 @@ class DistroSeriesSourcePackageRelease:
             DistroArchRelease.distrorelease = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distroseries.id),
-            orderBy=['-datecreated', '-id']
+            orderBy=['-datecreated', '-id'],
             clauseTables=['DistroArchRelease'])
 
     @property
