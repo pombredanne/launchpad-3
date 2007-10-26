@@ -449,7 +449,6 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
             "Further error processing not possible because of a "
                 "critical previous error.\n"
-            "\n-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
 
         self.assertEmail(contents)
@@ -470,7 +469,6 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "Unable to find distroseries: flangetrousers\n"
             "Further error processing not possible because of a "
                 "critical previous error.\n"
-            "\n-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
         self.assertEmail(
             contents,
@@ -490,6 +488,30 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "bar_1.0.orig.tar.gz: Section 'badsection' is not valid",
             "bar_1.0-1.diff.gz: Section 'badsection' is not valid"]
         self.assertEmail(contents)
+
+    def testPGPSignatureNotPreserved(self):
+        """Email notifications should remove the PGP signature from the
+           changes file."""
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
+
+        self.assertTrue(
+            "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
+            "Unexpected PGP header found")
+        self.assertTrue(
+            "-----BEGIN PGP SIGNATURE-----" not in body,
+            "Unexpected start of PGP signature found")
+        self.assertTrue(
+            "iD8DBQFFt7D9jn63CGxkqMURAk1BAJwIQfOMS+l9lDDwPORtuZb3hFI2OgCaArNc"
+                not in body,
+            "Unexpected PGP signature data found")
+        self.assertTrue(
+            "-----END PGP SIGNATURE-----" not in body,
+            "Unexpected end of PGP signature found")
 
 
 def test_suite():
