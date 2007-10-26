@@ -167,8 +167,7 @@ class OpenIdMixin:
     @property
     def sreg_field_names(self):
         """Return the list of sreg keys that will be provided to the RP."""
-        # XXX: 2007-07-09 jamesh
-        # Port to use openid.sreg module.
+        # XXX: jamesh 2007-07-09: Port to use openid.sreg module.
         field_names = set()
         # Collect the field names requested.  We treat required and
         # optional parameters the same.
@@ -200,8 +199,7 @@ class OpenIdMixin:
         Shipping information is taken from the last shipped Shipit
         request.
         """
-        # XXX: 2007-07-09 jamesh
-        # Port to use openid.sreg module.
+        # XXX: jamesh 2007-07-09: Port to use openid.sreg module.
         assert self.user is not None, (
             'Must be logged in to calculate sreg items')
         # Collect registration values
