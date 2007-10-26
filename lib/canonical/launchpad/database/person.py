@@ -1759,9 +1759,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if uploader_only:
             clauses.append(
                 'sourcepackagerelease.creator = %s' % quote(self.id))
-            if not ppa_only:
-                clauses.append(
-                    'sourcepackagerelease.maintainer != %s' % quote(self.id))
+
+        if ppa_only:
+            # Source maintainer is irrelevant for PPA uploads.
+            pass
+        elif uploader_only:
+            clauses.append(
+                'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
             clauses.append(
                 'sourcepackagerelease.maintainer = %s' % quote(self.id))
