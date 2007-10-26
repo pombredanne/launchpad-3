@@ -76,13 +76,23 @@ body {margin: 0; padding: 0;}
 :link:active, :visited:active {color: #36c;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
-h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 2.2em;  margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.5em;  margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.1em;  margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
-h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h5 {font-size: 1em;    margin: 0;              padding: 0;}
-h6 {font-size: 1em;    margin: 0;              padding: 0;}
+h1, h2, h3, h4, h5, h6 {
+  background: none;
+  padding: 0;
+  margin: 0;
+  /* Content headings are highlighted using a different color (the color is
+     overriden per-application in subsequent rules) instead of bold text. */
+  color: #83ad23;
+  font-weight: normal;
+}
+h1 { font-size: 2.2em; }
+h2 { font-size: 1.5em; }
+h3 { font-size: 1.1em; }
+h4, h5, h6 { font-size: 1em; }
+h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
+/* H1 is only used at the top the maincontent, maybe below a short description
+   of the displayed object. It must not have zero margin-top. */
+h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
