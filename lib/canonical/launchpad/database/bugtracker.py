@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = ['BugTracker', 'BugTrackerSet']
 
+import re
 import urllib
 
 from zope.interface import implements
@@ -107,12 +108,17 @@ class BugTrackerSet:
         for row in self.table.select(orderBy="title"):
             yield row
 
+    def _normalise_leading_slashes(self, rest):
+        """Ensure that the 'rest' segment of a URL starts with //."""
+        slashre = re.compile('^/*(.*)')
+        return '//' + slashre.match(rest).group(1)
+
     def normalise_baseurl(self, baseurl):
         # turn https to http, and raise an exception elsewhere
         schema, rest = urllib.splittype(baseurl)
         if schema not in ['http', 'https']:
-            if (schema is None) and (rest[0:2] != '//'):
-                baseurl = 'http://' + baseurl
+            if schema is None:
+                baseurl = 'http:' + self._normalise_leading_slashes(baseurl)
             return baseurl
         if schema == 'https':
             schema = 'http'
@@ -132,29 +138,22 @@ class BugTrackerSet:
         """
         http_schemas = ['http', 'https']
         url_schema, rest = urllib.splittype(base_url)
-        if (url_schema in http_schemas) or (url_schema is None):
+        if url_schema in http_schemas or url_schema is None:
             possible_schemas = http_schemas
-            if rest[0:2] != '//':
-                rest = '//' + rest
+            rest = self._normalise_leading_slashes(rest)
         else:
             # This else-clause is here since we have no strict
             # requirement that bug trackers have to have http URLs.
             possible_schemas = [url_schema]
-        alternative_urls = []
+        alternative_urls = [base_url]
         for schema in possible_schemas:
             url = "%s:%s" % (schema, rest)
-            alternative_urls.append(url)
+            if url != base_url:
+                alternative_urls.append(url)
             if url.endswith('/'):
                 alternative_urls.append(url[:-1])
             else:
                 alternative_urls.append(url + '/')
-        # Make sure that the original URL is always first, to make the
-        # common case require less db queries.
-        # But skip that if we know the url_schema is not present, in
-        # which case one of the alternatives is our best bet.
-        if url_schema is not None:
-            alternative_urls.remove(base_url)
-            alternative_urls.insert(0, base_url)
         return alternative_urls
 
     def queryByBaseURL(self, baseurl):
