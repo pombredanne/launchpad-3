@@ -49,6 +49,7 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'OpenID'
+LAUNCHPAD_TEAMS_NS = 'http://ns.launchpad.net/2007/openid-teams'
 
 # Shut up noisy OpenID library
 def null_log(message, level=0):
@@ -228,6 +229,31 @@ class OpenIdMixin:
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 
+    def checkTeamMembership(self, openid_response):
+        """Perform team membership checks.
+
+        If any team membership checks have been requested as part of
+        the OpenID request, annotate the response with 
+        """
+        assert self.user is not None, (
+            'Must be logged in to calculate team membership')
+        args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
+        team_names = args.get('query_membership')
+        if not team_names:
+            return
+        team_names = team_names.split(',')
+        memberships = []
+        personset = getUtility(IPersonSet)
+        for team_name in team_names:
+            team = personset.getByName(team_name)
+            if team is None or not team.isTeam():
+                continue
+            if self.user.inTeam(team):
+                memberships.append(team_name)
+        openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
+        openid_response.fields.setArg(
+            LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
+
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
@@ -266,6 +292,8 @@ class OpenIdMixin:
             response.fields.namespaces.addAlias(SREG_URI, 'sreg')
             for (field_name, value) in sreg_fields:
                 response.fields.setArg(SREG_URI, field_name, value)
+
+        self.checkTeamMembership(response)
 
         return response
 
