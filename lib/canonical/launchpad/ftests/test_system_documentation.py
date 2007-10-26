@@ -709,7 +709,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
 
     @classmethod
     def addTestsToSpecial(cls):
-        """Adds all the tests related to process-mail.py. to special"""
+        """Adds all the tests related to process-mail.py to special"""
         global special
 
         for filename in cls.doctests_without_logging:
