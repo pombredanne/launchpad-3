@@ -327,7 +327,11 @@ class POFile(SQLBase, POFileMixIn):
         assert potmsgset.is_translation_credit, (
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % msgid)
-        text = potmsgset.translationsForLanguage(self.language.code)[0]
+        imported = potmsgset.getImportedTranslationMessage(self.language)
+        if imported is None:
+            text = None
+        else:
+            text = imported.translations[0]
         if msgid in [u'_: EMAIL OF TRANSLATORS\nYour emails', u'Your emails']:
             emails = []
             if text is not None:
