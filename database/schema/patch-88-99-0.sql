@@ -447,7 +447,28 @@ ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
 
 DROP VIEW POExport;
 DROP VIEW POTExport;
-DROP TABLE POFileTranslator;
+
+-- TODO: This cures bad sample data, but we need a stable comparison base first.
+-- DROP TABLE POFileTranslator;
+-- TODO: This is temporary, until we can drop POFileTranslator again
+ALTER TABLE POFileTranslator DROP CONSTRAINT personpofile__latest_posubmission__fk;
+-- TODO: Temporary migration based on existing, bad sample data.  Replace with
+-- rewrite later (has already been tested).
+ALTER TABLE POFileTranslator
+	ADD COLUMN latest_message integer;
+UPDATE POFileTranslator
+SET latest_message = TranslationMessage.id
+FROM TranslationMessage
+WHERE
+	TranslationMessage.id0 = latest_posubmission OR
+	TranslationMessage.id1 = latest_posubmission OR
+	TranslationMessage.id2 = latest_posubmission OR
+	TranslationMessage.id3 = latest_posubmission;
+ALTER TABLE POFileTranslator ALTER COLUMN latest_message SET NOT NULL;
+ALTER TABLE POFileTranslator DROP COLUMN latest_posubmission;
+-- TODO: End of POFileTranslator change
+
+
 DROP TABLE POSubmission;
 DROP TABLE POMsgSet;
 
@@ -671,41 +692,41 @@ ALTER TABLE TranslationMessage DROP COLUMN id3;
 -- SELECT 'Re-creating POFileTranslator', statement_timestamp();	-- DEBUG
 
 -- Re-create POFileTranslator (replacing latest_posubmission)
-CREATE TABLE POFileTranslator (
-	id serial,
-	person integer NOT NULL,
-	pofile integer NOT NULL,
-	latest_message integer NOT NULL,
-	date_last_touched timestamp without time zone
-		DEFAULT timezone('UTC'::text, now()) NOT NULL);
-
+-- TODO: This cures bad sample data, but we need a stable comparison base first.
+--CREATE TABLE POFileTranslator (
+--	id serial,
+--	person integer NOT NULL,
+--	pofile integer NOT NULL,
+--	latest_message integer NOT NULL,
+--	date_last_touched timestamp without time zone
+--		DEFAULT timezone('UTC'::text, now()) NOT NULL);
 
 -- Re-populate POFileTranslator
-INSERT INTO POFileTranslator (
-    person, pofile, latest_message, date_last_touched
-    )
-SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
-FROM TranslationMessage
-ORDER BY submitter, pofile, date_created DESC, id DESC;
+--INSERT INTO POFileTranslator (
+--    person, pofile, latest_message, date_last_touched
+--    )
+--SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
+--FROM TranslationMessage
+--ORDER BY submitter, pofile, date_created DESC, id DESC;
 
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator__latest_message__fk
-	FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
-	DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator__person__fk
-	FOREIGN KEY (person) REFERENCES Person(id);
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator__pofile__fk
-	FOREIGN KEY (pofile) REFERENCES POFile(id);
-CREATE INDEX pofiletranslator__date_last_touched__idx
-	ON POFileTranslator(date_last_touched);
-ALTER TABLE POFileTranslator
-	ADD CONSTRAINT pofiletranslator__person__pofile__key
-	UNIQUE (person, pofile);
-ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
+--ALTER TABLE POFileTranslator
+--	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
+--ALTER TABLE POFileTranslator
+--	ADD CONSTRAINT pofiletranslator__latest_message__fk
+--	FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
+--	DEFERRABLE INITIALLY DEFERRED;
+--ALTER TABLE POFileTranslator
+--	ADD CONSTRAINT pofiletranslator__person__fk
+--	FOREIGN KEY (person) REFERENCES Person(id);
+--ALTER TABLE POFileTranslator
+--	ADD CONSTRAINT pofiletranslator__pofile__fk
+--	FOREIGN KEY (pofile) REFERENCES POFile(id);
+--CREATE INDEX pofiletranslator__date_last_touched__idx
+--	ON POFileTranslator(date_last_touched);
+--ALTER TABLE POFileTranslator
+--	ADD CONSTRAINT pofiletranslator__person__pofile__key
+--	UNIQUE (person, pofile);
+--ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 
 DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
