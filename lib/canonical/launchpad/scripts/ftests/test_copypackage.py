@@ -118,8 +118,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         # Check locations.  They should be the same as the defaults defined
         # in the getCopier method.
-        self.assertEqual(str(from_location), 'ubuntu/warty/RELEASE')
-        self.assertEqual(str(to_location), 'ubuntu/hoary/RELEASE')
+        self.assertEqual(str(from_location),
+                         'Primary Archive for Ubuntu Linux: warty-RELEASE')
+        self.assertEqual(str(to_location),
+                         'Primary Archive for Ubuntu Linux: hoary-RELEASE')
 
         # Check target source title - this should be the package name in
         # the sample data for our source package.
@@ -176,7 +178,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Could not find any version of 'zaphod' in ubuntu/warty/RELEASE",
+            "Could not find any version of 'zaphod' in "
+            "Primary Archive for Ubuntu Linux: warty-RELEASE",
             copy_helper.doCopy)
 
     def testBadDistro(self):
@@ -203,8 +206,9 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Can not sync between the same locations: 'ubuntu/warty/RELEASE'"
-            " to 'ubuntu/warty/RELEASE'",
+            "Can not sync between the same locations: "
+            "'Primary Archive for Ubuntu Linux: warty-RELEASE' to "
+            "'Primary Archive for Ubuntu Linux: warty-RELEASE'",
             copy_helper.doCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
@@ -213,8 +217,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Could not find 'mozilla-firefox/None' in"
-            " ubuntu/breezy-autotest/RELEASE",
+            "Could not find 'mozilla-firefox/None' in "
+            "Primary Archive for Ubuntu Linux: breezy-autotest-RELEASE",
             copy_helper.doCopy)
 
 
