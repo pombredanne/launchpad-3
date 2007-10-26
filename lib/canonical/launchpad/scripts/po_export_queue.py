@@ -214,7 +214,11 @@ def process_queue(transaction_manager, logger):
     """
     request_set = getUtility(IPOExportRequestSet)
 
-    person, objects, format = request_set.popRequest()
+    request = request_set.popRequest()
+    if request is None:
+        return
+
+    person, objects, format = request
 
     try:
         process_request(person, objects, format, logger)
@@ -226,7 +230,6 @@ def process_queue(transaction_manager, logger):
                 person.displayname),
             exc_info=True)
         transaction_manager.abort()
-        break
-
-    # Apply all changes.
-    transaction_manager.commit()
+    else:
+        # Apply all changes.
+        transaction_manager.commit()
