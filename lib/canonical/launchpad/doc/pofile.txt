@@ -599,7 +599,6 @@ Right now, there is no translation existing for this message.
 So adding an empty one produces that...
 
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
-    >>> flush_database_caches() # Store modification dates in database
     >>> new_translation_message = potmsgset.updateTranslation(
     ...     pofile, person, {0: u''}, is_fuzzy=False,
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
@@ -661,16 +660,20 @@ And we can see that it's applied in the exported file.
 Setting a new translation directly through Launchpad (not-published)
 updates the date_reviewed value and invalidates the cache.
 
-    >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print msgset.active_texts
+    >>> new_tm = new_translation_message.potmsgset.updateTranslation(
+    ...     new_translation_message.pofile, person, {0: u'Blah.'},
+    ...     is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches()
+    >>> new_tm.is_current
+    True
+    >>> print new_tm.translations
     [u'Blah.']
-
-    # We need to sync the changed objects for the same reason as before.
-    >>> msgset.sync()
-    >>> msgset.date_reviewed is None
+    >>> print new_tm.reviewer.name
+    sabdfl
+    >>> new_tm.date_reviewed is None
     False
-    >>> pofile.last_touched_pomsgset==msgset
+    >>> pofile.date_changed==new_tm.date_reviewed
     True
 
 Another export run generates a new cached file that contains that new
@@ -684,9 +687,9 @@ translation.
     >>> export is not None
     True
 
-    # And we can see that it's applied in the exported file.
-    XXXXXXXXXXXX
-    >>> export.decode('UTF-8')
+And we can see that it's applied in the exported file.
+
+    >>> print export.decode('UTF-8')
     #...
     #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
@@ -710,7 +713,7 @@ This tests two specific things:
    cache's validity.
 
     >>> empty_pofile = pofile.potemplate.newPOFile('cy')
-    >>> empty_pofile.last_touched_pomsgset is None
+    >>> empty_pofile.lasttranslator is None
     True
     >>> empty_pofile.is_cached_export_valid
     False
@@ -720,7 +723,7 @@ This tests two specific things:
     True
 
     >>> empty_pofile.is_cached_export_valid
-    False
+    True
 
 Also, the export is robust enough to handle a situation where Librarian is not
 available.
@@ -754,13 +757,13 @@ updated.
 Even when we there is no cached file, the export will work and will not be
 stored due the problem with Librarian.
 
-    >>> pofile.is_cached_export_valid()
+    >>> pofile.date_changed = datetime.datetime.now(UTC)
     >>> len(pofile.export()) > 0
     WARNING:root:Error uploading a cached file into librarian
     ...
     UploadFailed: (111, 'Connection refused')
     True
-    >>> pofile.is_cached_export_valid()
+    >>> pofile.is_cached_export_valid
     False
 
     # We restore now Librarian

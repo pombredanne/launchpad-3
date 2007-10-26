@@ -297,6 +297,23 @@ class POTMsgSet(SQLBase):
                     distribution=self.potemplate.distribution,
                     sourcepackagename=self.potemplate.sourcepackagename)
 
+                # If the current message has been changed and
+                # there was a different person (a reviewer) from the
+                # message submitter doing it, add reviewer karma as well.
+                if (new_message != current_message):
+                    if (new_message.submitter != submitter):
+                        submitter.assignKarma(
+                            'translationreview',
+                            product=self.potemplate.product,
+                            distribution=self.potemplate.distribution,
+                            sourcepackagename=self.potemplate.sourcepackagename)
+
+                    new_message.reviewer = submitter
+                    new_message.date_reviewed = UTC_NOW
+                    pofile.date_changed = UTC_NOW
+                    pofile.lasttranslator = submitter
+
+
     def updateTranslation(self, pofile, submitter, new_translations, is_fuzzy,
                           is_imported, lock_timestamp, ignore_errors=False,
                           force_edition_rights=False):
@@ -425,17 +442,6 @@ class POTMsgSet(SQLBase):
                     self._makeTranslationMessageCurrent(
                         pofile, matching_message, current_message, is_imported,
                         submitter)
-
-                # If the current message has been changed and
-                # there was a different person (a reviewer) from the
-                # message submitter activating it, add reviewer karma as well.
-                if (matching_message != current_message and
-                    matching_message.submitter != submitter):
-                    submitter.assignKarma(
-                        'translationreview',
-                        product=self.potemplate.product,
-                        distribution=self.potemplate.distribution,
-                        sourcepackagename=self.potemplate.sourcepackagename)
 
         return matching_message
 
