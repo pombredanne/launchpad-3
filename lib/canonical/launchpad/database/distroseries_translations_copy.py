@@ -359,9 +359,9 @@ def _prepare_translationmessage_merge(
         potmsgset = POTMsgSet.id AND
         msgstr0 IS NOT NULL AND
         (potmsgset.msgid_plural IS NULL OR (
-         (msgstr1 IS NOT NULL OR Language.pluralforms <= 1) AND
-         (msgstr2 IS NOT NULL OR Language.pluralforms <= 2) AND
-         (msgstr3 IS NOT NULL OR Language.pluralforms <= 3)))
+         (msgstr1 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 1) AND
+         (msgstr2 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 2) AND
+         (msgstr3 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 3)))
         """
     copier.extract(
         'TranslationMessage', joins=['POFile'],
