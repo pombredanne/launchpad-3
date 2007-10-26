@@ -560,19 +560,22 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
-        return self.msgid_singular.msgid in [
+        return (self.msgid_singular is not None and
+                self.msgid_singular.msgid in [
             u'translation-credits',
             u'translator-credits',
             u'translator_credits',
             u'_: EMAIL OF TRANSLATORS\nYour emails',
             u'Your emails',
-            ]
+            ])
 
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
+        if self.msgid_singular is None:
+            return False
         regular_credits = self.msgid_singular.msgid in [
             u'translation-credits',
             u'translator-credits',

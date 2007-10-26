@@ -67,11 +67,14 @@ class ExistingPOFileInDatabase:
 
     def _fetchDBRows(self):
         sql = '''
-        SELECT DISTINCT ON (TranslationMessage.id, is_current, is_imported)
+        SELECT
             POMsgId.msgid AS msgid,
             POMsgID_Plural.msgid AS msgid_plural,
             context,
-            pt0.translation, pt1.translation, pt2.translation, pt3.translation,
+            pt0.translation as translation0,
+            pt1.translation as translation1,
+            pt2.translation as translation2,
+            pt3.translation as translation3,
             date_reviewed,
             is_fuzzy,
             is_current,
@@ -120,10 +123,14 @@ class ExistingPOFileInDatabase:
                 message.context = context
                 message.msgid_plural = msgid_plural
 
-            message.addTranslation(0, msgstr0)
-            message.addTranslation(1, msgstr1)
-            message.addTranslation(2, msgstr2)
-            message.addTranslation(3, msgstr3)
+            if msgstr0 is not None:
+                message.addTranslation(0, msgstr0)
+            if msgstr1 is not None:
+                message.addTranslation(1, msgstr1)
+            if msgstr2 is not None:
+                message.addTranslation(2, msgstr2)
+            if msgstr3 is not None:
+                message.addTranslation(3, msgstr3)
             message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
@@ -374,7 +381,9 @@ class TranslationImporter:
 
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
-            if (message.msgid_plural and self.pofile is not None and
+            if (message.msgid_plural is not None and
+                self.pofile is not None and
+                potmsgset.msgid_plural is not None and
                 (message.msgid_plural != potmsgset.msgid_plural.msgid)):
                 # The PO file wants to change the plural msgid from the PO
                 # template, that's broken and not usual, so we raise an
