@@ -13,6 +13,7 @@ just write messages to the file.
 import os
 import sys
 import smtpd
+import signal
 import asyncore
 
 import itest_helper
@@ -26,21 +27,10 @@ execute_zcml_for_scripts()
 from canonical.config import config
 
 
-class Channel(smtpd.SMTPChannel):
-    """Add an SMTP EXIT function for quitting the process."""
-    def smtp_EXIT(self, arg):
-        raise asyncore.ExitNow
-
-
 class Server(smtpd.SMTPServer):
     def __init__(self):
         smtpd.SMTPServer.__init__(self, config.mailman.smtp, None)
         self._mbox = open(sys.argv[1], 'w')
-
-    def handle_accept(self):
-        """Open our extended channel."""
-        conn, addr = self.accept()
-        Channel(self, conn, addr)
 
     def process_message(self, peer, mailfrom, rcpttos, data):
         """Shove the message into the mbox file."""
@@ -54,9 +44,19 @@ class Server(smtpd.SMTPServer):
         self._mbox.close()
 
 
+def handle_signal(*ignore):
+    """Handle signal sent by parent to kill the process."""
+    # Why is killing an asyncore loop so painful?
+    asyncore.socket_map.clear()
+
+
+# Catch the parent's exit signal, and also C-c.
+signal.signal(signal.SIGTERM, handle_signal)
+signal.signal(signal.SIGINT, handle_signal)
+
+
+# Run the main loop.
 server = Server()
-try:
-    asyncore.loop()
-except asyncore.ExitNow:
-    asyncore.close_all()
-    server.close()
+asyncore.loop()
+asyncore.close_all()
+server.close()

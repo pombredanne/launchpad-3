@@ -1,0 +1,105 @@
+= Mailing list subscriptions =
+
+Both direct and indirect members of a team may subscribe to a team's mailing
+list.  First, create the mailing list.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
+
+    >>> list_set = getUtility(IMailingListSet)
+    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> lpadmin = list(experts.allmembers)[0]
+    >>> list_one = list_set.get('itest-one')
+    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
+    >>> itest_helper.transactionmgr.commit()
+
+    >>> itest_helper.wait_for_mailman()
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+Because subscriptions are not yet exposed through the web, we'll add some
+people and join them to teams through the backdoor.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     get_alternative_email, new_person)
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_one = person_set.getByName('itest-one')
+    >>> list_one = list_set.get('itest-one')
+
+    # Subscribe Anne with her preferred address.
+    >>> anne = new_person('Anne')
+    >>> anne.join(team_one)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> list_one.subscribe(removeSecurityProxy(anne))
+
+    # Subscribe Bart with his alternative address.
+    >>> bart = new_person('Bart')
+    >>> bart.join(team_one)
+    >>> list_one.subscribe(removeSecurityProxy(bart),
+    ...                    get_alternative_email(bart))
+    >>> itest_helper.transactionmgr.commit()
+    >>> itest_helper.wait_for_mailman()
+
+Both Anne and Bart should now be members of the mailing list.
+
+    >>> from Mailman.MailList import MailList
+    >>> mailing_list = MailList('itest-one', lock=False)
+    >>> for key in sorted(mailing_list.getMembers()):
+    ...     address = mailing_list.getMemberCPAddress(key)
+    ...     fullname = mailing_list.getMemberName(key)
+    ...     print fullname, '<%s>' % address
+    Anne Person <anne.person@example.com>
+    Bart Person <bperson@example.org>
+
+Add Cris and Dirk as members, change Anne's preferred email address, and
+unsubscribe Bart from the mailing list.
+
+    >>> team_one = person_set.getByName('itest-one')
+    >>> list_one = list_set.get('itest-one')
+
+    # Subscribe Cris with her preferred address.
+    >>> cris = new_person('Cris')
+    >>> cris.join(team_one)
+    >>> list_one.subscribe(removeSecurityProxy(cris))
+
+    # Subscribe Dirk with his preferred address.
+    >>> dirk = new_person('Dirk')
+    >>> dirk.join(team_one)
+    >>> list_one.subscribe(removeSecurityProxy(dirk))
+
+    # Unsubscribe Bart.
+    >>> bart = person_set.getByName('bart')
+    >>> list_one.unsubscribe(bart)
+
+    # Change Anne's email address to her alternative.
+    >>> anne = person_set.getByName('anne')
+    >>> anne.setPreferredEmail(get_alternative_email(anne))
+    >>> itest_helper.transactionmgr.commit()
+    >>> itest_helper.wait_for_mailman()
+
+Now, Anne should be subscribed with her alternate email address, and Cris and
+Dirk are the only other members.
+
+    # Reload the list data.
+    >>> mailing_list.Load()
+    >>> for key in sorted(mailing_list.getMembers()):
+    ...     address = mailing_list.getMemberCPAddress(key)
+    ...     fullname = mailing_list.getMemberName(key)
+    ...     print fullname, '<%s>' % address
+    Anne Person <aperson@example.org>
+    Cris Person <cris.person@example.com>
+    Dirk Person <dirk.person@example.com>

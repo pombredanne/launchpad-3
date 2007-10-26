@@ -1,0 +1,19 @@
+= Posting =
+
+Only Launchpad members are allowed to post to team mailing lists.  A message
+by a sender who is not a Launchpad member will be summarily discarded.
+
+    # This test requires a us to start an SMTP server that accepts messages
+    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+    >>> import os
+    >>> import tempfile
+    >>> descriptor, mbox_filename = tempfile.mkstemp()
+    >>> os.close(descriptor)
+
+    >>> import itest_helper
+    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd.start()
+
+= Clean up =
+
+    >>> smtpd.stop()
