@@ -12,35 +12,12 @@ We need to get a POTMsgSet object to performe this test.
     >>> potmsgsets = potemplate.getPOTMsgSets()
     >>> potmsgset = potmsgsets[0]
 
+Verify interface.
 
-POTMsgSet.getPOMsgSet
----------------------
-
-A request for a POMsgSet with a variant field value should not break.
-
-    >>> potmsgset.getPOMsgSet('en', 'boldquot') is None
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IPOTMsgSet
+    >>> verifyObject(IPOTMsgSet, potmsgset)
     True
-
-
-POTMsgSet.getDummyPOMsgSet
---------------------------
-
-Some times, there are POMsgSet objects that are not yet created in our
-database and thus, we need to get dummy ones for read operations.
-This method give us such dummy objects.
-
-
-    >>> potmsgset.getDummyPOMsgSet('es_ES') is None
-    False
-
-But, if we already have such POMsgSet in our database, and we request
-a dummy one, that's broken and we should detect it.
-
-    >>> potmsgset.getDummyPOMsgSet('es')
-    Traceback (most recent call last):
-    ...
-    AssertionError: There is already a valid IPOMsgSet ...
-
 
 POTMsgSet.normalizeWhitespaces
 -------------------------------
@@ -51,7 +28,7 @@ POTMsgSet's msgid into the 'text' argument.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string')
+    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string', None)
     >>> text = u'another normal string'
 
     In this case, it should not change.
@@ -70,7 +47,7 @@ every test.
     should have it too.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with leading newline')
+    ...     u'\nnormal string with leading newline', None)
     >>> potmsgset.normalizeWhitespaces(text)
     u'\na string with \n whitespaces'
 
@@ -94,7 +71,8 @@ This method changes the u'\u2022' char by the normal white space.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string without the point')
+    >>> potmsgset = potemplate.createMessageSetFromText(
+    ...     u'normal string without the point', None)
     >>> text = u'another normal string'
 
     In this case, it should not change.
@@ -111,7 +89,7 @@ every test.
     Now, msgid will have also that char, so 'text' should not change.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...    u'normal string with the char \u2022')
+    ...    u'normal string with the char \u2022', None)
     >>> potmsgset.convertDotToSpace(text)
     u'a string with the char \u2022'
 
@@ -124,9 +102,9 @@ This method syncs the new line chars to use the same as the associated msgid.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset_windows = potemplate.createMessageSetFromText(u'\r\n')
-    >>> potmsgset_unix = potemplate.createMessageSetFromText(u'\n')
-    >>> potmsgset_mac = potemplate.createMessageSetFromText(u'\r')
+    >>> potmsgset_windows = potemplate.createMessageSetFromText(u'\r\n', None)
+    >>> potmsgset_unix = potemplate.createMessageSetFromText(u'\n', None)
+    >>> potmsgset_mac = potemplate.createMessageSetFromText(u'\r', None)
     >>> text_windows = u'\r\n'
     >>> text_unix = u'\n'
     >>> text_mac = u'\r'
@@ -179,7 +157,7 @@ As this test is very, we wil create a msgid just for this test. We are going
 to use a msgid with a leading and a trailing newline.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with\nleading and trailing newline\n')
+    ...     u'\nnormal string with\nleading and trailing newline\n', None)
 
 And the text we are going to check will have them too, but we are going to
 use '\r\n' like when we get a form submission.
@@ -187,3 +165,33 @@ use '\r\n' like when we get a form submission.
     >>> text = u'\r\nTranslation\r\nto test\r\n'
     >>> potmsgset.applySanityFixes(text)
     u'\nTranslation\nto test\n'
+
+
+POTMsgSet.getPOMsgSet
+---------------------
+
+A request for a POMsgSet with a variant field value should not break.
+
+    >>> potmsgset.getPOMsgSet('en', 'boldquot') is None
+    True
+
+
+POTMsgSet.getDummyPOMsgSet
+--------------------------
+
+Some times, there are POMsgSet objects that are not yet created in our
+database and thus, we need to get dummy ones for read operations.
+This method give us such dummy objects.
+
+
+    >>> potmsgset.getDummyPOMsgSet('es_ES') is None
+    False
+
+But, if we already have such POMsgSet in our database, and we request
+a dummy one, that's broken and we should detect it.
+
+    >>> potmsgset.getDummyPOMsgSet('es')
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is already a valid IPOMsgSet ...
+

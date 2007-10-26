@@ -67,7 +67,7 @@ class ExistingPOFileInDatabase:
 
     def _fetchDBRows(self):
         sql = '''
-        SELECT
+        SELECT DISTINCT ON (TranslationMessage.id, is_current, is_imported)
             POMsgId.msgid AS msgid,
             POMsgID_Plural.msgid AS msgid_plural,
             context,
@@ -76,32 +76,31 @@ class ExistingPOFileInDatabase:
             is_fuzzy,
             is_current,
             is_imported
-          FROM POFile
-            JOIN TranslationMessage ON
-              TranslationMessage.pofile=POFile.id
+          FROM TranslationMessage
+            JOIN POFile ON
+              TranslationMessage.pofile=POFile.id AND POFile.id=%s
             JOIN POTMsgSet ON
               POTMsgSet.id=TranslationMessage.potmsgset
-            JOIN POTranslation pt0 ON
+            LEFT OUTER JOIN POTranslation pt0 ON
               pt0.id=TranslationMessage.msgstr0
-            JOIN POTranslation pt1 ON
+            LEFT OUTER JOIN POTranslation pt1 ON
               pt1.id=TranslationMessage.msgstr1
-            JOIN POTranslation pt2 ON
+            LEFT OUTER JOIN POTranslation pt2 ON
               pt2.id=TranslationMessage.msgstr2
-            JOIN POTranslation pt3 ON
+            LEFT OUTER JOIN POTranslation pt3 ON
               pt3.id=TranslationMessage.msgstr3
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
-          WHERE POFile.id=%s AND
+          WHERE
                 is_current or is_imported
           '''
         cur = cursor()
         cur.execute(sql % sqlvalues(self.pofile))
 
         for (msgid, msgid_plural, context, msgstr0, msgstr1, msgstr2, msgstr3,
-             date, isfuzzy, is_current, is_imported) in cur.fetchall():
-
+             date, is_fuzzy, is_current, is_imported) in cur.fetchall():
             if is_current:
                 look_at = self.messages
             elif is_imported:
