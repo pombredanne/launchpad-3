@@ -420,10 +420,10 @@ class POFile(SQLBase, POFileMixIn):
             potmsgset=potmsgset, pofile=self)
 
     def getCurrentTranslationMessage(self, msgid_text, context=None,
-                                     only_current=False):
+                                     ignore_obsolete=False):
         """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
-        if only_current:
+        if ignore_obsolete:
             query += ' AND sequence > 0'
 
         if not isinstance(msgid_text, unicode):
@@ -1099,7 +1099,7 @@ class DummyPOFile(POFileMixIn):
                                      ignore_obsolete=False):
         """See `IPOFile`."""
         query = 'potemplate = %d' % sqlvalues(self.potemplate)
-        if only_current:
+        if ignore_obsolete:
             query += ' AND sequence > 0'
 
         if not isinstance(msgid_text, unicode):

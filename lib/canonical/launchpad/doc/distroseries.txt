@@ -18,6 +18,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_caches, flush_database_updates)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
@@ -456,7 +458,6 @@ Supersede current publication:
 
 We need to flush cached values.
 
-   >>> from canonical.database.sqlbase import flush_database_updates
    >>> flush_database_updates()
 
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
@@ -740,6 +741,7 @@ category of message is called rosettaCount.
 When we compare the full translations for hoary and humpy, we see the changes
 we just made, as well as the differences between the messages-with-context.
 
+    >>> flush_database_caches()
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
     <BLANKLINE>
