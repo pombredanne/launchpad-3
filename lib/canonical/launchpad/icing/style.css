@@ -528,11 +528,22 @@ ul#menuroot li.selected a.breadcrumb {
 /* The widget has two parts. First, the tab itself. */
 #help-tab {
   background: url(help-tab.gif);
-  color: #f7f7f7;
   float: right;
-  font-size: 1px;
+  /* The help-tab.gif dimensions are 32x62. We must set absolute width and
+     height and override any padding that could be applied by less specific
+     rules. */     
   width: 32px;
   height: 62px;
+  padding: 0;
+  /* The help-tab element contains the "Help" text for rendering without CSS.
+     For reasonable minimum font sizes, this text should fit in the gray area
+     at the top of the image. We set the text color to the background color of
+     the image to make it invisible. */
+  color: #f7f7f7;
+  font-size: 1px;
+  /* For correct positioning, the help-tab must have zero margin. Reset
+     margins set by less specific rules (such as "h2"). */
+  margin: 0;
 }
 /* Second, the help panel, which takes up the rest of the 300px. */
 #help-panel {float: left; width: 268px;}
