@@ -173,6 +173,7 @@ class LaunchpadServer(Server):
                 raise PermissionDenied("%s doesn't exist" % (user,))
             user_id = user_dict['id']
             if user_id != self.user_id:
+                # XXX Er.  user might not be a team!
                 raise PermissionDenied(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
