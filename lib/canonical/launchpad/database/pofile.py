@@ -676,9 +676,14 @@ class POFile(SQLBase, POFileMixIn):
         # were not translated.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
         query.append('NOT TranslationMessage.is_fuzzy')
-        for plural_form in range(self.language.pluralforms):
-            query.append(
-                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
+        # Check only complete translations.  For messages with only a single
+        # msgid, that's anything with a singular translation; for ones with a
+        # plural form, it's the number of plural forms the language supports.
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        for plural_form in range(1, self.language.pluralforms):
+            query.append("""
+                (POTMsgSet.msgid_plural IS NULL OR
+                 TranslationMessage.msgstr%d IS NOT NULL)""" % plural_form)
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
