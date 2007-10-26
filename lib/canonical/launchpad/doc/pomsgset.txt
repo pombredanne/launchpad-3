@@ -505,8 +505,8 @@ Launchpad for translations.
 
 == latest_change_date ==
 
-With latest_change_date we are able to know when was last time updated
-the message.
+With latest_change_date we are able to know when the message's last
+time updates was.
 
 It works for messages without plural forms.
 
@@ -521,7 +521,8 @@ Is newer or equal than the translation is use.
     ...  pomsgset_translated.getActiveSubmission(0).datecreated)
     True
 
-And, in this case, given that is a review time, it matches it.
+And, in this case, given that it is a review timestamp, it matches
+date_reviewed.
 
     >>> pomsgset_translated.latest_change_date == (
     ...     pomsgset_translated.date_reviewed)
@@ -534,7 +535,7 @@ And with messages with plural forms.
     >>> pomsgset_with_plurals.potmsgset.msgid_plural is None
     False
 
-It's always newer than when all existing translations were created...
+It's always newer than the all existing translations create time...
 
     >>> for plural_form in range(pomsgset_with_plurals.pluralforms):
     ...     active_submission = pomsgset_with_plurals.getActiveSubmission(
@@ -545,7 +546,7 @@ It's always newer than when all existing translations were created...
     ...             'latest_change_date is older than plural form'
     ...             ' %d datecreated' % active_submission.datecreated)
 
-... or equal when was it reviewed.
+... or equal to the last review time of the message.
 
     >>> print pomsgset_with_plurals.date_reviewed
     2005-10-11 20:18:55.981500+00:00
