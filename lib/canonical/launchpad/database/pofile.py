@@ -557,18 +557,16 @@ class POFile(SQLBase, POFileMixIn):
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
-            LEFT OUTER JOIN POMsgSet ON
-                POTMsgSet.id = POMsgSet.potmsgset AND
-                POMsgSet.pofile = %s
-            LEFT OUTER JOIN POSubmission ps1 ON
-                ps1.pomsgset = POMsgSet.id
-            LEFT OUTER JOIN POSubmission ps2 ON
-                ps2.pomsgset = ps1.pomsgset AND
-                ps2.pluralform = ps1.pluralform AND
-                ps2.id != ps1.id
+            LEFT JOIN TranslationMessage imported ON
+                POTMsgSet.id = imported.potmsgset
+            LEFT OUTER JOIN TranslationMessage current ON
+                POTMsgSet.id = current.potmsgset AND
+                imported.id != current.id AND
+                current.pofile = imported.pofile
             WHERE
-                ps1.published IS TRUE AND
-                ps2.active IS TRUE AND
+                imported.pofile = %s AND
+                imported.is_imported IS TRUE AND
+                current.is_current IS TRUE AND
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s)
             ''' % sqlvalues(self, self.potemplate),

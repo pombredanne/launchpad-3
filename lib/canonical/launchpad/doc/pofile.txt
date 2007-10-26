@@ -635,10 +635,6 @@ not set.
 
     >>> pofile.is_cached_export_valid
     False
-    >>> print pofile.lasttranslator.name
-    carlos
-    >>> print new_tm.submitter.name
-    sabdfl
 
 Exporting a pofile regenerates the cache.
 
@@ -822,15 +818,20 @@ Lets get a single untranslated POTMsgSet.
     >>> untranslated = list(pofile_changed.getPOTMsgSetUntranslated())[0]
     >>> untranslated is None
     False
-    >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.msgid)
-    >>> pomsgset is None
-    False
+    >>> current = untranslated.getCurrentTranslationMessage(
+    ...     pofile_changed.language)
+    >>> current is None
+    True
+    >>> imported = untranslated.getImportedTranslationMessage(
+    ...     pofile_changed.language)
+    >>> imported is None
+    True
 
 Now, lets provide a translation for it.
 
-    >>> pomsgset.updateTranslationSet(
-    ...     pofile_changed.owner, {0: u'sample translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> translation_message = untranslated.updateTranslation(pofile_changed,
+    ...     pofile_changed.owner, {0: u'sample translation'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
 
 And make sure that the count of changed in Launchpad hasn't changed.
 
@@ -841,23 +842,26 @@ And make sure that the count of changed in Launchpad hasn't changed.
     >>> print pofile_changed.updatesCount()
     1
 
-Now, lets change translation for a message which already has a published
-translation.  First we need to find a message with active, published
+Now, lets change translation for a message which already has an imported
+translation.  First we need to find a message with current, imported
 translation:
 
-    >>> for pomsgset in pofile_changed:
-    ...     if pomsgset.publishedcomplete and not pomsgset.publishedfuzzy:
-    ...         submission = pomsgset.getPublishedSubmission(0)
-    ...         if submission and submission.active:
-    ...             break
-    >>> pomsgset is None
+    >>> for potmsgset in pofile_changed.potemplate:
+    ...     tm = potmsgset.getImportedTranslationMessage(
+    ...         pofile_changed.language)
+    ...     if tm is not None and tm.is_complete and tm.is_current:
+    ...         imported_potmsgset = potmsgset
+    ...         break
+    >>> potmsgset is None
     False
 
 Lets re-translate that:
 
-    >>> pomsgset.updateTranslationSet(
-    ...     pofile_changed.owner, {0: u'new translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> translation_message = imported_potmsgset.updateTranslation(
+    ...     pofile_changed, pofile_changed.owner, {0: u'new translation'},
+    ...     is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches()
 
 And make sure that the count of messages changed in Launchpad _has_ changed:
 
