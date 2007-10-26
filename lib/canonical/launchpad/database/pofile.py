@@ -319,6 +319,8 @@ class POFile(SQLBase, POFileMixIn):
         if self.exportfile is None:
             return False
 
+        import sys; print  >>sys.stderr, "COMPARING ", self.exporttime, ",", self.date_changed
+
         return self.exporttime >= self.date_changed
 
     def prepareTranslationCredits(self, potmsgset):

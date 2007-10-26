@@ -261,6 +261,42 @@ class POTMsgSet(SQLBase):
                     sqlvalues(pluralform, potranslations[pluralform]))
         return TranslationMessage.selectOne(query, clauseTables=['POFile'])
 
+    def _makeTranslationMessageCurrent(self, pofile, new_message,
+                                       current_message, is_imported, submitter):
+        current_message = self.getCurrentTranslationMessage(
+            pofile.language)
+        if is_imported:
+            new_message.is_imported = True
+            # A new imported message is made current
+            # only if there is no existing current message
+            # or if the current message came from import
+            # or if current message is empty (deactivated translation)
+            if (current_message is None or
+                current_message.is_imported or
+                current_message.is_empty):
+                new_message.is_current = True
+                # Don't update the submitter and date changed
+                # if there was no current message and an empty
+                # message is submitted
+                if (not (current_message is None and
+                         new_message.is_empty)):
+                    pofile.lasttranslator = submitter
+                    pofile.date_changed = UTC_NOW
+        else:
+            # Non-imported translations.
+            new_message.is_current = True
+            pofile.lasttranslator = submitter
+            pofile.date_changed = UTC_NOW
+
+            if new_message.origin == RosettaTranslationOrigin.ROSETTAWEB:
+                # The submitted translation came from our UI, we give
+                # give karma to the submitter of that translation.
+                new_message.submitter.assignKarma(
+                    'translationsuggestionapproved',
+                    product=self.potemplate.product,
+                    distribution=self.potemplate.distribution,
+                    sourcepackagename=self.potemplate.sourcepackagename)
+
     def updateTranslation(self, pofile, submitter, new_translations, is_fuzzy,
                           is_imported, lock_timestamp, ignore_errors=False,
                           force_edition_rights=False):
@@ -278,8 +314,6 @@ class POTMsgSet(SQLBase):
                   '%s cannot add translations nor can add suggestions' % (
                     submitter.displayname))
 
-        # It makes no sense to have an "is_imported" submission from someone
-        # who is not an editor, so assert that.
         if is_imported and not is_editor:
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
@@ -321,26 +355,15 @@ class POTMsgSet(SQLBase):
         matching_message = self._findTranslationMessage(
             pofile.language, potranslations, pofile.language.pluralforms)
 
-        # Whether we are creating a new message.
-        new_message_created = False
-
-        # If it's not a suggestion, it'll be made current.
-        is_current = not just_a_suggestion
-
-        has_changed = False
-
         if matching_message is None:
-            new_message_created = True
+            # Creating a new message.
 
-            # A current one has changed if we are creating a new one.
-            has_changed = is_current
-            # Create a new one.
             if is_imported:
                 origin = RosettaTranslationOrigin.SCM
             else:
                 origin = RosettaTranslationOrigin.ROSETTAWEB
 
-            matching_message = TranslationMessage(
+            new_message = TranslationMessage(
                 potmsgset=self,
                 pofile=pofile,
                 origin=origin,
@@ -351,6 +374,9 @@ class POTMsgSet(SQLBase):
                 msgstr3=potranslations[3],
                 validation_status=validation_status)
 
+            # It's a fuzzy one.
+            new_message.is_fuzzy = is_fuzzy
+
             if just_a_suggestion:
                 # Adds suggestion karma: editors get their translations
                 # automatically approved, so they get 'reviewer' karma instead.
@@ -359,62 +385,57 @@ class POTMsgSet(SQLBase):
                     product=self.potemplate.product,
                     distribution=self.potemplate.distribution,
                     sourcepackagename=self.potemplate.sourcepackagename)
+                if warn_about_lock_timestamp:
+                    raise TranslationConflict(
+                        'The new translations were saved as suggestions to '
+                        'avoid possible conflicts. Please review them.')
+            else:
+                # Set the new current message if it validates ok.
+                if (new_message.validation_status ==
+                    TranslationValidationStatus.OK):
+                    current_message = self.getCurrentTranslationMessage(
+                        pofile.language)
+                    # Makes the new_message current if needed and also
+                    # assignes karma for translation approval
+                    self._makeTranslationMessageCurrent(
+                        pofile, new_message, current_message, is_imported,
+                        submitter)
 
+            matching_message = new_message
         else:
+            # There is an existing matching message. Update it as needed.
             # Also update validation status if needed
             matching_message.validation_status = validation_status
+            if just_a_suggestion:
+                # An existing message is just a suggestion, warn if needed.
+                if warn_about_lock_timestamp:
+                    raise TranslationConflict(
+                        'The new translations were saved as suggestions to '
+                        'avoid possible conflicts. Please review them.')
 
-        if not just_a_suggestion:
-            if is_imported:
-                current_message = self.getCurrentTranslationMessage(
-                    pofile.language)
-                if (current_message is None or current_message.is_imported or
-                    current_message.is_empty):
-                    matching_message.is_current = True
             else:
-                current_message = self.getCurrentTranslationMessage(
-                    pofile.language)
-                matching_message.is_current = is_current
-
-        if just_a_suggestion:
-            if not matching_message.is_current:
                 matching_message.is_fuzzy = is_fuzzy
-            if warn_about_lock_timestamp:
-                raise TranslationConflict(
-                    'The new translations were saved as suggestions to avoid '
-                    'possible conflicts. Please review them.')
-        else: # It's current submission and submitter is an editor.
-            matching_message.is_fuzzy = is_fuzzy
+                current_message = self.getCurrentTranslationMessage(
+                    pofile.language)
+                # Set the new current message if it validates ok.
+                if (matching_message.validation_status ==
+                    TranslationValidationStatus.OK):
+                    # Makes the new_message current if needed and also
+                    # assignes karma for translation approval
+                    self._makeTranslationMessageCurrent(
+                        pofile, matching_message, current_message, is_imported,
+                        submitter)
 
-            # Set message as current only if it validates ok.
-            if (has_changed and (matching_message.validation_status ==
-                                 TranslationValidationStatus.OK)):
-                pofile.lasttranslator = submitter
-                pofile.date_changed = UTC_NOW
-
-            if is_imported:
-                matching_message.is_imported = True
-            else:
-                if (new_message_created and
-                    (matching_message.origin ==
-                     RosettaTranslationOrigin.ROSETTAWEB)):
-                    # The submitted translation came from our UI, we give
-                    # give karma to the submitter of that translation.
-                    matching_message.submitter.assignKarma(
-                        'translationsuggestionapproved',
-                        product=self.potemplate.product,
-                        distribution=self.potemplate.distribution,
-                        sourcepackagename=self.potemplate.sourcepackagename)
-                if (has_changed and matching_message.submitter != submitter):
-                    # A reviewer activated someone else's translation.
+                # If the current message has been changed and
+                # there was a different person (a reviewer) from the
+                # message submitter activating it, add reviewer karma as well.
+                if (matching_message != current_message and
+                    matching_message.submitter != submitter):
                     submitter.assignKarma(
                         'translationreview',
                         product=self.potemplate.product,
                         distribution=self.potemplate.distribution,
                         sourcepackagename=self.potemplate.sourcepackagename)
-                if has_changed:
-                    matching_message.reviewer = submitter
-                    matching_message.date_reviewed = UTC_NOW
 
         return matching_message
 

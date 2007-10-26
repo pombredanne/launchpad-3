@@ -520,7 +520,12 @@ strongly related with is_cached_export_valid, which drives whether the export
 should be a full export from our database or just return an already
 cached value.
 
-    # Get hold of a PO file which has been exported before.
+We need this to be able to store dates inside database.
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+
+Get hold of a PO file which has been exported before.
+
     >>> from canonical.launchpad.database import POFile
     >>> pofile = POFile.get(1)
 
@@ -594,10 +599,11 @@ Right now, there is no translation existing for this message.
 So adding an empty one produces that...
 
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
+    >>> flush_database_caches() # Store modification dates in database
     >>> new_translation_message = potmsgset.updateTranslation(
-    ...     translation_message.pofile, person, {0: ''}, is_fuzzy=False,
+    ...     pofile, person, {0: u''}, is_fuzzy=False,
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_updates()
+    >>> flush_database_caches() # Store modification dates in database
     >>> print new_translation_message.translations
     [None]
     >>> print new_translation_message.date_reviewed
@@ -618,7 +624,7 @@ not set.
     ...     new_translation_message.pofile, person, {0: 'Foo.'},
     ...     is_fuzzy=False, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_updates()
+    >>> flush_database_caches() # Store modification dates in database
     >>> new_tm == translation_message
     False
     >>> print new_tm.translations
@@ -628,9 +634,6 @@ not set.
     >>> new_tm.is_empty
     False
 
-    # We need to sync the changed objects for the same reason as before.
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
     >>> pofile.is_cached_export_valid
     False
     >>> print pofile.lasttranslator.name
@@ -646,7 +649,7 @@ Exporting a pofile regenerates the cache.
 
     # And we can see that it's applied in the exported file.
     XXXXXXXXXXXXX
-    >>> export.decode('UTF-8')
+    >>> print export.decode('UTF-8')
     #...
     #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
