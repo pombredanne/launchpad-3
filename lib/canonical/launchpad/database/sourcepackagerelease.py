@@ -71,7 +71,7 @@ class SourcePackageRelease(SQLBase):
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
-    # landing 'NoMoreAptFtparchive' implementation for main archive. For
+    # landing 'NoMoreAptFtparchive' implementation for PRIMARY archive. For
     # PPA (primary target) we don't need populate old records.
     dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
     dsc_standards_version = StringCol(dbName='dsc_standards_version')
@@ -316,7 +316,8 @@ class SourcePackageRelease(SQLBase):
         queries.append(
             "Build.distroarchrelease IN %s" % sqlvalues(architectures))
 
-        # Follow archive inheritance across MAIN archives, for example:
+        # Follow archive inheritance across distribution officla archives,
+        # for example:
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on

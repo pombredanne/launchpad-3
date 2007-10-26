@@ -112,7 +112,7 @@ class IPublishing(Interface):
         """
 
     def getIndexStanza():
-        """Return respective archive index stanza contents
+        """Return archive index stanza contents
 
         It's based on the locally provided buildIndexStanzaTemplate method,
         which differs for binary and source instances.
@@ -128,7 +128,7 @@ class IPublishing(Interface):
     def supersede():
         """Supersede this publication.
 
-        Return the respective superseded publishing records, either a
+        Return the superseded publishing records, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
@@ -138,14 +138,14 @@ class IPublishing(Interface):
         param removed_by: `IPerson` responsible for the removal.
         param removal_comment: optional text describing the removal reason.
 
-        Return the respective deleted publishing records, either a
+        Return the deleted publishing records, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket):
         """Copy this publication to another location.
 
-        Return the respective publishing in the targeted location, either a
+        Return the publishing in the targeted location, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
@@ -181,7 +181,7 @@ class IFilePublishing(Interface):
     archive_url = Attribute('The on-archive URL for the published file.')
 
     publishing_record = Attribute(
-        "Return the respective Source or Binary publishing record "
+        "Return the Source or Binary publishing record "
         "(in the form of I{Source,Binary}PackagePublishingHistory).")
 
     def publish(diskpool, log):
@@ -318,7 +318,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 
         It is changed only if the argument is not None.
 
-        Return the respective overridden publishing record, either a
+        Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
@@ -440,7 +440,7 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
         It is changed only if the argument is not None.
 
-        Return the respective overridden publishing record, either a
+        Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 

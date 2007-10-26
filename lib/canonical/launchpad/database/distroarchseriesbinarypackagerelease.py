@@ -78,6 +78,9 @@ class DistroArchSeriesBinaryPackageRelease:
         record = self._latest_publishing_record(status=status)
         return record
 
+# XXX cprov 20071026: heavy queries should be moved near to the related
+# content classes in order to be better maintained. In this specific case
+# the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s "
                  "AND archive IN %s"
