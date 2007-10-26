@@ -138,7 +138,6 @@ no title, and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
-    >>> url = 'http://example.com/~ddaa/junkcode'
     >>> junkcode = branchset.new(
     ...     BranchType.HOSTED, 'junkcode', ddaa, ddaa, None, None,
     ...     date_created=now.next())
