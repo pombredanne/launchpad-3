@@ -223,7 +223,8 @@ class POFileMixIn(RosettaStats):
 
         potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(key=msgid_text,
                                                             context=context)
-        return getCurrentTranslationMessageFromPOTMsgSet(self, potmsgset)
+        return self.getCurrentTranslationMessageFromPOTMsgSet(
+            potmsgset, ignore_obsolete=ignore_obsolete)
 
 
 class POFile(SQLBase, POFileMixIn):
@@ -522,11 +523,13 @@ class POFile(SQLBase, POFileMixIn):
             POTMsgSet.sequence > 0 AND
             TranslationMessage.potmsgset = POTMsgSet.id AND
             TranslationMessage.pofile = %s AND
+            TranslationMessage.is_current IS NOT TRUE AND
             TranslationMessage.date_created > COALESCE(
-                (SELECT current.date_reviewed
+                (SELECT COALESCE(current.date_reviewed, current.date_created)
                     FROM TranslationMessage current
                     WHERE current.potmsgset = POTMsgSet.id AND
                           current.pofile = TranslationMessage.pofile AND
+                          current.id != TranslationMessage.id AND
                           current.is_current IS TRUE
                     LIMIT 1),
                 TIMESTAMP '1970-01-01 00:00:00')
@@ -639,13 +642,14 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get the number of translations that we got from imports.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query.append('TranslationMessage.is_imported')
+        query.append('TranslationMessage.is_imported IS TRUE')
         query.append('NOT TranslationMessage.was_fuzzy_in_last_import')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
-        for plural_form in range(self.language.pluralforms):
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        for plural_form in range(1, self.language.pluralforms):
             query.append(
-                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
+                '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
 
         current = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()

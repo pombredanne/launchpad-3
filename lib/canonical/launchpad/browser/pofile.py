@@ -393,7 +393,7 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.context.validExportCache():
+        if self.context.is_cached_export_valid:
             # There is already a valid exported file cached in Librarian, we
             # can serve that file directly.
             self.request.response.redirect(self.context.exportfile.http_url)
