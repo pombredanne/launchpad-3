@@ -1,0 +1,13 @@
+# This file is for listing TODOs for branches that are being worked on.
+# It should ALWAYS be empty in the mainline or in integration branches.
+# There is a test to ensure that this file is empty (except for this header)
+# when it lands on the trunk
+#
+
+ Tests for:
+  - we know about all the mirror speeds
+  - we correctly handle some of the calculations of aggregate mirror speeds
+     - per country
+     - in total
+  - this file is empty except for the header :-)
+
