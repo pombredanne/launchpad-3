@@ -90,17 +90,8 @@ mailing list to be activated.
     ...     print msg
     Mailing list requested and queued for approval.
 
-A brief behind-the-scenes peek verifies that the mailing list was
-created (do we really need this in a page test?)
-    
-    # We don't use getUtility(IMailingListSet) here because we want
-    # non-security-proxied objects so that we can call syncUpdate on them
-    # and change their status at our discretion.
-    >>> from canonical.launchpad.database import MailingListSet, Person
-    >>> list_set = MailingListSet()
-    >>> mailing_list = list_set.get('landscape-developers')
-    >>> mailing_list.status
-    <...MailingListStatus.REGISTERED...>
+By going to the mailing list configuration screen we can verify that
+the mailing list was created but has not been approved:
 
     >>> browser.getLink('Configure mailing list').click()
     >>> for msg in get_feedback_messages(browser):
@@ -117,6 +108,13 @@ not shown anymore.
 
 If the application is declined, the button won't be shown either. Instead,
 we'll ask the user to contact a Launchpad admin.
+    
+    # We don't use getUtility(IMailingListSet) here because we want
+    # non-security-proxied objects so that we can call syncUpdate on them
+    # and change their status at our discretion.
+    >>> from canonical.launchpad.database import MailingListSet, Person
+    >>> list_set = MailingListSet()
+    >>> mailing_list = list_set.get('landscape-developers')
 
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> from canonical.launchpad.ftests import login, logout
@@ -131,6 +129,7 @@ we'll ask the user to contact a Launchpad admin.
     Traceback (most recent call last):
     ...
     LookupError: ...
+
     >>> for msg in get_feedback_messages(browser):
     ...     print extract_text(msg)
     The application for this team's mailing list has been declined. Please
@@ -144,8 +143,7 @@ we'll ask the user to contact a Launchpad admin.
 Any time before the mailing list is approved, the application can be
 cancelled (and then re-requested afterwards).
 
-    >>> browser.getLink('Overview').click()
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.reload()
     >>> browser.getControl('Cancel Application').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
@@ -162,14 +160,17 @@ cancelled (and then re-requested afterwards).
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> mailing_list = list_set.get('landscape-developers')
-    >>> mailing_list
-    <MailingList for team "landscape-developers"; status=REGISTERED...
 
 The mailing list can be used as the team's contact address only when its
 status is ACTIVE. The process of activating a mailing list is invisible to
 users, so we'll simulate it here by directly accessing our database code.
 
+We need to get the mailing list object again because it's not the same
+list as last time--it was rejected and we requested a new one.
+
+    >>> mailing_list = list_set.get('landscape-developers')
+    >>> mailing_list
+    <MailingList for team "landscape-developers"; status=REGISTERED...
     >>> login('foo.bar@canonical.com')
     >>> mailing_list.review(foobar, MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
@@ -230,7 +231,7 @@ the team's contact address.
     ['\xa0The Launchpad mailing list for this team...]
 
 When the mailing list is not the team's contact address, the mailing
-list configuration screen displays an informative message:
+list configuration screen displays a message to this effect:
 
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
@@ -240,11 +241,16 @@ list configuration screen displays an informative message:
     ...     print msg
     This team's mailing list is not set as the team contact address.
 
-The mailing list configuration screen makes it easy to set the team
-contact address directly, rather than going to the contact address
-screen:
+The mailing list configuration screen also makes it easy to set the
+team contact address directly, rather than going through the contact
+address screen:
 
     >>> browser.getControl('Set mailing list as contact address').click()
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> get_feedback_messages(browser)
+    []
+
     >>> browser.getLink('Configure mailing list').click()
     >>> get_feedback_messages(browser)
     []
