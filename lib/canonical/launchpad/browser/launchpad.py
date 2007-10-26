@@ -483,18 +483,23 @@ class LaunchpadRootNavigation(Navigation):
         if name == 'bazaar' and IXMLRPCRequest.providedBy(self.request):
             return getUtility(IBazaarApplication)
 
-        try:
-            # account for common typing mistakes
-            if canonical_name(name) != name:
-                if self.request.method == 'POST':
-                    raise POSTToNonCanonicalURL
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
-            else:
-                return getUtility(IPillarNameSet)[name]
-        except NotFoundError:
-            return None
+        # account for common typing mistakes
+        if canonical_name(name) != name:
+            if self.request.method == 'POST':
+                raise POSTToNonCanonicalURL
+            return self.redirectSubTree(
+                canonical_url(self.context) + canonical_name(name),
+                status=301)
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        user = getUtility(ILaunchBag).user
+        ignore_inactive = True
+        if user and user.inTeam(admins):
+            # Admins should be able to access deactivated projects too
+            ignore_inactive = False
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=ignore_inactive)
+        return pillar
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect:

@@ -20,6 +20,7 @@ from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.scripts.importd.gettarget import ImportdTargetGetter
 from canonical.launchpad.scripts.importd.publish import ImportdPublisher
@@ -122,6 +123,7 @@ class TestImportdTargetGetter(ImportdTargetGetterTestCase):
         # end up with an environment that is valid for get_target in all
         # respects, except for the owner of the branch record.
         series = self.series_helper.series
+        sync(series)
         series.import_branch.owner = series.product.owner
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         assert series.import_branch.owner != vcs_imports

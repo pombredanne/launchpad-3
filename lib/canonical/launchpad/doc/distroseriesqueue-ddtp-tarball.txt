@@ -87,7 +87,7 @@ It was not rejected.
   ...
   DEBUG: signer of the above package.
   DEBUG: Sent a mail:
-  DEBUG:     Subject: Accepted translations_main_20060728.tar.gz - (raw-ddtp-tarball)
+  DEBUG:     Subject: Accepted: translations_main_20060728.tar.gz - (raw-ddtp-tarball)
   DEBUG:     Recipients: test@example.com
   ...
 

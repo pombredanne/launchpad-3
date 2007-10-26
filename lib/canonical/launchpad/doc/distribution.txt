@@ -495,7 +495,6 @@ the distribution in question:
     >>> [archive.owner.name for archive in debian.getAllPPAs()]
     []
 
-
 === Searching PPAs ===
 
 Via searchPPAs, the callsites are able to look for PPA given a string
@@ -510,25 +509,25 @@ There is only one 'active' PPA:
     1
     >>> no_priv.archive.getPublishedSources().count()
     0
-  
+
     >>> result = ubuntu.searchPPAs()
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'sabdfl']
-  
+
 PPAs can be reached passing a filter matching (substring) its
 description or the person string indexes:
 
     >>> print cprov.archive.description
     packages to help my friends.
-  
+
     >>> result = ubuntu.searchPPAs(text='friend')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
-  
+
     >>> result = ubuntu.searchPPAs(text='celso')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
-  
+
     >>> result = ubuntu.searchPPAs(text='oink')
     >>> [archive.owner.name for archive in result]
     []
@@ -538,14 +537,14 @@ Incluing 'inactive' PPAs:
     >>> result = ubuntu.searchPPAs(show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'no-priv', u'sabdfl']
-  
+
     >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'no-priv']
-  
+
     >>> print sabdfl.archive.description
     packages to help the humanity (you know, ubuntu)
-  
+
     >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'sabdfl']
