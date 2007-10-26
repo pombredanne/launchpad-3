@@ -20,7 +20,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingStatus)
+    IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
@@ -97,7 +97,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
     def getRemover(self, name='mozilla-firefox', version=None,
                    suite='warty', distribution_name='ubuntu',
-                   component=None, arch=None,
+                   component=None, arch=None, partner=False, ppa=None,
                    user_name=None, removal_comment=None,
                    binary_only=False, source_only=False):
         """Return a PackageRemover instance.
@@ -124,6 +124,12 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         if arch is not None:
             test_args.extend(['-a', arch])
 
+        if ppa is not None:
+            test_args.extend(['-p', ppa])
+
+        if partner:
+            test_args.append('-j')
+
         if component is not None:
             test_args.extend(['-c', component])
 
@@ -149,27 +155,26 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         remover.setupLocation()
         return remover
 
-    def _getPublicationIDs(self):
-        """Return the publication IDs for the mozilla-firefox release.
+    def _getPublicationIDs(self, source_name='mozilla-firefox',
+                           distribution_name='ubuntu',
+                           distroseries_name='warty'):
+        """Return the current publication IDs for the given sourcename.
 
-        Return the publication IDs for the sources and binaries of the current
-        mozilla-firefox release in warty (warty-i386, warty-hppa).
+        Return the publication IDs for the sources and binaries.
 
         We return IDs instead of the records because they won't be useful in
         callsites without a `flush_database_updates`.
         """
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        warty = ubuntu['warty']
-        warty_i386 = warty['i386']
-        warty_hppa = warty['hppa']
+        distribution = getUtility(IDistributionSet)[distribution_name]
+        distroseries = distribution[distroseries_name]
 
-        mozilla_sp = warty.getSourcePackage('mozilla-firefox')
-        mozilla_src_pub = mozilla_sp.currentrelease.current_published
-        mozilla_bin_pub_ids = [
+        sp = distroseries.getSourcePackage(source_name)
+        src_pub = sp.currentrelease.current_published
+        bin_pub_ids = [
             bin.current_publishing_record.id
-            for bin in mozilla_sp.currentrelease.published_binaries]
+            for bin in sp.currentrelease.published_binaries]
 
-        return (mozilla_src_pub.id, mozilla_bin_pub_ids)
+        return (src_pub.id, bin_pub_ids)
 
     def _preparePublicationIDs(self, pub_ids, source=True):
         """Prepare the given publication ID list for checks.
@@ -301,6 +306,127 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         self.assertPublished(mozilla_src_pub_id, source=True)
         self.assertPublished(other_bin_pub_ids, source=False)
         self.assertDeleted(mozilla_firefox_bin_pub_ids, source=False)
+
+    def testRemoveSourceAndBinariesFromPartner(self):
+        """Source and binary package removal for Partner archive."""
+        src_pub_id, bin_pub_ids = self._getPublicationIDs(
+            'commercialpackage', distroseries_name='breezy-autotest')
+        removal_candidates = [src_pub_id]
+        removal_candidates.extend(bin_pub_ids)
+
+        remover = self.getRemover(
+            name='commercialpackage', suite='breezy-autotest', partner=True)
+        removals = remover.mainTask()
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        self.assertDeleted(src_pub_id, source=True)
+        self.assertDeleted(bin_pub_ids, source=False)
+
+    def testRemoveSourceOnlyFromPartner(self):
+        """Source-only package removal for Partner archive."""
+        src_pub_id, bin_pub_ids = self._getPublicationIDs(
+            'commercialpackage', distroseries_name='breezy-autotest')
+        removal_candidates = [src_pub_id]
+
+        remover = self.getRemover(
+            name='commercialpackage', suite='breezy-autotest', partner=True,
+            source_only=True)
+        removals = remover.mainTask()
+
+        self.assertEqual(len(removals), 1)
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        self.assertDeleted(src_pub_id, source=True)
+        self.assertPublished(bin_pub_ids, source=False)
+
+    def testRemoveBinaryOnlyFromPartner(self):
+        """Binary-only package removal for Partner archive."""
+        src_pub_id, bin_pub_ids = self._getPublicationIDs(
+            'commercialpackage', distroseries_name='breezy-autotest')
+        removal_candidates = []
+        removal_candidates.extend(bin_pub_ids)
+
+        remover = self.getRemover(
+            name='commercialpackage', suite='breezy-autotest', partner=True,
+            binary_only=True)
+        removals = remover.mainTask()
+
+        self.assertEqual(len(removals), 1)
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        self.assertPublished(src_pub_id, source=True)
+        self.assertDeleted(bin_pub_ids, source=False)
+
+    def _getPublicationsIDsForPPA(self):
+        """Return a set of PPA publications IDs.
+
+        Using pmount_0.1-1 in warty from Cprov PPA.
+        """
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov_ppa = cprov.archive
+        warty = cprov.archive.distribution['warty']
+
+        src_pub = cprov_ppa.getPublishedSources(
+            name='pmount', version='0.1-1', exact_match=True)[0]
+        bin_pubs = src_pub.getPublishedBinaries()
+        src_pub_id = src_pub.id
+        bin_pub_ids = [p.id for p in bin_pubs]
+
+        return src_pub_id, bin_pub_ids
+
+    def testRemoveSourceAndBinariesFromPPA(self):
+        """Source and binary package removal for PPAs."""
+        src_pub_id, bin_pub_ids = self._getPublicationsIDsForPPA()
+        removal_candidates = [src_pub_id]
+        removal_candidates.extend(bin_pub_ids)
+
+        remover = self.getRemover(name='pmount', suite='warty', ppa='cprov')
+        removals = remover.mainTask()
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        self.assertDeleted(src_pub_id, source=True)
+        self.assertDeleted(bin_pub_ids, source=False)
+
+    def testRemoveSourceOnlyFromPPA(self):
+        """Source-only package removal for PPAs."""
+        src_pub_id, bin_pub_ids = self._getPublicationsIDsForPPA()
+        removal_candidates = [src_pub_id]
+
+        remover = self.getRemover(
+            name='pmount', suite='warty', ppa='cprov', source_only=True)
+        removals = remover.mainTask()
+
+        self.assertEqual(len(removals), 1)
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        self.assertDeleted(src_pub_id, source=True)
+        self.assertPublished(bin_pub_ids, source=False)
+
+    def testRemoveBinaryOnlyFromPPA(self):
+        """Binary-only package removal for PPAs."""
+        src_pub_id, bin_pub_ids = self._getPublicationsIDsForPPA()
+        removal_candidates = []
+        removal_candidates.extend(bin_pub_ids)
+
+        remover = self.getRemover(
+            name='pmount', suite='warty', ppa='cprov', binary_only=True)
+        removals = remover.mainTask()
+
+        self.assertEqual(
+            sorted([pub.id for pub in removals]), sorted(removal_candidates))
+
+        self.assertPublished(src_pub_id, source=True)
+        self.assertDeleted(bin_pub_ids, source=False)
 
     def testRemoveBinaryOnlySpecificArch(self):
         """Check binary-only removals in a specific architecture.
