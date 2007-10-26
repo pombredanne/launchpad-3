@@ -181,6 +181,18 @@ product.
     >>> print vcs_imports_junkcode.owner.name
     vcs-imports
 
+The allowed values for branch names is a slightly controversial topic.
+Currently, branch names must start with a number or a letter (upper or
+lower case) and -, +, _ and @ are allowed after that.  If these rules are
+
+    # XXX: MichaelHudson 2007-10-26 bug=95109: This section will need change
+    # when this bug is resolved, whatever approach is decided on.
+    >>> branchset.new(
+    ...     BranchType.HOSTED, 'invalid name!', ddaa, ddaa, None, None,
+    ...     date_created=now.next())
+    Traceback (most recent call last):
+      ...
+    LaunchpadValidationError: Branch names must start with a number or ...
 
 == Determining the number of branches ==
 

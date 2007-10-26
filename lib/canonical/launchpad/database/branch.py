@@ -43,8 +43,9 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.validators import LaunchpadValidationError
 
 
 class Branch(SQLBase):
@@ -680,6 +681,19 @@ class BranchSet:
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
+
+        # XXX: MichaelHudson 2007-10-26 bug=95109: This regular expression is
+        # a copy of the one in the database constraint, which is different
+        # from that used by IBranch['name'].validate()!  This needs to be
+        # sorted out, but for now we just want to present a nicer error than
+        # 'ERROR: new row for relation "branch" violates check constraint
+        # "valid_name"...' to the user.
+        pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
+        if not re.match(pat, name):
+            raise LaunchpadValidationError(
+                "Branch names must start with a number or letter.  The "
+                "characters +, -, _ and @ are also allowed after the first "
+                "character.")
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,
