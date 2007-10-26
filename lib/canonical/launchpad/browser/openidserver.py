@@ -261,9 +261,12 @@ class OpenIdMixin:
             response = self.openid_request.answer(True)
 
         # Add sreg result data
-        response.fields.namespaces.addAlias(SREG_URI, 'sreg')
-        for (field_name, value) in self.sreg_fields:
-            response.fields.setArg(SREG_URI, field_name, value)
+        sreg_fields = self.sreg_fields
+        if sreg_fields:
+            response.fields.namespaces.addAlias(SREG_URI, 'sreg')
+            for (field_name, value) in sreg_fields:
+                response.fields.setArg(SREG_URI, field_name, value)
+
         return response
 
     def createFailedResponse(self):
