@@ -316,7 +316,7 @@ class JobScheduler:
 
     def recordActivity(self, date_started, date_completed):
         """Record successful completion of the script."""
-        self.branch_status_client.recordSuccess(
+        return self.branch_status_client.recordSuccess(
             self.name, socket.gethostname(), date_started, date_completed)
 
 

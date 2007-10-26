@@ -129,7 +129,6 @@ The headings:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
-    <th>Files</th>
     </tr>
     </thead>
     ...
@@ -138,26 +137,22 @@ The data:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    pmount - 0.1-1
-    2007-07-09
-    Published
-    hoary
-    editors
-    i386
-    iceweasel - 1.0
-    2007-07-09
-    Published
-    warty
-    editors
-    orig
-    dsc
-    i386
     cdrkit - 1.0
     2007-07-09
     Published
     breezy-autotest
     editors
-    dsc
+    iceweasel - 1.0
+    2007-07-09
+    Published
+    warty
+    editors
+    pmount - 0.1-1
+    2007-07-09
+    Published
+    warty
+    editors
+
 
 == Searching an archive ==
 
@@ -233,7 +228,6 @@ The package row headings show an Uploader column:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
-    <th>Files</th>
     </tr>
     </thead>
     ...
@@ -247,7 +241,6 @@ The package row data shows the uploader:
     Pending
     hoary
     base
-    orig
 
 Links from files go to their on-archive locations:
 

@@ -246,10 +246,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_processSourceChange_success(self):
         """Check processSourceChange method call.
 
-        It simply wraps changeOverride method on
-        IDistroSeriesSourcePackageRelease, which is already tested in place.
-        Inspect the log to verify if the correct source was picked and correct
-        arguments was passed.
+        It simply wraps changeOverride method on `IArchivePublisher`, which is
+        already tested in place. Inspect the log to verify if the correct
+        source was picked and correct arguments was passed.
         """
         self.assertSourcePublished(
             self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
@@ -331,10 +330,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.
 
-        It simply wraps changeOverride method on
-        IDistroArchSeriesBinaryPackage, which is already tested in place.
-        Inspect the log messages, check if the correct binary was picked
-        and correct argument was passed.
+        It simply wraps changeOverride method on `IArchivePublisher`, which
+        is already tested in place. Inspect the log messages, check if the
+        correct binary was picked and correct argument was passed.
         """
         hoary_i386 = self.hoary['i386']
         self.assertBinaryPublished(

@@ -3,6 +3,7 @@
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
+    'AuthServerApplication',
     'BazaarApplication',
     'FeedsApplication',
     'MailingListApplication',
@@ -18,12 +19,19 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBazaarApplication,
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
     IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
     ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet)
+
+
+class AuthServerApplication:
+    """AuthServer End-Point."""
+    implements(IAuthServerApplication)
+
+    title = "Auth Server"
 
 
 class RegistryApplication:

@@ -106,7 +106,8 @@ Perform `post publication` override:
    >>> version = bpph.binarypackagerelease.version
    >>> pmount_hoary_i386_released = pmount_hoary_i386[version]
 
-   >>> override = pmount_hoary_i386_released.changeOverride(
+   >>> pmount_i386_pub = pmount_hoary_i386_released.current_publishing_record
+   >>> override = pmount_i386_pub.changeOverride(
    ...     new_section=new_section)
    >>> override.section == new_section
    True
@@ -123,7 +124,8 @@ Override information about 'pmount' is pending publication:
 
 Supersede current publication:
 
-   >>> superseded_pmount = pmount_hoary_i386_released.supersede()
+   >>> pmount_pubrec = pmount_hoary_i386_released.current_publishing_record
+   >>> superseded_pmount = pmount_pubrec.supersede()
    >>> pmount_hoary_i386.publishing_history.count()
    3
 

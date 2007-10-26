@@ -614,7 +614,7 @@ component 'universe'.
   >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> etherwake = breezy_autotest.getSourcePackage('etherwake')
   >>> etherwake_drspr = etherwake.currentrelease
-  >>> override = etherwake_drspr.changeOverride(
+  >>> override = etherwake_drspr.current_published.changeOverride(
   ...     new_component=getUtility(IComponentSet)['universe'])
 
 Check if we have new pending publishing record as expected
