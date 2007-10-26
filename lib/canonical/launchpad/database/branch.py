@@ -606,6 +606,7 @@ class BranchSet:
             return PUBLIC_BRANCH
         # You are not allowed to specify an owner that you are not a member of.
         if not creator.inTeam(owner):
+            # XXX owner might not be a team here!
             raise BranchCreatorNotMemberOfOwnerTeam(
                 "%s is not a member of %s"
                 % (creator.displayname, owner.displayname))
