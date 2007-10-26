@@ -105,7 +105,7 @@ created (do we really need this in a page test?)
     >>> browser.getLink('Configure mailing list').click()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    The application for a mailing list for this team is pending approval.
+    The application for this team's mailing list is pending approval.
 
 Once the mailing list is requested, the button to request its activation is
 not shown anymore.
@@ -133,9 +133,8 @@ we'll ask the user to contact a Launchpad admin.
     LookupError: ...
     >>> for msg in get_feedback_messages(browser):
     ...     print extract_text(msg)
-    The application for a mailing list for this team has been
-    declined. Please contact a Launchpad administrator for further
-    assistance.
+    The application for this team's mailing list has been declined. Please
+    contact a Launchpad administrator for further assistance.
 
     # Here we manually change its status back to REGISTERED so that we can
     # move on testing as if it wasn't declined.
@@ -175,9 +174,14 @@ users, so we'll simulate it here by directly accessing our database code.
     >>> mailing_list.review(foobar, MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
     >>> logout()
+
     >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl('The Launchpad mailing list').disabled
-    True
+    >>> browser.getControl('The Launchpad mailing list')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List')
     Traceback (most recent call last):
     ...
@@ -185,13 +189,11 @@ users, so we'll simulate it here by directly accessing our database code.
 
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This team's mailing list is being constructed.
+    This team's mailing list will be available shortly.
 
     >>> mailing_list.startConstructing()
     >>> mailing_list.syncUpdate()
     >>> browser.reload()
-    >>> browser.getControl('The Launchpad mailing list').disabled
-    True
     >>> browser.getControl('Apply for Mailing List')
     Traceback (most recent call last):
     ...
@@ -199,15 +201,7 @@ users, so we'll simulate it here by directly accessing our database code.
 
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Not available because mailing list is being constructed.
-
-Even after the mailing list has been requested and approved, it cannot
-be configured until it's made active:
-
-    >>> browser.getLink('Configure mailing list')
-    Traceback (most recent call last):
-    ... 
-    LinkNotFoundError
+    This team's mailing list will be available shortly.
 
 When the mailing list is constructed and made active, it can be used as
 the team's contact address.
@@ -226,7 +220,7 @@ the team's contact address.
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     This team's mailing list is not set as the team contact address.
-    
+        
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
@@ -235,33 +229,39 @@ the team's contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
-== Customizing the welcome message ==
+When the mailing list is not the team's contact address, the mailing
+list configuration screen displays an informative message:
 
-A project with a mailing list can have a custom welcome message. The
-welcome message is customizable whether or not the mailing list is
-currently the team's contact address.
-
-    >>> browser.getLink('Change contact address').click()
-
-    >>> browser.getLink('Configure mailing list').click()
-
-    >>> welcome_message = browser.getControl('Welcome message.')
-    >>> welcome_message.value
-    ''
-    >>> welcome_message.value = 'Welcome to the test team mailing list.'
-    >>> browser.getControl('Change').click()
-   
-However, when the mailing list is not the team's contact address, the
-mailing list configuration screen displays an informative message:
-
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl('Each user individually').selected = True
+    >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Configure mailing list').click()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     This team's mailing list is not set as the team contact address.
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team - landscape-developers@lists.launchpad.net']
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> get_feedback_messages(browser)
+    []
+
+== Customizing the welcome message ==
+
+A project with a mailing list can have a custom welcome message. The
+welcome message is customizable whether or not the mailing list is
+currently the team's contact address.
+
+    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message.value
+    ''
+    >>> welcome_message.value = 'Welcome to the test team mailing list.'
+    >>> browser.getControl('Change').click()  
 
 Changes to the welcome message take effect in the database immediately.
 
@@ -275,20 +275,8 @@ of this.
 
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This team's mailing list is not set as the team contact address.
     Some changes to this team's mailing list are pending an update and
     have not yet taken effect.
-
-(While the user waits, let's have them change the team contact address
-back to the mailing list, so that feedback message doesn't keep
-showing up and cluttering up the test.)
-
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl('The Launchpad mailing list').selected = True
-    >>> browser.getControl('Change').click()
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0The Launchpad mailing list for this team - landscape-developers@lists.launchpad.net']
 
 Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
 
@@ -302,11 +290,11 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     {'modify': [['landscape-developers', 
                  {'welcome_message': 'Welcome to the test team 
                                       mailing list.'}]]}
-
-    >>> browser.getLink('Configure mailing list').click()
+                                      
+    >>> browser.reload()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Changes to this mailing list are currently being propagated.
+    Changes to this team's mailing list are currently being propagated.
 
 Usually there is no problem. The welcome message is propagated to
 Mailman, and the informative message disappears from the contact
@@ -340,7 +328,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Changes to this mailing list are currently being propagated.
+    Changes to this team's mailing list are currently being propagated.
 
     >>> mailinglist_api.reportStatus({'landscape-developers' : 'failure'})
     True
@@ -348,7 +336,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This mailing list is in an inconsistent state because changes to
+    This team's mailing list is in an inconsistent state because changes to
     its configuration failed to propagate.
 
 (Now we have to maneuver the mailing list back into a consistent state

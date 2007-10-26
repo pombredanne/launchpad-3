@@ -374,7 +374,6 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
             return _("This team's mailing list has been deactivated.")
         elif self.mailing_list.status == MailingListStatus.FAILED:
             return _("This team's mailing list could not be created.")
-
         elif self.mailing_list.status == MailingListStatus.MODIFIED:
             return _("Some changes to this team's mailing list are pending "
                      "an update and have not yet taken effect.")
