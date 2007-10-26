@@ -647,8 +647,8 @@ Exporting a pofile regenerates the cache.
     >>> export is not None
     True
 
-    # And we can see that it's applied in the exported file.
-    XXXXXXXXXXXXX
+And we can see that it's applied in the exported file.
+
     >>> print export.decode('UTF-8')
     #...
     #: addressbook/addressbook-errors.xml.h:6

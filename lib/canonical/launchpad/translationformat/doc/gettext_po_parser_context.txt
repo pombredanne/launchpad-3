@@ -342,16 +342,14 @@ It's different from the imported file only in a few headers.
     >>> pofile = potemplate.getPOFileByLang('sr')
     >>> # XXX DaniloSegan: '...' doesn't seem to work with unicode name
     >>> # of "Carlos Perelló Marín"
-    >>> #import sys; print >>sys.stderr, pofile.uncachedExport()
-    >>> pofile.lasttranslator = None
-    >>> print pofile.uncachedExport()
+    >>> print pofile.uncachedExport().decode('UTF-8')
     msgid ""
     msgstr ""
     "Project-Id-Version: PACKAGE VERSION\n"
     "Report-Msgid-Bugs-To: \n"
-    ...
+    "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     "PO-Revision-Date: ...\n"
-    "Last-Translator: ...\n"
+    "Last-Translator: Carlos...\n"
     "Language-Team: LANGUAGE <LL@li.org>\n"
     "MIME-Version: 1.0\n"
     "Content-Type: text/plain; charset=UTF-8\n"
