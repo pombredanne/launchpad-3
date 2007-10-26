@@ -152,16 +152,16 @@ The data:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    commercialpackage - 1.0-1
-    (changes)
-    Pending
-    breezy-autotest
-    devel
     cdrkit - 1.0
     2007-07-09
     Published
     breezy-autotest
     editors
+    commercialpackage - 1.0-1
+    (changes)
+    Pending
+    warty
+    devel
     iceweasel - 1.0
     2007-07-09
     Published
