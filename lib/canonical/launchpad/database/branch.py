@@ -656,7 +656,9 @@ class BranchSet:
         # team policies that matches the owner.
         base_visibility_rule = product.getBaseBranchVisibilityRule()
         if base_visibility_rule == BranchVisibilityRule.FORBIDDEN:
-            raise BranchCreationForbidden()
+            raise BranchCreationForbidden(
+                "You cannot create branches for the product %r"
+                % product.name)
         elif base_visibility_rule == BranchVisibilityRule.PUBLIC:
             return PUBLIC_BRANCH
         else:
