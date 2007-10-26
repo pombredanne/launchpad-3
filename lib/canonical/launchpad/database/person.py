@@ -1742,8 +1742,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         :param uploader_only: controls if we are interested in SPRs where
             the person in question is only the uploader (creator) and not the
-            maintainer (debian-syncs), or, if the flag is False, it returns all
-            SPR maintained by this person.
+            maintainer (debian-syncs) if the `ppa_only` parameter is also
+            False, or, if the flag is False, it returns all SPR maintained
+            by this person.
 
         :param ppa_only: controls if we are interested only in source
             package releases targeted to any PPAs or, if False, sources targeted
@@ -1758,8 +1759,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if uploader_only:
             clauses.append(
                 'sourcepackagerelease.creator = %s' % quote(self.id))
-            clauses.append(
-                'sourcepackagerelease.maintainer != %s' % quote(self.id))
+            if not ppa_only:
+                clauses.append(
+                    'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
             clauses.append(
                 'sourcepackagerelease.maintainer = %s' % quote(self.id))
