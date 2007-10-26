@@ -712,31 +712,38 @@ whose translations have changed in Launchpad, ones that are newly translated
 in Launchpad, and ones with unreviewed suggestions.
 
 We update these statistics first, since we have not gone through the regular
-UI for updating translations, and receive the current numbers as a byproduct.
+UI for updating translations.
 
     >>> pofile_es_hoary.updateStatistics()
-    (7, 2, 4, 1)
+    (...)
     >>> pofile_es_humpy.updateStatistics()
-    (7, 2, 3, 0)
+    (...)
 
 The statistics for messages translated in Launchpad reflect the fact that we
 translated one previously untranslated string in Hoary.  The number for this
 category of message is called rosettaCount.
 
-    >>> pofile_es_hoary.currentCount()
-    7
-    >>> pofile_es_humpy.currentCount()
-    7
-
-    >>> pofile_es_hoary.updatesCount()
-    2
-    >>> pofile_es_humpy.updatesCount()
-    2
-
     >>> pofile_es_hoary.rosettaCount()
     4
     >>> pofile_es_humpy.rosettaCount()
     3
+
+The other statistics may change depending on unrelated factors, but it's
+the total number of current translations that matters.
+
+    >>> from canonical.database.sqlbase import quote
+    >>> from canonical.launchpad.database.translationmessage import (
+    ...     TranslationMessage)
+    >>> def count_current_translations(pofile):
+    ...     """Count how many messages in pofile have current translations.
+    ...     """
+    ...     return TranslationMessage.select(
+    ...         "pofile = %s AND is_current" % quote(pofile)).count()
+
+    >>> count_current_translations(pofile_es_hoary)
+    14
+    >>> count_current_translations(pofile_es_humpy)
+    12
 
 When we compare the full translations for hoary and humpy, we see the changes
 we just made, as well as the differences between the messages-with-context.
@@ -869,15 +876,16 @@ The Hoary message is updated, but even though the Humpy version is older, it
 is not overwritten by the copy.  (The differences in the part where we had
 messages with contexts remain as they were.)
 
-We can also see that the statistics are updated and both distributions show
-mostly the same numbers (though some messages in the rosettaCount actually
-differ between the two distro series).  The only difference is that 1 message
-that was untranslated in Humpy got copied from Hoary, whereas another that was
-translated in Humpy but not in Hoary, wasn't.
+We can also see that the statistics are updated and both distributions
+show mostly the same numbers (though some messages in the rosettaCount
+actually differ between the two distro series).  The only difference is
+that 1 message that was untranslated in Humpy got copied from Hoary,
+whereas another that was translated in Humpy but not in Hoary, wasn't.
 
-    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
-    True
-    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
+Thus Humpy now has one more message translated than Hoary does.
+
+    >>> (count_current_translations(pofile_es_hoary) ==
+    ...     count_current_translations(pofile_es_humpy) - 1)
     True
     >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount() - 1
     True
