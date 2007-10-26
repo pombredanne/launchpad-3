@@ -83,6 +83,8 @@ class DistroSeriesSourcePackageRelease:
             return None
         return currpub.component
 
+# XXX cprov 20071026: heavy queries should be moved near to the related
+# content classes in order to be better maintained.
     @property
     def builds(self):
         """See IDistroSeriesSourcePackageRelease."""
@@ -92,7 +94,7 @@ class DistroSeriesSourcePackageRelease:
             DistroArchRelease.distrorelease = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distroseries.id),
-            orderBy='-datecreated',
+            orderBy=['-datecreated', '-id'],
             clauseTables=['DistroArchRelease'])
 
     @property

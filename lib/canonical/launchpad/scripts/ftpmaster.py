@@ -151,11 +151,19 @@ class ArchiveOverrider:
                            % (package_name, self.distroseries.name))
             return
 
-        sp.currentrelease.current_published.changeOverride(
+        override = sp.currentrelease.current_published.changeOverride(
             new_component=self.component, new_section=self.section)
-        self.log.info("'%s/%s/%s' source overridden"
-                      % (package_name, sp.currentrelease.component.name,
-                         sp.currentrelease.section.name))
+
+        if override is None:
+            self.log.info("'%s/%s/%s' remained the same"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
+        else:
+            self.log.info("'%s/%s/%s' source overridden"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
 
     def processBinaryChange(self, package_name):
         """Perform changes in a given binary package name
@@ -195,7 +203,9 @@ class ArchiveOverrider:
             # iterations (on distroarchseries that obviously do not contain
             # any publication).
             if bpr.architecturespecific:
-                considered_archs = [bpr.build.distroarchseries]
+                archtag = bpr.build.distroarchseries.architecturetag
+                architecture = self.distroseries[archtag]
+                considered_archs = [architecture]
             else:
                 considered_archs = self.distroseries.architectures
             # Perform overrides.
@@ -217,16 +227,24 @@ class ArchiveOverrider:
                              distroarchseries.architecturetag))
             return
         dasbpr = dasbp[current.binarypackagerelease.version]
-        dasbpr.current_publishing_record.changeOverride(
+        override = dasbpr.current_publishing_record.changeOverride(
             new_component=self.component,
             new_priority=self.priority,
             new_section=self.section)
-        self.log.info(
-            "'%s/%s/%s/%s' binary overridden in %s/%s"
-            % (binaryname, current.component.name,
-               current.section.name, current.priority.name,
-               self.distroseries.name,
-               distroarchseries.architecturetag))
+
+        if override is None:
+            self.log.info(
+                "'%s/%s/%s/%s' remained the same"
+                % (current.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name))
+        else:
+            self.log.info(
+                "'%s/%s/%s/%s' binary overridden in %s"
+                % (override.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name,
+                   override.distroarchseries.displayname))
 
 
 class ArchiveCruftCheckerError(Exception):
@@ -1469,7 +1487,7 @@ class LpQueryDistro(LaunchpadScript):
                 "Action does not accept defined suite.")
 
     # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution. raising NotFoundError instead.
+    # IDistribution.
     def getSeriesByStatus(self, status):
         """Query context distribution for a distroseries in a given status.
 
@@ -1481,7 +1499,7 @@ class LpQueryDistro(LaunchpadScript):
         for series in self.location.distribution.serieses:
             if series.status == status:
                 return series
-        raise LaunchpadScriptFailure(
+        raise NotFoundError(
                 "Could not find a %s distroseries in %s"
                 % (status.name, self.location.distribution.name))
 
@@ -1490,13 +1508,16 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
+
         It may raise LaunchpadScriptFailure if a suite was passed in the
-        command-line.
-        See self.getSeriesByStatus for further information
+        command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.CURRENT)
+        try:
+            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
+        except NotFoundError, err:
+            raise LaunchpadScriptFailure(err)
+
         return series.name
 
     @property
@@ -1504,13 +1525,31 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
-        It may raise LaunchpadScriptFailure if a suite was passed in the
+
+        It may raise `LaunchpadScriptFailure` if a suite was passed in the
         command-line.
-        See self.getSeriesByStatus for further information
+
+        Return the first FROZEN distroseries found if there is no
+        DEVELOPMENT one available.
+
+        Raises `NotFoundError` if neither a CURRENT nor a FROZEN
+        candidate could be found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.DEVELOPMENT)
+        series = None
+        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
+                         DistroSeriesStatus.FROZEN)
+        for status in wanted_status:
+            try:
+                series = self.getSeriesByStatus(status)
+            except NotFoundError:
+                pass
+
+        if series is None:
+            raise LaunchpadScriptFailure(
+                'There is no DEVELOPMENT distroseries for %s' %
+                self.location.distribution.name)
+
         return series.name
 
     @property
