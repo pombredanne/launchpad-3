@@ -29,6 +29,7 @@ __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
+    'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
@@ -195,11 +196,13 @@ class IOpenIdApplication(ILaunchpadApplication):
 class IPrivateApplication(ILaunchpadApplication):
     """Launchpad private XML-RPC application root."""
 
+    authserver = Attribute("""Old Authserver API end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
 
-class IFeedsApplication(ILaunchpadApplication):
-    """Launchpad Feeds application root."""
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
 
 
 class IAuthApplication(Interface):
@@ -222,6 +225,11 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+
+class IFeedsApplication(ILaunchpadApplication):
+    """Launchpad Feeds application root."""
+
 
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""

@@ -450,9 +450,9 @@ distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
-distrosourcepackage_index = ContextTitle('%s')
+distributionsourcepackage_index = ContextTitle('%s')
 
-distrosourcepackage_publishinghistory = ContextTitle(
+distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
 distributionsourcepackage_manage_bugcontacts = ContextTitle(

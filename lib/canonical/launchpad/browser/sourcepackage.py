@@ -188,6 +188,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.status_message = None
+        self.error_message = None
         self.processForm()
 
     def processForm(self):
@@ -201,7 +202,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid series given.'
+                self.error_message = 'Invalid series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
