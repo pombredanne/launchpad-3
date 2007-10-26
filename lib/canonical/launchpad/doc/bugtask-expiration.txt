@@ -196,10 +196,10 @@ database changes as the Bug Watch Updater user.
     >>> process.returncode
     0
 
-    # Flush the caches so that the bugtasks defined above get
-    # their content from the modified DB.
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+    # Sync the bugtasks defined above with their modified DB values.
+    >>> from canonical.launchpad.ftests import sync
+    >>> for bugtask in bugtasks.values():
+    ...     sync(bugtask)
 
 
 == After the script has run ==
