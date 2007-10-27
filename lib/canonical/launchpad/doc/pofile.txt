@@ -443,6 +443,51 @@ And the encoding used is also using UTF-8 chars.
     >>> stream_list[i]
     'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
 
+There are some situations when a msgid_plural changes, while the msgid
+singular remains unchanged.
+
+So for a concrete export, we have a message like:
+
+    >>> print pofile_es.uncachedExport(force_utf8=True).decode('utf8')
+    # traducci...
+    ...
+    #: addressbook/gui/widgets/foo.c:345
+    #, fuzzy
+    msgid "%d foo"
+    msgid_plural "%d bars"
+    msgstr[0] "%d foo"
+    ...
+
+When it changes...
+
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d foo')
+
+    # It has plural forms.
+    >>> print potmsgset.msgid_plural
+    %d bars
+
+    # We change the plural form.
+    >>> from canonical.launchpad.interfaces import TranslationConstants
+    >>> pomsgidsighting = potmsgset.makeMessageIDSighting(
+    ...     u'something else', TranslationConstants.PLURAL_FORM, update=True)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> print potmsgset.msgid_plural
+    something else
+
+...the export reflects that change.
+
+    >>> print pofile_es.uncachedExport(force_utf8=True).decode('utf8')
+    # traducci...
+    ...
+    #: addressbook/gui/widgets/foo.c:345
+    #, fuzzy
+    msgid "%d foo"
+    msgid_plural "something else"
+    msgstr[0] "%d foo"
+    ...
+
 
 == getPOTMsgSetUntranslated ==
 

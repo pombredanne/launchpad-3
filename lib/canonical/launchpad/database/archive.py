@@ -23,7 +23,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, IDistributionSet, PackagePublishingStatus)
+    IBuildSet, IDistributionSet)
 from canonical.launchpad.webapp.url import urlappend
 
 

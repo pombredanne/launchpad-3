@@ -17,7 +17,6 @@ from canonical.launchpad.database import POFile
 from canonical.launchpad.database import POTemplate
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
-
 class VPOExportSet:
     """Retrieve collections of VPOExport objects."""
 
@@ -276,6 +275,7 @@ class VPOExport:
          self.translation3) = args
 
         self.potemplate = POTemplate.get(potemplate)
+        self.potmsgset = POTMsgSet.get(potmsgset)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None
@@ -288,3 +288,5 @@ class VPOExport:
                 # update the singular one.
                 self.translation0 = self.pofile.prepareTranslationCredits(
                     potmsgset)
+                self.is_current = True
+

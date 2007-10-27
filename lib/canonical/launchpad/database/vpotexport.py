@@ -92,4 +92,5 @@ class VPOTExport:
          self.msgid_plural) = args
 
         self.potemplate = POTemplate.get(potemplate)
+        self.potmsgset = POTMsgSet.get(potmsgset)
 
