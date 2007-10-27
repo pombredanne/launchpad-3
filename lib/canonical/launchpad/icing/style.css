@@ -529,6 +529,8 @@ ul#menuroot li.selected a.breadcrumb {
   /* In narrow windows, when the "#menuroot" is wide, this can wrap around. So
      use the same background color as the rest of the "#locationbar". */
   background-color: #AFDB1F;
+  /* Override margin set in common.css (for help.launchpad.net). */
+  margin: 0;
 }
 /* The control itself is actually in a table cell, vertically aligned to
  * the middle of the locationbar.
