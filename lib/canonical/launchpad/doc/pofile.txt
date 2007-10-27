@@ -464,7 +464,7 @@ When it changes...
     ...     u'%d foo')
 
     # It has plural forms.
-    >>> print potmsgset.msgid_plural
+    >>> print potmsgset.plural_text
     %d bars
 
     # We change the plural form.
@@ -473,7 +473,7 @@ When it changes...
     ...     u'something else', TranslationConstants.PLURAL_FORM, update=True)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> print potmsgset.msgid_plural
+    >>> print potmsgset.plural_text
     something else
 
 ...the export reflects that change.
