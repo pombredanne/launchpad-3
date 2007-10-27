@@ -69,7 +69,12 @@ html {
   color: #333;
   background-color: #fff;
 }
-body {margin: 0; padding: 0;}
+body {
+  margin: 0;
+  padding: 0;
+  /* Minimal width to display the application tabs and rounded corners. */
+  min-width: 529px;
+}
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -301,6 +306,7 @@ hr {
   background-color: #6D6D6D;
 }
 /* Next is a location bar. */
+
 #locationbar {
   width: 100%;
   height: 26px;
@@ -326,6 +332,15 @@ ul#menuroot {
   display: inline;
   float: left;
   margin: 0;
+  /* Right padding needed so the rightmost arrow is within the box. It must be
+     the opposite of the negative right margin on breadcrumb items. */
+  /* Other paddings and margins set to zero to undo the generic "ul" style. */
+  padding: 0 16px 0 0;
+  margin: 0;
+  /* Force the height to prevent a gap when "#logincontrol" wraps around and
+     the font size is increased.
+     0px vertical padding + 14px height = 26px, height of "#locationbar". */
+  height: 26px;
 }
 /* XXX: needs explanation */
 ul#menuroot li {
@@ -361,6 +376,11 @@ ul#menuroot a.breadcrumb {
   background-position: -1100px 0px;
   padding: 6px 0 6px 10px;
   margin-right: -1px;
+  /* Force the height to prevent a gap when "#logincontrol" wraps around and
+     the font size is increased.
+
+     12px vertical padding + 14px height = 26px, height of "#locationbar". */
+  height: 14px;
 }
 /* IE6 specific rule to make the location bar look better. */
 * html #yourlocation {padding-bottom: 4px;}
@@ -389,11 +409,6 @@ ul#menuroot a.breadcrumb em { /* should be changed to not need em */
 /* When a breadcrumb has a submenu, show a down-arrow. */
 ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   background-image: url(locationbar_em_bg.gif);
-}
-/* Undo more generic formatting around ul elements. */
-#locationbar ul {
-    margin: 0;
-    padding: 0;
 }
 /* General appearance of a dynamic menu item.
  * The area we actually see on the page is an <a> element.
@@ -511,6 +526,9 @@ ul#menuroot li.selected a.breadcrumb {
 #logincontrol {
   float: right;
   height: 100%;
+  /* In narrow windows, when the "#menuroot" is wide, this can wrap around. So
+     use the same background color as the rest of the "#locationbar". */
+  background-color: #AFDB1F;
 }
 /* The control itself is actually in a table cell, vertically aligned to
  * the middle of the locationbar.
@@ -520,7 +538,19 @@ ul#menuroot li.selected a.breadcrumb {
   font-size: 11px;
   font-weight: bold;
   vertical-align: middle;
+  /* Reset vertical padding specified by the "td" style. It causes the
+     "#logincontrol" background area to exceed the "#locationbar" height for
+     even modest increases in font size. */
+  padding-top: 0;
+  padding-bottom: 0;
+  /* Set horizontal padding to 10px, which is also the left padding of the
+     "#yourlocation" box (hence the visible space left of the location bar). */
+  padding-left: 10px;
+  padding-right: 10px;
 }
+/* Reset standard margin from "input[type='submit']" to avoid unwanted spacing
+   when logged in. */
+#logincontrol input[type='submit'] { margin-right: 0; }
 /* Link text is black. */
 #logincontrol a {
     color: #000000;
@@ -593,7 +623,6 @@ So it's hidden initially, and then revealed if JavaScript is available.
 /* test: http://launchpad.dev/+logout */
 #nonhelp {
   margin: 0 20px 0 38px;
-  min-width: 752px; /* prevents search field from sliding under tabs */
   padding-top: 10px;
 }
 
@@ -715,7 +744,6 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 border. */
 #mainarea {
   clear: both;
-  min-width: 712px;
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
@@ -747,8 +775,6 @@ border. */
   width: 100%;
   background: url(mainarea_topright.gif) 100% top no-repeat;
 }
-
-body {min-width: 480px;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
