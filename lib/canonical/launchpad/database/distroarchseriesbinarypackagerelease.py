@@ -78,6 +78,9 @@ class DistroArchSeriesBinaryPackageRelease:
         record = self._latest_publishing_record(status=status)
         return record
 
+# XXX cprov 20071026: heavy queries should be moved near to the related
+# content classes in order to be better maintained. In this specific case
+# the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s "
                  "AND archive IN %s"
@@ -89,7 +92,7 @@ class DistroArchSeriesBinaryPackageRelease:
             query += " AND status = %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+            query, orderBy=['-datecreated', '-id'])
 
     @property
     def publishing_history(self):
@@ -102,7 +105,7 @@ class DistroArchSeriesBinaryPackageRelease:
                     self.distroarchseries,
                     self.distribution.all_distro_archive_ids,
                     self.binarypackagerelease),
-            orderBy='-datecreated')
+            orderBy=['-datecreated', '-id'])
 
     @property
     def pocket(self):
