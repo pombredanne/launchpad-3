@@ -376,6 +376,113 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self._cached_pofiles_by_language[language_spec]
 
+    def getExternalSuggestions(self, potmsgsets, language):
+        """See `IPOTemplate`."""
+        result = dict((potmsgset, []) for potmsgset in potmsgsets)
+        if not potmsgsets:
+            return result
+        for potmsgset in potmsgsets:
+            assert potmsgset.potemplate == self, (
+                "Requesting external suggestions in wrong template.")
+
+        parameters = {}
+        parameters['this_template'] = quote(self)
+        parameters['language'] = quote(language)
+        parameters['wanted_msgids'] = ', '.join([
+            quote(msgid) for msgid in takers_for_msgid.keys()])
+
+        cur = cursor()
+
+        # Retrieve (the ids of) external suggestions, and for each, the
+        # message identifier (original English message, in the singular) it
+        # translates.
+        # The msgids come from the suggestions' potmsgsets, not from the
+        # potmsgsets we got in our parameter.  We need to know those msgids,
+        # but we avoid retrieving the potmsgsets from the database.
+        cur.execute("""
+            SELECT DISTINCT id, msgid_singular FROM (
+                SELECT
+                    DISTINCT ON (
+                        msgid_singular,
+                        msgstr0,
+                        msgstr1,
+                        msgstr2,
+                        msgstr3)
+                    Suggestion.id,
+                    Suggestion.msgstr0,
+                    Suggestion.msgstr1,
+                    Suggestion.msgstr2,
+                    Suggestion.msgstr3,
+                    POTMsgSet.msgid_singular
+                FROM TranslationMessage Suggestion
+                JOIN POTMsgSet ON Suggestion.potmsgset = POTMsgSet.id
+                JOIN POFile ON Suggestion.pofile = POFile.id
+                -- If this is slow, we can try joining POTemplate in through
+                -- POTMsgSet instead.
+                JOIN POTemplate ON POFile.potemplate = POTemplate.id
+                LEFT JOIN ProductSeries ON
+                    POTemplate.productseries = ProductSeries.id
+                LEFT JOIN Product ON ProductSeries.product = Product.id
+                LEFT JOIN DistroRelease ON
+                    POTemplate.distrorelease = DistroRelease.id
+                LEFT JOIN Distribution ON
+                    DistroRelease.distribution = Distribution.id
+                -- If there's a more recent translation message offering the
+                -- exact same translations, never mind the current one.
+                LEFT JOIN TranslationMessage AS Better ON
+                    Better.potmsgset = Suggestion.potmsgset AND
+                    Better.is_current AND
+                    COALESCE(Better.msgstr0, -1) =
+                        COALESCE(Suggestion.msgstr0, -1) AND
+                    COALESCE(Better.msgstr1, -1) =
+                        COALESCE(Suggestion.msgstr1, -1) AND
+                    COALESCE(Better.msgstr2, -1) =
+                        COALESCE(Suggestion.msgstr2, -1) AND
+                    COALESCE(Better.msgstr3, -1) =
+                        COALESCE(Suggestion.msgstr3, -1))
+                WHERE
+                    POTMsgSet.msgid_singular IN (%(wanted_msgids)s) AND
+                    POTemplate.id <> %(this_template)s AND
+                    POTemplate.iscurrent AND
+                    POFile.language = %(language)s AND
+                    NOT Suggestion.is_fuzzy AND
+                    (Product.official_rosetta OR
+                     Distribution.official_rosetta) AND
+                    Better.id IS NULL
+                    )
+                ORDER BY
+                    msgid_singular,
+                    msgstr0,
+                    msgstr1,
+                    msgstr2,
+                    msgstr3,
+                    Suggestion.id DESC
+                ) AS Suggestions
+            """ % parameters)
+
+            # Load these results straight into a dict: map suggestions' ids to
+            # the message identifiers they translate.
+            external_translations = dict(cur.fetcall())
+
+            if not external_translations:
+                return result
+
+            # Retrieve the actual suggestions.  Keep these in newest-to-oldest
+            # order, because that's the way the view class likes them.
+            suggestions = TranslationMessage.select(
+                "id IN (%s)" % ", ".join(
+                    [quote(id) for id in external_translations]),
+                orderBy="-datecreated")
+
+            # Figure out which of potmsgsets each suggestion is relevant to,
+            # and return our mapping from potmsgsets to various subsets of
+            # load_submissions.  The subsets may overlap because two
+            # potmsgsets could have the same msgid (i.e. translate the same
+            # string) but in different contexts.  The same suggestions would
+            # apply to both.
+            # TODO: Implement
+            # TODO: Infuse potmsgsets with cached suggestions
+
     def messageCount(self):
         """See `IRosettaStats`."""
         return self.messagecount
