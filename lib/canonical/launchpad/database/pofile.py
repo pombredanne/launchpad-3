@@ -1485,6 +1485,7 @@ class POFileToTranslationFileAdapter:
         rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
 
         potsequence = None
+        potmsgset = None
         posequence = None
         messages = []
         msgset = None
@@ -1516,7 +1517,14 @@ class POFileToTranslationFileAdapter:
 
             # If the sequence number of either the PO template or the PO file
             # has changed, we start a new message set.
-            if row.potsequence != potsequence or row.posequence != posequence:
+            # XXX CarlosPerelloMarin 2007-10-28 bug=157985: Due to a bug in
+            # our import process, we could have two different potmsgset with
+            # sequence = 0 but equal posequence, we workaround it here until
+            # we are able to migrate the database breakage checking that
+            # row.potmsgset did change.
+            if (row.potsequence != potsequence or
+                row.posequence != posequence or
+                row.potmsgset != potmsgset):
                 if msgset is not None:
                     # Output current message set before creating the new one.
                     messages.append(msgset)
@@ -1596,6 +1604,7 @@ class POFileToTranslationFileAdapter:
             # message.
             potsequence = row.potsequence
             posequence = row.posequence
+            potmsgset = row.potmsgset
 
         # Once we've processed all the rows, store last message set.
         if msgset is not None:

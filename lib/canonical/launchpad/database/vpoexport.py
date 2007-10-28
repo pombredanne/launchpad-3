@@ -55,6 +55,7 @@ class VPOExportSet:
         'posequence',
         'msgidpluralform',
         'translationpluralform',
+        'id'
     ]
     sort_columns = ', '.join(
         ['POExport.' + name for name in sort_column_names])
