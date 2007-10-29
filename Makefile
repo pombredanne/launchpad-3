@@ -37,6 +37,10 @@ check_sourcecode_dependencies:
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
+check_loggerhead_on_merge:
+	# We can't run the loggerhead tests in PQM yet :(
+	true
+
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
 	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
