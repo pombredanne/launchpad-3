@@ -17,7 +17,7 @@ We'll be going through usual steps of the PO file lifetime:
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
-    ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
+    ...     IProductSet, ITranslationImportQueue)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (

@@ -51,9 +51,8 @@ Change the description of a bug:
 
 Add a CVE reference to a bug:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
     >>> from canonical.launchpad.database import BugCve
-    >>> from canonical.lp.dbschema import CveStatus
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
     >>> bugcve = BugCve(cve=cve, bug=bug)
@@ -99,7 +98,7 @@ Accept a bug task:
 
 Change a bug task's importance:
 
-    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskImportance
     >>> bugtask.importance = BugTaskImportance.HIGH
     >>> for importance in BugTaskImportance.items:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)

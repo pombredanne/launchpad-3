@@ -85,8 +85,8 @@ So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.lp.dbschema import BugTaskImportance
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTaskSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=sabdfl,
