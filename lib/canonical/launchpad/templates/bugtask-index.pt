@@ -177,7 +177,12 @@
     </div>
 
     <div id="bug-description"
+         tal:condition="view/user"
          tal:content="structure context/bug/description/fmt:text-to-html" />
+
+    <div id="bug-description"
+         tal:condition="not:view/user"
+         tal:content="structure context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
   </div>
 

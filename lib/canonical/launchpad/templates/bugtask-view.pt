@@ -151,9 +151,16 @@
           </div>
 
           <h2>Bug description</h2>
+          <tal:description
+            condition="view/user"
+            content="structure context/bug/description/fmt:text-to-html"
+          >
+            $Bug.description
+          </tal:description>
 
           <tal:description
-            content="structure context/bug/description/fmt:text-to-html"
+            condition="not:view/user"
+            content="structure context/bug/description/fmt:obfuscate-email/fmt:text-to-html"
           >
             $Bug.description
           </tal:description>
