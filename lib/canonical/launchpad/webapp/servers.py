@@ -32,36 +32,6 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
     IShipItApplication)
 
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
-"""Definition of the internet servers that Launchpad uses."""
-
-__metaclass__ = type
-
-import threading
-import xmlrpclib
-
-from zope.app.form.browser.widget import SimpleInputWidget
-from zope.app.form.browser.itemswidgets import  MultiDataHelper
-from zope.app.session.interfaces import ISession
-from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
-from zope.app.publication.interfaces import IRequestPublicationFactory
-from zope.app.server import wsgi
-from zope.app.wsgi import WSGIPublisherApplication
-from zope.interface import implements
-from zope.publisher.browser import (
-    BrowserRequest, BrowserResponse, TestRequest)
-from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.proxy import isinstance as zope_isinstance
-from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
-
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
-
-import canonical.launchpad.layers
-from canonical.launchpad.interfaces import (
-    IShipItApplication, IOpenIdApplication, IPrivateApplication)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -303,6 +273,7 @@ class VirtualHostRequestPublicationFactory:
             return request_factory, publication_factory
         return None, None
 
+
 class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
     """A VirtualHostRequestPublicationFactory for XML-RPC.
 
@@ -329,6 +300,7 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
                 publication_factory = ProtocolErrorPublicationFactory(415)
         return request_factory, publication_factory
 
+
 class NotFoundRequestPublicationFactory:
     """An IRequestPublicationFactory which always yields a 404."""
 
@@ -345,6 +317,7 @@ class NotFoundRequestPublicationFactory:
         """
         return (ProtocolErrorRequest,
                 ProtocolErrorPublicationFactory(404))
+
             
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo and breadcrumbs."""
@@ -891,23 +864,12 @@ class ProtocolErrorRequest(LaunchpadBrowserRequest):
         """It's already been determined that there's an error. Return None."""
         return None
 
-    def _createResponse(self):
-        return ProtocolErrorResponse()
-
-class ProtocolErrorResponse(LaunchpadBrowserResponse):
-
-    def handleException(self, exception):
-        "Presumably a ProtocolErrorException."
-        status, headers = exception.status
-        self.setStatus(exception.status)
-        for header, value in exception.headers:
-            self.setHeader(header, value)
-        self.setHeader("Content-type", "text/plain")
-        self.setResult("An error occured.")
 
 class ProtocolErrorPublicationFactory:
+    """This class publishes error messages in response to protocol errors."""
 
     def __init__(self, status, headers=None):
+        
         if not headers:
             headers = {}
         self.status = status
@@ -916,26 +878,33 @@ class ProtocolErrorPublicationFactory:
     def __call__(self, db):
         return ProtocolErrorPublication(self.status, self.headers)
 
+
 class ProtocolErrorPublication(LaunchpadBrowserPublication):
+    """Publication used for requests that turn out to be protocol errors."""
 
     def __init__(self, status, headers):
+        """Prepare to construct a ProtocolErrorException
+
+        :param status: The HTTP status to send
+        :param headers: Any HTTP headers that should be sent.
+        """
         self.status = status
         self.headers = headers
 
-    def getApplication(self, request):
-        """Handle weird cases where host is not valid? Otherwise super()"""
-        return None
-
     def callObject(self, request, object):
+        """Raise an approprate exception for this protocol error."""
         if self.status == 404:
             raise NotFound()
         else:
             raise ProtocolErrorException(self.status, self.headers)
 
+
 class ProtocolErrorException(Exception):
     implements(ILaunchpadProtocolError)
+    """An exception for requests that turn out to be protocol errors."""    
 
     def __init__(self, status, headers):
+        """Store status and headers for rendering in the HTTP response."""
         self.status = status
         self.headers = headers
 
@@ -951,14 +920,6 @@ def register_launchpad_request_publication_factories():
     DEATH TO ZCML!
     """
     VHRP = VirtualHostRequestPublicationFactory
-
-    private_port = None
-    for server in config.servers:
-        if server.type == 'PrivateXMLRPC':
-            private_port = server.address[1]
-            break
-    if private_port is None:
-        raise AssertionError("Undefined PrivateXMLRPC server.")
 
     factories = [
         VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
@@ -978,14 +939,27 @@ def register_launchpad_request_publication_factories():
              ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         XMLRPCRequestPublicationFactory('xmlrpc', PublicXMLRPCRequest,
-                                        PublicXMLRPCPublication),
-        XMLRPCRequestPublicationFactory('xmlrpc_private', PrivateXMLRPCRequest,
-                                        PrivateXMLRPCPublication,
-                                        port=private_port),
+                                        PublicXMLRPCPublication)
         ]
+
+    # We may also have a private XML-RPC server.
+    private_port = None
+    for server in config.servers:
+        if server.type == 'PrivateXMLRPC':
+            private_port = server.address[1]
+            break
+
+    if private_port is not None:
+        factories.append(XMLRPCRequestPublicationFactory(
+            'xmlrpc_private', PrivateXMLRPCRequest,
+            PrivateXMLRPCPublication, port=private_port))
+
+    # Register those factories.
     for priority, factory in enumerate(factories):
         publisher_factory_registry.register(
             "*", "*", factory.vhost_name, len(factories)-priority+1, factory)
+
+    # Register a catch-all "not found" handler at the lowest priority.
     publisher_factory_registry.register(
         "*", "*", "*", 0, NotFoundRequestPublicationFactory())
     

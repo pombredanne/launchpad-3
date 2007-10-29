@@ -163,9 +163,9 @@ on its registered hosts.
 
 Our request publication factories save the environment when
 canHandle() is called so that they can return different publication
-and requests factories depening on the request. This is used to handle
-protocol errors. The side-effect of canHandle() is caused by
-limitations in the Zope API.
+and requests factories depending on the request. This is used to
+handle protocol errors. We have to create this side-effect of
+canHandle() because of limitations in the Zope API.
 
     >>> for key, value in sorted(factory._thread_local.environment.items()):
     ...     print '%s: %s' % (key, value)
@@ -235,10 +235,23 @@ The port is also checked for in the HTTP_HOST variable:
     >>> factory.canHandle(environment)
     False
 
-It also accepts a methods parameter that restrict the set of allowed
-methods. This doesn't affect canHandle, but it does affect which
-requests will make the request publication factory return a
-ProtocolErrorPublicationFactory.
+If the port is given twice (in SERVER_PORT and the Host header), an
+AssertionError is the inevitable result. This prevents sneaky
+outsiders from making requests to ports only exposed internally.
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'SERVER_PORT' : 1234,
+    ...                'HTTP_HOST': 'launchpad.dev:80'}
+    >>> factory.canHandle(environment)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Port specified in SERVER_PORT and HTTP_HOST
+
+The VirtualHostRequestPublicationFactory constructor also accepts a
+`methods` parameter that restrict the set of allowed methods. This
+doesn't affect canHandle, but it does affect which requests will make
+the request publication factory return a
+ProtocolErrorPublicationFactory when called.
 
     >>> environment = {'REQUEST_METHOD': 'DELETE',
     ...                'HTTP_HOST': 'launchpad.dev',
@@ -267,6 +280,7 @@ ProtocolErrorPublicationFactory.
     >>> requestfactory, publicationfactory = factory()
     >>> publicationfactory
     <class 'canonical.launchpad.webapp.publication.LaunchpadBrowserPublication'>
+
 
 == Zope Publisher integration ==
 
@@ -345,6 +359,10 @@ the registered factories:)
     >>> print_request_and_publication('code.launchpad.dev')
     CodeBrowserRequest
     CodePublication
+
+    >>> print_request_and_publication('feeds.launchpad.dev')
+    FeedsBrowserRequest
+    FeedsPublication
 
     >>> print_request_and_publication('openid.launchpad.dev')
     OpenIdBrowserRequest
@@ -428,7 +446,7 @@ to temporarily bump up the log level so I don't have to show the
     HTTP/1.1 405 Method Not Allowed
     Allow: POST
     ...
-    An error occured.
+    Your request didn't fit the protocol expected by this server.
     ...
 
 (A bit of cleanup so the test can continue:)
