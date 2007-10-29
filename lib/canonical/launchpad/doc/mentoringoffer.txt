@@ -158,8 +158,7 @@ Let's make sure it is off all of the lists:
 #
 #   >>> spec1.private
 #   False
-#   >>> spec1.setPrivate(True, getUtility(ILaunchBag).user)
-#   True
+#   >>> spec1.private = True
 #   >>> syncUpdate(spec1)
 #   >>> spec1.private
 #   True

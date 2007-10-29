@@ -253,7 +253,9 @@ class SecurityEmailCommand(EmailCommand):
     _numberOfArguments = 1
 
     def execute(self, context, current_event):
-        """See `IEmailCommand`. Much of this method has been lifted from
+        """See `IEmailCommand`.
+
+        Much of this method was lifted from
         `EditEmailCommand.execute`.
         """
         # Parse args.
@@ -267,7 +269,7 @@ class SecurityEmailCommand(EmailCommand):
             raise EmailProcessingError(
                 get_error_message('security-parameter-mismatch.txt'))
 
-        # Snapshot.
+        # Take a snapshot.
         edited = False
         edited_fields = set()
         if ISQLObjectModifiedEvent.providedBy(current_event):
