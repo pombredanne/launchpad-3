@@ -1,0 +1,63 @@
+= Bug obfuscation =
+
+Launchpad protects user email addresses from spam harvesters by
+obfuscating addresses viewed by anonymous users. When a bug's
+description contains an email address, the anonymous user sees
+<email address hidden>.
+
+No Privileges Person can see the email address in the bug's
+description in the bug page.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/debian/sarge/+source/mozilla-firefox/+bug/3')
+    >>> user_browser.title
+    'Bug #3 in mozilla-firefox (Debian Sarge): ...Bug Title Test...'
+
+    >>> description = find_tag_by_id(user_browser.contents, 'bug-description')
+    >>> description.renderContents()
+    '<p>Shirtpkdf user@domain.org lkjd hlkjfds...'
+
+Using the +viewstatus page, he can also see the email address.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus')
+    >>> user_browser.title
+    'Bug #3 in mozilla-firefox (Debian Sarge): ...Bug Title Test...'
+
+    >>> description = find_main_content(user_browser.contents).p
+    >>> description.renderContents()
+    'Shirtpkdf user@domain.org lkjd hlkjfds...'
+
+An anonymous cannot see the email address anywhere in the page.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/debian/sarge/+source/mozilla-firefox/+bug/3')
+    >>> anon_browser.title
+    'Bug #3 in mozilla-firefox (Debian Sarge): ...Bug Title Test...'
+
+    >>> 'user@domain.org' not in anon_browser.contents
+    True
+
+    >>> description = find_tag_by_id(anon_browser.contents, 'bug-description')
+    >>> description.renderContents()
+    '<p>Shirtpkdf &lt;email address hidden&gt; lkjd hlkjfds...'
+
+Nor can the anonymous user see the email address in the the +viewstatus
+page.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus')
+    >>> anon_browser.title
+    'Bug #3 in mozilla-firefox (Debian Sarge): ...Bug Title Test...'
+
+    >>> 'user@domain.org' not in anon_browser.contents
+    True
+
+    >>> description = find_main_content(anon_browser.contents).findAll('p')[1]
+    >>> description.renderContents()
+    'Shirtpkdf &lt;email address hidden&gt; lkjd hlkjfds...'
+
