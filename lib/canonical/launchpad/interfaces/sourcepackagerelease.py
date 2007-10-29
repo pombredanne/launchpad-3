@@ -10,10 +10,8 @@ from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket)
+from canonical.launchpad.interfaces import BuildStatus
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -103,6 +101,8 @@ class ISourcePackageRelease(Interface):
         "DistroSeriesSourcePackageReleases.")
     upload_archive = Attribute(
         "The archive for which this package was first uploaded in Launchpad")
+    upload_changesfile = Attribute(
+        'The LibraryFileAlias for the changesfile this package was uploaded with')
 
 
     # XXX Steve Alexander 2004-12-10:

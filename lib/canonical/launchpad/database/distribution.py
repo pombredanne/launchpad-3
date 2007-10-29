@@ -60,15 +60,12 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingStatus,
-    PackageUploadStatus)
-
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IArchiveSet, IBuildSet, IDistribution, IDistributionSet,
-    IFAQTarget, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName, MirrorContent,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
+    IHasLogo, IHasMugshot, ILaunchpadCelebrities, IQuestionTarget,
+    ISourcePackageName, MirrorContent, PackagePublishingStatus,
+    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
@@ -166,7 +163,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
-    def archiveIdList(self, archive=None):
+    def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:
             return self.all_distro_archive_ids
@@ -860,23 +857,17 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 orderBy="id")
             if publishing is not None:
                 # Attempt to find a published binary package of the
-                # same name. Try the current release first.
-                publishedpackage = PublishedPackage.selectFirstBy(
-                    sourcepackagename=sourcepackagename.name,
-                    binarypackagename=sourcepackagename.name,
-                    distroseries=self.currentseries,
+                # same name.
+                publishedpackage = PublishedPackage.selectFirst('''
+                    PublishedPackage.sourcepackagename = %s AND
+                    PublishedPackage.binarypackagename = %s AND
+                    PublishedPackage.distribution = %s AND
+                    PublishedPackage.archive IN %s
+                    ''' % sqlvalues(sourcepackagename.name,
+                                    sourcepackagename.name,
+                                    self,
+                                    self.all_distro_archive_ids),
                     orderBy=['-id'])
-                if publishedpackage is None:
-                    # Try any release next.
-                    # XXX Gavin Panella 2007-04-18:
-                    # Could we just do this first? I'm just
-                    # following the pattern that was here before
-                    # (e.g. see the search for a binary package below).
-                    publishedpackage = PublishedPackage.selectFirstBy(
-                        sourcepackagename=sourcepackagename.name,
-                        binarypackagename=sourcepackagename.name,
-                        distribution=self,
-                        orderBy=['-id'])
                 if publishedpackage is not None:
                     binarypackagename = BinaryPackageName.byName(
                         publishedpackage.binarypackagename)
@@ -891,19 +882,17 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
         if binarypackagename:
             # Ok, so we have a binarypackage with that name. Grab its
-            # latest publication -- first in the distribution series
-            # and if that fails, in the distribution (this may be an old
+            # latest publication in the distribution (this may be an old
             # package name the end-user is groping for) -- and then get
             # the sourcepackagename from that.
-            publishing = PublishedPackage.selectFirstBy(
-                binarypackagename=binarypackagename.name,
-                distroseries=self.currentseries,
+            publishing = PublishedPackage.selectFirst('''
+                PublishedPackage.binarypackagename = %s AND
+                PublishedPackage.distribution = %s AND
+                PublishedPackage.archive IN %s
+                ''' % sqlvalues(binarypackagename.name,
+                                self,
+                                self.all_distro_archive_ids),
                 orderBy=['-id'])
-            if publishing is None:
-                publishing = PublishedPackage.selectFirstBy(
-                    binarypackagename=binarypackagename.name,
-                    distribution=self,
-                    orderBy=['-id'])
             if publishing is not None:
                 sourcepackagename = SourcePackageName.byName(
                                         publishing.sourcepackagename)
@@ -922,6 +911,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
 
+    # XXX cprov 20071024:  move this API to IArchiveSet, Distribution is
+    # already too long and complicated.
     def getAllPPAs(self):
         """See `IDistribution`"""
         return Archive.selectBy(

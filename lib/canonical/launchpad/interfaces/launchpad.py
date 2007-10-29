@@ -29,11 +29,13 @@ __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
+    'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
     'IBreadcrumb',
     'ICrowd',
+    'IFeedsApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -131,7 +133,6 @@ class IMaloneApplication(ILaunchpadApplication):
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Launchpad")
     projects_with_bugs_count = Attribute("The number of products and "
         "distributions which have bugs in Launchpad.")
@@ -195,7 +196,13 @@ class IOpenIdApplication(ILaunchpadApplication):
 class IPrivateApplication(ILaunchpadApplication):
     """Launchpad private XML-RPC application root."""
 
+    authserver = Attribute("""Old Authserver API end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
 
 
 class IAuthApplication(Interface):
@@ -218,6 +225,11 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+
+class IFeedsApplication(ILaunchpadApplication):
+    """Launchpad Feeds application root."""
+
 
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""

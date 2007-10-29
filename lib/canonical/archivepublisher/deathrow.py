@@ -20,9 +20,8 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, SecureSourcePackagePublishingHistory,
     BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    NotInPool, ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus, ArchivePurpose
+    ArchivePurpose, ISecureSourcePackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory, NotInPool, PackagePublishingStatus)
 
 
 condemned_states = [

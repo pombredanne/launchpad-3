@@ -17,10 +17,9 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IDistributionSet, NotFoundError, PackagePublishingStatus,
+    PackagePublishingPocket)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
 
 from contrib.glock import GlobalLock
 
@@ -96,7 +95,7 @@ def checkOverrides(distroseries, pocket, log):
             spr.name, spr.version, spp.component.name, spp.section.name,
             spr.urgency.name)
 
-        for bpp in spp.publishedBinaries():
+        for bpp in spp.getPublishedBinaries():
             bpr = bpp.binarypackagerelease
             checker.addBinary(
                 bpr.name, bpr.version, bpp.distroarchseries.architecturetag,

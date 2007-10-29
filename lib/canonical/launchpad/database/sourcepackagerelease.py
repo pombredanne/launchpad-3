@@ -22,19 +22,21 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingStatus,
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
-    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES, NotFoundError
-    )
+    ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
+    ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
+    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
+    UNRESOLVED_BUGTASK_STATUSES)
+
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.queue import (
+    PackageUpload)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.scripts.queue import QueueActionError
@@ -73,7 +75,7 @@ class SourcePackageRelease(SQLBase):
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
-    # landing 'NoMoreAptFtparchive' implementation for main archive. For
+    # landing 'NoMoreAptFtparchive' implementation for PRIMARY archive. For
     # PPA (primary target) we don't need populate old records.
     dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
     dsc_standards_version = StringCol(dbName='dsc_standards_version')
@@ -318,12 +320,18 @@ class SourcePackageRelease(SQLBase):
         queries.append(
             "Build.distroarchrelease IN %s" % sqlvalues(architectures))
 
-        # Follow archive inheritance across PRIMARY archives, for example:
-        # guadalinex/foobar was initialised from ubuntu/dapper
+        # Follow archive inheritance across distribution officla archives,
+        # for example:
+        # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
+        # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
+        # and so on
         if archive.purpose != ArchivePurpose.PPA:
             parent_archives = set()
+            archive_set = getUtility(IArchiveSet)
             for series in parent_series:
-                parent_archives.add(series.main_archive)
+                target_archive = archive_set.getByDistroPurpose(
+                    series.distribution, archive.purpose)
+                parent_archives.add(target_archive)
             archives = [archive.id for archive in parent_archives]
         else:
             archives = [archive.id, ]
@@ -362,6 +370,29 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+
+    @property
+    def upload_changesfile(self):
+        """See ISourcePackageRelease."""
+        clauseTables = [
+            'PackageUpload',
+            'PackageUploadSource',
+            ]
+        query = """
+        PackageUpload.id = PackageUploadSource.packageupload AND
+        PackageUpload.distrorelease = %s AND
+        PackageUploadSource.sourcepackagerelease = %s AND
+        PackageUpload.status = %s
+        """ % sqlvalues(self.uploaddistroseries, self,
+                        PackageUploadStatus.DONE)
+        queue_record = PackageUpload.selectOne(
+            query, clauseTables=clauseTables)
+
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
 
     @property
     def change_summary(self):

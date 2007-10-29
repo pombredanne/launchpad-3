@@ -16,9 +16,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.processor import ProcessorFamily
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackagePublishingStatus, PackagePublishingPocket)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):

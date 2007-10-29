@@ -11,10 +11,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingPocket)
 from canonical.launchpad.scripts.ftpmaster import (
     ChrootManager, ChrootManagerError)
-from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.testing import LaunchpadZopelessLayer
 
 class TestChrootManager(TestCase):
@@ -26,7 +26,6 @@ class TestChrootManager(TestCase):
         self.files_to_delete = []
         self.distribution = getUtility(IDistributionSet)['ubuntu']
         self.distroarchseries = self.distribution.currentseries['i386']
-        self.pocket = PackagePublishingPocket.SECURITY
 
     def tearDown(self):
         """Clean up test environment and remove the test archive."""
@@ -55,11 +54,10 @@ class TestChrootManager(TestCase):
 
     def test_initialize(self):
         """Chroot Manager initialization"""
-        chroot_manager = ChrootManager(self.distroarchseries, self.pocket)
+        chroot_manager = ChrootManager(self.distroarchseries)
 
         self.assertEqual(self.distroarchseries,
                          chroot_manager.distroarchseries)
-        self.assertEqual(self.pocket, chroot_manager.pocket)
         self.assertEqual([], chroot_manager._messages)
 
     def test_add_and_get(self):
@@ -68,15 +66,15 @@ class TestChrootManager(TestCase):
         chrootfilename = os.path.basename(chrootfilepath)
 
         chroot_manager = ChrootManager(
-            self.distroarchseries, self.pocket, filepath=chrootfilepath)
+            self.distroarchseries, filepath=chrootfilepath)
 
         chroot_manager.add()
         self.assertEqual(
             ["LibraryFileAlias: 75, 5 bytes, 5088e6471ab02d4268002f529a02621c",
-             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
-             "/SECURITY (1) added."], chroot_manager._messages)
+             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) added."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot()
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
@@ -85,61 +83,62 @@ class TestChrootManager(TestCase):
         dest = self._create_file('chroot.gotten')
 
         chroot_manager = ChrootManager(
-            self.distroarchseries, self.pocket, filepath=dest)
+            self.distroarchseries, filepath=dest)
 
         chroot_manager.get()
         self.assertEqual(
-            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
-             "SECURITY (1) retrieved.",
+            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) retrieved.",
              "Writing to '/tmp/chroot.gotten'."], chroot_manager._messages)
 
         self.assertEqual(True, os.path.exists(dest))
 
     def test_update_and_remove(self):
-        """Update existent chroot then remove it."""
+        """Update existing chroot then remove it."""
         chrootfilepath = self._create_file('chroot.update', content="DUHHHH")
         chrootfilename = os.path.basename(chrootfilepath)
 
         chroot_manager = ChrootManager(
-            self.distroarchseries, self.pocket, filepath=chrootfilepath)
+            self.distroarchseries, filepath=chrootfilepath)
 
         chroot_manager.update()
         self.assertEqual(
             ["LibraryFileAlias: 75, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
-             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
-             "SECURITY (1) updated."], chroot_manager._messages)
+             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) updated."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot()
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
         commit()
 
-        chroot_manager = ChrootManager(
-            self.distroarchseries, self.pocket)
+        chroot_manager = ChrootManager(self.distroarchseries)
 
         chroot_manager.remove()
         self.assertEqual(
-            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
-             "SECURITY (1) retrieved.",
-             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
-             "SECURITY (1) removed."], chroot_manager._messages)
+            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) retrieved.",
+             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) removed."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot()
         self.assertEqual(None, pocket_chroot.chroot)
 
     def test_remove_fail(self):
-        """Attempt to remove inexistent chroot fail."""
-        chroot_manager = ChrootManager(
-            self.distroarchseries, PackagePublishingPocket.RELEASE)
+        """Attempt to remove non-existent chroot will fail."""
+        # Use a different distroarchseries in the sample data; this one
+        # has no chroot.
+        distroarchseries = self.distribution['warty']['hppa']
+        chroot_manager = ChrootManager(distroarchseries)
 
         self.assertRaises(
             ChrootManagerError, chroot_manager.remove)
 
     def test_add_fail(self):
-        """Attempt to add inexistent local chroot fail."""
+        """Attempt to add non-existent local chroot will fail."""
         chroot_manager = ChrootManager(
-            self.distroarchseries, PackagePublishingPocket.UPDATES,
+            self.distroarchseries,
             filepath='foo-bar')
 
         self.assertRaises(

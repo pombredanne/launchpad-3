@@ -93,6 +93,7 @@
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
     <sectiontype name="xmlrpc" extends="virtual_host" />
     <sectiontype name="xmlrpc-private" extends="virtual_host" />
+    <sectiontype name="feeds" extends="virtual_host" />
 
     <sectiontype name="virtual_hosts">
         <key name="use_https" datatype="boolean" required="yes">
@@ -114,6 +115,7 @@
         <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
         <section name="*" type="xmlrpc-private" attribute="xmlrpc_private"
                           required="yes" />
+        <section name="*" type="feeds" attribute="feeds" required="yes" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
@@ -1070,7 +1072,7 @@ k            </description>
         <key name="launch" datatype="boolean"       default="false" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
         <key name="xmlrpc_url" datatype="string"
-             default="http://xmlrpc.launchpad.dev/mailinglists" />
+             default="http://xmlrpc.launchpad.dev:8087/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
         <!-- XXX: A temporary key to control whether or not the functionality
         related to hosted mailing lists is exposed in the UI.

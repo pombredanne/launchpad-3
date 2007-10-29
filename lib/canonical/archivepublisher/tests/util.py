@@ -8,9 +8,8 @@ __metaclass__ = type
 # Utility functions/classes for testing the archive publisher.
 
 from canonical.archivepublisher.tests import datadir
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    DistroSeriesStatus)
+from canonical.launchpad.interfaces import (
+    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
 
 __all__ = ['FakeLogger']
 

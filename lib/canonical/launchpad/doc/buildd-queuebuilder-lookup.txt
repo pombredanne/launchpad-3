@@ -18,11 +18,10 @@ publications for a given distroseries:
 
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.database.publishing import (
-    ...      SecureSourcePackagePublishingHistory)
-    >>> from canonical.lp.dbschema import (
-    ...     ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket)
+    ...     SecureSourcePackagePublishingHistory)
     >>> from canonical.launchpad.interfaces import (
-    ...     IArchiveSet, IPersonSet, IDistributionSet)
+    ...     ArchivePurpose, IArchiveSet, IPersonSet, IDistributionSet,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
