@@ -40,7 +40,8 @@ check_sourcecode_dependencies:
 check_loggerhead_on_merge:
 	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
 	# depends on it (yet).
-	make -C sourcecode/loggerhead check
+	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
@@ -225,5 +226,5 @@ tags:
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches
+		sync_branches check_loggerhead_on_merge
 
