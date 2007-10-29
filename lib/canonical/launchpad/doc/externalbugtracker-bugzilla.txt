@@ -103,13 +103,50 @@ update:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224: RESOLVED FIXED
 
-Let's add a few more watches:
+Let's add a handful of watches:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IBugWatchSet, IPersonSet)
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_watch_set = getUtility(IBugWatchSet)
+
+    >>> expected_remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> for remote_bug_id in range(50,55):
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
+    ...         remotebug=str(remote_bug_id))
+    ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
+    ...         'RESOLVED', 'FIXED')
+    ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
+
+Set the batch threshold higher than the number of bug watches.
+
+    >>> external_bugzilla.batch_query_threshold = 10
+
+Then updateBugWatches() will make one request per bug watch:
+
+    >>> external_bugzilla.trace_calls = True
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+
+    >>> remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> external_bugzilla.trace_calls = False
+
+Let's add a few more watches:
+
     >>> expected_remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
@@ -120,6 +157,10 @@ Let's add a few more watches:
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
     ...         'ASSIGNED', '')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+
+Set the batch threshold very low:
+
+    >>> external_bugzilla.batch_query_threshold = 0
 
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:

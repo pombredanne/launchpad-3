@@ -471,12 +471,6 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
-PENDING_BUGWATCH_VOCABUARY = SimpleVocabulary(
-    [SimpleTerm(
-        "pending_bugwatch",
-        title="Show only bugs that need to be forwarded to an upstream bug "
-              "tracker")])
-
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
         "pending_bugwatch",
@@ -491,6 +485,16 @@ UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     SimpleTerm(
         "open_upstream",
         title="Show bugs that are open upstream"),
+    ])
+
+UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug "
+              "tracker"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved elsewhere"),
     ])
 
 class IBugTaskSearchBase(Interface):
@@ -583,7 +587,8 @@ class IUpstreamProductBugTaskSearch(IBugTaskSearch):
     """
     status_upstream = List(
         title=_('Status Upstream'),
-        value_type=Choice(vocabulary=PENDING_BUGWATCH_VOCABUARY),
+        value_type=Choice(
+            vocabulary=UPSTREAM_PRODUCT_STATUS_VOCABULARY),
         required=False)
 
 

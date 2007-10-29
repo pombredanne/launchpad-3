@@ -19,15 +19,36 @@ The page has a link to see all open bugs.
 
 == Bugs Fixed Elsewhere ==
 
-The Bugs frontpage includes the number of bugs that are fixed in some
-other context.
+The Bugs front page includes the number of bugs that are fixed in some
+other context. For example, users can see all bugs raised against Mozilla
+Firefox that are fixed in some other context:
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> fixed_elsewhere_link = anon_browser.getLink('bugs fixed elsewhere')
     >>> fixed_elsewhere_link.text
     '0 bugs fixed elsewhere'
 
-The link takes you to the list of the bugs fixed elsewhere.
+The link takes you to the list of the bugs fixed elsewhere:
+
+    >>> fixed_elsewhere_link.click()
+    >>> anon_browser.url
+    'http://.../+bugs?field.status_upstream=resolved_upstream'
+
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    <p>There are currently no open bugs.</p>
+    ...
+
+This also works for products not using Launchpad Bugs directly. For example
+users can see all bugs raised against Mozilla Thunderbird that are fixed in
+some other context:
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/thunderbird')
+    >>> fixed_elsewhere_link = anon_browser.getLink('bugs fixed elsewhere')
+    >>> fixed_elsewhere_link.text
+    '0 bugs fixed elsewhere'
+
+Again, the link takes you to the list of the bugs fixed elsewhere.:
 
     >>> fixed_elsewhere_link.click()
     >>> anon_browser.url

@@ -8,9 +8,14 @@ import subprocess
 import sys
 import unittest
 
+from zope.component import getUtility
+
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.testing import LaunchpadLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.interfaces import (
+    IDistributionSet, DistroSeriesStatus)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
 
@@ -102,12 +107,15 @@ class TestLpQueryDistroScript(unittest.TestCase):
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
         self.assertEqual(
-            err.strip(), 'ERROR   Action does not accept defined suite_name.')
+            err.strip(), 'ERROR   Action does not accept defined suite.')
 
 
 class TestLpQueryDistro(LaunchpadZopelessTestCase):
     """Test the LpQueryDistro class."""
-    test_output = None
+
+    def setUp(self):
+        self.test_output = None
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
 
     def getLpQueryDistro(self, test_args=None):
         """Return a built and LpQueryDistro object."""
@@ -126,9 +134,28 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         """Check if the 'current' action is executed sucessfully."""
         helper = self.getLpQueryDistro(test_args=['current'])
         helper.runAction(presenter=self.presenter)
-        # 'warty' is the CURRENT 'ubuntu' distroseries.
+        warty = self.ubuntu['warty']
+        self.assertEqual(warty.status.name, 'CURRENT')
         self.assertEqual(helper.location.distribution.name, u'ubuntu')
         self.assertEqual(self.test_output, u'warty')
+
+    def testDevelopmentAndFrozenDistroSeries(self):
+        """Check if the 'developement' action copes with FROZEN distroseries."""
+        helper = self.getLpQueryDistro(test_args=['development'])
+        helper.runAction(presenter=self.presenter)
+        hoary = self.ubuntu['hoary']
+        self.assertEqual(hoary.status.name, 'DEVELOPMENT')
+        self.assertEqual(helper.location.distribution.name, u'ubuntu')
+        self.assertEqual(self.test_output, u'hoary')
+
+        hoary.status = DistroSeriesStatus.FROZEN
+        flush_database_updates()
+
+        helper = self.getLpQueryDistro(test_args=['development'])
+        helper.runAction(presenter=self.presenter)
+        self.assertEqual(hoary.status.name, 'FROZEN')
+        self.assertEqual(helper.location.distribution.name, u'ubuntu')
+        self.assertEqual(self.test_output, u'hoary')
 
     def testUnknownAction(self):
         """'runAction' should fail for an unknown action."""

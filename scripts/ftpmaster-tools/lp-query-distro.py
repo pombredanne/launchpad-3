@@ -29,8 +29,5 @@ from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
 
 
 if __name__ == '__main__':
-    # XXX cprov 20070514: we can use read-only DB user for this task,
-    # however the mandatory ScriptActivity recording support added in
-    # LaunchpadScript by RF-4128 doesn't work if we do that.
-    script = LpQueryDistro('lp-query-distro', dbuser='uploader')
+    script = LpQueryDistro('lp-query-distro', dbuser='ro')
     script.run()

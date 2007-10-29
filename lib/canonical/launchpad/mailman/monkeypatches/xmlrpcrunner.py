@@ -9,6 +9,7 @@ __all__ = [
 import os
 import sys
 import shutil
+import socket
 import tarfile
 import traceback
 import xmlrpclib
@@ -62,6 +63,7 @@ class XMLRPCRunner(Runner):
         # is designed for.
         self._kids = {}
         self._stop = False
+        self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -73,20 +75,25 @@ class XMLRPCRunner(Runner):
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
-        # See if Launchpad has anything for us to do.
-        proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+        self._check_list_actions()
+        # Snooze for a while.
+        return 0
+
+    def _check_list_actions(self):
+        """See if there are any list actions to perform."""
         try:
-            actions = proxy.getPendingActions()
-        except xmlrpclib.ProtocolError, error:
+            actions = self._proxy.getPendingActions()
+        except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
-            return 0
+            return
+        except xmlrpclib.Fault, error:
+            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            return
         if actions:
-            syslog('xmlrpc', 'Got some things to do: %s',
+            syslog('xmlrpc', 'Received actions for these lists: %s',
                    COMMASPACE.join(actions.keys()))
         else:
-            # Always return 0 so self._snooze() will sleep for a while.
-            syslog('xmlrpc', 'Nothing to do')
-            return 0
+            return
         # There are three actions that can currently be taken.  A create
         # action creates a mailing list, possibly with some defaults, a modify
         # changes the settings on some existing mailing list, and a deactivate
@@ -111,7 +118,7 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Invalid xmlrpc action keys: %s',
                    COMMASPACE.join(actions.keys()))
         # Report the statuses to Launchpad.
-        proxy.reportStatus(statuses)
+        self._proxy.reportStatus(statuses)
         # Snooze for a while.
         return 0
 

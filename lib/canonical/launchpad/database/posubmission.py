@@ -142,7 +142,6 @@ class POSubmissionSet:
         # This is not a good thing, and if it's any faster than a single big
         # query, that's pure coincidence.
         parameters['temp_table'] = 'temp_suggestion_pomsgset'
-        postgresql.drop_tables(cur, [parameters['temp_table']])
         cur.execute("""
             CREATE TEMP TABLE %(temp_table)s
             ON COMMIT DROP
