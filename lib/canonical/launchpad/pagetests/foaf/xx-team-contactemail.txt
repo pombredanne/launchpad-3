@@ -124,7 +124,7 @@ we'll ask the user to contact a Launchpad admin.
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> foobar = Person.byName('name16')
-    >>> mailing_list.review(foobar, MailingListStatus.DECLINED)
+    >>> mailing_list.review(foobar, MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
     >>> logout()
 
