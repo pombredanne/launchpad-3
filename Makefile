@@ -38,8 +38,9 @@ check_sourcecode_dependencies:
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_loggerhead_on_merge:
-	# We can't run the loggerhead tests in PQM yet :(
-	true
+	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
+	# depends on it (yet).
+	make -C sourcecode/loggerhead check
 
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
