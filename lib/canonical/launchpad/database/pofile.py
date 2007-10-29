@@ -1503,8 +1503,7 @@ class POFileToTranslationFileAdapter:
             # XXX CarlosPerelloMarin 2007-10-26 bug=157540: Due a bug in our
             # POTExport view, we need to leave out pomsgidsightings which have
             # its 'inlastrevision' flag set to False because are not current
-            # anymore so we don't need them on export time. See bug #157528
-            # for more information.
+            # anymore so we don't need them on export time.
             messageID = POMsgID.byMsgid(row.msgid)
             pomsgidsighting = POMsgIDSighting.selectOneBy(
                 potmsgset=row.potmsgset,
@@ -1518,10 +1517,11 @@ class POFileToTranslationFileAdapter:
             # If the sequence number of either the PO template or the PO file
             # has changed, we start a new message set.
             # XXX CarlosPerelloMarin 2007-10-28 bug=157985: Due to a bug in
-            # our import process, we could have two different potmsgset with
-            # sequence = 0 but equal posequence, we workaround it here until
-            # we are able to migrate the database breakage checking that
-            # row.potmsgset did change.
+            # our import process, we can have two different pomsgset instances
+            # with equal sequence number, for the same language and template,
+            # and both have their related potmsgset's sequence = 0, we work
+            # around it here until we are able to fix the database breakage by
+            # checking that row.potmsgset did change.
             if (row.potsequence != potsequence or
                 row.posequence != posequence or
                 row.potmsgset != potmsgset):
