@@ -243,7 +243,7 @@ def _create_old_bug(
 
 def _summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
-    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in bugtasks:
         if len(bugtask.bug.bugtasks) == 1:
             title = bugtask.bug.title
@@ -266,10 +266,10 @@ def bugtaskExpirationSetUp(test):
     test.globs['create_old_bug'] = _create_old_bug
     test.globs['summarize_bugtasks'] = _summarize_bugtasks
     test.globs['ubuntu'] = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['jokosher'] = getUtility(
-        IProductSet).getByName('jokosher')
+    test.globs['jokosher'] = getUtility(IProductSet).getByName('jokosher')
     test.globs['thunderbird'] = getUtility(
         IProductSet).getByName('thunderbird')
+    test.globs['firefox'] = getUtility(IProductSet).getByName('firefox')
     test.globs['sync'] = sync
     test.globs['commit'] = commit
     test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
