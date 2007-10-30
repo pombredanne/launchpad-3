@@ -100,8 +100,6 @@ class TeamContactAddressView(LaunchpadFormView):
     label = "Contact address"
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget(
-        'welcome_message', TextAreaWidget, width=72, height=10)
 
     def _getList(self):
         """Return this team's mailing list."""
@@ -219,8 +217,6 @@ class TeamContactAddressView(LaunchpadFormView):
         mailing_list = self.getListInState(MailingListStatus.ACTIVE,
                                            MailingListStatus.MODIFIED,
                                            MailingListStatus.UPDATING)
-        if mailing_list is None:
-            self.form_fields = self.form_fields.omit('welcome_message')
 
     def getContactMethodField(self):
         """Create the form.Fields to use for the contact_method field.
