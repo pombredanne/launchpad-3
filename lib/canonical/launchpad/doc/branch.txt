@@ -159,12 +159,15 @@ A branch that is not associated with a product may not be owned by a
 team, however.
 
     >>> team = personset.getByName('simple-team')
+    >>> member = personset.getByName('one-membership')
+    >>> member.inTeam(team)
+    True
     >>> teamjunkcode = branchset.new(
-    ...     BranchType.HOSTED, 'junkcode', ddaa, team, None, None,
+    ...     BranchType.HOSTED, 'junkcode', member, team, None, None,
     ...     date_created=now.next())
     Traceback (most recent call last):
       ...
-    AssertionError: Cannot create team-owned junk branches.
+    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated

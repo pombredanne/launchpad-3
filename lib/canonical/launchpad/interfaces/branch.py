@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
+    'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
@@ -183,6 +184,13 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to a team that they are not a member of.
+    """
+
+
+class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
+    """We forbid the creation of team-owned +junk branches.
+
+    Raised when a user is attempting to create a team-owned +junk branch.
     """
 
 

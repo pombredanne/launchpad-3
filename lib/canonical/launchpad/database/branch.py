@@ -31,10 +31,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchLifecycleStatus, BranchListingSort,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
+    BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, InvalidBranchMergeProposal,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
@@ -600,10 +601,6 @@ class BranchSet:
         """
         PUBLIC_BRANCH = (False, None)
         PRIVATE_BRANCH = (True, None)
-        # If the product is None, then the branch is a +junk branch.
-        # All junk branches are public.
-        if product is None:
-            return PUBLIC_BRANCH
         # You are not allowed to specify an owner that you are not a member of.
         if not creator.inTeam(owner):
             if owner.isTeam():
@@ -614,6 +611,16 @@ class BranchSet:
                 raise BranchCreatorNotOwner(
                     "%s cannot create branches owned by %s"
                     % (creator.displayname, owner.displayname))
+        # If the product is None, then the branch is a +junk branch.
+        if product is None:
+            # The only team that is allowed to own +junk branches is
+            # ~vcs-imports.
+            if (owner.isTeam() and
+                owner != getUtility(ILaunchpadCelebrities).vcs_imports):
+                raise BranchCreationNoTeamOwnedJunkBranches(
+                    "Cannot create team-owned junk branches.")
+            # All junk branches are public.
+            return PUBLIC_BRANCH
         # First check if the owner has a defined visibility rule.
         policy = product.getBranchVisibilityRuleForTeam(owner)
         if policy is not None:
@@ -683,13 +690,6 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
-
-        if product is None and owner.isTeam():
-            # We disallow team-owned junk branches -- with the exception of
-            # ~vcs-imports, to allow the eventual creation of code imports not
-            # yet associated with a product.
-            assert owner == getUtility(ILaunchpadCelebrities).vcs_imports, (
-                "Cannot create team-owned junk branches.")
 
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
