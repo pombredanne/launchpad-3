@@ -899,6 +899,9 @@ class IBranchSet(Interface):
         :param branch_type: A value from the `BranchType` enum.
         """
 
+    def getTargetBranchesForUsersMergeProposals(user, product):
+        """Return a sequence of branches the user has targetted before."""
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""

@@ -1085,3 +1085,13 @@ class BranchSet:
             AND(Branch.q.branch_type == branch_type,
                 Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'], orderBy='mirror_request_time')
+
+    def getTargetBranchesForUsersMergeProposals(self, user, product):
+        """See `IBranchSet`."""
+        return Branch.select("""
+            BranchMergeProposal.target_branch = Branch.id
+            AND BranchMergeProposal.registrant = %s
+            AND Branch.product = %s
+            """ % sqlvalues(user, product),
+            clauseTables=['BranchMergeProposal'],
+            orderBy=['owner', 'name'], distinct=True)

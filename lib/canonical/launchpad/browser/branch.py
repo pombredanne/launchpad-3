@@ -55,6 +55,7 @@ from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
+from canonical.widgets.branch import TargetBranchWidget
 
 
 def quote(text):
@@ -864,7 +865,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
-    custom_widget('target_branch', SinglePopupWidget, displayWidth=35)
+    custom_widget('target_branch', TargetBranchWidget)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
 
     @action('Register', name='register')
