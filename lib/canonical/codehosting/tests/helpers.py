@@ -18,7 +18,7 @@ import unittest
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists
+from bzrlib.errors import FileExists, TransportNotPossible
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
@@ -84,6 +84,9 @@ def exception_names(exceptions):
         names = []
         for exc in exceptions:
             names.extend(exception_names(exc))
+    elif exceptions is TransportNotPossible:
+        # OMG hack!
+        names = ["Transport operation not possible"]
     else:
         names = [exceptions.__name__]
     return names

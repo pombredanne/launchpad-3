@@ -492,6 +492,16 @@ class SmartserverTests(SSHTestCase):
             self.getTransportURL('~sabdfl/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
 
+    @deferToThread
+    def test_authserver_error_propagation(self):
+        # Errors raised by createBranch on the authserver should be displayed
+        # sensibly by the client.  We test this by pushing to a product that
+        # does not exist (the other error message possibilities are covered by
+        # unit tests).
+        remote_url = self.getTransportURL('~sabdfl/firefax/branch')
+        error = self.assertTransportRaises(
+            TransportNotPossible, self.push, remote_url)
+        self.assertIn("Product 'firefax' does not exist.", str(error))
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
