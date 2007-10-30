@@ -50,7 +50,7 @@ ALTER TABLE DistroSeriesLanguage RENAME COLUMN distrorelease TO distroseries;
 
 ALTER TABLE distroreleaselanguage_pkey RENAME TO distroserieslanguage_pkey;
 ALTER TABLE distroreleaselanguage_distrorelease_language_uniq
-    RENAME TO distroserieslanguage__distrorelease__language__key;
+    RENAME TO distroserieslanguage__distroseries__language__key;
 ALTER TABLE DistroSeriesLanguage
     ADD CONSTRAINT distroserieslanguage__distroseries__fk
     FOREIGN KEY (distroseries) REFERENCES DistroSeries;
@@ -259,6 +259,8 @@ ALTER TABLE MirrorCdImageDistroSeries
 
 -- MirrorDistroReleaseSource
 ALTER TABLE MirrorDistroReleaseSource RENAME TO MirrorDistroSeriesSource;
+ALTER TABLE mirrordistroreleasesource_pkey
+    RENAME TO mirrordistroseriessource_pkey;
 ALTER TABLE MirrorDistroSeriesSource
     RENAME COLUMN distrorelease TO distroseries;
 ALTER TABLE mirrordistroreleasesource_id_seq
@@ -268,18 +270,17 @@ ALTER TABLE MirrorDistroSeriesSource
 ALTER TABLE mirrordistroreleasesource_uniq
     RENAME TO mirrordistroseriessource_uniq;
 ALTER TABLE MirrorDistroSeriesSource
-    DROP CONSTRAINT mirrordistroreleasesource_pkey,
     DROP CONSTRAINT mirrordistroreleasesource__component__fk,
     DROP CONSTRAINT mirrordistroreleasesource_distribution_mirror_fkey,
     DROP CONSTRAINT mirrordistroreleasesource_distro_release_fkey;
 ALTER TABLE MirrorDistroSeriesSource
-    ADD CONSTRAINT mirrordistroseriessource_pkey PRIMARY KEY (id),
     ADD CONSTRAINT mirrordistroseriessource__component__fk
         FOREIGN KEY (component) REFERENCES Component,
     ADD CONSTRAINT mirrordistroseriessource__distribution_mirror__fk
         FOREIGN KEY (distribution_mirror) REFERENCES DistributionMirror,
     ADD CONSTRAINT mirrordistroseriessource__distroseries__fk
         FOREIGN KEY (distroseries) REFERENCES DistroSeries;
+
 
 -- POTemplate
 ALTER TABLE POTemplate RENAME COLUMN distrorelease TO distroseries;
@@ -288,7 +289,7 @@ ALTER TABLE potemplate_distrorelease_key
 ALTER TABLE POTemplate
     DROP CONSTRAINT potemplate_distrorelease_fk,
     DROP CONSTRAINT "$2";
-ALTER TABLE POtemplate
+ALTER TABLE POTemplate
     ADD CONSTRAINT potemplate__distrorelease__fk
         FOREIGN KEY (distroseries) REFERENCES DistroSeries,
     ADD CONSTRAINT potemplate__from_sourcepackagename__fk
@@ -307,11 +308,106 @@ ALTER TABLE securesourcepackagepublishinghistory_distrorelease_idx
     RENAME TO securesourcepackagepublishinghistory__distroseries__idx;
 
 
--- Remaining tables
+-- PackageUploadBuild
+ALTER TABLE distroreleasequeuebuild_pkey RENAME TO packageuploadbuild_pkey;
+ALTER TABLE distroreleasequeuebuild__distroreleasequeue__build__unique
+    RENAME TO packageuploadbuild__packageupload__build__key;
+
+
+-- PackageUploadSource
+ALTER TABLE distroreleasequeuesource_pkey RENAME TO packageuploadsource_pkey;
+ALTER TABLE distroreleasequeuesource__distroreleasequeue__sourcepackagerele
+    RENAME TO packageuploadsource__packageupload__sourcepackagerelease__key;
+
+
+-- PackageUploadCustom
+ALTER TABLE distroreleasequeuecustom_pkey RENAME TO packageuploadcustom_pkey;
+
+
+-- PackageUpload
+ALTER TABLE distroreleasequeue_pkey RENAME TO packageupload_pkey;
+ALTER TABLE PackageUpload RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE PackageUpload DROP CONSTRAINT packageupload__distrorelease__fk;
+ALTER TABLE PackageUpload ADD CONSTRAINT packageupload__distroseries__fk
+    FOREIGN KEY (distroseries) REFERENCES DistroSeries;
+ALTER TABLE packageupload__distrorelease__key
+    RENAME TO packageupload__distroseries__key;
+ALTER TABLE packageupload__distrorelease__status__idx
+    RENAME TO packageupload__distroseries__status__idx;
+
+
+-- Packaging
+ALTER TABLE Packaging RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE packaging_distrorelease_and_sourcepackagename_idx
+    RENAME TO packaging__distroseries__sourcepackagename__idx;
+ALTER TABLE Packaging DROP CONSTRAINT packaging_distrorelease_fk;
+ALTER TABLE Packaging ADD CONSTRAINT packaging__distroseries__fk
+    FOREIGN KEY (distroseries) REFERENCES DistroSeries;
+
+
+-- MirrorDistroArchRelease
+ALTER TABLE MirrorDistroArchRelease RENAME TO MirrorDistroArchSeries;
+ALTER TABLE mirrordistroarchrelease_pkey RENAME TO mirrordistroarchseries_pkey;
+ALTER TABLE mirrordistroarchrelease_uniq RENAME TO mirrordistroarchseries_uniq;
+ALTER TABLE mirrordistroarchrelease_id_seq
+    RENAME TO mirrordistroarchseries_id_seq;
+ALTER TABLE MirrorDistroArchSeries
+    ALTER COLUMN id SET DEFAULT nextval('mirrordistroarchseries_id_seq');
+ALTER TABLE MirrorDistroArchSeries
+    RENAME COLUMN distro_arch_release TO distro_arch_series;
+ALTER TABLE MirrorDistroArchSeries
+    DROP CONSTRAINT mirrordistroarchrelease__component__fk,
+    DROP CONSTRAINT mirrordistroarchrelease_distribution_mirror_fkey,
+    DROP CONSTRAINT mirrordistroarchrelease_distro_arch_release_fkey;
+ALTER TABLE MirrorDistroArchSeries
+    ADD CONSTRAINT mirrordistroarchseries__component__fk
+        FOREIGN KEY (component) REFERENCES Component,
+    ADD CONSTRAINT mirrordistroarchseries__distribution_mirror__fk
+        FOREIGN KEY (distribution_mirror) REFERENCES DistributionMirror,
+    ADD CONSTRAINT mirrordistroarchseries__distro_arch_series__fk
+        FOREIGN KEY (distro_arch_series) REFERENCES DistroArchSeries;
+
+
+-- PocketChroot
+ALTER TABLE pocketchroot_distroarchrelease_key
+    RENAME TO pocketchroot__distroarchseries__key;
+ALTER TABLE PocketChroot RENAME COLUMN distroarchrelease TO distroarchseries;
+ALTER TABLE PocketChroot DROP CONSTRAINT "$1", DROP CONSTRAINT "$2";
+ALTER TABLE PocketChroot
+    ADD CONSTRAINT pocketchroot__distroarchseries__fk
+        FOREIGN KEY (distroarchseries) REFERENCES DistroArchSeries,
+    ADD CONSTRAINT pocketchroot__libraryfilealias__fk
+        FOREIGN KEY (chroot) REFERENCES LibraryFileAlias;
+
+
+-- Build
+ALTER TABLE Build RENAME COLUMN distroarchrelease TO distroarchseries;
+ALTER TABLE build_distroarchrelease_and_datebuilt_idx
+    RENAME TO build__distroarchseries__datebuilt__idx;
+ALTER TABLE Build
+    DROP CONSTRAINT "$1", DROP CONSTRAINT "$2",
+    DROP CONSTRAINT "$3", DROP CONSTRAINT "$4", DROP CONSTRAINT "$6";
+ALTER TABLE Build
+    ADD CONSTRAINT build__processor__fk
+        FOREIGN KEY (processor) REFERENCES Processor,
+    ADD CONSTRAINT build__distroarchseries__fk
+        FOREIGN KEY (distroarchseries) REFERENCES DistroArchSeries,
+    ADD CONSTRAINT build__buildlog__fk
+        FOREIGN KEY (buildlog) REFERENCES LibraryFileAlias,
+    ADD CONSTRAINT build__builder__fk
+        FOREIGN KEY (builder) REFERENCES Builder,
+    ADD CONSTRAINT build__sourcepackagerelease__fk
+        FOREIGN KEY (sourcepackagerelease) REFERENCES SourcePackageRelease;
+
+
+-- Detect remaining tables
 SELECT relname from pg_class where relname like '%distrorelease%';
+SELECT relname from pg_class where relname like '%distroarchrelease%';
 
-\d DistroSeriesPackageCache
+-- Remaining columns
+-- ???
 
+\d Build
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 50, 0);
 ABORT;
