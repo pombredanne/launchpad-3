@@ -5,17 +5,12 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-
+<metal:rightportlets fill-slot="portlets">
     <div tal:replace="structure context/@@+portlet-teambranches" />
-
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1><span tal:replace="view/title_prefix">Bazaar</span> branches</h1>
+  <h1 tal:content="view/heading">Bazaar branches</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
