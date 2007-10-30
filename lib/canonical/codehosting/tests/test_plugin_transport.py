@@ -298,19 +298,6 @@ class TestLaunchpadTransport(TestCase):
             else:
                 self.fail("mkdir() did not raise!")
 
-    def test_create_junk_team_branch(self):
-        transport = get_transport(self.server.get_url())
-        try:
-            transport.mkdir('~testteam/+junk/branch')
-        except errors.PermissionDenied, error:
-            self.assertEqual(
-                error.path,
-                "+junk is only allowed under user directories, not team "
-                "directories.")
-        else:
-            self.fail("mkdir() did not raise!")
-
-
     def lockBranch(self, unique_name):
         """Simulate locking a branch."""
         transport = get_transport(self.server.get_url() + unique_name)

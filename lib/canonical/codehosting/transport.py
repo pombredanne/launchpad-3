@@ -170,16 +170,6 @@ class LaunchpadServer(Server):
             raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        if product == '+junk':
-            user_dict = self.authserver.getUser(user)
-            if not user_dict:
-                raise PermissionDenied("%s doesn't exist" % (user,))
-            user_id = user_dict['id']
-            if user_id != self.user_id:
-                # XXX Er.  user might not be a team!
-                raise PermissionDenied(
-                    "+junk is only allowed under user directories, not team "
-                    "directories.")
         branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
         if branch_id != '':
