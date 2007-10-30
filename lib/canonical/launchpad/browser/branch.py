@@ -458,8 +458,10 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.date_last_modified = UTC_NOW
+        if self.updateContextFromData(data):
+            # Only specify that the context was modified if there
+            # was in fact a change.
+            self.context.date_last_modified = UTC_NOW
 
     @property
     def next_url(self):
