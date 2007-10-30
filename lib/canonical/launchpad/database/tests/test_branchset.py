@@ -17,10 +17,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchType, BranchLifecycleStatus, BranchCreationForbidden,
-    BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, PersonCreationRationale, TeamSubscriptionPolicy)
+    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner, BranchLifecycleStatus, BranchType,
+    BranchVisibilityRule, IBranchSet, IPersonSet, IProductSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, PersonCreationRationale,
+    TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -467,8 +468,12 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
         """If the creator isn't a member of the owner an exception is raised."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotMemberOfOwnerTeam, self.doug, self.xray)
+
+    def test_creation_under_different_user(self):
+        """If the owner is a user other than the creator an exception is raised.
+        """
         self.assertPolicyCheckRaises(
-            BranchCreatorNotMemberOfOwnerTeam, self.albert, self.bob)
+            BranchCreatorNotOwner, self.albert, self.bob)
 
     def test_public_branch_creation(self):
         """Branches where the creator is a memeber of owner will be public."""

@@ -8,6 +8,7 @@ __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
@@ -182,6 +183,14 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to a team that they are not a member of.
+    """
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
     """
 
 

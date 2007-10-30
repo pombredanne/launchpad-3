@@ -32,9 +32,9 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch,
+    BranchCreatorNotOwner, BranchLifecycleStatus, BranchListingSort,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, InvalidBranchMergeProposal,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
@@ -606,10 +606,14 @@ class BranchSet:
             return PUBLIC_BRANCH
         # You are not allowed to specify an owner that you are not a member of.
         if not creator.inTeam(owner):
-            # XXX owner might not be a team here!
-            raise BranchCreatorNotMemberOfOwnerTeam(
-                "%s is not a member of %s"
-                % (creator.displayname, owner.displayname))
+            if owner.isTeam():
+                raise BranchCreatorNotMemberOfOwnerTeam(
+                    "%s is not a member of %s"
+                    % (creator.displayname, owner.displayname))
+            else:
+                raise BranchCreatorNotOwner(
+                    "%s cannot create branches owned by %s"
+                    % (creator.displayname, owner.displayname))
         # First check if the owner has a defined visibility rule.
         policy = product.getBranchVisibilityRuleForTeam(owner)
         if policy is not None:
