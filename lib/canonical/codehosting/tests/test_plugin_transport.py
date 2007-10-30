@@ -13,7 +13,10 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
 
-from canonical.authserver.interfaces import READ_ONLY, WRITABLE
+from twisted.web.xmlrpc import Fault
+
+from canonical.authserver.interfaces import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     LaunchpadServer, makedirs, set_up_logging)
@@ -259,6 +262,41 @@ class TestLaunchpadTransport(TestCase):
         transport.mkdir('~testuser/thunderbird/orange')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
+
+    def test_createBranch_errors(self):
+        # The various Faults that createBranch can raise should be translated
+        # into bzrlib exceptions that are suitable for presentation to the
+        # user.
+        message = "Branch exploding, as requested."
+        transport = get_transport(self.server.get_url())
+        self.authserver.failing_branch_name = 'explode!'
+        self.authserver.failing_branch_string = message
+
+        for code, bzrliberror in [
+            (NOT_FOUND_FAULT_CODE, errors.NoSuchFile),
+            (PERMISSION_DENIED_FAULT_CODE, errors.PermissionDenied)]:
+
+            # This should possibly be in a test for FakeLaunchpad, if there
+            # were such things.
+            self.authserver.failing_branch_code = code
+            try:
+                self.authserver.createBranch(
+                    self.user_id, 'testuser', 'thunderbird', 'explode!')
+            except Fault, f:
+                self.assertEqual(f.faultCode, code)
+                self.assertEqual(f.faultString, message)
+            else:
+                self.fail("createBranch() did not raise!")
+
+            # This is what we're really testing: the translation from Fault to
+            # bzrlib exception.
+            try:
+                transport.mkdir('~testuser/thunderbird/explode!')
+            except bzrliberror, error:
+                self.failUnless(message in str(error))
+            else:
+                self.fail("createBranch() did not raise!")
+
 
     def lockBranch(self, unique_name):
         """Simulate locking a branch."""

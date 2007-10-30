@@ -21,7 +21,10 @@ from bzrlib.transport import (
     unregister_transport,
     )
 
-from canonical.authserver.interfaces import READ_ONLY
+from twisted.web.xmlrpc import Fault
+
+from canonical.authserver.interfaces import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
@@ -183,8 +186,16 @@ class LaunchpadServer(Server):
             self.logger.debug('Branch (%r, %r, %r) already exists ')
             return branch_id
         else:
-            return self.authserver.createBranch(
-                self.user_id, user, product, branch)
+            try:
+                return self.authserver.createBranch(
+                    self.user_id, user, product, branch)
+            except Fault, f:
+                if f.faultCode == NOT_FOUND_FAULT_CODE:
+                    raise NoSuchFile(f.faultString)
+                elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
+                    raise PermissionDenied(f.faultString)
+                else:
+                    raise
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions and

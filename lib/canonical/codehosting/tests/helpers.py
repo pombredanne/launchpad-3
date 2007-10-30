@@ -39,6 +39,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.xmlrpc import Fault
 
 
 class AvatarTestCase(TwistedTestCase):
@@ -281,6 +282,13 @@ def deferToThread(f):
 class FakeLaunchpad:
     """Stub RPC interface to Launchpad."""
 
+    # If failing_branch_name is set createBranch is called with that
+    # branch name, a Fault with the given code and string will be
+    # raised.
+    failing_branch_name = None
+    failing_branch_code = None
+    failing_branch_string = None
+
     def __init__(self):
         self._person_set = {
             1: dict(name='testuser', displayname='Test User',
@@ -315,6 +323,8 @@ class FakeLaunchpad:
 
     def createBranch(self, login_id, user, product, branch_name):
         """See IHostedBranchStorage.createBranch."""
+        if self.failing_branch_name == branch_name:
+            raise Fault(self.failing_branch_code, self.failing_branch_string)
         for user_id, user_info in self._person_set.iteritems():
             if user_info['name'] == user:
                 break
