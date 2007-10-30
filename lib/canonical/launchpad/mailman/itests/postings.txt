@@ -35,7 +35,8 @@ by a sender who is not a Launchpad member will be summarily discarded.
     >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one = list_set.get('itest-one')
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> itest_helper.transactionmgr.commit()
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
 
     >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
@@ -84,7 +85,7 @@ equivalent to making it unvalidated.
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
-    >>> itest_helper.transactionmgr.commit()
+    >>> commit()
     >>> print alternative_email.email, alternative_email.statusname
     aperson@example.org New Email Address
 
@@ -142,43 +143,24 @@ list.
     >>> len(messages)
     1
     >>> message = messages[0]
-    >>> print message.as_string()
-    Subject: Auto-discard notification
-    From: itest-one-bounces@launchpad.dev
-    To: itest-one-owner@launchpad.dev
-    MIME-Version: 1.0
-    Content-Type: multipart/mixed; boundary="===============..."
-    Message-ID: <mailman...itest-one@launchpad.dev>
-    Date: ...
-    Precedence: bulk
-    X-BeenThere: itest-one@launchpad.dev
-    X-Mailman-Version: ...
-    List-Id: <itest-one.launchpad.dev>
-    X-List-Administrivia: yes
-    Sender: itest-one-bounces@launchpad.dev
-    Errors-To: itest-one-bounces@launchpad.dev
-    <BLANKLINE>
-    --===============...==
-    Content-Type: text/plain; charset="us-ascii"
-    MIME-Version: 1.0
-    Content-Transfer-Encoding: 7bit
-    <BLANKLINE>
-    The attached message has been automatically discarded.
-    --===============...==
-    Content-Type: message/rfc822
-    MIME-Version: 1.0
-    <BLANKLINE>
-    From: anne.person@example.com
-    To: itest-one@lists.launchpad.dev
-    Subject: An unsubscribed post
-    Message-ID: <third-injection>
-    <BLANKLINE>
-    Hi, I am not a member of this team's list (yet).
-    <BLANKLINE>
-    --===============...==--
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
+    >>> message['from']
+    'itest-one-bounces@launchpad.dev'
+    >>> message['to']
+    'itest-one-owner@launchpad.dev'
+    >>> message['subject']
+    'Auto-discard notification'
+
+    # Show the discard message sitting in the first subpart.
+    >>> message.get_payload(0).get_payload()
+    'The attached message has been automatically discarded.'
+
+    # Because the second subpart is a message/rfc822, the actual original
+    # message is in the first subpart of the outer second subpart.  Yeah, MIME
+    # is fun that way.
+    >>> message.get_payload(1).get_payload(0)['from']
+    'anne.person@example.com'
+    >>> message.get_payload(1).get_payload(0).get_payload()
+    "Hi, I am not a member of this team's list (yet).\n"
 
 
 == Verified and registered member postings ==
@@ -193,9 +175,8 @@ to the mailing list.
 
     # Subscribe Anne with her preferred address.
     >>> anne.join(team_one)
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> list_one.subscribe(removeSecurityProxy(anne))
-    >>> itest_helper.transactionmgr.commit()
+    >>> list_one.subscribe(anne)
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
 
     >>> print anne.preferredemail.email, anne.preferredemail.statusname
@@ -219,28 +200,13 @@ and the newly posted message.
     >>> len(messages)
     2
     >>> message = messages[1]
-    >>> print message.as_string()
-    From: anne.person@example.com
-    To: itest-one@lists.launchpad.dev
-    Message-ID: <third-injection>
-    Subject: [Itest-one] A member post
-    X-BeenThere: itest-one@launchpad.dev
-    X-Mailman-Version: ...
-    Precedence: list
-    List-Id: <itest-one.launchpad.dev>
-    List-Unsubscribe: <http://.../mailman/listinfo/itest-one>,
-        <mailto:itest-one-request@launchpad.dev?subject=unsubscribe>
-    List-Archive: <http://.../pipermail/itest-one>
-    List-Post: <mailto:itest-one@launchpad.dev>
-    List-Help: <mailto:itest-one-request@launchpad.dev?subject=help>
-    List-Subscribe: <http://.../mailman/listinfo/itest-one>,
-        <mailto:itest-one-request@launchpad.dev?subject=subscribe>
-    MIME-Version: 1.0
-    Content-Type: text/plain; charset="us-ascii"
-    Content-Transfer-Encoding: 7bit
-    Sender: itest-one-bounces@launchpad.dev
-    Errors-To: itest-one-bounces@launchpad.dev
-    <BLANKLINE>
+    >>> message['from']
+    'anne.person@example.com'
+    >>> message['to']
+    'itest-one@lists.launchpad.dev'
+    >>> message['subject']
+    '[Itest-one] A member post'
+    >>> print message.get_payload()
     Hi, I am now a member of this team's list!
     _______________________________________________
     Itest-one mailing list

@@ -23,7 +23,8 @@ list.  First, create the mailing list.
     >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one = list_set.get('itest-one')
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> itest_helper.transactionmgr.commit()
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
 
     >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
@@ -43,15 +44,13 @@ people and join them to teams through the backdoor.
     # Subscribe Anne with her preferred address.
     >>> anne = new_person('Anne')
     >>> anne.join(team_one)
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> list_one.subscribe(removeSecurityProxy(anne))
+    >>> list_one.subscribe(anne)
 
     # Subscribe Bart with his alternative address.
     >>> bart = new_person('Bart')
     >>> bart.join(team_one)
-    >>> list_one.subscribe(removeSecurityProxy(bart),
-    ...                    get_alternative_email(bart))
-    >>> itest_helper.transactionmgr.commit()
+    >>> list_one.subscribe(bart, get_alternative_email(bart))
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
 
 Both Anne and Bart should now be members of the mailing list.
@@ -75,12 +74,12 @@ unsubscribe Bart from the mailing list.
     # Subscribe Cris with her preferred address.
     >>> cris = new_person('Cris')
     >>> cris.join(team_one)
-    >>> list_one.subscribe(removeSecurityProxy(cris))
+    >>> list_one.subscribe(cris)
 
     # Subscribe Dirk with his preferred address.
     >>> dirk = new_person('Dirk')
     >>> dirk.join(team_one)
-    >>> list_one.subscribe(removeSecurityProxy(dirk))
+    >>> list_one.subscribe(dirk)
 
     # Unsubscribe Bart.
     >>> bart = person_set.getByName('bart')
@@ -89,7 +88,7 @@ unsubscribe Bart from the mailing list.
     # Change Anne's email address to her alternative.
     >>> sync(anne)
     >>> anne.setPreferredEmail(get_alternative_email(anne))
-    >>> itest_helper.transactionmgr.commit()
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
 
 Now, Anne should be subscribed with her alternate email address, and Cris and

@@ -12,7 +12,6 @@ from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
 
 
-
 def process(mlist, msg, msgdata):
     """Discard the message if it doesn't come from a Launchpad member."""
     if msgdata.get('approved'):

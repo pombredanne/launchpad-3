@@ -139,7 +139,7 @@ class XMLRPCRunner(Runner):
             return
         if info:
             syslog('xmlrpc', 'Received subscription info for these lists: %s',
-                   COMMASPACE.join(info))
+                   COMMASPACE.join(info.keys()))
         for list_name in info:
             mlist = MailList(list_name, lock=True)
             try:
@@ -148,7 +148,6 @@ class XMLRPCRunner(Runner):
                 member_map = dict((address, realname)
                                   for address, realname, flags, status
                                   in info[list_name])
-                subscriber_info = info[list_name]
                 # Start by calculating two sets: one is the set of new members
                 # who need to be added to the mailing list, and the other is
                 # the set of old members who need to be removed from the

@@ -34,6 +34,8 @@ MAILMAN_BIN = os.path.normpath(os.path.join(
     os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
 
 MAX_CYCLES = 2
+LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=30)
+SECONDS_TO_SNOOZE = 0.1
 
 
 class IntegrationTestFailure(Exception):
@@ -52,18 +54,6 @@ def run_mailman(*args):
     if stderr:
         raise IntegrationTestFailure(stderr)
     return stdout
-
-
-transactionmgr = None
-def create_transaction_manager():
-    """Create the global transaction manager for this side of the tests."""
-    global transactionmgr
-    # Import this here because our paths are not set up correctly in the
-    # global module scope.
-    from canonical.lp import initZopeless
-    # Set up the connection to the database.  We use the 'testadmin' user
-    # because it has rights to do nasty things like delete Person entries.
-    transactionmgr = initZopeless(dbuser='testadmin')
 
 
 def make_browser():
@@ -87,15 +77,19 @@ def wait_for_mailman():
     # waits until this file has changed, indicating that Mailman has processed
     # the last request.
     #
-    # It's actually more complicated than that due to race conditions.
-    # Because we can't atomically get the mtime and apply the database change
-    # that will trigger a Mailman update, we actually wait through two cycles
-    # of changes.  Mailman's XMLRPCRunner will always print a message to its
-    # log file when it talks to Launchpad, so two cycles ensures that the
-    # operaton triggered by the transaction commit has actually been handled.
+    # It's actually more complicated than that due to a race condition.
+    # Mailman might be updating as we're committing the transaction, and the
+    # first log growth we see may not be about the change we're interested in.
+    # This occurs because we can't atomically get the mtime and commit the
+    # database change that will trigger a Mailman update.
+    #
+    # To solve this, we actually wait through two cycles of log growth.
+    # Mailman's XMLRPCRunner will always print a message to its log file when
+    # it talks to Launchpad, so two cycles ensures that the operaton triggered
+    # by the transaction commit has actually been handled.
     log_file = os.path.join(mm_cfg.LOG_DIR, 'xmlrpc')
     last_mtime = os.stat(log_file).st_mtime
-    until = datetime.datetime.now() + datetime.timedelta(seconds=30)
+    until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
     cycle = 0
     while True:
         if os.stat(log_file).st_mtime > last_mtime:
@@ -105,7 +99,7 @@ def wait_for_mailman():
                 return None
         if datetime.datetime.now() > until:
             return 'Timed out'
-        time.sleep(0.1)
+        time.sleep(SECONDS_TO_SNOOZE)
 
 
 class SMTPServer:
@@ -186,7 +180,7 @@ class LogWatcher:
 
     def wait_for_growth(self):
         """Wait for a while, or until the file has grown."""
-        until = datetime.datetime.now() + datetime.timedelta(seconds=30)
+        until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
         while True:
             size = get_size(self._log_path)
             if size > self._last_size:
@@ -195,7 +189,7 @@ class LogWatcher:
                 return None
             if datetime.datetime.now() > until:
                 return 'Timed out'
-            time.sleep(0.1)
+            time.sleep(SECONDS_TO_SNOOZE)
 
     def resync(self):
         """Re-sync the file size so that we can watch it again."""

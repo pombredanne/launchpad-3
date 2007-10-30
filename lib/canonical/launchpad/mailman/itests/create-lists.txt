@@ -47,7 +47,8 @@ the web, so we'll go behind the scenes to do this.
     >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one = list_set.get('itest-one')
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> itest_helper.transactionmgr.commit()
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
 
     >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
@@ -74,7 +75,7 @@ mailing list.
 
     >>> list_two = list_set.get('itest-two')
     >>> list_two.review(lpadmin, MailingListStatus.DECLINED)
-    >>> itest_helper.transactionmgr.commit()
+    >>> commit()
 
     >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))

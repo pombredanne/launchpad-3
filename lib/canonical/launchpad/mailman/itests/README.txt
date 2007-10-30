@@ -25,7 +25,4 @@ From the top of your Launchpad tree run this:
 
 % lib/canonical/launchpad/mailman/itests/runtests.py
 
-You should see all the numbered integration tests run in order, with no
-failures.
-
-XXX You might also want a +mail-configure.zcml in your override-includes.
+This will run all the integration doctests in this directory.

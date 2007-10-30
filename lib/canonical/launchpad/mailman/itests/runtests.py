@@ -1,16 +1,7 @@
 #! /usr/bin/env python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Run all the Launchpad-Mailman integration tests, in order.
-
-The tests are located by getting a list of all Python files in this directory,
-and looking for those that start with a two digit number.  The tests are
-numerically ordered by that two digit number.
-
-The file is then execfile()'d and a main() function is pulled from the
-namespace.  That main() function is then run with no arguments, and it should
-perform all the tests for that step.
-"""
+"""Run all the Launchpad-Mailman integration doctests in this directory."""
 
 import os
 import sys
@@ -32,7 +23,13 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
 
 execute_zcml_for_scripts()
-itest_helper.create_transaction_manager()
+
+# Initialize zopeless mode, which sets up a global transaction manager.
+from canonical.lp import initZopeless
+initZopeless(dbuser='testadmin')
+
+from canonical.database.sqlbase import commit
+
 
 DOCTEST_FLAGS = (doctest.ELLIPSIS |
                  doctest.NORMALIZE_WHITESPACE |
@@ -68,7 +65,7 @@ def integrationTestCleanUp(test):
     DELETE FROM Person
     WHERE id IN (SELECT id FROM DeathRow);
     """)
-    itest_helper.transactionmgr.commit()
+    commit()
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
@@ -111,12 +108,13 @@ def find_tests():
 
 
 def v_callback(option, opt, value, parser):
+    """Process the -v/--verbose and -q/--quiet options."""
     if opt in ('-q', '--quiet'):
         delta = -1
     elif opt in ('-v', '--verbose'):
         delta = 1
     else:
-        delta = 0
+        raise AssertionError('Unexpected option: %s' % opt)
     dest = getattr(parser.values, option.dest)
     setattr(parser.values, option.dest, max(0, dest + delta))
 

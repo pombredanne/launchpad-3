@@ -21,9 +21,6 @@ from email import message_from_string
 
 sys.path.insert(0, itest_helper.TOP)
 
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-execute_zcml_for_scripts()
-
 from canonical.config import config
 
 

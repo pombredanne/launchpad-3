@@ -30,7 +30,8 @@ will approve that request.
     >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one = list_set.get('itest-one')
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> itest_helper.transactionmgr.commit()
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
 
     >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
@@ -52,7 +53,7 @@ that would do.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.deactivate()
-    >>> itest_helper.transactionmgr.commit()
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
 
 As far as Mailman is concerned, the mailing list no longer exists.
