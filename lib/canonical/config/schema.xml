@@ -1069,7 +1069,7 @@ k            </description>
     <sectiontype name="mailman" prefix="canonical.mailman.config">
         <section name="*" type="mailman-build" attribute="build" />
 
-        <key name="launch" datatype="boolean"       default="false" />
+        <key name="launch" datatype="boolean"       default="true" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
         <key name="xmlrpc_url" datatype="string"
              default="http://xmlrpc.launchpad.dev:8087/mailinglists" />
