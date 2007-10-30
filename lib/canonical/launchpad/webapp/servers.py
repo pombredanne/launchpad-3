@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -159,11 +159,12 @@ class VirtualHostRequestPublicationFactory:
         :param vhost_name: The config section defining the virtual host
              handled by this factory.
         :param request_factory: The request factory to use for this virtual
-             host requests.
+             host's requests.
         :param publication_factory: The publication factory to use for this
-            virtual host requests.
-        :param port: The port which is handled by this factory. If this is
-            None, any port will do.
+            virtual host's requests.
+        :param port: The port which is handled by this factory. If
+            this is None, this factory will handle requests that
+            originate on any port.
         :param methods: A sequence of HTTP methods that this factory handles.
         :param handle_default_host: Whether or not this factory is
             capable of handling requests that specify no hostname.
@@ -190,7 +191,6 @@ class VirtualHostRequestPublicationFactory:
         Returns true if the HTTP host and port of the incoming request
         match the ones this factory is equipped to handle.
         """
-        
         # We look at the wsgi environment to get the port this request
         # is coming in over.  The port number can be in one of two
         # places; either it's on the SERVER_PORT environment variable
@@ -200,10 +200,14 @@ class VirtualHostRequestPublicationFactory:
         host = environment.get('HTTP_HOST')
         port = environment.get('SERVER_PORT')
         if ":" in host:
-            assert port is None, "Port specified in SERVER_PORT and HTTP_HOST"
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
-            host, port = host.split(':')        
+            host, new_port = host.split(':')
+            if port is not None:
+                assert str(port) == new_port, (
+                    "Port specified in SERVER_PORT does not match "
+                    "port specified in HTTP_HOST")
+            port = new_port
 
         if host == '':
             if not self.handle_default_host:
@@ -213,12 +217,13 @@ class VirtualHostRequestPublicationFactory:
         else:
             # This factory handles this host.
             pass
-        
-        if self.port:
-            try:
-                port = int(port)
-            except (ValueError, TypeError):
-                port = None
+
+        if self.port is not None:
+            if port is not None:
+                try:
+                    port = int(port)
+                except (ValueError):
+                    port = None
             if self.port != port:
                 return False
 
@@ -230,12 +235,12 @@ class VirtualHostRequestPublicationFactory:
 
         We know that this factory is the right one for the given host
         and port. But there might be something else wrong with the
-        request.  For instance, it might have the wrong HTTP method.    
+        request.  For instance, it might have the wrong HTTP method.
         """
         environment = self._thread_local.environment
         if environment is None:
             raise AssertionError('This factory declined the request.')
-        
+
         root_url = URI(self.vhost_config.rooturl)
 
         real_request_factory, publication_factory = (
@@ -252,7 +257,7 @@ class VirtualHostRequestPublicationFactory:
             root_url.port)
 
         self._thread_local.environment = None
-        return request_factory, publication_factory
+        return (request_factory, publication_factory)
 
     def checkRequest(self, environment):
         """Makes sure that the incoming HTTP request is of an expected type.
@@ -263,15 +268,16 @@ class VirtualHostRequestPublicationFactory:
 
         :return: An appropriate ProtocolErrorPublicationFactory if the
             HTTP request doesn't comply with the expected protocol. If
-            the request is all right, (None, None).            
+            the request is all right, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
-        if method not in self.methods:
+        if method in self.methods:
+            return None, None
+        else:
             request_factory = ProtocolErrorRequest
             publication_factory = ProtocolErrorPublicationFactory(
-                405,headers={'Allow' : " ".join(self.methods)})
+                405, headers={'Allow':" ".join(self.methods)})
             return request_factory, publication_factory
-        return None, None
 
 
 class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
@@ -288,15 +294,16 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
     def checkRequest(self, environment):
         """See `VirtualHostRequestPublicationFactory`.
 
-        Only accept requests when the MIME type is application/xml.
+        Accept only requests where the MIME type is text/xml.
         """
         request_factory, publication_factory = (
-            super(XMLRPCRequestPublicationFactory,
-                  self).checkRequest(environment))
+            super(XMLRPCRequestPublicationFactory, self).checkRequest(
+                environment))
         if request_factory is None:
             mime_type = environment.get('CONTENT_TYPE')
-            if mime_type != 'application/xml':
+            if mime_type != 'text/xml':
                 request_factory = ProtocolErrorRequest
+                # 415 - Unsupported Media Type
                 publication_factory = ProtocolErrorPublicationFactory(415)
         return request_factory, publication_factory
 
@@ -315,10 +322,9 @@ class NotFoundRequestPublicationFactory:
         request factory in an ApplicationServerSettingRequestFactory.
         That's because it's only triggered when there's no valid hostname.
         """
-        return (ProtocolErrorRequest,
-                ProtocolErrorPublicationFactory(404))
+        return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
-            
+
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo and breadcrumbs."""
 
@@ -860,7 +866,7 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
 class ProtocolErrorRequest(LaunchpadBrowserRequest):
     """An HTTP request that happened to result in an HTTP error."""
 
-    def traverse(self, object):        
+    def traverse(self, object):
         """It's already been determined that there's an error. Return None."""
         return None
 
@@ -869,13 +875,16 @@ class ProtocolErrorPublicationFactory:
     """This class publishes error messages in response to protocol errors."""
 
     def __init__(self, status, headers=None):
-        
+        """Store the headers and status for turning into a parameterized
+        publication.
+        """
         if not headers:
             headers = {}
         self.status = status
         self.headers = headers
 
     def __call__(self, db):
+        """Create a parameterized publication object."""
         return ProtocolErrorPublication(self.status, self.headers)
 
 
@@ -901,7 +910,7 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
 
 class ProtocolErrorException(Exception):
     implements(ILaunchpadProtocolError)
-    """An exception for requests that turn out to be protocol errors."""    
+    """An exception for requests that turn out to be protocol errors."""
 
     def __init__(self, status, headers):
         """Store status and headers for rendering in the HTTP response."""
@@ -909,6 +918,7 @@ class ProtocolErrorException(Exception):
         self.headers = headers
 
     def __str__(self):
+        """A protocol error can be well-represented by its HTTP status code."""
         return "Protocol error: %s" % self.status
 
 # ---- End publication classes.
@@ -946,7 +956,7 @@ def register_launchpad_request_publication_factories():
     private_port = None
     for server in config.servers:
         if server.type == 'PrivateXMLRPC':
-            private_port = server.address[1]
+            ip, private_port = server.address
             break
 
     if private_port is not None:
@@ -954,7 +964,12 @@ def register_launchpad_request_publication_factories():
             'xmlrpc_private', PrivateXMLRPCRequest,
             PrivateXMLRPCPublication, port=private_port))
 
-    # Register those factories.
+    # Register those factories, in priority order corresponding to
+    # their order in the list. This means picking a large number for
+    # the first factory and giving each subsequent factory the next
+    # lower number. We need to leave one space left over for the
+    # catch-all handler defined below, so we start at
+    # len(factories)+1.
     for priority, factory in enumerate(factories):
         publisher_factory_registry.register(
             "*", "*", factory.vhost_name, len(factories)-priority+1, factory)
@@ -962,5 +977,5 @@ def register_launchpad_request_publication_factories():
     # Register a catch-all "not found" handler at the lowest priority.
     publisher_factory_registry.register(
         "*", "*", "*", 0, NotFoundRequestPublicationFactory())
-    
+
 register_launchpad_request_publication_factories()
