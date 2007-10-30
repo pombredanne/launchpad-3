@@ -425,7 +425,7 @@ any other state can't though.
 
 == Mailing list permissions ===
 
-Random people can't edit a mailing list:
+Random people can't edit a mailing list.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
@@ -456,7 +456,8 @@ So can a Launchpad administrator:
 
     >>> login('foo.bar@canonical.com')
     >>> check_permission('launchpad.Edit', list_one)
-    True    
+    True
+
 
 == Welcome messages ==
 

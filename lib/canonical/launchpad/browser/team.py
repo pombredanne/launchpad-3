@@ -33,10 +33,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingListSet, IPersonSet, ITeamContactAddressForm, ITeamCreation,
-    ITeamMailingListConfigurationForm, ITeamMember, ITeam, LoginTokenType,
-    MailingListStatus, MAILING_LISTS_DOMAIN, TeamContactMethod,
-    TeamMembershipStatus, UnexpectedFormData)
+    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, ITeamMailingListConfigurationForm, ITeamMember,
+    LoginTokenType, MAILING_LISTS_DOMAIN, MailingListStatus,
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -120,8 +120,7 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @property
     def can_be_contact_method(self):
-        """See `MailingList.canBeContactMethod`.
-        """
+        """See `MailingList.canBeContactMethod`."""
         mailing_list = self._getList() 
         return mailing_list and mailing_list.canBeContactMethod()
 
@@ -172,6 +171,8 @@ class TeamContactAddressView(LaunchpadFormView):
             # Mailing list is active and the option will be enabled; there's
             # no need to display a status message.
             msg = ''
+        elif mailing_list.status == MailingListStatus.MOD_FAILED:
+            msg = 'an attempt to modify the mailing list failed.'
         else:
             raise AssertionError(
                 "Unknown mailing list status: %s" % mailing_list.status)
@@ -329,16 +330,21 @@ class TeamContactAddressView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "This team's Launchpad mailing list is currently "
                 "inactive and will be reactivated shortly.")
-        self.next_url = canonical_url(self.context)    
+        self.next_url = canonical_url(self.context)
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Changes the contact address for this mailing list."""
         context = self.context
         email_set = getUtility(IEmailAddressSet)
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
         if contact_method == TeamContactMethod.NONE:
             if context.preferredemail is not None:
+                # The user wants the mailing list to stop being the
+                # team's contact address, but not to be deactivated
+                # altogether. So we demote the list address from
+                # 'preferred' address to being just a regular address.
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
@@ -368,12 +374,13 @@ class TeamContactAddressView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+
 class TeamMailingListConfigurationView(LaunchpadFormView):
+    """A view class that lets the user manipulate a team's mailing list."""
 
     schema = ITeamMailingListConfigurationForm
     label = "Mailing list configuration"
-    custom_widget(
-        'welcome_message', TextAreaWidget, width=72, height=10)
+    custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
 
     def __init__(self, context, request):
         """Set feedback messages for users who want to edit the mailing list.
@@ -382,14 +389,13 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
         list might not take effect immediately. First, the mailing
         list may not actually be set as the team contact
         address. Second, the mailing list may be in a transitional
-        state: between MODIFIED and 
-        
+        state: from MODIFIED to UPDATING to ACTIVE can take a while.        
         """
         super(TeamMailingListConfigurationView,
               self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-        if (not self.context.preferredemail
+        if (self.context.preferredemail is None
             or self.mailing_list.address != self.context.preferredemail.email):
             self.request.response.addNotification(
                 _("This team's mailing list is not set as the team "
@@ -400,19 +406,23 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
                 _("Some changes to this team's mailing list are pending "
                   "an update and have not yet taken effect."))
 
-        if self.mailing_list.status == MailingListStatus.UPDATING:
+        elif self.mailing_list.status == MailingListStatus.UPDATING:
             self.request.response.addNotification(
                 _("Changes to this mailing list are currently "
                   "being propagated."))
 
-        if self.mailing_list.status == MailingListStatus.MOD_FAILED:
+        elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
             self.request.response.addNotification(
                 _("This mailing list is in an inconsistent state because "
                   "changes to its configuration failed to propagate."))
+        else:
+            # No other state needs a special notification.
+            pass
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        welcome_message = data.get('welcome_message', None)
+        """Sets the welcome message for a mailing list."""
+        welcome_message = data.get('welcome_message')
         assert (self.mailing_list is not None 
                 and self.mailing_list.canBeContactMethod()), (
             "Only an active mailing list can be configured.")
@@ -429,12 +439,12 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
         
         :return: A dictionary containing the current welcome message.
         """
-        context = self.context
-        if self.mailing_list is not None:            
-            return dict(welcome_message=self.mailing_list.welcome_message)
-        else:
+        if self.mailing_list is None:
             return {}
+        else:
+            return dict(welcome_message=self.mailing_list.welcome_message)
         
+
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation
@@ -525,7 +535,7 @@ class TeamMemberAddView(LaunchpadFormView):
 
         This checks that the new member has some active members and is not
         already an active team member.
-        """       
+        """
         newmember = data.get('newmember')
         error = None
         if newmember is not None:
