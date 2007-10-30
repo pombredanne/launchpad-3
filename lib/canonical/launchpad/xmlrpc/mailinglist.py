@@ -80,7 +80,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
             if action_status == 'failure':
-
                 if mailing_list.status in (MailingListStatus.CONSTRUCTING,
                                            MailingListStatus.DEACTIVATING):
                     mailing_list.transitionToStatus(MailingListStatus.FAILED)
