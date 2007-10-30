@@ -72,7 +72,7 @@ class LaunchpadFormView(LaunchpadView):
     # The for_input is passed through to create the fields.  If this value
     # is set to true in derived classes, then fields that are marked
     # read only will have editable widgets created for them.
-    for_input=None
+    for_input = None
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -132,7 +132,8 @@ class LaunchpadFormView(LaunchpadView):
         transaction.abort()
 
     def setUpFields(self):
-        assert self.schema is not None, "Schema must be set for LaunchpadFormView"
+        assert self.schema is not None, (
+            "Schema must be set for LaunchpadFormView")
         self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
         if self.field_names is not None:
@@ -231,7 +232,7 @@ class LaunchpadFormView(LaunchpadView):
             else:
                 widget = self.widgets.get(field.__name__)
                 if widget and widget.error():
-                    count +=1
+                    count += 1
 
         if count == 0:
             return ''

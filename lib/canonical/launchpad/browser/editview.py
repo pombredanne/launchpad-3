@@ -68,7 +68,8 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
             was_changed = False
             new_values = None
             try:
-                new_values = getWidgetsData(self, self.schema, self.fieldNames)
+                new_values = getWidgetsData(
+                    self, self.schema, self.fieldNames)
             except WidgetsError, errors:
                 self.errors = errors
                 transaction.abort()

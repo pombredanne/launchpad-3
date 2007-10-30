@@ -138,7 +138,7 @@ class BugEmailCommand(EmailCommand):
                 filealias=filealias,
                 parsed_message=parsed_msg)
             if message.text_contents.strip() == '':
-                 raise EmailProcessingError(
+                raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'))
 
             params = CreateBugParams(
@@ -177,7 +177,8 @@ class EditEmailCommand(EmailCommand):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
-            context_snapshot = Snapshot(context, providing=providedBy(context))
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
         edited = False
         for attr_name, attr_value in args.items():
@@ -229,7 +230,8 @@ class PrivateEmailCommand(EmailCommand):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
-            context_snapshot = Snapshot(context, providing=providedBy(context))
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
         # Apply requested changes.
         edited = context.setPrivate(private, getUtility(ILaunchBag).user)
@@ -274,7 +276,8 @@ class SecurityEmailCommand(EmailCommand):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
-            context_snapshot = Snapshot(context, providing=providedBy(context))
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
         # Apply requested changes.
         if security_related:
