@@ -150,7 +150,9 @@ def main():
     suite = find_tests()
     runner = unittest.TextTestRunner(verbosity=opts.verbosity)
     results = runner.run(suite)
-    return bool(results.failures or results.errors)
+    if results.failures or results.errors:
+        return 1
+    return 0
 
 
 if __name__ == '__main__':
