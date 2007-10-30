@@ -15,6 +15,8 @@ from zope.interface import Interface
 from zope.schema import Choice, Int, List, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
 
@@ -54,7 +56,7 @@ class ITranslationFormatExporter(Interface):
     # Enum infrastructure. See bug #135853 for more information.
     format = Choice(
         title=_('The file format that the translation will be exported to.'),
-        vocabulary='TranslationFileFormat',
+        vocabulary=TranslationFileFormat,
         required=True, readonly=True)
 
     supported_source_formats = List(
