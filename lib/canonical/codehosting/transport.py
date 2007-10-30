@@ -191,7 +191,14 @@ class LaunchpadServer(Server):
                     self.user_id, user, product, branch)
             except Fault, f:
                 if f.faultCode == NOT_FOUND_FAULT_CODE:
-                    raise NoSuchFile(f.faultString)
+                    # One might think that it would make sense to raise
+                    # NoSuchFile here, but that makes the client do "clever"
+                    # things like say "Parent directory of
+                    # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
+                    # does not exist.  You may supply --create-prefix to
+                    # create all leading parent directories."  Which is just
+                    # misleading.
+                    raise TransportNotPossible(f.faultString)
                 elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
                     raise PermissionDenied(f.faultString)
                 else:
