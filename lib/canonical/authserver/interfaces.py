@@ -17,8 +17,10 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'NOT_FOUND_FAULT_CODE',
+    'PERMISSION_DENIED_FAULT_CODE',
     'READ_ONLY',
-    'WRITABLE'
+    'WRITABLE',
     ]
 
 
@@ -27,6 +29,12 @@ from zope.interface import Interface
 
 READ_ONLY = 'r'
 WRITABLE = 'w'
+
+
+# Values for the faultCode of Faults raised by createBranch.
+# I borrow the numbers from HTTP for familiarity, there's nothing deep in it.
+PERMISSION_DENIED_FAULT_CODE = 403
+NOT_FOUND_FAULT_CODE = 404
 
 
 class IUserDetailsStorage(Interface):
@@ -173,6 +181,10 @@ class IHostedBranchStorage(Interface):
             belongs to.
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
+        :raises twisted.web.xmlrpc.Fault: If the branch cannot be created.
+            The faultCode will be PERMISSION_DENIED_FAULT_CODE or
+            NOT_FOUND_FAULT_CODE and the faultString will be a description
+            suitable to display to the user.
         """
 
     def requestMirror(branchID):

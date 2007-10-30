@@ -29,18 +29,15 @@ from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+    IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 from twisted.web.xmlrpc import Fault
 
-UTC = pytz.timezone('UTC')
 
-# I borrow the numbers from HTTP only for familiarity, there's nothing
-# deep here.
-PERMISSION_DENIED_FAULT_CODE = 403
-NOT_FOUND_FAULT_CODE = 404
+UTC = pytz.timezone('UTC')
 
 def utf8(x):
     if isinstance(x, unicode):
