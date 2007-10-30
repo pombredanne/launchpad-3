@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner, IHasSecurityContact)
+    IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.pillar import PillarNameField
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -85,7 +85,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
                IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ISpecificationTarget):
+               ILaunchpadUsage, ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -269,18 +269,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_(
             "Description of licenses that do not appear in the list above."))
 
-    @invariant
-    def bugExpirationRequiresLaunchpadBugs(distribution):
-        """Only Launchpad bug tacker can expire bugs.
-
-        The distribution must use Launchpad to track bugs for bug expiration
-        to be enabled.
-        """
-        # The distribution arg is a zope.formlib.form.FormData instance.
-        if (distribution.official_malone is False
-            and distribution.enable_bug_expiration is True):
-            distribution.enable_bug_expiration = False
-
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 
@@ -292,24 +280,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     bugtracker = ProductBugTracker(
         title=_('Bugs are tracked'),
         vocabulary="BugTracker")
-
-    official_answers = Bool(
-        title=_('Let people use Launchpad Answers to ask questions'),
-        required=True)
-
-    official_malone = Bool(
-        title=_('Bugs in this project are tracked in Launchpad'),
-        required=True)
-
-    official_rosetta = Bool(
-        title=_('Translations for this project are done in Launchpad'),
-        required=True)
-
-    enable_bug_expiration = Bool(
-        title=_('Automatically set inactive and Incomplete bug reports '
-                'to Invalid. This feature can only be enabled if this '
-                'product uses Launchpad to track bugs'),
-        required=True)
 
     sourcepackages = Attribute(_("List of packages for this product"))
 

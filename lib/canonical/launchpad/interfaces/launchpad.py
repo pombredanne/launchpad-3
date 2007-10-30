@@ -6,7 +6,8 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, TextLine
+from zope.interface.interface import invariant
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -52,6 +53,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
@@ -506,3 +508,32 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
+
+class ILaunchpadUsage(Interface):
+    """How the project uses Launchpad."""
+    official_answers = Bool(
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
+    enable_bug_expiration = Bool(
+        title=_('Automatically set inactive and Incomplete bug reports '
+                'to Invalid. This feature can only be enabled if this '
+                'project uses Launchpad to track bugs'),
+        required=True)
+
+    @invariant
+    def bugExpirationRequiresLaunchpadBugs(pillar):
+        """Only Launchpad bug tacker can expire bugs.
+
+        The pillar must use Launchpad to track bugs for bug expiration
+        to be enabled.
+        """
+        # The pillar arg is a zope.formlib.form.FormData instance.
+        if (pillar.official_malone is False
+            and pillar.enable_bug_expiration is True):
+            pillar.enable_bug_expiration = False

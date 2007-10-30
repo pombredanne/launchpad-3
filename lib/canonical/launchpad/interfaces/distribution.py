@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
-    IHasSecurityContact, ISpecificationTarget, PillarNameField)
+    IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget,
+    PillarNameField)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
@@ -41,7 +42,8 @@ class DistributionNameField(PillarNameField):
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ISpecificationTarget):
+    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
+    ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -157,20 +159,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_answers = Bool(
-        title=_('People can ask questions in Launchpad Answers'),
-        required=True)
-    official_malone = Bool(
-        title=_('Bugs in this distribution are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this distribution are done in Launchpad'),
-        required=True)
-    enable_bug_expiration = Bool(
-        title=_('Automatically set inactive and Incomplete bug reports '
-                'to Invalid. This feature can only be enabled if this '
-                'distribution uses Launchpad to track bugs'),
-        required=True)
 
     # properties
     currentseries = Attribute(
@@ -205,18 +193,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
-
-    @invariant
-    def bugExpirationRequiresLaunchpadBugs(distribution):
-        """Only Launchpad bug tacker can expire bugs.
-
-        The distribution must use Launchpad to track bugs for bug expiration
-        to be enabled.
-        """
-        # The distribution arg is a zope.formlib.form.FormData instance.
-        if (distribution.official_malone is False
-            and distribution.enable_bug_expiration is True):
-            distribution.enable_bug_expiration = False
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
