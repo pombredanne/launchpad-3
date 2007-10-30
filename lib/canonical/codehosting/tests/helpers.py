@@ -285,9 +285,8 @@ def deferToThread(f):
 class FakeLaunchpad:
     """Stub RPC interface to Launchpad."""
 
-    # If failing_branch_name is set createBranch is called with that
-    # branch name, a Fault with the given code and string will be
-    # raised.
+    # If failing_branch_name is set and createBranch is called with that
+    # branch name, a Fault with the given code and string will be raised.
     failing_branch_name = None
     failing_branch_code = None
     failing_branch_string = None

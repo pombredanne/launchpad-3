@@ -273,7 +273,8 @@ class TestLaunchpadTransport(TestCase):
         self.authserver.failing_branch_string = message
 
         for code, bzrliberror in [
-            # See transport.py for why we raise TransportNotPossible here.
+            # See transport.py for why we translate not-found errors
+            # into TransportNotPossible.
             (NOT_FOUND_FAULT_CODE, errors.TransportNotPossible),
             (PERMISSION_DENIED_FAULT_CODE, errors.PermissionDenied)]:
 

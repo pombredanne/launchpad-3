@@ -905,16 +905,12 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         self.assertPublic(self.albert, self.albert)
 
     def test_no_team_junk_branches(self):
-        """Branches created by anyone that has no product defined are created
-        as public branches.
-        """
+        """We forbid the creation of team-owned +junk branches."""
         self.assertPolicyCheckRaises(
             BranchCreationNoTeamOwnedJunkBranches, self.albert, self.xray)
 
     def test_no_create_junk_branch_for_other_user(self):
-        """Branches created by anyone that has no product defined are created
-        as public branches.
-        """
+        """One user can't create +junk branches owned by another."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotOwner, self.albert, self.doug)
 
