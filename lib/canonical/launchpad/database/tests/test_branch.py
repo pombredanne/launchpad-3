@@ -293,7 +293,7 @@ class BranchAddLandingTarget(TestCase):
 
 class BranchDateLastModified(BranchTestCase):
     """Exercies the situations where date_last_modifed is udpated."""
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         BranchTestCase.setUp(self)
@@ -337,22 +337,13 @@ class BranchDateLastModified(BranchTestCase):
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
-    def test_revisionsUpdateModifedTime(self):
-        """A branch that gets a new revision is considered modified."""
+    def test_updateScannedDetailsUpdateModifedTime(self):
+        """A branch that has been scanned is considered modified."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
         branch = self.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
-        transaction.commit()
 
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision = RevisionSet().new(
-            revision_id='some-unique-id', log_body='commit message',
-            revision_date=None, revision_author='ddaa@localhost',
-            owner=branch.owner, parent_ids=[], properties=None)
-        branch.createBranchRevision(0, revision)
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
-
+        branch.updateScannedDetails("hello world", 42);
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
