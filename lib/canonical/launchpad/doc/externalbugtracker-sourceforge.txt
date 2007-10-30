@@ -14,9 +14,8 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
     ...     SourceForge)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IExternalBugtracker,
     ...     SourceForge(new_bugtracker(BugTrackerType.SOURCEFORGE)))

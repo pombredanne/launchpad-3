@@ -39,7 +39,6 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,

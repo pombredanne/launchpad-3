@@ -42,8 +42,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import BugTaskImportance
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED

@@ -31,6 +31,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.pomsgid import POMsgID
+from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.pomsgset import (DummyPOMsgSet, POMsgSet)
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
@@ -1484,6 +1485,7 @@ class POFileToTranslationFileAdapter:
         rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
 
         potsequence = None
+        potmsgset = None
         posequence = None
         messages = []
         msgset = None
@@ -1498,9 +1500,31 @@ class POFileToTranslationFileAdapter:
             if row.posequence in (0, None) and row.potsequence == 0:
                 continue
 
+            # XXX CarlosPerelloMarin 2007-10-26 bug=157540: Due a bug in our
+            # POTExport view, we need to leave out pomsgidsightings which have
+            # its 'inlastrevision' flag set to False because are not current
+            # anymore so we don't need them on export time.
+            messageID = POMsgID.byMsgid(row.msgid)
+            pomsgidsighting = POMsgIDSighting.selectOneBy(
+                potmsgset=row.potmsgset,
+                pomsgid_=messageID,
+                pluralform=row.msgidpluralform)
+            if not pomsgidsighting.inlastrevision:
+                # Ignore it, the view should not provide us with this kind of
+                # rows.
+                continue
+
             # If the sequence number of either the PO template or the PO file
             # has changed, we start a new message set.
-            if row.potsequence != potsequence or row.posequence != posequence:
+            # XXX CarlosPerelloMarin 2007-10-28 bug=157985: Due to a bug in
+            # our import process, we can have two different pomsgset instances
+            # with equal sequence number, for the same language and template,
+            # and both have their related potmsgset's sequence = 0, we work
+            # around it here until we are able to fix the database breakage by
+            # checking that row.potmsgset did change.
+            if (row.potsequence != potsequence or
+                row.posequence != posequence or
+                row.potmsgset != potmsgset):
                 if msgset is not None:
                     # Output current message set before creating the new one.
                     messages.append(msgset)
@@ -1524,21 +1548,21 @@ class POFileToTranslationFileAdapter:
             # Note that the translation plural forms can be greater than or
             # equal to the translations available. This allows for
             # non-contiguous plural form indices.
-            if (row.msgidpluralform == TranslationConstants.SINGULAR_FORM and
-                msgset.msgid is None):
-                msgset.msgid = row.msgid
-            elif (row.msgidpluralform == TranslationConstants.PLURAL_FORM and
-                msgset.msgid_plural is None):
-                msgset.msgid_plural = row.msgid
+            if row.msgidpluralform == TranslationConstants.SINGULAR_FORM:
+                if msgset.msgid is None:
+                    msgset.msgid = row.msgid
+                else:
+                    assert row.msgid == msgset.msgid, (
+                        'got different msgid values for singular form.')
+            elif row.msgidpluralform == TranslationConstants.PLURAL_FORM:
+                if msgset.msgid_plural is None:
+                    msgset.msgid_plural = row.msgid
+                else:
+                    assert row.msgid == msgset.msgid_plural, (
+                        'got different msgid values for plural form.')
             else:
-                # msgset.msgid or msgset.msgid_plural could be not None,
-                # because we don't need to set it again, thus, we only check
-                # that row.msgidpluralform is correct.
-                assert row.msgidpluralform in (
-                    TranslationConstants.SINGULAR_FORM,
-                    TranslationConstants.PLURAL_FORM), (
-                        'msgid plural form is not valid: %s.' %
-                            row.msgidpluralform)
+                raise AssertionError(
+                    'msgid plural form %s is not valid.' % row.msgidpluralform)
 
             if (row.activesubmission is not None and
                 row.translationpluralform >= len(msgset.translations)):
@@ -1580,6 +1604,7 @@ class POFileToTranslationFileAdapter:
             # message.
             potsequence = row.potsequence
             posequence = row.posequence
+            potmsgset = row.potmsgset
 
         # Once we've processed all the rows, store last message set.
         if msgset is not None:

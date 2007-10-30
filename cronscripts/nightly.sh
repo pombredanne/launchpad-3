@@ -59,15 +59,17 @@ python update-bugtask-targetnamecaches.py -q
 echo == Expiring questions `date` ==
 python expire-questions.py
 
-echo == Expiring bugs `date` ==
-# XXX Do not enable expire-bugtasks until users have beta tested it.
-#python expire-bugtasks.py
+### echo == Expiring bugs `date` ==
+### python expire-bugtasks.py
 
 echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
 echo == Updating bug watches `date` ==
 LPCONFIG=production LP_DBUSER=temp_checkwatches python checkwatches.py
+
+echo == POFile stats `date` ==
+python rosetta-pofile-stats.py
 
 rm -f $LOCK
 
