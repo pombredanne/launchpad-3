@@ -217,6 +217,7 @@ ALTER TABLE ComponentSelection
 
 
 -- DevelopmentManifest
+/*
 ALTER TABLE DevelopmentManifest RENAME COLUMN distrorelease TO distroseries;
 ALTER TABLE DevelopmentManifest
     ADD CONSTRAINT developmentmanifest__distroseries__fk
@@ -228,6 +229,7 @@ ALTER TABLE developmentmanifest_datecreated_idx
     RENAME TO developmentmanifest__datecreated__idx;
 ALTER TABLE developmentmanifest_owner_datecreated_idx
     RENAME TO developmentmanifest__owner__datecreated__idx;
+*/
 
 
 -- DistroReleaseRole
@@ -255,11 +257,61 @@ ALTER TABLE MirrorCdImageDistroSeries
     DROP CONSTRAINT mirrorcdimagedistrorelease__unq;
 
 
+-- MirrorDistroReleaseSource
+ALTER TABLE MirrorDistroReleaseSource RENAME TO MirrorDistroSeriesSource;
+ALTER TABLE MirrorDistroSeriesSource
+    RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE mirrordistroreleasesource_id_seq
+    RENAME TO mirrordistroseriessource_id_seq;
+ALTER TABLE MirrorDistroSeriesSource
+    ALTER COLUMN id SET DEFAULT nextval('mirrordistroseriessource_id_seq');
+ALTER TABLE mirrordistroreleasesource_uniq
+    RENAME TO mirrordistroseriessource_uniq;
+ALTER TABLE MirrorDistroSeriesSource
+    DROP CONSTRAINT mirrordistroreleasesource_pkey,
+    DROP CONSTRAINT mirrordistroreleasesource__component__fk,
+    DROP CONSTRAINT mirrordistroreleasesource_distribution_mirror_fkey,
+    DROP CONSTRAINT mirrordistroreleasesource_distro_release_fkey;
+ALTER TABLE MirrorDistroSeriesSource
+    ADD CONSTRAINT mirrordistroseriessource_pkey PRIMARY KEY (id),
+    ADD CONSTRAINT mirrordistroseriessource__component__fk
+        FOREIGN KEY (component) REFERENCES Component,
+    ADD CONSTRAINT mirrordistroseriessource__distribution_mirror__fk
+        FOREIGN KEY (distribution_mirror) REFERENCES DistributionMirror,
+    ADD CONSTRAINT mirrordistroseriessource__distroseries__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries;
+
+-- POTemplate
+ALTER TABLE POTemplate RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE potemplate_distrorelease_key
+    RENAME TO potemplate_distroseries_uniq;
+ALTER TABLE POTemplate
+    DROP CONSTRAINT potemplate_distrorelease_fk,
+    DROP CONSTRAINT "$2";
+ALTER TABLE POtemplate
+    ADD CONSTRAINT potemplate__distrorelease__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries,
+    ADD CONSTRAINT potemplate__from_sourcepackagename__fk
+        FOREIGN KEY (from_sourcepackagename) REFERENCES SourcepackageName;
+
+
+-- SecureSourcePackagePublishingHistory
+ALTER TABLE SecureSourcePackagePublishingHistory
+    RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE SecureSourcePackagePublishingHistory
+    DROP CONSTRAINT securesourcepackagepublishinghistory_distrorelease_fk;
+ALTER TABLE SecureSourcePackagePublishingHistory
+    ADD CONSTRAINT securesourcepackagepublishinghistory__distroseries__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries;
+ALTER TABLE securesourcepackagepublishinghistory_distrorelease_idx
+    RENAME TO securesourcepackagepublishinghistory__distroseries__idx;
+
+
 -- Remaining tables
 SELECT relname from pg_class where relname like '%distrorelease%';
 
-\d MirrorCdImageDistroSeries
+\d DistroSeriesPackageCache
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 50, 0);
 ABORT;
