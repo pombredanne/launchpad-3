@@ -235,14 +235,23 @@ the team's contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
-Once the mailing list is active, its configuration action is
-available:
+Once the mailing list is active, its configuration screen is
+available.
 
     >>> browser.getLink('Configure mailing list') is None
     False
 
-It remains available even if the mailing list is not the team's
-contact address.
+Of course, it's not available to someone with no permission to
+manipulate the list.
+
+    >>> user_browser.open('http://launchpad.dev/~landscape-developers')
+    >>> user_browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The configuration screen remains available even if the mailing list is
+not the team's contact address.
 
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
@@ -260,7 +269,7 @@ currently the team's contact address.
 
     >>> browser.getLink('Configure mailing list').click()
 
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> welcome_message.value
     ''
     >>> welcome_message.value = 'Welcome to the test team mailing list.'
@@ -276,7 +285,7 @@ mailing list configuration screen displays an informative message:
 Changes to the welcome message take effect in the database immediately.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
@@ -330,7 +339,7 @@ address view.
     >>> browser.reload()
     >>> get_feedback_messages(browser)
     []
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
@@ -340,7 +349,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Configure mailing list').click()    
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     This change will fail to propagate.
 
