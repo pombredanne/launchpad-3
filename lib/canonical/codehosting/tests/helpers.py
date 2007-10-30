@@ -26,6 +26,7 @@ from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
+from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -335,6 +336,10 @@ class FakeLaunchpad:
         product_id = self.fetchProductID(product)
         if product_id is None:
             return ''
+        user = self.getUser(user_id)
+        if product_id == '' and 'team' in user['name']:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE,
+                        'Cannot create team-owned +junk branches.')
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():
