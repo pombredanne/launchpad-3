@@ -17,11 +17,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchLifecycleStatus, BranchType,
-    BranchVisibilityRule, IBranchSet, IPersonSet, IProductSet,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
+    IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -898,19 +898,25 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         # Override the product that is used in the check tests.
         self.firefox = None
 
-    def test_junk_brances_public(self):
+    def test_junk_branches_public(self):
         """Branches created by anyone that has no product defined are created
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22 bug=120501
-        # Bug 120501 is about whether or not users are able to create junk
-        # branches in the team namespace.
-        self.assertPublic(self.albert, self.xray)
-        self.assertPublic(self.albert, self.yankee)
-        self.assertPublic(self.albert, self.zulu)
 
-        self.assertPublic(self.doug, self.doug)
+    def test_no_team_junk_branches(self):
+        """Branches created by anyone that has no product defined are created
+        as public branches.
+        """
+        self.assertPolicyCheckRaises(
+            BranchCreationNoTeamOwnedJunkBranches, self.albert, self.xray)
+
+    def test_no_create_junk_branch_for_other_user(self):
+        """Branches created by anyone that has no product defined are created
+        as public branches.
+        """
+        self.assertPolicyCheckRaises(
+            BranchCreatorNotOwner, self.albert, self.doug)
 
 
 def test_suite():
