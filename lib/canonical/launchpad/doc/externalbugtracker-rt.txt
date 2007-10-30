@@ -1,0 +1,22 @@
+= ExternalBugTracker: RT =
+
+This covers the implementation of an ExternalBugTracker class for RT
+instances.
+
+
+== Basics ==
+
+When importing bugs from remote RT instances, we use an RT-specific
+implementation of ExternalBugTracker, RequestTracker.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     RequestTracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugtracker)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(
+    ...     IExternalBugtracker,
+    ...     RequestTracker(new_bugtracker(BugTrackerType.RT)))
+    True

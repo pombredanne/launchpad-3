@@ -105,6 +105,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return Trac(bugtracker)
     elif bugtrackertype == BugTrackerType.ROUNDUP:
         return Roundup(bugtracker)
+    elif bugtrackertype == BugTrackerType.RT:
+        return RequestTracker(bugtracker)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -1735,3 +1737,16 @@ class SourceForge(ExternalBugTracker):
         else:
             return local_status
 
+
+class RequestTracker(ExternalBugTracker):
+    """`ExternalBugTracker` subclass for handling RT imports."""
+    # We create our own opener so as to handle the RT authentication
+    # cookies that need to be passed around.
+    _opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+    def urlopen(self, request, data=None):
+        """Return a handle to a remote resource.
+
+        This method overrides that of `ExternalBugTracker` so that the
+        custom URL opener for RequestTracker instances can be used.
+        """
