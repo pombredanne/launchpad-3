@@ -21,6 +21,7 @@ __all__ = [
     'QuestionSetView',
     'QuestionSOP',
     'QuestionSubscriptionView',
+    'QuestionView',
     'QuestionWorkflowView',
     ]
 
@@ -160,6 +161,10 @@ class QuestionSetView(LaunchpadFormView):
     def most_active_projects(self):
         """Return the 5 most active projects."""
         return self.context.getMostActiveProjects(limit=5)
+
+
+class QuestionView(LaunchpadView):
+    """A simple view for a question that provides access to the user."""
 
 
 class QuestionSubscriptionView(LaunchpadView):

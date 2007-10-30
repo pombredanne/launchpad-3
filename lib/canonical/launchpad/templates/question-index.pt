@@ -68,9 +68,18 @@
         </tbody>
       </table>
 
+      <tal:user condition="view/user">
+        <tal:description
+          define="global description context/description/fmt:text-to-html" />
+      </tal:user>
+      <tal:not-user condition="not:view/user">
+        <tal:description
+          define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
+      </tal:not-user>
+
       <div
-        class="report" 
-        tal:content="structure context/description/fmt:text-to-html" 
+        class="report"
+        tal:content="structure description"
         />
 
       <div id="related-faq" tal:condition="context/faq">

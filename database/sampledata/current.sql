@@ -8364,7 +8364,7 @@ INSERT INTO question (id, "owner", title, description, assignee, answerer, produ
 
 Question: what after?
 .......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 18, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, NULL, NULL, 119, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto:user@domain.com link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
 
 Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
 
