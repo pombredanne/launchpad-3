@@ -1559,19 +1559,20 @@ class BugTaskSet:
                     ON BugTask.bug = Bug.id
                 LEFT OUTER JOIN Distribution
                     ON distribution = Distribution.id
-                    AND Distribution.official_malone IS TRUE
+                    AND Distribution.enable_bug_expiration IS TRUE
                 LEFT OUTER JOIN DistroRelease
                     ON distrorelease = Distrorelease.id
                     AND DistroRelease.distribution IN (
                         SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)
+                        WHERE enable_bug_expiration IS TRUE)
                 LEFT OUTER JOIN Product
                     ON product = Product.id
-                    AND Product.official_malone IS TRUE
+                    AND Product.enable_bug_expiration IS TRUE
                 LEFT OUTER JOIN ProductSeries
                     ON productseries = ProductSeries.id
                     AND ProductSeries.product IN (
-                        SELECT id FROM Product WHERE official_malone IS TRUE)
+                        SELECT id FROM Product
+                        WHERE enable_bug_expiration IS TRUE)
                 WHERE
                     (Distribution.id IS NOT NULL
                      OR DistroRelease.id IS NOT NULL

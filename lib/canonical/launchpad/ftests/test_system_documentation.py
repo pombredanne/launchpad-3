@@ -26,8 +26,9 @@ from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
-    ILanguageSet, ILaunchBag, IPersonSet, IProductSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistribution,
+    IDistributionSet, ILanguageSet, ILaunchBag, IPersonSet, IProduct,
+    IProductSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -251,7 +252,7 @@ def _summarize_bugtasks(bugtasks):
             title = bugtask.target.name
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
-            bugtask.target_uses_malone,
+            bugtask.pillar.enable_bug_expiration,
             (datetime.now(UTC) - bugtask.bug.date_last_message).days,
             bugtask.status.title,
             bugtask.assignee is not None,

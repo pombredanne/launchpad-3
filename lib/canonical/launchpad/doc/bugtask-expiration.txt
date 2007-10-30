@@ -4,9 +4,9 @@ Old unattended Incomplete bugtasks clutter Malone's search results,
 making the bug staff's job difficult. A script is run daily to
 locate unattended Incomplete bugtasks that have not been updated in
 2 months, and sets their status to INVALID. Only bugtasks for projects
-that use Malone and have enable_bug_expiration set to True will be
-expired; this rule does not apply to Bugs imported from upstream bug
-trackers. The preconditions are:
+that use Launchpad to track bugs and have enable_bug_expiration set to
+True will be expired; this rule does not apply to Bugs imported from
+upstream bug trackers. The preconditions are:
 
 1. The bugtask belongs to a project with enable_bug_expiration is True.
 2. The bugtask has the status Incomplete.
@@ -271,7 +271,7 @@ was expired. The remaining bugtasks are unchanged.
     milestone    True     61  Incomplete  False     False  True   False
     no_replys    True     61  Incomplete  False     False  False  True
     recent       True     31  Incomplete  False     False  False  False
-    no_expire    True     61  Incomplete  False     False  False  False
+    no_expire    False    61  Incomplete  False     False  False  False
 
 Only the three test bugtasks were expired in the entire database.
 

@@ -12,6 +12,7 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.interface.interface import invariant
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -268,6 +269,18 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_(
             "Description of licenses that do not appear in the list above."))
 
+    @invariant
+    def bugExpirationRequiresLaunchpadBugs(distribution):
+        """Only Launchpad bug tacker can expire bugs.
+
+        The distribution must use Launchpad to track bugs for bug expiration
+        to be enabled.
+        """
+        # The distribution arg is a zope.formlib.form.FormData instance.
+        if (distribution.official_malone is False
+            and distribution.enable_bug_expiration is True):
+            distribution.enable_bug_expiration = False
+
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 
@@ -290,6 +303,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     official_rosetta = Bool(
         title=_('Translations for this project are done in Launchpad'),
+        required=True)
+
+    enable_bug_expiration = Bool(
+        title=_('Automatically set inactive and Incomplete bug reports '
+                'to Invalid. This feature can only be enabled if this '
+                'product uses Launchpad to track bugs'),
         required=True)
 
     sourcepackages = Attribute(_("List of packages for this product"))

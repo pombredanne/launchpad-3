@@ -13,6 +13,7 @@ from zope.schema import (
     Object, Choice, Int, Text, TextLine, Bool)
 from zope.interface import (
     Interface, Attribute)
+from zope.interface.interface import invariant
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -165,6 +166,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     official_rosetta = Bool(
         title=_('Translations for this distribution are done in Launchpad'),
         required=True)
+    enable_bug_expiration = Bool(
+        title=_('Automatically set inactive and Incomplete bug reports '
+                'to Invalid. This feature can only be enabled if this '
+                'distribution uses Launchpad to track bugs'),
+        required=True)
 
     # properties
     currentseries = Attribute(
@@ -199,6 +205,18 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
+
+    @invariant
+    def bugExpirationRequiresLaunchpadBugs(distribution):
+        """Only Launchpad bug tacker can expire bugs.
+
+        The distribution must use Launchpad to track bugs for bug expiration
+        to be enabled.
+        """
+        # The distribution arg is a zope.formlib.form.FormData instance.
+        if (distribution.official_malone is False
+            and distribution.enable_bug_expiration is True):
+            distribution.enable_bug_expiration = False
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
