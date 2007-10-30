@@ -406,26 +406,29 @@ class HostedBranchStorageTest(DatabaseTest):
         except Fault, e:
             self.assertEquals(e.faultCode, NOT_FOUND_FAULT_CODE)
             self.assertEquals(e.faultString,
-                              "Product 'no-such-product' not found.")
+                              "Product 'no-such-product' does not exist.")
         else:
             self.fail("Creating a branch for a non-existant product did "
                       "not fail.")
 
     def test_createBranch_other_user(self):
-        # Test that creating a branch with an invalid name fails.
+        # Test that creating a branch under another user's directory fails.
         storage = DatabaseUserDetailsStorageV2(None)
         try:
             storage._createBranchInteraction(
                 1, 'no-priv', 'firefox', 'foo')
         except Fault, e:
             self.assertEquals(e.faultCode, PERMISSION_DENIED_FAULT_CODE)
-            # self.assertEquals(e.faultString, "") XXX make this sensible...
+            self.assertEquals(
+                e.faultString,
+                "Mark Shuttleworth cannot create branches owned by "
+                "No Privileges Person")
         else:
             self.fail("Creating a branch in another user's directory did "
                       "not fail.")
 
     def test_createBranch_bad_name(self):
-        # Test that creating a branch under another user's directory fails.
+        # Test that creating a branch with an invalid name fails.
         storage = DatabaseUserDetailsStorageV2(None)
         try:
             storage._createBranchInteraction(
@@ -436,6 +439,31 @@ class HostedBranchStorageTest(DatabaseTest):
                               BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
         else:
             self.fail("Creating a branch with an invalid name did not fail.")
+
+    def test_createBranch_bad_user(self):
+        # Test that creating a branch under a non-existent user fails.
+        storage = DatabaseUserDetailsStorageV2(None)
+        try:
+            storage._createBranchInteraction(
+                12, 'no-one', 'firefox', 'branch')
+        except Fault, e:
+            self.assertEquals(e.faultCode, NOT_FOUND_FAULT_CODE)
+            self.assertEquals(e.faultString, "User/team 'no-one' does not exist.")
+        else:
+            self.fail("Creating a branch with an invalid name did not fail.")
+        storage = DatabaseUserDetailsStorageV2(None)
+        # If both the user and the product are not found, then the missing
+        # user "wins" the error reporting race (as the url reads
+        # ~user/product/branch).
+        try:
+            storage._createBranchInteraction(
+                12, 'no-one', 'firefax', 'branch')
+        except Fault, e:
+            self.assertEquals(e.faultCode, NOT_FOUND_FAULT_CODE)
+            self.assertEquals(e.faultString, "User/team 'no-one' does not exist.")
+        else:
+            self.fail("Creating a branch with an invalid name did not fail.")
+
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)

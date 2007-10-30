@@ -354,6 +354,13 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         See `IHostedBranchStorage`.
         """
+
+        owner = getUtility(IPersonSet).getByName(personName)
+        if owner is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "User/team %r does not exist." % personName)
+
         if productName == '+junk':
             product = None
         else:
@@ -361,14 +368,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             if product is None:
                 raise Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "Product %r not found." % productName)
+                    "Product %r does not exist." % productName)
 
-        person_set = getUtility(IPersonSet)
-        owner = person_set.getByName(personName)
-
-        branch_set = getUtility(IBranchSet)
         try:
-            branch = branch_set.new(
+            branch = getUtility(IBranchSet).new(
                 BranchType.HOSTED, branchName, requester, owner,
                 product, None, None, author=requester)
         except (BranchCreationException, LaunchpadValidationError), e:
