@@ -299,7 +299,7 @@ class SourcePackageRelease(SQLBase):
         candidate = distroarchseries.distroseries
         while candidate is not None:
             parent_series.append(candidate)
-            candidate = candidate.parentseries
+            candidate = candidate.parent_series
 
         queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
 

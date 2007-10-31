@@ -342,9 +342,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
         # if we have a parent distroseries, try that
-        if self.distroseries.parentseries is not None:
+        if self.distroseries.parent_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                               distroseries=self.distroseries.parentseries)
+                               distroseries=self.distroseries.parent_series)
             return sp.packaging
         # capitulate
         return None

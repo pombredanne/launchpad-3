@@ -96,8 +96,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='releasestatus', notNull=True, schema=DistroSeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parentseries =  ForeignKey(
-        dbName='parentrelease', foreignKey='DistroSeries', notNull=False)
+    parent_series =  ForeignKey(
+        dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     driver = ForeignKey(
@@ -1212,7 +1212,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def initialiseFromParent(self):
         """See IDistroSeries."""
         archives = self.distribution.all_distro_archive_ids
-        assert self.parentseries is not None, "Parent series must be present"
+        assert self.parent_series is not None, "Parent series must be present"
         assert SourcePackagePublishingHistory.select("""
             Distroseries = %s AND
             Archive IN %s""" % sqlvalues(self.id, archives)).count() == 0, (
@@ -1223,7 +1223,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Archive IN %s""" % sqlvalues(arch, archives)).count() == 0, (
                 "Binary Publishing must be empty")
             try:
-                parent_arch = self.parentseries[arch.architecturetag]
+                parent_arch = self.parent_series[arch.architecturetag]
                 assert parent_arch.processorfamily == arch.processorfamily, (
                        "The arch tags must match the processor families.")
             except KeyError:
@@ -1252,7 +1252,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self._copy_component_and_section_selections(cur)
         self._copy_source_publishing_records(cur)
         for arch in self.architectures:
-            parent_arch = self.parentseries[arch.architecturetag]
+            parent_arch = self.parent_series[arch.architecturetag]
             self._copy_binary_publishing_records(cur, arch, parent_arch)
         self._copy_lucille_config(cur)
 
@@ -1267,7 +1267,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
                 WHERE pdr.id = %s)
             WHERE id = %s
-            ''' % sqlvalues(self.parentseries.id, self.id))
+            ''' % sqlvalues(self.parent_series.id, self.id))
 
     def _copy_binary_publishing_records(self, cur, arch, parent_arch):
         """Copy the binary publishing records from the parent arch series
@@ -1280,7 +1280,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         archives.
         """
         archive_set = getUtility(IArchiveSet)
-        for archive in self.parentseries.distribution.all_distro_archives:
+        for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
                     ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
@@ -1319,7 +1319,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         archives.
         """
         archive_set = getUtility(IArchiveSet)
-        for archive in self.parentseries.distribution.all_distro_archives:
+        for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
                     ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
@@ -1341,7 +1341,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                       spph.pocket = %s and spph.archive = %s
                 ''' % sqlvalues(self.id, target_archive, UTC_NOW, UTC_NOW,
                                 PackagePublishingPocket.RELEASE,
-                                self.parentseries.id,
+                                self.parent_series.id,
                                 PackagePublishingStatus.PENDING,
                                 PackagePublishingStatus.PUBLISHED,
                                 PackagePublishingPocket.RELEASE,
@@ -1356,13 +1356,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             INSERT INTO ComponentSelection (distroseries, component)
             SELECT %s AS distroseries, cs.component AS component
             FROM ComponentSelection AS cs WHERE cs.distroseries = %s
-            ''' % sqlvalues(self.id, self.parentseries.id))
+            ''' % sqlvalues(self.id, self.parent_series.id))
         # Copy the section selections
         cur.execute('''
             INSERT INTO SectionSelection (distroseries, section)
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
-            ''' % sqlvalues(self.id, self.parentseries.id))
+            ''' % sqlvalues(self.id, self.parent_series.id))
 
     def copyMissingTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
@@ -1556,7 +1556,7 @@ class DistroSeriesSet:
             return DistroSeries.select(where_clause)
 
     def new(self, distribution, name, displayname, title, summary,
-            description, version, parentseries, owner):
+            description, version, parent_series, owner):
         """See IDistroSeriesSet."""
         return DistroSeries(
             distribution=distribution,
@@ -1567,6 +1567,6 @@ class DistroSeriesSet:
             description=description,
             version=version,
             status=DistroSeriesStatus.EXPERIMENTAL,
-            parentseries=parentseries,
+            parent_series=parent_series,
             owner=owner)
 

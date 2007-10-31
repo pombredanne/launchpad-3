@@ -130,7 +130,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Status"), required=True,
         vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
-    parentseries = Choice(
+    parent_series = Choice(
         title=_("Parent series"),
         description=_("The series from which this one was branched."),
         required=True,
@@ -606,5 +606,5 @@ class IDistroSeriesSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+            version, parent_series, owner):
         """Creates a new distroseries"""

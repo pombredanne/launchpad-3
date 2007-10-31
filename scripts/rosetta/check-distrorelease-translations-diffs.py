@@ -81,7 +81,7 @@ def main(argv):
     release = distribution[options.release]
 
     logger_object.info('Starting...')
-    output = compare_translations(release.parentrelease, release)
+    output = compare_translations(release.parent_series, release)
     if output is not None:
         logger_object.error(output)
     logger_object.info('Done...')

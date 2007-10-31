@@ -103,7 +103,7 @@ def check_builds(distroseries):
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
-    parentseries = distroseries.parentseries
+    parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
     # pending build records for it.
@@ -119,7 +119,7 @@ def check_queue(distroseries):
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
-    parentseries = distroseries.parentseries
+    parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
     # queue items for it.
@@ -156,11 +156,11 @@ def copy_architectures(distroseries):
     SELECT %s, processorfamily, architecturetag, %s, official
     FROM DistroArchSeries WHERE distroseries = %s
     """ % sqlvalues(distroseries, distroseries.owner,
-                    distroseries.parentseries))
+                    distroseries.parent_series))
     flush_database_caches()
 
     distroseries.nominatedarchindep = distroseries[
-        distroseries.parentseries.nominatedarchindep.architecturetag]
+        distroseries.parent_series.nominatedarchindep.architecturetag]
 
 
 if __name__ == '__main__':
