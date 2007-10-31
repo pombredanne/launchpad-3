@@ -519,8 +519,11 @@ class BugTextView(LaunchpadView):
         else:
             text.append('duplicates: ')
 
-        text.append('subscribers: ')
+        text.append('attachments: ')
+        for attachment in bug.attachments:
+            text.append(' %s' % self.attachment_text(attachment))
 
+        text.append('subscribers: ')
         for subscription in bug.subscriptions:
             text.append(' %s' % self.person_text(subscription.person))
 
@@ -535,6 +538,10 @@ class BugTextView(LaunchpadView):
 
         text.append('importance: %s' % task.importance.title)
 
+        component = task.getPackageComponent()
+        if component:
+            text.append('component: %s' % component.name)
+
         if task.assignee:
             text.append('assignee: %s' % self.person_text(task.assignee))
         else:
@@ -546,6 +553,10 @@ class BugTextView(LaunchpadView):
             text.append('milestone: ')
 
         return ''.join(line + '\n' for line in text)
+
+    def attachment_text(self, attachment):
+        return "%s %s" % (attachment.libraryfile.http_url,
+                          attachment.libraryfile.mimetype)
 
     def render(self):
         """Return a text representation of the Bug."""
