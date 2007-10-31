@@ -162,7 +162,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "series.")
     architectures = Attribute("The architectures in this series.")
     nominatedarchindep = Attribute(
-        "DistroArchRelease designed to build architecture-independent "
+        "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
     milestones = Attribute(_(
         "The visible milestones associated with this series, "

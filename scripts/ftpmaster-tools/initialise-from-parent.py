@@ -151,10 +151,10 @@ def copy_architectures(distroseries):
     flush_database_updates()
     cur = cursor()
     cur.execute("""
-    INSERT INTO DistroArchRelease
-          (distrorelease, processorfamily, architecturetag, owner, official)
+    INSERT INTO DistroArchSeries
+          (distroseries, processorfamily, architecturetag, owner, official)
     SELECT %s, processorfamily, architecturetag, %s, official
-    FROM DistroArchRelease WHERE distrorelease = %s
+    FROM DistroArchSeries WHERE distroseries = %s
     """ % sqlvalues(distroseries, distroseries.owner,
                     distroseries.parentseries))
     flush_database_caches()
