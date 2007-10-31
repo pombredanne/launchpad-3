@@ -142,6 +142,27 @@ def get_comments_for_bugtask(bugtask, truncate=False):
     return comments
 
 
+def get_visible_comments(comments):
+    """Return comments, filtering out empty or duplicated ones."""
+    visible_comments = []
+    previous_comment = None
+    for comment in comments:
+        # Omit comments that are identical to their previous
+        # comment, which were probably produced by
+        # double-submissions or user errors, and which don't add
+        # anything useful to the bug itself.
+        # Also omit comments with no body text or attachments to display.
+        if (comment.isEmpty() or
+            previous_comment and
+            previous_comment.isIdenticalTo(comment)):
+            continue
+
+        visible_comments.append(comment)
+        previous_comment = comment
+
+    return visible_comments
+
+
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
@@ -653,25 +674,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         # The first comment is generally identical to the description,
         # and we include a special link to it in the template if it
         # isn't.
-        comments = self.comments[1:]
-
-        visible_comments = []
-        previous_comment = None
-        for comment in comments:
-            # Omit comments that are identical to their previous
-            # comment, which were probably produced by
-            # double-submissions or user errors, and which don't add
-            # anything useful to the bug itself.
-            # Also omit comments with no body text or attachments to display.
-            if (comment.isEmpty() or
-                previous_comment and
-                previous_comment.isIdenticalTo(comment)):
-                continue
-
-            visible_comments.append(comment)
-            previous_comment = comment
-
-        return visible_comments
+        return get_visible_comments(self.comments[1:])
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""

@@ -1,3 +1,5 @@
+= Bug Text pages =
+
 Add some attachments to bug 1:
 
   >>> import transaction
@@ -10,11 +12,11 @@ Add some attachments to bug 1:
   >>> mark = Person.selectOneBy(name="sabdfl")
   >>> bug = Bug.get(1)
   >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
-  >>> a1 = bug.addAttachment(mark, content, "comment", "file_a.txt",
+  >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
   ...   content_type="text/html")
   >>> content = StringIO.StringIO("do we need to")
-  >>> a2 = bug.addAttachment(mark, content, "comment", "file with space.txt",
-  ...   content_type="text/plain")
+  >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
+  ...   "file with space.txt", content_type="text/plain")
   >>> logout()
   >>> transaction.commit()
 
@@ -29,6 +31,8 @@ Get text page for a single bug.
   >>> print anon_browser.contents
   bug: 1
   title: Firefox does not support SVG
+  date: Thu, 01 Jan 2004 20:58:04 -0000
+  last-updated: Fri, 19 May 2006 06:37:40 -0000
   reporter: Sample Person (name12)
   duplicate-of: 
   duplicates: 
@@ -41,6 +45,7 @@ Get text page for a single bug.
   <BLANKLINE>
   task: firefox
   status: New
+  date: Fri, 02 Jan 2004 03:49:22 -0000
   reporter: Sample Person (name12)
   importance: Low
   assignee: Mark Shuttleworth (sabdfl)
@@ -48,6 +53,7 @@ Get text page for a single bug.
   <BLANKLINE>
   task: mozilla-firefox (Ubuntu)
   status: New
+  date: Sat, 17 Jan 2004 01:15:48 -0000
   reporter: Foo Bar (name16)
   importance: Medium
   component: main
@@ -56,11 +62,34 @@ Get text page for a single bug.
   <BLANKLINE>
   task: mozilla-firefox (Debian)
   status: Confirmed
+  date: Sun, 04 Jan 2004 03:49:22 -0000
   reporter: Sample Person (name12)
+  watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
   importance: Low
   assignee: 
   milestone: 
   <BLANKLINE>
+  Content-Type: multipart/mixed; boundary="...
+  MIME-Version: 1.0
+  <BLANKLINE>
+  --...
+  Content-Type: text/plain; charset="utf-8"
+  Content-Transfer-Encoding: quoted-printable
+  <BLANKLINE>
+  Firefox needs to support embedded SVG images, now that the standard has been finalised.
+  <BLANKLINE>
+  The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.
+  --...
+  ...
+  --...
+  Content-Type: text/plain; charset="utf-8"
+  Content-Transfer-Encoding: quoted-printable
+  Author: sabdfl
+  Date: ...
+  Message-Id: ...
+  <BLANKLINE>
+  comment for file with space
+  --...
 
 Check a bug that is a duplicate.
 
@@ -104,3 +133,42 @@ Get bug text page for a product.
   4
   5
   6
+
+== Private bugs ==
+
+  >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
+  >>> print admin_browser.contents
+  bug: 14
+  title: jokosher exposes personal details in its actions portlet
+  date: Thu, 09 Aug 2007 11:39:16 -0000
+  last-updated: Thu, 09 Aug 2007 11:39:16 -0000
+  reporter: Karl Tilbury (karl)
+  duplicate-of:
+  duplicates:
+  private: yes
+  security: yes
+  attachments:
+  subscribers:
+   Karl Tilbury (karl)
+   Dafydd Harries (daf)
+  <BLANKLINE>
+  task: jokosher
+  status: New
+  date: Thu, 09 Aug 2007 11:39:16 -0000
+  reporter: Karl Tilbury (karl)
+  importance: Undecided
+  assignee:
+  milestone:
+  <BLANKLINE>
+  Content-Type: multipart/mixed; boundary="...
+  MIME-Version: 1.0
+  <BLANKLINE>
+  --...
+  Content-Type: text/plain; charset="utf-8"
+  Content-Transfer-Encoding: quoted-printable
+  <BLANKLINE>
+  Jokosher discloses to any passerby the fact that I am single and unwed
+  in its actions portlet. Please fix this blatant violacion of privacy
+  now!!
+  --...
+

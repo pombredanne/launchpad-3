@@ -20,6 +20,8 @@ __all__ = [
     'MaloneView',
     ]
 
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 import operator
 
 from zope.app.form.browser import TextWidget
@@ -40,6 +42,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     )
 
+from canonical.launchpad.mailnotification import (
+    MailWrapper, format_rfc2822_date)
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
@@ -506,6 +510,9 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
+        text.append('date: %s' % format_rfc2822_date(bug.datecreated))
+        text.append('last-updated: %s' %
+            format_rfc2822_date(bug.date_last_updated))
         text.append('reporter: %s' % self.person_text(bug.owner))
 
         if bug.duplicateof:
@@ -518,6 +525,15 @@ class BugTextView(LaunchpadView):
             text.append('duplicates: %s' % dupes)
         else:
             text.append('duplicates: ')
+
+        if bug.private:
+            # XXX this could include date_made_private and
+            # who_made_private but Bjorn doesn't let me.
+            #    -- kiko, 2007-10-31
+            text.append('private: yes')
+
+        if bug.security_related:
+            text.append('security: yes')
 
         text.append('attachments: ')
         for attachment in bug.attachments:
@@ -534,7 +550,11 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
+        text.append('date: %s' % format_rfc2822_date(task.datecreated))
         text.append('reporter: %s' % self.person_text(task.owner))
+
+        if task.bugwatch:
+            text.append('watch: %s' % task.bugwatch.url)
 
         text.append('importance: %s' % task.importance.title)
 
@@ -555,16 +575,51 @@ class BugTextView(LaunchpadView):
         return ''.join(line + '\n' for line in text)
 
     def attachment_text(self, attachment):
+        """Return a text representation of a bug attachment."""
         return "%s %s" % (attachment.libraryfile.http_url,
                           attachment.libraryfile.mimetype)
+
+    def comment_text(self):
+        """Return a text representation of bug comments."""
+
+        def build_message(text):
+            mailwrapper = MailWrapper(width=72)
+            text = mailwrapper.format(text)
+            message = MIMEText(text.encode('utf-8'),
+                'plain', 'utf-8')
+            # This is redundant and makes the template noisy
+            del message['MIME-Version']
+            return message
+
+        from canonical.launchpad.browser.bugtask import (
+            get_visible_comments, get_comments_for_bugtask)
+
+        # XXX: for some reason, get_comments_for_bugtask takes a task,
+        # not a bug. For now live with it. -- kiko, 2007-10-31
+        first_task = self.context.bugtasks[0]
+        all_comments = get_comments_for_bugtask(first_task)
+        comments = get_visible_comments(all_comments[1:])
+
+        comment_mime = MIMEMultipart()
+        message = build_message(self.context.description)
+        comment_mime.attach(message)
+
+        for comment in comments:
+            message = build_message(comment.text_for_display)
+            message['Author'] = comment.owner.name
+            message['Date'] = format_rfc2822_date(comment.datecreated)
+            message['Message-Id'] = comment.rfc822msgid
+            comment_mime.attach(message)
+
+        return comment_mime.as_string().decode('utf-8')
 
     def render(self):
         """Return a text representation of the Bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        texts = (
-            [self.bug_text(self.context)] +
-            [self.bugtask_text(task) for task in self.context.bugtasks])
-        return u'\n'.join(texts)
+        texts = [self.bug_text(self.context)]
+        texts.extend(self.bugtask_text(task) for task in self.context.bugtasks)
+        texts.append(self.comment_text())
+        return "\n".join(texts)
 
 
 class BugURL:
