@@ -54,7 +54,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema, decorates
+from canonical.lp import decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -64,18 +64,19 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
-    IBugAttachmentSet, IBugBranchSet,
-    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
-    IConvertToQuestionForm, ICveSet, IDistribution,
+    BugNominationStatus, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet,
+    IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
+    IBugTaskSet, IConvertToQuestionForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
     IProject, IRemoveQuestionFromBugForm, ISourcePackage, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    UNRESOLVED_BUGTASK_STATUSES, validate_distrotask, valid_upstreamtask)
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask,
+    BugAttachmentType)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -95,7 +96,6 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr import EnumeratedType, Item
-from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -1237,7 +1237,7 @@ class BugListingPortletView(LaunchpadView):
         """Return the URL for critical bugs on this bug target."""
         return get_buglisting_search_filter_url(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            importance=dbschema.BugTaskImportance.CRITICAL.title)
+            importance=BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
@@ -1298,8 +1298,8 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     ['INVALID']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,
-    ...                   dbschema.BugTaskImportance.HIGH]}, IBugTaskSearch)
+    ...     {'importance': [BugTaskImportance.CRITICAL,
+    ...                   BugTaskImportance.HIGH]}, IBugTaskSearch)
     >>> [importance.name for importance in initial['importance']]
     ['CRITICAL', 'HIGH']
 
@@ -1605,7 +1605,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
             has_patch = data.pop("has_patch", False)
             if has_patch:
-                data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
+                data["attachmenttype"] = BugAttachmentType.PATCH
 
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
@@ -1698,7 +1698,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
-        return self.getWidgetValues("BugTaskImportance")
+        return self.getWidgetValues(vocabulary=BugTaskImportance)
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
@@ -2148,7 +2148,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtasks_and_nominations += [
                 nomination for nomination in bug.getNominations(target)
                 if (nomination.status !=
-                    dbschema.BugNominationStatus.APPROVED)
+                    BugNominationStatus.APPROVED)
                 ]
 
         return bugtasks_and_nominations

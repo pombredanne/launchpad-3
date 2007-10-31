@@ -83,11 +83,11 @@
     <browser:page
       name="+index"
       facet="overview"
-      template="../templates/distrosourcepackage-index.pt" />
+      template="../templates/distributionsourcepackage-index.pt" />
     <browser:page
       name="+publishinghistory"
       facet="overview"
-      template="../templates/distrosourcepackage-publishinghistory.pt" />
+      template="../templates/distributionsourcepackage-publishinghistory.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page

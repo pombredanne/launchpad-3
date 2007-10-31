@@ -503,6 +503,9 @@ Cleanup in preparation for the next test:
 
   >>> buildergroup.updateBuild(bqItem6)
   WARNING:root:***** bob has failed *****
+
+  >>> from canonical.launchpad.ftests import sync
+  >>> sync(a_builder)
   >>> a_builder.failnotes
   u'Builder returned BUILDERFAIL when asked for its status'
 
@@ -1053,7 +1056,7 @@ When there is no chroot it should not alter the buildstate:
   >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> PocketChroot.selectBy(
   ...     distroarchseries=bqItem3.archseries,
-  ...     pocket=PackagePublishingPocket.SECURITY).count()
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
   0
 
   >>> bqItem3 = a_build.createBuildQueueEntry()
@@ -1064,17 +1067,17 @@ Override the builder's slave with one that will claim to be 'OK'
 
   >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
-Make a build in the security pocket:
+Make a build in the updates pocket:
 
   >>> hoary = hoary_i386.distroseries
   >>> hoary_evo = hoary.getSourcePackage(
   ...    'evolution').currentrelease.sourcepackagerelease
-  >>> security_build = hoary_evo.createBuild(
+  >>> updates_build = hoary_evo.createBuild(
   ...     distroarchseries=hoary_i386,
-  ...     pocket=PackagePublishingPocket.SECURITY,
+  ...     pocket=PackagePublishingPocket.UPDATES,
   ...     processor=hoary_i386.default_processor,
   ...     archive=hoary_i386.main_archive)
-  >>> security_bqItem = security_build.createBuildQueueEntry()
+  >>> updates_bqItem = updates_build.createBuildQueueEntry()
 
 Builddmaster stops before starting to build a denied build.
 Since hoary is in development, we are not able to dispatch
@@ -1082,10 +1085,10 @@ builds for post-release pockets:
 
   >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'
-  >>> bm.startBuild(real_buildergroup, a_builder, security_bqItem)
+  >>> bm.startBuild(real_buildergroup, a_builder, updates_bqItem)
   Traceback (most recent call last):
   ...
-  AssertionError: i386 build of evolution 1.0 in ubuntu hoary SECURITY (31) can not be built for pocket SECURITY: invalid pocket due to the series status of hoary.
+  AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (31) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
 
 == Pocket dependencies ==
 
@@ -1153,17 +1156,24 @@ A build in the proposed pocket:
 A build in the security pocket:
 
   >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).buildstate = (
+  ...     BuildStatus.NEEDSBUILD)
   >>> removeSecurityProxy(bqItem3.build).pocket = (
   ...     PackagePublishingPocket.SECURITY)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
-  ensurepresent called
-  ensurepresent called
-  OkSlave BUILDING
-  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main']
-  Suite: hoary-security
-  Archive Purpose: PRIMARY
+
+XXX cprov 20071025: The pocket-dependency infrastructure is ready to
+deal with SECURITY pocket, however we explicitly skip security builds
+when dispatching because Embargoed-Archives and Restricted-UI
+implementations are not yet ready.
+
+Builds for security pocket will remain pending for now:
+
+  >>> bqItem3.build.buildstate.name
+  'NEEDSBUILD'
+
 
 A build in the backports pocket:
 
