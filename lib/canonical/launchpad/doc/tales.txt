@@ -403,6 +403,27 @@ is replaced with the message '<email address hidden>'.
     'medicalwei@sara:~$ ...'
 
 
+== Linkification of email addresses ==
+
+fmt:linkify-email will recognise email addresses that are registered in
+Launchpad and linkify them to point at the profile page for that person.
+The resulting HTML includes a person icon next to the linked text to
+emphasise the linkage.
+
+    >>> test_tales('foo/fmt:linkify-email', foo='foo.bar@canonical.com')
+    u'<a href="http://launchpad.dev/~name16"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;foo.bar@canonical.com</a>'
+
+Multiple addresses may be linkified at once:
+
+    >>> test_tales('foo/fmt:linkify-email',
+    ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
+    u'<a href="http://launchpad.dev/~name16"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;foo.bar@canonical.com</a> and <a href="http://launchpad.dev/~cprov"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;cprov@ubuntu.com</a>'
+
+Unknown email addresses are not altered in any way:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
+    'nobody@example.com'
+
 == Test the 'fmt:' namespace where the context is a dict. ==
 
 fmt:pagetitle takes a page template CONTEXTS dict, and gives you a string

@@ -8896,7 +8896,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 
   * Initial version
 
- -- Julian Edwards <launchpad@julian-edwards.com>   Thu, 16 Feb 2006 15:34:09 +0000', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+ -- Foo Bar <foo.bar@canonical.com>   Thu, 16 Feb 2006 15:34:09 +0000', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
 Format: 1.0

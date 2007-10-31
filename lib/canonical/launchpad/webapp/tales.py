@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces import (
     IHasLogo,
     IHasMugshot,
     IPerson,
+    IPersonSet,
     IProduct,
     IProject,
     ISprint,
@@ -1686,6 +1687,28 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
+    def linkify_email(self):
+        """Linkify any email address recognised in Launchpad.
+
+        If an email address is recognised as one registered in Launchpad,
+        it is linkified to point to the profile page for that person.
+        """
+        if not self._stringtoformat:
+            return self._stringtoformat
+        else:
+            text = self._stringtoformat
+
+        matches = re.finditer(self._re_email, text)
+        for match in matches:
+            address = match.group()
+            person = getUtility(IPersonSet).getByEmail(address)
+            if person is not None:
+                person_formatter = PersonFormatterAPI(person)
+                image_html = ObjectImageDisplayAPI(person).icon()
+                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
+                    canonical_url(person), image_html, address))
+        return text
+
     def lower(self):
         """Return the string in lowercase"""
         return self._stringtoformat.lower()
@@ -1712,6 +1735,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'linkify-email':
+            return self.linkify_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(

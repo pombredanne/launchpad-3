@@ -26,8 +26,7 @@ class SourcePackageReleaseView(LaunchpadView):
     @property
     def change_summary(self):
         """Return a linkified change summary."""
-        return self._linkify_changelog(
-            self.context.change_summary, self.context.name)
+        return self._linkify_changelog(self.context.change_summary)
 
     def _obfuscate_email(self, text):
         """Obfuscate email addresses if the user is not logged in."""
@@ -40,6 +39,11 @@ class SourcePackageReleaseView(LaunchpadView):
             return text
         else:
             return formatter.obfuscate_email()
+
+    def _linkify_email(self, text):
+        """Email addresses are linkified to point to the person's profile."""
+        formatter = FormattersAPI(text)
+        return formatter.linkify_email()
 
     def _linkify_bug_numbers(self, changelog):
         """Linkify to a bug if LP: #number appears in the changelog text."""
@@ -55,12 +59,25 @@ class SourcePackageReleaseView(LaunchpadView):
                     replace_text, FormattersAPI._linkify_substitution(match))
         return changelog
 
-    def _linkify_changelog(self, changelog, sourcepkgnametxt):
+    def _linkify_changelog(self, changelog):
         """Linkify source packages and bug numbers in changelogs."""
         if changelog is None:
             return ''
+
+        # Remove any email addresses if the user is not logged in.
         changelog = self._obfuscate_email(changelog)
+
+        # CGI Escape the changelog here before further replacements
+        # insert HTML. Email obfuscation does not insert HTML but can insert
+        # characters that must be escaped.
         changelog = cgi.escape(changelog)
+
+        # Any email addresses remaining in the changelog were not obfuscated,
+        # so we linkify them here.
+        changelog = self._linkify_email(changelog)
+
+        # Ensure any bug numbers are linkified to the bug page.
         changelog = self._linkify_bug_numbers(changelog)
+
         return changelog
 

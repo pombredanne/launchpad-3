@@ -154,3 +154,10 @@ form LP: #nnn where nnn is the bug number.
   >>> browser.getLink('LP: #10').url
   'http://launchpad.dev/bugs/10'
 
+If any email addresses in the changelog are recognised as registered in
+Launchpad, they are linkified to point to the person's profile page.
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/+source/commercialpackage/")
+  >>> user_browser.getLink('foo.bar@canonical.com').url
+  'http://launchpad.dev/~name16'
