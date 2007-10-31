@@ -1546,10 +1546,24 @@ class BugTaskSet:
     def findExpirableBugTasks(self, min_days_old):
         """See `IBugTaskSet`.
 
+        The list of Incomplete bugtasks is selected from products and
+        distributions that use Launchpad to track bugs. The bug report
+        is considered to be inactive if the date of the last update is
+        older than the min_days_old argument. The bug report is considered
+        confirmed if it is a duplicate, the bugtask is assigned or has
+        a milestone, or the bug report has another bugtask that is not
+        Incomplete or Invalid. If the bug report does not have any messages,
+        it is assumed that a bug contact has not explained to the bug
+        reporter what is needed to confirm the bug.
+
+        Bugtasks cannot transition to Invalid automatically unless they meet
+        all the rules stated above.
+
         This implementation returns the master of the master-slave conjoined
         pairs of bugtasks. Slave conjoined bugtasks are not included in the
         list because they can only be expired by calling the master bugtask's
-        transitionToStatus() method.
+        transitionToStatus() method. See Conjoined Bug Tasks in
+        c.l.doc/bugtasks.txt.
         """
         all_bugtasks = BugTask.select("""
             BugTask.id IN (
@@ -1582,21 +1596,25 @@ class BugTaskSet:
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
-                    AND Bug.date_last_message < CURRENT_TIMESTAMP
+                    AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
-        valid_statues = [
-            BugTaskStatus.NEW, BugTaskStatus.CONFIRMED,
-            BugTaskStatus.INPROGRESS, BugTaskStatus.FIXCOMMITTED,
-            BugTaskStatus.FIXRELEASED]
+        expirable_statuses = [
+            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
+            BugTaskStatus.WONTFIX]
         bugtasks = []
         for bugtask in all_bugtasks:
             # Bugtasks cannot be expired if any bugtask of the bug is valid.
-            if len([bt for bt in bugtask.bug.bugtasks
-                    if bt.status in valid_statues]) != 0:
+            if len([bt for bt in bugtask.related_tasks
+                    if bt.status not in expirable_statuses]) != 0:
                 continue
+            # No one has replied to the first message reporting the bug.
+            # The bug reporter should be notified that more information
+            # is required to confirm the bug report.
             if bugtask.bug.messages.count() == 1:
                 continue
+            # Do not add product or distribution slaves, since their
+            # attributes are updated by the series master.
             if bugtask.conjoined_master is None:
                 bugtasks.append(bugtask)
         return bugtasks

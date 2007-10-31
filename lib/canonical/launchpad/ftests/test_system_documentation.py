@@ -5,12 +5,11 @@ lib/canonical/launchpad/doc.
 """
 
 from datetime import datetime, timedelta
-import unittest
 import logging
 import os
 from pytz import UTC
-
 import transaction
+import unittest
 
 from zope.component import getUtility, getView
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
@@ -23,7 +22,7 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.ftests import login, ANONYMOUS, logout, sync
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
     BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
@@ -213,21 +212,20 @@ def bugLinkedToQuestionSetUp(test):
 
 
 def _create_old_bug(
-    title, age, target, status=BugTaskStatus.INCOMPLETE, with_message=True):
+    title, days_old, target, status=BugTaskStatus.INCOMPLETE,
+    with_message=True):
     """Create an aged bug.
     
     :title: A string. The bug title for testing.
-    :age: An int. The bug's age in days.
+    :days_old: An int. The bug's age in days.
     :target: A BugTarkget. The bug's target.
     :status: A BugTaskStatus. The status of the bug's single bugtask.
     :with_message: A Bool. Whether to create a reply message.
     """
-    login('no-priv@canonical.com')
     no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     params = CreateBugParams(
         owner=no_priv, title=title, comment='Something is broken.')
     bug = target.createBug(params)
-    login('test@canonical.com')
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     if with_message is True:
         bug.newMessage(
@@ -236,8 +234,8 @@ def _create_old_bug(
     bugtask = bug.bugtasks[0]
     bugtask.transitionToStatus(
         status, sample_person)
-    date = datetime.now(UTC) - timedelta(days=age)
-    removeSecurityProxy(bug).date_last_message = date
+    date = datetime.now(UTC) - timedelta(days=days_old)
+    removeSecurityProxy(bug).date_last_updated = date
     return bugtask
 
 
@@ -252,7 +250,7 @@ def _summarize_bugtasks(bugtasks):
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
             bugtask.target_uses_malone,
-            (datetime.now(UTC) - bugtask.bug.date_last_message).days,
+            (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
             bugtask.status.title,
             bugtask.assignee is not None,
             bugtask.bug.duplicateof is not None,

@@ -707,7 +707,7 @@ to anyone.
     ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
 
 
-== Privacy and Unpriviledged Users ==
+== Privacy and Unprivileged Users ==
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
