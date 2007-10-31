@@ -506,8 +506,8 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
-        text.append('date: %s' % format_rfc2822_date(bug.datecreated))
-        text.append('last-updated: %s' %
+        text.append('date-reported: %s' % format_rfc2822_date(bug.datecreated))
+        text.append('date-updated: %s' %
             format_rfc2822_date(bug.date_last_updated))
         text.append('reporter: %s' % bug.owner.unique_displayname)
 
@@ -546,7 +546,7 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
-        text.append('date: %s' % format_rfc2822_date(task.datecreated))
+        text.append('date-created: %s' % format_rfc2822_date(task.datecreated))
 
         for status in ["confirmed", "assigned", "inprogress",
                        "closed", "incomplete"]:
@@ -609,7 +609,7 @@ class BugTextView(LaunchpadView):
 
         for comment in comments:
             message = build_message(comment.text_for_display)
-            message['Author'] = comment.owner.unique_displayname
+            message['Author'] = comment.owner.unique_displayname.encode('utf-8')
             message['Date'] = format_rfc2822_date(comment.datecreated)
             message['Message-Id'] = comment.rfc822msgid
             comment_mime.attach(message)

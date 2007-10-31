@@ -44,8 +44,8 @@ Get text page for a single bug.
   >>> print anon_browser.contents
   bug: 1
   title: Firefox does not support SVG
-  date: Thu, 01 Jan 2004 20:58:04 -0000
-  last-updated: ...
+  date-reported: Thu, 01 Jan 2004 20:58:04 -0000
+  date-updated: ...
   reporter: Sample Person (name12)
   duplicate-of: 
   duplicates: 
@@ -58,7 +58,7 @@ Get text page for a single bug.
   <BLANKLINE>
   task: firefox
   status: Fix Released
-  date: Fri, 02 Jan 2004 03:49:22 -0000
+  date-created: Fri, 02 Jan 2004 03:49:22 -0000
   date-confirmed: ...
   date-assigned: 2005-01-02 11:07:20.330975+00:00
   date-inprogress: ...
@@ -70,7 +70,7 @@ Get text page for a single bug.
   <BLANKLINE>
   task: mozilla-firefox (Ubuntu)
   status: New
-  date: Sat, 17 Jan 2004 01:15:48 -0000
+  date-created: Sat, 17 Jan 2004 01:15:48 -0000
   date-assigned: 2005-01-17 01:15:48.241836+00:00
   reporter: Foo Bar (name16)
   importance: Medium
@@ -80,7 +80,7 @@ Get text page for a single bug.
   <BLANKLINE>
   task: mozilla-firefox (Debian)
   status: Confirmed
-  date: Sun, 04 Jan 2004 03:49:22 -0000
+  date-created: Sun, 04 Jan 2004 03:49:22 -0000
   date-assigned: 2005-01-04 11:07:20.584746+00:00
   reporter: Sample Person (name12)
   watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
@@ -103,7 +103,7 @@ Get text page for a single bug.
   --...
   Content-Type: text/plain; charset="utf-8"
   Content-Transfer-Encoding: quoted-printable
-  Author: =?utf-8?b?TcOhcmsgU2jDunR0bGV3w7JydGggKHNhYmRmbCk=?=
+  Author: ... (sabdfl)
   Date: ...
   Message-Id: ...
   <BLANKLINE>
@@ -159,8 +159,8 @@ Get bug text page for a product.
   >>> print admin_browser.contents
   bug: 14
   title: jokosher exposes personal details in its actions portlet
-  date: Thu, 09 Aug 2007 11:39:16 -0000
-  last-updated: Thu, 09 Aug 2007 11:39:16 -0000
+  date-reported: Thu, 09 Aug 2007 11:39:16 -0000
+  date-updated: Thu, 09 Aug 2007 11:39:16 -0000
   reporter: Karl Tilbury (karl)
   duplicate-of:
   duplicates:
@@ -173,7 +173,7 @@ Get bug text page for a product.
   <BLANKLINE>
   task: jokosher
   status: New
-  date: Thu, 09 Aug 2007 11:39:16 -0000
+  date-created: Thu, 09 Aug 2007 11:39:16 -0000
   reporter: Karl Tilbury (karl)
   importance: Undecided
   assignee:
