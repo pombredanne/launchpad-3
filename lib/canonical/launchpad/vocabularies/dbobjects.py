@@ -12,6 +12,7 @@ __all__ = [
     'ActiveMailingListVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
+    'BranchRestrictedOnProductVocabulary',
     'BugNominatableSeriesesVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
@@ -144,13 +145,8 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.id, obj.name)
 
 
-class BranchVocabulary(SQLObjectVocabularyBase):
-    """A vocabulary for searching branches.
-
-    If the context is a product or the launchbag contains a product,
-    then the search results are limited to branches associated with
-    that product.
-    """
+class BranchVocabularyBase(SQLObjectVocabularyBase):
+    """A base class for Branch vocabularies."""
 
     implements(IHugeVocabulary)
 
@@ -172,35 +168,112 @@ class BranchVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(branch)
 
+    def __len__(self):
+        return self.search('').count()
+
+    def _branchAttributeQuery(self, quoted_query):
+        """ """
+        if len(quoted_query) == 0:
+            return None
+        else:
+            return """
+                SELECT id FROM Branch
+                WHERE
+                   Branch.name LIKE '%%' || %s || '%%'
+                OR Branch.url LIKE '%%' || %s || '%%'
+                """ % (quoted_query, quoted_query)
+
+    def _registrantNameQuery(self, quoted_query):
+        """ """
+        if len(quoted_query) == 0:
+            return None
+        else:
+            return """
+                SELECT Branch.id FROM Branch, Person
+                WHERE
+                    Branch.owner = Person.id
+                AND Person.name LIKE '%%' || %s || '%%'
+                """ % quoted_query
+
+    def _productNameQuery(self, quoted_query):
+        """ """
+        if len(quoted_query) == 0:
+            return None
+        else:
+            return """
+                SELECT Branch.id from Branch, Product
+                WHERE
+                    Branch.product = Product.id
+                AND Product.name LIKE '%%' || %s || '%%'
+                """ % quoted_query
+
+    def _generalQuery(self, quoted_query,
+                      check_product=True, check_registrant=True):
+        args = [self._branchAttributeQuery(quoted_query)]
+        if check_product:
+            args.append(self._productNameQuery(quoted_query))
+        if check_registrant:
+            args.append(self._registrantNameQuery(quoted_query))
+        real_args = [arg for arg in args if arg is not None]
+        id_query = '\n\nUNION\n\n'.join(real_args)
+        if len(id_query) > 0:
+            sql = 'Branch.id in (%s)' % id_query
+        else:
+            sql = ''
+        return sql
+
     def search(self, query):
         """Return terms where query is a subtring of the name or URL."""
         launch_bag = getUtility(ILaunchBag)
         branch_set = BranchSet()
         logged_in_user = launch_bag.user
-        if not query:
-            query = branch_set._generateBranchClause(
-                query='', visible_by_user=logged_in_user)
-            return Branch.select(query)
 
-        quoted_query = quote_like(query)
-        sql_query = ("""
-            (Branch.name LIKE '%%' || %s || '%%' OR
-             Branch.url LIKE '%%' || %s || '%%')
-            """
-            % (quoted_query, quoted_query))
-
-        # If the context is a product or we have a product in the
-        # LaunchBag, narrow the search appropriately.
-        if IProduct.providedBy(self.context):
-            product = self.context
-        else:
-            product = launch_bag.product
-        if product is not None:
-            sql_query = sql_query + (" AND Branch.product = %s" % product.id)
+        sql_query = self._search(quote_like(query))
 
         sql_query = branch_set._generateBranchClause(
             sql_query, visible_by_user=logged_in_user)
-        return Branch.select(sql_query, orderBy=self._orderBy)
+        return Branch.select(
+            sql_query, orderBy=self._orderBy)
+
+
+class BranchVocabulary(BranchVocabularyBase):
+    """A vocabulary for searching branches.
+
+    The name and URL of the branch, the name of the product, and the
+    name of the registrant of the branches is checked for the entered
+    value.
+    """
+    def _search(self, quoted_query):
+        return self._generalQuery(quoted_query)
+
+
+class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
+    """A vocabulary for searching branches restriced on product.
+
+    The query entered checks the name or URL of the branch, or the
+    name of the registrant of the branch.
+    """
+
+    def _restrictToProduct(self, product):
+        if product is None:
+            return 'Branch.product is NULL'
+        else:
+            return 'Branch.product = %s' % quote(product)
+
+    def _search(self, quoted_query):
+        if IProduct.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context)
+        elif IBranch.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context.product)
+        else:
+            # An unexpected type.
+            raise AssertionError('Unexpected context type')
+
+        base_sql = self._generalQuery(quoted_query, check_product=False)
+        if len(base_sql) > 0:
+            return '%s AND %s' % (base_sql, restrict_sql)
+        else:
+            return restrict_sql
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
