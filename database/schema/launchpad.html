@@ -121,7 +121,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2007-10-30</p>
+Dumped on 2007-10-31</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -203,14 +203,14 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.distributionsourcepackagecache">distributionsourcepackagecache</a></li>
 <li><a href=
-"#public.table.distroarchrelease">distroarchrelease</a></li>
+"#public.table.distroarchseries">distroarchseries</a></li>
 <li><a href=
 "#public.table.distrocomponentuploader">distrocomponentuploader</a></li>
-<li><a href="#public.table.distrorelease">distrorelease</a></li>
+<li><a href="#public.table.distroseries">distroseries</a></li>
 <li><a href=
-"#public.table.distroreleaselanguage">distroreleaselanguage</a></li>
+"#public.table.distroserieslanguage">distroserieslanguage</a></li>
 <li><a href=
-"#public.table.distroreleasepackagecache">distroreleasepackagecache</a></li>
+"#public.table.distroseriespackagecache">distroseriespackagecache</a></li>
 <li><a href="#public.table.emailaddress">emailaddress</a></li>
 <li><a href="#public.table.entitlement">entitlement</a></li>
 <li><a href="#public.table.faq">faq</a></li>
@@ -251,12 +251,12 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.milestone">milestone</a></li>
 <li><a href="#public.table.mirror">mirror</a></li>
 <li><a href=
-"#public.table.mirrorcdimagedistrorelease">mirrorcdimagedistrorelease</a></li>
+"#public.table.mirrorcdimagedistroseries">mirrorcdimagedistroseries</a></li>
 <li><a href="#public.table.mirrorcontent">mirrorcontent</a></li>
 <li><a href=
-"#public.table.mirrordistroarchrelease">mirrordistroarchrelease</a></li>
+"#public.table.mirrordistroarchseries">mirrordistroarchseries</a></li>
 <li><a href=
-"#public.table.mirrordistroreleasesource">mirrordistroreleasesource</a></li>
+"#public.table.mirrordistroseriessource">mirrordistroseriessource</a></li>
 <li><a href=
 "#public.table.mirrorproberecord">mirrorproberecord</a></li>
 <li><a href=
@@ -1793,7 +1793,7 @@ SQLObject.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distroreleasename</td>
+<td>distroseriesname</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -1834,14 +1834,14 @@ SELECT (
      ) || 
      (securebinarypackagepublishinghistory.id)::text
 ) AS id
-, distrorelease.distribution
+, distroseries.distribution
 , securebinarypackagepublishinghistory.id AS binarypackagepublishing
 , component.name AS componentname
 , libraryfilealias.filename AS libraryfilealiasfilename
 , sourcepackagename.name AS sourcepackagename
 , binarypackagefile.libraryfile AS libraryfilealias
-, distrorelease.name AS distroreleasename
-, distroarchrelease.architecturetag
+, distroseries.name AS distroseriesname
+, distroarchseries.architecturetag
 , securebinarypackagepublishinghistory.status AS publishingstatus
 , securebinarypackagepublishinghistory.pocket
 , securebinarypackagepublishinghistory.archive 
@@ -1884,14 +1884,14 @@ FROM (
                              (binarypackagefile.libraryfile = libraryfilealias.id)
                        )
                  )
-              JOIN distroarchrelease 
+              JOIN distroarchseries 
                 ON (
-                       (securebinarypackagepublishinghistory.distroarchrelease = distroarchrelease.id)
+                       (securebinarypackagepublishinghistory.distroarchseries = distroarchseries.id)
                  )
            )
-        JOIN distrorelease 
+        JOIN distroseries 
           ON (
-                 (distroarchrelease.distrorelease = distrorelease.id)
+                 (distroarchseries.distroseries = distroseries.id)
            )
      )
   JOIN component 
@@ -2070,7 +2070,7 @@ A lowercase name identifying one or more binarypackages</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distroreleasepackagecache">public.distroreleasepackagecache</a></li>
+"#public.table.distroseriespackagecache">public.distroseriespackagecache</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -2311,7 +2311,7 @@ access to embargoed entries</p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>distroarchrelease</td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -2406,7 +2406,7 @@ SELECT securebinarypackagepublishinghistory.id
 , securebinarypackagepublishinghistory.component
 , securebinarypackagepublishinghistory.section
 , securebinarypackagepublishinghistory.priority
-, securebinarypackagepublishinghistory.distroarchrelease
+, securebinarypackagepublishinghistory.distroarchseries
 , securebinarypackagepublishinghistory.pocket
 , securebinarypackagepublishinghistory.archive
 , securebinarypackagepublishinghistory.datecreated
@@ -2781,7 +2781,7 @@ represented as a number of kilobytes of storage.</td>
 This field indicates whether or not a binarypackage is
 architecture-specific. If it is not specific to any given
 architecture then it can automatically be included in all the
-distroarchreleases which pertain.</td>
+distroarchseries which pertain.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -6521,7 +6521,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.bugnomination" id=
 "public.table.bugnomination">bugnomination</a></h2>
-<p>A bug nominated for fixing in a distrorelease or
+<p>A bug nominated for fixing in a distroseries or
 productseries</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.bugnomination Structure</caption>
@@ -6547,12 +6547,12 @@ The bug being nominated.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><br />
 <br />
-The distrorelease for which the bug is nominated.</td>
+The distroseries for which the bug is nominated.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
@@ -7844,8 +7844,7 @@ product.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.bug">public.bug.id</a> <a href=
-"#public.table.bugwatch">public.bugwatch.bug#1</a></td>
+<td><a href="#public.table.bug">public.bug.id</a></td>
 <td>bug</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
@@ -7855,7 +7854,7 @@ product.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.product">public.product.id</a> <a href=
-"#public.table.milestone">public.milestone.product#3</a></td>
+"#public.table.milestone">public.milestone.product#2</a></td>
 <td>product</td>
 <td>integer</td>
 <td><br />
@@ -7865,7 +7864,7 @@ The product in which this bug shows up.</td>
 <tr class="tr1">
 <td><a href="#public.table.distribution">public.distribution.id</a>
 <a href=
-"#public.table.milestone">public.milestone.distribution#2</a></td>
+"#public.table.milestone">public.milestone.distribution#1</a></td>
 <td>distribution</td>
 <td>integer</td>
 <td><br />
@@ -7874,8 +7873,8 @@ The distro of the named sourcepackage.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -7960,8 +7959,8 @@ later.</td>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.milestone">public.milestone.id#2</a>
-<a href="#public.table.milestone">public.milestone.id#3</a></td>
+<td><a href="#public.table.milestone">public.milestone.id#1</a>
+<a href="#public.table.milestone">public.milestone.id#2</a></td>
 <td>milestone</td>
 <td>integer</td>
 <td><br />
@@ -7970,7 +7969,7 @@ A way to mark a bug for grouping purposes, e.g. to say it needs to
 be fixed by version 1.2</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.bugwatch">public.bugwatch.id#1</a></td>
+<td><a href="#public.table.bugwatch">public.bugwatch.id</a></td>
 <td>bugwatch</td>
 <td>integer</td>
 <td><br />
@@ -8063,29 +8062,29 @@ The product series to which the bug is targeted</td>
 <tr class="tr0">
 <td>bugtask_assignment_checks</td>
 <td>CHECK (CASE WHEN (product IS NOT NULL) THEN ((((productseries
-IS NULL) AND (distribution IS NULL)) AND (distrorelease IS NULL))
+IS NULL) AND (distribution IS NULL)) AND (distroseries IS NULL))
 AND (sourcepackagename IS NULL)) WHEN (productseries IS NOT NULL)
-THEN (((distribution IS NULL) AND (distrorelease IS NULL)) AND
+THEN (((distribution IS NULL) AND (distroseries IS NULL)) AND
 (sourcepackagename IS NULL)) WHEN (distribution IS NOT NULL) THEN
-(distrorelease IS NULL) WHEN (distrorelease IS NOT NULL) THEN true
+(distroseries IS NULL) WHEN (distroseries IS NOT NULL) THEN true
 ELSE false END)</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-bugtask__date_incomplete__idx date_incomplete) WHERE
-(date_incomplete IS NOT NULL bugtask__productseries__idx
+bugtask__assignee__idx assignee bugtask__binarypackagename__idx
+binarypackagename) WHERE (binarypackagename IS NOT NULL
+bugtask__bug__idx bug bugtask__date_incomplete__idx
+date_incomplete) WHERE (date_incomplete IS NOT NULL
+bugtask__datecreated__idx datecreated
+bugtask__distribution__sourcepackagename__idx distribution,
+sourcepackagename bugtask__distroseries__sourcepackagename__idx
+distroseries, sourcepackagename bugtask__milestone__idx milestone
+bugtask__owner__idx "owner" bugtask__productseries__idx
 productseries) WHERE (productseries IS NOT NULL
-bugtask__status__idx status bugtask_assignee_idx assignee
-bugtask_binarypackagename_idx binarypackagename bugtask_bug_idx bug
-bugtask_datecreated_idx datecreated
-bugtask_distribution_and_sourcepackagename_idx distribution,
-sourcepackagename bugtask_distribution_idx distribution
-bugtask_distrorelease_and_sourcepackagename_idx distrorelease,
-sourcepackagename bugtask_distrorelease_idx distrorelease
-bugtask_fti fti bugtask_milestone_idx milestone bugtask_owner_idx
-"owner" bugtask_sourcepackagename_idx sourcepackagename 
-<!-- View Definition -->
+bugtask__sourcepackagename__idx sourcepackagename) WHERE
+(sourcepackagename IS NOT NULL bugtask__status__idx status
+bugtask_fti fti <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -8822,7 +8821,7 @@ public</a></p>
 "public.table.build" id="public.table.build">build</a></h2>
 <p>Build: This table stores the build procedure information of a
 sourcepackagerelease and its results (binarypackagereleases) for a
-given distroarchrelease.</p>
+given distroarchseries.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.build Structure</caption>
 <tr>
@@ -8857,8 +8856,8 @@ build.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
-<td>distroarchrelease</td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
@@ -8960,14 +8959,15 @@ Targeted archive for this build.</td>
 "#public.table.securebinarypackagepublishinghistory">public.securebinarypackagepublishinghistory</a></li>
 </ul>
 <!-- Indexes -->
-build__archive__idx archive build_builder_and_buildstate_idx
+build__archive__idx archive
+build__distroarchseries__buildstate__idx distroarchseries,
+buildstate build__distroarchseries__datebuilt__idx
+distroarchseries, datebuilt build_builder_and_buildstate_idx
 builder, buildstate build_buildlog_idx buildlog) WHERE (buildlog IS
 NOT NULL build_buildstate_idx buildstate build_datebuilt_idx
 datebuilt build_datecreated_idx datecreated
-build_distroarchrelease_and_buildstate_idx distroarchrelease,
-buildstate build_distroarchrelease_and_datebuilt_idx
-distroarchrelease, datebuilt build_sourcepackagerelease_idx
-sourcepackagerelease <!-- View Definition -->
+build_sourcepackagerelease_idx sourcepackagerelease 
+<!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -11023,11 +11023,11 @@ Description of this component.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrordistroarchrelease">public.mirrordistroarchrelease</a></li>
+"#public.table.mirrordistroarchseries">public.mirrordistroarchseries</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrordistroreleasesource">public.mirrordistroreleasesource</a></li>
+"#public.table.mirrordistroseriessource">public.mirrordistroseriessource</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -11220,7 +11220,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.componentselection" id=
 "public.table.componentselection">componentselection</a></h2>
-<p>Allowed components in a given distrorelease.</p>
+<p>Allowed components in a given distroseries.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.componentselection Structure</caption>
 <tr>
@@ -11237,18 +11237,18 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
-Refers to the distrorelease in question.</td>
+Refers to the distroseries in question.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.component">public.component.id</a></td>
 <td>component</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 Refers to the component in qestion.</td>
 </tr>
@@ -12191,7 +12191,7 @@ public</a></p>
 "public.table.distribution" id=
 "public.table.distribution">distribution</a></h2>
 <p>Distribution: A soyuz distribution. A distribution is a
-collection of DistroReleases. Distributions often group together
+collection of DistroSeries. Distributions often group together
 policy and may be referred to by a name such as "Ubuntu" or
 "Debian"</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -12353,21 +12353,20 @@ The team or person responsible for approving goals for each release
 in the distribution. This should usually be a very small team
 because the Distribution driver can approve items for backporting
 to past releases as well as the current release under development.
-Each distrorelease has its own driver too, so you can have the
-small superset in the Distribution driver, and then specific teams
-per distrorelease for backporting, for example, or for the current
+Each distroseries has its own driver too, so you can have the small
+superset in the Distribution driver, and then specific teams per
+distroseries for backporting, for example, or for the current
 release management team on the current development focus
 release.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
+"#public.table.distroseries">public.distroseries.id</a></td>
 <td>translation_focus</td>
 <td>integer</td>
 <td><br />
 <br />
-The DistroRelease that should get the translation effort
-focus.</td>
+The DistroSeries that should get the translation effort focus.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
@@ -12508,7 +12507,7 @@ release.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distrorelease">public.distrorelease</a></li>
+"#public.table.distroseries">public.distroseries</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.faq">public.faq</a></li>
@@ -13170,15 +13169,15 @@ NULL)) OR (rsync_base_url IS NOT NULL)))</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
-"#public.table.mirrorcdimagedistrorelease">public.mirrorcdimagedistrorelease</a></li>
+"#public.table.mirrorcdimagedistroseries">public.mirrorcdimagedistroseries</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrordistroarchrelease">public.mirrordistroarchrelease</a></li>
+"#public.table.mirrordistroarchseries">public.mirrordistroarchseries</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrordistroreleasesource">public.mirrordistroreleasesource</a></li>
+"#public.table.mirrordistroseriessource">public.mirrordistroseriessource</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -13535,13 +13534,13 @@ public.distributionsourcepackagecache</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distroarchrelease" id=
-"public.table.distroarchrelease">distroarchrelease</a></h2>
-<p>DistroArchRelease: A soyuz distribution release for a given
-architecture. A distrorelease runs on various architectures. The
-distroarchrelease groups that architecture-specific stuff.</p>
+"public.table.distroarchseries" id=
+"public.table.distroarchseries">distroarchseries</a></h2>
+<p>DistroArchSeries: A soyuz distribution release for a given
+architecture. A distroseries runs on various architectures. The
+distroarchseries groups that architecture-specific stuff.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distroarchrelease Structure</caption>
+<caption>public.distroarchseries Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -13556,12 +13555,12 @@ distroarchrelease groups that architecture-specific stuff.</p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
 <br />
-The distribution which this distroarchrelease is part of.</td>
+The distribution which this distroarchseries is part of.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
@@ -13571,7 +13570,7 @@ The distribution which this distroarchrelease is part of.</td>
 <td><i>UNIQUE#2 NOT NULL</i><br />
 <br />
 A link to the ProcessorFamily table, giving the architecture of
-this DistroArchRelease.</td>
+this DistroArchSeries.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -13628,7 +13627,7 @@ release pocket.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distrorelease">public.distrorelease</a></li>
+"#public.table.distroseries">public.distroseries</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -13640,7 +13639,7 @@ release pocket.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrordistroarchrelease">public.mirrordistroarchrelease</a></li>
+"#public.table.mirrordistroarchseries">public.mirrordistroarchseries</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -13651,15 +13650,13 @@ release pocket.</td>
 "#public.table.securebinarypackagepublishinghistory">public.securebinarypackagepublishinghistory</a></li>
 </ul>
 <!-- Indexes -->
-distroarchrelease_architecturetag_idx architecturetag
-distroarchrelease_distrorelease_idx distrorelease
-distroarchrelease_processorfamily_idx processorfamily 
-<!-- View Definition -->
+distroarchseries__distroseries__idx distroseries
+distroarchseries__owner__idx "owner" <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.distroarchrelease</caption>
+public.distroarchseries</caption>
 <tr>
 <th>User</th>
 <th>
@@ -14016,13 +14013,13 @@ public.distrocomponentuploader</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distrorelease" id=
-"public.table.distrorelease">distrorelease</a></h2>
-<p>DistroRelease: A soyuz distribution release. A DistroRelease is
-a given version of a distribution. E.g. "Warty" "Hoary" "Sarge"
+"public.table.distroseries" id=
+"public.table.distroseries">distroseries</a></h2>
+<p>DistroSeries: A soyuz distribution release. A DistroSeries is a
+given version of a distribution. E.g. "Warty" "Hoary" "Sarge"
 etc.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distrorelease Structure</caption>
+<caption>public.distroseries Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -14042,7 +14039,7 @@ etc.</p>
 <td>integer</td>
 <td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
 <br />
-The distribution which contains this distrorelease.</td>
+The distribution which contains this distroseries.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -14050,7 +14047,7 @@ The distribution which contains this distrorelease.</td>
 <td>text</td>
 <td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
-The unique name of the distrorelease. This is a short name in lower
+The unique name of the distroseries. This is a short name in lower
 case and would be used in sources.list configuration and in
 generated URLs. E.g. "warty" "sarge" "sid"</td>
 </tr>
@@ -14060,7 +14057,7 @@ generated URLs. E.g. "warty" "sarge" "sid"</td>
 <td>text</td>
 <td><i>NOT NULL</i><br />
 <br />
-The display-name title of the distrorelease E.g. "Warty
+The display-name title of the distroseries E.g. "Warty
 Warthog"</td>
 </tr>
 <tr class="tr0">
@@ -14087,7 +14084,7 @@ would be "5.4"</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The current release status of this distrorelease. E.g. "pre-release
+The current release status of this distroseries. E.g. "pre-release
 freeze" or "released"</td>
 </tr>
 <tr class="tr1">
@@ -14096,18 +14093,19 @@ freeze" or "released"</td>
 <td>timestamp without time zone</td>
 <td><br />
 <br />
-The date on which this distrorelease was released. (obviously only
+The date on which this distroseries was released. (obviously only
 valid for released distributions)</td>
 </tr>
 <tr class="tr0">
-<td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>parentrelease</td>
+<td><a href="#public.table.distroseries">public.distroseries.id</a>
+<a href=
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>parent_series</td>
 <td>integer</td>
 <td><br />
 <br />
-The parent release on which this distribution is based. This is
-related to the inheritance stuff.</td>
+The parent distroseries on which this distribution is based. This
+is related to the inheritance stuff.</td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
@@ -14115,7 +14113,7 @@ related to the inheritance stuff.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The ultimate owner of this distrorelease.</td>
+The ultimate owner of this distroseries.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -14133,7 +14131,7 @@ uploads and generating archives for this distro release</td>
 <td><i>NOT NULL</i><br />
 <br />
 A brief summary of the distro release. This will be displayed in
-bold at the top of the distrorelease page, above the distrorelease
+bold at the top of the distroseries page, above the distroseries
 description. It should include any high points that are
 particularly important to draw to the attention of users.</td>
 </tr>
@@ -14157,23 +14155,23 @@ particularly important to draw to the attention of users.</td>
 <br />
 This is a cached value and may be a few hours out of sync with
 reality. It should, however, be in sync with the values in
-DistroReleaseLanguage, and should never be updated separately. The
+DistroSeriesLanguage, and should never be updated separately. The
 total number of translation messages in this distro release, as per
 IRosettaStats.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
 <td>nominatedarchindep</td>
 <td>integer</td>
 <td><br />
 <br />
-This is the DistroArchRelease nominated to build architecture
+This is the DistroArchSeries nominated to build architecture
 independent packages within this DistroRelase, it is mandatory for
-buildable distroreleases, i.e., Auto Build System will avoid to
-create build jobs for a DistroRelease with no nominatedarchindep,
+buildable distroseries, i.e., Auto Build System will avoid to
+create build jobs for a DistroSeries with no nominatedarchindep,
 but the database model allow us to do it (for non-buildable
-DistroReleases). See further info in NominatedArchIndep
+DistroSeries). See further info in NominatedArchIndep
 specification.</td>
 </tr>
 <tr class="tr0">
@@ -14183,8 +14181,7 @@ specification.</td>
 <td><br />
 <br />
 The email address (name name) of the changes announcement list for
-this distrorelease. If NULL, no announcement mail will be
-sent.</td>
+this distroseries. If NULL, no announcement mail will be sent.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -14281,7 +14278,7 @@ update.</td>
 <!-- Constraint List -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distrorelease Constraints</caption>
+<caption>public.distroseries Constraints</caption>
 <tr>
 <th>Name</th>
 <th>Constraint</th>
@@ -14319,19 +14316,19 @@ update.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distroarchrelease">public.distroarchrelease</a></li>
+"#public.table.distroarchseries">public.distroarchseries</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distrorelease">public.distrorelease</a></li>
+"#public.table.distroseries">public.distroseries</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distroreleaselanguage">public.distroreleaselanguage</a></li>
+"#public.table.distroserieslanguage">public.distroserieslanguage</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distroreleasepackagecache">public.distroreleasepackagecache</a></li>
+"#public.table.distroseriespackagecache">public.distroseriespackagecache</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -14342,11 +14339,11 @@ update.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrorcdimagedistrorelease">public.mirrorcdimagedistrorelease</a></li>
+"#public.table.mirrorcdimagedistroseries">public.mirrorcdimagedistroseries</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.mirrordistroreleasesource">public.mirrordistroreleasesource</a></li>
+"#public.table.mirrordistroseriessource">public.mirrordistroseriessource</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -14387,11 +14384,12 @@ update.</td>
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <!-- Indexes -->
-<!-- View Definition -->
-<!-- List off permissions -->
+distroseries__driver__idx driver) WHERE (driver IS NOT NULL
+distroseries__owner__idx "owner" <!-- View Definition -->
+ <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.distrorelease</caption>
+<caption>Permissions which apply to public.distroseries</caption>
 <tr>
 <th>User</th>
 <th>
@@ -14645,12 +14643,12 @@ update.</td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distroreleaselanguage" id=
-"public.table.distroreleaselanguage">distroreleaselanguage</a></h2>
+"public.table.distroserieslanguage" id=
+"public.table.distroserieslanguage">distroserieslanguage</a></h2>
 <p>A cache of the current translation status of that language
-across an entire distrorelease.</p>
+across an entire distroseries.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distroreleaselanguage Structure</caption>
+<caption>public.distroserieslanguage Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -14665,13 +14663,14 @@ across an entire distrorelease.</p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.language">public.language.id</a></td>
+<td><a href="#public.table.language">public.language.id</a>
+<a href="#public.table.language">public.language.id</a></td>
 <td>language</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i></td>
@@ -14707,7 +14706,7 @@ As per IRosettaStats.</td>
 <td><i>NOT NULL</i><br />
 <br />
 The total number of contributors to the translation of this
-distrorelease into this language.</td>
+distroseries into this language.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -14736,7 +14735,7 @@ As per IRosettaStats.</td>
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.distroreleaselanguage</caption>
+public.distroserieslanguage</caption>
 <tr>
 <th>User</th>
 <th>
@@ -14872,13 +14871,13 @@ public.distroreleaselanguage</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distroreleasepackagecache" id=
-"public.table.distroreleasepackagecache">distroreleasepackagecache</a></h2>
+"public.table.distroseriespackagecache" id=
+"public.table.distroseriespackagecache">distroseriespackagecache</a></h2>
 <p>A cache of the text associated with binary packages in the
-distrorelease. This table allows for fast queries to find a binary
+distroseries. This table allows for fast queries to find a binary
 packagename that matches a given text.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distroreleasepackagecache Structure</caption>
+<caption>public.distroseriespackagecache Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -14893,12 +14892,12 @@ packagename that matches a given text.</p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
-The distrorelease in which we are checking.</td>
+The distroseries in which we are checking.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
@@ -14926,7 +14925,7 @@ full text index.</td>
 <td><br />
 <br />
 A single summary for one of the binary packages of this name in
-this distrorelease. We could potentially have binary packages in
+this distroseries. We could potentially have binary packages in
 different architectures with the same name and different summaries,
 so this is a way of collapsing to one arbitrarily-chosen one, for
 display purposes. The chances of actually having different
@@ -14947,7 +14946,7 @@ does not build on a specific architecture.</td>
 <td><br />
 <br />
 The aggregated summaries of all the binary packages with this name
-in this distrorelease.</td>
+in this distroseries.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -14956,7 +14955,7 @@ in this distrorelease.</td>
 <td><br />
 <br />
 The aggregated description of all the binary packages with this
-name in this distrorelease.</td>
+name in this distroseries.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -14969,13 +14968,13 @@ name in this distrorelease.</td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-distroreleasepackagecache_fti fti
-distroreleasepackagecache_fti_gist fti <!-- View Definition -->
+distroseriespackagecache__distroseries__idx distroseries
+distroseriespackagecache_fti fti <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.distroreleasepackagecache</caption>
+public.distroseriespackagecache</caption>
 <tr>
 <th>User</th>
 <th>
@@ -16335,7 +16334,7 @@ data.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
 <td>distroarchseries</td>
 <td>integer</td>
 <td><br />
@@ -18042,7 +18041,7 @@ NULL)))</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
-"#public.table.distroreleaselanguage">public.distroreleaselanguage</a></li>
+"#public.table.distroserieslanguage">public.distroserieslanguage</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.person">public.person</a></li>
@@ -18254,7 +18253,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.languagepack" id=
 "public.table.languagepack">languagepack</a></h2>
-<p>Store exported language packs for DistroReleases.</p>
+<p>Store exported language packs for DistroSeries.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.languagepack Structure</caption>
 <tr>
@@ -18298,7 +18297,7 @@ being used, its value is NULL</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
+"#public.table.distroseries">public.distroseries.id</a></td>
 <td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
@@ -18345,7 +18344,7 @@ The LanguagePack that this one updates.</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
-"#public.table.distrorelease">public.distrorelease</a></li>
+"#public.table.distroseries">public.distroseries</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -21601,9 +21600,10 @@ The product for which this is a milestone.</td>
 The identifier text, e.g. "1.2."</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.distribution">public.distribution.id</a>
+<td><a href=
+"#public.table.distroseries">public.distroseries.distribution#1</a>
 <a href=
-"#public.table.distrorelease">public.distrorelease.distribution#1</a></td>
+"#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
 <td>integer</td>
 <td><i>UNIQUE#1 UNIQUE#2</i><br />
@@ -21643,20 +21643,20 @@ vocabularies.</td>
 The productseries for which this is a milestone. A milestone on a
 productseries is ALWAYS also a milestone for the same product. This
 is because milestones started out on products/distributions but are
-moving to being on series/distroreleases.</td>
+moving to being on series/distroseries.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id#1</a>
-<a href="#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id#1</a> <a href=
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><br />
 <br />
-The distrorelease for which this is a milestone. A milestone on a
-distrorelease is ALWAYS also a milestone for the same distribution.
+The distroseries for which this is a milestone. A milestone on a
+distroseries is ALWAYS also a milestone for the same distribution.
 This is because milestones started out on products/distributions
-but are moving to being on series/distroreleases.</td>
+but are moving to being on series/distroseries.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -22068,11 +22068,11 @@ mirror manager, otherwise False.</td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.mirrorcdimagedistrorelease" id=
-"public.table.mirrorcdimagedistrorelease">mirrorcdimagedistrorelease</a></h2>
+"public.table.mirrorcdimagedistroseries" id=
+"public.table.mirrorcdimagedistroseries">mirrorcdimagedistroseries</a></h2>
 <p>The mirror of a given CD/DVD image.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.mirrorcdimagedistrorelease Structure</caption>
+<caption>public.mirrorcdimagedistroseries Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -22096,8 +22096,8 @@ The distribution mirror.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
@@ -22127,7 +22127,7 @@ The Distribution Release Flavour.</td>
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.mirrorcdimagedistrorelease</caption>
+public.mirrorcdimagedistroseries</caption>
 <tr>
 <th>User</th>
 <th>
@@ -22249,7 +22249,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.mirrorcontent" id=
 "public.table.mirrorcontent">mirrorcontent</a></h2>
-<p>Stores which distroarchreleases and compoenents a given mirror
+<p>Stores which distroarchseries and compoenents a given mirror
 has.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.mirrorcontent Structure</caption>
@@ -22273,12 +22273,12 @@ has.</p>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
-<td>distroarchrelease</td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-A distroarchrelease that this mirror contains.</td>
+A distroarchseries that this mirror contains.</td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.component">public.component.id</a></td>
@@ -22286,7 +22286,7 @@ A distroarchrelease that this mirror contains.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-What component of the distroarchrelease that this mirror
+What component of the distroarchseries that this mirror
 contains.</td>
 </tr>
 <tr class="tr0">
@@ -22408,11 +22408,11 @@ contains.</td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.mirrordistroarchrelease" id=
-"public.table.mirrordistroarchrelease">mirrordistroarchrelease</a></h2>
+"public.table.mirrordistroarchseries" id=
+"public.table.mirrordistroarchseries">mirrordistroarchseries</a></h2>
 <p>The mirror of the packages of a given Distro Arch Release.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.mirrordistroarchrelease Structure</caption>
+<caption>public.mirrordistroarchseries Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -22436,12 +22436,12 @@ The distribution mirror.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
-<td>distro_arch_release</td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The distro arch release.</td>
+The distro arch series.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -22481,7 +22481,7 @@ The PackagePublishingPocket.</td>
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.mirrordistroarchrelease</caption>
+public.mirrordistroarchseries</caption>
 <tr>
 <th>User</th>
 <th>
@@ -22603,11 +22603,11 @@ public.mirrordistroarchrelease</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.mirrordistroreleasesource" id=
-"public.table.mirrordistroreleasesource">mirrordistroreleasesource</a></h2>
+"public.table.mirrordistroseriessource" id=
+"public.table.mirrordistroseriessource">mirrordistroseriessource</a></h2>
 <p>The mirror of a given Distro Release</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.mirrordistroreleasesource Structure</caption>
+<caption>public.mirrordistroseriessource Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -22631,8 +22631,8 @@ The distribution mirror.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
@@ -22674,7 +22674,7 @@ The status of the mirror, that is, how up-to-date it is.</td>
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.mirrordistroreleasesource</caption>
+public.mirrordistroseriessource</caption>
 <tr>
 <th>User</th>
 <th>
@@ -22983,7 +22983,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.mirrorsourcecontent" id=
 "public.table.mirrorsourcecontent">mirrorsourcecontent</a></h2>
-<p>Stores which distrorelease and components a given mirror that
+<p>Stores which distroseries and components a given mirror that
 includes source packages has.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.mirrorsourcecontent Structure</caption>
@@ -23007,12 +23007,12 @@ includes source packages has.</p>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-A distrorelease that this mirror contains.</td>
+A distroseries that this mirror contains.</td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.component">public.component.id</a></td>
@@ -23020,7 +23020,7 @@ A distrorelease that this mirror contains.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-What component of the distrorelease that this sourcepackage mirror
+What component of the distroseries that this sourcepackage mirror
 contains.</td>
 </tr>
 <tr class="tr0">
@@ -24228,8 +24228,8 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -24392,7 +24392,7 @@ public</a></p>
 "public.table.packageupload" id=
 "public.table.packageupload">packageupload</a></h2>
 <p>An upload. This table stores information pertaining to uploads
-to a given DistroRelease/Archive.</p>
+to a given DistroSeries/Archive.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.packageupload Structure</caption>
 <tr>
@@ -24419,12 +24419,12 @@ dbschema.py</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-This integer field refers to the DistroRelease to which this upload
+This integer field refers to the DistroSeries to which this upload
 is targeted</td>
 </tr>
 <tr class="tr1">
@@ -24483,8 +24483,8 @@ The archive to which this upload is targetted.</td>
 </ul>
 <!-- Indexes -->
 packageupload__changesfile__idx changesfile
-packageupload__distrorelease__key distrorelease
-packageupload__distrorelease__status__idx distrorelease, status
+packageupload__distroseries__key distroseries
+packageupload__distroseries__status__idx distroseries, status
 packageupload__signing_key__idx signing_key 
 <!-- View Definition -->
  <!-- List off permissions -->
@@ -25210,11 +25210,11 @@ derivative distro managed in Launchpad. So don't join through this
 table to get from product to source package, or vice versa. Rather,
 use the ProductSeries.sourcepackages attribute, or the
 SourcePackage.productseries attribute. You may need to create a
-SourcePackage with a given sourcepackagename and distrorelease,
-then use its .productrelease attribute. The code behind those
-methods does more than just join through the tables, it is also
-smart enough to look at related distro's and parent distroreleases,
-and at Ubuntu in particular.</p>
+SourcePackage with a given sourcepackagename and distroseries, then
+use its .productrelease attribute. The code behind those methods
+does more than just join through the tables, it is also smart
+enough to look at related distro's and parent distroseries, and at
+Ubuntu in particular.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.packaging Structure</caption>
 <tr>
@@ -25261,13 +25261,12 @@ the distro.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i><br />
 <br />
-The distrorelease in which the productseries has been
-packaged.</td>
+The distroseries in which the productseries has been packaged.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
@@ -25277,7 +25276,7 @@ packaged.</td>
 <td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The upstream product series that has been packaged in this
-distrorelease sourcepackage.</td>
+distroseries sourcepackage.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -25310,7 +25309,7 @@ setting.</td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-packaging_distrorelease_and_sourcepackagename_idx distrorelease,
+packaging__distroseries__sourcepackagename__idx distroseries,
 sourcepackagename packaging_sourcepackagename_idx sourcepackagename
 <!-- View Definition -->
  <!-- List off permissions -->
@@ -25895,7 +25894,7 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href=
-"#public.table.distroarchrelease">public.distroarchrelease</a></li>
+"#public.table.distroarchseries">public.distroarchseries</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -25903,7 +25902,7 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href=
-"#public.table.distrorelease">public.distrorelease</a></li>
+"#public.table.distroseries">public.distroseries</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -26876,7 +26875,7 @@ public</a></p>
 "public.table.pocketchroot" id=
 "public.table.pocketchroot">pocketchroot</a></h2>
 <p>PocketChroots: Which chroot belongs to which pocket of which
-distroarchrelease. Any given pocket of any given distroarchrelease
+distroarchseries. Any given pocket of any given distroarchseries
 needs a specific chroot in order to be built. This table links it
 all together.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -26895,12 +26894,12 @@ all together.</p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
-<td>distroarchrelease</td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i><br />
 <br />
-Which distroarchrelease this chroot applies to.</td>
+Which distroarchseries this chroot applies to.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -26908,7 +26907,7 @@ Which distroarchrelease this chroot applies to.</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
-Which pocket of the distroarchrelease this chroot applies to. Valid
+Which pocket of the distroarchseries this chroot applies to. Valid
 values are specified in dbschema.PackagePublishingPocket</td>
 </tr>
 <tr class="tr1">
@@ -26918,7 +26917,7 @@ values are specified in dbschema.PackagePublishingPocket</td>
 <td>integer</td>
 <td><br />
 <br />
-The chroot used by the pocket of the distroarchrelease.</td>
+The chroot used by the pocket of the distroarchseries.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -27284,7 +27283,7 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>distrorelease</td>
+<td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -27484,7 +27483,7 @@ SELECT (
 , potemplate.id AS potemplate
 , potemplate.productseries
 , potemplate.sourcepackagename
-, potemplate.distrorelease
+, potemplate.distroseries
 , potemplate."header" AS potheader
 , potemplate.languagepack
 , pofile.id AS pofile
@@ -30001,8 +30000,8 @@ comes.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i><br />
 <br />
@@ -30112,8 +30111,8 @@ column.</td>
 </tr>
 <tr class="tr1">
 <td>valid_link</td>
-<td>CHECK ((((productseries IS NULL) &lt;&gt; (distrorelease IS
-NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS
+<td>CHECK ((((productseries IS NULL) &lt;&gt; (distroseries IS
+NULL)) AND ((distroseries IS NULL) = (sourcepackagename IS
 NULL))))</td>
 </tr>
 </table>
@@ -30578,7 +30577,7 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>distrorelease</td>
+<td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -30674,7 +30673,7 @@ SELECT (
 , potemplate.id AS potemplate
 , potemplate.productseries
 , potemplate.sourcepackagename
-, potemplate.distrorelease
+, potemplate.distroseries
 , potemplate."header"
 , potemplate.languagepack
 , potmsgset.id AS potmsgset
@@ -31443,7 +31442,7 @@ public</a></p>
 <p>An architecture, that might consist of several actual
 processors. Different distributions call these architectures
 different things, so we have an "architecturetag" in
-DistroArchRelease that might be different to the architecture's
+DistroArchSeries that might be different to the architecture's
 name.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.processorfamily Structure</caption>
@@ -31494,7 +31493,7 @@ code would run on a 386... Ubuntu for example requires a 486.</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
-"#public.table.distroarchrelease">public.distroarchrelease</a></li>
+"#public.table.distroarchseries">public.distroarchseries</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.processor">public.processor</a></li>
@@ -34819,7 +34818,7 @@ in the distribution, but may be more widely used.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distroarchrelease</td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -34831,13 +34830,13 @@ in the distribution, but may be more widely used.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distrorelease</td>
+<td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>distroreleasename</td>
+<td>distroseriesname</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -34957,10 +34956,10 @@ in the distribution, but may be more widely used.</p>
 <!-- View Definition -->
 <pre>
 SELECT securebinarypackagepublishinghistory.id
-, distroarchrelease.id AS distroarchrelease
-, distrorelease.distribution
-, distrorelease.id AS distrorelease
-, distrorelease.name AS distroreleasename
+, distroarchseries.id AS distroarchseries
+, distroseries.distribution
+, distroseries.id AS distroseries
+, distroseries.name AS distroseriesname
 , processorfamily.id AS processorfamily
 , processorfamily.name AS processorfamilyname
 , securebinarypackagepublishinghistory.status AS packagepublishingstatus
@@ -34989,19 +34988,19 @@ FROM (
                                          (
                                                (
                                                      (securebinarypackagepublishinghistory 
-                                                        JOIN distroarchrelease 
+                                                        JOIN distroarchseries 
                                                           ON (
-                                                                 (distroarchrelease.id = securebinarypackagepublishinghistory.distroarchrelease)
+                                                                 (distroarchseries.id = securebinarypackagepublishinghistory.distroarchseries)
                                                            )
                                                      )
-                                                  JOIN distrorelease 
+                                                  JOIN distroseries 
                                                     ON (
-                                                           (distroarchrelease.distrorelease = distrorelease.id)
+                                                           (distroarchseries.distroseries = distroseries.id)
                                                      )
                                                )
                                             JOIN processorfamily 
                                               ON (
-                                                     (distroarchrelease.processorfamily = processorfamily.id)
+                                                     (distroarchseries.processorfamily = processorfamily.id)
                                                )
                                          )
                                       JOIN component 
@@ -36518,15 +36517,15 @@ The number of CDs.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The flavour of the distrorelease (e.g. EdUbuntu).</td>
+The flavour of the distroseries (e.g. EdUbuntu).</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>distrorelease</td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The distrorelease of the CDs (e.g. Ubuntu Breezy).</td>
+The distroseries of the CDs (e.g. Ubuntu Breezy).</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -38322,7 +38321,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.sectionselection" id=
 "public.table.sectionselection">sectionselection</a></h2>
-<p>Allowed sections in a given distrorelease.</p>
+<p>Allowed sections in a given distroseries.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.sectionselection Structure</caption>
 <tr>
@@ -38339,12 +38338,12 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-Refers to the distrorelease in question.</td>
+Refers to the distroseries in question.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.section">public.section.id</a></td>
@@ -38532,12 +38531,12 @@ The binarypackage being published.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
-<td>distroarchrelease</td>
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
+<td>distroarchseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The distroarchrelease into which the binarypackage is being
+The distroarchseries into which the binarypackage is being
 published.</td>
 </tr>
 <tr class="tr1">
@@ -38642,7 +38641,7 @@ The date/time at which the package was actually deleted.</td>
 <br />
 The pocket into which this record is published. The RELEASE pocket
 (zero) provides behaviour as normal. Other pockets may append
-things to the distrorelease name such as the UPDATES pocket
+things to the distroseries name such as the UPDATES pocket
 (-updates) or the SECURITY pocket (-security).</td>
 </tr>
 <tr class="tr1">
@@ -38695,14 +38694,15 @@ Reason why the publication was removed.</td>
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
 securebinarypackagepublishinghistory__archive__status__idx archive,
-status securebinarypackagepublishinghistory__removed_by__idx
-removed_by) WHERE (removed_by IS NOT NULL
+status securebinarypackagepublishinghistory__distroarchseries__idx
+distroarchseries
+securebinarypackagepublishinghistory__removed_by__idx removed_by)
+WHERE (removed_by IS NOT NULL
 securebinarypackagepublishinghistory_binarypackagerelease_idx
 binarypackagerelease
 securebinarypackagepublishinghistory_component_idx component
-securebinarypackagepublishinghistory_distroarchrelease_idx
-distroarchrelease securebinarypackagepublishinghistory_pocket_idx
-pocket securebinarypackagepublishinghistory_section_idx section
+securebinarypackagepublishinghistory_pocket_idx pocket
+securebinarypackagepublishinghistory_section_idx section
 securebinarypackagepublishinghistory_status_idx status 
 <!-- View Definition -->
  <!-- List off permissions -->
@@ -38923,12 +38923,12 @@ The sourcepackagerelease being published.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The distrorelease into which the sourcepackagerelease is being
+The distroseries into which the sourcepackagerelease is being
 published.</td>
 </tr>
 <tr class="tr1">
@@ -39024,7 +39024,7 @@ The date/time at which the source was actually deleted.</td>
 <br />
 The pocket into which this record is published. The RELEASE pocket
 (zero) provides behaviour as normal. Other pockets may append
-things to the distrorelease name such as the UPDATES pocket
+things to the distroseries name such as the UPDATES pocket
 (-updates), the SECURITY pocket (-security) and the PROPOSED pocket
 (-proposed)</td>
 </tr>
@@ -39078,12 +39078,12 @@ Reason why the publication was removed.</td>
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
 securesourcepackagepublishinghistory__archive__status__idx archive,
-status securesourcepackagepublishinghistory__removed_by__idx
+status securesourcepackagepublishinghistory__distroseries__idx
+distroseries securesourcepackagepublishinghistory__removed_by__idx
 removed_by) WHERE (removed_by IS NOT NULL
 securesourcepackagepublishinghistory_component_idx component
-securesourcepackagepublishinghistory_distrorelease_idx
-distrorelease securesourcepackagepublishinghistory_pocket_idx
-pocket securesourcepackagepublishinghistory_section_idx section
+securesourcepackagepublishinghistory_pocket_idx pocket
+securesourcepackagepublishinghistory_section_idx section
 securesourcepackagepublishinghistory_sourcepackagerelease_idx
 sourcepackagerelease
 securesourcepackagepublishinghistory_status_idx status 
@@ -40846,7 +40846,7 @@ SQLObject.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distroreleasename</td>
+<td>distroseriesname</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -40881,13 +40881,13 @@ SELECT (
      ) || 
      (securesourcepackagepublishinghistory.id)::text
 ) AS id
-, distrorelease.distribution
+, distroseries.distribution
 , securesourcepackagepublishinghistory.id AS sourcepackagepublishing
 , sourcepackagereleasefile.libraryfile AS libraryfilealias
 , libraryfilealias.filename AS libraryfilealiasfilename
 , sourcepackagename.name AS sourcepackagename
 , component.name AS componentname
-, distrorelease.name AS distroreleasename
+, distroseries.name AS distroseriesname
 , securesourcepackagepublishinghistory.status AS publishingstatus
 , securesourcepackagepublishinghistory.pocket
 , securesourcepackagepublishinghistory.archive 
@@ -40917,9 +40917,9 @@ FROM (
                        (libraryfilealias.id = sourcepackagereleasefile.libraryfile)
                  )
            )
-        JOIN distrorelease 
+        JOIN distroseries 
           ON (
-                 (securesourcepackagepublishinghistory.distrorelease = distrorelease.id)
+                 (securesourcepackagepublishinghistory.distroseries = distroseries.id)
            )
      )
   JOIN component 
@@ -41456,7 +41456,7 @@ access to embargoed entries</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distrorelease</td>
+<td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -41550,7 +41550,7 @@ SELECT securesourcepackagepublishinghistory.id
 , securesourcepackagepublishinghistory.status
 , securesourcepackagepublishinghistory.component
 , securesourcepackagepublishinghistory.section
-, securesourcepackagepublishinghistory.distrorelease
+, securesourcepackagepublishinghistory.distroseries
 , securesourcepackagepublishinghistory.pocket
 , securesourcepackagepublishinghistory.archive
 , securesourcepackagepublishinghistory.datecreated
@@ -41769,8 +41769,8 @@ public</a></p>
 "public.table.sourcepackagerelease">sourcepackagerelease</a></h2>
 <p>SourcePackageRelease: A source package release. This table
 represents a specific release of a source package. Source package
-releases may be published into a distrorelease, or even multiple
-distroreleases.</p>
+releases may be published into a distroseries, or even multiple
+distroseries.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.sourcepackagerelease Structure</caption>
 <tr>
@@ -41809,7 +41809,7 @@ field.</td>
 The version string for this source package release. E.g. "1.0-2" or
 "1.4-5ubuntu9.1". Note that, in ubuntu-style and redhat-style
 distributions, the version+sourcepackagename is unique, even across
-distroreleases. In other words, you cannot have a foo-1.2-1 package
+distroseries. In other words, you cannot have a foo-1.2-1 package
 in Hoary that is different from foo-1.2-1 in Warty.</td>
 </tr>
 <tr class="tr1">
@@ -41927,12 +41927,12 @@ Reference to a SourcePackageName.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>uploaddistrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>upload_distroseries</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The distrorelease into which this source package release was
+The distroseries into which this source package release was
 uploaded into Launchpad / Ubuntu for the first time. In general,
 this will be the development Ubuntu release into which this package
 was uploaded. For a package which was unchanged between warty and
@@ -42593,11 +42593,11 @@ showing which specs are planned to implement for a given
 series.</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.distribution">public.distribution.id</a>
+<td><a href=
+"#public.table.distroseries">public.distroseries.distribution#1</a>
+<a href="#public.table.distribution">public.distribution.id</a>
 <a href=
-"#public.table.milestone">public.milestone.distribution#1</a>
-<a href=
-"#public.table.distrorelease">public.distrorelease.distribution#2</a></td>
+"#public.table.milestone">public.milestone.distribution#2</a></td>
 <td>distribution</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i><br />
@@ -42608,19 +42608,18 @@ distribution.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id#2</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id#1</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><br />
 <br />
 If this is not NULL, then it means that the release managers have
-targeted this feature to be released in the given distrorelease. It
-is not necessary to target a distrorelease, but this is a useful
-way of know which specifications are, for example,
-BreezyGoals.</td>
+targeted this feature to be released in the given distroseries. It
+is not necessary to target a distroseries, but this is a useful way
+of know which specifications are, for example, BreezyGoals.</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.milestone">public.milestone.id#1</a>
+<td><a href="#public.table.milestone">public.milestone.id#2</a>
 <a href="#public.table.milestone">public.milestone.id#3</a></td>
 <td>milestone</td>
 <td>integer</td>
@@ -42725,7 +42724,7 @@ release have accepted this specification as a goal.</td>
 <td><br />
 <br />
 The person who proposed this spec as a goal for the productseries
-or distrorelease.</td>
+or distroseries.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -42801,8 +42800,8 @@ Specification is private.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
-<td>distribution_and_distrorelease</td>
-<td>CHECK (((distrorelease IS NULL) OR (distribution IS NOT
+<td>distribution_and_distroseries</td>
+<td>CHECK (((distroseries IS NULL) OR (distribution IS NOT
 NULL)))</td>
 </tr>
 <tr class="tr1">
@@ -42832,8 +42831,8 @@ NULL)))</td>
 </tr>
 <tr class="tr0">
 <td>specification_goal_nomination_chk</td>
-<td>CHECK ((((productseries IS NULL) AND (distrorelease IS NULL))
-OR ((goal_proposer IS NOT NULL) AND (date_goal_proposed IS NOT
+<td>CHECK ((((productseries IS NULL) AND (distroseries IS NULL)) OR
+((goal_proposer IS NOT NULL) AND (date_goal_proposed IS NOT
 NULL))))</td>
 </tr>
 <tr class="tr1">
@@ -46037,8 +46036,8 @@ The timestamp when the import was done.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
 <td>integer</td>
 <td><br />
 <br />
@@ -46125,8 +46124,8 @@ The file format of the content that is being imported.</td>
 </tr>
 <tr class="tr0">
 <td>valid_link</td>
-<td>CHECK ((((productseries IS NULL) &lt;&gt; (distrorelease IS
-NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS
+<td>CHECK ((((productseries IS NULL) &lt;&gt; (distroseries IS
+NULL)) AND ((distroseries IS NULL) = (sourcepackagename IS
 NULL))))</td>
 </tr>
 </table>
