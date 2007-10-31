@@ -323,7 +323,7 @@ anyway.
     archive-404-mirror NEVER
     archive-mirror2 2006-05-24...
 
-    
+
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
