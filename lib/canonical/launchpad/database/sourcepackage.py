@@ -161,7 +161,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 """SourcePackagePublishingHistory.sourcepackagerelease =
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
-                   SourcePackagePublishingHistory.distrorelease = %s AND
+                   SourcePackagePublishingHistory.distroseries = %s AND
                    SourcePackagePublishingHistory.archive IN %s AND
                    SourcePackagePublishingHistory.dateremoved is NULL
                 """ % sqlvalues(
@@ -272,16 +272,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.dateremoved is NULL
             ''' % sqlvalues(self.sourcepackagename, self.distribution,
                             self.distribution.all_distro_archive_ids),
-            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
+            clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
             orderBy=[SQLConstant(order_const+" DESC")])
         return releases.distinct()
@@ -393,7 +393,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distrorelease = %s" % sqlvalues(self.distroseries),
+            "BugTask.distroseries = %s" % sqlvalues(self.distroseries),
             user,
             count_subcontext_clause="BugTask.sourcepackagename = %s" % (
                 sqlvalues(self.sourcepackagename)))
@@ -415,7 +415,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return (
-            'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
+            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
     def setPackaging(self, productseries, user):
@@ -453,7 +453,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         condition_clauses = ["""
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
-        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
@@ -524,14 +524,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            distrorelease = %s AND
+            distroseries = %s AND
             sourcepackagename = %s AND
             iscurrent IS TRUE AND
-            distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = Distribution.id AND
+            distroseries = DistroSeries.id AND
+            DistroSeries.distribution = Distribution.id AND
             Distribution.official_rosetta IS TRUE
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroRelease', 'Distribution'])
+            clauseTables = ['DistroSeries', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(
             shortlist(result, 300),
@@ -540,13 +540,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            distrorelease = %s AND
+            distroseries = %s AND
             sourcepackagename = %s AND
-            distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = Distribution.id AND
+            distroseries = DistroSeries.id AND
+            DistroSeries.distribution = Distribution.id AND
             (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroRelease', 'Distribution'])
+            clauseTables = ['DistroSeries', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(
             shortlist(result, 300),

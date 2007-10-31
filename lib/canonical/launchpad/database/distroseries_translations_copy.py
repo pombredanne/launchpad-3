@@ -79,7 +79,7 @@ def _copy_active_translations_to_new_series(
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distrorelease = %s AND iscurrent' % quote(child.parentseries)
+    where = 'distroseries = %s AND iscurrent' % quote(child.parentseries)
     copier.extract('POTemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
@@ -91,7 +91,7 @@ def _copy_active_translations_to_new_series(
     cursor().execute('''
         UPDATE %s
         SET
-            distrorelease = %s,
+            distroseries = %s,
             datecreated =
                 timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone)
@@ -765,8 +765,8 @@ def _copy_active_translations_as_update(child, transaction, logger):
         WHERE
             pt1.potemplatename = pt2.potemplatename AND
             pt1.sourcepackagename = pt2.sourcepackagename AND
-            pt1.distrorelease = %s AND
-            pt2.distrorelease = %s
+            pt1.distroseries = %s AND
+            pt2.distroseries = %s
         """ % sqlvalues(child.parentseries, child))
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_template_pkey "

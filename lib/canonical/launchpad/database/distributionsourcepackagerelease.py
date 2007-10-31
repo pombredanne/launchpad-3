@@ -62,15 +62,15 @@ class DistributionSourcePackageRelease:
     def publishing_history(self):
         """See IDistributionSourcePackageRelease."""
         return SourcePackagePublishingHistory.select("""
-            DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease = %s
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
-            clauseTables=['DistroRelease'],
+            clauseTables=['DistroSeries'],
             orderBy='-datecreated')
 
     @property
@@ -78,9 +78,9 @@ class DistributionSourcePackageRelease:
         """See IDistributionSourcePackageRelease."""
         return Build.select("""
             Build.sourcepackagerelease = %s AND
-            Build.distroarchseries = DistroArchRelease.id AND
-            DistroArchRelease.distroseries = DistroRelease.id AND
-            DistroRelease.distribution = %s
+            Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distribution.id),
             orderBy='-datecreated',
@@ -103,10 +103,10 @@ class DistributionSourcePackageRelease:
     def sample_binary_packages(self):
         """See IDistributionSourcePackageRelease."""
         all_published = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease =
-                DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -117,7 +117,7 @@ class DistributionSourcePackageRelease:
                             self.sourcepackagerelease),
             distinct=True,
             orderBy=['-datecreated'],
-            clauseTables=['DistroArchRelease', 'DistroRelease',
+            clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'Build'])
         samples = []
         names = set()

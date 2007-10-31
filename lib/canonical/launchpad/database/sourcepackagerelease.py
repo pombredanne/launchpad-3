@@ -67,8 +67,8 @@ class SourcePackageRelease(SQLBase):
     architecturehintlist = StringCol(dbName='architecturehintlist')
     format = EnumCol(dbName='format', schema=SourcePackageFormat,
         default=SourcePackageFormat.DPKG, notNull=True)
-    uploaddistroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='uploaddistrorelease')
+    upload_distroseries = ForeignKey(foreignKey='DistroSeries',
+        dbName='upload_distroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 
@@ -145,7 +145,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        series = self.uploaddistroseries
+        series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -153,7 +153,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        distribution = self.uploaddistroseries.distribution
+        distribution = self.upload_distroseries.distribution
         return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -210,7 +210,7 @@ class SourcePackageRelease(SQLBase):
 
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
-        upload_distro = self.uploaddistroseries.distribution
+        upload_distro = self.upload_distroseries.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # XXX: kiko 2006-03-07:
@@ -237,9 +237,9 @@ class SourcePackageRelease(SQLBase):
         # XXX cprov 2006-08-23: Will distinct=True help us here?
         archSerieses = sets.Set(DistroArchSeries.select(
             """
-            BinaryPackagePublishingHistory.distroarchrelease =
-               DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %d AND
+            BinaryPackagePublishingHistory.distroarchseries =
+               DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %d AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
@@ -318,7 +318,7 @@ class SourcePackageRelease(SQLBase):
         architectures = [
             architecture.id for architecture in parent_architectures]
         queries.append(
-            "Build.distroarchrelease IN %s" % sqlvalues(architectures))
+            "Build.distroarchseries IN %s" % sqlvalues(architectures))
 
         # Follow archive inheritance across distribution officla archives,
         # for example:
@@ -359,7 +359,7 @@ class SourcePackageRelease(SQLBase):
         if component is not None:
             self.component = component
             # See if the new component requires a new archive:
-            distribution = self.uploaddistroseries.distribution
+            distribution = self.upload_distroseries.distribution
             new_archive = distribution.getArchiveByComponent(component.name)
             if new_archive is not None:
                 self.upload_archive = new_archive
@@ -381,10 +381,10 @@ class SourcePackageRelease(SQLBase):
             ]
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
-        PackageUpload.distrorelease = %s AND
+        PackageUpload.distroseries = %s AND
         PackageUploadSource.sourcepackagerelease = %s AND
         PackageUpload.status = %s
-        """ % sqlvalues(self.uploaddistroseries, self,
+        """ % sqlvalues(self.upload_distroseries, self,
                         PackageUploadStatus.DONE)
         queue_record = PackageUpload.selectOne(
             query, clauseTables=clauseTables)
@@ -449,5 +449,5 @@ class SourcePackageRelease(SQLBase):
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
-                distroseries=self.uploaddistroseries)
+                distroseries=self.upload_distroseries)
 

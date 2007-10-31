@@ -324,7 +324,7 @@ class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
-                     'distrorelease', 'milestone', 'sourcepackagename']
+                     'distroseries', 'milestone', 'sourcepackagename']
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
@@ -345,7 +345,7 @@ class BugTask(SQLBase, BugTaskMixin):
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
     distroseries = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroSeries',
+        dbName='distroseries', foreignKey='DistroSeries',
         notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
@@ -1083,7 +1083,7 @@ class BugTaskSet:
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
-            'distrorelease': params.distroseries,
+            'distroseries': params.distroseries,
             'productseries': params.productseries,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -1151,7 +1151,7 @@ class BugTaskSet:
             extra_clauses.append("Bug.duplicateof is NULL")
 
         if params.omit_targeted:
-            extra_clauses.append("BugTask.distrorelease is NULL AND "
+            extra_clauses.append("BugTask.distroseries is NULL AND "
                                  "BugTask.productseries is NULL")
 
         if params.has_cve:
@@ -1203,7 +1203,7 @@ class BugTaskSet:
                 SourcePackageRelease.sourcepackagename AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
@@ -1269,7 +1269,7 @@ class BugTaskSet:
                 target=params.nominated_for,
                 nomination_status=BugNominationStatus.PROPOSED)
             if IDistroSeries.providedBy(params.nominated_for):
-                mappings['target_column'] = 'distrorelease'
+                mappings['target_column'] = 'distroseries'
             elif IProductSeries.providedBy(params.nominated_for):
                 mappings['target_column'] = 'productseries'
             else:
@@ -1558,9 +1558,9 @@ class BugTaskSet:
                 LEFT OUTER JOIN Distribution
                     ON distribution = Distribution.id
                     AND Distribution.official_malone IS TRUE
-                LEFT OUTER JOIN DistroRelease
-                    ON distrorelease = Distrorelease.id
-                    AND DistroRelease.distribution IN (
+                LEFT OUTER JOIN DistroSeries
+                    ON distroseries = Distrorelease.id
+                    AND DistroSeries.distribution IN (
                         SELECT id FROM Distribution
                         WHERE official_malone IS TRUE)
                 LEFT OUTER JOIN Product
@@ -1572,7 +1572,7 @@ class BugTaskSet:
                         SELECT id FROM Product WHERE official_malone IS TRUE)
                 WHERE
                     (Distribution.id IS NOT NULL
-                     OR DistroRelease.id IS NOT NULL
+                     OR DistroSeries.id IS NOT NULL
                      OR Product.id IS NOT NULL
                      OR ProductSeries.id IS NOT NULL)
                     AND BugTask.status = %s
