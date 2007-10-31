@@ -1012,6 +1012,20 @@ class POTemplateToTranslationFileAdapter:
             if row.sequence == 0:
                 continue
 
+            # XXX CarlosPerelloMarin 2007-10-26 bug=157540: Due a bug in our
+            # POTExport view, we need to leave out pomsgidsightings which have
+            # its 'inlastrevision' flag set to False because are not current
+            # anymore so we don't need them on export time.
+            messageID = POMsgID.byMsgid(row.msgid)
+            pomsgidsighting = POMsgIDSighting.selectOneBy(
+                potmsgset=row.potmsgset,
+                pomsgid_=messageID,
+                pluralform=row.pluralform)
+            if not pomsgidsighting.inlastrevision:
+                # Ignore it, the view should not provide us with this kind of
+                # rows.
+                continue
+
             # If the sequence number changes, is a new message.
             if row.sequence != sequence:
                 if msgset is not None:
@@ -1027,21 +1041,21 @@ class POTemplateToTranslationFileAdapter:
             # appear multiple times. We see how many we've added already to
             # check whether the message ID/translation in the current row are
             # ones we need to add.
-            if (row.pluralform == TranslationConstants.SINGULAR_FORM and
-                msgset.msgid is None):
-                msgset.msgid = row.msgid
-            elif (row.pluralform == TranslationConstants.PLURAL_FORM and
-                msgset.msgid_plural is None):
-                msgset.msgid_plural = row.msgid
+            if row.pluralform == TranslationConstants.SINGULAR_FORM:
+                if msgset.msgid is None:
+                    msgset.msgid = row.msgid
+                else:
+                    assert row.msgid == msgset.msgid, (
+                        'got different msgid values for singular form.')
+            elif row.pluralform == TranslationConstants.PLURAL_FORM:
+                if msgset.msgid_plural is None:
+                    msgset.msgid_plural = row.msgid
+                else:
+                    assert row.msgid == msgset.msgid_plural, (
+                        'got different msgid values for plural form.')
             else:
-                # msgset.msgid or msgset.msgid_plural could be not None,
-                # because we don't need to set it again, thus, we only check
-                # that row.msgidpluralform is correct.
-                assert row.msgidpluralform in (
-                    TranslationConstants.SINGULAR_FORM,
-                    TranslationConstants.PLURAL_FORM), (
-                        'msgid plural form is not valid: %s.' %
-                            row.msgidpluralform)
+                raise AssertionError(
+                    'msgid plural form %s is not valid.' % row.pluralform)
 
             if row.context is not None and msgset.context is None:
                 msgset.context = row.context

@@ -281,6 +281,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         last_submission = None
         for pluralform in range(self.pluralforms):
             submission = self.getActiveSubmission(pluralform)
+            if submission is None:
+                continue
             if (last_submission is None or
                 submission.datecreated > last_submission.datecreated):
                 last_submission = submission

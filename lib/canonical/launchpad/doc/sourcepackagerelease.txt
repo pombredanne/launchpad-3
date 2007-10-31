@@ -109,6 +109,11 @@ If there isn't one, that should return None.
    >>> print SourcePackageRelease.get(20).productrelease
    None
 
+Check that the uploaded changesfile works:
+
+   >>> commercial = SourcePackageRelease.get(36)
+   >>> commercial.upload_changesfile.http_url
+   'http://.../commercialpackage_1.0-1_source.changes'
 
 Check ISourcePackageRelease.override() behaviour:
 
@@ -343,7 +348,8 @@ was inherited in the initialization.
     The Hoary Hedgehog Release
 
     >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
-    >>> copied_pub = hoary_evo_dsspr.copyTo(breezy_autotest, pocket_release)
+    >>> copied_pub = hoary_evo_dsspr.current_published.copyTo(
+    ...     breezy_autotest, pocket_release)
 
     >>> breezy_autotest_evo_sp = breezy_autotest.getSourcePackage('evolution')
     >>> breezy_autotest_evo_dsspr = breezy_autotest_evo_sp['1.0']
@@ -355,12 +361,12 @@ parent series, it should be found by a build lookup happening on
 ubuntu/breezy-autotest/i386.
 
 In practical terms it means that another build is not necessary in
-this context. 
+this context.
 
     >>> breezy_autotest_build = evo_spr.getBuildByArch(
     ...     breezy_autotest_i386, ubuntu.main_archive)
     >>> print breezy_autotest_build.title
-    i386 build of evolution 1.0 in ubuntu hoary RELEASE    
+    i386 build of evolution 1.0 in ubuntu hoary RELEASE
 
 
 == Counting bugs ==

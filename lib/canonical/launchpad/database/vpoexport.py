@@ -11,11 +11,11 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
 
-from canonical.launchpad.database import POTemplate
-from canonical.launchpad.database import POFile
-from canonical.launchpad.database import Language
-from canonical.launchpad.interfaces import (
-    IVPOExportSet, IVPOExport, PackagePublishingStatus)
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
 class VPOExportSet:
     """Retrieve collections of VPOExport objects."""
@@ -27,6 +27,7 @@ class VPOExportSet:
         'pofile',
         'language',
         'variant',
+        'potmsgset',
         'potsequence',
         'posequence',
         'potheader',
@@ -55,6 +56,7 @@ class VPOExportSet:
         'posequence',
         'msgidpluralform',
         'translationpluralform',
+        'id'
     ]
     sort_columns = ', '.join(
         ['POExport.' + name for name in sort_column_names])
@@ -260,6 +262,7 @@ class VPOExport:
          pofile,
          language,
          self.variant,
+         potmsgset,
          self.potsequence,
          self.posequence,
          self.potheader,
@@ -279,15 +282,15 @@ class VPOExport:
          self.flagscomment) = args
 
         self.potemplate = POTemplate.get(potemplate)
+        self.potmsgset = POTMsgSet.get(potmsgset)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(self.msgid)
-            if potmsgset and potmsgset.is_translation_credit:
+            if self.potmsgset.is_translation_credit:
                 self.translation = self.pofile.prepareTranslationCredits(
-                    potmsgset)
+                    self.potmsgset)
                 self.activesubmission = True
                 self.translationpluralform = 0
 

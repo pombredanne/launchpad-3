@@ -6,7 +6,8 @@ import canonical.launchpad
 from canonical.launchpad.ftests._launchpadformharness import (
     LaunchpadFormHarness)
 from canonical.launchpad.ftests._login import *
-from canonical.launchpad.ftests._sqlobject import syncUpdate, set_so_attr
+from canonical.launchpad.ftests._sqlobject import (
+    sync, syncUpdate, set_so_attr)
 from canonical.launchpad.ftests._tales import test_tales
 from canonical.launchpad.ftests.timecounter import time_counter
 from canonical.launchpad.ftests.keys_for_tests import (

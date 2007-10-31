@@ -14,6 +14,8 @@ from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -207,7 +209,7 @@ class IPOTemplate(IRosettaStats):
     source_file_format = Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary="TranslationFileFormat")
+        vocabulary=TranslationFileFormat)
 
     priority = Int(
         title=_('Priority'),

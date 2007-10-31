@@ -19,7 +19,7 @@ You can specify the db_location explicitly:
     ...     DebBugs)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
     >>> external_debbugs = DebBugs(debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location

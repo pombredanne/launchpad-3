@@ -521,7 +521,7 @@ To obtain the packages a person is related to, we can use:
 
  1. getLatestMaintainedPackages(),
  2. getLatestUploadedButNotMaintainedPackages(),
- 3. getLatestUploadedPPAPackages methods of IPersonSet.
+ 3. getLatestUploadedPPAPackages
 
 The 1st will return the latest SourcePackageReleases related to a
 person in which he is listed as the Maintainer. The second will return
@@ -559,13 +559,36 @@ question to any PPA.
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-    >>> for sprelease in sabdfl.getLatestUploadedPPAPackages():
+    >>> sabdfl_spreleases = sabdfl.getLatestUploadedPPAPackages()
+    >>> for sprelease in sabdfl_spreleases:
     ...     print (sprelease.name,
+    ...            sprelease.version,
+    ...            sprelease.creator.name,
+    ...            sprelease.maintainer.name,
     ...            sprelease.upload_archive.owner.name,
-    ...            sprelease.uploaddistroseries.fullseriesname,
-    ...            sprelease.version)
-    (u'iceweasel', u'sabdfl', u'Ubuntu Warty', u'1.0')
-    (u'iceweasel', u'no-priv', u'Ubuntu Warty', u'1.0')
+    ...            sprelease.uploaddistroseries.fullseriesname)
+    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'sabdfl', u'Ubuntu Warty')
+    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
+
+We will change modify the first SourcePackageRelease to reproduce the
+issue mentioned in bug 157303, where source with same creator and
+maintainer got omitted from the results:
+
+    >>> any_spr = sabdfl_spreleases[0]
+    >>> naked_spr = removeSecurityProxy(any_spr)
+    >>> naked_spr.maintainer = sabdfl
+    >>> flush_database_updates()
+
+    >>> sabdfl_spreleases = sabdfl.getLatestUploadedPPAPackages()
+    >>> for sprelease in sabdfl_spreleases:
+    ...     print (sprelease.name,
+    ...            sprelease.version,
+    ...            sprelease.creator.name,
+    ...            sprelease.maintainer.name,
+    ...            sprelease.upload_archive.owner.name,
+    ...            sprelease.uploaddistroseries.fullseriesname)
+    (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
+    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
 
 == Pillars owned or driven by a person or team ==

@@ -95,7 +95,7 @@ class POExportRequestSet:
         try:
             request = POExportRequest.select(limit=1, orderBy='id')[0]
         except IndexError:
-            return None
+            return None, None, None
 
         person = request.person
         format = request.format

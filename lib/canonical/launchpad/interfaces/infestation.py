@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugInfestationStatus',
     'IBugProductInfestationSet',
     'IBugPackageInfestationSet',
     'IBugProductInfestation',
@@ -16,6 +17,64 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Choice, Datetime, Int
 from canonical.launchpad import _
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class BugInfestationStatus(DBEnumeratedType):
+    """Bug Infestation Status.
+
+    Malone is the bug tracking application that is part of Launchpad. It
+    tracks the status of bugs in different distributions as well as
+    upstream. This schema documents the kinds of infestation of a bug
+    in a code release.
+    """
+
+    AFFECTED = DBItem(60, """
+        Affected
+
+        This bug is believed to affect that code release. The
+        `verifiedby` field will indicate whether that has been verified
+        by a package maintainer.
+        """)
+
+    DORMANT = DBItem(50, """
+        Dormant
+
+        The bug exists in the code of this code release, but it is dormant
+        because that codepath is unused in this release.
+        """)
+
+    VICTIMIZED = DBItem(40, """
+        Victimized
+
+        This code release does not actually contain the buggy code, but
+        it is affected by the bug nonetheless because of the way it
+        interacts with the products or packages that are actually buggy.
+        Often users will report a bug against the package which displays
+        the symptoms when the bug itself lies elsewhere.
+        """)
+
+    FIXED = DBItem(30, """
+        Fixed
+
+        It is believed that the bug is actually fixed in this release of code.
+        Setting the "fixed" flag allows us to generate lists of bugs fixed
+        in a release.
+        """)
+
+    UNAFFECTED = DBItem(20, """
+        Unaffected
+
+        It is believed that this bug does not infest this release of code.
+        """)
+
+    UNKNOWN = DBItem(10, """
+        Unknown
+
+        We don't know if this bug infests that code release.
+        """)
+
 
 class IBugProductInfestation(Interface):
     """Represents a report that a bug does or does not affect the source

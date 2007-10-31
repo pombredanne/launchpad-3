@@ -5,6 +5,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import TranslationFileFormat
+
 from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
@@ -118,7 +120,7 @@ class ITranslationImportQueueEntry(Interface):
 
     format = Choice(
         title=_('The file format of the import.'),
-        vocabulary='TranslationFileFormat',
+        vocabulary=TranslationFileFormat,
         required=True, readonly=True)
 
     status = Choice(

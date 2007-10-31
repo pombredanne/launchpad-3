@@ -17,7 +17,7 @@ We'll be going through usual steps of the PO file lifetime:
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
-    ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
+    ...     IProductSet, ITranslationImportQueue)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -277,8 +277,9 @@ published fuzzy is still on).
 
 
 Common next step is having a new package upload which provides us with
-updated translations upstream.  A fuzzy flag is removed from the
-"fourth" message, and both "fifth" and "sixth" are translated.
+updated translations upstream.  The "second" message translation is changed,
+a fuzzy flag is removed from the "fourth" message, and both "fifth" and
+"sixth" are translated.
 
     >>> test_translation_published_update = r'''
     ... msgid ""
@@ -292,7 +293,7 @@ updated translations upstream.  A fuzzy flag is removed from the
     ... msgstr "a"
     ...
     ... msgid "second"
-    ... msgstr "b"
+    ... msgstr "b-updated"
     ...
     ... #, fuzzy
     ... msgid "third"
@@ -326,17 +327,18 @@ preference to translations done inside Launchpad over imported ones.
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz
      1. first              a                       a                       *
-     2. second             b-from-LP               b                       *
+     2. second             b-from-LP               b-updated               *
      3. third              c                  yes  c                  yes  *
      4. fourth             d-from-LP               d                       *
      5. fifth              e-from-LP               e                       *
      6. sixth              f                       f                       *
 
 
-Finally, we do another translator (i.e. not from a package) update,
-where we remove the fuzzy flag from the published translation for
-"third", and revert "fourth" to the published translation.  We also
-update the "fifth" translation with a new translation.
+A new translation for "second" message through Launchpad is added.  We also
+do another translator (i.e. not from a package) update, where we remove the
+fuzzy flag from the published translation for "third", and revert "fourth"
+to the published translation.  Finally, "fifth" translation is updated with
+a new translation.
 
     >>> test_translation_update2 = r'''
     ... msgid ""
@@ -350,9 +352,8 @@ update the "fifth" translation with a new translation.
     ... msgid "first"
     ... msgstr "a"
     ...
-    ... # stays the same as it was (but not published)
     ... msgid "second"
-    ... msgstr "b-from-LP"
+    ... msgstr "b-from-LP-two"
     ...
     ... # same as already published one, removes the fuzzy flag
     ... msgid "third"
@@ -386,7 +387,63 @@ translation.
     >>> print_pofile(firefox_serbian)
     no. msgid              translation        fuz  published          pfuz
      1. first              a                       a                       *
-     2. second             b-from-LP               b                       *
+     2. second             b-from-LP-two           b-updated               *
+     3. third              c                       c                  yes  *
+     4. fourth             d                       d                       *
+     5. fifth              e-from-LP-two           e                       *
+     6. sixth              f                       f                       *
+
+Finally, we make sure that adding another suggestion to the "second" message
+works properly, even if it makes us have two inactive and non-published
+suggestions.
+
+    >>> test_translation_update3 = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: %s\n"
+    ... "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Launchpad-Export-Date: %s\n"
+    ...
+    ... # stays as published
+    ... msgid "first"
+    ... msgstr "a"
+    ...
+    ... msgid "second"
+    ... msgstr "b-from-LP-three"
+    ...
+    ... # same as already published one, removes the fuzzy flag
+    ... msgid "third"
+    ... msgstr "c"
+    ...
+    ... # revert to published translation
+    ... msgid "fourth"
+    ... msgstr "d"
+    ...
+    ... # updates active translation
+    ... msgid "fifth"
+    ... msgstr "e-from-LP-two"
+    ...
+    ... # sixth message is not being updated at all
+    ... msgid "sixth"
+    ... msgstr "f"
+    ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
+
+    >>> entry = import_pofile_or_potemplate(test_translation_update3,
+    ...                                     carlos, firefox_trunk,
+    ...                                     pofile=firefox_serbian,
+    ...                                     published=False)
+    >>> print entry.status.name
+    IMPORTED
+
+Notice that "second" message is indeed updated properly.  We are making sure
+we don't get any problems with too many inactive suggestions for that
+one ("b-from-LP", "b-from-LP-two").
+
+    >>> print_pofile(firefox_serbian)
+    no. msgid              translation        fuz  published          pfuz
+     1. first              a                       a                       *
+     2. second             b-from-LP-three         b-updated               *
      3. third              c                       c                  yes  *
      4. fourth             d                       d                       *
      5. fifth              e-from-LP-two           e                       *

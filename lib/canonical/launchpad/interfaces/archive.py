@@ -56,6 +56,8 @@ class IArchive(IHasOwner):
 
     title = Attribute("Archive Title.")
 
+    series_with_sources = Attribute(
+        "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
@@ -74,14 +76,55 @@ class IArchive(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
-    def getPublishedSources():
+    def getPublishedSources(name=None, version=None, status=None,
+                            distroseries=None, exact_match=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
+
+        :param: name: source name filter (exact match or SQL LIKE controlled
+                      by 'exact_match' argument).
+        :param: version: source version filter (always exact match).
+        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: distroseries: `IDistroSeries` filter.
+        :param: exact_match: either or not filter source names by exact
+                             matching.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getPublishedBinaries():
+    def getPublishedOnDiskBinaries(name=None, version=None, status=None,
+                                   distroarchseries=None, exact_match=False):
+        """Unique `IBinaryPackagePublishingHistory` target to this archive.
+
+        In spite of getAllPublishedBinaries method, this method only returns
+        distinct binary publications inside this Archive, i.e, it excludes
+        architecture-independent publication for other architetures than the
+        nominatedarchindep. In few words it represents the binary files
+        published in the archive disk pool.
+
+        :param: name: binary name filter (exact match or SQL LIKE controlled
+                      by 'exact_match' argument).
+        :param: version: binary version filter (always exact match).
+        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: exact_match: either or not filter source names by exact
+                             matching.
+
+        :return: SelectResults containing `IBinaryPackagePublishingHistory`.
+        """
+
+    def getAllPublishedBinaries(name=None, version=None, status=None,
+                                distroarchseries=None, exact_match=False):
         """All `IBinaryPackagePublishingHistory` target to this archive.
+
+        See getUniquePublishedBinaries for further information.
+
+        :param: name: binary name filter (exact match or SQL LIKE controlled
+                      by 'exact_match' argument).
+        :param: version: binary version filter (always exact match).
+        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: exact_match: either or not filter source names by exact
+                             matching.
 
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
         """
@@ -125,6 +168,9 @@ class IArchiveSet(Interface):
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
+
+    def getPPAByDistributionAndOwnerName(distribution, name):
+        """Return a single PPA the given (distribution, name) pair."""
 
     def getByDistroPurpose(distribution, purpose):
         """Return the IArchive with the given distribution and purpose."""

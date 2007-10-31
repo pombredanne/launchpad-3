@@ -12,9 +12,9 @@ import signal
 import subprocess
 
 from canonical.config import config
-from canonical.launchpad.mailman.monkeypatches import monkey_patch
 from canonical.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
+from canonical.launchpad.mailman import runmailman
 
 
 TWISTD_SCRIPT = None
@@ -114,31 +114,8 @@ class MailmanService(Service):
         # Don't run the server if it wasn't asked for.
         if not self.should_launch:
             return
-
-        # Add the directory containing the Mailman package to our sys.path.
-        # We also need the Mailman bin directory so we can run some of
-        # Mailman's command line scripts.
-        mailman_path = config.mailman.build.prefix
-        mailman_bin  = os.path.join(mailman_path, 'bin')
-
-        # Monkey-patch the installed Mailman 2.1 tree.
-        monkey_patch(mailman_path, config)
-
-        # Start the Mailman master qrunner.  If that succeeds, then set things
-        # up so that it will be stopped when runlaunchpad.py exits.
-        def stop_mailman():
-            # Ignore any errors
-            code = subprocess.call(('./mailmanctl', 'stop'), cwd=mailman_bin)
-            if code:
-                print >> sys.stderr, 'mailmanctl did not stop cleanly:', code
-                # There's no point in calling sys.exit() since we're already
-                # exiting!
-
-        code = subprocess.call(('./mailmanctl', 'start'), cwd=mailman_bin)
-        if code:
-            print >> sys.stderr, 'mailmanctl did not start cleanly'
-            sys.exit(code)
-        atexit.register(stop_mailman)
+        runmailman.start_mailman()
+        atexit.register(runmailman.stop_mailman)
 
 
 def prepare_for_librarian():

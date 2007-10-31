@@ -253,9 +253,9 @@ class QueueAction:
         # We may discuss a more reasonable output format later
         # and avoid extra boring code. The IDRQ.displayname should
         # do should be enough.
-        if queue_item.containsSource:
+        if queue_item.contains_source:
             source_tag = 'S'
-        if queue_item.containsBuild:
+        if queue_item.contains_build:
             build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)

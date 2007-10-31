@@ -43,6 +43,8 @@ from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
     BUG_CONTACT_BUGTASK_STATUSES,
+    BugNominationStatus,
+    BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -64,14 +66,10 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,)
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
-
-from canonical.lp.dbschema import (
-    BugNominationStatus,
-    BugTaskImportance,
-    )
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
