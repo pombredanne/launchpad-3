@@ -1776,12 +1776,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistroseries, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease, archive
                  WHERE %s
-              ORDER BY uploaddistroseries, sourcepackagename, upload_archive,
+              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
               """ % (query_clause)

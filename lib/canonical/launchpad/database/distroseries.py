@@ -828,7 +828,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
         """See IDistroSeries."""
         return SourcePackageRelease(
-            uploaddistroseries=self, sourcepackagename=sourcepackagename,
+            upload_distroseries=self, sourcepackagename=sourcepackagename,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
@@ -1219,7 +1219,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "Source Publishing must be empty")
         for arch in self.architectures:
             assert BinaryPackagePublishingHistory.select("""
-            Distroarchrelease = %s AND
+            DistroArchSeries = %s AND
             Archive IN %s""" % sqlvalues(arch, archives)).count() == 0, (
                 "Binary Publishing must be empty")
             try:

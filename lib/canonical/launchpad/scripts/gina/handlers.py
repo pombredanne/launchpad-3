@@ -573,7 +573,7 @@ class SourcePackageHandler:
             builddependsindep=src.build_depends_indep,
             architecturehintlist=src.architecture,
             format=SourcePackageFormat.DPKG,
-            uploaddistroseries=distroseries.id,
+            upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
