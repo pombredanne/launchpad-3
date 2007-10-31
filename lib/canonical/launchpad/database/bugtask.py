@@ -1562,7 +1562,7 @@ class BugTaskSet:
         This implementation returns the master of the master-slave conjoined
         pairs of bugtasks. Slave conjoined bugtasks are not included in the
         list because they can only be expired by calling the master bugtask's
-        transitionToStatus() method. See Conjoined Bug Tasks in
+        transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
         """
         all_bugtasks = BugTask.select("""
@@ -1613,8 +1613,8 @@ class BugTaskSet:
             # is required to confirm the bug report.
             if bugtask.bug.messages.count() == 1:
                 continue
-            # Do not add product or distribution slaves, since their
-            # attributes are updated by the series master.
+            # Only add bugtasks that are not product or distribution
+            # conjoined slaves.
             if bugtask.conjoined_master is None:
                 bugtasks.append(bugtask)
         return bugtasks

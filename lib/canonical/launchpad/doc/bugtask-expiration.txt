@@ -74,7 +74,7 @@ also provides ubuntu, hoary, jokosher, and thunderbird for our test.
 
 Let's also make some bugs that almost qualify for expiration.
 
-    # An bugtask whose status is not Incomplete is not expirable,
+    # A bugtask whose status is not Incomplete is not expirable,
     # This one's status is New.
     >>> new_bugtask = bugtaskset.createTask(
     ...     bug=ubuntu_bugtask.bug, owner=sample_person,
