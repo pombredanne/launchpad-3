@@ -7,7 +7,6 @@ First, we need some imports.
     >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import POMsgSet, DummyPOMsgSet
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
