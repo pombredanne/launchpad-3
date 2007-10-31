@@ -2,7 +2,7 @@ Specifications and Milestones
 =============================
 
 Let's target a blueprint to the 1.0 milestone of Mozilla. Before we do this,
-the milestone page lists one feature targeted already:
+the milestone page lists one feature targeted already, and no bugs:
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
     >>> tag = find_tag_by_id(admin_browser.contents, 'specification-count')

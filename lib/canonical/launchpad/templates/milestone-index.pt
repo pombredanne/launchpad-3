@@ -150,11 +150,15 @@
 
   </tal:has_bugtasks>
 
-  <tal:has_bugs_or_specs condition="not: view/has_bugs_or_specs">
-   There are no feature specifications or bug tasks targeted to this
-   milestone.  Specifications and bug tasks can be targeted to a
-   milestone in order to keep a handy listing of project objectives.
-  </tal:has_bugs_or_specs>
+  <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">
+    <h2>No blueprints or bugs targeted</h2>
+    <p>
+      You do not have any feature specifications or bug tasks targeted
+      to this milestone. For any given specification or bug task, you
+      can target it to a milestone to keep a handy listing of things you
+      want to get done in that milestone.
+    </p>
+  </tal:neither_bugs_nor_specs>
 
 </div> 
 </body>

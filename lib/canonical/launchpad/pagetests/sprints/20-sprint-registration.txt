@@ -68,9 +68,9 @@ since the date range overlaps that of the sprint.
 
 Now, Sample Person should be listed as an attendee.
 
-    >>> def print_attendees(page):
+    >>> def print_attendees(sprint_page):
     ...     """Print the attendees listed in the attendees portlet."""
-    ...     soup = find_main_content(page)
+    ...     soup = find_main_content(sprint_page)
     ...     attendees_portlet_headers = soup.fetchText('Attendees')
     ...     assert len(attendees_portlet_headers) == 1
     ...     attendees_portlet = attendees_portlet_headers[0].parent.parent

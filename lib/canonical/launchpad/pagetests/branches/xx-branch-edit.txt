@@ -246,3 +246,30 @@ know if it conflicts or not:
     There is 1 error.
     Invalid value
 
+
+== URL validation ==
+
+Edit forms do the same URL validation checks as the add forms.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://bazaar.launchpad.dev/~foo/bar/baz')
+    >>> browser.getControl('Change Branch').click()
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be
+    on launchpad.dev.
+
+Check that when editing a hosted branch the URL field is not shown.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://acme.example.com/~foo/bar/baz')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Branch URL'
+
