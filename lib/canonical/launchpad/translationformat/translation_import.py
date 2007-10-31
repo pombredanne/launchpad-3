@@ -354,6 +354,7 @@ class TranslationImporter:
                     self.pofile,
                     is_imported=translation_import_queue_entry.is_published)
         errors = []
+        use_pofile = None
         for message in translation_file.messages:
             if not message.msgid_singular:
                 # The message has no msgid, we ignore it and jump to next
