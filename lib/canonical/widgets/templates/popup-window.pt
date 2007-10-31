@@ -55,7 +55,8 @@
                     tal:attributes="value request/field" />
             </form>
 
-            <table tal:condition="view/hasMoreThanOnePage">
+            <tal:has-search condition="request/search|nothing">
+              <table tal:condition="view/hasMoreThanOnePage">
                 <tr>
                     <th>
                         <a tal:attributes="href batchnav/prevBatchURL">&larr;</a>
@@ -72,8 +73,7 @@
                         <a tal:attributes="href batchnav/nextBatchURL">&rarr;</a>
                     </th>
                 </tr>
-            </table>
-            <tal:has-search condition="request/search|nothing">
+              </table>
               <dl>
                   <tal:x repeat="item batchnav/currentBatch">
                       <dt><img src="/@@/bullet" alt="" border="" />
