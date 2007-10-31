@@ -1559,7 +1559,7 @@ class BugTaskSet:
                     ON distribution = Distribution.id
                     AND Distribution.official_malone IS TRUE
                 LEFT OUTER JOIN DistroSeries
-                    ON distroseries = Distrorelease.id
+                    ON distroseries = DistroSeries.id
                     AND DistroSeries.distribution IN (
                         SELECT id FROM Distribution
                         WHERE official_malone IS TRUE)
