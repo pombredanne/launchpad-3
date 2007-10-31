@@ -501,10 +501,6 @@ class DeprecatedAssignedBugsView:
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
 
-    def person_text(self, person):
-        """Return a Person for text display."""
-        return '%s (%s)' % (person.displayname, person.name)
-
     def bug_text(self, bug):
         """Return the bug information for text display."""
         text = []
@@ -513,7 +509,7 @@ class BugTextView(LaunchpadView):
         text.append('date: %s' % format_rfc2822_date(bug.datecreated))
         text.append('last-updated: %s' %
             format_rfc2822_date(bug.date_last_updated))
-        text.append('reporter: %s' % self.person_text(bug.owner))
+        text.append('reporter: %s' % bug.owner.unique_displayname)
 
         if bug.duplicateof:
             text.append('duplicate-of: %d' % bug.duplicateof.id)
@@ -541,7 +537,7 @@ class BugTextView(LaunchpadView):
 
         text.append('subscribers: ')
         for subscription in bug.subscriptions:
-            text.append(' %s' % self.person_text(subscription.person))
+            text.append(' %s' % subscription.person.unique_displayname)
 
         return ''.join(line + '\n' for line in text)
 
@@ -558,7 +554,7 @@ class BugTextView(LaunchpadView):
             if date:
                 text.append("date-%s: %s" % (status, date))
 
-        text.append('reporter: %s' % self.person_text(task.owner))
+        text.append('reporter: %s' % task.owner.unique_displayname)
 
         if task.bugwatch:
             text.append('watch: %s' % task.bugwatch.url)
@@ -570,7 +566,7 @@ class BugTextView(LaunchpadView):
             text.append('component: %s' % component.name)
 
         if task.assignee:
-            text.append('assignee: %s' % self.person_text(task.assignee))
+            text.append('assignee: %s' % task.assignee.unique_displayname)
         else:
             text.append('assignee: ')
 
@@ -613,7 +609,7 @@ class BugTextView(LaunchpadView):
 
         for comment in comments:
             message = build_message(comment.text_for_display)
-            message['Author'] = comment.owner.name
+            message['Author'] = comment.owner.unique_displayname
             message['Date'] = format_rfc2822_date(comment.datecreated)
             message['Message-Id'] = comment.rfc822msgid
             comment_mime.attach(message)

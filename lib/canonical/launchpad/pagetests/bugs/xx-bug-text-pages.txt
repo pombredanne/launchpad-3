@@ -4,7 +4,6 @@
 
 Add some attachments to bug 1:
 
-  >>> import transaction
   >>> import StringIO
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests.ppa import publishToPPA
@@ -12,6 +11,7 @@ Add some attachments to bug 1:
   >>> from canonical.launchpad.database import Bug, Person
   >>> login("foo.bar@canonical.com")
   >>> mark = Person.selectOneBy(name="sabdfl")
+  >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
   >>> bug = Bug.get(1)
   >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
   >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
@@ -65,7 +65,7 @@ Get text page for a single bug.
   date-closed: ...
   reporter: Sample Person (name12)
   importance: Low
-  assignee: Mark Shuttleworth (sabdfl)
+  assignee: M...rk Sh...ttlew...rth (sabdfl)
   milestone: 
   <BLANKLINE>
   task: mozilla-firefox (Ubuntu)
@@ -103,7 +103,7 @@ Get text page for a single bug.
   --...
   Content-Type: text/plain; charset="utf-8"
   Content-Transfer-Encoding: quoted-printable
-  Author: sabdfl
+  Author: =?utf-8?b?TcOhcmsgU2jDunR0bGV3w7JydGggKHNhYmRmbCk=?=
   Date: ...
   Message-Id: ...
   <BLANKLINE>
