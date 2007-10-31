@@ -551,6 +551,13 @@ class BugTextView(LaunchpadView):
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
         text.append('date: %s' % format_rfc2822_date(task.datecreated))
+
+        for status in ["confirmed", "assigned", "inprogress",
+                       "closed", "incomplete"]:
+            date = getattr(task, "date_%s" % status)
+            if date:
+                text.append("date-%s: %s" % (status, date))
+
         text.append('reporter: %s' % self.person_text(task.owner))
 
         if task.bugwatch:

@@ -1,5 +1,7 @@
 = Bug Text pages =
 
+== Data setup ==
+
 Add some attachments to bug 1:
 
   >>> import transaction
@@ -17,8 +19,19 @@ Add some attachments to bug 1:
   >>> content = StringIO.StringIO("do we need to")
   >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
   ...   "file with space.txt", content_type="text/plain")
+
+And cycle through all statuses so the dates are present:
+
+  >>> from canonical.launchpad.interfaces import BugTaskStatus
+  >>> t0 = bug.bugtasks[0]
+  >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
+  >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
+  >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
+  >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
   >>> logout()
-  >>> transaction.commit()
+  >>> flush_database_updates()
+
+== The Text Page ==
 
 Get text page for a single bug.
 
@@ -32,7 +45,7 @@ Get text page for a single bug.
   bug: 1
   title: Firefox does not support SVG
   date: Thu, 01 Jan 2004 20:58:04 -0000
-  last-updated: Fri, 19 May 2006 06:37:40 -0000
+  last-updated: ...
   reporter: Sample Person (name12)
   duplicate-of: 
   duplicates: 
@@ -44,8 +57,12 @@ Get text page for a single bug.
    Sample Person (name12)
   <BLANKLINE>
   task: firefox
-  status: New
+  status: Fix Released
   date: Fri, 02 Jan 2004 03:49:22 -0000
+  date-confirmed: ...
+  date-assigned: 2005-01-02 11:07:20.330975+00:00
+  date-inprogress: ...
+  date-closed: ...
   reporter: Sample Person (name12)
   importance: Low
   assignee: Mark Shuttleworth (sabdfl)
@@ -54,6 +71,7 @@ Get text page for a single bug.
   task: mozilla-firefox (Ubuntu)
   status: New
   date: Sat, 17 Jan 2004 01:15:48 -0000
+  date-assigned: 2005-01-17 01:15:48.241836+00:00
   reporter: Foo Bar (name16)
   importance: Medium
   component: main
@@ -63,6 +81,7 @@ Get text page for a single bug.
   task: mozilla-firefox (Debian)
   status: Confirmed
   date: Sun, 04 Jan 2004 03:49:22 -0000
+  date-assigned: 2005-01-04 11:07:20.584746+00:00
   reporter: Sample Person (name12)
   watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
   importance: Low
