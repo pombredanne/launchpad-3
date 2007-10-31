@@ -303,7 +303,7 @@ URL validation should check that the entered URL is not from Launchpad.
     ...     'http://code.launchpad.dev/~testuser/')
     >>> user_browser.getControl('Name').value = 'unique-name'
     >>> user_browser.getControl('Add Branch').click()
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be on
