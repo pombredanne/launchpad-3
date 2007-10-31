@@ -85,8 +85,7 @@ markup. Search engine robots and browsers will use the lang and dir
 attributes for indexing and rendering respectively. Users will find
 the language in the question details portlet.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.html['lang']
     pt-BR
     >>> print soup.html['dir']
@@ -156,6 +155,6 @@ new question.
     '.../ubuntu/+question/...'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.find('b', text='Language:').next.strip()
     Japanese

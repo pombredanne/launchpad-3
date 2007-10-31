@@ -13,8 +13,7 @@ the 'Related Bugs' portlet.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
     <a href=".../bugs/1">#1:
@@ -47,7 +46,7 @@ button.
 A notification message is displayed telling the user about the added
 link.
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Added link to bug #4:
     ...Reflow problems with complex page layouts...</div>
@@ -68,6 +67,6 @@ and click the 'Remove' button.
 
 A confirmation is displayed to the user.
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #4.</div>

@@ -13,8 +13,7 @@ password page.
     ...     'test@canonical.com')
     >>> browser.getControl('Register').click()
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'error message'):
     ...     print tag.renderContents()
     Sorry, someone with the address test@canonical.com already has a
@@ -55,7 +54,7 @@ on with the registration process.
     >>> browser.url
     'http://launchpad.dev'
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('div', 'informational message'):
     ...     print tag.renderContents()
     Registration completed successfully
@@ -103,7 +102,7 @@ this.
 
     >>> anon_browser.url
     'http://launchpad.dev'
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> for tag in soup('div', 'informational message'):
     ...     print tag.renderContents()
     Registration completed successfully

@@ -17,8 +17,7 @@ they want to subscribe by clicking on the 'Subscribe' button.
     >>> print user_browser.title
     Subscription to question #2
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('h1')
     <h1>Subscribe to question</h1>
     >>> user_browser.getControl('Subscribe').click()
@@ -26,7 +25,7 @@ they want to subscribe by clicking on the 'Subscribe' button.
 A message confirming that he was subscribed is displayed and the user
 name appears in the 'Subscribers' portlet:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
     You have subscribed to this question.
 
@@ -52,7 +51,7 @@ link and then click on the 'Unsubscribe' button.
     '.../+question/2/+subscribe'
     >>> link.click()
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('h1')
     <h1>Unsubscribe from question</h1>
     >>> user_browser.getControl('Unsubscribe').click()
@@ -60,7 +59,7 @@ link and then click on the 'Unsubscribe' button.
 A confirmation is displayed and the user, which was unsubscribed from
 the question, doesn't appear anymore in the subscribers portlet:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
     You have unsubscribed from this question.
 
@@ -91,7 +90,7 @@ A notification message is displayed notifying of the subscription:
     Thanks for your information request.
     You have subscribed to this question.
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> for subscriber_link in portlet.findAll('a'):
     ...     print subscriber_link.renderContents()

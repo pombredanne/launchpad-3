@@ -32,8 +32,7 @@ button.
 When the user makes a mistake and uses an invalid bug number, an error
 message is displayed:
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'message')
     <div class="message">Not a valid bug number or nickname.</div>
 
@@ -56,7 +55,7 @@ portlet:
 
     >>> user_browser.getControl('Bug ID').value = '1'
     >>> user_browser.getControl('Link').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
       <a href=".../bugs/1">#1: Firefox does not support SVG</a>
@@ -87,7 +86,7 @@ message is displayed:
 
     >>> user_browser.url
     '.../firefox/+question/2'
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #...</div>
     >>> soup.first('div', {'id': 'portlet-related-bugs'}) is None
@@ -132,7 +131,7 @@ able to link to that bug.
     >>> admin_browser.getLink('Link existing bug').click()
     >>> admin_browser.getControl('Bug ID').value = '6'
     >>> admin_browser.getControl('Link').click()
-    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> soup = find_main_content(admin_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
       <a href=".../bugs/6">#6: Firefox crashes when Save As dialog
@@ -144,7 +143,7 @@ will only see that a private bug is linked.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
       <a href=".../bugs/6">#6: private bug</a>
@@ -154,7 +153,7 @@ Only the administrator will be able to unlink the bug.
 
     >>> browser.open('http://launchpad.dev/firefox/+question/2')
     >>> browser.getLink('Remove bug link').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup.first('p', 'informational message')
     <p class="informational message">
       There are no links that you are allowed to remove.

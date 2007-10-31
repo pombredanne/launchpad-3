@@ -6,8 +6,7 @@ We should be able to see the workload of a sprint:
 
 We should be able to see the spec assignment table of a sprint:
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> [soup] = BeautifulSoup(anon_browser.contents)('div', id='mainarea')
+  >>> [soup] = find_main_content(anon_browser.contents)('div', id='mainarea')
   >>> [tag.string for tag in soup('tr')[0]('th')]
   [u'Priority', u'Name', u'Definition', u'Delivery', u'Assignee', u'Drafter',
    u'Approver']

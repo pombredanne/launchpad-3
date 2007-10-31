@@ -25,7 +25,7 @@ Branch URLs are not valid for hosted branches.
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/hosted-branch')
     >>> browser.getControl('Add Branch').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Branch URLs cannot be set for Hosted branches.
@@ -59,7 +59,7 @@ mirrors the branch.
 Branch URLs are required for mirrored branches.
 
     >>> browser.getControl('Add Branch').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Branch URLs are required for Mirrored branches.
@@ -244,8 +244,7 @@ That should give us the form back with an error message.
 
     >>> browser.url
     'http://launchpad.dev/gnome-terminal/+addbranch'
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup('div', {'class': 'message'})[0].renderContents()
     Name already in use. ...
 
@@ -263,7 +262,7 @@ same error message.
     >>> browser.getControl('Add Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+addbranch'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup('div', {'class': 'message'})[0].renderContents()
     Name already in use. ...
 
@@ -276,7 +275,7 @@ know if it conflicts or not:
     >>> browser.getControl('Add Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+addbranch'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup('div', {'class': 'message'})[0].renderContents()
     Invalid value
 

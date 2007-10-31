@@ -79,7 +79,6 @@ language is accepted.
     '.../ubuntu/+question/5'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.find('b', text='Language:').next.strip()
     Japanese
