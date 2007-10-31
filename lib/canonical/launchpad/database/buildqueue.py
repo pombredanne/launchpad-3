@@ -96,7 +96,7 @@ class BuildQueue(SQLBase):
         """See IBuildQueue"""
         # Grab any logger instance available.
         logger = logging.getLogger()
-    
+
         if self.manual:
             logger.debug(
                 "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))

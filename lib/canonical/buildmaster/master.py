@@ -234,7 +234,7 @@ class BuilddMaster:
             # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
             # should be modeled as DistroArchSeries.ppa_supported.
             if pubrec.archive.purpose == ArchivePurpose.PPA:
-                ppa_archtags = ('i386', 'amd64')
+                ppa_archtags = ('i386', 'amd64', 'lpia')
                 local_archs = [
                     distro_arch_series for distro_arch_series in legal_archs
                     if distro_arch_series.architecturetag in ppa_archtags]
@@ -533,7 +533,7 @@ class BuilddMaster:
                 is_trusted=build_candidate.is_trusted)
             if not builder:
                 #self._logger.debug('No Builder Available')
-                continue
+                break
             # either dispatch or mark obsolete builds (sources superseded
             # or removed) as SUPERSEDED.
             spr = build_candidate.build.sourcepackagerelease
