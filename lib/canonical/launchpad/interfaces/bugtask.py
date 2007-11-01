@@ -460,6 +460,13 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         old_task and this task.
         """
 
+    def getPackageComponent():
+        """Return the task's package's component or None.
+
+        Returns the component associated to the latest package published
+        in that distribution. If the task is not a package task, returns
+        None.
+        """
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.

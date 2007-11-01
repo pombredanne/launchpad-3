@@ -777,6 +777,21 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
+    def getPackageComponent(self):
+        """See `IBugTask`."""
+        component = None
+        if ISourcePackage.providedBy(self.target):
+            component = self.target.latest_published_component
+        if IDistributionSourcePackage.providedBy(self.target):
+            # Pull the component from the package published in the
+            # latest distribution series. 
+            packages = self.target.get_distroseries_packages()
+            if packages:
+                component = packages[0].latest_published_component
+        if component:
+            return component
+        return None
+
     def asEmailHeaderValue(self):
         """See `IBugTask`."""
         # Calculate an appropriate display value for the assignee.
@@ -804,17 +819,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Calculate an appropriate display value for the component, if the
         # target looks like some kind of source package.
-        component = 'None'
-        currentrelease = None
-        if ISourcePackage.providedBy(self.target):
-            currentrelease = self.target.currentrelease
-        if IDistributionSourcePackage.providedBy(self.target):
-            if self.target.currentrelease:
-                target = self.target
-                currentrelease = target.currentrelease.sourcepackagerelease
-
-        if currentrelease:
-            component = currentrelease.component.name
+        component = self.getPackageComponent()
+        if component is None:
+            component_name = 'None'
+        else:
+            component_name = component.name
 
         if IUpstreamBugTask.providedBy(self):
             header_value = 'product=%s;' %  self.target.name
@@ -828,7 +837,7 @@ class BugTask(SQLBase, BugTaskMixin):
                 'component=%(componentname)s;') %
                 {'distroname': self.distribution.name,
                  'sourcepackagename': sourcepackagename_value,
-                 'componentname': component})
+                 'componentname': component_name})
         elif IDistroSeriesBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
@@ -838,7 +847,7 @@ class BugTask(SQLBase, BugTaskMixin):
                 {'distroname': self.distroseries.distribution.name,
                  'distroseriesname': self.distroseries.name,
                  'sourcepackagename': sourcepackagename_value,
-                 'componentname': component})
+                 'componentname': component_name})
         else:
             raise AssertionError('Unknown BugTask context: %r.' % self)
 
