@@ -9,17 +9,29 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
+from canonical.launchpad.interfaces import IBranchSet, IProductSet
 from canonical.launchpad.vocabularies.dbobjects import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestBranchVocabulary(TestCase):
-    """Test that the BranchVocabulary behavies as expected."""
-    layer = LaunchpadZopelessLayer
+class BranchVocabTestCase(TestCase):
+    """A base class for the branch vocabulary test cases."""
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        login(ANONYMOUS)
+
+    def tearDown(self):
+        logout()
+
+
+class TestBranchVocabulary(BranchVocabTestCase):
+    """Test that the BranchVocabulary behavies as expected."""
+
+    def setUp(self):
+        BranchVocabTestCase.setUp(self)
         self.vocab = BranchVocabulary(context=None)
 
     def test_emptySearch(self):
@@ -72,15 +84,48 @@ class TestBranchVocabulary(TestCase):
             self.assertTrue('b' in mash_up, "%r doesn't have a b" % mash_up)
 
 
-class TestRestrictedBranchVocabularyOnProduct(TestCase):
-    """Test that the BranchVocabulary behavies as expected."""
-    layer = LaunchpadZopelessLayer
+class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
+    """Test the BranchRestrictedOnProductVocabulary behaves as expected."""
 
     def setUp(self):
+        BranchVocabTestCase.setUp(self)
         self.product = getUtility(IProductSet).getByName('gnome-terminal')
         self.vocab = BranchRestrictedOnProductVocabulary(context=self.product)
 
     def test_correctCount(self):
+        results = self.vocab.search('')
+        self.assertEqual(10, results.count())
+
+    def test_mainBranches(self):
+        results = self.vocab.search('main')
+        expected = [
+            u'~name12/gnome-terminal/main',
+            ]
+        branch_names = sorted([branch.unique_name for branch in results])
+        self.assertEqual(expected, branch_names)
+
+    def test_orBranches(self):
+        results = self.vocab.search('or')
+
+        built_strings = ['%s %s' % (branch.unique_name, branch.url)
+                         for branch in results]
+
+        for mash_up in built_strings:
+            self.assertTrue('or' in mash_up, "%r doesn't have 'or'" % mash_up)
+
+
+class TestRestrictedBranchVocabularyOnBranch(BranchVocabTestCase):
+    """Test the BranchRestrictedOnProductVocabulary behaves as expected."""
+
+    def setUp(self):
+        BranchVocabTestCase.setUp(self)
+        self.branch = getUtility(IBranchSet).getByUniqueName(
+            '~name12/gnome-terminal/main')
+        self.vocab = BranchRestrictedOnProductVocabulary(context=self.branch)
+
+    def test_correctCount(self):
+        # Make sure that branch count is correct given that two gnome-terminal
+        # branches are private.
         results = self.vocab.search('')
         self.assertEqual(10, results.count())
 

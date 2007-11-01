@@ -81,10 +81,10 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, EmailAddressStatus, IBugTask, IDistribution,
+    DistroSeriesStatus, EmailAddressStatus, IBranch, IBugTask, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
-    ILaunchBag, IMailingList, IMailingListSet, IMilestoneSet, IPerson,
+    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
     IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
     ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
     MailingListStatus)
@@ -155,9 +155,14 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+        """The display should include the URL if there is one."""
+        text = obj.displayname
+        if obj.url is not None:
+            text = "%s<br/>(%s)" % (text, obj.url)
+        return SimpleTerm(obj, obj.unique_name, text)
 
     def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
         branch_set = BranchSet()
         branch = branch_set.getByUniqueName(token)
         # fall back to interpreting the token as a branch URL
@@ -169,71 +174,85 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         return self.toTerm(branch)
 
     def __len__(self):
+        """See `IVocabulary`."""
         return self.search('').count()
 
     def _branchAttributeQuery(self, quoted_query):
-        """ """
-        if len(quoted_query) == 0:
-            return None
-        else:
-            return """
-                SELECT id FROM Branch
-                WHERE
-                   Branch.name LIKE '%%' || %s || '%%'
-                OR Branch.url LIKE '%%' || %s || '%%'
-                """ % (quoted_query, quoted_query)
+        """Return a query that will identify branches that match.
+
+        Checks for matches by branch name or URL.
+
+        See `_generalQuery` for more details.
+        """
+        return """
+            SELECT id FROM Branch
+            WHERE
+               Branch.name LIKE '%%' || %s || '%%'
+            OR Branch.url LIKE '%%' || %s || '%%'
+            """ % (quoted_query, quoted_query)
 
     def _registrantNameQuery(self, quoted_query):
-        """ """
-        if len(quoted_query) == 0:
-            return None
-        else:
-            return """
-                SELECT Branch.id FROM Branch, Person
-                WHERE
-                    Branch.owner = Person.id
-                AND Person.name LIKE '%%' || %s || '%%'
-                """ % quoted_query
+        """Return a query that will identify branches that match.
+
+        Checks for matches by the name of the branch owner (registrant).
+
+        See `_generalQuery` for more details.
+        """
+        return """
+            SELECT Branch.id FROM Branch, Person
+            WHERE
+                Branch.owner = Person.id
+            AND Person.name LIKE '%%' || %s || '%%'
+            """ % quoted_query
 
     def _productNameQuery(self, quoted_query):
-        """ """
-        if len(quoted_query) == 0:
-            return None
-        else:
-            return """
-                SELECT Branch.id from Branch, Product
-                WHERE
-                    Branch.product = Product.id
-                AND Product.name LIKE '%%' || %s || '%%'
-                """ % quoted_query
+        """Return a query that will identify branches that match.
+
+        Checks for matches by the name of the product that the branch is for.
+
+        See `_generalQuery` for more details.
+        """
+        return """
+            SELECT Branch.id from Branch, Product
+            WHERE
+                Branch.product = Product.id
+            AND Product.name LIKE '%%' || %s || '%%'
+            """ % quoted_query
 
     def _generalQuery(self, quoted_query,
                       check_product=True, check_registrant=True):
+        """Return the naive branch where clause for the given query.
+
+        If the user has not specified any query, then there is nothing to
+        restrict the search on, so the result is an empty string.
+
+        When a non-empty string is passed in a sequence of queries are built
+        up depending on whether check_product or check_registrant are set to
+        true.  These queries are joined using the SQL union clause to restrict
+        the branches in the resulting select.
+        """
+        if len(quoted_query) == 0:
+            return ''
+        # Generate the query for the branch attributes, and optionally the
+        # product name and registrant name.
         args = [self._branchAttributeQuery(quoted_query)]
         if check_product:
             args.append(self._productNameQuery(quoted_query))
         if check_registrant:
             args.append(self._registrantNameQuery(quoted_query))
-        real_args = [arg for arg in args if arg is not None]
-        id_query = '\n\nUNION\n\n'.join(real_args)
-        if len(id_query) > 0:
-            sql = 'Branch.id in (%s)' % id_query
-        else:
-            sql = ''
-        return sql
+        id_query = '\n\nUNION\n\n'.join(args)
+        return 'Branch.id in (%s)' % id_query
 
     def search(self, query):
-        """Return terms where query is a subtring of the name or URL."""
-        launch_bag = getUtility(ILaunchBag)
-        branch_set = BranchSet()
-        logged_in_user = launch_bag.user
+        """Return the branches that match.
 
-        sql_query = self._search(quote_like(query))
-
-        sql_query = branch_set._generateBranchClause(
-            sql_query, visible_by_user=logged_in_user)
-        return Branch.select(
-            sql_query, orderBy=self._orderBy)
+        Only branches that the logged in user is able to see are actually
+        returned.
+        """
+        sql_query = BranchSet()._generateBranchClause(
+            self._search(quote_like(query)),
+            visible_by_user=getUtility(ILaunchBag).user)
+        return Branch.select(sql_query, orderBy=self._orderBy)
 
 
 class BranchVocabulary(BranchVocabularyBase):
@@ -244,6 +263,7 @@ class BranchVocabulary(BranchVocabularyBase):
     value.
     """
     def _search(self, quoted_query):
+        """Return the naive branch where clause based on the query."""
         return self._generalQuery(quoted_query)
 
 
@@ -255,12 +275,14 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
     """
 
     def _restrictToProduct(self, product):
+        """Return the where clause to restrict to the product."""
         if product is None:
             return 'Branch.product is NULL'
         else:
             return 'Branch.product = %s' % quote(product)
 
     def _search(self, quoted_query):
+        """Return the naive branch where clause based on the query."""
         if IProduct.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context)
         elif IBranch.providedBy(self.context):
