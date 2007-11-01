@@ -4,8 +4,9 @@ The PO parser handles GNU gettext format human readable files.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ITranslationMessage, ITranslationHeader)
-    >>> from canonical.launchpad.translationformat import TranslationMessage
+    ...     ITranslationMessageData, ITranslationHeaderData)
+    >>> from canonical.launchpad.translationformat import (
+    ...     TranslationMessageData)
     >>> from canonical.launchpad.translationformat.gettext_po_parser import (
     ...     POHeader, POParser)
 
@@ -67,14 +68,14 @@ A POHeader is the first entry in a .po file, and it is treated specially
 because its translation contains metadata about the .po file.  The msgid of
 this special entry is the empty string ("").
 
-It must implement ITranslationHeader.
+It must implement ITranslationHeaderData.
 
     >>> content = """
     ...     msgid ""
     ...     msgstr ""
     ...     "Content-Type: text/plain; charset=ASCII\n"
     ...     """
-    >>> verifyObject(ITranslationHeader, POHeader(content))
+    >>> verifyObject(ITranslationHeaderData, POHeader(content))
     True
 
 Creating a new POHeader with broken plural forms still gives us a valid

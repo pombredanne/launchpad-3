@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <div class="portlet" id="portlet-details"
      tal:condition="context/is_valid_person">
   <h2 tal:content="context/browsername" />
@@ -70,3 +75,4 @@
   </div>
 
 </div>
+</tal:root>

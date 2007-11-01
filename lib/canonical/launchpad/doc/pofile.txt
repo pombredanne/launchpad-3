@@ -82,7 +82,7 @@ This is the new header we are going to apply.
     ... Content-Transfer-Encoding: 8bit
     ... Report-Msgid-Bugs-To: serrador@hispalinux.es'''
 
-We can get an ITranslationHeader from the file format importer.
+We can get an ITranslationHeaderData from the file format importer.
 
     >>> from canonical.launchpad.interfaces import ITranslationImporter
     >>> translation_importer = getUtility(ITranslationImporter)
