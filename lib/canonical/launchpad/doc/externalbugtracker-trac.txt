@@ -11,10 +11,13 @@ bug watches on Trac bug trackers is externalbugtracker.Trac, which implements
 IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Trac
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> verifyObject(IExternalBugtracker, Trac('http://trac.foo.com'))
+    >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
+    >>> verifyObject(IExternalBugtracker, trac)
     True
 
 
