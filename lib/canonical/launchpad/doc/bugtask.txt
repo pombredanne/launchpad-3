@@ -748,7 +748,9 @@ entitled _Privacy and Team Awareness_):
 
     >>> old_state = Snapshot(
     ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
-    >>> bug_upstream_firefox_no_svg_support.bug.private = True
+    >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])

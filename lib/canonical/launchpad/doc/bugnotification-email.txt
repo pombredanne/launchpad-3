@@ -164,7 +164,8 @@ logins to a user that is explicitly subscribed to this bug):
 
     >>> login("steve.alexander@ubuntulinux.com")
 
-    >>> edited_bug.private = True
+    >>> edited_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> edited_bug.security_related = True
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -183,7 +184,8 @@ logins to a user that is explicitly subscribed to this bug):
 Now we set the bug public, and not security-related and check if the
 e-mail sent changed as well.
 
-    >>> edited_bug.private = False
+    >>> edited_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> edited_bug.security_related = False
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,

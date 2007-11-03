@@ -26,7 +26,8 @@ import operator
 
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
@@ -41,15 +42,18 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
+from canonical.launchpad.event import (
+    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
-    LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
+    LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
@@ -476,6 +480,29 @@ class BugSecrecyEditView(BugEditViewBase):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
+        # We will modify data later, so take a copy now.
+        data = dict(data)
+
+        # We handle privacy changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.setPrivate() to
+        # ensure auditing information is recorded.
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        private = data.pop('private')
+        notify(SQLObjectToBeModifiedEvent(bug, dict(private=private)))
+        private_changed = bug.setPrivate(
+            private, getUtility(ILaunchBag).user)
+        if private_changed:
+            # Although the call to updateBugFromData later on will
+            # send notification of changes, it will only do so if it
+            # makes the change. We have applied the 'private' change
+            # already, so updateBugFromData will only send an event if
+            # 'security_related' is changed, and we can't have that.
+            notify(SQLObjectModifiedEvent(
+                    bug, bug_before_modification, ['private']))
+
+        # Apply other changes.
         self.updateBugFromData(data)
 
 
