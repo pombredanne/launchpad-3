@@ -4,30 +4,28 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-builds">
+<div class="portlet" id="portlet-builds" tal:condition="context/builds">
 
-  <h2>Builds of <span tal:replace="context/title">apache2 2.0.54 (source) in
-  Ubuntu</span></h2>
+  <h2>Builds</h2>
 
   <div class="portletBody portletContent">
 
-    <ul tal:condition="context/builds">
-    <li tal:repeat="build context/builds">
-      <a tal:attributes="href build/fmt:url">
-        <span tal:replace="build/distroarchseries/distroseries/name">
-          hoary
+    <ul>
+      <li tal:repeat="build context/builds">
+        <a tal:attributes="href build/fmt:url">
+          <span tal:replace="build/distroarchseries/distroseries/name">
+            hoary
+          </span>
+          <span tal:content="build/distroarchseries/architecturetag">i386</span>
+        </a>
+        <span tal:replace="build/buildstate/title">Failure</span>
+        <span tal:condition="build/package_upload">
+          (<span tal:replace="build/package_upload/status/name">NEW</span>)
         </span>
-        <span tal:content="build/distroarchseries/architecturetag">i386</span>
-      </a>
-      <span tal:replace="build/buildstate/title">Failure</span>
-      <span tal:condition="build/package_upload">
-        (<span tal:replace="build/package_upload/status/name">NEW</span>)
-      </span>
-    </li>
+      </li>
     </ul>
-    <p tal:condition="not:context/builds">
-      <i>No builds recorded.</i>
-    </p>
+
   </div>
+
 </div>
 </tal:root>
