@@ -258,10 +258,13 @@ class TestPullerMaster(TrialTestCase):
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
 
-    def makeFailure(self, exception_factory):
-        """Make a Failure object from the given exception factory."""
+    def makeFailure(self, exception_factory, *args, **kwargs):
+        """Make a Failure object from the given exception factory.
+
+        Any other arguments are passed straight on to the factory.
+        """
         try:
-            raise exception_factory()
+            raise exception_factory(*args, **kwargs)
         except:
             return failure.Failure()
 
@@ -289,11 +292,12 @@ class TestPullerMaster(TrialTestCase):
         error.
         """
         now = datetime.now(pytz.timezone('UTC'))
-        fail = self.makeFailure(RuntimeError)
+        fail = self.makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail, now)
         oops = self.getLastOOPS(now)
         self.assertEqual(fail.getTraceback(), oops.tb_text)
-        self.assertEqual('exceptions.RuntimeError', oops.value)
+        self.assertEqual('error message', oops.value)
+        self.assertEqual('RuntimeError', oops.type)
         self.assertEqual(
             get_canonical_url_for_branch_name(
                 self.eventHandler.unique_name), oops.url)

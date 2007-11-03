@@ -252,7 +252,7 @@ class PullerMaster:
             ('error-explanation', failure.getErrorMessage())])
         request.URL = get_canonical_url_for_branch_name(self.unique_name)
         errorlog.globalErrorUtility.raising(
-            (failure.value, failure.type, failure.getTraceback()), request,
+            (failure.type, failure.value, failure.getTraceback()), request,
             now)
         self.logger.info('Recorded %s', request.oopsid)
 
