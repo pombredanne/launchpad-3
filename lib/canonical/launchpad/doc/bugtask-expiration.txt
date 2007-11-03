@@ -1,12 +1,13 @@
 = Bugtask Expiration =
 
-Old unattended Incomplete bugtasks clutter Malone's search results,
-making the bug staff's job difficult. A script is run daily to
-locate unattended Incomplete bugtasks that have not been updated in
-2 months, and sets their status to Invalid. Only bugtasks for projects
-that use Launchpad to track bugs and have enable_bug_expiration set to
-True will be expired; this rule does not apply to Bugs imported from
-upstream bug trackers. The preconditions are:
+Old unattended Incomplete bugtasks clutter the search results of
+Launchpad Bugs making the bug staff's job difficult. A script is run
+daily to locate unattended Incomplete bugtasks that have not been
+updated in 2 months, and sets their status to Invalid. Only bugtasks
+for projects that use Launchpad to track bugs and have
+enable_bug_expiration set to True will be expired; this rule does not
+apply to Bugs imported from upstream bug trackers. The preconditions
+are:
 
 1. The bugtask belongs to a project with enable_bug_expiration is True.
 2. The bugtask has the status Incomplete.
@@ -95,7 +96,7 @@ Let's also make some bugs that almost qualify for expiration.
     >>> duplicate_bugtask = create_old_bug('duplicate', 61, ubuntu)
     >>> duplicate_bugtask.bug.duplicateof = confirmed_bugtask.bug
 
-    # A bugtask that is not expirable because it does not use Malone.
+    # A bugtask that is not expirable because it does not use Launchpad Bugs.
     >>> external_bugtask = create_old_bug('external', 61, thunderbird)
     >>> thunderbird.official_malone
     False
@@ -248,7 +249,7 @@ config.malone.expiration_dbuser.
     >>> print err
     INFO    creating lockfile
     INFO    Expiring unattended, INCOMPLETE bugtasks older than
-            60 days for projects that use Malone.
+            60 days for projects that use Launchpad Bugs.
     INFO    Found 2 bugtasks to expire.
     INFO    Expired 2 bugtasks.
     INFO    Finished expiration run.
