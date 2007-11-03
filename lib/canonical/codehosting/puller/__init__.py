@@ -53,10 +53,9 @@ def mirror(logger, manager):
 
     date_started = datetime.datetime.now(UTC)
 
-    def recordSuccess(passed_through):
+    def recordSuccess(ignored):
         date_completed = datetime.datetime.now(UTC)
-        manager.recordActivity(date_started, date_completed)
-        return passed_through
+        return manager.recordActivity(date_started, date_completed)
 
     def unlock(passed_through):
         manager.unlock()

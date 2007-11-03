@@ -1,0 +1,120 @@
+=== Kiko's wonderfully incomplete testbrowser reference manual for dummies ===
+
+Opening pages:
+
+    >>> browser.open('http://foo.launchpad.dev/bar')
+
+    >>> anon_browser.open('http://launchpad.dev/no-such-url')
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+
+Authentication:
+
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+branding')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Manipulating content:
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    <BLANKLINE>
+    <html xmlns="http://www.w3.org/1999/xhtml"...
+    ...
+    Some page content here
+    ...
+
+    >>> "foo" in browser.contents
+    True
+
+Parsing specific sections of pages:
+
+    >>> find_portlet()
+    XXX
+    >>> find_main_content()
+    XXX
+    >>> get_feedback_messages()
+    XXX
+
+Printing tabs, action items and comments:
+
+    >>> print_tab_links()
+    XXX
+    >>> print_action_links()
+    XXX
+    >>> print_comments()
+    XXX
+
+Finding contents by element class or IDs:
+
+    >>> tags = find_tags_by_class(browser.contents, 'warning message')
+    >>> print extract_text(tags[0])
+    You did something bad
+    >>> print extract_text(tags[1])
+    Two bad things in fact
+
+    >>> tag = first_tag_by_class(browser.contents, 'warning message')
+    >>> print extract_text(tag)
+    You did something bad
+
+    >>> tag = find_tag_by_id(browser.contents, 'my-div')
+    >>> print extract_text(tags)
+    That div contained bogus information
+    >>> print tag.renderContent()
+    <b>That div contained bogus information.</b>
+
+    >>> subtag = tag.find('a', text="Go to bar")
+    >>> subtag['href']
+    '/bar'
+
+Manipulating links:
+
+    >>> link = browser.getLink('Link text')
+    >>> link.url
+    '/foo'
+    >>> link.text
+    'Link text'
+
+    >>> link = browser.getLink(url='/foo')
+
+    >>> browser.getLink(url='/no-such-link')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> link.click()
+    >>> browser.url
+    'http://where-you-went/'
+    >>> browser.title
+    'Bogus titles R us'
+
+Form control basics:
+
+    >>> control = browser.getControl('Label')
+    >>> control = browser.getControl(name='field.foo')
+    >>> control = browser.getControl(name='no-such-name')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> browser.getControl('Button label').click()
+    >>> browser.url
+    'http://where-you-went-after-posting/'
+
+Form controls:
+
+    >>> browser.getControl('Checkbox label').selected
+    True
+
+    >>> browser.getControl('Input label').value
+    'text in my input'
+
+    >>> browser.getControl(name='field.multiple_checkboxes').value
+    ['GPL', 'BSD']
+
+    >>> browser.getControl(name='field.select_control').displayValue
+    ['Option one']
+

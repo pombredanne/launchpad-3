@@ -78,7 +78,7 @@ address.
   'Root <root@localhost>'
 
   >>> notification['Subject']
-  'netapplet-1.0.0.tar.gz is NEW'
+  'New: netapplet 0.99.6-1 (source)'
 
 The mail body contains a list of files that were accepted:
 
@@ -152,7 +152,7 @@ The mail 'From:' addresses are the uploader and the changer.
   ['Root <root@localhost>', 'Daniel Silverstone <daniel.silverstone@canonical.com>']
 
   >>> notification['Subject']
-  'netapplet-1.0.0.tar.gz is NEW'
+  'New: netapplet 0.99.6-1 (source)'
 
 The mail body contains the same list of files again:
 
@@ -206,7 +206,7 @@ The mail headers are the same as before:
   'Root <root@localhost>'
 
   >>> notification['Subject']
-  'netapplet-1.0.0.tar.gz is NEW'
+  'New: netapplet 0.99.6-1 (source)'
 
 The mail body contains the same list of files again:
 
