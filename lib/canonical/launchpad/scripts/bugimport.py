@@ -33,13 +33,11 @@ from zope.app.content_types import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugActivitySet,
-    IBugAttachmentSet, IBugSet, IBugTrackerSet,
-    IBugWatchSet, ICveSet, IEmailAddressSet, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessageSet, IPersonSet, NoBugTrackerFound,
-    PersonCreationRationale)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugActivitySet, IBugAttachmentSet, IBugSet, IBugTrackerSet, IBugWatchSet,
+    ICveSet, IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessageSet, IPersonSet, NoBugTrackerFound, PersonCreationRationale)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
-from canonical.lp.dbschema import BugTaskImportance, BugAttachmentType
 
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')
@@ -263,9 +261,12 @@ class BugImporter:
             msg=msg,
             datecreated=datecreated,
             title=title,
-            private=private,
+            private=private or security_related,
             security_related=security_related,
             owner=owner))
+        # Security related bugs must be created private, so we set it
+        # correctly after creation.
+        bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
 

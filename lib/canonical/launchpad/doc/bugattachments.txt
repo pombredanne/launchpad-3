@@ -347,8 +347,7 @@ Search for attachments
 We can search for attachment of a specific types:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, BugTaskSearchParams)
-    >>> from canonical.lp.dbschema import BugAttachmentType
+    ...     BugAttachmentType, BugTaskSearchParams, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)

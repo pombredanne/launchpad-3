@@ -50,7 +50,6 @@ from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI

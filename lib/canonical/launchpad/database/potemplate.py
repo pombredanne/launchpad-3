@@ -7,7 +7,7 @@ __all__ = [
     'POTemplate',
     'POTemplateSet',
     'POTemplateSubset',
-    'POTemplateToTranslationFileAdapter',
+    'POTemplateToTranslationFileDataAdapter',
     ]
 
 import datetime
@@ -36,13 +36,13 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    ITranslationExporter, ITranslationFile, ITranslationImporter,
+    ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationConstants, TranslationFileFormat,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -452,7 +452,7 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        template_file = ITranslationFile(self)
+        template_file = ITranslationFileData(self)
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
 
@@ -471,10 +471,10 @@ class POTemplate(SQLBase, RosettaStats):
                 self.source_file_format))
 
         translation_files = [
-            ITranslationFile(pofile)
+            ITranslationFileData(pofile)
             for pofile in self.pofiles
             ]
-        translation_files.append(ITranslationFile(self))
+        translation_files.append(ITranslationFileData(self))
         return translation_format_exporter.exportTranslationFiles(
             translation_files)
 
@@ -958,9 +958,9 @@ class POTemplateSet:
                 ' not None.')
 
 
-class POTemplateToTranslationFileAdapter:
-    """Adapter from `IPOTemplate` to `ITranslationFile`."""
-    implements(ITranslationFile)
+class POTemplateToTranslationFileDataAdapter:
+    """Adapter from `IPOTemplate` to `ITranslationFileData`."""
+    implements(ITranslationFileData)
 
     def __init__(self, potemplate):
         self._potemplate = potemplate
@@ -968,17 +968,17 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def path(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.path
 
     @cachedproperty
     def translation_domain(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.potemplatename.translationdomain
 
     @property
     def is_template(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return True
 
     @property
@@ -988,11 +988,11 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def header(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.getHeader()
 
     def _getMessages(self):
-        """Return a list of `ITranslationMessage`."""
+        """Return a list of `ITranslationMessageData`."""
         potemplate = self._potemplate
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
@@ -1011,6 +1011,20 @@ class POTemplateToTranslationFileAdapter:
             if row.sequence == 0:
                 continue
 
+            # XXX CarlosPerelloMarin 2007-10-26 bug=157540: Due a bug in our
+            # POTExport view, we need to leave out pomsgidsightings which have
+            # its 'inlastrevision' flag set to False because are not current
+            # anymore so we don't need them on export time.
+            messageID = POMsgID.byMsgid(row.msgid)
+            pomsgidsighting = POMsgIDSighting.selectOneBy(
+                potmsgset=row.potmsgset,
+                pomsgid_=messageID,
+                pluralform=row.pluralform)
+            if not pomsgidsighting.inlastrevision:
+                # Ignore it, the view should not provide us with this kind of
+                # rows.
+                continue
+
             # If the sequence number changes, is a new message.
             if row.sequence != sequence:
                 if msgset is not None:
@@ -1018,7 +1032,7 @@ class POTemplateToTranslationFileAdapter:
                     messages.append(msgset)
 
                 # Create new message set
-                msgset = TranslationMessage()
+                msgset = TranslationMessageData()
                 msgset.sequence = row.sequence
                 msgset.obsolete = False
 
@@ -1026,21 +1040,21 @@ class POTemplateToTranslationFileAdapter:
             # appear multiple times. We see how many we've added already to
             # check whether the message ID/translation in the current row are
             # ones we need to add.
-            if (row.pluralform == TranslationConstants.SINGULAR_FORM and
-                msgset.msgid is None):
-                msgset.msgid = row.msgid
-            elif (row.pluralform == TranslationConstants.PLURAL_FORM and
-                msgset.msgid_plural is None):
-                msgset.msgid_plural = row.msgid
+            if row.pluralform == TranslationConstants.SINGULAR_FORM:
+                if msgset.msgid is None:
+                    msgset.msgid = row.msgid
+                else:
+                    assert row.msgid == msgset.msgid, (
+                        'got different msgid values for singular form.')
+            elif row.pluralform == TranslationConstants.PLURAL_FORM:
+                if msgset.msgid_plural is None:
+                    msgset.msgid_plural = row.msgid
+                else:
+                    assert row.msgid == msgset.msgid_plural, (
+                        'got different msgid values for plural form.')
             else:
-                # msgset.msgid or msgset.msgid_plural could be not None,
-                # because we don't need to set it again, thus, we only check
-                # that row.msgidpluralform is correct.
-                assert row.msgidpluralform in (
-                    TranslationConstants.SINGULAR_FORM,
-                    TranslationConstants.PLURAL_FORM), (
-                        'msgid plural form is not valid: %s.' %
-                            row.msgidpluralform)
+                raise AssertionError(
+                    'msgid plural form %s is not valid.' % row.pluralform)
 
             if row.context is not None and msgset.context is None:
                 msgset.context = row.context
