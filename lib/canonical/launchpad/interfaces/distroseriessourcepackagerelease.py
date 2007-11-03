@@ -68,30 +68,3 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
     published_binaries = Attribute(
         "A list of published `DistroArchSeriesBinaryPackageRelease` for "
         "all relevant architectures.")
-
-    def changeOverride(new_component=None, new_section=None):
-        """Change the component and/or section.
-
-        It is changed only if the argument is not None.
-        """
-
-    def supersede():
-        """Supersede a `DistroSeriesSourcePackageRelease` .
-
-        Return the modified `ISourcePackagePublishingHistory` object.
-        """
-
-    def delete(removed_by, removal_comment=None):
-        """Delete a `DistroSeriesSourcePackageRelease`.
-
-        param removed_by: `IPerson` responsible for the removal.
-        param removal_comment: optional text describing the removal reason.
-
-        Return the modified `ISourcePackagePublishingHistory` object.
-        """
-
-    def copyTo(distroseries, pocket):
-        """Copy a `DistroSeriesSourcePackageRelease` to another location.
-
-        Return the publishing record in the targeted location.
-        """

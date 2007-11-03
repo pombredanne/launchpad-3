@@ -52,7 +52,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema, decorates
+from canonical.lp import decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -62,17 +62,17 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
+    BugAttachmentType, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
-    IBugAttachmentSet, IBugBranchSet,
-    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
-    ICveSet, IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
-    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
-    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    UNRESOLVED_BUGTASK_STATUSES, validate_distrotask, valid_upstreamtask)
+    IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
+    IBugTaskSearch, IBugTaskSet, ICveSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
+    IProject, ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -92,7 +92,6 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr import EnumeratedType, Item
-from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -141,6 +140,27 @@ def get_comments_for_bugtask(bugtask, truncate=False):
             current_title = comment.title
             comment.display_title = True
     return comments
+
+
+def get_visible_comments(comments):
+    """Return comments, filtering out empty or duplicated ones."""
+    visible_comments = []
+    previous_comment = None
+    for comment in comments:
+        # Omit comments that are identical to their previous
+        # comment, which were probably produced by
+        # double-submissions or user errors, and which don't add
+        # anything useful to the bug itself.
+        # Also omit comments with no body text or attachments to display.
+        if (comment.isEmpty() or
+            previous_comment and
+            previous_comment.isIdenticalTo(comment)):
+            continue
+
+        visible_comments.append(comment)
+        previous_comment = comment
+
+    return visible_comments
 
 
 def get_sortorder_from_request(request):
@@ -654,25 +674,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         # The first comment is generally identical to the description,
         # and we include a special link to it in the template if it
         # isn't.
-        comments = self.comments[1:]
-
-        visible_comments = []
-        previous_comment = None
-        for comment in comments:
-            # Omit comments that are identical to their previous
-            # comment, which were probably produced by
-            # double-submissions or user errors, and which don't add
-            # anything useful to the bug itself.
-            # Also omit comments with no body text or attachments to display.
-            if (comment.isEmpty() or
-                previous_comment and
-                previous_comment.isIdenticalTo(comment)):
-                continue
-
-            visible_comments.append(comment)
-            previous_comment = comment
-
-        return visible_comments
+        return get_visible_comments(self.comments[1:])
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1234,7 +1236,7 @@ class BugListingPortletView(LaunchpadView):
         """Return the URL for critical bugs on this bug target."""
         return get_buglisting_search_filter_url(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            importance=dbschema.BugTaskImportance.CRITICAL.title)
+            importance=BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
@@ -1295,8 +1297,8 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     ['INVALID']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,
-    ...                   dbschema.BugTaskImportance.HIGH]}, IBugTaskSearch)
+    ...     {'importance': [BugTaskImportance.CRITICAL,
+    ...                   BugTaskImportance.HIGH]}, IBugTaskSearch)
     >>> [importance.name for importance in initial['importance']]
     ['CRITICAL', 'HIGH']
 
@@ -1602,7 +1604,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
             has_patch = data.pop("has_patch", False)
             if has_patch:
-                data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
+                data["attachmenttype"] = BugAttachmentType.PATCH
 
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
@@ -1695,7 +1697,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
-        return self.getWidgetValues("BugTaskImportance")
+        return self.getWidgetValues(vocabulary=BugTaskImportance)
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
@@ -2145,7 +2147,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtasks_and_nominations += [
                 nomination for nomination in bug.getNominations(target)
                 if (nomination.status !=
-                    dbschema.BugNominationStatus.APPROVED)
+                    BugNominationStatus.APPROVED)
                 ]
 
         return bugtasks_and_nominations

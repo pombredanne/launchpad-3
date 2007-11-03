@@ -1,71 +1,79 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
   <body>
     <h1 metal:fill-slot="heading">Questions and answers</h1>
     <div metal:fill-slot="main">
 
-                        <ul class="rollover buttons">
-                          <li>
-                            <a href="/+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
-                        <form class="central" action="" method="get"
-                              tal:attributes="action request/URL">
-                          <table>
-                            <tbody>
-                              <tr>
-                                <td style="text-align: right;">
-                                  <input
-                                    id="text"
-                                    type="text"
-                                    name="field.search_text"
-                                    size="50"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    tal:replace="structure view/search_action/render"
-                                    type="submit"
-                                    value="Find Answers"
-                                  />
-                                </td>
-                              </tr>
-                              <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
-                                <td tal:attributes="class view/scope_css_class"
-                                    style="text-align: right;">
+      <ul class="rollover buttons">
+        <li>
+          <a href="/+tour">
+            <img
+              alt="Take a tour"
+              src="/+icing/but-lrg-takeatour.gif"
+            />
+          </a>
+        </li>
+      </ul>
+      <form class="central" action="" method="get"
+            tal:attributes="action request/URL">
+        <table>
+          <tbody>
+            <tr>
+              <td style="text-align: right;">
+                <input
+                  id="text"
+                  type="text"
+                  name="field.search_text"
+                  size="50"
+                />
+              </td>
+              <td>
+                <input
+                  tal:replace="structure view/search_action/render"
+                  type="submit"
+                  value="Find Answers"
+                />
+              </td>
+            </tr>
+            <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
+              <td tal:attributes="class view/scope_css_class"
+                  style="text-align: right;">
 
-                                  <tal:scope
-                                    replace="structure view/widgets/scope/renderScopeOptions" />
+                <tal:scope
+                  replace="structure view/widgets/scope/renderScopeOptions" />
 
-                                    <tal:input replace="structure target_widget/inputField" />
+                  <tal:input replace="structure target_widget/inputField" />
 
-                                  <tal:sort
-                                    replace="structure view/widgets/sort/hidden" />
-                                  <tal:status
-                                    replace="structure view/widgets/status/hidden" />
-                                  <div class="message"
-                                    tal:condition="view/scope_error"
-                                    tal:content="structure view/scope_error">
-                                    Error message
-                                  </div>
-                                </td>
-                                <td tal:content="structure target_widget/chooseLink" />
-                              </tr>
-                            </tbody>
-                          </table>
-                          <div>
-                        </form>
-                        <p id="application-summary">
-                          Launchpad Answers helps you build a
-                          community support network and knowledge base for
-                          your project. Encourage new users to ask questions
-                          rather than file bugs!
-                          <a href="/+about">Learn more&#8230;</a>
-                        </p>
+                <tal:sort
+                  replace="structure view/widgets/sort/hidden" />
+                <tal:status
+                  replace="structure view/widgets/status/hidden" />
+                <div class="message"
+                  tal:condition="view/scope_error"
+                  tal:content="structure view/scope_error">
+                  Error message
+                </div>
+              </td>
+              <td tal:content="structure target_widget/chooseLink" />
+            </tr>
+          </tbody>
+        </table>
+      </form>
+      <p id="application-summary">
+        Launchpad Answers helps you build a
+        community support network and knowledge base for
+        your project. Encourage new users to ask questions
+        rather than file bugs!
+        <a href="/+about">Learn more&#8230;</a>
+      </p>
 
       <div class="columns">
         <div id="most-active-projects" class="three column left">

@@ -16,11 +16,11 @@ from canonical.launchpad.scripts.ftpmasterbase import (
 class TestSoyuzScript(LaunchpadZopelessTestCase):
     """Test the SoyuzScript class."""
 
-    def getNakedSoyuz(self, version=None, component=None, arch=None,
-                      suite=None, distribution_name='ubuntu'):
+    def getSoyuz(self, version=None, component=None, arch=None,
+                 suite=None, distribution_name='ubuntu',
+                 ppa=None, partner=False):
         """Return a SoyuzScript instance.
 
-        Do not call SoyuzScript.setupLocation().
         Allow tests to use a set of default options and pass an
         inactive logger to SoyuzScript.
         """
@@ -38,89 +38,171 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         if component is not None:
             test_args.extend(['-c', component])
 
-        soyuz = SoyuzScript(name='soyuz-script', test_args=test_args)
-        # Swallowing all log messages.
-        soyuz.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        soyuz.logger.message = message
-        return soyuz
+        if ppa is not None:
+            test_args.extend(['-p', ppa])
 
-    def getSoyuz(self, *args, **kwargs):
-        """Return an initialized SoyuzScript instance."""
-        soyuz = self.getNakedSoyuz(*args, **kwargs)
+        if partner:
+            test_args.append('-j')
+
+        soyuz = SoyuzScript(name='soyuz-script', test_args=test_args)
+        # Store output messages, for future checks.
+        soyuz.logger = FakeLogger()
+        self.output = []
+        def message(prefix, *stuff, **kw):
+            self.output.append("%s %s" % (prefix, stuff[0]))
+        soyuz.logger.message = message
         soyuz.setupLocation()
         return soyuz
 
-    def testSetupLocation(self):
-        """Check if `SoyuzScript` handles `PackageLocation` properly.
-
-        SoyuzScriptError is raised on not-found or broken locations.
-        """
+    def testFindLatestPublishedSourceInPRIMARY(self):
+        """Source lookup in PRIMARY archive."""
         soyuz = self.getSoyuz()
+        src = soyuz.findLatestPublishedSource('pmount')
+        self.assertEqual(src.displayname, 'pmount 0.1-2 in hoary')
 
-        self.assertEqual(soyuz.location.distribution.name, 'ubuntu')
-        self.assertEqual(soyuz.location.distroseries.name, 'hoary')
-        self.assertEqual(soyuz.location.pocket.name, 'RELEASE')
-
-        soyuz = self.getNakedSoyuz(distribution_name='beeblebrox')
-        self.assertRaises(SoyuzScriptError, soyuz.setupLocation)
-
-        soyuz = self.getNakedSoyuz(suite='beeblebrox')
-        self.assertRaises(SoyuzScriptError, soyuz.setupLocation)
-
-    def testFindSource(self):
-        """The findSource method of SoyuzScript finds pmount in the
-        default component, main, but not in other components or with a
-        non-existent version, etc.
-        """
-        soyuz = self.getSoyuz()
-        src = soyuz.findSource('pmount')
-        self.assertEqual(
-            src.title, 'pmount 0.1-2 (source) in ubuntu hoary')
-
-        soyuz = self.getSoyuz(suite='hoary', component='main')
-        src = soyuz.findSource('pmount')
-        self.assertEqual(
-            src.title, 'pmount 0.1-2 (source) in ubuntu hoary')
-
-        soyuz = self.getSoyuz()
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'marvin')
-
-        soyuz = self.getSoyuz(version='666')
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'pmount')
-
-        soyuz = self.getSoyuz(component='multiverse')
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'pmount')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'marvin')
 
         soyuz = self.getSoyuz(suite='hoary-security')
-        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'pmount')
-
-    def testFindBinaries(self):
-        """The findBinary method of SoyuzScript finds mozilla-firefox in the
-        default component, main, but not in other components or with a
-        non-existent version, etc.
-        """
-        soyuz = self.getSoyuz()
-
-        binaries = soyuz.findBinaries('pmount')
-        self.assertEqual(len(binaries), 2)
-        binary_names = set([b.name for b in binaries])
-        self.assertEqual(list(binary_names), ['pmount'])
-
-        self.assertRaises(SoyuzScriptError, soyuz.findBinaries, 'marvin')
-
-        soyuz = self.getSoyuz(version='666')
         self.assertRaises(
-            SoyuzScriptError, soyuz.findBinaries, 'pmount')
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'pmount')
+
+    def testFindLatestPublishedSourceInPARTNER(self):
+        """Source lookup in PARTNER archive."""
+        soyuz = self.getSoyuz(suite='breezy-autotest', partner=True)
+        src = soyuz.findLatestPublishedSource('commercialpackage')
+        self.assertEqual(
+            src.displayname, 'commercialpackage 1.0-1 in breezy-autotest')
+
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'marvin')
+
+        soyuz = self.getSoyuz(suite='warty', partner=True)
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource,
+            'commercialpackage')
+
+    def testFindLatestPublishedSourceInPPA(self):
+        """Source lookup in PPAs."""
+        soyuz = self.getSoyuz(ppa='cprov', suite='warty')
+        src = soyuz.findLatestPublishedSource('pmount')
+        self.assertEqual(src.displayname, 'pmount 0.1-1 in warty')
+
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'marvin')
+
+        soyuz = self.getSoyuz(ppa='cprov', suite='warty-security')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'pmount')
+
+    def testFindLatestPublishedSourceAndCheckComponent(self):
+        """Before returning the source publication component is checked.
+
+        Despite of existing the found publication should match the given
+        component (if given) otherwise an error is raised.
+        """
+        soyuz = self.getSoyuz(suite='hoary', component='main')
+        src = soyuz.findLatestPublishedSource('pmount')
+        self.assertEqual(src.displayname, 'pmount 0.1-2 in hoary')
 
         soyuz = self.getSoyuz(component='multiverse')
         self.assertRaises(
-            SoyuzScriptError, soyuz.findBinaries, 'pmount')
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'pmount')
+
+    def testFindLatestPublishedSourceWithSpecificVersion(self):
+        """Source lookups for specific version."""
+        soyuz = self.getSoyuz(version='0.1-2')
+        src = soyuz.findLatestPublishedSource('pmount')
+        self.assertEqual(src.displayname, 'pmount 0.1-2 in hoary')
+
+        soyuz = self.getSoyuz(version='666')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'pmount')
+
+    def testFindLatestPublishedBinariesInPRIMARY(self):
+        """Binary lookups in PRIMARY archive."""
+        soyuz = self.getSoyuz()
+        binaries = soyuz.findLatestPublishedBinaries('pmount')
+        self.assertEqual(
+            [b.displayname for b in binaries],
+            ['pmount 2:1.9-1 in hoary hppa', 'pmount 0.1-1 in hoary i386'])
+
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'marvin')
 
         soyuz = self.getSoyuz(suite='warty-security')
         self.assertRaises(
-            SoyuzScriptError, soyuz.findBinaries, 'pmount')
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'pmount')
+
+    def testFindLatestPublishedBinariesInPARTNER(self):
+        """Binary lookups in PARTNER archive."""
+        soyuz = self.getSoyuz(suite='breezy-autotest', partner=True)
+        binaries = soyuz.findLatestPublishedBinaries('commercialpackage')
+        self.assertEqual(
+            [b.displayname for b in binaries],
+            ['commercialpackage 1.0-1 in breezy-autotest i386'])
+
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'marvin')
+
+        soyuz = self.getSoyuz(suite='warty-security')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries,
+            'commercialpackage')
+
+    def testFindLatestPublishedBinariesInPPA(self):
+        """Binary lookups in PPAs."""
+        soyuz = self.getSoyuz(ppa='cprov', suite='warty')
+        binaries = soyuz.findLatestPublishedBinaries('pmount')
+        self.assertEqual(
+            [b.displayname for b in binaries],
+            ['pmount 0.1-1 in warty hppa', 'pmount 0.1-1 in warty i386'])
+
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'marvin')
+
+        soyuz = self.getSoyuz(ppa='cprov', suite='warty-security')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'pmount')
+
+    def testFindLatestPublishedBinariesCheckComponent(self):
+        """Each suitable binary publication component is checked.
+
+        For each one of them not matching the given component a warning
+        message is issued. If none of them match the given component (no
+        suitable binary found) an errors is raised.
+        """
+        soyuz = self.getSoyuz(component='main')
+        binaries = soyuz.findLatestPublishedBinaries('pmount')
+        self.assertEqual(
+            [b.displayname for b in binaries],
+            ['pmount 2:1.9-1 in hoary hppa'])
+        self.assertEqual(
+            self.output,
+            ['WARNING pmount 0.1-1 in hoary i386 was skipped '
+             'because it is not in MAIN component'])
+
+        soyuz = self.getSoyuz(component='multiverse')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'pmount')
+
+    def testFindLatestPublishedBinariesWithSpecificVersion(self):
+        """Binary lookups for specific version."""
+        soyuz = self.getSoyuz(version='0.1-1')
+        binaries = soyuz.findLatestPublishedBinaries('pmount')
+        self.assertEqual(
+            [b.displayname for b in binaries],
+            ['pmount 0.1-1 in hoary i386'])
+
+        soyuz = self.getSoyuz(version='2:1.9-1')
+        binaries = soyuz.findLatestPublishedBinaries('pmount')
+        self.assertEqual(
+            [b.displayname for b in binaries],
+            ['pmount 2:1.9-1 in hoary hppa'])
+
+        soyuz = self.getSoyuz(version='666')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'pmount')
 
 
 def test_suite():

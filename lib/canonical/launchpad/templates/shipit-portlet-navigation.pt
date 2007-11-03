@@ -1,8 +1,14 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div
   class="shipitPortlet shipitPortletBody lesser"
   style="padding: 0.3em; border: 1px solid #5b4832; background-color: #f6eecc;"
 >
-  <ul><base href="">
+  <ul><base href="" />
     <li class="search"><a href="/requests">Search Requests</a></li>
     <li class="add"><a href="/adminrequest">Create new Request</a></li>
     <li class="info"><a href="/exports">Generated Exports</a></li>
@@ -10,3 +16,4 @@
     <li class="info"><a href="/standardoptions">Standard Options</a></li>
   </ul>
 </div>
+</tal:root>

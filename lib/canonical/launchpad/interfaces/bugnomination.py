@@ -10,15 +10,17 @@ __all__ = [
     'IBugNomination',
     'IBugNominationForm',
     'IBugNominationSet',
+    'BugNominationStatus',
     'NominationSeriesObsoleteError']
 
 from zope.schema import Int, Datetime, Choice, Set
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import BugNominationStatus
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, IHasOwner, can_be_nominated_for_serieses)
+
+from canonical.lazr import DBEnumeratedType, DBItem
 
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
@@ -30,6 +32,34 @@ class NominationSeriesObsoleteError(Exception):
 
 class BugNominationStatusError(Exception):
     """A error occurred while trying to set a bug nomination status."""
+
+
+class BugNominationStatus(DBEnumeratedType):
+    """Bug Nomination Status.
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = DBItem(10, """
+        Nominated
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = DBItem(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = DBItem(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
+        """)
 
 
 class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
@@ -66,7 +96,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     target = Attribute(
         "The IProductSeries or IDistroSeries of this nomination.")
     status = Choice(
-        title=_("Status"), vocabulary="BugNominationStatus",
+        title=_("Status"), vocabulary=BugNominationStatus,
         default=BugNominationStatus.PROPOSED)
 
     def approve(approver):
