@@ -27,7 +27,8 @@ from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.interfaces import (
+    BranchType, IBranchSet, IScriptActivitySet)
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.testing import LaunchpadScriptLayer
 
@@ -235,6 +236,18 @@ class TestBranchPuller(BranchTestCase):
         """Run the puller on an empty pull queue."""
         command, retcode, output, error = self.runPuller("upload")
         self.assertRanSuccessfully(command, retcode, output, error)
+
+    def test_recordsScriptActivity(self):
+        """A record gets created in the ScriptActivity table."""
+        script_activity_set = getUtility(IScriptActivitySet)
+        self.assertIs(
+            script_activity_set.getLastActivity("branch-puller-hosted"),
+            None)
+        self.runPuller("upload")
+        transaction.abort()
+        self.assertIsNot(
+            script_activity_set.getLastActivity("branch-puller-hosted"),
+            None)
 
     # Possible tests to add:
     # - branch already exists in new location
