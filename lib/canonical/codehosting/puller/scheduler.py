@@ -220,7 +220,7 @@ class PullerMaster:
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
             self.branch_type.name]
-        reactor.spawnProcess(protocol, sys.executable, command)
+        reactor.spawnProcess(protocol, sys.executable, command, env=None)
         return deferred
 
     def run(self):
