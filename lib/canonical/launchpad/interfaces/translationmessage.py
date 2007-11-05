@@ -175,6 +175,16 @@ class ITranslationMessage(Interface):
         title=_("Whether this message has any translation"),
         readonly=True, required=True)
 
+    messages = Choice(
+        title=_("Suggestions"),
+        readonly=False, required=True,
+        vocabulary="TranslationMessage")
+
+    countries = Choice(
+        title=_("Countries"),
+        readonly=False, required=False,
+        vocabulary="CountryName")
+
     def destroySelf():
         """Remove this object.
 

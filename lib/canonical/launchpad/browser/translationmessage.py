@@ -4,15 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BaseTranslationView',
-    'POMsgSetAppMenus',
-    'POMsgSetFacets',
-    'POMsgSetIndexView',
-    'POMsgSetPageView',
-    'POMsgSetSOP',
-    'POMsgSetSuggestions',
-    'POMsgSetView',
-    'POMsgSetZoomedView',
+    'CurrentTranslationMessageView'
     ]
 
 import cgi
@@ -29,7 +21,7 @@ from zope.app import datetimeutils
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import Interface, IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
@@ -46,7 +38,8 @@ from canonical.launchpad.interfaces import (
     TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
-from canonical.launchpad.webapp import urlparse
+from canonical.launchpad.webapp import urlparse, custom_widget
+from canonical.launchpad.webapp import LaunchpadEditFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -905,7 +898,6 @@ class POMsgSetPageView(BaseTranslationView):
         self._redirectToNextPage()
         return True
 
-
 class POMsgSetView(LaunchpadView):
     """Holds all data needed to show an IPOMsgSet.
 
@@ -1405,3 +1397,67 @@ class POMsgSetSuggestions:
                         'translation_%s' % (submission.pluralform)),
                 })
 
+
+
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+
+class TranslationsRadioWidget(LaunchpadRadioWidget):
+    """A widget to work around a bug in RadioWidget."""
+
+    def textForValue(self, term):
+        context = term.value
+        singular_text = context.potmsgset.singular_text
+        plural_text = context.potmsgset.plural_text
+        msgctxt = context.potmsgset.context
+        english_text = u''
+        if plural_text is not None:
+            english_text += '<strong>English Singular:</strong> %s<br/>' % (
+                singular_text)
+            english_text += '<strong>English Plural:</strong> %s<br/>' % (
+                plural_text)
+        if msgctxt is not None:
+            english_text += ('<font size="-2"><strong>Context:</strong>'
+                             ' %s</font><br />') % msgctxt
+        translation_text = u''
+        for translation in context.translations:
+            if translation is not None:
+                translation_text += translation
+            translation_text += u'<br/>\n'
+
+        submitter_text = ''
+        if context.submitter is not None:
+            submitter_text = context.submitter.displayname
+        return "%s%s<br />By %s on %s" % (
+            english_text, translation_text,
+            submitter_text,
+            context.date_created)
+
+class CurrentTranslationMessageView(LaunchpadEditFormView):
+    """Displays a current ITranslationMessage for an IPOTMsgSet.
+
+    Also shows all the suggestions and translations elsewhere.
+    """
+    schema = ITranslationMessage
+
+    field_names = ['messages']
+    custom_widget('messages', TranslationsRadioWidget)
+
+    def initialize(self):
+        translationmessage = self.context
+        self.label = 'Translating'
+        self._current_translationmessage = self.context
+        self._potmsgset = translationmessage.potmsgset
+        self._pofile = translationmessage.pofile
+        self._language = translationmessage.pofile.language
+        LaunchpadEditFormView.initialize(self)
+
+    #def initial_values(self):
+    #    return dict(messages=self.context)
+
+    @property
+    def imported_translation(self):
+        return self.potmsgset.getImportedTranslationMessage(self.language)
+
+    @property
+    def current_translation(self):
+        return self.potmsgset.getCurrentTranslationMessage(self.language)

@@ -460,28 +460,28 @@ class POTemplate(SQLBase, RosettaStats):
                 ) AS Suggestions
             """ % parameters)
 
-            # Load these results straight into a dict: map suggestions' ids to
-            # the message identifiers they translate.
-            external_translations = dict(cur.fetcall())
+        # Load these results straight into a dict: map suggestions' ids to
+        # the message identifiers they translate.
+        external_translations = dict(cur.fetcall())
 
-            if not external_translations:
-                return result
+        if not external_translations:
+            return result
 
-            # Retrieve the actual suggestions.  Keep these in newest-to-oldest
-            # order, because that's the way the view class likes them.
-            suggestions = TranslationMessage.select(
-                "id IN (%s)" % ", ".join(
-                    [quote(id) for id in external_translations]),
-                orderBy="-datecreated")
+        # Retrieve the actual suggestions.  Keep these in newest-to-oldest
+        # order, because that's the way the view class likes them.
+        suggestions = TranslationMessage.select(
+            "id IN (%s)" % ", ".join(
+                [quote(id) for id in external_translations]),
+            orderBy="-datecreated")
 
-            # Figure out which of potmsgsets each suggestion is relevant to,
-            # and return our mapping from potmsgsets to various subsets of
-            # load_submissions.  The subsets may overlap because two
-            # potmsgsets could have the same msgid (i.e. translate the same
-            # string) but in different contexts.  The same suggestions would
-            # apply to both.
-            # TODO: Implement
-            # TODO: Infuse potmsgsets with cached suggestions
+        # Figure out which of potmsgsets each suggestion is relevant to,
+        # and return our mapping from potmsgsets to various subsets of
+        # load_submissions.  The subsets may overlap because two
+        # potmsgsets could have the same msgid (i.e. translate the same
+        # string) but in different contexts.  The same suggestions would
+        # apply to both.
+        # TODO: Implement
+        # TODO: Infuse potmsgsets with cached suggestions
 
     def messageCount(self):
         """See `IRosettaStats`."""

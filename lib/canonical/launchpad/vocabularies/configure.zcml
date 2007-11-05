@@ -236,6 +236,11 @@
     />
 
   <vocabulary
+    name="TranslationMessage"
+    factory="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
+    />
+
+  <vocabulary
    name="TranslationPermission"
    factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
    />

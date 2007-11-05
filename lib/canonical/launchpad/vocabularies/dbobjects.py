@@ -53,6 +53,7 @@ __all__ = [
     'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
+    'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamVocabulary',
@@ -75,7 +76,8 @@ from canonical.launchpad.database import (
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
     LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
     ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    SourcePackageRelease, Specification, Sprint, TranslationGroup,
+    TranslationMessage)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -495,6 +497,22 @@ def project_products_using_malone_vocabulary_factory(context):
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     _table = TranslationGroup
+
+
+class TranslationMessageVocabulary(SQLObjectVocabularyBase):
+
+    _table = TranslationMessage
+    _orderBy = 'date_created'
+
+    def toTerm(self, obj):
+        translation = ''
+        if obj.msgstr0 is not None:
+            translation = obj.msgstr0.translation
+        return SimpleTerm(obj, obj.id, translation)
+
+    def __iter__(self):
+        for message in self.context.messages:
+            yield self.toTerm(message)
 
 
 class NonMergedPeopleAndTeamsVocabulary(
@@ -1600,3 +1618,4 @@ class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
         query.append('(updates is NULL OR updates = %s)' % sqlvalues(
             self.context.language_pack_base))
         return query
+

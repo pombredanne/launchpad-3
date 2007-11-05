@@ -892,6 +892,11 @@ def pomsgset_translate(context, view):
     """Return the page title for editing a PO file."""
     return smartquote('Edit "%s"' % context.pofile.title)
 
+
+def translationmessage_view(context, view):
+    """Return the page title for editing a translation message."""
+    return smartquote('Edit "%s"' % context.pofile.title)
+
 # potemplate_chart is a fragment
 
 potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))

@@ -442,7 +442,7 @@ class POFile(SQLBase, POFileMixIn):
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
         translation_message = self.getCurrentTranslationMessage(
-            msgid_text, ignore_obsolete=True)
+            unicode(msgid_text), ignore_obsolete=True)
         if translation_message is None:
             raise NotFoundError(msgid_text)
         else:

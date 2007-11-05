@@ -117,7 +117,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationMessage.select(
             """id in (
-              SELECT DISTINCT ON (msgstr0) TranslationMessage.id
+              SELECT TranslationMessage.id
                  FROM TranslationMessage
                  LEFT JOIN POTMsgSet ON
                    TranslationMessage.potmsgset = POTMsgSet.id
