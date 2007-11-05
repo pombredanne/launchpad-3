@@ -67,7 +67,7 @@
   Disabled Mirrors
   >>> print find_tag_by_id(browser.contents, 'mainarea').renderContents()
   <BLANKLINE>
-  ...We don't know about any Disabled Mirrors of this distribution...
+  ...We don't know of any Disabled Mirrors of this distribution...
 
   
   And yet another page to list the non-official mirrors, which can be seen

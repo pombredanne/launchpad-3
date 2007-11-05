@@ -164,7 +164,8 @@ logins to a user that is explicitly subscribed to this bug):
 
     >>> login("steve.alexander@ubuntulinux.com")
 
-    >>> edited_bug.private = True
+    >>> edited_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> edited_bug.security_related = True
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -183,7 +184,8 @@ logins to a user that is explicitly subscribed to this bug):
 Now we set the bug public, and not security-related and check if the
 e-mail sent changed as well.
 
-    >>> edited_bug.private = False
+    >>> edited_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> edited_bug.security_related = False
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -369,7 +371,7 @@ We can also add a bugwatch while adding a new bugtask.
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> mozilla_bug_watch = getUtility(IBugWatchSet).get(1)
     >>> mozilla_bugtask = getUtility(IBugTaskSet).get(15)
-    >>> mozilla_bugtask.bugwatch = mozilla_bug_watch 
+    >>> mozilla_bugtask.bugwatch = mozilla_bug_watch
 
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -483,7 +485,7 @@ The From address generator handles a few special cases. The trivial case
 is, well, trivial. Stuart has four email addresses:
 
     >>> stub = getUtility(IPersonSet).getByName("stub")
-    >>> [(email.email, email.status.name) for email 
+    >>> [(email.email, email.status.name) for email
     ...  in getUtility(IEmailAddressSet).getByPerson(stub)]
     [(u'stuart.bishop@canonical.com', 'PREFERRED'),
      (u'stuart@stuartbishop.net', 'VALIDATED'),

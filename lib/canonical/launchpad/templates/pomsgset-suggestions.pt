@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:block condition="context/submissions">
   <tal:submission repeat="submission context/submissions">
   <tr class="secondary">
@@ -26,7 +32,7 @@
                 '${submission/translation_html_id}_new');;
               selectWidget('${submission/translation_html_id}_new_select', event);;
             return false;;
-          "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
       </tal:user-is-not-official-translator>
       </tal:form-writeable>
     </td>
@@ -85,3 +91,4 @@
   </tr>
   </tal:submission>
 </tal:block>
+</tal:root>
