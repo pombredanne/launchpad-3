@@ -4051,7 +4051,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, 0, '2007-10-25 12:16:11.273895');
+', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, 0, '2007-11-05 22:05:32.075554');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the evolution package.
@@ -4156,42 +4156,40 @@ ALTER TABLE pofile ENABLE TRIGGER ALL;
 
 ALTER TABLE pofiletranslator DISABLE TRIGGER ALL;
 
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (1, 1, 1, 696, '2005-06-06 20:08:02.521892');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (2, 12, 32, 689, '2007-01-19 13:00:41.049464');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (3, 13, 1, 695, '2006-12-22 11:47:14.827772');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (4, 13, 12, 694, '2005-05-06 21:12:13.908028');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (5, 13, 29, 687, '2005-10-11 23:08:01.899322');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (6, 13, 32, 699, '2007-01-24 19:15:47.546879');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (7, 13, 33, 690, '2007-04-07 10:14:36.267119');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (8, 13, 34, 693, '2007-07-12 03:42:48.848044');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (9, 16, 12, 686, '2005-06-06 19:42:48.236409');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (10, 16, 33, 701, '2007-04-07 11:09:37.437343');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (11, 30, 17, 669, '2005-05-06 21:12:40.937835');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (12, 30, 23, 645, '2005-05-06 21:12:35.766036');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (13, 30, 24, 597, '2005-05-06 21:12:23.441015');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (14, 33, 7, 72, '2005-05-06 20:09:31.825695');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (15, 34, 5, 135, '2005-05-06 20:09:51.386766');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (16, 35, 10, 198, '2005-05-06 20:10:18.431259');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (17, 36, 9, 261, '2005-05-06 20:10:41.732277');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (18, 37, 3, 324, '2005-05-06 20:11:16.591589');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (19, 38, 4, 387, '2005-05-06 20:11:41.773683');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (20, 39, 6, 450, '2005-05-06 20:12:08.283113');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (21, 40, 8, 499, '2005-05-06 20:12:35.976807');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (22, 41, 11, 561, '2005-05-06 20:13:10.405056');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (23, 42, 13, 579, '2005-05-06 21:12:18.833057');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (24, 43, 15, 588, '2005-05-06 21:12:20.874654');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (25, 44, 25, 603, '2005-05-06 21:12:25.930403');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (26, 45, 14, 612, '2005-05-06 21:12:27.602384');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (27, 46, 21, 621, '2005-05-06 21:12:29.45271');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (28, 47, 19, 630, '2005-05-06 21:12:31.382429');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (29, 48, 22, 642, '2005-05-06 21:12:33.238579');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (30, 49, 20, 654, '2005-05-06 21:12:37.221421');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (31, 50, 12, 698, '2005-06-06 20:05:03.244905');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (32, 50, 18, 663, '2005-05-06 21:12:39.082421');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (33, 51, 16, 678, '2005-05-06 21:12:42.747648');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (34, 52, 1, 697, '2005-08-29 16:16:58.010285');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (35, 56, 31, 688, '2007-01-05 13:04:20.092506');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (36, 66, 30, 684, '2006-12-13 21:19:06.369142');
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (34, 1, 1, '2005-06-06 20:08:02.521892', 696);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (35, 12, 32, '2007-01-19 13:00:41.049464', 689);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (36, 13, 1, '2006-12-22 11:47:14.827772', 695);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (37, 13, 12, '2005-05-06 21:12:13.908028', 570);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (38, 13, 29, '2005-10-11 23:08:01.899322', 687);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (39, 13, 32, '2007-01-24 19:15:47.546879', 699);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (40, 16, 12, '2005-06-06 19:42:48.236409', 686);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (41, 30, 17, '2005-05-06 21:12:40.937835', 669);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (42, 30, 23, '2005-05-06 21:12:35.766036', 645);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (43, 30, 24, '2005-05-06 21:12:23.441015', 597);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (44, 33, 7, '2005-05-06 20:09:31.825695', 72);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (45, 34, 5, '2005-05-06 20:09:51.386766', 135);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (46, 35, 10, '2005-05-06 20:10:18.431259', 198);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (47, 36, 9, '2005-05-06 20:10:41.732277', 261);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (48, 37, 3, '2005-05-06 20:11:16.591589', 324);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (49, 38, 4, '2005-05-06 20:11:41.773683', 387);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (50, 39, 6, '2005-05-06 20:12:08.283113', 450);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (51, 40, 8, '2005-05-06 20:12:35.976807', 499);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (52, 41, 11, '2005-05-06 20:13:10.405056', 561);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (53, 42, 13, '2005-05-06 21:12:18.833057', 579);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (54, 43, 15, '2005-05-06 21:12:20.874654', 588);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (55, 44, 25, '2005-05-06 21:12:25.930403', 603);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (56, 45, 14, '2005-05-06 21:12:27.602384', 612);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (57, 46, 21, '2005-05-06 21:12:29.45271', 621);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (58, 47, 19, '2005-05-06 21:12:31.382429', 630);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (59, 48, 22, '2005-05-06 21:12:33.238579', 642);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (60, 49, 20, '2005-05-06 21:12:37.221421', 654);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (61, 50, 12, '2005-06-06 20:05:03.244905', 698);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (62, 50, 18, '2005-05-06 21:12:39.082421', 663);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (63, 51, 16, '2005-05-06 21:12:42.747648', 678);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (64, 52, 1, '2005-08-29 16:16:58.010285', 697);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (65, 56, 31, '2007-01-05 13:04:20.092506', 688);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (66, 66, 30, '2006-12-13 21:19:06.369142', 684);
+INSERT INTO pofiletranslator (id, person, pofile, date_last_touched, latest_message) VALUES (68, 13, 34, '2007-07-12 03:42:48.848044', 693);
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
