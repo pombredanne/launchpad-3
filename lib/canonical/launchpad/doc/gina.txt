@@ -254,7 +254,7 @@ Test ubuntu-meta in breezy, which was forcefully imported.
     >>> um = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.80")
     >>> print um.section.name, um.architecturehintlist, \
-    ...         um.uploaddistroseries.name
+    ...         um.upload_distroseries.name
     base any breezy
 
 And check that its files actually ended up in the librarian (these sha1sums
