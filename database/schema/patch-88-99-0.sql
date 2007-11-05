@@ -116,29 +116,29 @@ SELECT
 FROM POMsgSet m
         LEFT OUTER JOIN POSubmission AS s0 ON
             s0.pomsgset = m.id AND
-            s0.pluralform = 0 AND
-            s0.active IS NOT FALSE AND
-            s0.published IS NOT FALSE
+            s0.pluralform = 0
         LEFT OUTER JOIN POSubmission AS s1 ON
             s1.pomsgset = m.id AND
-            s1.pluralform = 1 AND
-            s1.active IS NOT FALSE AND
-            s1.published IS NOT FALSE
+            s1.pluralform = 1
         LEFT OUTER JOIN POSubmission AS s2 ON
             s2.pomsgset = m.id AND
-            s2.pluralform = 2 AND
-            s2.active IS NOT FALSE AND
-            s2.published IS NOT FALSE
+            s2.pluralform = 2
         LEFT OUTER JOIN POSubmission AS s3 ON
             s3.pomsgset = m.id AND
-            s3.pluralform = 3 AND
-            s3.active IS NOT FALSE AND
-            s3.published IS NOT FALSE
+            s3.pluralform = 3
 WHERE
-    s0.id IS NOT NULL OR
-    s1.id IS NOT NULL OR
-    s2.id IS NOT NULL OR
-    s3.id IS NOT NULL;
+    (s0.id IS NOT NULL OR
+     s1.id IS NOT NULL OR
+     s2.id IS NOT NULL OR
+     s3.id IS NOT NULL) AND
+    s0.active IS NOT FALSE AND
+    s1.active IS NOT FALSE AND
+    s2.active IS NOT FALSE AND
+    s3.active IS NOT FALSE AND
+    s0.published IS NOT FALSE AND
+    s1.published IS NOT FALSE AND
+    s2.published IS NOT FALSE AND
+    s3.published IS NOT FALSE;
 
 -- SELECT 'Migrating active, non-published submissions', statement_timestamp();	-- DEBUG
 
