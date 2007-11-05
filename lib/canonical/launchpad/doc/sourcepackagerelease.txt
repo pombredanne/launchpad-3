@@ -344,7 +344,7 @@ was inherited in the initialization.
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> breezy_autotest_i386 = breezy_autotest['i386']
 
-    >>> print breezy_autotest.parentseries.title
+    >>> print breezy_autotest.parent_series.title
     The Hoary Hedgehog Release
 
     >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
