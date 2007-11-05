@@ -428,7 +428,7 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit', 'imports', 'translationdownload']
+    links = ['translators', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'

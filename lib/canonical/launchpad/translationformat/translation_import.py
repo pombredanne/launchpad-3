@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
     PersonCreationRationale, RosettaImportStatus, TranslationConflict,
-    TranslationConstants, TranslationFileFormat)
+    TranslationFileFormat)
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -71,37 +71,39 @@ class ExistingPOFileInDatabase:
             POMsgId.msgid AS msgid,
             POMsgID_Plural.msgid AS msgid_plural,
             context,
-            pt0.translation, pt1.translation, pt2.translation, pt3.translation,
+            pt0.translation as translation0,
+            pt1.translation as translation1,
+            pt2.translation as translation2,
+            pt3.translation as translation3,
             date_reviewed,
             is_fuzzy,
             is_current,
             is_imported
-          FROM POFile
-            JOIN TranslationMessage ON
-              TranslationMessage.pofile=POFile.id
+          FROM TranslationMessage
+            JOIN POFile ON
+              TranslationMessage.pofile=POFile.id AND POFile.id=%s
             JOIN POTMsgSet ON
               POTMsgSet.id=TranslationMessage.potmsgset
-            JOIN POTranslation pt0 ON
+            LEFT OUTER JOIN POTranslation pt0 ON
               pt0.id=TranslationMessage.msgstr0
-            JOIN POTranslation pt1 ON
+            LEFT OUTER JOIN POTranslation pt1 ON
               pt1.id=TranslationMessage.msgstr1
-            JOIN POTranslation pt2 ON
+            LEFT OUTER JOIN POTranslation pt2 ON
               pt2.id=TranslationMessage.msgstr2
-            JOIN POTranslation pt3 ON
+            LEFT OUTER JOIN POTranslation pt3 ON
               pt3.id=TranslationMessage.msgstr3
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
-          WHERE POFile.id=%s AND
+          WHERE
                 is_current or is_imported
           '''
         cur = cursor()
         cur.execute(sql % sqlvalues(self.pofile))
 
         for (msgid, msgid_plural, context, msgstr0, msgstr1, msgstr2, msgstr3,
-             date, isfuzzy, is_current, is_imported) in cur.fetchall():
-
+             date, is_fuzzy, is_current, is_imported) in cur.fetchall():
             if is_current:
                 look_at = self.messages
             elif is_imported:
@@ -121,10 +123,14 @@ class ExistingPOFileInDatabase:
                 message.context = context
                 message.msgid_plural = msgid_plural
 
-            message.addTranslation(0, msgstr0)
-            message.addTranslation(1, msgstr1)
-            message.addTranslation(2, msgstr2)
-            message.addTranslation(3, msgstr3)
+            if msgstr0 is not None:
+                message.addTranslation(0, msgstr0)
+            if msgstr1 is not None:
+                message.addTranslation(1, msgstr1)
+            if msgstr2 is not None:
+                message.addTranslation(2, msgstr2)
+            if msgstr3 is not None:
+                message.addTranslation(3, msgstr3)
             message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
@@ -376,8 +382,9 @@ class TranslationImporter:
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
             if (message.msgid_plural is not None and
-                message.msgid_plural != potmsgset.msgid_plural.msgid and
-                self.pofile is not None):
+                self.pofile is not None and
+                potmsgset.msgid_plural is not None and
+                (message.msgid_plural != potmsgset.msgid_plural.msgid)):
                 # The PO file wants to change the plural msgid from the PO
                 # template, that's broken and not usual, so we raise an
                 # exception to log the issue. It needs to be fixed

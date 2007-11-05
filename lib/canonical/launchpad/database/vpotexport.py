@@ -13,7 +13,6 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.database import POTemplate
-from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import IVPOTExportSet, IVPOTExport
 
 

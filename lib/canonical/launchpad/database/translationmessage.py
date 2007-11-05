@@ -11,7 +11,7 @@ from datetime import datetime
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
-    BoolCol, ForeignKey, StringCol)
+    BoolCol, ForeignKey, StringCol, SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
@@ -78,6 +78,34 @@ class DummyTranslationMessage(TranslationMessageMixIn):
             self.translations = [None]
         else:
             self.translations = [None] * self.pofile.language.pluralforms
+
+
+    def _setMessages(self, current):
+        current.is_current = True
+        self._current = current
+
+    def _getMessages(self):
+        all_msgs = []
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.language)
+        if current is None:
+            current = self.potmsgset.getCurrentDummyTranslationMessage(
+                self.pofile.language)
+        all_msgs.append(current)
+
+        imported = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.language)
+        if imported is not None:
+            all_msgs.append(imported)
+
+        all_msgs.extend(list(self.potmsgset.getLocalTranslationMessages(
+            self.pofile.language)))
+
+        #all_msgs.extend(list(self.potmsgset.getExternalTranslationMessages(
+        #    self.pofile.language)))
+
+        return all_msgs
+    messages = property(_getMessages, _setMessages)
 
     def destroySelf(self):
         """See `ITranslationMessage`."""
@@ -223,3 +251,31 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 return False
         # We found no translations in this translation_message
         return True
+
+    def _setMessages(self, current):
+        current.is_current = True
+        self._current = current
+
+    def _getMessages(self):
+        all_msgs = []
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.language)
+        if current is None:
+            current = self.potmsgset.getCurrentDummyTranslationMessage(
+                self.pofile.language)
+        all_msgs.append(current)
+
+        imported = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.language)
+        if imported is not None and not imported.is_current:
+            all_msgs.append(imported)
+
+        all_msgs.extend(list(self.potmsgset.getLocalTranslationMessages(
+            self.pofile.language)))
+
+        all_msgs.extend(list(self.potmsgset.getExternalTranslationMessages(
+            self.pofile.language)))
+
+        return all_msgs
+
+    messages = property(_getMessages, _setMessages)

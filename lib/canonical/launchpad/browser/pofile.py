@@ -21,7 +21,7 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.pomsgset import (
+from canonical.launchpad.browser.translationmessage import (
     BaseTranslationView, POMsgSetView)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
@@ -69,18 +69,18 @@ class POFileNavigation(Navigation):
                 "%r is not a valid sequence number." % name)
 
         # Need to check in our database whether we have already the requested
-        # POMsgSet.
-        pomsgset = potmsgset.getPOMsgSet(
-            self.context.language.code, self.context.variant)
+        # TranslationMessage.
+        translation = potmsgset.getCurrentTranslationMessage(
+            self.context.language)
 
-        if pomsgset is not None:
+        if translation is not None:
             # Already have a valid POMsgSet entry, just return it.
-            return pomsgset
+            return translation
         elif self.request.method in ['GET', 'HEAD']:
             # It's just a query, get a fake one so we don't create new
             # POMsgSet just because someone is browsing the web.
-            return potmsgset.getDummyPOMsgSet(
-                self.context.language.code, self.context.variant)
+            return potmsgset.getCurrentDummyTranslationMessage(
+                self.context.language)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
@@ -393,7 +393,7 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.context.validExportCache():
+        if self.context.is_cached_export_valid:
             # There is already a valid exported file cached in Librarian, we
             # can serve that file directly.
             self.request.response.redirect(self.context.exportfile.http_url)

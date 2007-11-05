@@ -213,6 +213,19 @@ class POFileMixIn(RosettaStats):
 
         return result
 
+    def getCurrentTranslationMessage(self, msgid_text, context=None,
+                                     ignore_obsolete=False):
+        """See `IPOFile`."""
+        if not isinstance(msgid_text, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode.)"
+                % type(msgid_text))
+
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(key=msgid_text,
+                                                            context=context)
+        return self.getCurrentTranslationMessageFromPOTMsgSet(
+            potmsgset, ignore_obsolete=ignore_obsolete)
+
 
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
@@ -420,46 +433,16 @@ class POFile(SQLBase, POFileMixIn):
             # There is no IPOTMsgSet for this id.
             return None
 
-        return POMsgSet.selectOneBy(
-            potmsgset=potmsgset, pofile=self)
-
-    def getCurrentTranslationMessage(self, msgid_text, context=None,
-                                     ignore_obsolete=False):
-        """See `IPOFile`."""
-        query = 'potemplate = %d' % self.potemplate.id
-        if ignore_obsolete:
-            query += ' AND sequence > 0'
-
-        if not isinstance(msgid_text, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode or POTMsgSet.)"
-                % type(msgid_text))
-
-        # Find a message ID with the given text.
-        try:
-            pomsgid = POMsgID.byMsgid(msgid_text)
-        except SQLObjectNotFound:
-            return None
-
-        # Find a message set with the given message ID.
-        if context is not None:
-            query += ' AND context=%s' % sqlvalues(context)
+        current = potmsgset.getCurrentTranslationMessage(self.language)
+        if current is None:
+            return DummyTranslationMessage(self, potmsgset)
         else:
-            query += ' AND context IS NULL'
-
-        potmsgset = POTMsgSet.selectOne(query +
-            (' AND msgid_singular = %s' % sqlvalues(pomsgid)))
-
-        if potmsgset is None:
-            # There is no IPOTMsgSet for this id.
-            return None
-
-        return TranslationMessage.selectOneBy(potmsgset=potmsgset, pofile=self)
+            return current
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
         translation_message = self.getCurrentTranslationMessage(
-            msgid_text, ignore_obsolete=True)
+            unicode(msgid_text), ignore_obsolete=True)
         if translation_message is None:
             raise NotFoundError(msgid_text)
         else:
@@ -540,11 +523,13 @@ class POFile(SQLBase, POFileMixIn):
             POTMsgSet.sequence > 0 AND
             TranslationMessage.potmsgset = POTMsgSet.id AND
             TranslationMessage.pofile = %s AND
+            TranslationMessage.is_current IS NOT TRUE AND
             TranslationMessage.date_created > COALESCE(
-                (SELECT current.date_reviewed
+                (SELECT COALESCE(current.date_reviewed, current.date_created)
                     FROM TranslationMessage current
                     WHERE current.potmsgset = POTMsgSet.id AND
                           current.pofile = TranslationMessage.pofile AND
+                          current.id != TranslationMessage.id AND
                           current.is_current IS TRUE
                     LIMIT 1),
                 TIMESTAMP '1970-01-01 00:00:00')
@@ -657,13 +642,14 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get the number of translations that we got from imports.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query.append('TranslationMessage.is_imported')
+        query.append('TranslationMessage.is_imported IS TRUE')
         query.append('NOT TranslationMessage.was_fuzzy_in_last_import')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
-        for plural_form in range(self.language.pluralforms):
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        for plural_form in range(1, self.language.pluralforms):
             query.append(
-                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
+                '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
 
         current = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()
@@ -676,9 +662,14 @@ class POFile(SQLBase, POFileMixIn):
         # were not translated.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
         query.append('NOT TranslationMessage.is_fuzzy')
-        for plural_form in range(self.language.pluralforms):
-            query.append(
-                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
+        # Check only complete translations.  For messages with only a single
+        # msgid, that's anything with a singular translation; for ones with a
+        # plural form, it's the number of plural forms the language supports.
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        for plural_form in range(1, self.language.pluralforms):
+            query.append("""
+                (POTMsgSet.msgid_plural IS NULL OR
+                 TranslationMessage.msgstr%d IS NOT NULL)""" % plural_form)
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
@@ -1041,7 +1032,7 @@ class DummyPOFile(POFileMixIn):
         self.translation_messages = None
 
     def __getitem__(self, msgid_text):
-        translation_message = self.getCurrentTranslationMesssage(
+        translation_message = self.getCurrentTranslationMessage(
             msgid_text, ignore_obsolete=True)
         if translation_message is None:
             raise NotFoundError(msgid_text)
@@ -1097,41 +1088,7 @@ class DummyPOFile(POFileMixIn):
             # There is no IPOTMsgSet for this id.
             return None
 
-        return DummyPOMsgSet(self, potmsgset)
-
-    def getCurrentTranslationMessage(self, msgid_text, context=None,
-                                     ignore_obsolete=False):
-        """See `IPOFile`."""
-        query = 'potemplate = %d' % sqlvalues(self.potemplate)
-        if ignore_obsolete:
-            query += ' AND sequence > 0'
-
-        if not isinstance(msgid_text, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode or POTMsgSet.)"
-                % type(msgid_text))
-
-        # Find a message ID with the given text.
-        try:
-            pomsgid = POMsgID.byMsgid(msgid_text)
-        except SQLObjectNotFound:
-            return None
-
-        # Find a message set with the given message ID.
-
-        if context is not None:
-            query += ' AND context=%s' % sqlvalues(context)
-        else:
-            query += ' AND context IS NULL'
-
-        potmsgset = POTMsgSet.selectOne(query +
-            (' AND msgid_singular = %s' % sqlvalues(pomsgid)))
-
-        if potmsgset is None:
-            # There is no IPOTMsgSet for this id.
-            return None
-
-        return DummyPOMsgSet(self, potmsgset)
+        return DummyTranslationMessage(self, potmsgset)
 
     def emptySelectResults(self):
         return POFile.select("1=2")

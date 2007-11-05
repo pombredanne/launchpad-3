@@ -303,13 +303,21 @@ class ITranslationImportQueue(Interface):
 class IEditTranslationImportQueueEntry(Interface):
     """Set of widgets needed to moderate an entry on the imports queue."""
 
-    potemplatename = Choice(
-        title=_("Template Name"),
-        description=_("The name of this PO template, for example"
-            " 'evolution-2.2'. Each translation template's name"
-            " is unique within its package"),
-        required=True,
-        vocabulary="POTemplateName")
+    potemplatename = TextLine(
+        title=_("Template name"),
+        description=_("The name of this PO template, for example "
+            "'evolution-2.2'. Each translation template has a "
+            "unique name in its package. It's important to get this "
+            "correct, because Launchpad will recommend alternative "
+            "translations based on the name."),
+        required=True)
+
+    translation_domain = TextLine(
+        title=_("Translation domain"),
+        description=_("The translation domain for a translation template. "
+            "Used with PO file format when generating MO files for inclusion "
+            "in language pack or MO tarball exports."),
+        required=True)
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),

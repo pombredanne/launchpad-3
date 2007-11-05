@@ -50,7 +50,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             field_values['sourcepackagename'] = self.context.sourcepackagename
         if self.context.potemplate is not None:
             field_values['potemplatename'] = (
-                self.context.potemplate.potemplatename.name)
+                self.context.potemplate.name)
+            field_values['translation_domain'] = (
+                self.context.potemplate.translation_domain)
         if self.context.pofile is not None:
             field_values['language'] = self.context.pofile.language
             field_values['variant'] = self.context.pofile.variant
@@ -82,8 +84,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
-        self.field_names = ['sourcepackagename', 'potemplatename', 'path',
-                            'language', 'variant']
+        self.field_names = ['sourcepackagename', 'potemplatename',
+                            'translation_domain', 'path', 'language',
+                            'variant']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -119,6 +122,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     def change_action(self, action, data):
         """Process the form we got from the submission."""
         potemplatename = data.get('potemplatename')
+        translation_domain = data.get('translation_domain')
         path = data.get('path')
         sourcepackagename = data.get('sourcepackagename')
         language = data.get('language')
@@ -141,10 +145,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             potemplate_subset = potemplate_set.getSubset(
                 productseries=self.context.productseries)
         try:
-            potemplate = potemplate_subset[potemplatename.name]
+            potemplate = potemplate_subset[potemplatename]
         except NotFoundError:
             potemplate = potemplate_subset.new(
                 potemplatename,
+                translation_domain,
                 self.context.path,
                 self.context.importer)
 

@@ -544,9 +544,7 @@ ALTER TABLE POTMsgSet
 UPDATE POTMsgSet
 SET msgid_plural = sighting.pomsgid
 FROM POMsgIDSighting sighting
-WHERE
-    sighting.potmsgset = POTMsgSet.id AND pluralform = 1 AND
-    sighting.inlastrevision;
+WHERE potmsgset = POTMsgSet.id AND pluralform = 1 AND inlastrevision;
 
 DROP TABLE POMsgIDSighting;
 

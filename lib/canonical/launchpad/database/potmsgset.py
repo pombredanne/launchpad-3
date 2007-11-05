@@ -9,16 +9,15 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
-    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
+    RosettaTranslationOrigin, TranslationConflict,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
@@ -118,7 +117,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationMessage.select(
             """id in (
-              SELECT DISTINCT ON (msgstr0) TranslationMessage.id
+              SELECT TranslationMessage.id
                  FROM TranslationMessage
                  LEFT JOIN POTMsgSet ON
                    TranslationMessage.potmsgset = POTMsgSet.id
@@ -560,19 +559,22 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
-        return self.msgid_singular.msgid in [
+        return (self.msgid_singular is not None and
+                self.msgid_singular.msgid in [
             u'translation-credits',
             u'translator-credits',
             u'translator_credits',
             u'_: EMAIL OF TRANSLATORS\nYour emails',
             u'Your emails',
-            ]
+            ])
 
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
+        if self.msgid_singular is None:
+            return False
         regular_credits = self.msgid_singular.msgid in [
             u'translation-credits',
             u'translator-credits',
