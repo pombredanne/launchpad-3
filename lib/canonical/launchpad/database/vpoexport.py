@@ -260,7 +260,7 @@ class VPOExport:
          self.translation_file_comment,
          self.translation_header,
          self.is_translation_header_fuzzy,
-         potmsgset
+         potmsgset,
          self.sequence,
          self.comment,
          self.source_comment,
