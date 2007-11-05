@@ -15,6 +15,7 @@ from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.database import Language
 from canonical.launchpad.database import POFile
 from canonical.launchpad.database import POTemplate
+from canonical.launchpad.database import POTMsgSet
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
 class VPOExportSet:
@@ -258,6 +259,7 @@ class VPOExport:
          self.translation_file_comment,
          self.translation_header,
          self.is_translation_header_fuzzy,
+         potmsgset,
          self.sequence,
          self.comment,
          self.source_comment,
@@ -288,4 +290,3 @@ class VPOExport:
                 self.translation0 = self.pofile.prepareTranslationCredits(
                     potmsgset)
                 self.is_current = True
-

@@ -108,8 +108,8 @@ it to return:
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, ANONYMOUS
   >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IBugSet, IBugTrackerSet, ILaunchpadCelebrities)
-  >>> from canonical.lp.dbschema import BugTrackerType
+  ...     BugTrackerType, IPersonSet, IBugSet, IBugTrackerSet,
+  ...     ILaunchpadCelebrities)
   >>> from canonical.launchpad.scripts import bugzilla
 
 Get a reference to the Ubuntu bug tracker, and log in:

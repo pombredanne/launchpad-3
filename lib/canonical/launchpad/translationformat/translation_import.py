@@ -52,7 +52,7 @@ class ExistingPOFileInDatabase:
         self.is_imported = is_imported
 
         # Dict indexed by (msgid, context) containing current
-        # TranslationMessages: doing this for the speed.
+        # TranslationMessageData: doing this for the speed.
         self.messages = {}
         # Messages which have been seen in the file: messages which exist
         # in the database, but not in the import, will be expired.
@@ -411,7 +411,6 @@ class TranslationImporter:
 
                 errors.append(error)
                 continue
-
 
             # Update the position
             count += 1

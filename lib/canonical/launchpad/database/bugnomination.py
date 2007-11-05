@@ -26,10 +26,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp import dbschema
-
 from canonical.launchpad.interfaces import (
-    IBugNomination, IBugTaskSet, IBugNominationSet,
+    BugNominationStatus, IBugNomination, IBugTaskSet, IBugNominationSet,
     ILaunchpadCelebrities, NotFoundError)
 
 class BugNomination(SQLBase):
@@ -49,8 +47,8 @@ class BugNomination(SQLBase):
         notNull=False, default=None)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     status = EnumCol(
-        dbName='status', notNull=True, schema=dbschema.BugNominationStatus,
-        default=dbschema.BugNominationStatus.PROPOSED)
+        dbName='status', notNull=True, schema=BugNominationStatus,
+        default=BugNominationStatus.PROPOSED)
 
     @property
     def target(self):
@@ -59,7 +57,7 @@ class BugNomination(SQLBase):
 
     def approve(self, approver):
         """See IBugNomination."""
-        self.status = dbschema.BugNominationStatus.APPROVED
+        self.status = BugNominationStatus.APPROVED
         self.decider = approver
         self.date_decided = datetime.now(pytz.timezone('UTC'))
 
@@ -88,21 +86,21 @@ class BugNomination(SQLBase):
 
     def decline(self, decliner):
         """See IBugNomination."""
-        self.status = dbschema.BugNominationStatus.DECLINED
+        self.status = BugNominationStatus.DECLINED
         self.decider = decliner
         self.date_decided = datetime.now(pytz.timezone('UTC'))
 
     def isProposed(self):
         """See IBugNomination."""
-        return self.status == dbschema.BugNominationStatus.PROPOSED
+        return self.status == BugNominationStatus.PROPOSED
 
     def isDeclined(self):
         """See IBugNomination."""
-        return self.status == dbschema.BugNominationStatus.DECLINED
+        return self.status == BugNominationStatus.DECLINED
 
     def isApproved(self):
         """See IBugNomination."""
-        return self.status == dbschema.BugNominationStatus.APPROVED
+        return self.status == BugNominationStatus.APPROVED
 
     def canApprove(self, person):
         """See IBugNomination."""

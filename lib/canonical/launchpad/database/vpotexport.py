@@ -24,6 +24,7 @@ class VPOTExportSet:
     column_names = [
         'potemplate',
         'template_header',
+        'potmsgset',
         'sequence',
         'comment',
         'source_comment',
@@ -82,6 +83,7 @@ class VPOTExport:
     def __init__(self, *args):
         (potemplate,
          self.template_header,
+         potmsgset,
          self.sequence,
          self.comment,
          self.source_comment,

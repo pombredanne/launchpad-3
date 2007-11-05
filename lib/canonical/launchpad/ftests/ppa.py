@@ -113,5 +113,3 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             pocket=PackagePublishingPocket.RELEASE,
             embargo=False,
             archive=archive)
-
-
