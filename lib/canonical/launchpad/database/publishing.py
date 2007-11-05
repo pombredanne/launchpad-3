@@ -560,7 +560,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             embargo=False)
 
 
-
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 

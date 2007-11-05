@@ -443,7 +443,6 @@ suggestions.
     ...                                     published=False)
     >>> print entry.status.name
     IMPORTED
-    >>> flush_database_caches()
 
 Notice that "second" message is indeed updated properly.  We are making sure
 we don't get any problems with too many inactive suggestions for that

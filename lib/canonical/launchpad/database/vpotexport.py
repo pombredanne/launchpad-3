@@ -25,6 +25,7 @@ class VPOTExportSet:
         'potemplate',
         'potmsgset',
         'template_header',
+        'potmsgset',
         'sequence',
         'comment',
         'source_comment',
@@ -83,7 +84,6 @@ class VPOTExport:
     def __init__(self, *args):
         (potemplate,
          potmsgset,
-         self.template_header,
          self.sequence,
          self.comment,
          self.source_comment,

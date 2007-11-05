@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:comment condition="nothing">
   Indicates if no templates are registered for this object, and
   redirects to the mailing lists in case that is incorrect.
@@ -19,7 +25,7 @@
 
   <tal:block condition="potemplates">
 
-    <tal:block tal:condition="python:len(potemplates) > 5">
+    <tal:block tal:condition="python:len(potemplates) &gt; 5">
       <!-- Listing of MANY templates -->
 
       <p>
@@ -46,7 +52,7 @@
 
     </tal:block>
 
-    <tal:listing tal:condition="python:len(potemplates) <= 5">
+    <tal:listing tal:condition="python:len(potemplates) &lt;= 5">
       <!-- Listing of FEW templates -->
 
       <div tal:condition="not: view/translatable_languages">
@@ -88,3 +94,4 @@
   </tal:block>
 
 </tal:content>
+</tal:root>
