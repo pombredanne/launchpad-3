@@ -15,8 +15,8 @@ from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.database import Language
 from canonical.launchpad.database import POFile
 from canonical.launchpad.database import POTemplate
+from canonical.launchpad.database import POTMsgSet
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
-
 
 class VPOExportSet:
     """Retrieve collections of VPOExport objects."""
@@ -32,6 +32,7 @@ class VPOExportSet:
         'translation_file_comment',
         'translation_header',
         'is_translation_header_fuzzy',
+        'potmsgset',
         'sequence',
         'comment',
         'source_comment',
@@ -259,6 +260,7 @@ class VPOExport:
          self.translation_file_comment,
          self.translation_header,
          self.is_translation_header_fuzzy,
+         potmsgset
          self.sequence,
          self.comment,
          self.source_comment,
@@ -276,15 +278,14 @@ class VPOExport:
          self.translation3) = args
 
         self.potemplate = POTemplate.get(potemplate)
+        self.potmsgset = POTMsgSet.get(potmsgset)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-                self.msgid_singular)
-            if potmsgset and potmsgset.is_translation_credit:
+            if self.potmsgset.is_translation_credit:
                 # Translation credits doesn't have plural forms so we only
                 # update the singular one.
                 self.translation0 = self.pofile.prepareTranslationCredits(
-                    potmsgset)
+                    self.potmsgset)

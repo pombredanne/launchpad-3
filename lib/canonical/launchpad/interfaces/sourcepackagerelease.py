@@ -10,7 +10,6 @@ from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-
 from canonical.launchpad.interfaces import BuildStatus
 
 class ISourcePackageRelease(Interface):

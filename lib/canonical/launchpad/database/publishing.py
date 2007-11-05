@@ -534,7 +534,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
-        SecureSourcePackagePublishingHistory(
+        return SecureSourcePackagePublishingHistory(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
             status=PackagePublishingStatus.PENDING,
@@ -543,13 +543,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket=current.pocket,
             component=new_component,
             section=new_section,
-            archive=current.archive
-        )
+            archive=current.archive)
 
     def copyTo(self, distroseries, pocket):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
-        copy = SecureSourcePackagePublishingHistory(
+        return SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=current.archive,
@@ -558,9 +557,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=current.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            embargo=False,
-        )
-        return copy
+            embargo=False)
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -714,7 +711,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
-        SecureBinaryPackagePublishingHistory(
+        return SecureBinaryPackagePublishingHistory(
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
@@ -724,8 +721,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=current.archive
-            )
+            archive=current.archive)
 
     def copyTo(self, distroseries, pocket):
         """See `BinaryPackagePublishingHistory`."""
@@ -734,7 +730,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         current = self.secure_record
         target_das = distroseries[current.distroarchseries.architecturetag]
 
-        copy = SecureBinaryPackagePublishingHistory(
+        return SecureBinaryPackagePublishingHistory(
             archive=current.archive,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=target_das,
@@ -744,6 +740,4 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket,
-            embargo=False
-        )
-        return copy
+            embargo=False)

@@ -26,11 +26,10 @@ from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugWatchSet,
-    IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
+    BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
+    IBugWatchSet, IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
     IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests

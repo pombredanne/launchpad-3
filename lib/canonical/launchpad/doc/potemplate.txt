@@ -515,6 +515,38 @@ Templates can be exported to its native format.
     "automatically update the feed URL to the new address.</p>"
     msgstr ""
 
+There are some situations when a msgidplural changes, while the msgid
+singular remains unchanged.
+
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'Found %i invalid file.')
+
+    # It has plural forms.
+    >>> print potmsgset.msgid_plural
+    Found %i invalid files.
+
+    # We change the plural form.
+    >>> from canonical.launchpad.interfaces import TranslationConstants
+    >>> pomsgidsighting = potmsgset.makeMessageIDSighting(
+    ...     u'something else', TranslationConstants.PLURAL_FORM, update=True)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> print potmsgset.msgid_plural
+    something else
+
+When that happens, the export should reflect that change.
+
+    >>> print potemplate.export()
+    #, fuzzy
+    ...
+    #: encfs/encfsctl.cpp:346
+    #, c-format
+    msgid "Found %i invalid file."
+    msgid_plural "something else"
+    msgstr[0] ""
+    msgstr[1] ""
+    ...
+
 
 == exportWithTranslations() ==
 

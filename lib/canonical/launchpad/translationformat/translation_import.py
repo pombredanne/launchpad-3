@@ -52,7 +52,7 @@ class ExistingPOFileInDatabase:
         self.is_imported = is_imported
 
         # Dict indexed by (msgid, context) containing current
-        # TranslationMessages: doing this for the speed.
+        # TranslationMessageData: doing this for the speed.
         self.messages = {}
         # Messages which have been seen in the file: messages which exist
         # in the database, but not in the import, will be expired.
@@ -375,8 +375,9 @@ class TranslationImporter:
 
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
-            if (message.msgid_plural and self.pofile is not None and
-                (message.msgid_plural != potmsgset.msgid_plural.msgid)):
+            if (message.msgid_plural is not None and
+                message.msgid_plural != potmsgset.msgid_plural.msgid and
+                self.pofile is not None):
                 # The PO file wants to change the plural msgid from the PO
                 # template, that's broken and not usual, so we raise an
                 # exception to log the issue. It needs to be fixed
@@ -403,7 +404,6 @@ class TranslationImporter:
 
                 errors.append(error)
                 continue
-
 
             # Update the position
             count += 1

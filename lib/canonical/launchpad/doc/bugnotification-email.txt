@@ -390,8 +390,7 @@ We can also add a bugwatch while adding a new bugtask.
 
 Adding a CVE will generate a notification that looks as follows:
 
-    >>> from canonical.launchpad.interfaces import IBugCve
-    >>> from canonical.lp.dbschema import CveStatus
+    >>> from canonical.launchpad.interfaces import CveStatus, IBugCve
 
     >>> class MockCVE:
     ...     implements(ICve)
