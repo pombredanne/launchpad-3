@@ -16,9 +16,10 @@ CREATE TABLE TranslationMessage(
     id serial,
     pofile integer NOT NULL,
     potmsgset integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    date_created timestamp WITHOUT TIME ZONE
+        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     submitter integer NOT NULL,
-    date_reviewed timestamp without time zone, 
+    date_reviewed timestamp WITHOUT TIME ZONE,
     reviewer integer,
     msgstr0 integer,
     msgstr1 integer,
@@ -41,7 +42,6 @@ CREATE TABLE TranslationMessage(
     id2 integer,
     id3 integer
 );
-
 
 -- Create TranslationMessages based each on 1 POMsgSet and up to 4 associated
 -- POSubmissions (for the up to 4 plural forms that we support).
@@ -84,283 +84,273 @@ CREATE TABLE TranslationMessage(
 
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validation_status, is_current, is_imported,
-	was_obsolete_in_last_import, was_fuzzy_in_last_import,
-    is_fuzzy, date_created, date_reviewed, comment_text,
-	msgsetid, id0, id1, id2, id3)
+    msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
+    reviewer, validation_status, is_current, is_imported,
+    was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
+    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
 SELECT
-	s0.potranslation AS msgstr0,
-	s1.potranslation AS msgstr1,
-	s2.potranslation AS msgstr2,
-	s3.potranslation AS msgstr3,
-	m.pofile AS pofile,
-	m.potmsgset AS potmsgset,
-	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
-	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validation_status,
-	TRUE AS is_current,
-	TRUE AS is_imported,
-	m.obsolete AS was_obsolete_in_last_import,
+    s0.potranslation AS msgstr0,
+    s1.potranslation AS msgstr1,
+    s2.potranslation AS msgstr2,
+    s3.potranslation AS msgstr3,
+    m.pofile AS pofile,
+    m.potmsgset AS potmsgset,
+    COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
+    COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+    m.reviewer AS reviewer,
+    COALESCE(s0.validationstatus, 1) AS validation_status,
+    TRUE AS is_current,
+    TRUE AS is_imported,
+    m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
-	m.isfuzzy AS is_fuzzy,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
-		AS date_created,
-	m.date_reviewed AS date_reviewed,
-	m.commenttext AS comment_text,
-
-	m.id AS msgsetid,
-	s0.id AS id0,
-	s1.id AS id1,
-	s2.id AS id2,
-	s3.id AS id3
+    m.isfuzzy AS is_fuzzy,
+    COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+        AS date_created,
+    m.date_reviewed AS date_reviewed,
+    m.commenttext AS comment_text,
+    m.id AS msgsetid,
+    s0.id AS id0,
+    s1.id AS id1,
+    s2.id AS id2,
+    s3.id AS id3
 FROM POMsgSet m
-LEFT OUTER JOIN POSubmission AS s0 ON
-	s0.pomsgset = m.id AND
-	s0.pluralform = 0
-LEFT OUTER JOIN POSubmission AS s1 ON
-	s1.pomsgset = m.id AND
-	s1.pluralform = 1
-LEFT OUTER JOIN POSubmission AS s2 ON
-	s2.pomsgset = m.id AND
-	s2.pluralform = 2
-LEFT OUTER JOIN POSubmission AS s3 ON
-	s3.pomsgset = m.id AND
-	s3.pluralform = 3
+        LEFT OUTER JOIN POSubmission AS s0 ON
+            s0.pomsgset = m.id AND
+            s0.pluralform = 0 AND
+            s0.active IS NOT FALSE AND
+            s0.published IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s1 ON
+            s1.pomsgset = m.id AND
+            s1.pluralform = 1 AND
+            s1.active IS NOT FALSE AND
+            s1.published IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s2 ON
+            s2.pomsgset = m.id AND
+            s2.pluralform = 2 AND
+            s2.active IS NOT FALSE AND
+            s2.published IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s3 ON
+            s3.pomsgset = m.id AND
+            s3.pluralform = 3 AND
+            s3.active IS NOT FALSE AND
+            s3.published IS NOT FALSE
 WHERE
-	(s0.id IS NOT NULL OR
-	 s1.id IS NOT NULL OR
-	 s2.id IS NOT NULL OR
-	 s3.id IS NOT NULL) AND
-	s0.active IS NOT FALSE AND
-	s1.active IS NOT FALSE AND
-	s2.active IS NOT FALSE AND
-	s3.active IS NOT FALSE AND
-	s0.published IS NOT FALSE AND
-	s1.published IS NOT FALSE AND
-	s2.published IS NOT FALSE AND
-	s3.published IS NOT FALSE
-;
+    s0.id IS NOT NULL OR
+    s1.id IS NOT NULL OR
+    s2.id IS NOT NULL OR
+    s3.id IS NOT NULL;
 
 -- SELECT 'Migrating active, non-published submissions', statement_timestamp();	-- DEBUG
 
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validation_status, is_current, is_imported,
-	was_obsolete_in_last_import, was_fuzzy_in_last_import,
-    is_fuzzy, date_created, date_reviewed, comment_text,
-	msgsetid, id0, id1, id2, id3)
+    msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
+    reviewer, validation_status, is_current, is_imported,
+    was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
+    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
 SELECT
-	s0.potranslation AS msgstr0,
-	s1.potranslation AS msgstr1,
-	s2.potranslation AS msgstr2,
-	s3.potranslation AS msgstr3,
-	m.pofile AS pofile,
-	m.potmsgset AS potmsgset,
-	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
-	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validation_status,
-	TRUE AS is_current,
-	FALSE AS is_imported,
-	m.obsolete AS was_obsolete_in_last_import,
+    s0.potranslation AS msgstr0,
+    s1.potranslation AS msgstr1,
+    s2.potranslation AS msgstr2,
+    s3.potranslation AS msgstr3,
+    m.pofile AS pofile,
+    m.potmsgset AS potmsgset,
+    COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
+    COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+    m.reviewer AS reviewer,
+    COALESCE(s0.validationstatus, 1) AS validation_status,
+    TRUE AS is_current,
+    FALSE AS is_imported,
+    m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
-	m.isfuzzy AS is_fuzzy,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
-		AS date_created,
-	m.date_reviewed AS date_reviewed,
-	m.commenttext AS comment_text,
-
-	m.id AS msgsetid,
-	s0.id AS id0,
-	s1.id AS id1,
-	s2.id AS id2,
-	s3.id AS id3
+    m.isfuzzy AS is_fuzzy,
+    COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+        AS date_created,
+    m.date_reviewed AS date_reviewed,
+    m.commenttext AS comment_text,
+    m.id AS msgsetid,
+    s0.id AS id0,
+    s1.id AS id1,
+    s2.id AS id2,
+    s3.id AS id3
 FROM POMsgSet m
-LEFT OUTER JOIN POSubmission AS s0 ON
-	s0.pomsgset = m.id AND
-	s0.pluralform = 0 AND
-	s0.active
-LEFT OUTER JOIN POSubmission AS s1 ON
-	s1.pomsgset = m.id AND
-	s1.pluralform = 1 AND
-	s1.active
-LEFT OUTER JOIN POSubmission AS s2 ON
-	s2.pomsgset = m.id AND
-	s2.pluralform = 2 AND
-	s2.active
-LEFT OUTER JOIN POSubmission AS s3 ON
-	s3.pomsgset = m.id AND
-	s3.pluralform = 3 AND
-	s3.active
+        LEFT OUTER JOIN POSubmission AS s0 ON
+            s0.pomsgset = m.id AND
+            s0.pluralform = 0 AND
+            s0.active IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s1 ON
+            s1.pomsgset = m.id AND
+            s1.pluralform = 1 AND
+            s1.active IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s2 ON
+            s2.pomsgset = m.id AND
+            s2.pluralform = 2 AND
+            s2.active IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s3 ON
+            s3.pomsgset = m.id AND
+            s3.pluralform = 3 AND
+            s3.active IS NOT FALSE
 WHERE
-	-- At least one "published" must be an actual FALSE (not just NULL).
-	NOT s0.published OR
-	NOT s1.published OR
-	NOT s2.published OR
-	NOT s3.published
-;
+    -- At least one "published" must be an actual FALSE (not just NULL).
+    NOT s0.published OR
+    NOT s1.published OR
+    NOT s2.published OR
+    NOT s3.published;
 
 -- SELECT 'Migrating non-active, published submissions', statement_timestamp();	-- DEBUG
 
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validation_status, is_current, is_imported,
-	was_obsolete_in_last_import, was_fuzzy_in_last_import,
-    is_fuzzy, date_created, date_reviewed, comment_text,
-	msgsetid, id0, id1, id2, id3)
+    msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
+    reviewer, validation_status, is_current, is_imported,
+    was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
+    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
 SELECT
-	s0.potranslation AS msgstr0,
-	s1.potranslation AS msgstr1,
-	s2.potranslation AS msgstr2,
-	s3.potranslation AS msgstr3,
-	m.pofile AS pofile,
-	m.potmsgset AS potmsgset,
-	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
-	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validation_status,
-	FALSE AS is_current,
-	TRUE AS is_imported,
-
-	m.obsolete AS was_obsolete_in_last_import,
+    s0.potranslation AS msgstr0,
+    s1.potranslation AS msgstr1,
+    s2.potranslation AS msgstr2,
+    s3.potranslation AS msgstr3,
+    m.pofile AS pofile,
+    m.potmsgset AS potmsgset,
+    COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
+    COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+    m.reviewer AS reviewer,
+    COALESCE(s0.validationstatus, 1) AS validation_status,
+    FALSE AS is_current,
+    TRUE AS is_imported,
+    m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
-	m.isfuzzy AS is_fuzzy,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
-		AS date_created,
-	m.date_reviewed AS date_reviewed,
-	m.commenttext AS comment_text,
-
-	m.id AS msgsetid,
-	s0.id AS id0,
-	s1.id AS id1,
-	s2.id AS id2,
-	s3.id AS id3
+    m.isfuzzy AS is_fuzzy,
+    COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+        AS date_created,
+    m.date_reviewed AS date_reviewed,
+    m.commenttext AS comment_text,
+    m.id AS msgsetid,
+    s0.id AS id0,
+    s1.id AS id1,
+    s2.id AS id2,
+    s3.id AS id3
 FROM POMsgSet m
-LEFT OUTER JOIN POSubmission AS s0 ON
-	s0.pomsgset = m.id AND
-	s0.pluralform = 0 AND
-	s0.published
-LEFT OUTER JOIN POSubmission AS s1 ON
-	s1.pomsgset = m.id AND
-	s1.pluralform = 1 AND
-	s1.published
-LEFT OUTER JOIN POSubmission AS s2 ON
-	s2.pomsgset = m.id AND
-	s2.pluralform = 2 AND
-	s2.published
-LEFT OUTER JOIN POSubmission AS s3 ON
-	s3.pomsgset = m.id AND
-	s3.pluralform = 3 AND
-	s3.published
+        LEFT OUTER JOIN POSubmission AS s0 ON
+            s0.pomsgset = m.id AND
+            s0.pluralform = 0 AND
+            s0.published IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s1 ON
+            s1.pomsgset = m.id AND
+            s1.pluralform = 1 AND
+            s1.published IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s2 ON
+            s2.pomsgset = m.id AND
+            s2.pluralform = 2 AND
+            s2.published IS NOT FALSE
+        LEFT OUTER JOIN POSubmission AS s3 ON
+            s3.pomsgset = m.id AND
+            s3.pluralform = 3 AND
+            s3.published IS NOT FALSE
 WHERE
-	-- At least one "active" must be FALSE (not just NULL).
-	NOT s0.active OR NOT s1.active OR NOT s2.active OR NOT s3.active
-;
+    -- At least one "active" must be FALSE (not just NULL).
+    NOT s0.active OR
+    NOT s1.active OR
+    NOT s2.active OR
+    NOT s3.active;
 
 -- SELECT 'Migrating non-active, non-published submissions', statement_timestamp();	-- DEBUG
 
 -- Bundle POSubmissions that are not all published or active (but are all by
 -- the same person and created at the same time).
 INSERT INTO TranslationMessage(
-	msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin,
-	submitter, reviewer, validation_status, is_current, is_imported,
-	was_obsolete_in_last_import, was_fuzzy_in_last_import,
-    is_fuzzy, date_created, date_reviewed, comment_text,
-    msgsetid, id0, id1, id2, id3)
+    msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
+    reviewer, validation_status, is_current, is_imported,
+    was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
+    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
 SELECT
-	s0.potranslation AS msgstr0,
-	s1.potranslation AS msgstr1,
-	s2.potranslation AS msgstr2,
-	s3.potranslation AS msgstr3,
-	m.pofile AS pofile,
-	m.potmsgset AS potmsgset,
-	COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
-	COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
-	m.reviewer AS reviewer,
-	COALESCE(s0.validationstatus, 1) AS validation_status,
-	FALSE AS is_current,
-	FALSE AS is_imported,
-	m.obsolete AS was_obsolete_in_last_import,
+    s0.potranslation AS msgstr0,
+    s1.potranslation AS msgstr1,
+    s2.potranslation AS msgstr2,
+    s3.potranslation AS msgstr3,
+    m.pofile AS pofile,
+    m.potmsgset AS potmsgset,
+    COALESCE(s0.origin, s1.origin, s2.origin, s3.origin) AS origin,
+    COALESCE(s0.person, s1.person, s2.person, s3.person) AS submitter,
+    m.reviewer AS reviewer,
+    COALESCE(s0.validationstatus, 1) AS validation_status,
+    FALSE AS is_current,
+    FALSE AS is_imported,
+    m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
-	m.isfuzzy AS is_fuzzy,
-	COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
-		AS date_created,
-	m.date_reviewed AS date_reviewed,
-	m.commenttext AS comment_text,
-
-	m.id AS msgsetid,
-	s0.id AS id0,
-	s1.id AS id1,
-	s2.id AS id2,
-	s3.id AS id3
+    m.isfuzzy AS is_fuzzy,
+    COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
+        AS date_created,
+    m.date_reviewed AS date_reviewed,
+    m.commenttext AS comment_text,
+    m.id AS msgsetid,
+    s0.id AS id0,
+    s1.id AS id1,
+    s2.id AS id2,
+    s3.id AS id3
 FROM POMsgSet m
-LEFT OUTER JOIN POSubmission AS s0 ON
-	s0.pomsgset = m.id AND
-	s0.pluralform = 0
-LEFT OUTER JOIN POSubmission AS s1 ON
-	s1.pomsgset = m.id AND
-	s1.pluralform = 1 AND
-	(s0.id IS NULL OR
-	 (s1.person = s0.person AND
-	  s1.datecreated = s0.datecreated))
-LEFT OUTER JOIN POSubmission AS s2 ON
-	s2.pomsgset = m.id AND
-	s2.pluralform = 2 AND
-	((s0.id IS NULL AND s1.id IS NULL) OR
-	 (s2.person = COALESCE(s0.person, s1.person) AND
-	  s2.datecreated = COALESCE(s0.datecreated, s1.datecreated)))
-LEFT OUTER JOIN POSubmission AS s3 ON
-	s3.pomsgset = m.id AND
-	s3.pluralform = 3 AND
-	((s0.id IS NULL AND s1.id IS NULL AND s2.id IS NULL) OR
-	 (s3.person = COALESCE(s0.person, s1.person, s2.person) AND
-	  s3.datecreated = COALESCE(s0.datecreated, s1.datecreated, s2.datecreated)))
+        LEFT OUTER JOIN POSubmission AS s0 ON
+            s0.pomsgset = m.id AND
+            s0.pluralform = 0
+        LEFT OUTER JOIN POSubmission AS s1 ON
+            s1.pomsgset = m.id AND
+            s1.pluralform = 1 AND
+            (s0.id IS NULL OR
+             (s1.person = s0.person AND
+              s1.datecreated = s0.datecreated))
+        LEFT OUTER JOIN POSubmission AS s2 ON
+            s2.pomsgset = m.id AND
+            s2.pluralform = 2 AND
+            ((s0.id IS NULL AND s1.id IS NULL) OR
+             (s2.person = COALESCE(s0.person, s1.person) AND
+              s2.datecreated = COALESCE(s0.datecreated, s1.datecreated)))
+        LEFT OUTER JOIN POSubmission AS s3 ON
+            s3.pomsgset = m.id AND
+            s3.pluralform = 3 AND
+            ((s0.id IS NULL AND s1.id IS NULL AND s2.id IS NULL) OR
+             (s3.person = COALESCE(s0.person, s1.person, s2.person) AND
+              s3.datecreated = COALESCE(s0.datecreated, s1.datecreated, s2.datecreated)))
 WHERE
-	(NOT s0.active OR NOT s1.active OR NOT s2.active OR NOT s3.active) AND
-	(NOT s0.published OR
-	 NOT s1.published OR
-	 NOT s2.published OR
-	 NOT s3.published)
-;
-
+    (NOT s0.active OR
+     NOT s1.active OR
+     NOT s2.active OR
+     NOT s3.active) AND
+    (NOT s0.published OR
+     NOT s1.published OR
+     NOT s2.published OR
+     NOT s3.published);
 
 -- SELECT 'Migrating POMsgSets without POSubmissions', statement_timestamp();	-- DEBUG
 
 INSERT INTO TranslationMessage(
-	pofile, potmsgset, origin, submitter, reviewer, validation_status,
-	is_current, is_imported,
-	was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
-    date_created, date_reviewed, comment_text, msgsetid)
+    pofile, potmsgset, origin, submitter, reviewer, validation_status,
+    is_current, is_imported, was_obsolete_in_last_import,
+    was_fuzzy_in_last_import, is_fuzzy, date_created, date_reviewed,
+    comment_text, msgsetid)
 SELECT
-	m.pofile AS pofile,
-	m.potmsgset AS potmsgset,
-	-- We're only converting these POMsgSets if they have a reviewer, so
-	-- origin must be ROSETTAWEB.
-	2 AS origin,
-	m.reviewer AS submitter,
-	m.reviewer AS reviewer,
-	-- Validation status is OK.
-	1 AS validation_status,
-	-- Empty translation messages only make sense where they're current.
-	TRUE AS is_current,
-	FALSE AS is_imported,
-	m.obsolete AS was_obsolete_in_last_import,
+    m.pofile AS pofile,
+    m.potmsgset AS potmsgset,
+    -- We're only converting these POMsgSets if they have a reviewer, so
+    -- origin must be ROSETTAWEB.
+    2 AS origin,
+    m.reviewer AS submitter,
+    m.reviewer AS reviewer,
+    -- Validation status is OK.
+    1 AS validation_status,
+    -- Empty translation messages only make sense where they're current.
+    TRUE AS is_current,
+    FALSE AS is_imported,
+    m.obsolete AS was_obsolete_in_last_import,
     m.publishedfuzzy AS was_fuzzy_in_last_import,
-	m.isfuzzy AS is_fuzzy,
-	m.date_reviewed AS date_created,
-	m.date_reviewed AS date_reviewed,
-	m.commenttext AS comment_text,
-
-	m.id AS msgsetid
+    m.isfuzzy AS is_fuzzy,
+    m.date_reviewed AS date_created,
+    m.date_reviewed AS date_reviewed,
+    m.commenttext AS comment_text,
+    m.id AS msgsetid
 FROM POMsgSet m
-LEFT OUTER JOIN POSubmission ON POSubmission.pomsgset = m.id
-WHERE POSubmission.id IS NULL AND reviewer IS NOT NULL
-;
-
+        LEFT OUTER JOIN POSubmission ON POSubmission.pomsgset = m.id
+WHERE
+    POSubmission.id IS NULL AND reviewer IS NOT NULL;
 
 -- SELECT 'Patching up ValidationStatus', statement_timestamp();	-- DEBUG
 
@@ -370,31 +360,37 @@ WHERE POSubmission.id IS NULL AND reviewer IS NOT NULL
 -- case can it be left at whatever the pluralform-0 POSubmission had for its
 -- status.
 UPDATE TranslationMessage
-SET validation_status = 2
+    SET validation_status = 2
 FROM POSubmission Pos
 WHERE
-	Pos.pluralform > 0 AND
-	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
-	Pos.validationstatus = 2;
+    Pos.pluralform > 0 AND
+    Pos.id IN (id1, id2, id3) AND
+    Pos.validationstatus = 2;
+
 UPDATE TranslationMessage
-SET validation_status = 0
+    SET validation_status = 0
 FROM POSubmission Pos
 WHERE
-	Pos.pluralform > 0 AND
-	(Pos.id = id1 OR Pos.id = id2 OR Pos.id = id3) AND
-	Pos.validationstatus = 0;
+    Pos.pluralform > 0 AND
+    Pos.id IN (id1, id2, id3) AND
+    Pos.validationstatus = 0;
 
 
 -- SELECT 'Indexing TranslationMessage table', statement_timestamp();	-- DEBUG
 
+-- Now that all tables are migrated, we start creating indexes
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
-	ON TranslationMessage(potmsgset, pofile) WHERE is_current;
+    ON TranslationMessage(potmsgset, pofile) WHERE is_current;
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
-	ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
+    ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
+
+-- XXX CarlosPerelloMarin : Do we really need those indexes? as far as I know
+-- they are created automatically when we add them as a reference key
+-- to another table...
 CREATE INDEX translationmessage__submitter__idx
-	ON TranslationMessage(submitter);
+    ON TranslationMessage(submitter);
 CREATE INDEX translationmessage__reviewer__idx
-	ON TranslationMessage(reviewer);
+    ON TranslationMessage(reviewer);
 
 CREATE INDEX translationmessage__msgstr0__idx ON TranslationMessage(msgstr0);
 CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1);
@@ -402,46 +398,46 @@ CREATE INDEX translationmessage__msgstr2__idx ON TranslationMessage(msgstr2);
 CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3);
 
 CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key
-	ON TranslationMessage(
-		pofile,
-		potmsgset,
-		COALESCE(msgstr0, -1),
-		COALESCE(msgstr1, -1),
-		COALESCE(msgstr2, -1),
-		COALESCE(msgstr3, -1));
+    ON TranslationMessage(
+        pofile,
+        potmsgset,
+        COALESCE(msgstr0, -1),
+        COALESCE(msgstr1, -1),
+        COALESCE(msgstr2, -1),
+        COALESCE(msgstr3, -1));
 
 -- SELECT 'Adding constraints to TranslationMessage table', statement_timestamp();	-- DEBUG
 
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
 
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__reviewer__date_reviewed__valid
-	CHECK ((reviewer IS NULL) = (date_reviewed IS NULL));
+    ADD CONSTRAINT translationmessage__reviewer__date_reviewed__valid
+    CHECK ((reviewer IS NULL) = (date_reviewed IS NULL));
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__submitter__fk
-	FOREIGN KEY (submitter) REFERENCES Person(id);
+    ADD CONSTRAINT translationmessage__submitter__fk
+    FOREIGN KEY (submitter) REFERENCES Person(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr0__fk
-	FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
+    ADD CONSTRAINT translationmessage__msgstr0__fk
+    FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr1__fk
-	FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
+    ADD CONSTRAINT translationmessage__msgstr1__fk
+    FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr2__fk
-	FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
+    ADD CONSTRAINT translationmessage__msgstr2__fk
+    FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__msgstr3__fk
-	FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
+    ADD CONSTRAINT translationmessage__msgstr3__fk
+    FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__reviewer__fk
-	FOREIGN KEY (reviewer) REFERENCES Person(id);
+    ADD CONSTRAINT translationmessage__reviewer__fk
+    FOREIGN KEY (reviewer) REFERENCES Person(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__pofile__fk
-	FOREIGN KEY (pofile) REFERENCES pofile(id);
+    ADD CONSTRAINT translationmessage__pofile__fk
+    FOREIGN KEY (pofile) REFERENCES pofile(id);
 ALTER TABLE TranslationMessage
-	ADD CONSTRAINT translationmessage__potmsgset__fk
-	FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
+    ADD CONSTRAINT translationmessage__potmsgset__fk
+    FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
 ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
 
@@ -481,23 +477,23 @@ DROP TABLE POMsgSet;
 -- not maintained.
 ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
 ALTER TABLE POFile
-	ADD COLUMN date_changed timestamp without time zone
-	DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone);
+    ADD COLUMN date_changed timestamp without time zone
+    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
 
 UPDATE POFile
 SET
-	date_changed = Latest.latest_change_date,
-	lasttranslator = Latest.submitter
+    date_changed = Latest.latest_change_date,
+    lasttranslator = Latest.submitter
 FROM (
-	SELECT DISTINCT ON (pofile)
-		pofile,
-		greatest(date_created, date_reviewed) AS latest_change_date,
-		submitter
-	FROM TranslationMessage
-	ORDER BY pofile, latest_change_date DESC
-	) AS Latest
+    SELECT DISTINCT ON (pofile)
+        pofile,
+        greatest(date_created, date_reviewed) AS latest_change_date,
+        submitter
+    FROM TranslationMessage
+    ORDER BY pofile, latest_change_date DESC
+    ) AS Latest
 WHERE
-	Latest.pofile = POFile.id;
+    Latest.pofile = POFile.id;
 
 -- POFiles without TranslationMessages have creation date as change date.
 UPDATE POFile SET date_changed = datecreated WHERE date_changed IS NULL;
@@ -511,17 +507,17 @@ ALTER TABLE POTemplate ADD COLUMN name text;
 ALTER TABLE POTemplate ADD COLUMN translation_domain text;
 
 UPDATE POTemplate
-SET name = ptn.name, translation_domain = ptn.translationdomain
+    SET name = ptn.name, translation_domain = ptn.translationdomain
 FROM POTemplateName ptn
 WHERE potemplatename = ptn.id;
 
 ALTER TABLE POTemplate DROP COLUMN potemplatename;
 
 CREATE UNIQUE INDEX potemplate__distrorelease__name__key
-	ON POTemplate(distrorelease, sourcepackagename, name);
+    ON POTemplate(distrorelease, sourcepackagename, name);
 
 CREATE UNIQUE INDEX potemplate__productseries__name__key
-	ON POTemplate(productseries, name);
+    ON POTemplate(productseries, name);
 
 CREATE INDEX potemplate__name__idx ON POTemplate(name);
 
@@ -531,7 +527,7 @@ ALTER TABLE POTemplate ALTER translation_domain SET NOT NULL;
 DROP TABLE POTemplateName;
 
 ALTER TABLE POTemplate
-	ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
+    ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
 
 -- SELECT 'Retiring POMsgIDSighting', statement_timestamp();	-- DEBUG
@@ -542,16 +538,17 @@ ALTER TABLE POTMsgSet DROP alternative_msgid;
 ALTER TABLE POTMsgSet RENAME primemsgid TO msgid_singular;
 ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
 ALTER TABLE POTMsgSet
-	ADD CONSTRAINT potmsgset__msgid_plural__fk
-	FOREIGN KEY (msgid_plural) REFERENCES POMsgID(id);
+    ADD CONSTRAINT potmsgset__msgid_plural__fk
+    FOREIGN KEY (msgid_plural) REFERENCES POMsgID(id);
 
 UPDATE POTMsgSet
 SET msgid_plural = sighting.pomsgid
 FROM POMsgIDSighting sighting
-WHERE sighting.potmsgset = POTMsgSet.id AND pluralform = 1;
+WHERE
+    sighting.potmsgset = POTMsgSet.id AND pluralform = 1 AND
+    sighting.inlastrevision;
 
 DROP TABLE POMsgIDSighting;
-
 
 -- SELECT 'Restoring export views', statement_timestamp();	-- DEBUG
 
@@ -732,9 +729,9 @@ DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
 
 CREATE TRIGGER mv_pofiletranslator_translationmessage
-	AFTER INSERT OR DELETE OR UPDATE ON TranslationMessage
-	FOR EACH ROW
-	EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
+    AFTER INSERT OR DELETE OR UPDATE ON TranslationMessage
+    FOR EACH ROW
+    EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
 -- SELECT 'Completing', statement_timestamp();	-- DEBUG
 
