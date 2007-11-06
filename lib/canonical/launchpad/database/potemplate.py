@@ -33,6 +33,7 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
@@ -378,9 +379,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getExternalSuggestions(self, potmsgsets, language):
         """See `IPOTemplate`."""
-        result = dict((potmsgset, []) for potmsgset in potmsgsets)
         if not potmsgsets:
-            return result
+            return
         for potmsgset in potmsgsets:
             assert potmsgset.potemplate == self, (
                 "Requesting external suggestions in wrong template.")
@@ -446,6 +446,8 @@ class POTemplate(SQLBase, RosettaStats):
                     POTemplate.iscurrent AND
                     POFile.language = %(language)s AND
                     NOT Suggestion.is_fuzzy AND
+                    COALESCE(msgstr0, msgstr1, msgstr2, msgstr3)
+                        IS NOT NULL AND
                     (Product.official_rosetta OR
                      Distribution.official_rosetta) AND
                     Better.id IS NULL
@@ -460,19 +462,32 @@ class POTemplate(SQLBase, RosettaStats):
                 ) AS Suggestions
             """ % parameters)
 
-        # Load these results straight into a dict: map suggestions' ids to
-        # the message identifiers they translate.
-        external_translations = dict(cur.fetcall())
+        external_suggestions = cur.fetchall()
 
-        if not external_translations:
-            return result
+        if external_translations:
+            # Retrieve the actual suggestions.  Keep these in
+            # newest-to-oldest order, because that's the way the view
+            # class likes them.
+            messages_query = TranslationMessage.select(
+                "id IN (%s)" % ", ".join(
+                    [quote(id) for id in external_translations]),
+                orderBy="-datecreated")
+            messages = shortlist(
+                messages_query, longest_expected=100, hardlimit=200)
+        else:
+            messages = []
 
-        # Retrieve the actual suggestions.  Keep these in newest-to-oldest
-        # order, because that's the way the view class likes them.
-        suggestions = TranslationMessage.select(
-            "id IN (%s)" % ", ".join(
-                [quote(id) for id in external_translations]),
-            orderBy="-datecreated")
+        suggestions_by_id = dict(
+            (message.id, message) for message in messages)
+
+        # For each of the message identifiers belonging to potmsgsets,
+        # exactly which potmsgsets could benefit from a suggestion for
+        # that message identifier?  There could be multiple because the
+        # same message identifier may occur in different contexts.
+        takers_for_msgid = dict(
+            (potmsgset.msgid_singular, []) for potmsgset in potmsgsets)
+        for potmsgset in potmsgsets:
+            takers_for_msgid[potmsgset.msgid_singular].append(potmsgset)
 
         # Figure out which of potmsgsets each suggestion is relevant to,
         # and return our mapping from potmsgsets to various subsets of
@@ -480,8 +495,16 @@ class POTemplate(SQLBase, RosettaStats):
         # potmsgsets could have the same msgid (i.e. translate the same
         # string) but in different contexts.  The same suggestions would
         # apply to both.
-        # TODO: Implement
-        # TODO: Infuse potmsgsets with cached suggestions
+        # Suggestions are still kept in new-to-old order.
+        result = dict((potmsgset, []) for potmsgset in potmsgsets)
+        for translationmessage_id, msgid in external_suggestions:
+            suggestion = suggestions_by_id[translationmessage_id]
+            result[takers_for_msgid[msgid]].append(suggestion)
+
+        # Populate potmsgsets' external-suggestions caches.
+        for potmsgset in potmsgsets:
+            potmsgset.infuseExternalSuggestionsCache(
+                language, result[potmsgset])
 
     def messageCount(self):
         """See `IRosettaStats`."""

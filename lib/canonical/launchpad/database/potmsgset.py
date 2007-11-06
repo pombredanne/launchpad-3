@@ -113,30 +113,29 @@ class POTMsgSet(SQLBase):
                                          sqlvalues(self, language),
                                          clauseTables=['POFile'])
 
+    def infuseExternalSuggestionsCache(self, language, suggestions):
+        """Remember external suggestions for self in given language.
+
+        This pre-seeds the list that will be returned by
+        `getExternalTranslationMessages`.
+
+        :param language: `Language` that the suggestions are in.
+        :param suggestions: a list of external suggestions, in new-to-old
+            order, for this `POTMsgSet` in the given language.  None of these
+            should have self as their potmsgset.  Pass None to clear the cache
+            for this language.
+        """
+        self.external_suggestions_cache[language] = suggestions
+
     def getExternalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.select(
-            """id in (
-              SELECT TranslationMessage.id
-                 FROM TranslationMessage
-                 LEFT JOIN POTMsgSet ON
-                   TranslationMessage.potmsgset = POTMsgSet.id
-                 LEFT JOIN POFile ON
-                   POFile.potemplate = POTMsgSet.potemplate
-                 WHERE
-                   is_current IS TRUE AND
-                   -- Fuzzy are not really 'used in'
-                   is_fuzzy IS NOT TRUE AND
-                   -- Exclude ourselves
-                   potmsgset != %s AND
-                   POTMsgSet.msgid_singular=%s AND
-                   POFile.language = %s AND
-                   -- Exclude untranslated (deactivation) messages
-                   (msgstr0 IS NOT NULL AND msgstr1 IS NOT NULL AND
-                    msgstr2 IS NOT NULL AND msgstr3 IS NOT NULL)
-                 ORDER BY TranslationMessage.date_created DESC
-              )""" %
-            sqlvalues(self, self.msgid_singular, language))
+        if self.external_suggestions_cache is None:
+            self.external_suggestions_cache = {}
+        if self.external_suggestions_cache.get(language) is None:
+            # Don't have suggestions for this language cached.  Request them
+            # for just ourselves.
+            self.potemplate.getExternalSuggestions([self], language)
+        return self.external_suggestions_cache[language]
 
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""

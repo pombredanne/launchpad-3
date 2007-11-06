@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.launchpad.database import POTemplate
+from canonical.launchpad.database import POTemplate, POTMsgSet
 from canonical.launchpad.interfaces import IVPOTExportSet, IVPOTExport
 
 
@@ -23,6 +23,7 @@ class VPOTExportSet:
 
     column_names = [
         'potemplate',
+        'potmsgset',
         'template_header',
         'potmsgset',
         'sequence',
@@ -82,7 +83,6 @@ class VPOTExport:
 
     def __init__(self, *args):
         (potemplate,
-         self.template_header,
          potmsgset,
          self.sequence,
          self.comment,

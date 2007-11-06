@@ -30,108 +30,96 @@ This method will only overwrite translations in Launchpad with upstream
 ones if the previous upstream translation matches the translation used in
 Launchpad or there is no complete translation.
 
-  >>> pomsgset = pofile_es.getPOMsgSet(u'EncFS Password: ')
+  >>> potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
+  ...     u'EncFS Password: ')
 
 We can see that this is actually the case:
 
-  >>> pomsgset.active_texts
-  [u'Contrase\xf1a de EncFS: ']
-  >>> pomsgset.isfuzzy
+  >>> from canonical.launchpad.database.language import LanguageSet
+  >>> spanish = LanguageSet().getLanguageByCode('es')
+  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message.msgstr0.translation
+  u'Contrase\xf1a de EncFS: '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [u'Contrase\xf1a de EncFS: ']
-  >>> pomsgset.publishedfuzzy
+  >>> message.is_imported
+  True
+  >>> message.was_fuzzy_in_last_import
   False
-  >>> pomsgset.publishedcomplete
-  True
 
 We change the published one, and thus, the one in Launchpad will be changed
 too at the same time.
 
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'foo '}, fuzzy=False, published=True,
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'foo '}, is_fuzzy=False, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
 
-  >>> pomsgset.active_texts
-  [u'foo ']
-  >>> pomsgset.isfuzzy
+  >>> message.msgstr0.translation
+  u'foo '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [u'foo ']
-  >>> pomsgset.publishedfuzzy
+  >>> message.is_imported
+  True
+  >>> message.was_fuzzy_in_last_import
   False
-  >>> pomsgset.publishedcomplete
-  True
 
 If the translation in Launchpad is fuzzy, we keep update it.
 
-  >>> pomsgset.isfuzzy = True
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'bar '}, fuzzy=False, published=True,
+  >>> message.is_fuzzy = True
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'bar '}, is_fuzzy=False, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [u'bar ']
-  >>> pomsgset.isfuzzy
+  >>> message.msgstr0.translation
+  u'bar '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [u'bar ']
-  >>> pomsgset.publishedfuzzy
-  False
-  >>> pomsgset.publishedcomplete
+  >>> message.is_published
   True
 
 Even more, if there is no translation at all in Launchpad, we still get
 the update from upstream.
 
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {}, fuzzy=False, published=False,
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {}, is_fuzzy=False, is_import=False,
   ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [None]
-  >>> pomsgset.isfuzzy
+  >>> message.msgstr0
+  None
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   False
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'foobar '}, fuzzy=False, published=True,
-  ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [u'foobar ']
-  >>> pomsgset.isfuzzy
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'foobar '}, is_fuzzy=False,
+  ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> message.msgstr0.translation
+  u'foobar '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [u'foobar ']
-  >>> pomsgset.publishedfuzzy
-  False
-  >>> pomsgset.publishedcomplete
+  >>> message.is_imported
   True
 
 Now, is turn to do the oposite, the system should prevent that,
 when a translation coming from upstream with the fuzzy flag is imported, we
 revert a valid translation in Launchpad.
 
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'foos '}, fuzzy=True, published=True,
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'foos '}, is_fuzzy=True, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [u'foobar ']
-  >>> pomsgset.isfuzzy
+  >>> message.msgstr0.translation
+  u'foobar '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [u'foos ']
-  >>> pomsgset.publishedfuzzy
-  True
-  >>> pomsgset.publishedcomplete
+  >>> message.is_imported
   True
 
 Even when the upstream translation is the same as current translation
@@ -139,39 +127,31 @@ in Launchpad, if the only difference is the fuzzy flag, the one
 in Launchpad should not get the fuzzy flag because otherwise, we will
 be losing translations.
 
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'foobar '}, fuzzy=True, published=True,
-  ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [u'foobar ']
-  >>> pomsgset.isfuzzy
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'foobar '}, is_fuzzy=True,
+  ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> message.msgstr0.translation
+  u'foobar '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [u'foobar ']
-  >>> pomsgset.publishedfuzzy
-  True
-  >>> pomsgset.publishedcomplete
+  >>> message.is_published
   True
 
 When we get no translations at all, Launchpad should keep its active
 translation.
 
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {}, fuzzy=False, published=True,
+  >>> message = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {}, is_fuzzy=False, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [u'foobar ']
-  >>> pomsgset.isfuzzy
+  >>> message.msgstr0.translation
+  u'foobar '
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.iscomplete
+  >>> message.is_complete
   True
-  >>> pomsgset.published_texts
-  [None]
-  >>> pomsgset.publishedfuzzy
-  False
-  >>> pomsgset.publishedcomplete
+  >>> message.is_published
   False
 
 And finally, now that published and active translations diverged,
