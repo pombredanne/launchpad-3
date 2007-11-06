@@ -130,6 +130,22 @@ class SystemErrorView:
             return self.index()
 
 
+class ProtocolErrorView(SystemErrorView):
+    """Helper class for views on protocol errors: problems to do with
+    an HTTP request that need to be handled more subtly than with a
+    500 response code.
+
+    Used to handle a `ProtocolErrorException`.
+    """
+
+    def __call__(self):
+        """Set the appropriate status code and headers."""
+        exception = self.context
+        self.request.response.setStatus(exception.status)
+        for header, value in exception.headers.items():
+            self.request.response.setHeader(header, value)
+        return self.index()
+
 class NotFoundView(SystemErrorView):
 
     response_code = 404
