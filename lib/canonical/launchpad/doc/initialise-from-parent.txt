@@ -50,8 +50,8 @@ Check if it fails for an already released distroseries:
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parent_series
-  DEBUG   Check for no pending builds in parent_series
+  DEBUG   Check empty mutable queues in parentseries
+  DEBUG   Check for no pending builds in parentseries
   DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
@@ -71,8 +71,8 @@ Let's initialise the just created distroseries:
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parent_series
-  DEBUG   Check for no pending builds in parent_series
+  DEBUG   Check empty mutable queues in parentseries
+  DEBUG   Check for no pending builds in parentseries
   DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
   DEBUG   initialising from parent, copying publishing records.
   DEBUG   Committing transaction.
