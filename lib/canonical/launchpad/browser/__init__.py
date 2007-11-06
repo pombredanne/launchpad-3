@@ -104,5 +104,4 @@ from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.queue import *
-from canonical.launchpad.browser.pomsgset import *
 from canonical.launchpad.browser.translationmessage import *
