@@ -340,8 +340,6 @@ And a Serbian PO file is exported using regular export_pofile call.
 It's different from the imported file only in a few headers.
 
     >>> pofile = potemplate.getPOFileByLang('sr')
-    >>> # XXX DaniloSegan: '...' doesn't seem to work with unicode name
-    >>> # of "Carlos Perelló Marín"
     >>> print pofile.uncachedExport().decode('UTF-8')
     msgid ""
     msgstr ""

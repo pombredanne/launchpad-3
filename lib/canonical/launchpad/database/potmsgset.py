@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
     RosettaTranslationOrigin, TranslationConflict,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
@@ -594,3 +595,16 @@ class POTMsgSet(SQLBase):
         if suffix is not None:
             elements.append(suffix)
         return '_'.join(elements)
+
+    def updatePluralForm(self, plural_form_text):
+        """See `IPOTMsgSet`."""
+        if plural_form_text is None:
+            self.msgid_plural = None
+            return
+        else:
+            # Store the given plural form.
+            try:
+                pomsgid = POMsgID.byMsgid(plural_form_text)
+            except SQLObjectNotFound:
+                pomsgid = POMsgID(msgid=plural_form_text)
+            self.msgid_plural = pomsgid

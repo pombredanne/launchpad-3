@@ -1312,7 +1312,7 @@ class POFileTranslator(SQLBase):
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
-    latest_posubmission = ForeignKey(foreignKey='POSubmission',
+    latest_message = ForeignKey(foreignKey='POSubmission',
         dbName='latest_posubmission', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
         notNull=False, default=None)

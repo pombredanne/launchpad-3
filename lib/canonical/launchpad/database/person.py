@@ -1562,9 +1562,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             ' AND '.join(query),
             prejoins=[
                 'pofile.potemplate',
-                'laatest_translation_message',
-                'latest_translation_message.potmsgset.msgid_singular',
-                'latest_translation_message.msgstr0'],
+                'latest_message',
+                'latest_message.potmsgset.msgid_singular',
+                'latest_message.msgstr0'],
             clauseTables=['Language', 'POFile'],
             orderBy="-date_last_touched")
         return history

@@ -278,7 +278,7 @@ class VPOExport:
          self.translation3) = args
 
         self.potemplate = POTemplate.get(potemplate)
-        self.potmsgset = POTMsgSet(potmsgset)
+        self.potmsgset = POTMsgSet.get(potmsgset)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None

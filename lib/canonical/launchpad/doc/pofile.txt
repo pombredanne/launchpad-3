@@ -452,7 +452,7 @@ So for a concrete export, we have a message like:
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
-    #, fuzzy
+    #, fuzzy, c-format
     msgid "%d foo"
     msgid_plural "%d bars"
     msgstr[0] "%d foo"
@@ -468,9 +468,7 @@ When it changes...
     %d bars
 
     # We change the plural form.
-    >>> from canonical.launchpad.interfaces import TranslationConstants
-    >>> pomsgidsighting = potmsgset.makeMessageIDSighting(
-    ...     u'something else', TranslationConstants.PLURAL_FORM, update=True)
+    >>> potmsgset.updatePluralForm(u'something else')
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> print potmsgset.plural_text
@@ -482,7 +480,7 @@ When it changes...
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
-    #, fuzzy
+    #, fuzzy, c-format
     msgid "%d foo"
     msgid_plural "something else"
     msgstr[0] "%d foo"

@@ -2,11 +2,6 @@
 
 """View classes for POMsgSet classes."""
 
-__metaclass__ = type
-__all__ = [
-    'CurrentTranslationMessageView'
-    ]
-
 import cgi
 import datetime
 import gettextpo
@@ -42,6 +37,12 @@ from canonical.launchpad.webapp import urlparse, custom_widget
 from canonical.launchpad.webapp import LaunchpadEditFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 
+__metaclass__ = type
+
+__all__ = [
+    'CurrentTranslationMessageView',
+    'POMsgSetIndexView',
+    ]
 
 #
 # Translation-related formatting functions
@@ -285,20 +286,20 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
-class POMsgSetFacets(POTemplateFacets):
+class CurrentTranslationMessageFacets(POTemplateFacets):
     usedfor = ITranslationMessage
 
     def __init__(self, context):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
 
 
-class POMsgSetSOP(POTemplateSOP):
+class CurrentTranslationMessageSOP(POTemplateSOP):
 
     def __init__(self, context):
         POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
-class POMsgSetAppMenus(ApplicationMenu):
+class CurrentTranslationMessageAppMenus(ApplicationMenu):
     usedfor = ITranslationMessage
     facet = 'translations'
     links = ['overview', 'translate', 'upload', 'download']
