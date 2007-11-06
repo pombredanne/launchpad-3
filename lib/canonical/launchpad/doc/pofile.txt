@@ -452,7 +452,7 @@ So for a concrete export, we have a message like:
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
-    #, fuzzy
+    #, fuzzy, c-format
     msgid "%d foo"
     msgid_plural "%d bars"
     msgstr[0] "%d foo"
@@ -468,9 +468,7 @@ When it changes...
     %d bars
 
     # We change the plural form.
-    >>> from canonical.launchpad.interfaces import TranslationConstants
-    >>> pomsgidsighting = potmsgset.makeMessageIDSighting(
-    ...     u'something else', TranslationConstants.PLURAL_FORM, update=True)
+    >>> potmsgset.updatePluralForm(u'something else')
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> print potmsgset.plural_text
@@ -482,50 +480,11 @@ When it changes...
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
-    #, fuzzy
+    #, fuzzy, c-format
     msgid "%d foo"
     msgid_plural "something else"
     msgstr[0] "%d foo"
     ...
-
-XXX CarlosPerelloMarin 2007-10-28 bug=157985: Due to a bug in our
-import code, this test should pass, once that bug is fixed and
-data is migrated, this should fail and thus, the test should be
-removed and sample data should be fixed so we don't have two obsolete
-pomsgset with the same sequence:
-
-There are some cases when we have two different pomsgsets that are not
-part of the template anymore, so potmsgset.sequence is zero:
-
-    >>> obsolete_pomsgset_1 = pofile_es.getPOMsgSet(u'Found %i invalid file.')
-    >>> obsolete_pomsgset_1.potmsgset.sequence
-    0
-    >>> obsolete_pomsgset_2 = pofile_es.getPOMsgSet(u'_Add Group')
-    >>> obsolete_pomsgset_2.potmsgset.sequence
-    0
-
-But the sequence in which they appear in the pofile is the same.
-
-    >>> obsolete_pomsgset_1.sequence
-    22
-    >>> obsolete_pomsgset_2.sequence
-    22
-
-In that case, we still get both messages in the exported file.
-
-    # We need to provide a traslation for obsolete_pomsgset_1 or it will not
-    # appear, just because it's untranslated.
-    >>> obsolete_pomsgset_1.updateTranslationSet(
-    ...     rosetta_experts, {0: u'foo %i'}, fuzzy=False, published=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> print pofile_es.uncachedExport(force_utf8=True).decode('utf8')
-    # traducci...
-    ...
-    #~ msgid "Found %i invalid file."
-    #~ msgstr "foo %i"
-    <BLANKLINE>
-    #~ msgid "_Add Group"
-    #~ msgstr ...
 
 
 == getPOTMsgSetUntranslated ==

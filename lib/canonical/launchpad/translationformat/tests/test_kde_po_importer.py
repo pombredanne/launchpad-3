@@ -149,20 +149,20 @@ class KdePOImporterTestCase(unittest.TestCase):
     def testTemplateContext(self):
         """Check whether legacy KDE context is correctly imported."""
         message = self.template_file.messages[1]
-        msgid = message.singular_text
+        singular = message.msgid_singular
         context = message.context
         self.failUnless(
-            (msgid == u'Message' and context == u'Context'),
+            (singular == u'Message' and context == u'Context'),
             "KdePOImporter didn't import KDE context correctly.")
 
     def testTranslationContext(self):
         """Check whether legacy KDE context is correctly imported."""
         message = self.translation_file.messages[1]
-        msgid = message.singular_text
+        singular = message.msgid_singular
         context = message.context
         translations = message.translations
         self.failUnless(
-            (msgid == u'Message' and context == u'Context' and
+            (singular == u'Message' and context == u'Context' and
              translations[0] == u'Contextual translation'),
             "KdePOImporter didn't import translated KDE context correctly.")
 

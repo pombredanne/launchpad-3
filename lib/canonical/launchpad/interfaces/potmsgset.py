@@ -203,3 +203,10 @@ class IPOTMsgSet(Interface):
         :param suffix: an optional suffix to be appended.  Must be suitable
             for use in HTML element ids.
         """
+
+    def updatePluralForm(plural_form_text):
+        """Update plural form text for this message.
+
+        :param plural_form_text: Unicode string representing the plural form
+            we want to store or None to unset current plural form.
+        """
