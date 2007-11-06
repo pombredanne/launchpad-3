@@ -572,15 +572,13 @@ class POFile(SQLBase, POFileMixIn):
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POMsgSet.pofile = %s AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POSubmission.published IS TRUE AND
-            POSubmission.pluralform = 0 AND
-            POSubmission.validationstatus <> %s
+            TranslationMessage.potmsgset = POTMsgSet.id AND
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.is_imported IS TRUE AND
+            TranslationMessage.validation_status <> %s
             ''' % sqlvalues(self.potemplate.id, self.id,
                             TranslationValidationStatus.OK),
-            clauseTables=['POMsgSet', 'POSubmission'],
+            clauseTables=['TranslationMessage'],
             orderBy='POTmsgSet.sequence')
 
         if slice is not None:
@@ -1312,8 +1310,8 @@ class POFileTranslator(SQLBase):
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
-    latest_posubmission = ForeignKey(foreignKey='POSubmission',
-        dbName='latest_posubmission', notNull=True)
+    latest_message = ForeignKey(foreignKey='TranslationMessage',
+        dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
         notNull=False, default=None)
 
