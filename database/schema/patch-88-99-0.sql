@@ -10,7 +10,7 @@ SET client_min_messages=ERROR;
 -- end.  This has been shown to improve performance quite radially in some
 -- cases.
 
--- SELECT 'Creating TranslationMessage', statement_timestamp();	-- DEBUG
+-- SELECT 'Creating TranslationMessage', statement_timestamp(); -- DEBUG
 
 CREATE TABLE TranslationMessage(
     id serial,
@@ -80,7 +80,7 @@ CREATE TABLE TranslationMessage(
 -- active, published POSubmissions in one query, active but non-published ones
 -- in another and so on.
 
--- SELECT 'Migrating active, published submissions', statement_timestamp();	-- DEBUG
+-- SELECT 'Migrating active, published submissions', statement_timestamp(); -- DEBUG
 
 -- Bundle POSubmissions that are both active and published.
 INSERT INTO TranslationMessage(
@@ -140,7 +140,7 @@ WHERE
     s2.published IS NOT FALSE AND
     s3.published IS NOT FALSE;
 
--- SELECT 'Migrating active, non-published submissions', statement_timestamp();	-- DEBUG
+-- SELECT 'Migrating active, non-published submissions', statement_timestamp(); -- DEBUG
 
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
@@ -197,7 +197,7 @@ WHERE
     NOT s2.published OR
     NOT s3.published;
 
--- SELECT 'Migrating non-active, published submissions', statement_timestamp();	-- DEBUG
+-- SELECT 'Migrating non-active, published submissions', statement_timestamp(); -- DEBUG
 
 -- Bundle POSubmissions that are published but not all active.
 INSERT INTO TranslationMessage(
@@ -254,7 +254,7 @@ WHERE
     NOT s2.active OR
     NOT s3.active;
 
--- SELECT 'Migrating non-active, non-published submissions', statement_timestamp();	-- DEBUG
+-- SELECT 'Migrating non-active, non-published submissions', statement_timestamp(); -- DEBUG
 
 -- Bundle POSubmissions that are not all published or active (but are all by
 -- the same person and created at the same time).
@@ -320,7 +320,7 @@ WHERE
      NOT s2.published OR
      NOT s3.published);
 
--- SELECT 'Migrating POMsgSets without POSubmissions', statement_timestamp();	-- DEBUG
+-- SELECT 'Migrating POMsgSets without POSubmissions', statement_timestamp(); -- DEBUG
 
 INSERT INTO TranslationMessage(
     pofile, potmsgset, origin, submitter, reviewer, validation_status,
@@ -352,7 +352,7 @@ FROM POMsgSet m
 WHERE
     POSubmission.id IS NULL AND reviewer IS NOT NULL;
 
--- SELECT 'Patching up ValidationStatus', statement_timestamp();	-- DEBUG
+-- SELECT 'Patching up ValidationStatus', statement_timestamp(); -- DEBUG
 
 -- Update validation_status: if any of the POSubmissions that are bundled
 -- needs validation, validation_status should be 0 (UNKNOWN).  Otherwise, if
@@ -376,7 +376,7 @@ WHERE
     Pos.validationstatus = 0;
 
 
--- SELECT 'Indexing TranslationMessage table', statement_timestamp();	-- DEBUG
+-- SELECT 'Indexing TranslationMessage table', statement_timestamp(); -- DEBUG
 
 -- Now that all tables are migrated, we start creating indexes
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
@@ -384,9 +384,6 @@ CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key
 CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key
     ON TranslationMessage(potmsgset, pofile) WHERE is_imported;
 
--- XXX CarlosPerelloMarin : Do we really need those indexes? as far as I know
--- they are created automatically when we add them as a reference key
--- to another table...
 CREATE INDEX translationmessage__submitter__idx
     ON TranslationMessage(submitter);
 CREATE INDEX translationmessage__reviewer__idx
@@ -406,7 +403,7 @@ CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key
         COALESCE(msgstr2, -1),
         COALESCE(msgstr3, -1));
 
--- SELECT 'Adding constraints to TranslationMessage table', statement_timestamp();	-- DEBUG
+-- SELECT 'Adding constraints to TranslationMessage table', statement_timestamp(); -- DEBUG
 
 ALTER TABLE TranslationMessage
     ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
@@ -444,32 +441,12 @@ ALTER TABLE POFile DROP CONSTRAINT pofile_last_touched_pomsgset_fkey;
 DROP VIEW POExport;
 DROP VIEW POTExport;
 
--- TODO: This cures bad sample data, but we need a stable comparison base first.
--- DROP TABLE POFileTranslator;
--- TODO: This is temporary, until we can drop POFileTranslator again
-ALTER TABLE POFileTranslator DROP CONSTRAINT personpofile__latest_posubmission__fk;
--- TODO: Temporary migration based on existing, bad sample data.  Replace with
--- rewrite later (has already been tested).
-ALTER TABLE POFileTranslator
-	ADD COLUMN latest_message integer;
-UPDATE POFileTranslator
-SET latest_message = TranslationMessage.id
-FROM TranslationMessage
-WHERE
-	TranslationMessage.id0 = latest_posubmission OR
-	TranslationMessage.id1 = latest_posubmission OR
-	TranslationMessage.id2 = latest_posubmission OR
-	TranslationMessage.id3 = latest_posubmission;
-ALTER TABLE POFileTranslator ALTER COLUMN latest_message SET NOT NULL;
-ALTER TABLE POFileTranslator DROP COLUMN latest_posubmission;
--- TODO: End of POFileTranslator change
-
-
+DROP TABLE POFileTranslator;
 DROP TABLE POSubmission;
 DROP TABLE POMsgSet;
 
 
--- SELECT 'Retiring POFile.last_touched_pomsgset', statement_timestamp();	-- DEBUG
+-- SELECT 'Retiring POFile.last_touched_pomsgset', statement_timestamp(); -- DEBUG
 
 -- POFile.last_touched_pomsgset is no longer needed; instead POFile holds the
 -- person who last modified a TranslationMessage in the POFile and the date of
@@ -500,7 +477,7 @@ UPDATE POFile SET date_changed = datecreated WHERE date_changed IS NULL;
 
 ALTER TABLE POFile ALTER COLUMN date_changed SET NOT NULL;
 
--- SELECT 'Retiring POTemplateName', statement_timestamp();	-- DEBUG
+-- SELECT 'Retiring POTemplateName', statement_timestamp(); -- DEBUG
 
 -- Merge POTemplateName into POTemplate
 ALTER TABLE POTemplate ADD COLUMN name text;
@@ -530,7 +507,7 @@ ALTER TABLE POTemplate
     ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
 
--- SELECT 'Retiring POMsgIDSighting', statement_timestamp();	-- DEBUG
+-- SELECT 'Retiring POMsgIDSighting', statement_timestamp(); -- DEBUG
 
 -- Remove unused fields.
 ALTER TABLE POTMsgSet DROP alternative_msgid;
@@ -548,7 +525,7 @@ WHERE potmsgset = POTMsgSet.id AND pluralform = 1 AND inlastrevision;
 
 DROP TABLE POMsgIDSighting;
 
--- SELECT 'Restoring export views', statement_timestamp();	-- DEBUG
+-- SELECT 'Restoring export views', statement_timestamp(); -- DEBUG
 
 -- Restore POExport view
 CREATE VIEW POExport(
@@ -674,7 +651,7 @@ FROM
     LEFT JOIN POMsgID AS msgid_singular ON POTMsgSet.msgid_singular = msgid_singular.id
     LEFT JOIN POMsgID AS msgid_plural ON POTMsgSet.msgid_plural = msgid_plural.id;
 
--- SELECT 'Cleaning up TranslationMessage temp columns', statement_timestamp();	-- DEBUG
+-- SELECT 'Cleaning up TranslationMessage temp columns', statement_timestamp(); -- DEBUG
 
 -- Clean up columns that were only for use during migration.
 ALTER TABLE TranslationMessage DROP COLUMN msgsetid;
@@ -684,44 +661,43 @@ ALTER TABLE TranslationMessage DROP COLUMN id2;
 ALTER TABLE TranslationMessage DROP COLUMN id3;
 
 
--- SELECT 'Re-creating POFileTranslator', statement_timestamp();	-- DEBUG
+-- SELECT 'Re-creating POFileTranslator', statement_timestamp(); -- DEBUG
 
 -- Re-create POFileTranslator (replacing latest_posubmission)
--- TODO: This cures bad sample data, but we need a stable comparison base first.
---CREATE TABLE POFileTranslator (
---	id serial,
---	person integer NOT NULL,
---	pofile integer NOT NULL,
---	latest_message integer NOT NULL,
---	date_last_touched timestamp without time zone
---		DEFAULT timezone('UTC'::text, now()) NOT NULL);
+CREATE TABLE POFileTranslator (
+    id serial,
+    person integer NOT NULL,
+    pofile integer NOT NULL,
+    latest_message integer NOT NULL,
+    date_last_touched timestamp without time zone
+        DEFAULT timezone('UTC'::text, now()) NOT NULL);
 
 -- Re-populate POFileTranslator
---INSERT INTO POFileTranslator (
---    person, pofile, latest_message, date_last_touched
---    )
---SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
---FROM TranslationMessage
---ORDER BY submitter, pofile, date_created DESC, id DESC;
+INSERT INTO POFileTranslator (
+    person, pofile, latest_message, date_last_touched
+    )
+SELECT DISTINCT ON (submitter, pofile) submitter, pofile, id, date_created
+FROM TranslationMessage
+ORDER BY submitter, pofile, date_created DESC, id DESC;
 
---ALTER TABLE POFileTranslator
---	ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
---ALTER TABLE POFileTranslator
---	ADD CONSTRAINT pofiletranslator__latest_message__fk
---	FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
---	DEFERRABLE INITIALLY DEFERRED;
---ALTER TABLE POFileTranslator
---	ADD CONSTRAINT pofiletranslator__person__fk
---	FOREIGN KEY (person) REFERENCES Person(id);
---ALTER TABLE POFileTranslator
---	ADD CONSTRAINT pofiletranslator__pofile__fk
---	FOREIGN KEY (pofile) REFERENCES POFile(id);
---CREATE INDEX pofiletranslator__date_last_touched__idx
---	ON POFileTranslator(date_last_touched);
---ALTER TABLE POFileTranslator
---	ADD CONSTRAINT pofiletranslator__person__pofile__key
---	UNIQUE (person, pofile);
---ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
+ALTER TABLE POFileTranslator
+    ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
+ALTER TABLE POFileTranslator
+    ADD CONSTRAINT pofiletranslator__latest_message__fk
+    FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
+    DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE POFileTranslator
+    ADD CONSTRAINT pofiletranslator__person__fk
+    FOREIGN KEY (person) REFERENCES Person(id);
+ALTER TABLE POFileTranslator
+    ADD CONSTRAINT pofiletranslator__pofile__fk
+    FOREIGN KEY (pofile) REFERENCES POFile(id);
+CREATE INDEX pofiletranslator__date_last_touched__idx
+    ON POFileTranslator(date_last_touched);
+ALTER TABLE POFileTranslator
+    ADD CONSTRAINT pofiletranslator__person__pofile__key
+    UNIQUE (person, pofile);
+ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 
 DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
 DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
@@ -731,7 +707,7 @@ CREATE TRIGGER mv_pofiletranslator_translationmessage
     FOR EACH ROW
     EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
--- SELECT 'Completing', statement_timestamp();	-- DEBUG
+-- SELECT 'Completing', statement_timestamp(); -- DEBUG
 
--- ROLLBACK;	-- DEBUG
+-- ROLLBACK; -- DEBUG
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
