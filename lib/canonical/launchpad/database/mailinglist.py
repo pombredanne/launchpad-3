@@ -99,16 +99,16 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.ACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be active or failed')
-        # State: From UPDATING to either ACTIVE or FAILED
+        # State: From UPDATING to either ACTIVE or MOD_FAILED
         elif self.status == MailingListStatus.UPDATING:
             assert target_state in (MailingListStatus.ACTIVE,
-                                    MailingListStatus.FAILED), (
-                'target_state result must be active or failed')
-        # State: From DEACTIVATING to INACTIVE or FAILED
+                                    MailingListStatus.MOD_FAILED), (
+                'target_state result must be active or mod_failed')
+        # State: From DEACTIVATING to INACTIVE or MOD_FAILED
         elif self.status == MailingListStatus.DEACTIVATING:
             assert target_state in (MailingListStatus.INACTIVE,
-                                    MailingListStatus.FAILED), (
-                'target_state result must be inactive or failed')
+                                    MailingListStatus.MOD_FAILED), (
+                'target_state result must be inactive or mod_failed')
             self._clearSubscriptions()
         else:
             raise AssertionError(
@@ -120,7 +120,8 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            email.status = EmailAddressStatus.VALIDATED
+            if email.status in [EmailAddressStatus.NEW, EmailAddressStatus.OLD]:
+                email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
@@ -150,6 +151,13 @@ class MailingList(SQLBase):
     def _get_welcome_message(self):
         return self.welcome_message_text
 
+    def canBeContactMethod(self):
+        """See `IMailingList`"""
+        return self.status in [MailingListStatus.ACTIVE,
+                               MailingListStatus.MODIFIED,
+                               MailingListStatus.UPDATING,
+                               MailingListStatus.MOD_FAILED]
+
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
             # Do nothing because the status does not change.  When setting the
@@ -158,7 +166,7 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.status == MailingListStatus.ACTIVE:
+        elif self.canBeContactMethod():
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.

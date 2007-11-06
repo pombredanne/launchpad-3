@@ -3,8 +3,10 @@
 Team admins are allowed to set the contact method used by Launchpad to
 send notifications to that team.  The possible contact methods are:
 
-    - Hosted mailing list:  Notifications are sent to this team's mailing
-                            list hosted on Launchpad.
+    - Hosted mailing list:  Notifications are sent to this team's
+                            mailing list hosted on Launchpad. The
+                            mailing list may have a customized message
+                            sent to new subscribers.
 
     - None:  There's no way to contact the team as a whole, so any
              notification is sent to every member of the team.
@@ -23,14 +25,13 @@ As we can see, the landscape-developers team has no contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
 
-Changing it to an external address will require the user to go through
-the email address confirmation process.
+Changing the contact address to an external address will require the
+user to go through the email address confirmation process.
 
     >>> browser.getControl('Another e-mail address').selected = True
     >>> browser.getControl(
     ...     name='field.contact_address').value = 'foo@example.com'
     >>> browser.getControl('Change').click()
-
     >>> browser.title
     'Landscape Developers in Launchpad'
     >>> for msg in get_feedback_messages(browser):
@@ -76,9 +77,10 @@ Follow the token link, to confirm the new email address.
 To change that to a hosted mailing list, we first need to request the
 mailing list to be activated.
 
-    >>> browser.getControl('The Launchpad mailing list').disabled
+    >>> description = 'The Launchpad mailing list for this team - '
+    >>> browser.getControl(description).disabled
     True
-    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl(description).selected = True
     Traceback (most recent call last):
     ...
     AttributeError: item is disabled
@@ -202,6 +204,14 @@ users, so we'll simulate it here by directly accessing our database code.
     ...     print msg
     Not available because mailing list is being constructed.
 
+Even after the mailing list has been requested and approved, it cannot
+be configured until it's made active:
+
+    >>> browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 When the mailing list is constructed and made active, it can be used as
 the team's contact address.
 
@@ -225,6 +235,159 @@ the team's contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
+Once the mailing list is active, its configuration screen is
+available.
+
+    >>> browser.getLink('Configure mailing list').url
+    'http://launchpad.dev/~landscape-developers/+mailinglist'
+
+Of course, it's not available to someone with no permission to
+manipulate the list.
+
+    >>> user_browser.open('http://launchpad.dev/~landscape-developers')
+    >>> user_browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The configuration screen remains available even if the mailing list is
+not the team's contact address.
+
+    >>> browser.getControl('Each member individually').selected = True
+    >>> browser.getControl('Change').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Each member individually']
+    >>> browser.getLink('Configure mailing list').url
+    'http://launchpad.dev/~landscape-developers/+mailinglist'
+
+
+== Customizing the welcome message ==
+
+A project with a mailing list can have a custom welcome message. The
+welcome message is customizable whether or not the mailing list is
+currently the team's contact address.
+
+    >>> browser.getLink('Configure mailing list').click()
+
+    >>> welcome_message = browser.getControl('Welcome message')
+    >>> welcome_message.value
+    ''
+    >>> welcome_message.value = 'Welcome to the test team mailing list.'
+    >>> browser.getControl('Change').click()
+
+However, when the mailing list is not the team's contact address, the
+mailing list configuration screen displays an informative message.
+
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list is not set as the team contact address.
+
+Changes to the welcome message take effect in the database immediately.
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> welcome_message = browser.getControl('Welcome message')
+    >>> print welcome_message.value
+    Welcome to the test team mailing list.
+
+But they takes a while to be propagated to Mailman. The user is informed
+of this.
+
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list is not set as the team contact address.
+    Some changes to this team's mailing list are pending an update and
+    have not yet taken effect.
+
+While the user waits, let's have them change the team contact address
+back to the mailing list, so that the feedback message about the
+contact address not being the mailing list doesn't keep showing up and
+cluttering up the test.
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team -
+      landscape-developers@lists.launchpad.net']
+
+Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
+
+    >>> import xmlrpclib
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from canonical.launchpad.ftests.xmlrpc_helper import (
+    ...     mailingListPrintActions)
+    >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
+    >>> mailinglist_api = xmlrpclib.ServerProxy(
+    ...    private_root + 'mailinglists/',
+    ...    transport=XMLRPCTestTransport())
+    >>> mailingListPrintActions(mailinglist_api.getPendingActions())
+    landscape-developers --> modify
+        {'welcome_message': u'Welcome to the test team mailing list.'}
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Changes to this mailing list are currently being propagated.
+
+Usually there is no problem. The welcome message is propagated to
+Mailman, and the informative message disappears from the contact
+address view.
+
+    >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
+    True
+    >>> mailingListPrintActions(mailinglist_api.getPendingActions())
+
+    >>> browser.reload()
+    >>> get_feedback_messages(browser)
+    []
+    >>> welcome_message = browser.getControl('Welcome message')
+    >>> print welcome_message.value
+    Welcome to the test team mailing list.
+
+What if the change fails to propagate? The user will know of this too.
+
+    >>> welcome_message.value = 'This change will fail to propagate.'
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> welcome_message = browser.getControl('Welcome message')
+    >>> print welcome_message.value
+    This change will fail to propagate.
+
+    >>> mailingListPrintActions(mailinglist_api.getPendingActions())
+    landscape-developers --> modify
+        {'welcome_message': u'This change will fail to propagate.'}
+    >>> browser.reload()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Changes to this mailing list are currently being propagated.
+
+    >>> mailinglist_api.reportStatus({'landscape-developers':'failure'})
+    True
+
+    >>> browser.reload()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This mailing list is in an inconsistent state because changes to
+    its configuration failed to propagate.
+
+    # Now we have to maneuver the mailing list back into a consistent
+    # state for the next test. To do this we need to bypass the
+    # workflow which prevents much of anything from being done with a
+    # mailing list in a MOD_FAILED state.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> no_security_list = removeSecurityProxy(mailing_list)
+    >>> no_security_list.status = MailingListStatus.ACTIVE
+    >>> no_security_list.syncUpdate()
+    >>> browser.reload()
+    >>> print get_feedback_messages(browser)
+    []
+
+
+== Hidden by config variable ==
+
 XXX: We don't really want all this functionality to be visible to users
 when this code lands on mainline, so there's a config variable which
 controls its visibility.  That variable is named expose_hosted_mailing_lists
@@ -237,17 +400,25 @@ functionality on production. -- Guilherme Salgado 2007-09-20
     >>> config.mailman.expose_hosted_mailing_lists
     True
 
+    >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayOptions
     ['\xa0The Launchpad mailing list for this team -
       landscape-developers@lists.launchpad.net',
      '\xa0Each member individually',
      '\xa0Another e-mail address']
+    >>> browser.getLink('Configure mailing list').url
+    'http://launchpad.dev/~landscape-developers/+mailinglist'
 
     >>> config.mailman.expose_hosted_mailing_lists = False
     >>> browser.reload()
     >>> browser.getControl(name='field.contact_method').displayOptions
     ['\xa0Each member individually',
      '\xa0Another e-mail address']
+
+    >>> browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
     >>> config.mailman.expose_hosted_mailing_lists = True
     >>> browser.reload()
@@ -256,4 +427,5 @@ functionality on production. -- Guilherme Salgado 2007-09-20
       landscape-developers@lists.launchpad.net',
      '\xa0Each member individually',
      '\xa0Another e-mail address']
-
+    >>> browser.getLink('Configure mailing list').url
+    'http://launchpad.dev/~landscape-developers/+mailinglist'

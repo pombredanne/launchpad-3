@@ -7,6 +7,7 @@ __all__ = [
     'TeamAddView',
     'TeamBrandingView',
     'TeamContactAddressView',
+    'TeamMailingListConfigurationView',
     'TeamEditView',
     'TeamMemberAddView',
     ]
@@ -17,6 +18,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
@@ -30,9 +32,10 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingListSet, IPersonSet,
-    ITeamContactAddressForm, ITeamCreation, ITeamMember, ITeam,
-    LoginTokenType, MailingListStatus, MAILING_LISTS_DOMAIN,
+    EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
+    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, ITeamMailingListConfigurationForm, ITeamMember,
+    LoginTokenType, MAILING_LISTS_DOMAIN, MailingListStatus,
     TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
@@ -98,6 +101,10 @@ class TeamContactAddressView(LaunchpadFormView):
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
 
+    def _getList(self):
+        """Return this team's mailing list."""
+        return getUtility(IMailingListSet).get(self.context.name)
+
     def getListInState(self, *statuses):
         """Return this team's mailing list if it's in one of the given states.
 
@@ -106,10 +113,16 @@ class TeamContactAddressView(LaunchpadFormView):
         :return: This team's IMailingList or None if the team doesn't have
             a mailing list, or if it isn't in one of the given states.
         """
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        mailing_list = self._getList()
         if mailing_list is not None and mailing_list.status in statuses:
             return mailing_list
         return None
+
+    @property
+    def can_be_contact_method(self):
+        """See `MailingList.canBeContactMethod`."""
+        mailing_list = self._getList() 
+        return mailing_list and mailing_list.canBeContactMethod()
 
     def shouldRenderHostedListOptionManually(self):
         """Should the HOSTED_LIST option be rendered manually?
@@ -121,8 +134,9 @@ class TeamContactAddressView(LaunchpadFormView):
         radio button with a 'submit' button that allows the user to request
         the mailing list creation.
         """
+        mailing_list = self._getList() 
         return (config.mailman.expose_hosted_mailing_lists and
-                self.getListInState(MailingListStatus.ACTIVE) is None)
+                (not mailing_list or not mailing_list.canBeContactMethod()))
 
     @property
     def mailing_list_status_message(self):
@@ -149,13 +163,16 @@ class TeamContactAddressView(LaunchpadFormView):
             msg += "mailing list is currently deactivated."
         elif mailing_list.status == MailingListStatus.FAILED:
             msg += "mailing list creation failed."
-        elif mailing_list.status in [MailingListStatus.MODIFIED,
-                                     MailingListStatus.UPDATING]:
+        elif mailing_list.status == MailingListStatus.MODIFIED:
+            msg += "mailing list is pending an update."
+        elif mailing_list.status == MailingListStatus.UPDATING:
             msg += "mailing list is being updated."
         elif mailing_list.status == MailingListStatus.ACTIVE:
             # Mailing list is active and the option will be enabled; there's
             # no need to display a status message.
             msg = ''
+        elif mailing_list.status == MailingListStatus.MOD_FAILED:
+            msg = 'an attempt to modify the mailing list failed.'
         else:
             raise AssertionError(
                 "Unknown mailing list status: %s" % mailing_list.status)
@@ -185,37 +202,50 @@ class TeamContactAddressView(LaunchpadFormView):
         """The address for this team's mailing list."""
         return '%s@%s' % (self.context.name, MAILING_LISTS_DOMAIN)
 
-    def setUpWidgets(self, context=None):
-        """Set up the widgets for the mailing list contact choices.
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        The welcome message control will only be displayed if the
+        mailing list's state is ACTIVE, MODIFIED, or UPDATING.
+        """
+        super(TeamContactAddressView, self).setUpFields()
+
+        # Replace the default contact_method field by a custom one.
+        self.form_fields = (
+            form.FormFields(self.getContactMethodField())
+            + self.form_fields.omit('contact_method'))
+            
+        mailing_list = self.getListInState(MailingListStatus.ACTIVE,
+                                           MailingListStatus.MODIFIED,
+                                           MailingListStatus.UPDATING)
+
+    def getContactMethodField(self):
+        """Create the form.Fields to use for the contact_method field.
 
         Check if the HOSTED_LIST option of our contact_method widget
         should be rendered by Zope3, manually (by ourselves) in the
         template or not rendered at all and change the vocabulary
         accordingly.
         """
-        vocab_items = TeamContactMethod.items.items[:]
-        if (not config.mailman.expose_hosted_mailing_lists
-            or self.shouldRenderHostedListOptionManually()):
-            # Either we'll render the HOSTED_LIST option manually or not
-            # render it at all, so remove it from vocab_items.
-            vocab_items.remove(TeamContactMethod.HOSTED_LIST)
-        else:
+        terms = [term for term in TeamContactMethod
+                 if term.value != TeamContactMethod.HOSTED_LIST]
+        if (config.mailman.expose_hosted_mailing_lists
+            and self.can_be_contact_method):
             # The HOSTED_LIST option will be rendered normally by zope3, so
             # we just need to change its title to include the actual email
             # address of the mailing list.
-            index = vocab_items.index(TeamContactMethod.HOSTED_LIST)
-            item = vocab_items.pop(index)
-            item.title = ('The Launchpad mailing list for this team - '
-                          '<strong>%s</strong>' % self.mailinglist_address)
-            vocab_items.insert(index, item)
-        contact_method = form.FormField(
+            title = ('The Launchpad mailing list for this team - '
+                     '<strong>%s</strong>' % self.mailinglist_address)
+            hosted_list_term = SimpleTerm(
+                TeamContactMethod.HOSTED_LIST,
+                TeamContactMethod.HOSTED_LIST.name, title)
+            terms.insert(0, hosted_list_term)
+
+        return form.FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact these team's members?"),
-                   required=True, values=vocab_items),
+                   required=True, vocabulary=SimpleVocabulary(terms)),
             custom_widget=self.custom_widgets['contact_method'])
-        self.form_fields = form.Fields(
-            contact_method, self.form_fields['contact_address'])
-        super(TeamContactAddressView, self).setUpWidgets(context=context)
 
     def validate(self, data):
         """Validate the team contact email address.
@@ -241,8 +271,7 @@ class TeamContactAddressView(LaunchpadFormView):
                     self.setFieldError('contact_address', str(error))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if (mailing_list is None
-                or mailing_list.status != MailingListStatus.ACTIVE):
+            if (mailing_list is None or not mailing_list.canBeContactMethod()):
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -305,17 +334,22 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Changes the contact address for this mailing list."""
         context = self.context
         email_set = getUtility(IEmailAddressSet)
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
         if contact_method == TeamContactMethod.NONE:
             if context.preferredemail is not None:
-                context.preferredemail.destroySelf()
+                # The user wants the mailing list to stop being the
+                # team's contact address, but not to be deactivated
+                # altogether. So we demote the list address from
+                # 'preferred' address to being just a regular address.
+                context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
             assert (mailing_list is not None 
-                    and mailing_list.status == MailingListStatus.ACTIVE), (
+                    and mailing_list.canBeContactMethod()), (
                 "A team can only use an active mailing list as its contact "
                 "address.")
             context.setContactAddress(
@@ -340,6 +374,76 @@ class TeamContactAddressView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+
+class TeamMailingListConfigurationView(LaunchpadFormView):
+    """A view class that lets the user manipulate a team's mailing list."""
+
+    schema = ITeamMailingListConfigurationForm
+    label = "Mailing list configuration"
+    custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
+
+    def __init__(self, context, request):
+        """Set feedback messages for users who want to edit the mailing list.
+
+        There are a number of reasons why your changes to the mailing
+        list might not take effect immediately. First, the mailing
+        list may not actually be set as the team contact
+        address. Second, the mailing list may be in a transitional
+        state: from MODIFIED to UPDATING to ACTIVE can take a while.        
+        """
+        super(TeamMailingListConfigurationView,
+              self).__init__(context, request)
+        list_set = getUtility(IMailingListSet)
+        self.mailing_list = list_set.get(self.context.name)
+        if (self.context.preferredemail is None
+            or self.mailing_list.address != self.context.preferredemail.email):
+            self.request.response.addNotification(
+                _("This team's mailing list is not set as the team "
+                  "contact address."))
+
+        if self.mailing_list.status == MailingListStatus.MODIFIED:
+            self.request.response.addNotification(
+                _("Some changes to this team's mailing list are pending "
+                  "an update and have not yet taken effect."))
+
+        elif self.mailing_list.status == MailingListStatus.UPDATING:
+            self.request.response.addNotification(
+                _("Changes to this mailing list are currently "
+                  "being propagated."))
+
+        elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
+            self.request.response.addNotification(
+                _("This mailing list is in an inconsistent state because "
+                  "changes to its configuration failed to propagate."))
+        else:
+            # No other state needs a special notification.
+            pass
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Sets the welcome message for a mailing list."""
+        welcome_message = data.get('welcome_message')
+        assert (self.mailing_list is not None 
+                and self.mailing_list.canBeContactMethod()), (
+            "Only an active mailing list can be configured.")
+
+        if (welcome_message is not None
+            and welcome_message != self.mailing_list.welcome_message):
+            self.mailing_list.welcome_message = welcome_message
+
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """The initial value of welcome_message comes from the database.
+        
+        :return: A dictionary containing the current welcome message.
+        """
+        if self.mailing_list is None:
+            return {}
+        else:
+            return dict(welcome_message=self.mailing_list.welcome_message)
+        
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
