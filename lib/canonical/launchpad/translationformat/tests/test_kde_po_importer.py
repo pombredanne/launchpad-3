@@ -130,10 +130,10 @@ class KdePOImporterTestCase(unittest.TestCase):
     def testTemplatePlurals(self):
         """Check whether legacy KDE plural forms are correctly imported."""
         message = self.template_file.messages[0]
-        msgid = message.singular_text
-        msgid_plural = message.plural_text
+        singular = message.msgid_singular
+        plural = message.msgid_plural
         self.failUnless(
-            (msgid == u'%1 foo' and msgid_plural == u'%1 foos'),
+            (singular == u'%1 foo' and plural == u'%1 foos'),
             "KdePOImporter didn't import KDE plural forms correctly.")
 
     def testTranslationPlurals(self):

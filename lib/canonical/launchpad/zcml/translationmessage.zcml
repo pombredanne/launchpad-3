@@ -35,8 +35,9 @@
         />
 
     <browser:menus
-        module="canonical.launchpad.browser.pomsgset"
-        classes="POMsgSetFacets POMsgSetAppMenus"
+        module="canonical.launchpad.browser.translationmessage"
+        classes="CurrentTranslationMessageFacets
+                 CurrentTranslationMessageAppMenus"
         />
 
     <browser:defaultView
@@ -64,7 +65,7 @@
         name="+translate"
         for="canonical.launchpad.interfaces.ITranslationMessage"
         permission="zope.Public"
-        template="../templates/translationmessage-view.pt"
+        template="../templates/pomsgset-translate.pt"
         class="canonical.launchpad.browser.CurrentTranslationMessageView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />

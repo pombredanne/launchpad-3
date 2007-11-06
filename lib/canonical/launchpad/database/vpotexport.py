@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'VPOTExportSet',
-    'VPOTExport'
+    'VPOTExport',
     ]
 
 from zope.interface import implements
@@ -23,7 +23,6 @@ class VPOTExportSet:
 
     column_names = [
         'potemplate',
-        'potmsgset',
         'template_header',
         'potmsgset',
         'sequence',
@@ -41,6 +40,7 @@ class VPOTExportSet:
         'potemplate',
         'sequence',
         'potmsgset',
+        'id',
     ]
     sort_columns = ', '.join(
         ['POTExport.' + name for name in sort_column_names])
@@ -83,6 +83,7 @@ class VPOTExport:
 
     def __init__(self, *args):
         (potemplate,
+         self.template_header,
          potmsgset,
          self.sequence,
          self.comment,
