@@ -79,14 +79,14 @@ If the translation in Launchpad is fuzzy, we keep update it.
   False
   >>> message.is_complete
   True
-  >>> message.is_published
+  >>> message.is_imported
   True
 
 Even more, if there is no translation at all in Launchpad, we still get
 the update from upstream.
 
   >>> message = potmsgset.updateTranslation(
-  ...     pofile_es, carlos, {}, is_fuzzy=False, is_import=False,
+  ...     pofile_es, carlos, {}, is_fuzzy=False, is_imported=False,
   ...     lock_timestamp=datetime.datetime.now(UTC))
   >>> message.msgstr0
   None
@@ -136,7 +136,7 @@ be losing translations.
   False
   >>> message.is_complete
   True
-  >>> message.is_published
+  >>> message.is_imported
   True
 
 When we get no translations at all, Launchpad should keep its active
@@ -151,7 +151,7 @@ translation.
   False
   >>> message.is_complete
   True
-  >>> message.is_published
+  >>> message.is_imported
   False
 
 And finally, now that published and active translations diverged,
