@@ -65,7 +65,7 @@
         name="+translate"
         for="canonical.launchpad.interfaces.ITranslationMessage"
         permission="zope.Public"
-        template="../templates/pomsgset-translate.pt"
+        template="../templates/translationmessage.pt"
         class="canonical.launchpad.browser.CurrentTranslationMessageView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
