@@ -10,15 +10,11 @@ __metaclass__ = type
 import _pythonpath
 
 from zope.component import getUtility
-#XXX: Only needed until the soyuz buildmaster class is fully deleted.
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.buildmaster.master import (
-    BuilddMaster, builddmaster_lockfilename)
-
-from canonical.launchpad.scripts.base import (LaunchpadCronScript,
-    LaunchpadScriptFailure)
+from canonical.buildmaster.master import builddmaster_lockfilename
+from canonical.launchpad.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import IBuilderSet
 from canonical.lp import READ_COMMITTED_ISOLATION
 
@@ -32,9 +28,17 @@ class SlaveScanner(LaunchpadCronScript):
 
         builder_set = getUtility(IBuilderSet)
         buildMaster = builder_set.pollBuilders(self.logger, self.txn)
-        # XXX: lifeless 2007-05-25:
-        # Only needed until the soyuz buildmaster class is fully deleted.
-        builder_set.dispatchBuilds(self.logger, removeSecurityProxy(buildMaster))
+
+        self.logger.info("Dispatching Jobs.")
+
+        for builder in builder_set:
+            if not builder.is_available:
+                self.logger.warn('%s: not available.' % builder.name)
+                continue
+            candidate = builder.findBuildCandidate()
+            builder.dispatchBuildCandidate(candidate)
+
+        self.logger.info("Slave Scan Process Finished.")
 
     @property
     def lockfilename(self):

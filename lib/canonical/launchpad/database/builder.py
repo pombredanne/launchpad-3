@@ -9,6 +9,7 @@ __all__ = [
 
 import httplib
 import gzip
+import logging
 import os
 import socket
 import subprocess
@@ -24,14 +25,17 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildDaemonError, BuildSlaveFailure, CannotBuild,
-    CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet,
-    IDistroArchSeriesSet, IHasBuildRecords, NotFoundError,
-    PackagePublishingPocket, ProtocolVersionMismatch, pocketsuffix)
+    ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
+    CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet,
+    IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
+    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
+    pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -296,17 +300,18 @@ class Builder(SQLBase):
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
-            logger.debug("Missing CHROOT for %s/%s/%s",
+            raise CannotBuild(
+                "Missing CHROOT for %s/%s/%s",
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
                 build_queue_item.build.distroarchseries.architecturetag)
-            raise CannotBuild
 
         # XXX cprov 20071025: We silently ignore SECURITY builds until we
         # have a proper infrastructure to build (EMBARGO archive) and
         # reviewed the UI to hide their information until public disclosure.
         if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
-            raise CannotBuild
+            raise CannotBuild(
+                'Soyuz is not yet capable to build SECURITY uploads.')
 
         # The main distribution has policies to prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
@@ -499,6 +504,85 @@ class Builder(SQLBase):
             out_file.close()
             os.remove(out_file_name)
 
+    @property
+    def is_available(self):
+        """See `IBuilder`."""
+        if not self.builderok:
+            return False
+        if self.manual:
+            return False
+        try:
+            slavestatus = self.slaveStatusSentence()
+        except (xmlrpclib.Fault, socket.error), info:
+            return False
+        if slavestatus[0] != BuilderStatus.IDLE:
+            return False
+        return True
+
+    def _findBuildCandidate(self):
+        """Actually the real build candidate lookup.
+
+        It will become public (with the same name) when we get able to detect
+        superseded builds at build creation time.5B
+        """
+        clauses = ["""
+            buildqueue.build = build.id AND
+            build.distroarchrelease = distroarchrelease.id AND
+            build.archive = archive.id AND
+            build.buildstate = %s AND
+            distroarchrelease.processorfamily = %s AND
+            buildqueue.builder IS NULL
+        """ % sqlvalues(BuildStatus.NEEDSBUILD, self.processor.family)]
+
+        clauseTables = ['Build', 'DistroArchRelease', 'Archive']
+
+        if self.trusted:
+            clauses.append("""
+                archive.purpose IN %s
+            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
+        else:
+            clauses.append("""
+                archive.purpose = %s
+            """ % sqlvalues(ArchivePurpose.PPA))
+
+        query = " AND ".join(clauses)
+
+        candidate = BuildQueue.selectFirst(
+            query, clauseTables=clauseTables, prejoins=['build'],
+            orderBy=['-buildqueue.lastscore'])
+
+        return candidate
+
+    def findBuildCandidate(self):
+        """See `IBuilder`."""
+        logger = logging.getLogger()
+
+        candidate = self._findBuildCandidate()
+
+        if not candidate:
+            logger.debug("No candidates available.")
+            return None
+
+        while candidate.is_last_version is False:
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (candidate.build.id, candidate.id))
+            candidate.build.buildstate = BuildStatus.SUPERSEDED
+            candidate.destroySelf()
+            candidate = self._findBuildCandidate()
+
+        return candidate
+
+    def dispatchBuildCandidate(self, candidate):
+        """See `IBuilder`."""
+        logger = logging.getLogger()
+        try:
+            self.startBuild(candidate, logger)
+        except (BuildSlaveFailure, CannotBuild), err:
+            # Ignore the exception - this code is being refactored
+            # and the caller of startBuild expects it to never fail.
+            logger.warn('Could not build: %s' % err)
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
@@ -559,15 +643,3 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
-
-    def dispatchBuilds(self, logger, buildMaster):
-        """See IBuilderSet."""
-        buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
-
-        logger.info("Dispatching Jobs.")
-        # Now that we've gathered in all the builds, dispatch the pending ones
-        for candidate_proc in buildCandidatesSortedByProcessor.iteritems():
-            processor, buildCandidates = candidate_proc
-            buildMaster.dispatchByProcessor(processor, buildCandidates)
-
-        logger.info("Slave Scan Process Finished.")

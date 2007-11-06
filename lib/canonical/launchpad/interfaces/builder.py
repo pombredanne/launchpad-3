@@ -231,6 +231,19 @@ class IBuilder(IHasOwner):
         :return: A librarian file alias.
         """
 
+    is_available = Attribute(
+        "Whether or not a builder is available for building new jobs.")
+
+    def findBuildCandidate():
+        """Return the candidate for building.
+
+        The result the pending BuildQueue item with the highest score for
+        this builder ProcessorFamily or None if no candidate is available.
+        """
+
+    def dispatchBuildCandidate(candidate):
+        """XXX """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.
@@ -279,15 +292,4 @@ class IBuilderSet(Interface):
         :return: A canonical.buildmaster.master.BuilddMaster instance. This is
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
-        """
-
-    def dispatchBuilds(logger, buildMaster):
-        """Dispatch any pending builds that can be dispatched.
-
-        :param logger: A logger to use to provide information about the
-            dispatching process.
-        :param buildMaster: This is a canonical.buildmaster.master.BuilddMaster
-            instance which will be used to perform the dispatching as that is
-            where the detailed logic currently resides. This is being
-            refactored to remove the need for a buildMaster parameter at all.
         """

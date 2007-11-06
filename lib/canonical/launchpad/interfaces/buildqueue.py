@@ -56,6 +56,9 @@ class IBuildQueue(Interface):
     buildduration = Attribute(
         "Durarion of the job, calculated on-the-fly based on buildstart.")
     is_trusted = Attribute("See IBuild.is_trusted.")
+    is_last_version = Attribute(
+        "Whether or not the job source is the last version published in "
+        "the archive.")
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""

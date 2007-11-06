@@ -22,7 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
-    SourcePackageUrgency)
+    PackagePublishingStatus, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -91,6 +91,16 @@ class BuildQueue(SQLBase):
     def is_trusted(self):
         """See IBuildQueue"""
         return self.build.is_trusted
+
+    @property
+    def is_last_version(self):
+        """See  IBuildQueue ."""
+        spr = self.build.sourcepackagerelease
+        if (spr.publishings and spr.publishings[0].status >
+            PackagePublishingStatus.PUBLISHED):
+            return False
+
+        return True
 
     def score(self):
         """See IBuildQueue"""
@@ -263,7 +273,6 @@ class BuildQueueSet(object):
         if not archserieses:
             # return an empty SQLResult instance to make the callsites happy.
             return BuildQueue.select("1=2")
-
         if not isinstance(archserieses, list):
             archseries = [archserieses]
         arch_ids = [d.id for d in archserieses]

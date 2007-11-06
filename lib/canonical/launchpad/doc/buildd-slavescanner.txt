@@ -18,11 +18,12 @@ transaction should be retrieved.
 We check for sent mails in some places, so load the stub mailer:
 
   >>> from canonical.launchpad.mail import stub
+  >>> from canonical.database.sqlbase import commit
 
 And create a utility function to make tests easier to read.
 
   >>> def check_mail_sent(last_stub_mail_count):
-  ...    local_transaction.commit()
+  ...    commit()
   ...    return len(stub.test_emails) == last_stub_mail_count + 3
 
 The master also requires an 'logging' instance to not compromise the
@@ -190,7 +191,7 @@ be aborted appropriately.
   >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
 
   >>> buildergroup.updateBuilderStatus(lostbuilding_builder, hoary_i386)
-  WARNING:root:Builder on http://fake:0000 marked as failed due to: <Fault 8002: 'Could not abort'>
+  WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
   Traceback (most recent call last):
   ...
   Fault: <Fault 8002: 'Could not abort'>
@@ -309,9 +310,6 @@ hence certain package dependencies.
   >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
   ...                          builder5, builder6, builder7, builder8,
   ...                          builder9, builder10, builder11]
-
-  >>> buildergroup.firstAvailable() is builder2
-  True
 
   Stub classes to emulate Build and BuildQueue
 
@@ -817,10 +815,9 @@ let's see how this method works:
   >>> logfile.filename, logfile.mimetype
   (u'buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz', u'text/plain')
 
-
 Needed so that the Librarian can serve the new file.
 
-  >>> local_transaction.commit()
+  >>> commit()
 
 Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
@@ -876,9 +873,7 @@ Remove build upload results root
 
   >>> shutil.rmtree(config.builddmaster.root)
 
-
-    BuilddMaster class
-    ===================
+== BuilddMaster class ==
 
   >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
 
@@ -897,11 +892,10 @@ Create a totally bogus CHROOT
   >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=pocket, chroot=chroot)
 
+Setup a buildd-slave instance for a succesfully 'scan' procedure.
 
-As we do when building the BuildQueue entries we need to recognise
-all available distroarchseriess and figure out which slave builder
-is able to build stuff properly for that one.
-
+  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+  >>> BuilddSlaveTestSetup().setUp()
 
 Initialiase the BuildMaster with all available distroarchseriess.
 Because the sampledata builders are busy we issue and warning stating that.
@@ -913,104 +907,75 @@ Because the sampledata builders are busy we issue and warning stating that.
   ...                                    dar.architecturetag)):
   ...     bm.addDistroArchSeries(dar)
   ...     bm.setupBuilders(dar)
-  WARNING:root.builders.x86:Builder on http://localhost:8221/ marked as failed due to: <socket.error ...>
-  Traceback (most recent call last):
-  ...
-  error: (111, 'Connection refused')
-  WARNING:root.builders.x86:No builders are available
-
-Inspect private attribute _archseries contents. Remember
-archseries was fetched in the beginning of the test.
-
-  >>> len(bm._archserieses)
-  1
-
-It should be hoary/x86:
-
-  >>> bm._archserieses.keys()[0].title
-  u'The Hoary Hedgehog Release for i386 (x86)'
-
-  >>> real_buildergroup = bm._archserieses[hoary_i386]['builders']
-
-  >>> real_buildergroup.firstAvailable() is None
-  True
 
 Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
 the Launchpad DB. (simply check if it doesn't explode)
 
   >>> bm.scanActiveBuilders()
+  WARNING:root.builders.x86:Builder http://localhost:8221/ forgot about build i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE -- resetting buildqueue record
 
-Create a list of jobs separated by processor to turn the dispatch
-process easier, then try to dispatch them according his processor and
-the available builder slaves at moment.
+We are done here, let's stop the buildd-slave instance:
 
-  >>> byproc = bm.sortAndSplitByProcessor()
-  >>> len(byproc)
-  1
+  >>> BuilddSlaveTestSetup().tearDown()
 
-Inspect the organized list content:
+== Build Dispatching ==
 
-  >>> for proc, queueItems in byproc.iteritems():
-  ...     for item in queueItems:
-  ...         proc.name, item.id, item.build.buildstate.name
-  (u'x86', 2, 'NEEDSBUILD')
-  (u'x86', 1, 'NEEDSBUILD')
+Build dispatching can be entirely done via IBuilder content class via
+the the following API:
 
-Invoke dispacher on the available list: (no builder available atm)
+ * findCandidate:  returns a suitable BuildQueue candidate
+ * dispatchBuildCandidate: dispatch a build for a given candidate.
 
-  >>> for proc, queueItems in byproc.iteritems():
-  ...     bm.dispatchByProcessor(proc, queueItems)
+IBuilder.findCandidate also identifies if there are builds for
+superseded source package releases in the queue and mark the
+correspondent build record as SUPERSEDED.
 
-We wish now to check what happens if we dispatchByProcessor and there
-are builds for now superseded source package releases in the queue.
+  >>> old_candidate = a_builder.findBuildCandidate()
+  >>> print old_candidate.build.buildstate.name
+  NEEDSBUILD
 
-This involves subbing in a scarily large amount of crud, so here
-goes nothing.
+The 'candidate' is constant until we dispatch it.
 
+  >>> new_candidate = a_builder.findBuildCandidate()
+  >>> new_candidate.id == old_candidate.id
+  True
+
+A lot of effort is required in order to make the current candidate to
+be considered 'superseded', basically,  it involves directly tweaking
+the status of the current publication (as a permissive database user).
+
+  >>> from canonical.config import config
   >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> from canonical.launchpad.database.publishing import (
+  ...     SecureSourcePackagePublishingHistory)
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
-  >>> class MockBG:
-  ...     def firstAvailable(self, is_trusted=False):
-  ...         return "Something which is not None"
+  >>> spr = old_candidate.build.sourcepackagerelease
+  >>> current_pub = spr.publishings[0]
+  >>> secure_pub = SecureSourcePackagePublishingHistory.get(current_pub.id)
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-  >>> class MockProcessor:
-  ...     id = "fakeprocessor"
-  ...     name = "fakeprocessor"
+Now, if we look up for a build candidate, we will see that it changed.
 
-  >>> class MockPubRecord:
-  ...     def __init__(self):
-  ...         self.status = PackagePublishingStatus.SUPERSEDED
+  >>> new_candidate = a_builder.findBuildCandidate()
+  >>> new_candidate.id != old_candidate.id
+  True
 
-  >>> class MockSPR:
-  ...     publishings = [MockPubRecord()]
+The 'previous' candidate correspondent build record was marked as
+superseded, so it's not part of the candidates list anymore.
 
-  >>> from canonical.buildd.utils import notes
-  >>> notes[MockProcessor()]["builders"] = MockBG()
-  >>> qitem = MockBuildQueue(1000, None, MockBuild(1001))
-  >>> qbuild = qitem.build
-  >>> queue = [qitem]
-  >>> qitem.build.sourcepackagerelease = MockSPR()
-  >>> bm.dispatchByProcessor(MockProcessor(), queue)
-
-  >>> print qbuild.buildstate.name
+  >>> print old_candidate.build.buildstate.name
   SUPERSEDED
 
-
-Get a BuildQueue to test with:
-
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> setupBuildQueue(bqItem3, a_builder)
-  >>> last_stub_mail_count = len(stub.test_emails)
-
-Override the builder's slave with one that will claim to be 'OK'
-
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-
-This build is building in the release pocket for the main component in
-the primary archive.  It will pass an 'archives' property to the slave
-that contains sources.list entries for each pocket required in the
-primary archive.
+When this build is building in the release pocket for the main
+component in the primary archive.  It will pass an 'archives' property
+to the slave that contains sources.list entries for each pocket
+required in the primary archive.
 
 We also pass a property called 'suite' which is the current distroseries and
 pocket, (e.g. edgy-updates) and 'archive_purpose' which contains the build's
@@ -1018,7 +983,11 @@ archive.purpose (e.g. PRIMARY or PPA).  These latter two properties are
 used in the chroot to determine whether it needs to turn on some features
 or not (like pkgstriptranslations and pkgmaintainermangler).
 
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> a_builder.dispatchBuildCandidate(candidate)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1026,9 +995,7 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
   Suite: hoary
   Archive Purpose: PRIMARY
 
-Cleanup in preparation for the next test:
-
-  >>> bqItem3.destroySelf()
+  >>> candidate.destroySelf()
 
 Partner archive builds will set up the 'archives' property such that it
 references all the required pockets/components in the primary archive, in
@@ -1037,12 +1004,16 @@ addition to a reference to the release pocket in the partner archive itself.
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> partner_archive = ubuntu.getArchiveByComponent('partner')
   >>> removeSecurityProxy(a_build).archive = partner_archive
-  >>> local_transaction.commit()
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> commit()
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(candidate, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+
+  >>> a_builder.dispatchBuildCandidate(candidate)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1050,22 +1021,25 @@ addition to a reference to the release pocket in the partner archive itself.
   Suite: hoary
   Archive Purpose: PARTNER
 
-  >>> bqItem3.destroySelf()
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-  >>> local_transaction.commit()
+  >>> candidate.destroySelf()
 
 Similarly, PPA builds pass the archives property:
 
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
   >>> removeSecurityProxy(a_build).archive = cprov_archive
-  >>> local_transaction.commit()
-  >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> a_builder.trusted = False
-  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> commit()
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(candidate, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+
+  >>> a_builder.dispatchBuildCandidate(candidate)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1075,11 +1049,10 @@ Similarly, PPA builds pass the archives property:
 
 Clean up before continuing:
 
-  >>> bqItem3.destroySelf()
+  >>> candidate.destroySelf()
   >>> a_builder.trusted = True
-  >>> a_builder.builderok = True
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-  >>> local_transaction.commit()
+  >>> commit()
 
 When there is no chroot it should not alter the buildstate:
 
@@ -1089,13 +1062,9 @@ When there is no chroot it should not alter the buildstate:
   ...     pocket=PackagePublishingPocket.UPDATES).count()
   0
 
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(candidate, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-
-Override the builder's slave with one that will claim to be 'OK'
-
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
 
 Make a build in the updates pocket:
 
@@ -1115,7 +1084,7 @@ builds for post-release pockets:
 
   >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'
-  >>> bm.startBuild(real_buildergroup, a_builder, updates_bqItem)
+  >>> a_builder.dispatchBuildCandidate(updates_bqItem)
   Traceback (most recent call last):
   ...
   AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (31) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
@@ -1160,7 +1129,7 @@ A build in the updates pocket:
   ...     PackagePublishingPocket.UPDATES)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1175,12 +1144,27 @@ A build in the proposed pocket:
   ...     PackagePublishingPocket.PROPOSED)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-proposed main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
   Suite: hoary-proposed
+  Archive Purpose: PRIMARY
+
+A build in the backports pocket:
+
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).pocket = (
+  ...     PackagePublishingPocket.BACKPORTS)
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
+  Suite: hoary-backports
   Archive Purpose: PRIMARY
 
 A build in the security pocket:
@@ -1192,7 +1176,8 @@ A build in the security pocket:
   ...     PackagePublishingPocket.SECURITY)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
+  WARNING:root:Could not build: Soyuz is not yet capable to build SECURITY uploads.
 
 XXX cprov 20071025: The pocket-dependency infrastructure is ready to
 deal with SECURITY pocket, however we explicitly skip security builds
@@ -1203,22 +1188,6 @@ Builds for security pocket will remain pending for now:
 
   >>> bqItem3.build.buildstate.name
   'NEEDSBUILD'
-
-
-A build in the backports pocket:
-
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> removeSecurityProxy(bqItem3.build).pocket = (
-  ...     PackagePublishingPocket.BACKPORTS)
-  >>> setupBuildQueue(bqItem3, a_builder)
-  >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
-  ensurepresent called
-  ensurepresent called
-  OkSlave BUILDING
-  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
-  Suite: hoary-backports
-  Archive Purpose: PRIMARY
 
 
 == Builder Status Handler ==
