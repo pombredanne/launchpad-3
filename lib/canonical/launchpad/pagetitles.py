@@ -888,12 +888,7 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-def pomsgset_translate(context, view):
-    """Return the page title for editing a PO file."""
-    return smartquote('Edit "%s"' % context.pofile.title)
-
-
-def translationmessage_view(context, view):
+def translationmessage(context, view):
     """Return the page title for editing a translation message."""
     return smartquote('Edit "%s"' % context.pofile.title)
 

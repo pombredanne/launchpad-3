@@ -582,77 +582,6 @@ class BaseTranslationView(LaunchpadView):
             translations, is_fuzzy, error, self.second_lang_code,
             self.form_is_writeable)
 
-    #
-    # Internals
-    #
-
-    def _initializeAltLanguage(self):
-        """Initialize the alternative language widget and check form data."""
-        alternative_language = None
-        second_lang_code = self.request.form.get("field.alternative_language")
-        fallback_language = self.pofile.language.alt_suggestion_language
-        if isinstance(second_lang_code, list):
-            # self._redirect() was generating duplicate params in the URL.
-            # We may be able to remove this guard.
-            raise UnexpectedFormData(
-                "You specified more than one alternative language; "
-                "only one is currently supported.")
-
-        if second_lang_code:
-            try:
-                translatable_vocabulary = getVocabularyRegistry().get(
-                    None, 'TranslatableLanguage')
-                language_term = (
-                    translatable_vocabulary.getTermByToken(second_lang_code))
-                alternative_language = language_term.value
-            except LookupError:
-                # Oops, a bogus code was provided in the request.
-                # This is UnexpectedFormData caused by a hacked URL, or an
-                # old URL. The alternative_language field used to use
-                # LanguageVocabulary that contained untranslatable languages.
-                second_lang_code = None
-        elif fallback_language is not None:
-            # If there's a standard alternative language and no
-            # user-specified language was provided, preselect it.
-            alternative_language =  fallback_language
-            second_lang_code = fallback_language.code
-        else:
-            # The second_lang_code is None and there is no fallback_language.
-            # This is probably a parent language or an English variant.
-            pass
-
-        # Whatever alternative language choice came out of all that, ignore it
-        # if the user has preferred languages and the alternative language
-        # isn't among them.  Otherwise we'd be initializing this dropdown to a
-        # choice it didn't in fact contain, resulting in an oops.
-        if alternative_language is not None:
-            user = getUtility(ILaunchBag).user
-            if user is not None:
-                choices = set(user.translatable_languages)
-                if choices and alternative_language not in choices:
-                    self.request.response.addInfoNotification(
-                        u"Not showing suggestions from selected alternative "
-                        "language %s.  If you wish to see suggestions from "
-                        "this language, add it to your preferred languages "
-                        "first."
-                        % alternative_language.displayname)
-                    alternative_language = None
-                    second_lang_code = None
-
-        initial_values = {}
-        if alternative_language is not None:
-            initial_values['alternative_language'] = alternative_language
-
-        self.alternative_language_widget = CustomWidgetFactory(
-            CustomDropdownWidget)
-        setUpWidgets(
-            self, IPOFileAlternativeLanguage, IInputWidget,
-            names=['alternative_language'], initial=initial_values)
-
-        # We store second_lang_code for use in hidden inputs in the
-        # other forms in the translation pages.
-        self.second_lang_code = second_lang_code
-
     @property
     def has_plural_form_information(self):
         """Return whether we know the plural forms for this language."""
@@ -1433,32 +1362,163 @@ class TranslationsRadioWidget(LaunchpadRadioWidget):
             submitter_text,
             context.date_created)
 
-class CurrentTranslationMessageView(LaunchpadEditFormView):
+class CurrentTranslationMessageView(LaunchpadView):
     """Displays a current ITranslationMessage for an IPOTMsgSet.
 
     Also shows all the suggestions and translations elsewhere.
     """
-    schema = ITranslationMessage
-
-    field_names = ['messages']
-    custom_widget('messages', TranslationsRadioWidget)
-
     def initialize(self):
         translationmessage = self.context
-        self.label = 'Translating'
-        self._current_translationmessage = self.context
-        self._potmsgset = translationmessage.potmsgset
-        self._pofile = translationmessage.pofile
-        self._language = translationmessage.pofile.language
-        LaunchpadEditFormView.initialize(self)
+        self.potmsgset = translationmessage.potmsgset
+        self.pofile = translationmessage.pofile
+        self.language = translationmessage.pofile.language
+        self._initializeAltLanguage()
 
-    #def initial_values(self):
-    #    return dict(messages=self.context)
+        if (self.request.method == 'POST'):
+            if self.user is None:
+                raise UnexpectedFormData, (
+                    'Anonymous users cannot do POST submissions.')
+            try:
+                # Try to get the timestamp when the submitted form was
+                # created. We use it to detect whether someone else updated
+                # the translation we are working on in the elapsed time
+                # between the form loading and its later submission.
+                self.lock_timestamp = datetimeutils.parseDatetimetz(
+                    self.request.form.get('lock_timestamp', u''))
+            except datetimeutils.DateTimeError:
+                # invalid format. Either we don't have the timestamp in the
+                # submitted form or it has the wrong format.
+                raise UnexpectedFormData, (
+                    'We didn\'t find the timestamp that tells us when was'
+                    ' generated the submitted form.')
+
+            # Check if this is really the form we are listening for..
+            if self.request.form.get("submit_translations"):
+                # Check if this is really the form we are listening for..
+                if self._submitTranslations():
+                    # .. and if no errors occurred, adios. Otherwise, we
+                    # need to set up the subviews for error display and
+                    # correction.
+                    return
+        else:
+            # It's not a POST, so we should generate lock_timestamp.
+            UTC = pytz.timezone('UTC')
+            self.lock_timestamp = datetime.datetime.now(UTC)
+
+        LaunchpadView.initialize(self)
 
     @property
     def imported_translation(self):
-        return self.potmsgset.getImportedTranslationMessage(self.language)
+        imported = self.potmsgset.getImportedTranslationMessage(self.language)
+        # Only return an imported translation if it's not current atm
+        if imported.is_current:
+            return None
+        else:
+            return imported
 
     @property
     def current_translation(self):
-        return self.potmsgset.getCurrentTranslationMessage(self.language)
+        current = self.potmsgset.getCurrentTranslationMessage(self.language)
+        if current is None:
+            return self.potmsgset.getDummyTranslationMessage(self.language)
+        else:
+            return current
+
+    @property
+    def local_suggestions(self):
+        return self.potmsgset.getLocalTranslationMessages(self.language)
+
+    @property
+    def external_suggestions(self):
+        return self.potmsgset.getExternalTranslationMessages(self.language)
+
+    @property
+    def user_is_official_translator(self):
+        """Determine whether the current user is an official translator."""
+        return self.pofile.canEditTranslations(self.user)
+
+    @cachedproperty
+    def form_is_writeable(self):
+        """Whether the form should accept write operations."""
+        return (self.user is not None and
+                self.pofile.canAddSuggestions(self.user))
+
+    @property
+    def has_plural_form_information(self):
+        """Return whether we know the plural forms for this language."""
+        if self.pofile.potemplate.hasPluralMessage():
+            return self.pofile.language.pluralforms is not None
+        # If there are no plural forms, we assume that we have the
+        # plural form information for this language.
+        return True
+
+    #
+    # Internals
+    #
+
+    def _initializeAltLanguage(self):
+        """Initialize the alternative language widget and check form data."""
+        alternative_language = None
+        second_lang_code = self.request.form.get("field.alternative_language")
+        fallback_language = self.pofile.language.alt_suggestion_language
+        if isinstance(second_lang_code, list):
+            # self._redirect() was generating duplicate params in the URL.
+            # We may be able to remove this guard.
+            raise UnexpectedFormData(
+                "You specified more than one alternative language; "
+                "only one is currently supported.")
+
+        if second_lang_code:
+            try:
+                translatable_vocabulary = getVocabularyRegistry().get(
+                    None, 'TranslatableLanguage')
+                language_term = (
+                    translatable_vocabulary.getTermByToken(second_lang_code))
+                alternative_language = language_term.value
+            except LookupError:
+                # Oops, a bogus code was provided in the request.
+                # This is UnexpectedFormData caused by a hacked URL, or an
+                # old URL. The alternative_language field used to use
+                # LanguageVocabulary that contained untranslatable languages.
+                second_lang_code = None
+        elif fallback_language is not None:
+            # If there's a standard alternative language and no
+            # user-specified language was provided, preselect it.
+            alternative_language =  fallback_language
+            second_lang_code = fallback_language.code
+        else:
+            # The second_lang_code is None and there is no fallback_language.
+            # This is probably a parent language or an English variant.
+            pass
+
+        # Whatever alternative language choice came out of all that, ignore it
+        # if the user has preferred languages and the alternative language
+        # isn't among them.  Otherwise we'd be initializing this dropdown to a
+        # choice it didn't in fact contain, resulting in an oops.
+        if alternative_language is not None:
+            user = getUtility(ILaunchBag).user
+            if user is not None:
+                choices = set(user.translatable_languages)
+                if choices and alternative_language not in choices:
+                    self.request.response.addInfoNotification(
+                        u"Not showing suggestions from selected alternative "
+                        "language %s.  If you wish to see suggestions from "
+                        "this language, add it to your preferred languages "
+                        "first."
+                        % alternative_language.displayname)
+                    alternative_language = None
+                    second_lang_code = None
+
+        initial_values = {}
+        if alternative_language is not None:
+            initial_values['alternative_language'] = alternative_language
+
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomDropdownWidget)
+        setUpWidgets(
+            self, IPOFileAlternativeLanguage, IInputWidget,
+            names=['alternative_language'], initial=initial_values)
+
+        # We store second_lang_code for use in hidden inputs in the
+        # other forms in the translation pages.
+        self.second_lang_code = second_lang_code

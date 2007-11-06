@@ -80,14 +80,14 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationMessage.selectOne("""
             potmsgset = %s AND is_current IS TRUE AND POFile.language = %s
-            AND pofile = POFile.id
+            AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
 
     def getImportedTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
         return TranslationMessage.selectOne("""
             potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
-            AND pofile = POFile.id
+            AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
 
     def flags(self):
