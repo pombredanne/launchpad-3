@@ -248,16 +248,12 @@ class POTMsgSet(SQLBase):
     def _makeTranslationMessageCurrent(self, pofile, new_message,
                                        current_message, is_imported, submitter):
         if is_imported:
-            # Store the value because it's reset when a new message is set
-            # as is_imported.
-            current_is_imported = current_message.is_imported
-            new_message.is_imported = True
             # A new imported message is made current
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation)
             if (current_message is None or
-                current_is_imported or
+                current_message.is_imported or
                 current_message.is_empty):
                 new_message.is_current = True
                 # Don't update the submitter and date changed
@@ -267,6 +263,7 @@ class POTMsgSet(SQLBase):
                          new_message.is_empty)):
                     pofile.lasttranslator = submitter
                     pofile.date_changed = UTC_NOW
+            new_message.is_imported = True
         else:
             # Non-imported translations.
             new_message.is_current = True
