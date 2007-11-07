@@ -8,7 +8,7 @@ possible for its bugs to have an Unknown importance.
 
     >>> admin_browser.open('http://launchpad.dev/debian/+edit')
     >>> admin_browser.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected
+    ...     'Bugs in this project are tracked in Launchpad').selected
     False
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
@@ -17,15 +17,19 @@ possible for its bugs to have an Unknown importance.
     >>> print extract_text(read_only_icon.parent)
     Unknown
 
-If the project switches to use Launchpad as its bug tracker, the importance
-will still have an Unknown value.
+If the project switches to use Launchpad as its bug tracker, the
+importance will still have an Unknown value.
 
     >>> admin_browser.open('http://launchpad.dev/debian/+edit')
     >>> admin_browser.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected = True
+    ...     'Bugs in this project are tracked in Launchpad').selected = True
+    >>> # The page JavaScript checks the bug expiration control
+    >>> # when Launchpad bugs is selected.
+    >>> admin_browser.getControl(
+    ...     'Expire inactive, Incomplete bug reports').selected = True
     >>> admin_browser.getControl('Change').click()
-    >>> admin_browser.url
-    'http://launchpad.dev/debian'
+    >>> admin_browser.title
+    'Debian GNU/Linux in Launchpad'
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
@@ -33,3 +37,59 @@ will still have an Unknown value.
     >>> read_only_icon = main.find('img', {'src': '/@@/read-only'})
     >>> print extract_text(read_only_icon.parent)
     Unknown
+
+
+== The Launchpad bug tracker and bug expiration ==
+
+Projects that use Launchpad to track bugs are enabled to expire
+Incomplete, inactive bugs be default.
+
+    >>> # We need a helper function to display the Launchpad usage status.
+    >>> import re
+    >>> uses_launchpad_re = re.compile('Status:')
+    >>> def print_launchpad_usage(browser):
+    ...     """Print the Launchpad usage row in the project details."""
+    ...     table = find_tag_by_id(browser.contents, id='table-details')
+    ...     print extract_text(table.find(
+    ...         text=uses_launchpad_re).parent.parent.renderContents())
+
+    >>> admin_browser.open('http://launchpad.dev/thunderbird')
+    >>> admin_browser.title
+    'Mozilla Thunderbird in Launchpad'
+
+    >>> print_launchpad_usage(admin_browser)
+    Status: Active
+            Doesn&rsquo;t use Bugs...
+
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.title
+    'Change project details'
+
+    >>> admin_browser.getControl(name='field.bugtracker').value = ['malone']
+    >>> # The page JavaScript selects the bug expiration control
+    >>> # when Launchpad bugs is selected.
+    >>> admin_browser.getControl(
+    ...     'Expire inactive, Incomplete bug reports').selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.title
+    'Mozilla Thunderbird in Launchpad'
+
+    >>> print_launchpad_usage(admin_browser)
+    Status: Active
+            Uses Bugs...
+
+The project admin may choose to disable the expiration feature.
+
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.title
+    'Change project details'
+
+    >>> control = admin_browser.getControl(
+    ...     'Expire inactive, Incomplete bug reports')
+    >>> control.selected
+    True
+
+    >>> control.selected = False
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.title
+    'Mozilla Thunderbird in Launchpad'

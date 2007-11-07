@@ -329,3 +329,24 @@ status changes.
     ...         activity.whatchanged, activity.oldvalue, activity.newvalue)
     Launchpad Janitor  None: status             Incomplete  Invalid
     Launchpad Janitor  None: statusexplanation  None        [Expired for...
+
+
+== enable_bug_expiration ==
+
+The bugtask no_expiration_bugtask has not been expired because it does
+not participate in bug expiration. When uses_bug_expiration is set to
+True for a project old bugs will be expired the next time the bugs are
+expired.
+
+    >>> no_expiration_bugtask.pillar.official_malone
+    True
+    >>> no_expiration_bugtask.pillar.enable_bug_expiration
+    False
+
+    >>> no_expiration_bugtask.pillar.enable_bug_expiration = True
+    >>> sync(no_expiration_bugtask.pillar)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
+    >>> summarize_bugtasks(expirable_bugtasks)
+    ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    no_expire    True    61   Incomplete  False     False  False  False
+

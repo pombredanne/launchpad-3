@@ -735,8 +735,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     label = "Change project details"
     field_names = [
         "displayname", "title", "summary", "description", "project",
-        "bugtracker", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject",
+        "bugtracker", 'enable_bug_expiration', "official_rosetta",
+        "official_answers", "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus", "licenses", "license_info"]
     custom_widget(

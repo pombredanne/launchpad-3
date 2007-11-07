@@ -521,9 +521,7 @@ class ILaunchpadUsage(Interface):
         title=_('Translations for this project are done in Launchpad'),
         required=True)
     enable_bug_expiration = Bool(
-        title=_('Automatically set inactive and Incomplete bug reports '
-                'to Invalid. This feature can only be enabled if this '
-                'project uses Launchpad to track bugs'),
+        title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)
 
     @invariant
@@ -531,9 +529,14 @@ class ILaunchpadUsage(Interface):
         """Only Launchpad bug tacker can expire bugs.
 
         The pillar must use Launchpad to track bugs for bug expiration
-        to be enabled.
+        to be enabled. If a pillar chooses to switch from Launchpad to
+        another bug tracker, bug expiration is implicitly disabled.
         """
-        # The pillar arg is a zope.formlib.form.FormData instance.
-        if (pillar.official_malone is False
-            and pillar.enable_bug_expiration is True):
+        # The pillar arg may be a zope.formlib.form.FormData instance,
+        # and will not have enable_bug_expiration if it was disabled in
+        # the form.
+        if pillar.enable_bug_expiration is not True:
+            return
+
+        if pillar.official_malone is False:
             pillar.enable_bug_expiration = False
