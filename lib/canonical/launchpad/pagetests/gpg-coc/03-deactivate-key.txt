@@ -14,9 +14,8 @@ Now Sample Person will deactivate his key...
 
 ... but he forgot to select the checkbox of the key he wants to remove.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> browser.getControl('Deactivate Key').click()
-    >>> for tag in BeautifulSoup(browser.contents)('p', 'error message'):
+    >>> for tag in find_main_content(browser.contents)('p', 'error message'):
     ...     print tag.renderContents()
     No Key(s) selected for deactivation.
 
@@ -25,7 +24,7 @@ Now he selects the checkbox and deactivates it.
 
     >>> browser.getControl('1024D/DFD20543').selected = True
     >>> browser.getControl('Deactivate Key').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
     Deactivated key(s): 1024D/DFD20543

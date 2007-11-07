@@ -5,7 +5,7 @@ Get evolution template for Ubuntu Hoary
     >>> import datetime
     >>> import pytz
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
     ...     ISourcePackageNameSet)

@@ -561,6 +561,8 @@ class BugTextView(LaunchpadView):
         text.append('attachments: ')
         for attachment in bug.attachments:
             text.append(' %s' % self.attachment_text(attachment))
+            
+        text.append('tags: %s' % ' '.join(bug.tags))  
 
         text.append('subscribers: ')
         for subscription in bug.subscriptions:
