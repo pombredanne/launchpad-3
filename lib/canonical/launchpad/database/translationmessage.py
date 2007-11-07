@@ -7,6 +7,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -71,7 +72,8 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.id = None
         self.pofile = pofile
         self.potmsgset = potmsgset
-        self.date_created = datetime.utcnow()
+        UTC = pytz.timezone('UTC')
+        self.date_created = datetime.datetime.now(UTC)
         self.submitter = getUtility(ILaunchpadCelebrities).rosetta_expert
         self.date_reviewed = None
         self.reviewer = None

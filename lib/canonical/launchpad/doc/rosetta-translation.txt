@@ -117,8 +117,8 @@ active as soon as we see it is working.
 Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
-    >>> pomsgset.updateTranslationSet(Pb, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> potmsgset.updateTranslation(pofile, Pb, translations, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> web_submission = pomsgset.getActiveSubmission(0)
 
 Make sure the new submission is from Pb.
