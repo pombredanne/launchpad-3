@@ -654,11 +654,12 @@ FROM
 -- SELECT 'Cleaning up TranslationMessage temp columns', statement_timestamp(); -- DEBUG
 
 -- Clean up columns that were only for use during migration.
-ALTER TABLE TranslationMessage DROP COLUMN msgsetid;
-ALTER TABLE TranslationMessage DROP COLUMN id0;
-ALTER TABLE TranslationMessage DROP COLUMN id1;
-ALTER TABLE TranslationMessage DROP COLUMN id2;
-ALTER TABLE TranslationMessage DROP COLUMN id3;
+ALTER TABLE TranslationMessage
+    DROP COLUMN msgsetid,
+    DROP COLUMN id0,
+    DROP COLUMN id1,
+    DROP COLUMN id2,
+    DROP COLUMN id3;
 
 
 -- SELECT 'Re-creating POFileTranslator', statement_timestamp(); -- DEBUG
