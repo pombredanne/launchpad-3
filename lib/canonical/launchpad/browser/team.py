@@ -33,10 +33,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, ITeamMailingListConfigurationForm, ITeamMember,
-    LoginTokenType, MAILING_LISTS_DOMAIN, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, ITeamMember, LoginTokenType, MAILING_LISTS_DOMAIN,
+    MailingListStatus, TeamContactMethod, TeamMembershipStatus,
+    UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -378,7 +378,8 @@ class TeamContactAddressView(LaunchpadFormView):
 class TeamMailingListConfigurationView(LaunchpadFormView):
     """A view class that lets the user manipulate a team's mailing list."""
 
-    schema = ITeamMailingListConfigurationForm
+    schema = IMailingList
+    field_names = ['welcome_message']
     label = "Mailing list configuration"
     custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
 
@@ -419,8 +420,8 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
             # No other state needs a special notification.
             pass
 
-    @action('Change', name='change')
-    def change_action(self, action, data):
+    @action('Save', name='save')
+    def save_action(self, action, data):
         """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message')
         assert (self.mailing_list is not None

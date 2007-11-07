@@ -21,7 +21,7 @@
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons">
-      <input tal:replace="structure view/change_action/render" />
+      <input tal:replace="structure view/save_action/render" />
     </div>
   </div>
 </div>
