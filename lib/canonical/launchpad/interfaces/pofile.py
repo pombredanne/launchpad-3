@@ -381,7 +381,7 @@ class IPOFileTranslator(Interface):
         title=_('The `IPOFile` modified by the translator'), required=True,
         schema=IPOFile)
 
-    latest_translation_message = Attribute(
+    latest_message = Attribute(
         _("Latest translation message added to the translation file."))
 
     date_last_touched = Datetime(

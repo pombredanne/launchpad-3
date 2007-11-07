@@ -446,6 +446,7 @@ class POTemplate(SQLBase, RosettaStats):
                     POTMsgSet.msgid_singular IN (%(wanted_msgids)s) AND
                     POTemplate.id <> %(this_template)s AND
                     POTemplate.iscurrent AND
+                    Suggestion.is_current AND
                     POFile.language = %(language)s AND
                     NOT Suggestion.is_fuzzy AND
                     COALESCE(msgstr0, msgstr1, msgstr2, msgstr3)
