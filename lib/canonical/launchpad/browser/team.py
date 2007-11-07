@@ -121,7 +121,7 @@ class TeamContactAddressView(LaunchpadFormView):
     @property
     def can_be_contact_method(self):
         """See `MailingList.canBeContactMethod`."""
-        mailing_list = self._getList() 
+        mailing_list = self._getList()
         return mailing_list and mailing_list.canBeContactMethod()
 
     def shouldRenderHostedListOptionManually(self):
@@ -134,7 +134,7 @@ class TeamContactAddressView(LaunchpadFormView):
         radio button with a 'submit' button that allows the user to request
         the mailing list creation.
         """
-        mailing_list = self._getList() 
+        mailing_list = self._getList()
         return (config.mailman.expose_hosted_mailing_lists and
                 (not mailing_list or not mailing_list.canBeContactMethod()))
 
@@ -214,7 +214,7 @@ class TeamContactAddressView(LaunchpadFormView):
         self.form_fields = (
             form.FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
-            
+
         mailing_list = self.getListInState(MailingListStatus.ACTIVE,
                                            MailingListStatus.MODIFIED,
                                            MailingListStatus.UPDATING)
@@ -294,7 +294,7 @@ class TeamContactAddressView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Infer the contact method from this team's preferredemail.
-        
+
         Return a dictionary representing the contact_address and
         contact_method so inferred.
         """
@@ -302,7 +302,7 @@ class TeamContactAddressView(LaunchpadFormView):
         if context.preferredemail is None:
             return dict(contact_method=TeamContactMethod.NONE)
         mailing_list = getUtility(IMailingListSet).get(context.name)
-        if (mailing_list is not None 
+        if (mailing_list is not None
             and mailing_list.address == context.preferredemail.email):
             return dict(contact_method=TeamContactMethod.HOSTED_LIST)
         return dict(contact_address=context.preferredemail.email,
@@ -348,7 +348,7 @@ class TeamContactAddressView(LaunchpadFormView):
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert (mailing_list is not None 
+            assert (mailing_list is not None
                     and mailing_list.canBeContactMethod()), (
                 "A team can only use an active mailing list as its contact "
                 "address.")
@@ -389,7 +389,7 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
         list might not take effect immediately. First, the mailing
         list may not actually be set as the team contact
         address. Second, the mailing list may be in a transitional
-        state: from MODIFIED to UPDATING to ACTIVE can take a while.        
+        state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
         super(TeamMailingListConfigurationView,
               self).__init__(context, request)
@@ -423,7 +423,7 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
     def change_action(self, action, data):
         """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message')
-        assert (self.mailing_list is not None 
+        assert (self.mailing_list is not None
                 and self.mailing_list.canBeContactMethod()), (
             "Only an active mailing list can be configured.")
 
@@ -436,14 +436,14 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
     @property
     def initial_values(self):
         """The initial value of welcome_message comes from the database.
-        
+
         :return: A dictionary containing the current welcome message.
         """
         if self.mailing_list is None:
             return {}
         else:
             return dict(welcome_message=self.mailing_list.welcome_message)
-        
+
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 

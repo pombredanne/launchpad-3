@@ -1,4 +1,13 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
@@ -68,7 +77,7 @@
                 href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
                 <strong>Zope 2 switches to Launchpad:</strong> &#8220;Launchpad works
                 great ... allows us to focus on creating a great Zope
-                plataform&#8221;.</a>
+                platform&#8221;.</a>
             </li>
             <li>
               <a
