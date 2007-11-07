@@ -949,6 +949,13 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
+        if self.context.is_imported:
+            # The imported translation matches the current one.
+            self.imported_translation_message = None
+        else:
+            self.imported_translation_message = (
+                self.context.potmsgset.getImportedTranslationMessage(
+                    self.context.pofile.language))
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -987,52 +994,45 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.suggestion_blocks = {}
         self.suggestions_count = {}
         self.pluralform_indices = range(self.context.plural_forms)
-        for index in self.pluralform_indices:
-            non_editor, elsewhere, wiki, alt_lang_suggestions = \
-                self._buildAllSuggestions(index)
-            self.suggestion_blocks[index] = \
-                [non_editor, elsewhere, wiki, alt_lang_suggestions]
-            self.suggestions_count[index] = (
-                len(non_editor.submissions) + len(elsewhere.submissions) +
-                len(wiki.submissions) + len(alt_lang_suggestions.submissions))
+        if False:
+            # XXX Disabled to get everything else working.
+            for index in self.pluralform_indices:
+                non_editor, elsewhere, wiki, alt_lang_suggestions = \
+                    self._buildAllSuggestions(index)
+                self.suggestion_blocks[index] = \
+                    [non_editor, elsewhere, wiki, alt_lang_suggestions]
+                self.suggestions_count[index] = (
+                    len(non_editor.submissions) + len(elsewhere.submissions) +
+                    len(wiki.submissions) + len(alt_lang_suggestions.submissions))
 
         # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
-
         for index in self.pluralform_indices:
-            active = self.getActiveTranslation(index)
-            published = self.getPublishedTranslation(index)
-            translation = self.getTranslation(index)
-            if (translation is None and
+            current_translation = self.getCurrenTranslation(index)
+            imported_translation = self.getImportedTranslation(index)
+            submitted_translation = self.getSubmittedTranslation(index)
+            if (submitted_translation is None and
                 self.user_is_official_translator):
                 # We don't have anything to show as the submitted translation
                 # and the user is the official one. We prefill the 'New
-                # translation' field with the active translation.
-                translation = active
-            is_multi_line = (count_lines(active) > 1 or
-                             count_lines(translation) > 1 or
+                # translation' field with the current translation.
+                translation = current_translation
+            is_multi_line = (count_lines(current_translation) > 1 or
+                             count_lines(submitted_translation) > 1 or
                              count_lines(self.singular_text) > 1 or
                              count_lines(self.plural_text) > 1)
-            active_submission = self.context.getActiveSubmission(index)
-            if active_submission and active_submission.published:
-                published_submission = None
-            else:
-                published_submission = (
-                    self.context.getPublishedSubmission(index))
-            is_same_translator = active_submission is not None and (
-                active_submission.person == self.context.reviewer)
-            is_same_date = active_submission is not None and (
-                active_submission.datecreated == self.context.date_reviewed)
+            is_same_translator = self.context.submitter == self.context.reviewer
+            is_same_date = self.context.datecreated == self.context.date_reviewed
             translation_entry = {
                 'plural_index': index,
-                'active_translation': text_to_html(
-                    active, self.context.potmsgset.flags()),
-                'translation': translation,
-                'active_submission': active_submission,
-                'published_translation': text_to_html(
-                    published, self.context.potmsgset.flags()),
-                'published_submission': published_submission,
+                'current_translation': text_to_html(
+                    current_translation, self.context.potmsgset.flags()),
+                'translation': submitted_translation,
+                'imported_translation': text_to_html(
+                    imported_translation, self.context.potmsgset.flags()),
+                'imported_translation_message': (
+                    self.imported_translation_message),
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
@@ -1043,15 +1043,15 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLId('translation_%d' % index),
                 }
 
-            if published_submission is not None:
-                translation_entry['html_id_published_suggestion'] = (
-                    published_submission.makeHTMLId(
+            if self.imported_translation_message is not None:
+                translation_entry['html_id_imported_suggestion'] = (
+                    self.imported_translation_message.makeHTMLId(
                         'suggestion', self.context.potmsgset))
 
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
                 # info that we don't want to show to anoymous users.
-                translation_entry['active_translation'] = u'''
+                translation_entry['current_translation'] = u'''
                     To prevent privacy issues, this translation is not
                     available to anonymous users,<br />
                     if you want to see it, please, <a href="+login">log in</a>
@@ -1170,13 +1170,9 @@ class CurrentTranslationMessageView(LaunchpadView):
             title, self.context, submissions[:self.max_entries],
             self.user_is_official_translator, self.form_is_writeable)
 
-    def getOfficialTranslation(self, index, published = False):
+    def getOfficialTranslation(self, index, is_imported=False):
         """Return active or published translation for plural form 'index'."""
-        assert index in self.pluralform_indices, (
-            'There is no plural form #%d for %s language' % (
-                index, self.context.pofile.language.displayname))
-
-        if published:
+        if is_imported:
             translation = self.context.published_texts[index]
         else:
             translation = self.context.active_texts[index]
@@ -1188,15 +1184,15 @@ class CurrentTranslationMessageView(LaunchpadView):
         else:
             return None
 
-    def getActiveTranslation(self, index):
+    def getCurrentTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index)
 
-    def getPublishedTranslation(self, index):
+    def getImportedTranslation(self, index):
         """Return the published translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index, published=True)
 
-    def getTranslation(self, index):
+    def getSubmittedTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
