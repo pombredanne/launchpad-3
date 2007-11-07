@@ -126,7 +126,7 @@ class VPOExportSet:
                   JOIN TranslationMessage ON
                     TranslationMessage.pofile = POFile.id AND
                     TranslationMessage.date_reviewed > %s AND
-                    TranslationMessage.active IS TRUE''' % sqlvalues(date)
+                    TranslationMessage.is_current IS TRUE''' % sqlvalues(date)
 
         if component is not None:
             join += '''
@@ -237,7 +237,7 @@ class VPOExportSet:
                 'TranslationMessage ON '
                     'TranslationMessage.pofile = POFile.id AND '
                     'TranslationMessage.date_reviewed > %s AND '
-                    'TranslationMessage.active IS TRUE' % sqlvalues(date),
+                    'TranslationMessage.is_current IS TRUE' % sqlvalues(date),
             ]
             where = 'POTemplate.distrorelease = %s' % sqlvalues(series)
 
