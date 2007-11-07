@@ -127,7 +127,7 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
-        assert comments.has_key(message_id)
+        assert comments.has_key(message_id), message_id
         comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
