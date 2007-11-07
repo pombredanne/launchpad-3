@@ -220,7 +220,7 @@ We can also define another helper function...
   ...     punt_upload_into_queue(leafname, distro=distro)
   ...     assert (process_uploads(upload_policy, build_id, series),
   ...             "Upload processes failed")
-  ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
+  ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should only contain a lockfile: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:

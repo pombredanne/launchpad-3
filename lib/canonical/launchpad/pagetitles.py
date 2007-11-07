@@ -450,9 +450,9 @@ distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
-distrosourcepackage_index = ContextTitle('%s')
+distributionsourcepackage_index = ContextTitle('%s')
 
-distrosourcepackage_publishinghistory = ContextTitle(
+distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
 distributionsourcepackage_manage_bugcontacts = ContextTitle(
@@ -782,8 +782,8 @@ person_answer_contact_for = ContextDisplayName(
 person_bounties = ContextDisplayName('Bounties for %s')
 
 def person_branches(context, view):
-    """Return the view's page_title."""
-    return view.page_title
+    """Return the view's heading."""
+    return view.heading
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
