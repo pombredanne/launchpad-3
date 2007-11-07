@@ -16,7 +16,7 @@ from zope.app import datetimeutils
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import Interface, IInputWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
@@ -24,8 +24,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.potemplate import (
-    POTemplateFacets, POTemplateSOP)
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, ITranslationMessage, TranslationConstants,
     NotFoundError, ILaunchBag, IPOFileAlternativeLanguage,
@@ -33,15 +32,20 @@ from canonical.launchpad.interfaces import (
     TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
-from canonical.launchpad.webapp import urlparse, custom_widget
-from canonical.launchpad.webapp import LaunchpadEditFormView
+from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 __metaclass__ = type
 
 __all__ = [
+    'BaseTranslationView',
+    'CurrentTranslationMessageAppMenus',
     'CurrentTranslationMessageView',
+    'CurrentTranslationMessageFacets',
     'POMsgSetIndexView',
+    'POMsgSetPageView',
+    'POMsgSetSuggestions',
+    'POMsgSetZoomedView',
     ]
 
 #
@@ -293,12 +297,6 @@ class CurrentTranslationMessageFacets(POTemplateFacets):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
 
 
-class CurrentTranslationMessageSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.pofile.potemplate)
-
-
 class CurrentTranslationMessageAppMenus(ApplicationMenu):
     usedfor = ITranslationMessage
     facet = 'translations'
@@ -368,7 +366,7 @@ class BaseTranslationView(LaunchpadView):
     translations and form elements. It processes the form submitted and
     constructs data which can be then fed back into the subviews.
 
-    The subviews must be (or behave like) POMsgSetViews.
+    The subviews must be (or behave like) CurrentTranslationMessageViews.
 
     Child classes must define:
         - self.pofile
@@ -549,20 +547,22 @@ class BaseTranslationView(LaunchpadView):
         else:
             return None
 
-    def _prepareView(self, view_class, pomsgset, error):
+    def _prepareView(self, view_class, current_translation_message, error):
         """Collect data and build a POMsgSetView for display."""
         # XXX: kiko 2006-09-27:
         # It would be nice if we could easily check if this is being
         # called in the right order, after _storeTranslations().
         translations = {}
         # Get translations that the user typed in the form.
-        posted = self.form_posted_translations.get(pomsgset, None)
+        posted = self.form_posted_translations.get(
+            current_translation_message, None)
         # Get the flags set by the user to note whether 'New suggestion'
         # should be taken in consideration.
         plural_indices_to_store = (
-            self.form_posted_translations_has_store_flag.get(pomsgset, []))
+            self.form_posted_translations_has_store_flag.get(
+                current_translation_message, []))
         # We are going to prepare the content of the translation form.
-        for plural_index in range(pomsgset.pluralforms):
+        for plural_index in range(current_translation_message.plural_forms):
             if posted is not None and posted[plural_index] is not None:
                 # We have something submitted by the user, we use that value.
                 translations[plural_index] = posted[plural_index]
@@ -573,14 +573,86 @@ class BaseTranslationView(LaunchpadView):
 
         # Check the values we got with the submit for the 'Needs review' flag
         # so we prepare the new render with the same values.
-        if self.form_posted_needsreview.has_key(pomsgset):
-            is_fuzzy = self.form_posted_needsreview[pomsgset]
+        if self.form_posted_needsreview.has_key(current_translation_message):
+            is_fuzzy = self.form_posted_needsreview[
+                current_translation_message]
         else:
-            is_fuzzy = pomsgset.isfuzzy
+            is_fuzzy = current_translation_message.is_fuzzy
 
-        return view_class(pomsgset, self.request, plural_indices_to_store,
-            translations, is_fuzzy, error, self.second_lang_code,
-            self.form_is_writeable)
+        return view_class(current_translation_message, self.request,
+            plural_indices_to_store, translations, is_fuzzy, error,
+            self.second_lang_code, self.form_is_writeable)
+
+    #
+    # Internals
+    #
+
+    def _initializeAltLanguage(self):
+        """Initialize the alternative language widget and check form data."""
+        alternative_language = None
+        second_lang_code = self.request.form.get("field.alternative_language")
+        fallback_language = self.pofile.language.alt_suggestion_language
+        if isinstance(second_lang_code, list):
+            # self._redirect() was generating duplicate params in the URL.
+            # We may be able to remove this guard.
+            raise UnexpectedFormData(
+                "You specified more than one alternative language; "
+                "only one is currently supported.")
+
+        if second_lang_code:
+            try:
+                translatable_vocabulary = getVocabularyRegistry().get(
+                    None, 'TranslatableLanguage')
+                language_term = (
+                    translatable_vocabulary.getTermByToken(second_lang_code))
+                alternative_language = language_term.value
+            except LookupError:
+                # Oops, a bogus code was provided in the request.
+                # This is UnexpectedFormData caused by a hacked URL, or an
+                # old URL. The alternative_language field used to use
+                # LanguageVocabulary that contained untranslatable languages.
+                second_lang_code = None
+        elif fallback_language is not None:
+            # If there's a standard alternative language and no
+            # user-specified language was provided, preselect it.
+            alternative_language =  fallback_language
+            second_lang_code = fallback_language.code
+        else:
+            # The second_lang_code is None and there is no fallback_language.
+            # This is probably a parent language or an English variant.
+            pass
+
+        # Whatever alternative language choice came out of all that, ignore it
+        # if the user has preferred languages and the alternative language
+        # isn't among them.  Otherwise we'd be initializing this dropdown to a
+        # choice it didn't in fact contain, resulting in an oops.
+        if alternative_language is not None:
+            user = getUtility(ILaunchBag).user
+            if user is not None:
+                choices = set(user.translatable_languages)
+                if choices and alternative_language not in choices:
+                    self.request.response.addInfoNotification(
+                        u"Not showing suggestions from selected alternative "
+                        "language %s.  If you wish to see suggestions from "
+                        "this language, add it to your preferred languages "
+                        "first."
+                        % alternative_language.displayname)
+                    alternative_language = None
+                    second_lang_code = None
+
+        initial_values = {}
+        if alternative_language is not None:
+            initial_values['alternative_language'] = alternative_language
+
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomDropdownWidget)
+        setUpWidgets(
+            self, IPOFileAlternativeLanguage, IInputWidget,
+            names=['alternative_language'], initial=initial_values)
+
+        # We store second_lang_code for use in hidden inputs in the
+        # other forms in the translation pages.
+        self.second_lang_code = second_lang_code
 
     @property
     def has_plural_form_information(self):
@@ -828,8 +900,8 @@ class POMsgSetPageView(BaseTranslationView):
         self._redirectToNextPage()
         return True
 
-class POMsgSetView(LaunchpadView):
-    """Holds all data needed to show an IPOMsgSet.
+class CurrentTranslationMessageView(LaunchpadView):
+    """Holds all data needed to show an ITranslationMessage.
 
     This view class could be used directly or as part of the POFileView class
     in which case, we would have up to 100 instances of this class using the
@@ -838,7 +910,8 @@ class POMsgSetView(LaunchpadView):
 
     # Instead of registering in ZCML, we indicate the template here and avoid
     # the adapter lookup when constructing these subviews.
-    template = ViewPageTemplateFile('../templates/pomsgset-translate-one.pt')
+    template = ViewPageTemplateFile(
+        '../templates/currenttranslationmessage-translate-one.pt')
 
     # Relevant instance variables:
     #   self.translations
@@ -848,9 +921,9 @@ class POMsgSetView(LaunchpadView):
     #   self.suggestion_blocks
     #   self.pluralform_indices
 
-    def __init__(self, pomsgset, request, plural_indices_to_store,
-                 translations, is_fuzzy, error, second_lang_code,
-                 form_is_writeable):
+    def __init__(self, current_translation_message, request,
+                 plural_indices_to_store, translations, is_fuzzy, error,
+                 second_lang_code, form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -867,14 +940,14 @@ class POMsgSetView(LaunchpadView):
         :param form_is_writeable: Whether the form should accept write
             operations
         """
-        LaunchpadView.__init__(self, pomsgset, request)
+        LaunchpadView.__init__(self, current_translation_message, request)
 
         self.plural_indices_to_store = plural_indices_to_store
         self.translations = translations
         self.error = error
         self.is_fuzzy = is_fuzzy
         self.user_is_official_translator = (
-            pomsgset.pofile.canEditTranslations(self.user))
+            current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
 
         # Set up alternative language variables.
@@ -907,11 +980,7 @@ class POMsgSetView(LaunchpadView):
         # This code is where we hit the database collecting suggestions for
         # this IPOMsgSet.
 
-        # Collect posubmissions etc. that we need from the database in order
-        # to identify useful suggestions.
-        self.context.initializeSubmissionsCaches()
-
-        # We store lists of POMsgSetSuggestions objects in a
+        # We store lists of TranslationMessageSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
         # using a generic template.
@@ -1261,7 +1330,7 @@ class POMsgSetView(LaunchpadView):
         return 3
 
 
-class POMsgSetZoomedView(POMsgSetView):
+class POMsgSetZoomedView(CurrentTranslationMessageView):
     """A view that displays a `POMsgSet`, but zoomed in.
 
     See `POMsgSetPageView`.
@@ -1326,199 +1395,3 @@ class POMsgSetSuggestions:
                     pomsgset.makeHTMLId(
                         'translation_%s' % (submission.pluralform)),
                 })
-
-
-
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-
-class TranslationsRadioWidget(LaunchpadRadioWidget):
-    """A widget to work around a bug in RadioWidget."""
-
-    def textForValue(self, term):
-        context = term.value
-        singular_text = context.potmsgset.singular_text
-        plural_text = context.potmsgset.plural_text
-        msgctxt = context.potmsgset.context
-        english_text = u''
-        if plural_text is not None:
-            english_text += '<strong>English Singular:</strong> %s<br/>' % (
-                singular_text)
-            english_text += '<strong>English Plural:</strong> %s<br/>' % (
-                plural_text)
-        if msgctxt is not None:
-            english_text += ('<font size="-2"><strong>Context:</strong>'
-                             ' %s</font><br />') % msgctxt
-        translation_text = u''
-        for translation in context.translations:
-            if translation is not None:
-                translation_text += translation
-            translation_text += u'<br/>\n'
-
-        submitter_text = ''
-        if context.submitter is not None:
-            submitter_text = context.submitter.displayname
-        return "%s%s<br />By %s on %s" % (
-            english_text, translation_text,
-            submitter_text,
-            context.date_created)
-
-class CurrentTranslationMessageView(LaunchpadView):
-    """Displays a current ITranslationMessage for an IPOTMsgSet.
-
-    Also shows all the suggestions and translations elsewhere.
-    """
-    def initialize(self):
-        translationmessage = self.context
-        self.potmsgset = translationmessage.potmsgset
-        self.pofile = translationmessage.pofile
-        self.language = translationmessage.pofile.language
-        self._initializeAltLanguage()
-
-        if (self.request.method == 'POST'):
-            if self.user is None:
-                raise UnexpectedFormData, (
-                    'Anonymous users cannot do POST submissions.')
-            try:
-                # Try to get the timestamp when the submitted form was
-                # created. We use it to detect whether someone else updated
-                # the translation we are working on in the elapsed time
-                # between the form loading and its later submission.
-                self.lock_timestamp = datetimeutils.parseDatetimetz(
-                    self.request.form.get('lock_timestamp', u''))
-            except datetimeutils.DateTimeError:
-                # invalid format. Either we don't have the timestamp in the
-                # submitted form or it has the wrong format.
-                raise UnexpectedFormData, (
-                    'We didn\'t find the timestamp that tells us when was'
-                    ' generated the submitted form.')
-
-            # Check if this is really the form we are listening for..
-            if self.request.form.get("submit_translations"):
-                # Check if this is really the form we are listening for..
-                if self._submitTranslations():
-                    # .. and if no errors occurred, adios. Otherwise, we
-                    # need to set up the subviews for error display and
-                    # correction.
-                    return
-        else:
-            # It's not a POST, so we should generate lock_timestamp.
-            UTC = pytz.timezone('UTC')
-            self.lock_timestamp = datetime.datetime.now(UTC)
-
-        LaunchpadView.initialize(self)
-
-    @property
-    def imported_translation(self):
-        imported = self.potmsgset.getImportedTranslationMessage(self.language)
-        # Only return an imported translation if it's not current atm
-        if imported.is_current:
-            return None
-        else:
-            return imported
-
-    @property
-    def current_translation(self):
-        current = self.potmsgset.getCurrentTranslationMessage(self.language)
-        if current is None:
-            return self.potmsgset.getDummyTranslationMessage(self.language)
-        else:
-            return current
-
-    @property
-    def local_suggestions(self):
-        return self.potmsgset.getLocalTranslationMessages(self.language)
-
-    @property
-    def external_suggestions(self):
-        return self.potmsgset.getExternalTranslationMessages(self.language)
-
-    @property
-    def user_is_official_translator(self):
-        """Determine whether the current user is an official translator."""
-        return self.pofile.canEditTranslations(self.user)
-
-    @cachedproperty
-    def form_is_writeable(self):
-        """Whether the form should accept write operations."""
-        return (self.user is not None and
-                self.pofile.canAddSuggestions(self.user))
-
-    @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.pofile.potemplate.hasPluralMessage():
-            return self.pofile.language.pluralforms is not None
-        # If there are no plural forms, we assume that we have the
-        # plural form information for this language.
-        return True
-
-    #
-    # Internals
-    #
-
-    def _initializeAltLanguage(self):
-        """Initialize the alternative language widget and check form data."""
-        alternative_language = None
-        second_lang_code = self.request.form.get("field.alternative_language")
-        fallback_language = self.pofile.language.alt_suggestion_language
-        if isinstance(second_lang_code, list):
-            # self._redirect() was generating duplicate params in the URL.
-            # We may be able to remove this guard.
-            raise UnexpectedFormData(
-                "You specified more than one alternative language; "
-                "only one is currently supported.")
-
-        if second_lang_code:
-            try:
-                translatable_vocabulary = getVocabularyRegistry().get(
-                    None, 'TranslatableLanguage')
-                language_term = (
-                    translatable_vocabulary.getTermByToken(second_lang_code))
-                alternative_language = language_term.value
-            except LookupError:
-                # Oops, a bogus code was provided in the request.
-                # This is UnexpectedFormData caused by a hacked URL, or an
-                # old URL. The alternative_language field used to use
-                # LanguageVocabulary that contained untranslatable languages.
-                second_lang_code = None
-        elif fallback_language is not None:
-            # If there's a standard alternative language and no
-            # user-specified language was provided, preselect it.
-            alternative_language =  fallback_language
-            second_lang_code = fallback_language.code
-        else:
-            # The second_lang_code is None and there is no fallback_language.
-            # This is probably a parent language or an English variant.
-            pass
-
-        # Whatever alternative language choice came out of all that, ignore it
-        # if the user has preferred languages and the alternative language
-        # isn't among them.  Otherwise we'd be initializing this dropdown to a
-        # choice it didn't in fact contain, resulting in an oops.
-        if alternative_language is not None:
-            user = getUtility(ILaunchBag).user
-            if user is not None:
-                choices = set(user.translatable_languages)
-                if choices and alternative_language not in choices:
-                    self.request.response.addInfoNotification(
-                        u"Not showing suggestions from selected alternative "
-                        "language %s.  If you wish to see suggestions from "
-                        "this language, add it to your preferred languages "
-                        "first."
-                        % alternative_language.displayname)
-                    alternative_language = None
-                    second_lang_code = None
-
-        initial_values = {}
-        if alternative_language is not None:
-            initial_values['alternative_language'] = alternative_language
-
-        self.alternative_language_widget = CustomWidgetFactory(
-            CustomDropdownWidget)
-        setUpWidgets(
-            self, IPOFileAlternativeLanguage, IInputWidget,
-            names=['alternative_language'], initial=initial_values)
-
-        # We store second_lang_code for use in hidden inputs in the
-        # other forms in the translation pages.
-        self.second_lang_code = second_lang_code

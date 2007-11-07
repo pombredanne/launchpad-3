@@ -444,6 +444,13 @@ class IPOTemplate(IRosettaStats):
         import will be logged there.
         """
 
+    def getExternalSuggestions(potmsgsets, language):
+        """Return a dictionary with all suggestions per potmsgset.
+
+        :param potmsgsets: A list of `IPOTMsgSet` objects.
+        :param language: Language we are interested on for the suggestions.
+        """
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
