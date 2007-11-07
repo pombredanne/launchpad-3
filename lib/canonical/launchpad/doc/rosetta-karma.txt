@@ -276,7 +276,7 @@ No Privileges Person is a translator that fits this requirement.
 We are going to add a suggestion that already exists from other user,
 that should not add any kind of karma to this user.
 
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: 'bar'}
     >>> fuzzy = False
     >>> published = False
@@ -284,8 +284,8 @@ that should not add any kind of karma to this user.
 And we can see as he won't get any karma activity from that, otherwise it'd be
 printed after the call to updateTranslationSet().
 
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, new_translations, fuzzy, published,
+    >>> potmsgset.updateTranslation(
+    ...     pofile, no_priv, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> transaction.commit()
 
@@ -298,9 +298,9 @@ At this moment, karma is assigned and thus is printed here.
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, new_translations, fuzzy, published,
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
+    >>> potmsgset.updateTranslation(
+    ...     pofile, no_priv, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
@@ -316,10 +316,10 @@ being approved.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
-    >>> pomsgset.updateTranslationSet(
-    ...     kurem, new_translations, fuzzy, published,
+    >>> potmsgset.updateTranslation(
+    ...     pofile, kurem, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
@@ -331,10 +331,10 @@ get karma for his autoapproved translation.
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
-    >>> pomsgset.updateTranslationSet(
-    ...     kurem, new_translations, fuzzy, published,
+    >>> potmsgset.updateTranslation(
+    ...     pofile, kurem, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()

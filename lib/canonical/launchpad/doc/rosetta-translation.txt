@@ -3,20 +3,13 @@ Rosetta Translation Objects
 ===========================
 
 This test demonstrates the complete hierarchy of Rosetta translation objects,
-from POTemplateName down to POTranslation.
+from POTemplate down to POTranslation.
 
-Get a PO template name. A PO template name groups together different PO
-templates which are translating the same resource.
-
-    >>> from canonical.launchpad.database import POTemplateName
-    >>> ptn = POTemplateName.byName('evolution-2.2')
-
-Get a PO template, and check its PO template name is the same as the one we
-got just now.
+Get a PO template.
 
     >>> from canonical.launchpad.database import POTemplate
     >>> template = POTemplate.get(1)
-    >>> template.potemplatename == ptn
+    >>> template.name == 'evolution-2.2'
     True
 
 Check that the PO template has a certain message ID.
@@ -30,10 +23,12 @@ Get a Spanish PO file for this PO template
 
     >>> pofile = template.getPOFileByLang('es')
 
-Get a PO message set for a particular message and check it has a translation.
+Get a translation for a particular message and check it has a translation.
 
-    >>> pomsgset = pofile[u'evolution addressbook']
-    >>> pomsgset.active_texts
+    >>> potmsgset = template.getPOTMsgSetByMsgIDText(u'evolution addressbook')
+    >>> spanish = pofile.language
+    >>> translationmessage = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> translationmessage.translations
     [u'libreta de direcciones de Evolution']
 
 Get a person to create a translation with.
@@ -47,29 +42,37 @@ Add a translation.
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
-    >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+    >>> message = potmsgset.updateTranslation(
+    ...     pofile, person, translations, is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
 
 Check that this submission is now the active one for this msgset/pluralform
 
-    >>> submission = pomsgset.getActiveSubmission(0)
-    >>> submission.potranslation.translation == u'foo'
+    >>> potmsgset.getCurrentTranslationMessage(spanish) == message
+    True
+    >>> message.is_current
+    True
+    >>> message.msgstr0.translation == u'foo'
     True
 
 Check that this submission is the published one
 
-    >>> pomsgset.getPublishedSubmission(0) == submission
+    >>> potmsgset.getImportedTranslationMessage(spanish) == message
+    True
+    >>> message.is_imported
     True
 
 Test the origin enum column.
 
     >>> from canonical.launchpad.interfaces import RosettaTranslationOrigin
-    >>> submission.origin == RosettaTranslationOrigin.SCM
+    >>> message.origin == RosettaTranslationOrigin.SCM
     True
 
 Get a list of the translations again to check the new one has been added.
 
-    >>> pomsgset.active_texts
+    >>> message.translations
     [u'foo']
 
 Now we want to test the interaction of the "published" translations with the
