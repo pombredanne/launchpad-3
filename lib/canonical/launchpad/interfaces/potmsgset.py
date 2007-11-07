@@ -93,10 +93,6 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
-    def getExternalTranslationMessages(language):
-        """Get TranslationMessages for the same msgid in different templates.
-        """
-
     def hasTranslationChangedInLaunchpad(language):
         """Whether an imported translation differs from the current one.
 

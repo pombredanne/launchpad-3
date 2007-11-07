@@ -32,8 +32,7 @@ button.
 When the user makes a mistake and uses an invalid bug number, an error
 message is displayed:
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'message')
     <div class="message">Not a valid bug number or nickname.</div>
 
@@ -44,19 +43,15 @@ bug number.
     >>> user_browser.url
     '.../firefox/+bugs'
 
-    # We should use goBack() here but can't because of bug #98372:
-    # zope.testbrowser truncates document content after goBack().
-    #>>> user_browser.goBack()
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+question/2/+linkbug')
+    >>> user_browser.goBack(1)
 
 The user now enters the correct bug number and after clicking the
-'Link' button, the bug will now be listed under the 'Related Bugs'
+'Link' button, the bug will now be listed under the 'Related bugs'
 portlet:
 
     >>> user_browser.getControl('Bug ID').value = '1'
     >>> user_browser.getControl('Link').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_portlet(user_browser.contents, 'Related bugs')
     >>> soup.first('li', 'bug')
     <li class="bug">
       <a href=".../bugs/1">#1: Firefox does not support SVG</a>
@@ -64,9 +59,10 @@ portlet:
 
 A notification is also displayed.
 
-    >>> soup.first('div', 'informational message')
-    <div class="informational message">Added link to bug #1:
-    ...Firefox does not support SVG...</div>
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    Added link to bug #1: ...Firefox does not support SVG...
+
 
 == Removing Links ==
 
@@ -87,7 +83,7 @@ message is displayed:
 
     >>> user_browser.url
     '.../firefox/+question/2'
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #...</div>
     >>> soup.first('div', {'id': 'portlet-related-bugs'}) is None
@@ -133,7 +129,7 @@ able to link to that bug.
     >>> admin_browser.getLink('Link existing bug').click()
     >>> admin_browser.getControl('Bug ID').value = '6'
     >>> admin_browser.getControl('Link').click()
-    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> soup = find_portlet(admin_browser.contents, 'Related bugs')
     >>> soup.first('li', 'bug')
     <li class="bug">
       <a href=".../bugs/6">#6: Firefox crashes when Save As dialog
@@ -145,7 +141,7 @@ will only see that a private bug is linked.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_portlet(anon_browser.contents, 'Related bugs')
     >>> soup.first('li', 'bug')
     <li class="bug">
       <a href=".../bugs/6">#6: private bug</a>
@@ -155,12 +151,12 @@ Only the administrator will be able to unlink the bug.
 
     >>> browser.open('http://launchpad.dev/firefox/+question/2')
     >>> browser.getLink('Remove bug link').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup.first('p', 'informational message')
-    <p class="informational message">
-      There are no links that you are allowed to remove.
-    </p>
+    >>> soup = find_main_content(browser.contents)
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    There are no links that you are allowed to remove.
 
     >>> admin_browser.getLink('Remove bug link').click()
     >>> admin_browser.getControl('#6: Firefox').selected = True
     >>> admin_browser.getControl('Remove').click()
+

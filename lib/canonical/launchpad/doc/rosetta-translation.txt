@@ -45,8 +45,8 @@ Add a translation.
     >>> message = potmsgset.updateTranslation(
     ...     pofile, person, translations, is_fuzzy=False, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
 
 Check that this submission is now the active one for this msgset/pluralform
 

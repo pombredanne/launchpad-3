@@ -114,30 +114,6 @@ class POTMsgSet(SQLBase):
                                          sqlvalues(self, language),
                                          clauseTables=['POFile'])
 
-    def infuseExternalSuggestionsCache(self, language, suggestions):
-        """Remember external suggestions for self in given language.
-
-        This pre-seeds the list that will be returned by
-        `getExternalTranslationMessages`.
-
-        :param language: `Language` that the suggestions are in.
-        :param suggestions: a list of external suggestions, in new-to-old
-            order, for this `POTMsgSet` in the given language.  None of these
-            should have self as their potmsgset.  Pass None to clear the cache
-            for this language.
-        """
-        self.external_suggestions_cache[language] = suggestions
-
-    def getExternalTranslationMessages(self, language):
-        """See `IPOTMsgSet`."""
-        if self.external_suggestions_cache is None:
-            self.external_suggestions_cache = {}
-        if self.external_suggestions_cache.get(language) is None:
-            # Don't have suggestions for this language cached.  Request them
-            # for just ourselves.
-            self.potemplate.getExternalSuggestions([self], language)
-        return self.external_suggestions_cache[language]
-
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""
         imported_translation = self.getImportedTranslationMessage(language)

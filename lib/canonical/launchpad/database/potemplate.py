@@ -379,6 +379,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getExternalSuggestions(self, potmsgsets, language):
         """See `IPOTemplate`."""
+        assert language is not None, "We must know the language to use."
+
         if not potmsgsets:
             return
         for potmsgset in potmsgsets:
@@ -501,10 +503,7 @@ class POTemplate(SQLBase, RosettaStats):
             suggestion = suggestions_by_id[translationmessage_id]
             result[takers_for_msgid[msgid]].append(suggestion)
 
-        # Populate potmsgsets' external-suggestions caches.
-        for potmsgset in potmsgsets:
-            potmsgset.infuseExternalSuggestionsCache(
-                language, result[potmsgset])
+        return result
 
     def messageCount(self):
         """See `IRosettaStats`."""

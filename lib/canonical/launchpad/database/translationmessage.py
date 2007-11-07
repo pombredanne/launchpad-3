@@ -30,6 +30,21 @@ class TranslationMessageMixIn:
     interface to use the methods and properties defined here.
     """
 
+    @cachedproperty
+    def plural_forms(self):
+        """See `ITranslationMessage`."""
+        if self.potmsgset.msgid_plural is None:
+            # This message is a singular message.
+            return 1
+        elif self.pofile.language.pluralforms is None:
+            # It's a plural form but we don't know plural forms for this
+            # message. Fallback to '2'.
+            return 2
+        else:
+            # It's a plural form and we know it's number of entries for this
+            # language.
+            return self.pofile.language.pluralforms
+
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
         elements = [self.pofile.language.code]
@@ -77,35 +92,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         if self.potmsgset.msgid_plural is None:
             self.translations = [None]
         else:
-            self.translations = [None] * self.pofile.language.pluralforms
-
-
-    def _setMessages(self, current):
-        current.is_current = True
-        self._current = current
-
-    def _getMessages(self):
-        all_msgs = []
-        current = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.language)
-        if current is None:
-            current = self.potmsgset.getCurrentDummyTranslationMessage(
-                self.pofile.language)
-        all_msgs.append(current)
-
-        imported = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.language)
-        if imported is not None:
-            all_msgs.append(imported)
-
-        all_msgs.extend(list(self.potmsgset.getLocalTranslationMessages(
-            self.pofile.language)))
-
-        #all_msgs.extend(list(self.potmsgset.getExternalTranslationMessages(
-        #    self.pofile.language)))
-
-        return all_msgs
-    messages = property(_getMessages, _setMessages)
+            self.translations = [None] * self.plural_forms
 
     def destroySelf(self):
         """See `ITranslationMessage`."""
@@ -211,20 +198,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
-        if self.potmsgset.msgid_plural is None:
-            # This message is a singular message.
-            plural_forms = 1
-        else:
-            # It's a plural form.
-            plural_forms = self.pofile.language.pluralforms
-
-        assert plural_forms is not None, (
-            "Don't know the number of plural forms for %s language." % (
-                self.pofile.language.englishname))
         msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
         translations = []
         # Return translations for no more plural forms than the POFile knows.
-        for msgstr in msgstrs[:plural_forms]:
+        for msgstr in msgstrs[:self.plural_forms]:
             if msgstr is None:
                 translations.append(None)
             else:
@@ -251,31 +228,3 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 return False
         # We found no translations in this translation_message
         return True
-
-    def _setMessages(self, current):
-        current.is_current = True
-        self._current = current
-
-    def _getMessages(self):
-        all_msgs = []
-        current = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.language)
-        if current is None:
-            current = self.potmsgset.getCurrentDummyTranslationMessage(
-                self.pofile.language)
-        all_msgs.append(current)
-
-        imported = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.language)
-        if imported is not None and not imported.is_current:
-            all_msgs.append(imported)
-
-        all_msgs.extend(list(self.potmsgset.getLocalTranslationMessages(
-            self.pofile.language)))
-
-        all_msgs.extend(list(self.potmsgset.getExternalTranslationMessages(
-            self.pofile.language)))
-
-        return all_msgs
-
-    messages = property(_getMessages, _setMessages)

@@ -52,6 +52,7 @@ Get text page for a single bug.
   attachments:
    http://.../file_a.txt text/html
    http://.../file%20with%20space.txt text/plain
+  tags: 
   subscribers: 
    Steve Alexander (stevea)
    Sample Person (name12)
@@ -167,6 +168,7 @@ Get bug text page for a product.
   private: yes
   security: yes
   attachments:
+  tags: lunch-money
   subscribers:
    Karl Tilbury (karl)
    Dafydd Harries (daf)
