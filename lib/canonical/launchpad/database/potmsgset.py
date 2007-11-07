@@ -110,7 +110,16 @@ class POTMsgSet(SQLBase):
             is_current IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
-            POFile.language = %s AND pofile=POFile.id""" %
+            POFile.language = %s AND pofile=POFile.id AND
+            date_created > (
+                SELECT GREATEST(current.date_reviewed,
+                                current.date_created,
+                                TIMESTAMP '2000-01-01 00:00')
+                    FROM TranslationMessage AS current
+                    WHERE current.potmsgset=TranslationMessage.potmsgset AND
+                          current.pofile=TranslationMessage.pofile
+                    LIMIT 1)
+            """ %
                                          sqlvalues(self, language),
                                          clauseTables=['POFile'])
 
