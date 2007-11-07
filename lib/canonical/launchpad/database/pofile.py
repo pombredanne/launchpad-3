@@ -469,6 +469,7 @@ class POFileMixIn(RosettaStats):
 
         return result
 
+
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
 
