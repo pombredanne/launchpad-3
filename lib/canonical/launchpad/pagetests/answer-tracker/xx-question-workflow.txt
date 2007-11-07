@@ -14,12 +14,13 @@ the Firefox product which was filed by 'Sample Person'.
     # Define some utility functions to retrieve easily the last comment
     # added and the status of the question.
     >>> def find_request_status(contents):
-    ...     soup = find_main_content(contents)
+    ...     soup = find_tag_by_id(contents, 'portlet-details')
     ...     return soup.find('b', text='Status:').next.strip()
     ...
     >>> def  find_last_comment(contents):
     ...     soup = find_main_content(contents)
     ...     return soup.fetch('div', 'boardCommentBody')[-1]
+
 
 == Logging In ==
 
@@ -163,7 +164,7 @@ This changes the status of the question to 'Solved' and mark
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = find_main_content(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> np = 'No Privileges Person'
     >>> np in extract_text(soup.first('b', text='Solved by:').findNext('a'))
     True
@@ -176,6 +177,7 @@ confirmation message was appended to the question discussion:
 
 The confirmed answer is also highlighted.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
     >>> print bestAnswer.first('img')
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
@@ -269,9 +271,10 @@ message as the "Best answer".
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = find_main_content(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     Sample Person
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.first('img', {'title': 'Marked as best answer'})
     >>> None == bestAnswer
     True
@@ -291,12 +294,13 @@ is attributed as the answerer.
     >>> owner_browser.getControl('This Solved My Problem').click()
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = find_main_content(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     No Privileges Person
 
 The answer's message is also highlighted as the best answer.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.find('img', {'title' : 'Marked as best answer'})
     >>> print bestAnswer
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />

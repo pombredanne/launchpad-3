@@ -3,6 +3,7 @@
 Users can subscribe to specific questions. When they are subscribed they
 will receive notifications for any changes to the question.
 
+
 == Subscribing ==
 
 To subscribe, users use the 'Subscribe' link and then confirm that
@@ -16,20 +17,16 @@ they want to subscribe by clicking on the 'Subscribe' button.
     >>> link.click()
     >>> print user_browser.title
     Subscription to question #2
-
-    >>> soup = find_main_content(user_browser.contents)
-    >>> soup.first('h1')
-    <h1>Subscribe to question</h1>
     >>> user_browser.getControl('Subscribe').click()
 
 A message confirming that he was subscribed is displayed and the user
 name appears in the 'Subscribers' portlet:
 
-    >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
     You have subscribed to this question.
 
-    >>> portlet = soup.first('div', id='portlet-subscribers')
+    >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     >>> portlet.first('h2')
     <h2>Subscribers to question #2</h2>
     >>> portlet.first('ul')
@@ -39,6 +36,7 @@ name appears in the 'Subscribers' portlet:
             Person</a>
       </li>
     </ul>
+
 
 == Unsubscribing ==
 
@@ -59,15 +57,16 @@ link and then click on the 'Unsubscribe' button.
 A confirmation is displayed and the user, which was unsubscribed from
 the question, doesn't appear anymore in the subscribers portlet:
 
-    >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
     You have unsubscribed from this question.
 
-    >>> portlet = soup.first('div', id='portlet-subscribers')
+    >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     >>> portlet.first('p')
     <p>
       <i>No subscribers.</i>
     </p>
+
 
 == Subscribing While Posting A Message ==
 
@@ -85,13 +84,12 @@ discussion about this question' checkbox:
 
 A notification message is displayed notifying of the subscription:
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
     Thanks for your information request.
     You have subscribed to this question.
 
-    >>> soup = find_main_content(user_browser.contents)
-    >>> portlet = soup.first('div', id='portlet-subscribers')
+    >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     >>> for subscriber_link in portlet.findAll('a'):
     ...     print subscriber_link.renderContents()
     No Privileges Person
@@ -103,3 +101,4 @@ doesn't appear on the page:
     Traceback (most recent call last):
       ...
     LookupError: ...
+

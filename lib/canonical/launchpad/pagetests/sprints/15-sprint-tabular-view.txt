@@ -6,10 +6,16 @@ We should be able to see the workload of a sprint:
 
 We should be able to see the spec assignment table of a sprint:
 
-  >>> [soup] = find_main_content(anon_browser.contents)('div', id='mainarea')
-  >>> [tag.string for tag in soup('tr')[0]('th')]
-  [u'Priority', u'Name', u'Definition', u'Delivery', u'Assignee', u'Drafter',
-   u'Approver']
+  >>> mainarea = find_tag_by_id(anon_browser.contents, 'mainarea')
+  >>> for header in mainarea.findAll('th'):
+  ...     print header.renderContents()
+  Priority
+  Name
+  Definition
+  Delivery
+  Assignee
+  Drafter
+  Approver
 
 And we should be able to see the workload page of a sprint even when there's
 no spec assigned to people.

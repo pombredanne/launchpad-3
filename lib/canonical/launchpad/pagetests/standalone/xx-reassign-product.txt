@@ -80,8 +80,8 @@
 
   Here we see the new registrant: No Privileges person. 
 
-  >>> soup = find_main_content(admin_browser.contents)
-  >>> soup.fetchText('Registered by:')[0].findNext('a').string
+  >>> portlet = find_portlet(admin_browser.contents, 'Lifecycle')
+  >>> portlet.fetchText('Registered by:')[0].findNext('a').string
   u'No Privileges Person'
 
   >>> login('no-priv@canonical.com')
@@ -122,6 +122,6 @@
   >>> browser.getControl(name='existing').value = ['existing']
   >>> browser.getControl('Change Registrant').click()
 
-  >>> soup = find_main_content(browser.contents)
-  >>> soup.fetchText('Registered by:')[0].findNext('a').string
+  >>> portlet = find_portlet(browser.contents, 'Lifecycle')
+  >>> portlet.fetchText('Registered by:')[0].findNext('a').string
   u'Sample Person'

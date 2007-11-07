@@ -79,6 +79,7 @@ language is accepted.
     '.../ubuntu/+question/5'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
-    >>> soup = find_main_content(browser.contents)
-    >>> print soup.find('b', text='Language:').next.strip()
+    >>> details_portlet = find_tag_by_id(browser.contents, 'portlet-details')
+    >>> print details_portlet.find('b', text='Language:').next.strip()
     Japanese
+

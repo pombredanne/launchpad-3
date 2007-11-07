@@ -4,8 +4,7 @@ have been used for bugs in this context.
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+bugs'
-    >>> soup = find_main_content(anon_browser.contents)
-    >>> tags_portlet = soup.find('div', {'id': "portlet-tags"})
+    >>> tags_portlet = find_tag_by_id(anon_browser.contents, 'portlet-tags')
     >>> for td_tag in tags_portlet('td'):
     ...     print td_tag.renderContents()
     <a ...>crash</a>

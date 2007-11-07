@@ -95,8 +95,11 @@ button. He can enter an optional message along his confirmation.
 
 This adds his comment to the question and mark it as 'Solved.'
 
-    >>> soup = find_main_content(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print soup.find('b', text='Status:').next.strip()
     Solved
-    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    >>> print find_tags_by_class(
+    ...     owner_browser.contents, 'boardCommentBody')[-1].renderContents()
     <p>Thanks! This indeed solved the problem.</p>
+
+
