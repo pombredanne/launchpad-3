@@ -110,7 +110,16 @@ class POTMsgSet(SQLBase):
             is_current IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
-            POFile.language = %s AND pofile=POFile.id""" %
+            POFile.language = %s AND pofile=POFile.id AND
+            date_created > (
+                SELECT GREATEST(current.date_reviewed,
+                                current.date_created,
+                                TIMESTAMP '2000-01-01 00:00')
+                    FROM TranslationMessage AS current
+                    WHERE current.potmsgset=TranslationMessage.potmsgset AND
+                          current.pofile=TranslationMessage.pofile
+                    LIMIT 1)
+            """ %
                                          sqlvalues(self, language),
                                          clauseTables=['POFile'])
 
@@ -238,16 +247,17 @@ class POTMsgSet(SQLBase):
 
     def _makeTranslationMessageCurrent(self, pofile, new_message,
                                        current_message, is_imported, submitter):
-        current_message = self.getCurrentTranslationMessage(
-            pofile.language)
         if is_imported:
+            # Store the value because it's reset when a new message is set
+            # as is_imported.
+            current_is_imported = current_message.is_imported
             new_message.is_imported = True
             # A new imported message is made current
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation)
             if (current_message is None or
-                current_message.is_imported or
+                current_is_imported or
                 current_message.is_empty):
                 new_message.is_current = True
                 # Don't update the submitter and date changed

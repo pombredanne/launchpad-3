@@ -33,7 +33,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
     """
     cur = cursor()
     cur.execute("""
-        SELECT SourcePackageName.name, POTemplateName.translationdomain
+        SELECT SourcePackageName.name, POTemplate.translation_domain
         FROM
             SourcePackageName
             JOIN POTemplate ON

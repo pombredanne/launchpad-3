@@ -135,7 +135,7 @@ But if we give the empty string or None, we get nothing
 POTemplate is an object with all strings that must be translated for a
 concrete context.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import IPOTemplate
     >>> potemplate = POTemplate.get(1)
