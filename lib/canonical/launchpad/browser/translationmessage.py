@@ -986,7 +986,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         # using a generic template.
         self.suggestion_blocks = {}
         self.suggestions_count = {}
-        self.pluralform_indices = range(self.context.pluralforms)
+        self.pluralform_indices = range(self.context.plural_forms)
         for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
@@ -1171,7 +1171,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             self.user_is_official_translator, self.form_is_writeable)
 
     def getOfficialTranslation(self, index, published = False):
-        """Return active or published translation for pluralform 'index'."""
+        """Return active or published translation for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.context.pofile.language.displayname))

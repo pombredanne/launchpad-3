@@ -30,6 +30,21 @@ class TranslationMessageMixIn:
     interface to use the methods and properties defined here.
     """
 
+    @cachedproperty
+    def plural_forms(self):
+        """See `ITranslationMessage`."""
+        if self.potmsgset.msgid_plural is None:
+            # This message is a singular message.
+            return 1
+        elif self.pofile.language.pluralforms is None:
+            # It's a plural form but we don't know plural forms for this
+            # message. Fallback to '2'.
+            return 2
+        else:
+            # It's a plural form and we know it's number of entries for this
+            # language.
+            return self.pofile.language.pluralforms
+
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
         elements = [self.pofile.language.code]
@@ -179,21 +194,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         assert self.is_imported, ('The message is not imported')
 
         return self._SO_get_was_fuzzy_in_last_import()
-
-    @cachedproperty
-    def plural_forms(self):
-        """See `ITranslationMessage`."""
-        if self.potmsgset.msgid_plural is None:
-            # This message is a singular message.
-            return 1
-        elif self.pofile.language.pluralforms is None:
-            # It's a plural form but we don't know plural forms for this
-            # message. Fallback to '2'.
-            return 2
-        else:
-            # It's a plural form and we know it's number of entries for this
-            # language.
-            return self.pofile.language.pluralforms
 
     @cachedproperty
     def translations(self):

@@ -260,10 +260,14 @@ class POFileTranslateView(BaseTranslationView):
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 
-            pomsgset = potmsgset.getCurrentTranslationMessage(
+            translation_message = potmsgset.getCurrentTranslationMessage(
                 self.context.language)
+            if translation_message is None:
+                translation_message = potmsgset.getCurrentDummyTranslationMessage(
+                    self.context.language)
             view = self._prepareView(
-                CurrentTranslationMessageView, pomsgset, self.errors.get(potmsgset))
+                CurrentTranslationMessageView, translation_message,
+                self.errors.get(potmsgset))
             self.pomsgset_views.append(view)
 
     def _submitTranslations(self):
