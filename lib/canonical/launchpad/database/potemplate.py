@@ -433,7 +433,6 @@ class POTemplate(SQLBase, RosettaStats):
                 -- exact same translations, never mind the current one.
                 LEFT JOIN TranslationMessage AS Better ON
                     Better.potmsgset = Suggestion.potmsgset AND
-                    Better.is_current AND
                     COALESCE(Better.msgstr0, -1) =
                         COALESCE(Suggestion.msgstr0, -1) AND
                     COALESCE(Better.msgstr1, -1) =
