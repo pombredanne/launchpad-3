@@ -1172,6 +1172,10 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     def getOfficialTranslation(self, index, is_imported=False):
         """Return active or published translation for plural form 'index'."""
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
+                index, self.context.pofile.language.displayname))
+
         if is_imported:
             translation = self.context.published_texts[index]
         else:

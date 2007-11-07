@@ -276,6 +276,21 @@ class POFileMixIn(RosettaStats):
                     POTemplate.distrorelease = DistroRelease.id
                 LEFT JOIN Distribution ON
                     DistroRelease.distribution = Distribution.id
+                -- If there's a more recent translation message offering the
+                -- exact same translations, never mind the current one.
+                -- XXX CarlosPerelloMarin 20071107 This is crap and useless,
+                -- we should look in the local potmsgset not in the
+                -- suggestions ones...
+                LEFT JOIN TranslationMessage AS Better ON
+                    Better.potmsgset = Suggestion.potmsgset AND
+                    COALESCE(Better.msgstr0, -1) =
+                        COALESCE(Suggestion.msgstr0, -1) AND
+                    COALESCE(Better.msgstr1, -1) =
+                        COALESCE(Suggestion.msgstr1, -1) AND
+                    COALESCE(Better.msgstr2, -1) =
+                        COALESCE(Suggestion.msgstr2, -1) AND
+                    COALESCE(Better.msgstr3, -1) =
+                        COALESCE(Suggestion.msgstr3, -1))
                 WHERE
                     POTMsgSet.msgid_singular IN (%(wanted_msgids)s) AND
                     POTemplate.id <> %(this_template)s AND
@@ -286,7 +301,8 @@ class POFileMixIn(RosettaStats):
                     COALESCE(msgstr0, msgstr1, msgstr2, msgstr3)
                         IS NOT NULL AND
                     (Product.official_rosetta OR
-                     Distribution.official_rosetta)
+                     Distribution.official_rosetta) AND
+                    Better.id IS NULL
                     )
                 ORDER BY
                     msgid_singular,
@@ -400,6 +416,7 @@ class POFileMixIn(RosettaStats):
                         IS NOT NULL AND
                     (Product.official_rosetta OR
                      Distribution.official_rosetta) AND
+                    Better.id IS NULL
                     )
                 ORDER BY
                     msgid_singular,
@@ -451,6 +468,7 @@ class POFileMixIn(RosettaStats):
             result[takers_for_msgid[msgid]].append(suggestion)
 
         return result
+
 
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)

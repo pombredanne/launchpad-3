@@ -30,11 +30,15 @@ Get a translation for a particular message and check it has a translation.
     >>> translationmessage = potmsgset.getCurrentTranslationMessage(spanish)
     >>> translationmessage.translations
     [u'libreta de direcciones de Evolution']
+    >>> translationmessage.is_imported
+    True
 
 Get a person to create a translation with.
 
     >>> from canonical.launchpad.database import Person
     >>> person = Person.get(1)
+    >>> pofile.canEditTranslations(person)
+    True
 
 Add a translation.
 
@@ -89,21 +93,22 @@ Let's pretend we've seen a new translation in the published PO files for
 this project from Pa.
 
     >>> translations = { 0: u'bar' }
-    >>> pomsgset.updateTranslationSet(Pa, translations, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> submission = pomsgset.getActiveSubmission(0)
+    >>> message = potmsgset.updateTranslation(
+    ...     pofile, Pa, translations, is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches()
 
 Make sure that the new submission is in fact from Pa.
 
-    >>> submission.person == Pa
+    >>> message.submitter == Pa
     True
 
 Now let's test that this has become both active and published
 
-    >>> submission.potranslation.translation == u'bar'
+    >>> message.msgstr0.translation == u'bar'
     True
 
-    >>> pomsgset.getPublishedSubmission(0) == submission
+    >>> potmsgset.getImportedTranslationMessage(spanish) == submission
     True
 
 Excellent. This shows that the code to make a new published translation
