@@ -17,7 +17,7 @@ Events of each type are created by separate methods in the
 ICodeImportEventSet utility.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces import ICodeImportEventSet
     >>> event_set = getUtility(ICodeImportEventSet)
