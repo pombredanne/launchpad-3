@@ -1554,10 +1554,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def translation_history(self):
         """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
-        query = ['POFileTranslator.person = %s' % sqlvalues(self)]
-        query.append('POFileTranslator.pofile = POFile.id')
-        query.append('POFile.language = Language.id')
-        query.append("Language.code != 'en'")
+        query = ['POFileTranslator.person = %s' % sqlvalues(self),
+                 'POFileTranslator.pofile = POFile.id',
+                 'POFile.language = Language.id',
+                 "Language.code != 'en'"]
         history = POFileTranslator.select(
             ' AND '.join(query),
             prejoins=[

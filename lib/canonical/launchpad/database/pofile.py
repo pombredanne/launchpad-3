@@ -882,12 +882,12 @@ class POFile(SQLBase, POFileMixIn):
         flush_database_updates()
 
         # Get the number of translations that we got from imports.
-        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query.append('TranslationMessage.is_imported IS TRUE')
-        query.append('NOT TranslationMessage.was_fuzzy_in_last_import')
-        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
-        query.append('POTMsgSet.sequence > 0')
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        query = ['TranslationMessage.pofile = %s' % sqlvalues(self),
+                 'TranslationMessage.is_imported IS TRUE',
+                 'NOT TranslationMessage.was_fuzzy_in_last_import',
+                 'TranslationMessage.potmsgset = POTMsgSet.id',
+                 'POTMsgSet.sequence > 0',
+                 'TranslationMessage.msgstr0 IS NOT NULL']
         for plural_form in range(1, self.language.pluralforms):
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
