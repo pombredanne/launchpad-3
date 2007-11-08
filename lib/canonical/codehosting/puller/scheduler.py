@@ -8,6 +8,7 @@ import sys
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
+from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
 from twisted.web.xmlrpc import Proxy
 
@@ -19,12 +20,21 @@ from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
 
+# XXX: Move this to a config file and make it more realistic (e.g. 300
+# seconds)
+TIMEOUT_PERIOD = 50
+
+
 class BadMessage(Exception):
     """Raised when the protocol receives a message that we don't recognize."""
 
     def __init__(self, bad_netstring):
         Exception.__init__(
             self, 'Received unrecognized message: %r' % bad_netstring)
+
+
+class TimeoutError(Exception):
+    """Raised when the listener doesn't receive messages for a long time."""
 
 
 class BranchStatusClient:
@@ -53,10 +63,10 @@ class BranchStatusClient:
             'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
-class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
+class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
     """The protocol for receiving events from the puller worker."""
 
-    def __init__(self, deferred, listener):
+    def __init__(self, deferred, listener, clock=None):
         """Construct an instance of the protocol, for listening to a worker.
 
         :param deferred: A Deferred that will be fired when the worker has
@@ -75,6 +85,9 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
+        if clock is None:
+            clock = reactor
+        self.clock = clock
 
     def _processTerminated(self, reason):
         if self._termination_deferred is None:
@@ -106,6 +119,14 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self._current_command = None
         self._expected_args = None
         self._current_args = []
+
+    def callLater(self, period, func):
+        # Override TimeoutMixin.callLater so we use self.clock. This allows us
+        # to write unit tests that don't depend on actual wall clock time.
+        return self.clock.callLater(period, func)
+
+    def connectionMade(self):
+        self.setTimeout(TIMEOUT_PERIOD)
 
     def dataReceived(self, data):
         NetstringReceiver.dataReceived(self, data)
@@ -156,6 +177,9 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
     def errReceived(self, data):
         self._stderr.write(data)
+
+    def timeoutConnection(self):
+        self.unexpectedError(failure.Failure(TimeoutError('foo')))
 
     def unexpectedError(self, failure):
         """Called when we receive data that violates the protocol.

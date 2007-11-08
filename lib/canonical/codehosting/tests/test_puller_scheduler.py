@@ -5,7 +5,7 @@ import unittest
 from bzrlib.branch import Branch
 from bzrlib.urlutils import local_path_to_url
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -136,9 +136,11 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.arbitrary_branch_id = 1
         self.listener = self.StubPullerListener()
         self.termination_deferred = defer.Deferred()
+        self.clock = task.Clock()
         self.protocol = scheduler.PullerMasterProtocol(
-            self.termination_deferred, self.listener)
+            self.termination_deferred, self.listener, self.clock)
         self.protocol.transport = self.StubTransport()
+        self.protocol.connectionMade()
 
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
@@ -166,6 +168,15 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
+
+    def test_timeoutWithoutProgress(self):
+        """If we don't receive any messages after the configured timeout
+        period, then we kill the child process.
+        """
+        self.sendToProtocol('startMirroring', 0)
+        self.clock.advance(scheduler.TIMEOUT_PERIOD + 1)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
 
     def test_progressMade(self):
         """Receiving a progressMade message notifies the listener."""
