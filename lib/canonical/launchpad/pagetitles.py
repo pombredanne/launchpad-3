@@ -1293,6 +1293,8 @@ team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
+team_mailinglist = 'Configure mailing list'
+
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
 team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))

@@ -110,7 +110,7 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
     IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
-    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
     ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
@@ -884,9 +884,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'editlanguages', 'polls', 'add_poll',
-             'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'editemail', 'configuremailinglist', 'editlanguages', 'polls',
+             'add_poll', 'joinleave', 'mentorships', 'reassign',
+             'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -962,6 +962,21 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
+
+    def configuremailinglist(self):
+        target = '+mailinglist'
+        text = 'Configure mailing list'
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        enabled = config.mailman.expose_hosted_mailing_lists
+        if mailing_list:
+            enabled = (enabled and
+                       check_permission('launchpad.Edit', mailing_list))
+        else:
+            enabled = (enabled and
+                       check_permission('launchpad.Admin', self.context))
+        summary = (
+            'The mailing list associated with %s' % self.context.browsername)
+        return Link(target, text, summary, enabled=enabled, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):

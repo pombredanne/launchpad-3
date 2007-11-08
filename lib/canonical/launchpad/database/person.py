@@ -1631,7 +1631,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.person.id == self.id
-
         if self.preferredemail is not None:
             self.preferredemail.status = EmailAddressStatus.VALIDATED
             # We need to flush updates, because we don't know what order

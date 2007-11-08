@@ -1,0 +1,62 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+    <div class="informational message"
+         tal:condition="view/list_could_be_contact_method_but_isnt">
+        This team's mailing list is not set as the team contact address.
+        <form tal:attributes="action 
+                              string:${context/fmt:url}/+contactaddress"
+              method="POST">
+          <input type="hidden" 
+           id="field.contact_method.0" name="field.contact_method" 
+           value="HOSTED_LIST" />
+          <input type="submit" class="button" 
+                 id="field.actions.listascontact" 
+                 name="field.actions.listascontact" 
+                 value="Set mailing list as contact address" />
+        </form>
+    </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <metal:widgets fill-slot="widgets">
+
+    <div class="informational message" style="margin: 0 0 0 2em"
+         tal:condition="view/mailing_list_status_message">
+      <span tal:content="structure view/mailing_list_status_message">
+        This team's mailing list could not be created.
+      </span>
+      <input tal:replace="structure view/request_list_creation/render"
+             tal:condition="view/list_can_be_requested" />
+      <input tal:replace="structure view/cancel_list_creation/render"
+             tal:condition="view/list_application_can_be_cancelled" />
+    </div>
+
+     <div tal:condition="view/list_can_be_contact_method">
+      <tal:widget define="widget nocall:view/widgets/welcome_message">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+     </div>
+    </metal:widgets>
+
+    <div class="actions" metal:fill-slot="buttons"
+     tal:condition="view/list_can_be_contact_method">
+      <input tal:replace="structure view/change_action/render" />
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -412,6 +412,41 @@ any other state can't though.
     AssertionError: Only mailing lists in the REGISTERED state...
 
 
+== Mailing list permissions ===
+
+Random people can't edit a mailing list:
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Edit', list_one)
+    False
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.Edit', list_one)
+    False
+
+An administrator of the team whose list it is can edit the list:
+
+    >>> sample_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> team_one.addMember(
+    ...     sample_user, reviewer=carlos, status=TeamMembershipStatus.ADMIN)
+    >>> flush_database_updates()
+    >>> check_permission('launchpad.Edit', list_one)
+    True
+
+The owner of the team whose list it is can edit the list:
+
+    >>> login('carlos@canonical.com')
+    >>> check_permission('launchpad.Edit', list_one)
+    True
+
+So can a Launchpad administrator:
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.Edit', list_one)
+    True    
+
 == Welcome messages ==
 
 Mailing lists have a welcome message text which is sent to new members when
