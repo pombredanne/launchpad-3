@@ -66,6 +66,8 @@ class BranchStatusClient:
 class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
     """The protocol for receiving events from the puller worker."""
 
+    unexpected_error_received = False
+
     def __init__(self, deferred, listener, clock=None):
         """Construct an instance of the protocol, for listening to a worker.
 
@@ -157,6 +159,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
                 self._resetState()
 
     def do_startMirroring(self):
+        self.resetTimeout()
         self._branch_mirror_complete_deferred = defer.maybeDeferred(
             self.listener.startMirroring)
         self._branch_mirror_complete_deferred.addErrback(self.unexpectedError)
@@ -170,6 +173,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
     def do_progressMade(self):
+        self.resetTimeout()
         self.listener.progressMade()
 
     def outReceived(self, data):
@@ -191,6 +195,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         Calling this method kills the child process and fires the completion
         deferred that was provided to the constructor.
         """
+        self.unexpected_error_received = True
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:
