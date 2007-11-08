@@ -43,6 +43,11 @@ the usage.
     ...
     LookupError: name...
 
+    >>> print registrant.getControl(name='field.enable_bug_expiration').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
     >>> print registrant.getControl(name='field.official_answers').value
     Traceback (most recent call last):
     ...
@@ -58,13 +63,18 @@ A Launchpad administrator, however, can see the controls.
     True
     >>> print admin_browser.getControl(name='field.official_malone').value
     True
+    >>> print admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value
+    True
     >>> print admin_browser.getControl(name='field.official_answers').value
     True
-     
-And if the admin changes the settings, the changes show up on the distribution
-Overview page.
+
+And if the admin changes the settings, the changes show up on the
+distribution Overview page.
 
     >>> admin_browser.getControl(name='field.official_rosetta').value = False
+    >>> admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
     >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
