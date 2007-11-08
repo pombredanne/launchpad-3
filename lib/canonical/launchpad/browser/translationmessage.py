@@ -1006,7 +1006,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     len(wiki.submissions) + len(alt_lang_suggestions.submissions))
 
         for index in self.pluralform_indices:
-            self.suggestion_blocks[index] = [[], [], [], []]
+            self.suggestion_blocks[index] = []
             self.suggestions_count[index] = 0
 
         # Initialise the translation dictionaries used from the
@@ -1307,7 +1307,7 @@ class CurrentTranslationMessageView(LaunchpadView):
     @property
     def comment(self):
         """Return the translator comments for this IPOMsgSet."""
-        return self.context.commenttext
+        return self.context.comment_text
 
     @property
     def file_references(self):
