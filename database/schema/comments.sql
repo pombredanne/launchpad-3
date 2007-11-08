@@ -1650,6 +1650,42 @@ COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the sub
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
+COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
+COMMENT ON COLUMN HWDriver.package IS 'The Debian package name a driver is a part of';
+COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON TABLE HWBus IS 'A list of bud names, e.g., PCI or USB';
+COMMENT ON COLUMN HWBus.name IS 'The name of a bus.';
+
+COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
+COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
+
+COMMENT ON TABLE HWVendorId IS 'Associate a tuple (bus, vendor ID for this bus) with a vendor name';
+COMMENT ON COLUMN HWVendorId.bus IS 'The bus.';
+COMMENT ON COLUMN HWVendorId.vendor_id_for_bus IS 'The ID of a vendor for the bus given by column `bus`';
+
+COMMENT ON TABLE HWDevice IS 'Basic information on devices.';
+COMMENT ON COLUMN HWDevice.bus_vendor_id IS 'A reference to a HWVendorID record.';
+COMMENT ON COLUMN HWDevice.bus_product_id IS 'The bus product ID of a device';
+COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a device that shares its vendor and product ID with another, technically different, device.';
+COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
+COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
+
+COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and poduct names of devices.';
+COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
+COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
+COMMENT ON COLUMN HWDeviceNameVariant.device IS 'The device named by this alternative vendor and product names.';
+COMMENT ON COLUMN HWDeviceNameVariant.submissions IS 'The number of submissions containing this alternative vendor and product name.';
+
+COMMENT ON TABLE HWDeviceDriverLink IS 'Combinations of devices and drivers mentioned in submissions.';
+COMMENT ON COLUMN HWDeviceDriverLink.device IS 'The device controlled by the driver.';
+COMMENT ON COLUMN HWDeviceDriverLink.driver IS 'The driver controlling the device.';
+
+COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
+COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
+COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
+COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+
 -- StructuralSubscription
 /*
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
