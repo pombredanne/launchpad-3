@@ -37,6 +37,7 @@ from canonical.codehosting.tests.helpers import (
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.uri import URI
 from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
@@ -741,6 +742,16 @@ class TestErrorHandling(ErrorHandlingTestCase):
             raise BranchReferenceLoopError()
         self.branch._checkBranchReference = stubCheckBranchReference
         self.runMirrorAndAssertErrorEquals("Circular branch reference.")
+
+    def testInvalidURIError(self):
+        """When a branch reference contains an invalid URL, an InvalidURIError
+        is raised. The worker catches this and reports it to the scheduler.
+        """
+        def stubCheckBranchReference():
+            raise URI("This is not a URL")
+        self.branch._checkBranchReference = stubCheckBranchReference
+        self.runMirrorAndAssertErrorEquals(
+            'InvalidURIError: "This is not a URL" is not a valid URI')
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():
