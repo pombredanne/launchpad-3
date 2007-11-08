@@ -76,7 +76,8 @@ list, so if we mark bug #2 as private, No Privileges won't see it, since
 he's not subscribed to it.
 
     >>> bug_two = getUtility(IBugSet).get(2)
-    >>> bug_two.private = True
+    >>> bug_two.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug_two)
 
     >>> login('no-priv@canonical.com')

@@ -44,7 +44,7 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.codehosting import branch_id_to_path
 
 
 class Branch(SQLBase):
@@ -409,7 +409,7 @@ class Branch(SQLBase):
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
             prefix = config.codehosting.branches_root
-            return os.path.join(prefix, split_branch_id(self.id))
+            return os.path.join(prefix, branch_id_to_path(self.id))
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 

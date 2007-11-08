@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
   <ul>
     <li tal:condition="context/datepublished">
       <strong>Published</strong>
@@ -28,4 +33,5 @@
       <span tal:attributes="title context/dateremoved/fmt:datetime"
             tal:content="context/dateremoved/fmt:displaydate" />.
     </li>
- </ul>
+  </ul>
+</tal:root>

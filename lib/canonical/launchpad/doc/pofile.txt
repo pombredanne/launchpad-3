@@ -5,7 +5,7 @@ Get evolution template for Ubuntu Hoary
     >>> import datetime
     >>> import pytz
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
     ...     ISourcePackageNameSet)
@@ -82,7 +82,7 @@ This is the new header we are going to apply.
     ... Content-Transfer-Encoding: 8bit
     ... Report-Msgid-Bugs-To: serrador@hispalinux.es'''
 
-We can get an ITranslationHeader from the file format importer.
+We can get an ITranslationHeaderData from the file format importer.
 
     >>> from canonical.launchpad.interfaces import ITranslationImporter
     >>> translation_importer = getUtility(ITranslationImporter)

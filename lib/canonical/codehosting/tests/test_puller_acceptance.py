@@ -29,7 +29,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, IScriptActivitySet)
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.codehosting import branch_id_to_path
 from canonical.testing import LaunchpadScriptLayer
 
 
@@ -89,12 +89,12 @@ class TestBranchPuller(BranchTestCase):
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
         return os.path.join(
-            config.codehosting.branches_root, split_branch_id(branch.id))
+            config.codehosting.branches_root, branch_id_to_path(branch.id))
 
     def getMirroredPath(self, branch):
         """Return the path of 'branch' in the supermirror area."""
         return os.path.join(
-            config.supermirror.branchesdest, split_branch_id(branch.id))
+            config.supermirror.branchesdest, branch_id_to_path(branch.id))
 
     def makeCleanDirectory(self, path):
         """Guarantee an empty branch upload area."""

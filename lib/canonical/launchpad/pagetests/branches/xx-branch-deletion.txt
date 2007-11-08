@@ -58,6 +58,6 @@ the branch has been deleted.
 
     >>> print browser.url
     http://code.launchpad.dev/~name12
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Branch ~name12/firefox/to-delete deleted.
