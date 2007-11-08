@@ -138,6 +138,9 @@ class IPOTMsgSet(Interface):
         Returns a modified or newly created translation message.
         """
 
+    def getNewSuggestions(language):
+        """Return suggestions for this message made since last review."""
+
     def flags():
         """Return a list of flags on this set."""
 

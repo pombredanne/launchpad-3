@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
     RosettaTranslationOrigin, TranslationConflict,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
@@ -94,6 +95,25 @@ class POTMsgSet(SQLBase):
             potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
             AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
+
+    def getNewSuggestions(self, language):
+        """See `IPOTMsgSet`."""
+        current = self.getCurrentTranslationMessage(language)
+        if current is not None:
+            query = """
+                TranslationMessage.potmsgset = %s AND
+                POFile.id = TranslationMessage.pofile AND
+                POFile.language = %s AND
+                TranslationMessage.date_created > %s
+                """ % sqlvalues(self, language, current.date_created)
+        else:
+            query = """
+                TranslationMessage.potmsgset = %s AND
+                POFile.id = TranslationMessage.pofile AND
+                POFile.language = %s
+                """ % sqlvalues(self, language)
+        result = TranslationMessage.select(query, clauseTables=['POFile'])
+        return shortlist(result, longest_expected=20, hardlimit=100)
 
     def flags(self):
         if self.flagscomment is None:

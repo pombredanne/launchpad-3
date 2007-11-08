@@ -187,7 +187,7 @@ Testing NoneEditorTranslations
 Let's see if there are any suggestions for this potmsgset. We are not
 expecting any.
 
-    >>> potmsgset.getNewSubmissions(spanish)
+    >>> potmsgset.getNewSuggestions(spanish)
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
@@ -201,25 +201,24 @@ to see a non-editor published submission.
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Traceback (most recent call last):
     ...
-    AssertionError: published translations are ALWAYS from an editor
+    AssertionError: Only an editor can submit is_imported translations.
 
-Now let's try again, this time we are not using a public API, but we need it
-to test the code more easily:
+Now let's try again, but not as an imported translation.  This is
+accepted.
 
-    >>> is_fuzzy = False
-    >>> plural_form = 0
-    >>> noneditor_submission = potmsgset._makeSubmission(
-    ...    Pn, u'bong', is_fuzzy, plural_form, published=False)
+    >>> noneditor_submission = potmsgset.updateTranslation(
+    ...    pofile, Pn, {0: u'bong'}, is_fuzzy=False, is_imported=False,
+    ...    lock_timestamp=datetime.datetime.now(UTC))
 
 This submission should come from the new non-editor person:
 
-    >>> noneditor_submission.person == Pn
+    >>> noneditor_submission.submitter == Pn
     True
 
 And the lasttranslator for this POFile should not change, as this submission
 is not from an editor:
 
-    >>> pofile.lasttranslator == web_submission.submitter
+    >>> pofile.lasttranslator == Pc
     True
 
 And now we need to cheat, just a little bit.  We need to pretend that the
@@ -230,14 +229,14 @@ that, so we bump up the noneditor_submission.datecreated by a whole 2
 seconds.
 
     >>> import datetime
-    >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
+    >>> noneditor_submission.date_created += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> from zope.security.proxy import removeSecurityProxy
 
 Let's make sure:
 
-    >>> (noneditor_submission.datecreated >
+    >>> (noneditor_submission.date_created >
     ...  potmsgset.getCurrentTranslationMessage(spanish).date_created)
     True
 
@@ -256,6 +255,6 @@ And it should definitely not be published:
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> len(potmsgset.getNewSubmissions(spanish))
+    >>> len(potmsgset.getNewSuggestions(spanish))
     1
 
