@@ -1470,10 +1470,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(distroseries=self)
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.name))
+        result = POTemplate.selectBy(distroseries=self,
+                                     orderBy=['-priority', 'name'])
+        return shortlist(result, 300)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -1484,10 +1483,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroRelease.distribution = Distribution.id AND
             Distribution.official_rosetta IS TRUE
             ''' % sqlvalues(self),
-            clauseTables = ['DistroRelease', 'Distribution'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.name))
+            clauseTables = ['DistroRelease', 'Distribution'],
+            orderBy=['-priority', 'name'])
+        return shortlist(result, 300)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -1497,11 +1495,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroRelease.distribution = Distribution.id AND
             (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
-            clauseTables = ['DistroRelease', 'Distribution'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.name))
-
+            clauseTables = ['DistroRelease', 'Distribution'],
+            orderBy=['-priority', 'name'])
+        return shortlist(result, 300)
 
 class DistroSeriesSet:
     implements(IDistroSeriesSet)
