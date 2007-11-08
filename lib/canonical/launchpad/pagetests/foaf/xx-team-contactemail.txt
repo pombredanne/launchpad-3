@@ -274,7 +274,7 @@ currently the team's contact address.
     >>> welcome_message.value
     ''
     >>> welcome_message.value = 'Welcome to the test team mailing list.'
-    >>> browser.getControl('Change').click()
+    >>> browser.getControl('Save').click()
 
 However, when the mailing list is not the team's contact address, the
 mailing list configuration screen displays an informative message.
@@ -316,13 +316,13 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
-    >>> from canonical.launchpad.ftests.xmlrpc_helper import (
-    ...     mailingListPrintActions)
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     print_actions)
     >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
     >>> mailinglist_api = xmlrpclib.ServerProxy(
     ...    private_root + 'mailinglists/',
     ...    transport=XMLRPCTestTransport())
-    >>> mailingListPrintActions(mailinglist_api.getPendingActions())
+    >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'Welcome to the test team mailing list.'}
 
@@ -337,7 +337,7 @@ address view.
 
     >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
-    >>> mailingListPrintActions(mailinglist_api.getPendingActions())
+    >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
     >>> get_feedback_messages(browser)
@@ -349,14 +349,14 @@ address view.
 What if the change fails to propagate? The user will know of this too.
 
     >>> welcome_message.value = 'This change will fail to propagate.'
-    >>> browser.getControl('Change').click()
+    >>> browser.getControl('Save').click()
 
     >>> browser.getLink('Configure mailing list').click()
     >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     This change will fail to propagate.
 
-    >>> mailingListPrintActions(mailinglist_api.getPendingActions())
+    >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
     >>> browser.reload()
