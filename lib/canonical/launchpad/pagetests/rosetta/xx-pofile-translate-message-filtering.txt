@@ -210,7 +210,10 @@ see our own translation since we are only showing untranslated strings.
 
 We do, however, see Spanish suggestions.
 
-  >>> print text
+XXX JeroenVermeulen 2007-11-09: We've disabled suggestions for Phase 2 schema
+refactorings.  Re-enable this test once they work again.
+
+  #>>> print text.decode('utf-8')
   Template ...
   English: evolution addressbook
   Current Chinese (China): (no translation yet)

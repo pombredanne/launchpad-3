@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
     RosettaTranslationOrigin, TranslationConflict,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
@@ -75,6 +76,9 @@ class POTMsgSet(SQLBase):
             'There is already a translation message in our database.')
 
         pofile = self.potemplate.getPOFileByLang(language.code)
+        if pofile is None:
+            pofileset = getUtility(IPOFileSet)
+            pofile = pofileset.getDummy(self.potemplate, language)
         return DummyTranslationMessage(pofile, self)
 
     def getCurrentTranslationMessage(self, language):
