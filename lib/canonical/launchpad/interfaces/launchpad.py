@@ -6,7 +6,6 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.interface.interface import invariant
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
@@ -523,20 +522,3 @@ class ILaunchpadUsage(Interface):
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)
-
-    @invariant
-    def bugExpirationRequiresLaunchpadBugs(pillar):
-        """Only Launchpad bug tacker can expire bugs.
-
-        The pillar must use Launchpad to track bugs for bug expiration
-        to be enabled. If a pillar chooses to switch from Launchpad to
-        another bug tracker, bug expiration is implicitly disabled.
-        """
-        # The pillar arg may be a zope.formlib.form.FormData instance,
-        # and will not have enable_bug_expiration if it was disabled in
-        # the form.
-        if pillar.enable_bug_expiration is not True:
-            return
-
-        if pillar.official_malone is False:
-            pillar.enable_bug_expiration = False

@@ -531,7 +531,14 @@ class DistributionEditView(LaunchpadEditFormView):
         LaunchpadFormView.setUpFields(self)
         if not self.isAdmin():
             self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers')
+                'official_malone', 'official_rosetta', 'official_answers',
+                'enable_bug_expiration')
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        official_malone = data.get('official_malone', False)
+        if not official_malone:
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):

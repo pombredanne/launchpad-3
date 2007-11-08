@@ -752,6 +752,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
 
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        official_malone = data.get('official_malone', False)
+        if not official_malone:
+            data['enable_bug_expiration'] = False
+
     @action("Change", name='change')
     def change_action(self, action, data):
         previous_licenses = self.context.licenses

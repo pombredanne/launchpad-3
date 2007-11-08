@@ -25,9 +25,8 @@ from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistribution,
-    IDistributionSet, ILanguageSet, ILaunchBag, IPersonSet, IProduct,
-    IProductSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
+    ILanguageSet, ILaunchBag, IPersonSet, IProductSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

@@ -10,10 +10,9 @@ __all__ = [
     ]
 
 from zope.schema import (
-    Object, Choice, Int, Text, TextLine, Bool)
+    Object, Choice, Int, Text, TextLine)
 from zope.interface import (
     Interface, Attribute)
-from zope.interface.interface import invariant
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (

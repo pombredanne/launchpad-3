@@ -12,7 +12,6 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.interface.interface import invariant
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
