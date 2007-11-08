@@ -50,7 +50,7 @@ class TranslationMessageMixIn:
         elements = [self.pofile.language.code]
         if suffix is not None:
             elements.append(suffix)
-        return self.potmsgset.makeHTMLId('_'.join(elements))
+        return self.potmsgset.makeHTMLID('_'.join(elements))
 
 
 class DummyTranslationMessage(TranslationMessageMixIn):

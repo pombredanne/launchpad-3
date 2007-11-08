@@ -177,7 +177,7 @@
       </th>
       <tal:not-locked condition="not:context/potmsgset/is_translation_credit">
         <tal:with-content
-             condition="translation_dictionary/active_translation">
+             condition="translation_dictionary/current_translation">
           <td class="icon left right">
             <tal:form-writeable condition="view/form_is_writeable">
             <tal:user-is-official-translator condition="view/user_is_official_translator">
@@ -208,7 +208,7 @@
             </tal:form-writeable>
           </td>
           <td>
-            <div tal:content="structure translation_dictionary/active_translation"
+            <div tal:content="structure translation_dictionary/current_translation"
                  tal:condition="not: view/user_is_official_translator"
                  tal:attributes="
                    lang context/pofile/language/dashedcode;
@@ -218,7 +218,7 @@
             </div>
             <label
               style="white-space: normal"
-              tal:content="structure translation_dictionary/active_translation"
+              tal:content="structure translation_dictionary/current_translation"
               tal:condition="view/user_is_official_translator"
               tal:attributes="
                 lang context/pofile/language/dashedcode;
@@ -230,7 +230,7 @@
           </td>
         </tal:with-content>
         <tal:without-content
-          condition="not: translation_dictionary/active_translation">
+          condition="not: translation_dictionary/current_translation">
           <td class="icon left right">
             <tal:user-is-official-translator condition="view/user_is_official_translator">
               <input
@@ -295,14 +295,14 @@
             <div tal:condition="not: view/user_is_official_translator"
                  tal:attributes="
                    id string:${translation_dictionary/html_id_translation}"
-                 tal:content="structure translation_dictionary/active_translation">
+                 tal:content="structure translation_dictionary/current_translation">
               translation credits
             </div>
             <label tal:condition="view/user_is_official_translator"
                    tal:attributes="
                      id string:${translation_dictionary/html_id_translation};
                      for string:${translation_dictionary/html_id_translation}_radiobutton"
-                   tal:content="structure translation_dictionary/active_translation">
+                   tal:content="structure translation_dictionary/current_translation">
               translation credits
             </label>
           </tal:form-not-writeable>
@@ -310,27 +310,26 @@
       </tal:locked>
     </tr>
 
-    <tal:active-submission
-      define="active_submission translation_dictionary/active_submission"
-      condition="active_submission">
+    <tal:has-submitter
+      define="submitter context/submitter" condition="submitter">
       <tr tal:condition=
             "not:translation_dictionary/same_translator_and_reviewer"
           class="discreet secondary translation">
-	<td colspan="4" />
+        <td colspan="4" />
         <td id="translated_by" style="overflow: auto;">
           Translated by
-          <a tal:content="active_submission/person/browsername"
-             tal:attributes="href active_submission/person/fmt:url">Foo Bar</a>
+          <a tal:content="submitter/browsername"
+             tal:attributes="href submitter/fmt:url">Foo Bar</a>
           <span
-            tal:attributes="title active_submission/datecreated/fmt:datetime"
-            tal:content="active_submission/datecreated/fmt:displaydate">
+            tal:attributes="title context/date_created/fmt:datetime"
+            tal:content="context/date_created/fmt:displaydate">
             on 2006-08-05
           </span>
         </td>
       </tr>
       <tr class="discreet secondary translation"
           tal:condition="context/reviewer">
-	<td colspan="4" />
+        <td colspan="4" />
         <td tal:condition="translation_dictionary/same_translator_and_reviewer"
             id="translated_and_reviewed_by"
             style="overflow: auto">
@@ -357,9 +356,9 @@
           </span>
         </td>
       </tr>
-    </tal:active-submission>
-    <tal:published-submission
-      define="submission translation_dictionary/published_submission"
+    </tal:has-submitter>
+    <tal:imported-submission
+      define="submission translation_dictionary/imported_translation_message"
       condition="submission">
   <tr class="secondary"
     tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
@@ -402,8 +401,8 @@
           lang context/pofile/language/dashedcode;
           dir context/pofile/language/abbreviated_text_dir;
           id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}"
-        tal:content="structure translation_dictionary/published_translation">
-        published translation
+        tal:content="structure translation_dictionary/imported_translation">
+        imported translation
       </div>
       <label
         style="white-space: normal"
@@ -413,8 +412,8 @@
           dir context/pofile/language/abbreviated_text_dir;
           id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index};
           for string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_radiobutton;"
-        tal:content="structure translation_dictionary/published_translation">
-        published translation
+        tal:content="structure translation_dictionary/imported_translation">
+        imported translation
       </label>
     </td>
   </tr>
@@ -423,17 +422,17 @@
     <td colspan="4" class="icon left right" />
     <td style="overflow: auto;">
       Translated by
-      <a tal:content="submission/person/browsername"
-         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <a tal:content="submission/submitter/browsername"
+         tal:attributes="href submission/submitter/fmt:url">Foo Bar</a>
       <span
-        tal:attributes="title submission/datecreated/fmt:datetime"
-        tal:content="submission/datecreated/fmt:displaydate">
+        tal:attributes="title submission/date_created/fmt:datetime"
+        tal:content="submission/date_created/fmt:displaydate">
         2006-08-05
       </span>
     </td>
   </tr>
 
-    </tal:published-submission>
+    </tal:imported-submission>
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title
          condition="translation_dictionary/suggestions_count">

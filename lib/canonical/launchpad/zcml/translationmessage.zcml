@@ -74,7 +74,7 @@
         name="+display"
         for="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
         permission="launchpad.AnyPerson"
-        template="../templates/pomsgset-suggestions.pt"
+        template="../templates/translationmessage-suggestions.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 

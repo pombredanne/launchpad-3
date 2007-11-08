@@ -188,7 +188,7 @@ class IPOTMsgSet(Interface):
     is_translation_credit = Attribute(
         """Whether this is a message set for crediting translators.""")
 
-    def makeHTMLId(suffix=None):
+    def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.
 
         The name is an underscore-separated sequence of:

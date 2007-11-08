@@ -572,7 +572,7 @@ class POTMsgSet(SQLBase):
                         self.context == u'NAME OF TRANSLATORS'))
         return (regular_credits or old_kde_credits or kde_credits)
 
-    def makeHTMLId(self, suffix=None):
+    def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""
         elements = ['msgset', str(self.id)]
         if suffix is not None:
