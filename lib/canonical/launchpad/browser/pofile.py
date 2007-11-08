@@ -287,15 +287,8 @@ class POFileTranslateView(BaseTranslationView):
                     "Got translation for POTMsgID %d which is not in the "
                     "template." % id)
 
-            # Get hold of an appropriate message set in the PO file,
-            # creating it if necessary.
-            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
-                                                            only_current=False)
-            if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
-
-            error = self._storeTranslations(pomsgset)
-            if error and pomsgset.sequence != 0:
+            error = self._storeTranslations(potmsgset)
+            if error and potmsgset.sequence != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #
@@ -309,7 +302,7 @@ class POFileTranslateView(BaseTranslationView):
                 # error, we cannot render that error so we discard it,
                 # that translation is not being used anyway, so it's not
                 # a big loss.
-                self.errors[pomsgset.potmsgset] = error
+                self.errors[potmsgset] = error
 
         if self.errors:
             if len(self.errors) == 1:
