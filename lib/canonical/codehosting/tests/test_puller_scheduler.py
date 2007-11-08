@@ -239,8 +239,12 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
         return self.termination_deferred
 
-    def test_deferredWaitsForListener(self):
-        """If the process terminates while we are waiting """
+    def test_processTerminationCancelsTimeout(self):
+        """When the process ends (for any reason) cancel the timeout."""
+        self.protocol._processTerminated(
+            failure.Failure(error.ConnectionDone()))
+        self.clock.advance(scheduler.TIMEOUT_PERIOD * 2)
+        self.assertProtocolSuccess()
 
     def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise

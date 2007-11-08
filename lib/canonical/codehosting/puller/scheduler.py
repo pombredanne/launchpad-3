@@ -92,6 +92,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self.clock = clock
 
     def _processTerminated(self, reason):
+        self.setTimeout(None)
         if self._termination_deferred is None:
             # We have already fired the deferred and do not want to do so
             # again.
