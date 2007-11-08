@@ -104,7 +104,7 @@ To avoid that, the page omits the suggestions.  It does warn Carlos that the
 suggestions will be shown only if he adds Japanese to his preferred languages
 first.
 
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Not showing suggestions from selected alternative language Japanese (ja).
     If you wish to see suggestions from this language, add it to your

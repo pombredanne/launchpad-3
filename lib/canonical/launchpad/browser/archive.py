@@ -15,8 +15,12 @@ __all__ = [
     'ArchiveAdminView',
     ]
 
+from zope.schema import Choice
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.utility import setUpWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -90,12 +94,30 @@ class ArchiveView(LaunchpadView):
     __used_for__ = IArchive
 
     def initialize(self):
-        """Setup a batched `ISourcePackagePublishingHistory` list."""
+        """Set up select control and our batched list of publishing records."""
+        self.terms = [SimpleTerm(s, s.name, s.title)
+                 for s in self.context.series_with_sources]
+        field = Choice(
+                __name__='series', title=_("Distro Series"),
+                vocabulary=SimpleVocabulary(self.terms), required=True)
+        setUpWidget(self, 'series',  field, IInputWidget)
+        self.series_widget.extra = "onChange='updateSeries(this);'"
+
         self.name_filter = self.request.get('name_filter', None)
         publishing = self.context.getPublishedSources(
             name=self.name_filter)
         self.batchnav = BatchNavigator(publishing, self.request)
         self.search_results = self.batchnav.currentBatch()
+
+    @property
+    def plain_series_widget(self):
+        """Render a <select> control with no <div>s around it."""
+        return self.series_widget.renderValue(None)
+
+    @property
+    def sources_in_more_than_one_series(self):
+        """Whether this archive has sources in more than one distro series."""
+        return len(self.terms) > 1
 
     def source_count_text(self):
         if self.context.number_of_sources == 1:

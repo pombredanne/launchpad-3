@@ -69,7 +69,7 @@
             back in a few days.
           </p>
           <p>To view existing requests, first sign in using your
-          <a href="https://launchpad.net">Launchpad</a> account.
+          <a href="https://launchpad.net">Launchpad</a> account.</p>
           </tal:is-closed>
 
           <form name="login" method="POST">

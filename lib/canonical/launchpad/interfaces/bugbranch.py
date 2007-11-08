@@ -17,8 +17,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import BugField
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
-from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.bugtask import IBugTask, IPerson
+
 from canonical.lazr import DBEnumeratedType, DBItem
 
 

@@ -14,14 +14,12 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IDistroArchSeriesBinaryPackageRelease, PackagePublishingStatus)
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
+    BinaryPackagePublishingHistory)
 
 class DistroArchSeriesBinaryPackageRelease:
 
@@ -80,6 +78,9 @@ class DistroArchSeriesBinaryPackageRelease:
         record = self._latest_publishing_record(status=status)
         return record
 
+# XXX cprov 20071026: heavy queries should be moved near to the related
+# content classes in order to be better maintained. In this specific case
+# the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s "
                  "AND archive IN %s"
@@ -91,7 +92,7 @@ class DistroArchSeriesBinaryPackageRelease:
             query += " AND status = %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+            query, orderBy=['-datecreated', '-id'])
 
     @property
     def publishing_history(self):
@@ -104,7 +105,7 @@ class DistroArchSeriesBinaryPackageRelease:
                     self.distroarchseries,
                     self.distribution.all_distro_archive_ids,
                     self.binarypackagerelease),
-            orderBy='-datecreated')
+            orderBy=['-datecreated', '-id'])
 
     @property
     def pocket(self):
@@ -233,94 +234,3 @@ class DistroArchSeriesBinaryPackageRelease:
     def files(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.files
-
-    def copyTo(self, distroseries, pocket):
-        """See IDistroArchSeriesBinaryPackageRelease."""
-        # Both lookups may raise NotFoundError; it should be handled in
-        # the caller.
-        current = self.current_publishing_record
-        target_das = distroseries[current.distroarchseries.architecturetag]
-
-        copy = SecureBinaryPackagePublishingHistory(
-            archive=current.archive,
-            binarypackagerelease=self.binarypackagerelease,
-            distroarchseries=target_das,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False
-        )
-        return copy
-
-    def changeOverride(self, new_component=None, new_section=None,
-                       new_priority=None):
-        """See `IDistroArchSeriesBinaryPackageRelease`."""
-
-        # Check we have been asked to do something
-        if (new_component is None and new_section is None
-            and new_priority is None):
-            raise AssertionError("changeOverride must be passed a new"
-                                 "component, section and/or priority.")
-
-        # Retrieve current publishing info
-        current = self.current_publishing_record
-
-        # Check there is a change to make
-        if new_component is None:
-            new_component = current.component
-        if new_section is None:
-            new_section = current.section
-        if new_priority is None:
-            new_priority = current.priority
-
-        if (new_component == current.component and
-            new_section == current.section and
-            new_priority == current.priority):
-            return
-
-        # See if the archive has changed by virtue of the component changing:
-        new_archive = self.distribution.getArchiveByComponent(
-            new_component.name)
-        if new_archive != None and new_archive != current.archive:
-            raise ArchiveOverriderError(
-                "Overriding component to '%s' failed because it would "
-                "require a new archive." % new_component.name)
-
-        # Append the modified package publishing entry
-        SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=self.binarypackagerelease,
-            distroarchseries=self.distroarchseries,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False,
-            pocket=current.pocket,
-            component=new_component,
-            section=new_section,
-            priority=new_priority,
-            archive=current.archive
-            )
-
-    def supersede(self):
-        """See `IDistroArchSeriesBinaryPackageRelease`."""
-        # Retrieve current publishing info
-        current = self.current_publishing_record
-        current = SecureBinaryPackagePublishingHistory.get(current.id)
-        current.status = PackagePublishingStatus.SUPERSEDED
-        current.datesuperseded = UTC_NOW
-
-        return current
-
-    def delete(self, removed_by, removal_comment=None):
-        """See `IDistroArchSeriesBinaryPackageRelease`."""
-        # Retrieve current publishing info
-        current = self.current_publishing_record
-        current = SecureBinaryPackagePublishingHistory.get(current.id)
-        current.status = PackagePublishingStatus.DELETED
-        current.datesuperseded = UTC_NOW
-        current.removed_by = removed_by
-        current.removal_comment = removal_comment
-
-        return current

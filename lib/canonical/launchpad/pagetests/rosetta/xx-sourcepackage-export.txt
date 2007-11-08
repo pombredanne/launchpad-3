@@ -40,7 +40,7 @@ export format, and request the download.
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     Your request has been received. Expect to receive an email shortly.
 
@@ -56,8 +56,7 @@ native file format.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database.potemplate import POTemplateSubset
     >>> from canonical.launchpad.database.distribution import DistributionSet
-    >>> from canonical.launchpad.interfaces.translationfileformat import (
-    ...     TranslationFileFormat)
+    >>> from canonical.launchpad.interfaces import TranslationFileFormat
     >>> ubuntu = DistributionSet().getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
     >>> hoary_subset = POTemplateSubset(distroseries=hoary)
@@ -68,14 +67,14 @@ If the file format for one of these templates were different from the other's,
 a warning would appear on the export request form that wasn't there before.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
 
     >>> an_evolution_template.source_file_format = TranslationFileFormat.MO
     >>> flush_database_updates()
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     This package has templates with different native file formats.  If you
     proceed, all translations will be exported in the single format you

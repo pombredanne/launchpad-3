@@ -27,21 +27,6 @@
                  message view/performQueueAction;
                  error view/error|nothing">
 
-  <script type="text/javascript">
-    function toggleQueueFilelistVisibility(row_id) {
-      row = document.getElementById(row_id)
-      view_icon = document.getElementById(row_id + "-view")
-      if (row.style.display == "none") {
-        row.style.display = "table-row";
-        view_icon.setAttribute("src", "/@@/treeExpanded")
-      } else {
-        row.style.display = "none";
-        view_icon.setAttribute("src", "/@@/treeCollapsed")
-      }
-      return false;
-    }
-  </script>
-
   <p class="informational message"
      tal:condition="message"
      tal:content="structure message">
@@ -107,7 +92,7 @@
              When
            </th>
            <th>
-             Changes File
+             Changes
            </th>
          </tr>
        </thead>
@@ -120,14 +105,13 @@
                         tal:attributes="value queue/id"/>
               </td>
               <td width="14">
-                <a tal:attributes="
-	           href string:./+queue;
-                   onclick string:return toggleQueueFilelistVisibility('${filelist_id}')"
-                   ><img tal:attributes="id string:${filelist_id}-view"
+                <a tal:attributes="href string:./+queue;
+                   onclick string:return toggleExpandableTableRow('${filelist_id}')"
+                   ><img tal:attributes="id string:${filelist_id}-arrow"
                          width="14" height="14"
                          src="/@@/treeCollapsed" alt="view files"/></a>
               </td>
-  	      <td>
+              <td>
                 <tal:iconlist replace="structure queue/@@+iconlist" />
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>

@@ -12,7 +12,7 @@ We are be able to display a list of branches for a product at +branches.
    >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
    >>> print browser.title
    GNOME Terminal's Bazaar branches registered in Launchpad
-  
+
 == Default page for code site ==
 
 When going directly to a product on the code rootsite for launchpad,
@@ -21,6 +21,8 @@ the +branches is the default page shown.
    >>> browser.open('http://code.launchpad.dev/applets')
    >>> print browser.title
    Gnome Applets's Bazaar branches registered in Launchpad
+   >>> print extract_text(find_main_content(browser.contents).h1)
+   Bazaar branches for Gnome Applets
 
 If there are not any branches, a relevant message is shown.
 

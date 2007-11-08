@@ -88,7 +88,8 @@ If we make the bug private, no-priv won't be allowed to edit neither the
 bug nor the BugBranch.
 
     >>> login('foo.bar@canonical.com')
-    >>> bug.private = True
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
     >>> login('no-priv@canonical.com')
     >>> bug_branch_three.whiteboard = 'Yet another whiteboard.'
@@ -102,7 +103,8 @@ bug nor the BugBranch.
     Unauthorized:...
 
     >>> login('foo.bar@canonical.com')
-    >>> bug.private = False
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> login('no-priv@canonical.com')
 
 

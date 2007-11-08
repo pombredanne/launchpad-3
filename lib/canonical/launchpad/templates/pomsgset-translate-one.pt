@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:language-code
   define="language_code context/pofile/language/code">
 <tr class="translation">
@@ -42,7 +48,7 @@
                '${view/html_id_singular}_new');;
              selectWidget('${view/html_id_singular}_new_select', event);;
              return false;;
-         "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+         "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
     </tal:form-writeable>
   </td>
   <td>
@@ -66,7 +72,7 @@
              '${view/html_id}_${language_code}_translation_',
              ${context/pluralforms});;
            return false;;
-      "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+      "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
     </tal:form-writeable>
   </td>
   <td>
@@ -197,7 +203,7 @@
                        '${translation_dictionary/html_id_translation}_new');;
                      selectWidget('${translation_dictionary/html_id_translation}_new_select', event);;
                      return false;;
-                 "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+                 "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
             </tal:is-not-editor>
             </tal:form-writeable>
           </td>
@@ -385,7 +391,7 @@
                 'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');;
               selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);;
             return false;;
-          "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
+          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
       </tal:user-is-not-official-translator>
       </tal:form-writeable>
     </td>
@@ -514,7 +520,7 @@
               </tal:comment>
               <textarea
                 style="width: 100%;"
-                rows=6
+                rows="6"
                 tal:attributes="
                   id string:${translation_dictionary/html_id_translation}_new;
                   name string:${translation_dictionary/html_id_translation}_new;
@@ -535,7 +541,7 @@
               </tal:comment>
               <textarea
                 style="width: 100%;"
-                rows=6
+                rows="6"
                 tal:attributes="
                   id string:${translation_dictionary/html_id_translation}_new;
                   name string:${translation_dictionary/html_id_translation}_new;
@@ -624,3 +630,4 @@
   </td>
 </tr>
 </tal:language-code>
+</tal:root>

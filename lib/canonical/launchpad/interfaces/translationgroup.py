@@ -95,7 +95,7 @@ class IHasTranslationGroup(Interface):
             " then only the designated translation group will be able to"
             " touch the translation files at all."),
         required=True,
-        vocabulary='TranslationPermission')
+        vocabulary=TranslationPermission)
 
 
 class ITranslationGroup(IHasOwner):
