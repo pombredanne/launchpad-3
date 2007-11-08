@@ -148,6 +148,9 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self._branch_mirror_complete_deferred.addCallback(
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
+    def do_progressMade(self, progress_indicator):
+        self.listener.progressMade(progress_indicator)
+
     def outReceived(self, data):
         self.dataReceived(data)
 

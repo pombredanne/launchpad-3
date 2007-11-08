@@ -111,6 +111,9 @@ class TestPullerMasterProtocol(TrialTestCase):
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
 
+        def progressMade(self, progress_indicator):
+            self.calls.append(('progressMade', progress_indicator))
+
 
     class StubTransport:
         """Stub transport that implements the minimum for a ProcessProtocol.
@@ -163,6 +166,12 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
+
+    def test_progressMade(self):
+        """Receiving a progressMade message notifies the listener."""
+        self.sendToProtocol('progressMade', 1, 'progress indicator')
+        self.assertEqual(
+            [('progressMade', 'progress indicator')], self.listener.calls)
 
     def test_processTermination(self):
         """The protocol fires a Deferred when it is terminated."""
