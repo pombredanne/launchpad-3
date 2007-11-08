@@ -371,7 +371,7 @@ class BaseTranslationView(LaunchpadView):
     Child classes must define:
         - self.pofile
         - _buildBatchNavigator()
-        - _initializeMsgSetViews()
+        - _initializeTranslationMessageViews()
         - _submitTranslations()
     """
 
@@ -466,7 +466,7 @@ class BaseTranslationView(LaunchpadView):
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
         # again, because of error handling.
-        self._initializeMsgSetViews()
+        self._initializeTranslationMessageViews()
 
     #
     # API Hooks
@@ -476,7 +476,7 @@ class BaseTranslationView(LaunchpadView):
         """Construct a BatchNavigator of POTMsgSets and return it."""
         raise NotImplementedError
 
-    def _initializeMsgSetViews(self):
+    def _initializeTranslationMessageViews(self):
         """Construct subviews as necessary."""
         raise NotImplementedError
 
@@ -891,8 +891,8 @@ class POMsgSetPageView(BaseTranslationView):
         return POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
                                        self.request, size=1)
 
-    def _initializeMsgSetViews(self):
-        """See `BaseTranslationView._initializeMsgSetViews`."""
+    def _initializeTranslationMessageViews(self):
+        """See `BaseTranslationView._initializeTranslationMessageViews`."""
         self.pomsgset_view = self._prepareView(POMsgSetZoomedView,
                                                self.context, self.error)
 

@@ -7,6 +7,8 @@ First, we need some imports.
     >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database import (
+    ...     TranslationMessage, DummyTranslationMessage)
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
@@ -115,30 +117,30 @@ And as it's the first entry, its sequence number is also the right one.
 Test that the associated text to translate is the one we want. We initialize
 a view for it, which will be the last in the pofile_view's list.
 
-    >>> len(pofile_view.pomsgset_views)
+    >>> len(pofile_view.translationmessage_views)
     10
-    >>> pofile_view._buildPOMsgSetViews([potmsgset])
-    >>> len(pofile_view.pomsgset_views)
+    >>> pofile_view._buildTranslationMessageViews([potmsgset])
+    >>> len(pofile_view.translationmessage_views)
     11
-    >>> pomsgset_view = pofile_view.pomsgset_views[-1]
-    >>> pomsgset_view.initialize()
-    >>> pomsgset_view.singular_text
+    >>> translationmessage_view = pofile_view.translationmessage_views[-1]
+    >>> translationmessage_view.initialize()
+    >>> translationmessage_view.singular_text
     u'evolution addressbook'
 
 It does not have a plural form.
 
-    >>> pomsgset_view.plural_text is None
+    >>> translationmessage_view.plural_text is None
     True
 
 And thus, it only has one translation.
 
-    >>> pomsgset_view.pluralform_indices
+    >>> translationmessage_view.pluralform_indices
     [0]
 
 Which is the one we wanted.
 
-    >>> pomsgset_view.getActiveTranslation(0)
-    u'libreta de direcciones de Evolution'
+    >>> translationmessage_view.context.translations
+    [u'libreta de direcciones de Evolution']
 
 It's time to check the submission of translations and the IPOFile statistics
 update.
@@ -259,9 +261,8 @@ their sequence is 0.
 
 And we can see that we didn't get errors.
 
-    >>> pomsgset = potmsgset.getPOMsgSet(
-    ...     pofile_es.language.code, pofile_es.variant)
-    >>> pomsgset.active_texts
+    >>> translationmessage = potmsgset.getCurrentTranslationMessage(pofile_es.language)
+    >>> translationmessage.translations
     [u'Foo']
     >>> pofile_view.errors
     {}
@@ -270,31 +271,31 @@ The view pre-populates the internal "relevant submissions" caches of the
 POMsgSets it shows.  We pick one with a nice list of POSubmissions and see
 what's inside.
 
-    >>> pomsgset = POMsgSet.get(604)
-    >>> pomsgset._hasSubmissionsCaches()
-    True
-    >>> pomsgset.id
-    604
-    >>> pomsgset.potmsgset.id
-    144
-    >>> for text in pomsgset.active_texts:
-    ...     print text
-    %d contacto
-    %d contactos
-    >>> for text in pomsgset.published_texts:
-    ...     print text
-    %d contacto
-    %d contactos
-    >>> list(pomsgset.getNewSubmissions(0))
-    []
-    >>> list(pomsgset.getNewSubmissions(1))
-    []
-    >>> for submission in pomsgset.getCurrentSubmissions(0):
-    ...     print submission.datecreated.isoformat()
-    2005-04-07T...
-    >>> for submission in pomsgset.getCurrentSubmissions(1):
-    ...     print submission.datecreated.isoformat()
-    2005-04-07T...
+#    >>> pomsgset = POMsgSet.get(604)
+#    >>> pomsgset._hasSubmissionsCaches()
+#    True
+#    >>> pomsgset.id
+#    604
+#    >>> pomsgset.potmsgset.id
+#    144
+#    >>> for text in pomsgset.active_texts:
+#    ...     print text
+#    %d contacto
+#    %d contactos
+#    >>> for text in pomsgset.published_texts:
+#    ...     print text
+#    %d contacto
+#    %d contactos
+#    >>> list(pomsgset.getNewSubmissions(0))
+#    []
+#    >>> list(pomsgset.getNewSubmissions(1))
+#    []
+#    >>> for submission in pomsgset.getCurrentSubmissions(0):
+#    ...     print submission.datecreated.isoformat()
+#    2005-04-07T...
+#    >>> for submission in pomsgset.getCurrentSubmissions(1):
+#    ...     print submission.datecreated.isoformat()
+#    2005-04-07T...
 
 The POMsgSet we're looking at had its submissions cache pre-populated by the
 view object, which is faster because it can fetch all its information from the
@@ -302,46 +303,46 @@ database in bulk.  If we force the POMsgSet to fill its own caches, using its
 own logic to fetch just its own submissions from the database, we get the
 exact same results.
 
-    >>> pomsgset._invalidateSubmissionsCaches()
-    >>> pomsgset._hasSubmissionsCaches()
-    False
-    >>> pomsgset.initializeSubmissionsCaches()
-    >>> pomsgset.id
-    604
-    >>> pomsgset.potmsgset.id
-    144
-    >>> for text in pomsgset.active_texts:
-    ...     print text
-    %d contacto
-    %d contactos
-    >>> for text in pomsgset.published_texts:
-    ...     print text
-    %d contacto
-    %d contactos
-    >>> list(pomsgset.getNewSubmissions(0))
-    []
-    >>> list(pomsgset.getNewSubmissions(1))
-    []
-    >>> for submission in pomsgset.getCurrentSubmissions(0):
-    ...     print submission.datecreated.isoformat()
-    2005-04-07T...
-    >>> for submission in pomsgset.getCurrentSubmissions(1):
-    ...     print submission.datecreated.isoformat()
-    2005-04-07T...
+#    >>> pomsgset._invalidateSubmissionsCaches()
+#    >>> pomsgset._hasSubmissionsCaches()
+#    False
+#    >>> pomsgset.initializeSubmissionsCaches()
+#    >>> pomsgset.id
+#    604
+#    >>> pomsgset.potmsgset.id
+#    144
+#    >>> for text in pomsgset.active_texts:
+#    ...     print text
+#    %d contacto
+#    %d contactos
+#    >>> for text in pomsgset.published_texts:
+#    ...     print text
+#    %d contacto
+#    %d contactos
+#    >>> list(pomsgset.getNewSubmissions(0))
+#    []
+#    >>> list(pomsgset.getNewSubmissions(1))
+#    []
+#    >>> for submission in pomsgset.getCurrentSubmissions(0):
+#    ...     print submission.datecreated.isoformat()
+#    2005-04-07T...
+#    >>> for submission in pomsgset.getCurrentSubmissions(1):
+#    ...     print submission.datecreated.isoformat()
+#    2005-04-07T...
 
 Now, we are going to check the alternative language submission.
 
-    >>> form = {
-    ...     'show': 'all',
-    ...     'batch': '10',
-    ...     'start': '10',
-    ...     'field.alternative_language': 'fr',
-    ...     'select_alternate_language': 'Change'}
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
-    >>> pofile_view.initialize()
-    >>> pofile_view.second_lang_code
-    'fr'
+#    >>> form = {
+#    ...     'show': 'all',
+#    ...     'batch': '10',
+#    ...     'start': '10',
+#    ...     'field.alternative_language': 'fr',
+#    ...     'select_alternate_language': 'Change'}
+#    >>> pofile_view = create_view(
+#    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+#    >>> pofile_view.initialize()
+#    >>> pofile_view.second_lang_code
+#    'fr'
 
 = POFileUploadView = 
 
@@ -396,9 +397,11 @@ given POFile instead of the one given with the submit.
     >>> pofile_es.path
     u'es.po'
 
+    >>> transaction.commit()
+
 = POFileNavigation =
 
-This class is used to traverse from IPOFile objects to IPOMsgSet ones.
+This class is used to traverse from IPOFile objects to ITranslationMessage ones.
 
     >>> from zope.security.proxy import isinstance
     >>> from canonical.launchpad.browser.pofile import POFileNavigation
@@ -422,7 +425,7 @@ The traversal value should be an integer.
     ...
     NotFoundError:...
 
-Also, pomsgset sequence numbers are always >= 1.
+Also, translation message sequence numbers are always >= 1.
 
     >>> navigation.traverse('0')
     Traceback (most recent call last):
@@ -437,22 +440,25 @@ if we use a high one, we should detect it.
     ...
     NotFoundError:...
 
-But if we have a right sequence number, we will get a valid pomsgset.
+But if we have a right sequence number, we will get a valid translation
+message.
 
-    >>> isinstance(navigation.traverse('1'), POMsgSet)
+    >>> isinstance(navigation.traverse('1'), TranslationMessage)
     True
 
-Now, we are going to select a POMsgSet that doesn't exist yet in our database.
+Now, we are going to select a translation message that doesn't exist
+yet in our database.
 
-    >>> isinstance(navigation.traverse('22'), DummyPOMsgSet)
+    >>> isinstance(navigation.traverse('22'), DummyTranslationMessage)
     True
 
-But if we do a POST, instead of getting a DummyPOMsgSet object, we will get a
-POMsgSet.
+But if we do a POST, instead of getting a DummyTranslationMessage
+object, we will get a TranslationMessage.
 
-    >>> request.method = 'POST'
-    >>> isinstance(navigation.traverse('22'), POMsgSet)
-    True
+#    >>> request.method = 'POST'
+#    >>> isinstance(navigation.traverse('22'), TranslationMessage)
+#    True
+
 
 = POExportView =
 
@@ -463,7 +469,7 @@ cached export, the user is redirected to the index page of the IPOFile.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
-    >>> pofile_es.validExportCache()
+    >>> pofile_es.is_cached_export_valid
     False
 
     # Request the download.
@@ -481,8 +487,10 @@ And we are redirected to the index page, as expected:
 But when there is an export done before the request, that already has a valid
 cache.
 
+    >>> potemplate = potemplatesubset['evolution-2.2']
+    >>> pofile_es = potemplate.getPOFileByLang('es')
     >>> content = pofile_es.export()
-    >>> pofile_es.validExportCache()
+    >>> pofile_es.is_cached_export_valid
     True
 
 The request now redirects directly to the librarian URL.
