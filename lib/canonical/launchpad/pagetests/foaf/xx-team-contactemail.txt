@@ -279,13 +279,14 @@ currently the team's contact address.
 However, when the mailing list is not the team's contact address, the
 mailing list configuration screen displays an informative message.
 
-    >>> for msg in get_feedback_messages(browser):
-    ...     print msg
+    >>> browser.getLink('Configure mailing list').click()
+    >>> tag = find_tag_by_id(browser.contents,
+    ...                      "mailing_list_not_contact_address")
+    >>> print tag.string
     This team's mailing list is not set as the team contact address.
 
 Changes to the welcome message take effect in the database immediately.
 
-    >>> browser.getLink('Configure mailing list').click()
     >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
@@ -295,22 +296,8 @@ of this.
 
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This team's mailing list is not set as the team contact address.
     Some changes to this team's mailing list are pending an update and
     have not yet taken effect.
-
-While the user waits, let's have them change the team contact address
-back to the mailing list, so that the feedback message about the
-contact address not being the mailing list doesn't keep showing up and
-cluttering up the test.
-
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl('The Launchpad mailing list').selected = True
-    >>> browser.getControl('Change').click()
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0The Launchpad mailing list for this team -
-      landscape-developers@lists.launchpad.net']
 
 Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
 
@@ -326,7 +313,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     landscape-developers --> modify
         {'welcome_message': u'Welcome to the test team mailing list.'}
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.reload()
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Changes to this mailing list are currently being propagated.
