@@ -237,7 +237,8 @@ private.)
     >>> current_user = getUtility(ILaunchBag).user
     >>> subscription = distro_series_task.bug.subscribe(current_user)
 
-    >>> distro_series_task.bug.private = True
+    >>> distro_series_task.bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
     >>> login(ANONYMOUS)
 
@@ -250,7 +251,8 @@ A private bugtask, as an anonymous user.
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
     >>> login("foo.bar@canonical.com")
-    >>> distro_series_task.bug.private = False
+    >>> distro_series_task.bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> distro_series_task.bug.unsubscribe(current_user)
 
 An IBugWatchSet.
