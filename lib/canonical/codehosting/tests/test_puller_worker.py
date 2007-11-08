@@ -813,6 +813,13 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
         self.assertSentNetstrings(
             ['mirrorFailed', '2', 'Error Message', 'OOPS'])
 
+    def test_progress(self):
+        """Calling 'progressMade' sends an arbitrary string indicating
+        progress.
+        """
+        self.protocol.progressMade(self.branch_to_mirror, "progress")
+        self.assertSentNetstrings(['progressMade', '1', 'progress'])
+
 
 class TestCanonicalUrl(unittest.TestCase):
     """Test cases for rendering the canonical url of a branch."""

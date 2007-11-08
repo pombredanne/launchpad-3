@@ -110,6 +110,9 @@ class PullerWorkerProtocol:
     def mirrorFailed(self, branch_to_mirror, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
 
+    def progressMade(self, branch_to_mirror, progress_indicator):
+        self.sendEvent('progressMade', progress_indicator)
+
 
 def identical_formats(branch_one, branch_two):
     """Check if two branches have the same bzrdir, repo, and branch formats."""
