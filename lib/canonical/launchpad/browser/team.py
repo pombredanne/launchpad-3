@@ -350,7 +350,7 @@ class TeamContactAddressView(LaunchpadFormView):
             mailing_list = list_set.get(context.name)
             assert (mailing_list is not None
                     and mailing_list.canBeContactMethod()), (
-                "A team can only use an active mailing list as its contact "
+                "A team can only use a created mailing list as its contact "
                 "address.")
             context.setContactAddress(
                 email_set.getByEmail(mailing_list.address))
@@ -396,11 +396,6 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
               self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-        if (self.context.preferredemail is None
-            or self.mailing_list.address != self.context.preferredemail.email):
-            self.request.response.addNotification(
-                _("This team's mailing list is not set as the team "
-                  "contact address."))
 
         if self.mailing_list.status == MailingListStatus.MODIFIED:
             self.request.response.addNotification(
@@ -444,6 +439,20 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
             return {}
         else:
             return dict(welcome_message=self.mailing_list.welcome_message)
+
+    @property
+    def list_could_be_contact_method_but_isnt(self):
+        """Does the list exist but not as the team's contact address?"""
+        return (self.list_can_be_contact_method and
+                (not self.context.preferredemail or
+                 self.mailing_list.address !=
+                 self.context.preferredemail.email))
+
+    @property
+    def list_can_be_contact_method(self):
+        """See `MailingList.canBeContactMethod`."""
+        return (self.mailing_list is not None and
+                self.mailing_list.canBeContactMethod())
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
