@@ -10,10 +10,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import BugTrackerType
+    BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.testing import LaunchpadFunctionalLayer
 
 

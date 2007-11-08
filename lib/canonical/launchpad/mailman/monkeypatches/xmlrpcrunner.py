@@ -9,12 +9,14 @@ __all__ = [
 import os
 import sys
 import shutil
+import socket
 import tarfile
 import traceback
 import xmlrpclib
 
 from cStringIO import StringIO
 
+from Mailman import Utils
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList
@@ -62,31 +64,40 @@ class XMLRPCRunner(Runner):
         # is designed for.
         self._kids = {}
         self._stop = False
+        self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
 
         Mailman makes an XMLRPC connection to Launchpad to see if there are
-        any mailing lists to create, modify or deactivate.  This method is
-        called periodically by the base class's main loop.
+        any mailing lists to create, modify or deactivate.  It also requests
+        updates to list subscriptions.  This method is called periodically by
+        the base class's main loop.
 
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
-        # See if Launchpad has anything for us to do.
-        proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+        self._check_list_actions()
+        self._get_subscriptions()
+        syslog('xmlrpc', 'completed oneloop')
+        # Snooze for a while.
+        return 0
+
+    def _check_list_actions(self):
+        """See if there are any list actions to perform."""
         try:
-            actions = proxy.getPendingActions()
-        except xmlrpclib.ProtocolError, error:
+            actions = self._proxy.getPendingActions()
+        except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
-            return 0
+            return
+        except xmlrpclib.Fault, error:
+            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            return
         if actions:
-            syslog('xmlrpc', 'Got some things to do: %s',
+            syslog('xmlrpc', 'Received these actions: %s',
                    COMMASPACE.join(actions.keys()))
         else:
-            # Always return 0 so self._snooze() will sleep for a while.
-            syslog('xmlrpc', 'Nothing to do')
-            return 0
+            return
         # There are three actions that can currently be taken.  A create
         # action creates a mailing list, possibly with some defaults, a modify
         # changes the settings on some existing mailing list, and a deactivate
@@ -111,9 +122,56 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Invalid xmlrpc action keys: %s',
                    COMMASPACE.join(actions.keys()))
         # Report the statuses to Launchpad.
-        proxy.reportStatus(statuses)
-        # Snooze for a while.
-        return 0
+        self._proxy.reportStatus(statuses)
+
+    def _get_subscriptions(self):
+        """Get the latest subscription information."""
+        # First, calculate the names of the active mailing lists.
+        active_lists = [list_name for list_name in Utils.list_names()
+                        if list_name <> mm_cfg.MAILMAN_SITE_LIST]
+        try:
+            info = self._proxy.getMembershipInformation(active_lists)
+        except (xmlrpclib.ProtocolError, socket.error), error:
+            syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
+            return
+        except xmlrpclib.Fault, error:
+            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            return
+        if info:
+            syslog('xmlrpc', 'Received subscription info for these lists: %s',
+                   COMMASPACE.join(info.keys()))
+        for list_name in info:
+            mlist = MailList(list_name, lock=True)
+            try:
+                # Create a mapping of subscriber address to subscriber real
+                # name.  Note that currently the flags and status are unused.
+                member_map = dict((address, realname)
+                                  for address, realname, flags, status
+                                  in info[list_name])
+                # Start by calculating two sets: one is the set of new members
+                # who need to be added to the mailing list, and the other is
+                # the set of old members who need to be removed from the
+                # mailing list.
+                current_members = set(mlist.getMembers())
+                future_members = set(member_map)
+                adds = future_members - current_members
+                deletes = current_members - future_members
+                updates = current_members & future_members
+                # Handle additions first.
+                for address in adds:
+                    mlist.addNewMember(address, realname=member_map[address])
+                # Handle deletions next.
+                for address in deletes:
+                    mlist.removeMember(address)
+                # The members who are sticking around may have updates to
+                # their real names, so it's just as easy to set that for
+                # everyone as it is to check to see if there's a change.
+                for address in updates:
+                    mlist.setMemberName(address, member_map[address])
+                # We're done, so flush the changes for this mailing list.
+                mlist.Save()
+            finally:
+                mlist.Unlock()
 
     def _create(self, actions, statuses):
         """Process mailing list creation actions.

@@ -22,6 +22,8 @@ the +branches is the default page shown.
    >>> browser.open('http://code.launchpad.dev/applets')
    >>> print browser.title
    Gnome Applets's Bazaar branches registered in Launchpad
+   >>> print extract_text(find_main_content(browser.contents).h1)
+   Bazaar branches for Gnome Applets
 
 If there are not any branches, a relevant message is shown.
 

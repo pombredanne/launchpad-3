@@ -4,35 +4,35 @@ Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
 
-import unittest
+from datetime import datetime, timedelta
 import logging
 import os
-
+from pytz import UTC
 import transaction
+import unittest
 
 from zope.component import getUtility, getView
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
-    flush_database_updates, READ_COMMITTED_ISOLATION)
+    commit, flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.ftests.xmlrpc_helper import (
-    fault_catcher, mailingListPrintActions, mailingListPrintInfo)
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
+from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
-    CreateBugParams, EmailAddressStatus, IBugTaskSet, IDistributionSet,
-    IEmailAddressSet, ILanguageSet, ILaunchBag, IMailingListSet, IPersonSet,
-    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
+    ILanguageSet, ILaunchBag, IPersonSet, IProductSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-        FunctionalLayer)
+    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
+    FunctionalLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -210,6 +210,71 @@ def bugLinkedToQuestionSetUp(test):
     # interaction in the test.
     login('no-priv@canonical.com')
 
+
+def _create_old_bug(
+    title, days_old, target, status=BugTaskStatus.INCOMPLETE,
+    with_message=True):
+    """Create an aged bug.
+    
+    :title: A string. The bug title for testing.
+    :days_old: An int. The bug's age in days.
+    :target: A BugTarkget. The bug's target.
+    :status: A BugTaskStatus. The status of the bug's single bugtask.
+    :with_message: A Bool. Whether to create a reply message.
+    """
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title=title, comment='Something is broken.')
+    bug = target.createBug(params)
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    if with_message is True:
+        bug.newMessage(
+            owner=sample_person, subject='Something is broken.',
+            content='Can you provide more information?')
+    bugtask = bug.bugtasks[0]
+    bugtask.transitionToStatus(
+        status, sample_person)
+    date = datetime.now(UTC) - timedelta(days=days_old)
+    removeSecurityProxy(bug).date_last_updated = date
+    return bugtask
+
+
+def _summarize_bugtasks(bugtasks):
+    """Summarize a sequence of bugtasks."""
+    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    for bugtask in bugtasks:
+        if len(bugtask.bug.bugtasks) == 1:
+            title = bugtask.bug.title
+        else:
+            title = bugtask.target.name
+        print '%s  %s  %s  %s  %s  %s  %s  %s' % (
+            title,
+            bugtask.target_uses_malone,
+            (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
+            bugtask.status.title,
+            bugtask.assignee is not None,
+            bugtask.bug.duplicateof is not None,
+            bugtask.milestone is not None,
+            bugtask.bug.messages.count() == 1)
+
+
+def bugtaskExpirationSetUp(test):
+    """Setup globs for bug expiration."""
+    setUp(test)
+    test.globs['create_old_bug'] = _create_old_bug
+    test.globs['summarize_bugtasks'] = _summarize_bugtasks
+    test.globs['ubuntu'] = getUtility(IDistributionSet).getByName('ubuntu')
+    test.globs['jokosher'] = getUtility(
+        IProductSet).getByName('jokosher')
+    test.globs['thunderbird'] = getUtility(
+        IProductSet).getByName('thunderbird')
+    test.globs['sync'] = sync
+    test.globs['commit'] = commit
+    test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
+        'test@canonical.com')
+    login('test@canonical.com')
+
+
 def uploaderBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     bugLinkedToQuestionSetUp(test)
@@ -225,54 +290,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     login(ANONYMOUS)
 
 
-def mailingListNewTeam(team_name, with_list=False):
-    """A helper function for the mailinglist doctests.
-
-    This just provides a convenience function for creating the kinds of teams
-    we need to use in the doctest.
-    """
-    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
-    # bug 125505.
-    policy = TeamSubscriptionPolicy.OPEN
-    personset = getUtility(IPersonSet)
-    ddaa = personset.getByName('ddaa')
-    team = personset.newTeam(ddaa, team_name, displayname,
-                             subscriptionpolicy=policy)
-    if not with_list:
-        return team
-    carlos = personset.getByName('carlos')
-    list_set = getUtility(IMailingListSet)
-    team_list = list_set.new(team)
-    team_list.review(carlos, MailingListStatus.APPROVED)
-    team_list.startConstructing()
-    team_list.transitionToStatus(MailingListStatus.ACTIVE)
-    return team, team_list
-
-
-def mailingListNewPerson(first_name):
-    """Create a new person with the given first name.
-
-    The person will be given two email addresses, with the 'long form'
-    (e.g. anne.person@example.com) as the preferred address.  Return the new
-    person object.
-    """
-    variable_name = first_name.lower()
-    full_name = first_name + ' Person'
-    # E.g. firstname.person@example.com will be the preferred address.
-    preferred_address = variable_name + '.person@example.com'
-    # E.g. aperson@example.org will be an alternative address.
-    alternative_address = variable_name[0] + 'person@example.org'
-    person, email = getUtility(IPersonSet).createPersonAndEmail(
-        preferred_address,
-        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-        name=variable_name, displayname=full_name)
-    person.setPreferredEmail(email)
-    email = getUtility(IEmailAddressSet).new(alternative_address, person)
-    email.status = EmailAddressStatus.VALIDATED
-    return person
-
-
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
@@ -285,17 +302,17 @@ def mailingListXMLRPCInternalSetUp(test):
     # stdout instead of in an OOPS report living in some log file somewhere.
     from canonical.launchpad.xmlrpc import MailingListAPIView
     class ImpedenceMatchingView(MailingListAPIView):
-        @fault_catcher
+        @mailinglists_helper.fault_catcher
         def getPendingActions(self):
             return super(ImpedenceMatchingView, self).getPendingActions()
-        @fault_catcher
+        @mailinglists_helper.fault_catcher
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
-        @fault_catcher
+        @mailinglists_helper.fault_catcher
         def getMembershipInformation(self, teams):
             return super(ImpedenceMatchingView, self).getMembershipInformation(
                 teams)
-        @fault_catcher
+        @mailinglists_helper.fault_catcher
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
                 address)
@@ -303,10 +320,6 @@ def mailingListXMLRPCInternalSetUp(test):
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['new_person'] = mailingListNewPerson
-    test.globs['new_team'] = mailingListNewTeam
-    test.globs['print_actions'] = mailingListPrintActions
-    test.globs['print_info'] = mailingListPrintInfo
     # Expose different commit() functions to handle the 'external' case below
     # where there is more than one connection.  The 'internal' case here has
     # just one coneection so the flush is all we need.
@@ -329,17 +342,7 @@ def mailingListXMLRPCExternalSetUp(test):
     # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
     # two globals will end up being different functions.
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['new_person'] = mailingListNewPerson
-    test.globs['new_team'] = mailingListNewTeam
-    test.globs['print_actions'] = mailingListPrintActions
-    test.globs['print_info'] = mailingListPrintInfo
     test.globs['commit'] = flush_database_updates
-
-
-def mailingListSubscriptionSetUp(test):
-    setUp(test)
-    test.globs['new_team'] = mailingListNewTeam
-    test.globs['new_person'] = mailingListNewPerson
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -536,8 +539,8 @@ special = {
             ),
     'bugtask-expiration.txt': LayeredDocFileSuite(
             '../doc/bugtask-expiration.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
+            setUp=bugtaskExpirationSetUp,
+            tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'bugmessage.txt': LayeredDocFileSuite(
@@ -676,13 +679,6 @@ special = {
     'mailinglist-subscriptions-xmlrpc.txt-external': FunctionalDocFileSuite(
             '../doc/mailinglist-subscriptions-xmlrpc.txt',
             setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            optionflags=default_optionflags,
-            layer=LaunchpadFunctionalLayer,
-            ),
-    'mailinglist-subscriptions.txt': FunctionalDocFileSuite(
-            '../doc/mailinglist-subscriptions.txt',
-            setUp=mailingListSubscriptionSetUp,
             tearDown=tearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,

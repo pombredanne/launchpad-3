@@ -6,19 +6,8 @@ people, a team and its team mailing list.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
-    >>> def get_alternative_email(person):
-    ...     """Return a non-preferred IEmailAddress for a person.
-    ...
-    ...     This assumes and asserts that there is exactly one non-preferred
-    ...     email address for the person.
-    ...     """
-    ...     alternatives = list(person.validatedemails)
-    ...     assert len(alternatives) == 1, (
-    ...         'Unexpected email count: %d' % len(alternatives))
-    ...     return alternatives[0]
-
-    >>> # new_person() and new_team() are helpers added in
-    >>> # test_system_documentation.py by this doctest's setup.
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     get_alternative_email, new_person)
     >>> anne = new_person('Anne')
     >>> flush_database_updates()
 
@@ -34,13 +23,15 @@ Anne gets two email addresses.  One is her preferred address...
 
     >>> bart = new_person('Bart')
     >>> flush_database_updates()
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one, list_one = new_team('team-one', with_list=True)
     >>> anne.join(team_one)
     >>> bart.join(team_one)
-    >>> # David Allouche shows up as a team member because he created the team
-    >>> # (in the doctest infrastructure).
+
+    # No Privileges Person shows up as a team member because he created the
+    # team (in the doctest infrastructure).
     >>> sorted(member.displayname for member in team_one.allmembers)
-    [u'Anne Person', u'Bart Person', u'David Allouche']
+    [u'Anne Person', u'Bart Person', u'No Privileges Person']
 
 Anne subscribes to the mailing list for team one.  Because Anne does not
 provide an email address when she subscribes, her preferred address is used.
@@ -81,22 +72,23 @@ Indirect members can subscribe to a team's mailing list.  To illustrate this,
 we first create team-two as a subteam of team-one.
 
     >>> team_two = new_team('team-two')
-    >>> # Teams cannot join, they must use addMember.  We need salgado as the
-    >>> # reviewer for adding team-two to team-one.
+
+    # Teams cannot join, they must use addMember.  We need salgado as the
+    # reviewer for adding team-two to team-one.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> team_one.addMember(team_two, salgado, force_team_add=True)
     >>> sorted(member.displayname for member in team_one.allmembers)
-    [u'Anne Person', u'Bart Person', u'David Allouche', u'Team Two']
+    [u'Anne Person', u'Bart Person', u'No Privileges Person', u'Team Two']
 
 Cris joins team-two, becoming a direct member of team-two and an indirect
 member of team-one.
 
     >>> cris.join(team_two)
     >>> sorted(member.displayname for member in team_two.allmembers)
-    [u'Cris Person', u'David Allouche']
+    [u'Cris Person', u'No Privileges Person']
     >>> sorted(member.displayname for member in team_one.allmembers)
-    [u'Anne Person', u'Bart Person', u'Cris Person', u'David Allouche',
+    [u'Anne Person', u'Bart Person', u'Cris Person', u'No Privileges Person',
      u'Team Two']
 
 Now, by virtue of her indirect membership in team-one, Cris can subscribe to
@@ -303,8 +295,9 @@ list are dropped.
 
     >>> sorted(list_one.getAddresses())
     [u'bperson@example.org', u'iona.person@example.com']
-    >>> # Deactivation isn't complete until the list's status is transitioned
-    >>> # to INACTIVE.
+
+    # Deactivation isn't complete until the list's status is transitioned to
+    # INACTIVE.
     >>> list_one.deactivate()
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)

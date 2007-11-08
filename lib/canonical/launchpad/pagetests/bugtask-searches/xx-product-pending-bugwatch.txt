@@ -54,7 +54,7 @@ He sees one match.
     >>> browser.open('http://bugs.launchpad.dev/alsa-utils/')
     >>> browser.getLink('Advanced search').click()
     >>> pending_bugwatch_label = (
-    ...     'Show only bugs that need to be forwarded to an upstream '
+    ...     'Show bugs that need to be forwarded to an upstream '
     ...     'bug tracker')
     >>> browser.getControl(pending_bugwatch_label).selected = True
     >>> browser.getControl('Search', index=0).click()

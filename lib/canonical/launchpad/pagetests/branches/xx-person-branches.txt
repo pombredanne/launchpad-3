@@ -5,16 +5,21 @@ There are several views of the branches related to a person.
 Branch lists for people also include branches that are owned by
 teams that the person is participating in.
 
+
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
 
   >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://code.launchpad.dev/~name12')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Sample Person...
-  ...Bazaar branches...
+  >>> print browser.title
+  Bazaar branches related to Sample Person
+
+The heading in the main content is the same as the page title text.
+
+  >>> main = find_main_content(browser.contents)
+  >>> print extract_text(main.h1)
+  Bazaar branches related to Sample Person
 
 
 == Default view for a person on code root site ==
@@ -41,7 +46,7 @@ the authored branches page.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show authored branches').click()
    >>> print browser.title
-   Authored branches for Sample Person
+   Bazaar branches authored by Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
@@ -60,7 +65,7 @@ There is also a link which points to the registered branches page.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show registered branches').click()
    >>> print browser.title
-   Registered branches for Sample Person
+   Bazaar branches registered by Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
@@ -79,7 +84,7 @@ branches.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show subscribed branches').click()
    >>> print browser.title
-   Subscribed branches for Sample Person
+   Bazaar branches subscribed to by Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)

@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <head>
   <tal:block metal:fill-slot="head_epilogue">
@@ -59,12 +66,12 @@
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">
       <a href="+mentoring" title="People will mentor work for newcomers">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif">
+        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif" />
       </a>
     </li>
     <li tal:condition="not: mentorships">
       <a href="+mentoring" title="No mentoring is yet offered for this team">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif">
+        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif" />
       </a>
     </li>
     <tal:not-restricted
@@ -345,7 +352,7 @@
       <table>
         <tr tal:repeat="spec specs"
             tal:replace="structure spec/@@+listing-simple" />
-      <table>
+      </table>
       <div tal:condition="specs">
         <tal:comment condition="nothing">
           <!-- XXX: Guilherme Salgado 2007-02-12:
@@ -386,6 +393,7 @@
       </tal:block>
     </div>
 
+  </div>
   </div>
   </tal:valid-person-or-team>
 
