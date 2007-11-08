@@ -68,7 +68,7 @@
         </div>
 
         <!-- The translation form. -->
-        <form method="POST" action="">
+        <form method="post" accept-charset="UTF-8" action="">
           <!-- the hidden elements -->
           <input type="hidden" name="lock_timestamp" value=""
                  tal:condition="view/form_is_writeable"
