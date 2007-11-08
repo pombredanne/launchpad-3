@@ -1,6 +1,7 @@
   >>> import datetime
   >>> import pytz
   >>> from zope.component import getUtility
+  >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.database import POMsgID
   >>> from canonical.launchpad.database import POTemplate
   >>> from canonical.launchpad.interfaces import IPersonSet
@@ -70,9 +71,11 @@ too at the same time.
 If the translation in Launchpad is fuzzy, we keep update it.
 
   >>> message.is_fuzzy = True
+  >>> flush_database_updates()
   >>> message = potmsgset.updateTranslation(
   ...     pofile_es, carlos, {0: u'bar '}, is_fuzzy=False, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> flush_database_updates()
   >>> message.msgstr0.translation
   u'bar '
   >>> message.is_fuzzy
@@ -88,15 +91,17 @@ the update from upstream.
   >>> message = potmsgset.updateTranslation(
   ...     pofile_es, carlos, {}, is_fuzzy=False, is_imported=False,
   ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> message.msgstr0
-  None
+  >>> message.msgstr0 is None
+  True
   >>> message.is_fuzzy
   False
   >>> message.is_complete
   False
+  >>> flush_database_updates()
   >>> message = potmsgset.updateTranslation(
   ...     pofile_es, carlos, {0: u'foobar '}, is_fuzzy=False,
   ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> flush_database_updates()
   >>> message.msgstr0.translation
   u'foobar '
   >>> message.is_fuzzy
@@ -113,14 +118,18 @@ revert a valid translation in Launchpad.
   >>> message = potmsgset.updateTranslation(
   ...     pofile_es, carlos, {0: u'foos '}, is_fuzzy=True, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> flush_database_updates()
+  >>> message.is_imported
+  True
+  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
   >>> message.msgstr0.translation
   u'foobar '
   >>> message.is_fuzzy
   False
   >>> message.is_complete
   True
-  >>> message.is_imported
-  True
+  >>> potmsgset.getImportedTranslationMessage(spanish).msgstr0.translation
+  u'foos '
 
 Even when the upstream translation is the same as current translation
 in Launchpad, if the only difference is the fuzzy flag, the one
@@ -130,8 +139,10 @@ be losing translations.
   >>> message = potmsgset.updateTranslation(
   ...     pofile_es, carlos, {0: u'foobar '}, is_fuzzy=True,
   ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> flush_database_updates()
   >>> message.msgstr0.translation
   u'foobar '
+  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
   >>> message.is_fuzzy
   False
   >>> message.is_complete
@@ -139,14 +150,20 @@ be losing translations.
   >>> message.is_imported
   True
 
-When we get no translations at all, Launchpad should keep its active
-translation.
+So far, the current translation has been the imported one.  If Carlos
+now submits another translation for the same message through the web
+form, it is marked as current, but the last-imported translation remains
+unaffected.
 
-  >>> message = potmsgset.updateTranslation(
-  ...     pofile_es, carlos, {}, is_fuzzy=False, is_imported=True,
+  >>> dummy = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: 'boing '}, is_fuzzy=False, is_imported=False,
   ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> flush_database_updates()
+  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message == dummy
+  True
   >>> message.msgstr0.translation
-  u'foobar '
+  u'boing '
   >>> message.is_fuzzy
   False
   >>> message.is_complete
@@ -158,18 +175,24 @@ And finally, now that published and active translations diverged,
 if we get a new upstream translation, the one in Launchpad will be keep
 untouched.
 
-  >>> pomsgset.updateTranslationSet(
-  ...     carlos, {0: u'bars '}, fuzzy=False, published=True,
+  >>> dummy = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'bars '}, is_fuzzy=False, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
-  >>> pomsgset.active_texts
-  [u'foobar ']
-  >>> pomsgset.isfuzzy
-  False
-  >>> pomsgset.iscomplete
+  >>> flush_database_updates()
+  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message != dummy
   True
-  >>> pomsgset.published_texts
+  >>> message.translations
+  [u'boing ']
+  >>> message.is_fuzzy
+  False
+  >>> message.is_complete
+  True
+  >>> message = potmsgset.getImportedTranslationMessage(spanish)
+  >>> message.translations
   [u'bars ']
-  >>> pomsgset.publishedfuzzy
+  >>> message.is_fuzzy
   False
-  >>> pomsgset.publishedcomplete
+  >>> message.is_complete
   True
+

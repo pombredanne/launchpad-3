@@ -246,14 +246,16 @@ class POTMsgSet(SQLBase):
         return TranslationMessage.selectOne(query, clauseTables=['POFile'])
 
     def _makeTranslationMessageCurrent(self, pofile, new_message,
-                                       current_message, is_imported, submitter):
+                                       current_message, is_imported,
+                                       submitter, is_fuzzy):
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation)
             if (current_message is None or
-                current_message.is_imported or
+                (current_message.is_imported and
+                 (current_message.is_fuzzy or not is_fuzzy)) or
                 current_message.is_empty):
                 new_message.is_current = True
                 # Don't update the submitter and date changed
@@ -398,7 +400,7 @@ class POTMsgSet(SQLBase):
                     # assignes karma for translation approval
                     self._makeTranslationMessageCurrent(
                         pofile, new_message, current_message, is_imported,
-                        submitter)
+                        submitter, is_fuzzy)
 
             matching_message = new_message
         else:
@@ -413,7 +415,6 @@ class POTMsgSet(SQLBase):
                         'avoid possible conflicts. Please review them.')
 
             else:
-                matching_message.is_fuzzy = is_fuzzy
                 current_message = self.getCurrentTranslationMessage(
                     pofile.language)
                 # Set the new current message if it validates ok.
@@ -423,7 +424,10 @@ class POTMsgSet(SQLBase):
                     # assignes karma for translation approval
                     self._makeTranslationMessageCurrent(
                         pofile, matching_message, current_message, is_imported,
-                        submitter)
+                        submitter, is_fuzzy)
+
+                if not is_fuzzy:
+                    matching_message.is_fuzzy = is_fuzzy
 
         return matching_message
 
