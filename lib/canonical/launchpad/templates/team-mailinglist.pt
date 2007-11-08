@@ -17,18 +17,6 @@
          tal:condition="view/list_could_be_contact_method_but_isnt">
       This team's mailing list is not set as the team contact address.
     </p>
-
-    <metal:widgets metal:fill-slot="widgets">
-
-      <tal:widget define="widget nocall:view/widgets/welcome_message">
-        <metal:block use-macro="context/@@launchpad_form/widget_row" />
-      </tal:widget>
-
-    </metal:widgets>
-
-    <div class="actions" metal:fill-slot="buttons">
-      <input tal:replace="structure view/save_action/render" />
-    </div>
   </div>
 </div>
 

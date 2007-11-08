@@ -14,15 +14,15 @@ from canonical.launchpad.interfaces import (
     ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingList, IMilestone, IPOFile,
-    IPOTemplate, IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPerson, IPoll, IPollOption,
-    IPollSubset, IProduct, IProductRelease, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISourcePackage, ISpecification,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPOFile, IPOTemplate,
+    IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset, IPackageUpload,
+    IPackageUploadQueue, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
+    ISprint, ISprintSpecification, IStandardShipItRequest,
+    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
+    ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -399,12 +399,6 @@ class EditPersonBySelf(AuthorizationBase):
     def checkAuthenticated(self, user):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
-
-
-class EditMailingListByTeamOwnerOrTeamAdminsOrAdmins(
-        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IMailingList
 
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
