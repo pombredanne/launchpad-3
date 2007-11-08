@@ -93,22 +93,22 @@ Let's pretend we've seen a new translation in the published PO files for
 this project from Pa.
 
     >>> translations = { 0: u'bar' }
-    >>> message = potmsgset.updateTranslation(
+    >>> imported_message = potmsgset.updateTranslation(
     ...     pofile, Pa, translations, is_fuzzy=False, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
 
 Make sure that the new submission is in fact from Pa.
 
-    >>> message.submitter == Pa
+    >>> imported_message.submitter == Pa
     True
 
 Now let's test that this has become both active and published
 
-    >>> message.msgstr0.translation == u'bar'
+    >>> imported_message.msgstr0.translation == u'bar'
     True
 
-    >>> potmsgset.getImportedTranslationMessage(spanish) == submission
+    >>> potmsgset.getImportedTranslationMessage(spanish) == imported_message
     True
 
 Excellent. This shows that the code to make a new published translation
@@ -117,33 +117,36 @@ active as soon as we see it is working.
 Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
-    >>> potmsgset.updateTranslation(pofile, Pb, translations, is_fuzzy=False,
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> web_submission = pomsgset.getActiveSubmission(0)
+    >>> message = potmsgset.updateTranslation(
+    ...     pofile, Pb, translations, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches()
+    >>> web_submission = potmsgset.getCurrentTranslationMessage(spanish)
 
 Make sure the new submission is from Pb.
 
-    >>> web_submission.person == Pb
+    >>> web_submission.submitter == Pb
     True
 
 This submission should now be active, but not published. When we get a new
 translation through the web, this updates the active selection but not the
 published selection.
 
-    >>> web_submission.potranslation.translation == u'baz'
+    >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> pomsgset.getPublishedSubmission(0) == web_submission
+    >>> potmsgset.getImportedTranslationMessage(spanish) == web_submission
     False
 
 In fact, the published submission should still be the original one, from Pa:
 
-    >>> pomsgset.getPublishedSubmission(0) == submission
+    >>> potmsgset.getImportedTranslationMessage(spanish) == imported_message
     True
 
-And the last_touched_pomsgset for this pofile should be this one.
+And the lasttranslator for this pofile should be the one who submitted the
+current translation.
 
-    >>> pofile.last_touched_pomsgset == web_submission.pomsgset
+    >>> pofile.lasttranslator == Pb
     True
 
 Now, let's see what happens if Pc submits exactly the same translation that
@@ -153,14 +156,15 @@ words, if the current active translation is 'baz', and someone else comes
 along and says it's 'baz', we don't record anything new.
 
     >>> translations = { 0: u'baz' }
-    >>> pomsgset.updateTranslationSet(Pc, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> repeat_submission = pomsgset.getActiveSubmission(0)
+    >>> dummy = potmsgset.updateTranslation(
+    ...     pofile, Pc, translations, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> repeat_submission = potmsgset.getCurrentTranslationMessage(spanish)
 
 Since that is exactly what Pb already said, let's see that the submission we
 got back was the one from Pb not a new one for Pc:
 
-    >>> repeat_submission.person == Pb
+    >>> repeat_submission.submitter == Pb
     True
 
 In fact, it should be the same as before:
@@ -180,10 +184,10 @@ Here is our NonEditor:
 
 Testing NoneEditorTranslations
 
-Let's see if there are any suggestions for this pomsgset. We are not
+Let's see if there are any suggestions for this potmsgset. We are not
 expecting any.
 
-    >>> pomsgset.getNewSubmissions(0)
+    >>> potmsgset.getNewSubmissions(spanish)
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
@@ -192,8 +196,9 @@ submission, and we expect to get an assertion error because we expect never
 to see a non-editor published submission.
 
     >>> translations = { 0: u'bong' }
-    >>> pomsgset.updateTranslationSet(Pn, translations, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+    >>> dummy = potmsgset.updateTranslation(
+    ...     pofile, Pn, translations, is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     Traceback (most recent call last):
     ...
     AssertionError: published translations are ALWAYS from an editor
@@ -203,7 +208,7 @@ to test the code more easily:
 
     >>> is_fuzzy = False
     >>> plural_form = 0
-    >>> noneditor_submission = pomsgset._makeSubmission(
+    >>> noneditor_submission = potmsgset._makeSubmission(
     ...    Pn, u'bong', is_fuzzy, plural_form, published=False)
 
 This submission should come from the new non-editor person:
@@ -211,44 +216,46 @@ This submission should come from the new non-editor person:
     >>> noneditor_submission.person == Pn
     True
 
-And latest touched pomsgset field for this POFile should not change, as this
-one is not from an editor:
+And the lasttranslator for this POFile should not change, as this submission
+is not from an editor:
 
-    >>> pofile.last_touched_pomsgset == web_submission.pomsgset
+    >>> pofile.lasttranslator == web_submission.submitter
     True
 
 And now we need to cheat, just a little bit.  We need to pretend that the
 noneditor submission was made a few seconds AFTER the other one. Since both
 use the DEFAULT datecreated, which is NOW, and both are inside the same
 transaction, they APPEAR to have happened simultaneously.  We need to change
-that, so we bump up the noneditor_submission.datecreated by a whole 2 seconds
-and re-initialize the pomsgset's in-memory caches.
+that, so we bump up the noneditor_submission.datecreated by a whole 2
+seconds.
 
     >>> import datetime
     >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(pomsgset)._invalidateSubmissionsCaches()
 
 Let's make sure:
 
-    >>> noneditor_submission.datecreated > pomsgset.getActiveSubmission(0).datecreated
+    >>> (noneditor_submission.datecreated >
+    ...  potmsgset.getCurrentTranslationMessage(spanish).date_created)
     True
 
 This new submission should not be active:
 
-    >>> pomsgset.getActiveSubmission(0) == noneditor_submission
+    >>> (potmsgset.getCurrentTranslationMessage(spanish) ==
+    ...  noneditor_submission)
     False
 
 And it should definitely not be published:
 
-    >>> pomsgset.getPublishedSubmission(0) == noneditor_submission
+    >>> (potmsgset.getImportedTranslationMessage(spanish) ==
+    ...  noneditor_submission)
     False
 
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> len(pomsgset.getNewSubmissions(0))
+    >>> len(potmsgset.getNewSubmissions(spanish))
     1
 
