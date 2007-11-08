@@ -111,8 +111,8 @@ class TestPullerMasterProtocol(TrialTestCase):
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
 
-        def progressMade(self, progress_indicator):
-            self.calls.append(('progressMade', progress_indicator))
+        def progressMade(self):
+            self.calls.append('progressMade')
 
 
     class StubTransport:
@@ -169,9 +169,8 @@ class TestPullerMasterProtocol(TrialTestCase):
 
     def test_progressMade(self):
         """Receiving a progressMade message notifies the listener."""
-        self.sendToProtocol('progressMade', 1, 'progress indicator')
-        self.assertEqual(
-            [('progressMade', 'progress indicator')], self.listener.calls)
+        self.sendToProtocol('progressMade', 0)
+        self.assertEqual(['progressMade'], self.listener.calls)
 
     def test_processTermination(self):
         """The protocol fires a Deferred when it is terminated."""

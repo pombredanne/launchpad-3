@@ -817,8 +817,8 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
         """Calling 'progressMade' sends an arbitrary string indicating
         progress.
         """
-        self.protocol.progressMade(self.branch_to_mirror, "progress")
-        self.assertSentNetstrings(['progressMade', '1', 'progress'])
+        self.protocol.progressMade(self.branch_to_mirror)
+        self.assertSentNetstrings(['progressMade', '0'])
 
 
 class TestCanonicalUrl(unittest.TestCase):
