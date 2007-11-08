@@ -9,6 +9,3 @@ means.
 Status
 ------
 See the Launchpad google calender or wiki for timeframes.
-
-This conflict marker will stop this branch from landing:
-<<<<<<< TREE
