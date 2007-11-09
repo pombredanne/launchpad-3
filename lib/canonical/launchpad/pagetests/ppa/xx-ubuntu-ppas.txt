@@ -179,7 +179,7 @@ The data:
 We can search a PPA for a particular package.  A non-existent package shows
 no results.
 
-    >>> field = browser.getControl("Package name contains:")
+    >>> field = browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
     >>> browser.getControl("Search").click()
     >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
@@ -187,11 +187,125 @@ no results.
 
 Searching for the package "iceweasel" show's that Celso is providing this.
 
-    >>> field = browser.getControl("Package name contains:")
+    >>> field = browser.getControl(name='field.name_filter')
     >>> field.value = 'iceweasel'
     >>> browser.getControl("Search").click()
     >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
     1
+
+In order to have a wider coverage in search status filter we will
+modify some publication in Celso's PPA to SUPERSEDED and DELETED
+states.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, PackagePublishingStatus)
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> iceweasel_pub = cprov.archive.getPublishedSources(name='iceweasel')[0]
+    >>> iceweasel_pub.secure_record.status = PackagePublishingStatus.SUPERSEDED
+    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
+    >>> pmount_pub.secure_record.status = PackagePublishingStatus.DELETED
+    >>> logout()
+    >>> transaction.commit()
+    >>> flush_database_updates()
+
+The default status filter is 'published', which means that, by
+default, PPA pages will only present PUBLISHED or PENDING packages.
+
+    >>> field = browser.getControl(name='field.name_filter')
+    >>> field.value = ''
+    >>> browser.getControl("Search").click()
+    >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
+    2
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    cdrkit - 1.0
+    2007-07-09
+    Published
+    breezy-autotest
+    editors
+    commercialpackage - 1.0-1
+    (changes)
+    Pending
+    warty
+    devel
+
+Use can explicitly select 'published' filter and will get the same result.
+
+    >>> field = browser.getControl(name='field.status_filter')
+    >>> field.value = ['published']
+    >>> browser.getControl("Search").click()
+    >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
+    2
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    cdrkit - 1.0
+    2007-07-09
+    Published
+    breezy-autotest
+    editors
+    commercialpackage - 1.0-1
+    (changes)
+    Pending
+    warty
+    devel
+
+When needed the users can select the 'superseded' filter and the
+result will only contain packages SUPERSEDED or DELETED.
+
+    >>> field = browser.getControl(name='field.status_filter')
+    >>> field.value = ['superseded']
+    >>> browser.getControl("Search").click()
+    >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
+    2
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    iceweasel - 1.0
+    2007-07-09
+    Superseded
+    warty
+    editors
+    pmount - 0.1-1
+    2007-07-09
+    Deleted
+    warty
+    editors
+
+The 'Any Status' filter is also available, so the user can search over
+any package ever published in the context PPA.
+
+    >>> field = browser.getControl(name='field.status_filter')
+    >>> field.value = ['any']
+    >>> browser.getControl("Search").click()
+    >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
+    4
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    cdrkit - 1.0
+    2007-07-09
+    Published
+    breezy-autotest
+    editors
+    commercialpackage - 1.0-1
+    (changes)
+    Pending
+    warty
+    devel
+    iceweasel - 1.0
+    2007-07-09
+    Superseded
+    warty
+    editors
+    pmount - 0.1-1
+    2007-07-09
+    Deleted
+    warty
+    editors
 
 
 == Single-publication PPAs ==
