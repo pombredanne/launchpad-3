@@ -751,7 +751,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
             raise URI("This is not a URL")
         self.branch._checkBranchReference = stubCheckBranchReference
         self.runMirrorAndAssertErrorEquals(
-            'InvalidURIError: "This is not a URL" is not a valid URI')
+            '"This is not a URL" is not a valid URI')
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():

@@ -19,7 +19,7 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 
 __all__ = [
@@ -358,6 +358,9 @@ class PullerWorker:
             self._mirrorFailed(msg)
 
         except BzrError, e:
+            self._mirrorFailed(e)
+
+        except InvalidURIError, e:
             self._mirrorFailed(e)
 
         except (KeyboardInterrupt, SystemExit):
