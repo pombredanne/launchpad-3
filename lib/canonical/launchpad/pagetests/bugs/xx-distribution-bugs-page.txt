@@ -17,6 +17,7 @@ The page has a link to see all open bugs.
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
     True
 
+
 == Bugs Fixed Elsewhere ==
 
 The Bugs frontpage for a distribution includes the number of bugs that are
@@ -37,6 +38,7 @@ The link takes you to the list of the bugs fixed elsewhere.
     <...
     <p>There are currently no open bugs.</p>
     ...
+
 
 == CVE Bugs ==
 
@@ -61,12 +63,13 @@ The link takes you to the list of bugs with CVEs linked to them.
       &mdash;
       Medium New
 
+
 == Open Bugs Statistics ==
 
 There's also some statistics about the open bugs for the distribution.
 This is displayed as a chart, which is generated using Javascript, but
-for those browsers not supporting Javascript, the statistics are displayed
-as normal text:
+for those browsers not supporting Javascript, the statistics are
+displayed as normal text:
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')

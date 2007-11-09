@@ -149,7 +149,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         """Ensure Publisher.getSourcesForOverrides works.
 
         FTPArchiveHandler.getSourcesForOverride should be returning
-        SourcePackagePublishingHistory rows that match the distrorelease,
+        SourcePackagePublishingHistory rows that match the distroseries,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
         """
         fa = self._setUpFTPArchiveHandler()
@@ -178,7 +178,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         """Ensure Publisher.getBinariesForOverrides works.
 
         FTPArchiveHandler.getBinariesForOverride should be returning
-        BinaryPackagePublishingHistory rows that match the distrorelease,
+        BinaryPackagePublishingHistory rows that match the distroseries,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
         """
         fa = self._setUpFTPArchiveHandler()

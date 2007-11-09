@@ -68,7 +68,7 @@ class ISourcePackageRelease(Interface):
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
-    uploaddistroseries = Attribute("The distroseries in which this package "
+    upload_distroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 

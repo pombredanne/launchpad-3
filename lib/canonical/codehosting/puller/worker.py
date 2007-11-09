@@ -14,7 +14,6 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
-from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
@@ -366,8 +365,6 @@ class PullerWorker:
 
         else:
             last_rev = self._dest_branch.last_revision()
-            if last_rev is None:
-                last_rev = NULL_REVISION
             self.protocol.mirrorSucceeded(self, last_rev)
 
     def __eq__(self, other):
