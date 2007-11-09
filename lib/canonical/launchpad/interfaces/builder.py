@@ -128,6 +128,8 @@ class IBuilder(IHasOwner):
         A dictionary that maps a pocket to pockets that it can
         depend on for a build.
         """)
+    is_available = Attribute(
+        "Whether or not a builder is available for building new jobs. ")
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
@@ -231,9 +233,6 @@ class IBuilder(IHasOwner):
         :return: A librarian file alias.
         """
 
-    is_available = Attribute(
-        "Whether or not a builder is available for building new jobs.")
-
     def findBuildCandidate():
         """Return the candidate for building.
 
@@ -242,7 +241,11 @@ class IBuilder(IHasOwner):
         """
 
     def dispatchBuildCandidate(candidate):
-        """XXX """
+        """Dispatch the given job to this builder.
+
+        This method can only be executed in the builddmaster machine, since
+        it will actually issues the XMLRPC call to the buildd-slave.
+        """
 
 
 class IBuilderSet(Interface):

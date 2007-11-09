@@ -966,20 +966,20 @@ Now, if we look up for a build candidate, we will see that it changed.
   >>> new_candidate.id != old_candidate.id
   True
 
-The 'previous' candidate correspondent build record was marked as
-superseded, so it's not part of the candidates list anymore.
+Because the 'previous' candidate was marked as superseded, so it's not
+part of the candidates list anymore.
 
   >>> print old_candidate.build.buildstate.name
   SUPERSEDED
 
-When this build is building in the release pocket for the main
-component in the primary archive.  It will pass an 'archives' property
-to the slave that contains sources.list entries for each pocket
-required in the primary archive.
+For building a candidate in the release pocket for the main component
+and the primary archive It will pass an 'archives' argument to the
+slave that contains sources.list entries for each pocket required in
+the primary archive dependency tree.
 
-We also pass a property called 'suite' which is the current distroseries and
+We also pass arguments called 'suite' which is the current distroseries and
 pocket, (e.g. edgy-updates) and 'archive_purpose' which contains the build's
-archive.purpose (e.g. PRIMARY or PPA).  These latter two properties are
+archive.purpose (e.g. PRIMARY or PPA).  These latter two arguments are
 used in the chroot to determine whether it needs to turn on some features
 or not (like pkgstriptranslations and pkgmaintainermangler).
 
@@ -997,7 +997,29 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
 
   >>> candidate.destroySelf()
 
-Partner archive builds will set up the 'archives' property such that it
+Currently we can theoretically dispatch a build candidate for a
+builder in 'manual' mode. This is not yet optimal because we can only
+do it once the manual builder has been collected (due to the
+BuildQueue.builder constraint). Also because we don't yet provide a
+API/UI method to request the dispatch in advance.
+
+  >>> a_builder.manual = True
+  >>> commit()
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> a_builder.dispatchBuildCandidate(candidate)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main']
+  Suite: hoary
+  Archive Purpose: PRIMARY
+
+  >>> candidate.destroySelf()
+
+Partner archive builds will set up the 'archives' argument such that it
 references all the required pockets/components in the primary archive, in
 addition to a reference to the release pocket in the partner archive itself.
 
@@ -1024,7 +1046,7 @@ addition to a reference to the release pocket in the partner archive itself.
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
   >>> candidate.destroySelf()
 
-Similarly, PPA builds pass the archives property:
+Similarly, PPA builds pass the 'archives' arguments:
 
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
@@ -1054,13 +1076,9 @@ Clean up before continuing:
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
   >>> commit()
 
-When there is no chroot it should not alter the buildstate:
-
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
-  >>> PocketChroot.selectBy(
-  ...     distroarchseries=bqItem3.archseries,
-  ...     pocket=PackagePublishingPocket.UPDATES).count()
-  0
+Builddmaster stops before starting to build a denied build.
+Since hoary is in development, we are not able to dispatch
+builds for post-release pockets:
 
   >>> candidate = a_build.createBuildQueueEntry()
   >>> setupBuildQueue(candidate, a_builder)
@@ -1077,10 +1095,6 @@ Make a build in the updates pocket:
   ...     processor=hoary_i386.default_processor,
   ...     archive=hoary_i386.main_archive)
   >>> updates_bqItem = updates_build.createBuildQueueEntry()
-
-Builddmaster stops before starting to build a denied build.
-Since hoary is in development, we are not able to dispatch
-builds for post-release pockets:
 
   >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'

@@ -509,8 +509,6 @@ class Builder(SQLBase):
         """See `IBuilder`."""
         if not self.builderok:
             return False
-        if self.manual:
-            return False
         try:
             slavestatus = self.slaveStatusSentence()
         except (xmlrpclib.Fault, socket.error), info:
@@ -579,8 +577,6 @@ class Builder(SQLBase):
         try:
             self.startBuild(candidate, logger)
         except (BuildSlaveFailure, CannotBuild), err:
-            # Ignore the exception - this code is being refactored
-            # and the caller of startBuild expects it to never fail.
             logger.warn('Could not build: %s' % err)
 
 
