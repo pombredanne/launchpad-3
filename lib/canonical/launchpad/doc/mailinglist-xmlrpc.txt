@@ -300,7 +300,7 @@ This is also true of lists in the failed state.
     Fault: <Fault 150: 'Unexpected status report "failure"
             for team: team-two'>
 
-Ant of lists in the modification-failed state.
+And of lists in the modification-failed state.
 
     >>> list_five.status.name
     'MOD_FAILED'
