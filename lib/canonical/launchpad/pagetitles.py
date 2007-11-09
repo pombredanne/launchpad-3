@@ -888,10 +888,6 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-def translationmessage(context, view):
-    """Return the page title for editing a translation message."""
-    return smartquote('Edit "%s"' % context.pofile.title)
-
 # potemplate_chart is a fragment
 
 potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
@@ -1341,6 +1337,12 @@ translationimportqueueentry_index = 'Translation import queue entry'
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translationmessage_translate(context, view):
+    """Return the page to translate a template into a language per message."""
+    return 'Translating %s into %s' % (
+        context.pofile.potemplate.displayname,
+        context.pofile.language.englishname)
 
 def translator_edit(context, view):
     """Return the page title for editing a translator in a group."""
