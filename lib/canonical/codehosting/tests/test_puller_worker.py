@@ -17,7 +17,7 @@ import urllib2
 import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
-from bzrlib.revision import ensure_null, NULL_REVISION
+from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -192,8 +192,7 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
 
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(
-            NULL_REVISION, ensure_null(mirrored_branch.last_revision()))
+        self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
@@ -330,10 +329,15 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
             'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
-        # now we have a good branch with a file called afile and id myid
-        # we need to figure out the actual path for the weave.. or
-        # deliberately corrupt it. like this.
-        tree.branch.repository.weave_store.put_weave(
+        # Now we have a good branch with a file called afile and id myid we
+        # need to figure out the actual path for the weave.. or deliberately
+        # corrupt it. like this.
+
+        # XXX: JonathanLange 2007-10-11: _put_weave is an internal function
+        # that we probably shouldn't be using. TODO: Ask author of this test
+        # to better explain which particular repository corruption we are
+        # trying to reproduce here.
+        tree.branch.repository.weave_store._put_weave(
             "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())
         source_url = os.path.abspath('missingrevision')
@@ -706,7 +710,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
             raise NotBranchError('http://example.com/not-branch')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.MIRRORED
-        expected_msg = 'Not a branch: http://example.com/not-branch'
+        expected_msg = 'Not a branch: "http://example.com/not-branch".'
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorHosted(self):
@@ -720,7 +724,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
                                  % split_id)
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.HOSTED
-        expected_msg = 'Not a branch: sftp://bazaar.launchpad.net/~%s' % (
+        expected_msg = 'Not a branch: "sftp://bazaar.launchpad.net/~%s".' % (
             self.branch.unique_name,)
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
