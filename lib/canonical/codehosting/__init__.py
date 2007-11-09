@@ -3,7 +3,32 @@
 """Launchpad code-hosting system."""
 
 __metaclass__ = type
-__all__ = ['branch_id_to_path']
+__all__ = ['branch_id_to_path', 'ProgressUIFactory']
+
+
+from bzrlib.ui import SilentUIFactory
+
+
+class ProgressUIFactory(SilentUIFactory):
+    """A UI Factory that installs a progress bar of your choice."""
+
+    def __init__(self, progress_bar_factory):
+        """Construct a ProgressUIFactory.
+
+        :param progress_bar_factory: A nullary callable that returns a
+            ProgressBar.
+        """
+        super(SilentUIFactory, self).__init__()
+        self._progress_bar_factory = progress_bar_factory
+
+    def progress_bar(self):
+        return self._progress_bar_factory
+
+    def nested_progress_bar(self):
+        if self._progress_bar_stack is None:
+            self._progress_bar_stack = bzrlib.progress.ProgressBarStack(
+                klass=self._progress_bar_factory)
+        return self._progress_bar_stack.get_nested()
 
 
 def branch_id_to_path(branch_id):
