@@ -1651,16 +1651,16 @@ COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL 
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
 COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
-COMMENT ON COLUMN HWDriver.package IS 'The Debian package name a driver is a part of';
+COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
 
-COMMENT ON TABLE HWBus IS 'A list of bud names, e.g., PCI or USB';
+COMMENT ON TABLE HWBus IS 'A list of bus names, e.g., PCI or USB';
 COMMENT ON COLUMN HWBus.name IS 'The name of a bus.';
 
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
 
-COMMENT ON TABLE HWVendorId IS 'Associate a tuple (bus, vendor ID for this bus) with a vendor name';
+COMMENT ON TABLE HWVendorId IS 'Associates tuples (bus, vendor ID for this bus) with vendor names.';
 COMMENT ON COLUMN HWVendorId.bus IS 'The bus.';
 COMMENT ON COLUMN HWVendorId.vendor_id_for_bus IS 'The ID of a vendor for the bus given by column `bus`';
 
@@ -1671,7 +1671,7 @@ COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a 
 COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
 COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
 
-COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and poduct names of devices.';
+COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
 COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
 COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
 COMMENT ON COLUMN HWDeviceNameVariant.device IS 'The device named by this alternative vendor and product names.';
@@ -1685,6 +1685,39 @@ COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
 COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
 COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
 COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+
+COMMENT ON TABLE HWTest IS 'General information about a device test.';
+COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';
+COMMENT ON COLUMN HWTest.name IS 'The name of a test.';
+
+COMMENT ON TABLE HWTestAnswerChoice IS 'Choice values of multiple choice tests/questions.';
+COMMENT ON COLUMN HWTestAnswerChoice.choice IS 'The choice value.';
+COMMENT ON COLUMN HWTestAnswerChoice.test IS 'The test this choice belongs to.';
+
+COMMENT ON TABLE HWTestAnswer IS 'The answer for a test from a submission. This can be either a multiple choice selection or a numerical value. Exactly one of the columns choice, intval, floatval must be non-null.';
+COMMENT ON COLUMN HWTestAnswer.test IS 'The test answered by this answer.';
+COMMENT ON COLUMN HWTestAnswer.choice IS 'The selected value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswer.intval IS 'The integer result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.floatval IS 'The double precision floating point number result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.unit IS 'The physical unit of a test with a numerical result.';
+
+COMMENT ON TABLE HWTestAnswerCount IS 'Accumulated results of tests. Either the column choice or the columns average and sum_square must be non-null.';
+COMMENT ON COLUMN HWTestAnswerCount.test IS 'The test.';
+COMMENT ON COLUMN HWTestAnswerCount.distroarchrelease IS 'The distroarchrelease for which results are accumulated,';
+COMMENT ON COLUMN HWTestAnswerCount.choice IS 'The choice value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswerCount.average IS 'The average value of the result of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.sum_square IS 'The sum of the squares of the results of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.unit IS 'The physical unit of a numerical test result.';
+COMMENT ON COLUMN HWTestAnswerCount.num_answers IS 'The number of submissions from which the result is accumulated.';
+
+COMMENT ON TABLE HWTestAnswerDevice IS 'Association of test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerDevice.device_driver IS 'The device/driver combination.';
+
+COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
+
 
 -- StructuralSubscription
 /*
