@@ -523,7 +523,7 @@ class Builder(SQLBase):
         """Actually the real build candidate lookup.
 
         It will become public (with the same name) when we get able to detect
-        superseded builds at build creation time.5B
+        superseded builds at build creation time.
         """
         clauses = ["""
             buildqueue.build = build.id AND
