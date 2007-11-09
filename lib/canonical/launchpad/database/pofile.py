@@ -17,7 +17,7 @@ import StringIO
 import pytz
 from urllib2 import URLError
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin
     )
 from zope.interface import implements
 from zope.component import getUtility
@@ -30,7 +30,6 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
@@ -41,7 +40,7 @@ from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFileTranslator, ITranslationExporter,
     ITranslationFileData, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
-    RosettaImportStatus, TranslationConstants, TranslationFormatSyntaxError,
+    RosettaImportStatus, TranslationFormatSyntaxError,
     TranslationFormatInvalidInputError, TranslationPermission,
     TranslationValidationStatus, ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
@@ -160,8 +159,9 @@ def _can_add_suggestions(pofile, person):
 class POFileMixIn(RosettaStats):
     """Base class for `POFile` and `DummyPOFile`.
 
-    Provides machinery for retrieving `POMsgSet`s and populating their
-    submissions caches.  That machinery is needed even for `DummyPOFile`s.
+    Provides machinery for retrieving `TranslationMessage`s and populating
+    their submissions caches.  That machinery is needed even for
+    `DummyPOFile`s.
     """
 
     def getHeader(self):
@@ -173,45 +173,6 @@ class POFileMixIn(RosettaStats):
         header.comment = self.topcomment
         header.has_plural_forms = self.potemplate.hasPluralMessage()
         return header
-
-    def getMsgSetsForPOTMsgSets(self, potmsgsets):
-        """See `IPOFile`."""
-        if potmsgsets is None:
-            return {}
-        potmsgsets = list(potmsgsets)
-        if not potmsgsets:
-            return {}
-
-        # Retrieve existing POMsgSets matching potmsgsets (one each).
-        ids_as_sql = ','.join(
-            quote(potmsgset) for potmsgset in potmsgsets)
-        existing_msgsets = []
-        if self.id is not None:
-            existing_msgsets = POMsgSet.select(
-                "potmsgset in (%s) AND pofile = %s"
-                % (ids_as_sql, quote(self)))
-
-        result = dict((pomsgset.potmsgset, pomsgset)
-                      for pomsgset in existing_msgsets)
-
-        dummies = {}
-        language_code = self.language.code
-        variant = self.variant
-        for potmsgset in potmsgsets:
-            if not potmsgset in result:
-                dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
-                dummies[potmsgset] = dummy
-
-        # XXX: no cache yet
-        #cache = getUtility(IPOSubmissionSet).getSubmissionsFor(
-        #    result.values(), dummies.values())
-
-        result.update(dummies)
-
-        #for pomsgset in result.values():
-        #    pomsgset.initializeSubmissionsCaches(cache[pomsgset])
-
-        return result
 
     def getCurrentTranslationMessage(self, msgid_text, context=None,
                                      ignore_obsolete=False):

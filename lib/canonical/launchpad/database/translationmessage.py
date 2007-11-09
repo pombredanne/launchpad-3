@@ -9,10 +9,8 @@ __all__ = [
 from datetime import datetime
 import pytz
 
-from zope.component import getUtility
 from zope.interface import implements
-from sqlobject import (
-    BoolCol, ForeignKey, StringCol, SQLRelatedJoin)
+from sqlobject import BoolCol, ForeignKey, StringCol
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
@@ -20,7 +18,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ITranslationMessage, RosettaTranslationOrigin,
+    ITranslationMessage, RosettaTranslationOrigin,
     TranslationValidationStatus)
 
 
@@ -74,7 +72,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
-        self.submitter = getUtility(ILaunchpadCelebrities).rosetta_expert
+        self.submitter = None
         self.date_reviewed = None
         self.reviewer = None
         self.msgstr0 = None
