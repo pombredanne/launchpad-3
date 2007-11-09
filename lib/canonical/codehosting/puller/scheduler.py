@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
 
 import os
 from StringIO import StringIO
@@ -19,6 +21,14 @@ from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
+__all__ = ['BadMessage',
+           'BranchStatusClient',
+           'LockError',
+           'JobScheduler',
+           'PullerMaster',
+           'PullerMasterProtocol',
+           'TimeoutError',
+           ]
 
 class BadMessage(Exception):
     """Raised when the protocol receives a message that we don't recognize."""

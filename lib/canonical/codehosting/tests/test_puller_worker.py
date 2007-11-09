@@ -1,8 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Unit tests for worker.py."""
 
 __metaclass__ = type
+__all__ = []
 
 import httplib
 import os

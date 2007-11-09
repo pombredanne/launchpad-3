@@ -1,3 +1,7 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 import logging
 import os
 import unittest
