@@ -75,7 +75,7 @@ class POTMsgSet(SQLBase):
             'There is already a translation message in our database.')
 
         pofile = self.potemplate.getPOFileByLang(language.code)
-        return DummyTranslationMessage(pofile, self)
+        return DummyTranslationMessage(language, self)
 
     def getCurrentTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
