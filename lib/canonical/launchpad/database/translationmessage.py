@@ -51,7 +51,7 @@ class TranslationMessageMixIn:
         elements = [self.pofile.language.code]
         if suffix is not None:
             elements.append(suffix)
-        return self.potmsgset.makeHTMLId('_'.join(elements))
+        return self.potmsgset.makeHTMLID('_'.join(elements))
 
 
 class DummyTranslationMessage(TranslationMessageMixIn):
@@ -73,7 +73,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.pofile = pofile
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
-        self.date_created = datetime.datetime.now(UTC)
+        self.date_created = datetime.now(UTC)
         self.submitter = getUtility(ILaunchpadCelebrities).rosetta_expert
         self.date_reviewed = None
         self.reviewer = None

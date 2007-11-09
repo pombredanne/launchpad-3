@@ -87,7 +87,9 @@ class POFileNavigation(Navigation):
             # We should check the kind of POST we got,
             # a Log out action will be also a POST and we
             # should not create a POMsgSet in that case.
-            return self.context.createMessageSetFromMessageSet(potmsgset)
+            # XXX This should not be needed anymore....
+            #return self.context.createTranslationMessageMessageSetFromMessageSet(potmsgset)
+            pass
 
 class POFileFacets(POTemplateFacets):
     usedfor = IPOFile
@@ -234,7 +236,7 @@ class POFileTranslateView(BaseTranslationView):
         # useful for doing display of only widgets with errors when we
         # do that.
         self.errors = {}
-        self.pomsgset_views = []
+        self.translationmessage_views = []
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
@@ -248,27 +250,27 @@ class POFileTranslateView(BaseTranslationView):
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE)
 
-    def _initializeMsgSetViews(self):
-        """See BaseTranslationView._initializeMsgSetViews."""
-        self._buildPOMsgSetViews(self.batchnav.currentBatch())
+    def _initializeTranslationMessageViews(self):
+        """See BaseTranslationView._initializeTranslationMessageViews."""
+        self._buildTranslationMessageViews(self.batchnav.currentBatch())
 
-    def _buildPOMsgSetViews(self, for_potmsgsets):
-        """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+    def _buildTranslationMessageViews(self, for_potmsgsets):
+        """Build translation message views for all potmsgsets given."""
         last = None
         for potmsgset in for_potmsgsets:
             assert last is None or potmsgset.sequence >= last.sequence, (
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 
-            translation_message = potmsgset.getCurrentTranslationMessage(
+            translationmessage = potmsgset.getCurrentTranslationMessage(
                 self.context.language)
-            if translation_message is None:
-                translation_message = potmsgset.getCurrentDummyTranslationMessage(
+            if translationmessage is None:
+                translationmessage = potmsgset.getCurrentDummyTranslationMessage(
                     self.context.language)
             view = self._prepareView(
-                CurrentTranslationMessageView, translation_message,
+                CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
-            self.pomsgset_views.append(view)
+            self.translationmessage_views.append(view)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -287,15 +289,8 @@ class POFileTranslateView(BaseTranslationView):
                     "Got translation for POTMsgID %d which is not in the "
                     "template." % id)
 
-            # Get hold of an appropriate message set in the PO file,
-            # creating it if necessary.
-            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
-                                                            only_current=False)
-            if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
-
-            error = self._storeTranslations(pomsgset)
-            if error and pomsgset.sequence != 0:
+            error = self._storeTranslations(potmsgset)
+            if error and potmsgset.sequence != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #
@@ -309,7 +304,7 @@ class POFileTranslateView(BaseTranslationView):
                 # error, we cannot render that error so we discard it,
                 # that translation is not being used anyway, so it's not
                 # a big loss.
-                self.errors[pomsgset.potmsgset] = error
+                self.errors[potmsgset] = error
 
         if self.errors:
             if len(self.errors) == 1:

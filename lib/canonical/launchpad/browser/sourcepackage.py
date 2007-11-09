@@ -134,7 +134,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates', 'imports', 'translationdownload']
+    links = ['help', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'

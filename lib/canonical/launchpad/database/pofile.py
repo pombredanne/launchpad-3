@@ -357,6 +357,9 @@ class POFileMixIn(RosettaStats):
 
     def getExternalSuggestions(self, potmsgsets):
         """See `IPOTemplate`."""
+        # XXX JeroenVermeulen 2007-11-08: Unify this with
+        # getCurrentSuggestions(), and sort out the current suggestions from
+        # the full set at the call site.
         if not potmsgsets:
             return
         for potmsgset in potmsgsets:

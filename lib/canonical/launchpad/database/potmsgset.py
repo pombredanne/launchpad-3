@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces import (
     RosettaTranslationOrigin, TranslationConflict,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
@@ -75,6 +77,9 @@ class POTMsgSet(SQLBase):
             'There is already a translation message in our database.')
 
         pofile = self.potemplate.getPOFileByLang(language.code)
+        if pofile is None:
+            pofileset = getUtility(IPOFileSet)
+            pofile = pofileset.getDummy(self.potemplate, language)
         return DummyTranslationMessage(pofile, self)
 
     def getCurrentTranslationMessage(self, language):
@@ -90,6 +95,25 @@ class POTMsgSet(SQLBase):
             potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
             AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
+
+    def getNewSuggestions(self, language):
+        """See `IPOTMsgSet`."""
+        current = self.getCurrentTranslationMessage(language)
+        if current is not None:
+            query = """
+                TranslationMessage.potmsgset = %s AND
+                POFile.id = TranslationMessage.pofile AND
+                POFile.language = %s AND
+                TranslationMessage.date_created > %s
+                """ % sqlvalues(self, language, current.date_created)
+        else:
+            query = """
+                TranslationMessage.potmsgset = %s AND
+                POFile.id = TranslationMessage.pofile AND
+                POFile.language = %s
+                """ % sqlvalues(self, language)
+        result = TranslationMessage.select(query, clauseTables=['POFile'])
+        return shortlist(result, longest_expected=20, hardlimit=100)
 
     def flags(self):
         if self.flagscomment is None:
@@ -246,18 +270,16 @@ class POTMsgSet(SQLBase):
         return TranslationMessage.selectOne(query, clauseTables=['POFile'])
 
     def _makeTranslationMessageCurrent(self, pofile, new_message,
-                                       current_message, is_imported, submitter):
+                                       current_message, is_imported,
+                                       submitter, is_fuzzy):
         if is_imported:
-            # Store the value because it's reset when a new message is set
-            # as is_imported.
-            current_is_imported = current_message.is_imported
-            new_message.is_imported = True
             # A new imported message is made current
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation)
             if (current_message is None or
-                current_is_imported or
+                (current_message.is_imported and
+                 (current_message.is_fuzzy or not is_fuzzy)) or
                 current_message.is_empty):
                 new_message.is_current = True
                 # Don't update the submitter and date changed
@@ -267,6 +289,7 @@ class POTMsgSet(SQLBase):
                          new_message.is_empty)):
                     pofile.lasttranslator = submitter
                     pofile.date_changed = UTC_NOW
+            new_message.is_imported = True
         else:
             # Non-imported translations.
             new_message.is_current = True
@@ -401,7 +424,7 @@ class POTMsgSet(SQLBase):
                     # assignes karma for translation approval
                     self._makeTranslationMessageCurrent(
                         pofile, new_message, current_message, is_imported,
-                        submitter)
+                        submitter, is_fuzzy)
 
             matching_message = new_message
         else:
@@ -416,7 +439,6 @@ class POTMsgSet(SQLBase):
                         'avoid possible conflicts. Please review them.')
 
             else:
-                matching_message.is_fuzzy = is_fuzzy
                 current_message = self.getCurrentTranslationMessage(
                     pofile.language)
                 # Set the new current message if it validates ok.
@@ -426,7 +448,10 @@ class POTMsgSet(SQLBase):
                     # assignes karma for translation approval
                     self._makeTranslationMessageCurrent(
                         pofile, matching_message, current_message, is_imported,
-                        submitter)
+                        submitter, is_fuzzy)
+
+                if not is_fuzzy:
+                    matching_message.is_fuzzy = is_fuzzy
 
         return matching_message
 
@@ -575,7 +600,7 @@ class POTMsgSet(SQLBase):
                         self.context == u'NAME OF TRANSLATORS'))
         return (regular_credits or old_kde_credits or kde_credits)
 
-    def makeHTMLId(self, suffix=None):
+    def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""
         elements = ['msgset', str(self.id)]
         if suffix is not None:

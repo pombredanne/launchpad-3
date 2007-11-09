@@ -138,6 +138,9 @@ class IPOTMsgSet(Interface):
         Returns a modified or newly created translation message.
         """
 
+    def getNewSuggestions(language):
+        """Return suggestions for this message made since last review."""
+
     def flags():
         """Return a list of flags on this set."""
 
@@ -188,7 +191,7 @@ class IPOTMsgSet(Interface):
     is_translation_credit = Attribute(
         """Whether this is a message set for crediting translators.""")
 
-    def makeHTMLId(suffix=None):
+    def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.
 
         The name is an underscore-separated sequence of:
