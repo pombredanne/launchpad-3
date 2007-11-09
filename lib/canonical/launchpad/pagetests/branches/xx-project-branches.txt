@@ -35,8 +35,4 @@ If there are not any branches, a relevant message is shown.
    The Test Project's Bazaar branches registered in Launchpad
    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
    >>> print extract_text(message)
-   There are no branches registered for the Test Project in Launchpad today.
-   We recommend you visit www.bazaar-vcs.org
-   for more information about how you can use
-   the Bazaar revision control system to improve community
-   participation in this project group.
+   There are no branches registered for the Test Project in Launchpad...

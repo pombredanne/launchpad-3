@@ -131,9 +131,7 @@ listing tab.
 
     >>> print_landscape_code_listing(anon_browser)
     There are no branches registered for The Landscape Project in Launchpad
-    today. We recommend you visit www.bazaar-vcs.org for more information
-    about how you can use the Bazaar revision control system to improve
-    community participation in this project.
+    today...
 
     >>> print_landscape_code_listing(no_priv_browser)
     testing-branch             ... New

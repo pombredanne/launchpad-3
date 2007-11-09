@@ -76,7 +76,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, view):
         TableBatchNavigator.__init__(
-            self, view.getVisibleBranches(), view.request,
+            self, view.getVisibleBranchesForUser(), view.request,
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
@@ -182,16 +182,16 @@ class BranchListingView(LaunchpadFormView):
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
 
-    def getVisibleBranches(self):
-        """Return a sequence of branches.
+    def getVisibleBranchesForUser(self):
+        """Get branches visible to the user.
 
         This method is called from the `BranchListingBatchNavigator` to
         get the branches to show in the listing.
         """
         return self._branches(self.selected_lifecycle_status)
 
-    def hasNonVisibleBranches(self):
-        """Does the context have branches that are not shown?"""
+    def hasAnyBranchesVisibleByUser(self):
+        """Does the context have any branches that are visible to the user?"""
         return self._branches(None).count() > 0
 
     def _branches(self, lifecycle_status):
@@ -212,7 +212,7 @@ class BranchListingView(LaunchpadFormView):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
         if (self.selected_lifecycle_status is not None
-            and self.hasNonVisibleBranches()):
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
                 'There are branches related to %s but none of them match the '
                 'current filter criteria for this page. '

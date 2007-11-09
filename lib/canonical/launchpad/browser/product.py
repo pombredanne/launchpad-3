@@ -1184,7 +1184,7 @@ class ProductBranchesView(BranchListingView):
     @property
     def no_branch_message(self):
         if (self.selected_lifecycle_status is not None
-            and self.hasNonVisibleBranches()):
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
                 'There are branches registered for %s '
                 'but none of them match the current filter criteria '
