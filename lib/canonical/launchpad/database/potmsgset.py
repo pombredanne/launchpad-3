@@ -130,22 +130,17 @@ class POTMsgSet(SQLBase):
 
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.select("""
+        query = """
             is_current IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
-            POFile.language = %s AND pofile=POFile.id AND
-            date_created > (
-                SELECT GREATEST(current.date_reviewed,
-                                TIMESTAMP '2000-01-01 00:00')
-                    FROM TranslationMessage AS current
-                    WHERE current.potmsgset=TranslationMessage.potmsgset AND
-                          current.pofile=TranslationMessage.pofile AND
-                          current.is_current IS TRUE
-                    LIMIT 3)
-            """ %
-                                         sqlvalues(self, language),
-                                         clauseTables=['POFile'])
+            POFile.language = %s AND
+            pofile=POFile.id
+            """ % sqlvalues(self, language)
+        current = self.getCurrentTranslationMessage(language)
+        if current is not None:
+            query += " AND date_created > %s" % sqlvalues(current.date_reviewed)
+        return TranslationMessage.select(query, clauseTables=['POFile'])
 
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""
