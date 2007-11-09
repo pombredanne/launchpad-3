@@ -220,6 +220,10 @@ class PullerMaster:
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
             self.branch_type.name]
+        # Passing env=None means that the subprocess will inherit our
+        # environment, and thus our configuration settings. This is necessary
+        # to ensure that branches are mirrored to the right place, that
+        # OOPSes are reported correctly etc.
         reactor.spawnProcess(protocol, sys.executable, command, env=None)
         return deferred
 
