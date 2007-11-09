@@ -600,7 +600,7 @@ COMMENT ON COLUMN TranslationMessage.msgstr2 IS 'Translation for plural form 2
 (if any).';
 COMMENT ON COLUMN TranslationMessage.msgstr3 IS 'Translation for plural form 3
 (if any).';
-COMMENT ON COLUMN TranslationMessage.comment_text IS 'Text of translator
+COMMENT ON COLUMN TranslationMessage.comment IS 'Text of translator
 comment from the translation file.';
 COMMENT ON COLUMN TranslationMessage.origin IS 'The source of this
 translation. This indicates whether the translation was in a translation file
