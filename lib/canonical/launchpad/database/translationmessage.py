@@ -72,7 +72,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.pofile = pofile
         self.potmsgset = potmsgset
         self.date_created = datetime.utcnow()
-        self.submitter = getUtility(ILaunchpadCelebrities).rosetta_expert
+        self.submitter = None
         self.date_reviewed = None
         self.reviewer = None
         self.msgstr0 = None
