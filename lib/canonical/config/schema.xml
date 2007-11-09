@@ -906,6 +906,12 @@ k            </description>
         <key name="masterlock" datatype="string"
         default="/var/tmp/sm-ng/masterlock" />
         <key name="maximum_workers" datatype="integer" default="4"/>
+        <key name="worker_timeout" datatype="integer" default="300">
+          <description>
+            The longest period of time, in seconds, that the scheduler will
+            wait for the worker to produce meaningful output.
+          </description>
+        </key>
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>

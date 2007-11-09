@@ -20,11 +20,6 @@ from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
 
-# XXX: Move this to a config file and make it more realistic (e.g. 300
-# seconds)
-TIMEOUT_PERIOD = 50
-
-
 class BadMessage(Exception):
     """Raised when the protocol receives a message that we don't recognize."""
 
@@ -129,7 +124,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         return self.clock.callLater(period, func)
 
     def connectionMade(self):
-        self.setTimeout(TIMEOUT_PERIOD)
+        self.setTimeout(config.supermirror.worker_timeout)
 
     def dataReceived(self, data):
         NetstringReceiver.dataReceived(self, data)

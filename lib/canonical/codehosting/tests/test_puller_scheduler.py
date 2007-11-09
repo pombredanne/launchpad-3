@@ -12,6 +12,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.puller import scheduler
 from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.testing import LaunchpadScriptLayer, reset_logging
 
@@ -180,14 +181,14 @@ class TestPullerMasterProtocol(TrialTestCase):
         period, then we kill the child process.
         """
         self.protocol.connectionMade()
-        self.clock.advance(scheduler.TIMEOUT_PERIOD + 1)
+        self.clock.advance(config.supermirror.worker_timeout + 1)
         return self.assertFailure(
             self.termination_deferred, scheduler.TimeoutError)
 
     def assertMessageResetsTimeout(self, *message):
         """Assert that sending the message resets the protocol timeout."""
-        self.assertTrue(2 < scheduler.TIMEOUT_PERIOD)
-        self.clock.advance(scheduler.TIMEOUT_PERIOD - 1)
+        self.assertTrue(2 < config.supermirror.worker_timeout)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
         self.sendToProtocol(*message)
         self.clock.advance(2)
         self.assertEqual(False, self.protocol.unexpected_error_received)
@@ -209,7 +210,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         other branches.
         """
         self.sendToProtocol('startMirroring', 0)
-        self.clock.advance(scheduler.TIMEOUT_PERIOD - 1)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
         self.sendToProtocol('mirrorSucceeded', 1, 'rev1')
         self.clock.advance(2)
         return self.assertFailure(
@@ -222,7 +223,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         mirrorSucceeded.
         """
         self.sendToProtocol('startMirroring', 0)
-        self.clock.advance(scheduler.TIMEOUT_PERIOD - 1)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
         self.sendToProtocol('mirrorFailed', 2, 'error message', 'OOPS')
         self.clock.advance(2)
         return self.assertFailure(
@@ -243,7 +244,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         """When the process ends (for any reason) cancel the timeout."""
         self.protocol._processTerminated(
             failure.Failure(error.ConnectionDone()))
-        self.clock.advance(scheduler.TIMEOUT_PERIOD * 2)
+        self.clock.advance(config.supermirror.worker_timeout * 2)
         self.assertProtocolSuccess()
 
     def test_terminatesWithError(self):
