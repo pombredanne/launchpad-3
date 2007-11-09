@@ -139,7 +139,11 @@ class POTMsgSet(SQLBase):
             """ % sqlvalues(self, language)
         current = self.getCurrentTranslationMessage(language)
         if current is not None:
-            query += " AND date_created > %s" % sqlvalues(current.date_reviewed)
+            if current.date_reviewed is None:
+                comparing_date = current.date_created
+            else:
+                comparing_date = current.date_reviewed
+            query += " AND date_created > %s" % sqlvalues(comparing_date)
         return TranslationMessage.select(query, clauseTables=['POFile'])
 
     def hasTranslationChangedInLaunchpad(self, language):
