@@ -22,7 +22,7 @@ class ProgressUIFactory(SilentUIFactory):
         self._progress_bar_factory = progress_bar_factory
 
     def progress_bar(self):
-        return self._progress_bar_factory
+        return self._progress_bar_factory()
 
     def nested_progress_bar(self):
         if self._progress_bar_stack is None:
