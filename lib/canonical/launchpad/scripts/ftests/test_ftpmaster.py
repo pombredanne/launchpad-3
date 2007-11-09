@@ -366,7 +366,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         """Check if inherited binaries get overriden correctly.
 
         Modify the build records in question to emulate the situation where
-        the binaries were built in the parentrelease.
+        the binaries were built in the parent_series.
         """
         hoary_i386 = self.hoary['i386']
         self.assertBinaryPublished(
