@@ -96,25 +96,6 @@ class POTMsgSet(SQLBase):
             AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
 
-    def getNewSuggestions(self, language):
-        """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(language)
-        if current is not None:
-            query = """
-                TranslationMessage.potmsgset = %s AND
-                POFile.id = TranslationMessage.pofile AND
-                POFile.language = %s AND
-                TranslationMessage.date_created > %s
-                """ % sqlvalues(self, language, current.date_created)
-        else:
-            query = """
-                TranslationMessage.potmsgset = %s AND
-                POFile.id = TranslationMessage.pofile AND
-                POFile.language = %s
-                """ % sqlvalues(self, language)
-        result = TranslationMessage.select(query, clauseTables=['POFile'])
-        return shortlist(result, longest_expected=20, hardlimit=100)
-
     def flags(self):
         if self.flagscomment is None:
             return []
@@ -130,22 +111,17 @@ class POTMsgSet(SQLBase):
 
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.select("""
+        query = """
             is_current IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
-            POFile.language = %s AND pofile=POFile.id AND
-            date_created > (
-                SELECT GREATEST(current.date_reviewed,
-                                current.date_created,
-                                TIMESTAMP '2000-01-01 00:00')
-                    FROM TranslationMessage AS current
-                    WHERE current.potmsgset=TranslationMessage.potmsgset AND
-                          current.pofile=TranslationMessage.pofile
-                    LIMIT 1)
-            """ %
-                                         sqlvalues(self, language),
-                                         clauseTables=['POFile'])
+            POFile.language = %s AND
+            pofile=POFile.id
+            """ % sqlvalues(self, language)
+        current = self.getCurrentTranslationMessage(language)
+        if current is not None:
+            query += " AND date_created > %s" % sqlvalues(current.date_reviewed)
+        return TranslationMessage.select(query, clauseTables=['POFile'])
 
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""
