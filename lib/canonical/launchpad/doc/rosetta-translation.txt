@@ -187,7 +187,7 @@ Testing NoneEditorTranslations
 Let's see if there are any suggestions for this potmsgset. We are not
 expecting any.
 
-    >>> potmsgset.getNewSuggestions(spanish)
+    >>> list(potmsgset.getLocalTranslationMessages(spanish))
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
@@ -255,6 +255,5 @@ And it should definitely not be published:
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> len(potmsgset.getNewSuggestions(spanish))
+    >>> potmsgset.getLocalTranslationMessages(spanish).count()
     1
-
