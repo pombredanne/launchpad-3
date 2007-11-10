@@ -113,12 +113,12 @@ class VPOExportSet:
         join = '''
             FROM POFile
               JOIN POTemplate ON POTemplate.id = POFile.potemplate
-              JOIN DistroRelease ON
-                DistroRelease.id = POTemplate.distrorelease'''
+              JOIN DistroSeries ON
+                DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
-              DistroRelease.id = %s
+              DistroSeries.id = %s
               ''' % sqlvalues(series)
 
         if date is not None:
@@ -131,7 +131,7 @@ class VPOExportSet:
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease=DistroRelease.id
+                SourcePackagePublishingHistory.distroseries=DistroSeries.id
             JOIN SourcePackageRelease ON
                 SourcePackagePublishingHistory.sourcepackagerelease=
                      SourcePackageRelease.id
@@ -175,8 +175,8 @@ class VPOExportSet:
         join = '''
             SELECT DISTINCT POTemplate.id
             FROM POTemplate
-              JOIN DistroRelease ON
-                DistroRelease.id = POTemplate.distrorelease'''
+              JOIN DistroSeries ON
+                DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
@@ -186,8 +186,8 @@ class VPOExportSet:
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id
             JOIN SourcePackageRelease ON
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id
@@ -228,7 +228,7 @@ class VPOExportSet:
 
         if date is None:
             join = None
-            where = ('distrorelease = %s AND languagepack' %
+            where = ('distroseries = %s AND languagepack' %
                     sqlvalues(series.id))
         else:
             join = [
@@ -239,7 +239,7 @@ class VPOExportSet:
                     'TranslationMessage.date_reviewed > %s AND '
                     'TranslationMessage.is_current IS TRUE' % sqlvalues(date),
             ]
-            where = 'POTemplate.distrorelease = %s' % sqlvalues(series)
+            where = 'POTemplate.distroseries = %s' % sqlvalues(series)
 
         return self._select(join=join, where=where)
 

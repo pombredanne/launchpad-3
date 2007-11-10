@@ -25,7 +25,7 @@ CREATE TABLE TranslationMessage(
     msgstr1 integer,
     msgstr2 integer,
     msgstr3 integer,
-    comment_text text,
+    comment text,
     origin integer NOT NULL,
     validation_status integer DEFAULT 0 NOT NULL,
     is_current boolean DEFAULT false NOT NULL,
@@ -87,7 +87,7 @@ INSERT INTO TranslationMessage(
     msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
     reviewer, validation_status, is_current, is_imported,
     was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
-    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
+    date_created, date_reviewed, comment, msgsetid, id0, id1, id2, id3)
 SELECT
     s0.potranslation AS msgstr0,
     s1.potranslation AS msgstr1,
@@ -107,7 +107,7 @@ SELECT
     COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
         AS date_created,
     m.date_reviewed AS date_reviewed,
-    m.commenttext AS comment_text,
+    m.commenttext AS comment,
     m.id AS msgsetid,
     s0.id AS id0,
     s1.id AS id1,
@@ -147,7 +147,7 @@ INSERT INTO TranslationMessage(
     msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
     reviewer, validation_status, is_current, is_imported,
     was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
-    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
+    date_created, date_reviewed, comment, msgsetid, id0, id1, id2, id3)
 SELECT
     s0.potranslation AS msgstr0,
     s1.potranslation AS msgstr1,
@@ -167,7 +167,7 @@ SELECT
     COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
         AS date_created,
     m.date_reviewed AS date_reviewed,
-    m.commenttext AS comment_text,
+    m.commenttext AS comment,
     m.id AS msgsetid,
     s0.id AS id0,
     s1.id AS id1,
@@ -204,7 +204,7 @@ INSERT INTO TranslationMessage(
     msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
     reviewer, validation_status, is_current, is_imported,
     was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
-    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
+    date_created, date_reviewed, comment, msgsetid, id0, id1, id2, id3)
 SELECT
     s0.potranslation AS msgstr0,
     s1.potranslation AS msgstr1,
@@ -224,7 +224,7 @@ SELECT
     COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
         AS date_created,
     m.date_reviewed AS date_reviewed,
-    m.commenttext AS comment_text,
+    m.commenttext AS comment,
     m.id AS msgsetid,
     s0.id AS id0,
     s1.id AS id1,
@@ -262,7 +262,7 @@ INSERT INTO TranslationMessage(
     msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
     reviewer, validation_status, is_current, is_imported,
     was_obsolete_in_last_import, was_fuzzy_in_last_import, is_fuzzy,
-    date_created, date_reviewed, comment_text, msgsetid, id0, id1, id2, id3)
+    date_created, date_reviewed, comment, msgsetid, id0, id1, id2, id3)
 SELECT
     s0.potranslation AS msgstr0,
     s1.potranslation AS msgstr1,
@@ -282,7 +282,7 @@ SELECT
     COALESCE(s0.datecreated, s1.datecreated, s2.datecreated, s3.datecreated)
         AS date_created,
     m.date_reviewed AS date_reviewed,
-    m.commenttext AS comment_text,
+    m.commenttext AS comment,
     m.id AS msgsetid,
     s0.id AS id0,
     s1.id AS id1,
@@ -326,7 +326,7 @@ INSERT INTO TranslationMessage(
     pofile, potmsgset, origin, submitter, reviewer, validation_status,
     is_current, is_imported, was_obsolete_in_last_import,
     was_fuzzy_in_last_import, is_fuzzy, date_created, date_reviewed,
-    comment_text, msgsetid)
+    comment, msgsetid)
 SELECT
     m.pofile AS pofile,
     m.potmsgset AS potmsgset,
@@ -345,7 +345,7 @@ SELECT
     m.isfuzzy AS is_fuzzy,
     m.date_reviewed AS date_created,
     m.date_reviewed AS date_reviewed,
-    m.commenttext AS comment_text,
+    m.commenttext AS comment,
     m.id AS msgsetid
 FROM POMsgSet m
         LEFT OUTER JOIN POSubmission ON POSubmission.pomsgset = m.id
@@ -367,6 +367,8 @@ WHERE
     Pos.id IN (id1, id2, id3) AND
     Pos.validationstatus = 2;
 
+-- XXX: This seems wrong. Comment says pluralform-0. This will choose an
+-- arbitrary plural form won't it?
 UPDATE TranslationMessage
     SET validation_status = 0
 FROM POSubmission Pos
@@ -406,33 +408,32 @@ CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key
 -- SELECT 'Adding constraints to TranslationMessage table', statement_timestamp(); -- DEBUG
 
 ALTER TABLE TranslationMessage
-    ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id),
 
-ALTER TABLE TranslationMessage
     ADD CONSTRAINT translationmessage__reviewer__date_reviewed__valid
-    CHECK ((reviewer IS NULL) = (date_reviewed IS NULL));
-ALTER TABLE TranslationMessage
+    CHECK ((reviewer IS NULL) = (date_reviewed IS NULL)),
+
     ADD CONSTRAINT translationmessage__submitter__fk
-    FOREIGN KEY (submitter) REFERENCES Person(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (submitter) REFERENCES Person(id),
+
     ADD CONSTRAINT translationmessage__msgstr0__fk
-    FOREIGN KEY (msgstr0) REFERENCES POTranslation(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (msgstr0) REFERENCES POTranslation(id),
+
     ADD CONSTRAINT translationmessage__msgstr1__fk
-    FOREIGN KEY (msgstr1) REFERENCES POTranslation(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (msgstr1) REFERENCES POTranslation(id),
+
     ADD CONSTRAINT translationmessage__msgstr2__fk
-    FOREIGN KEY (msgstr2) REFERENCES POTranslation(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (msgstr2) REFERENCES POTranslation(id),
+
     ADD CONSTRAINT translationmessage__msgstr3__fk
-    FOREIGN KEY (msgstr3) REFERENCES POTranslation(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (msgstr3) REFERENCES POTranslation(id),
+
     ADD CONSTRAINT translationmessage__reviewer__fk
-    FOREIGN KEY (reviewer) REFERENCES Person(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (reviewer) REFERENCES Person(id),
+
     ADD CONSTRAINT translationmessage__pofile__fk
-    FOREIGN KEY (pofile) REFERENCES pofile(id);
-ALTER TABLE TranslationMessage
+    FOREIGN KEY (pofile) REFERENCES pofile(id),
+
     ADD CONSTRAINT translationmessage__potmsgset__fk
     FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
 
@@ -452,10 +453,9 @@ DROP TABLE POMsgSet;
 -- person who last modified a TranslationMessage in the POFile and the date of
 -- the change.  There was already a column for the last translator, but it was
 -- not maintained.
-ALTER TABLE POFile DROP COLUMN last_touched_pomsgset;
 ALTER TABLE POFile
-    ADD COLUMN date_changed timestamp without time zone
-    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
+    DROP COLUMN last_touched_pomsgset,
+    ADD COLUMN date_changed timestamp without time zone;
 
 UPDATE POFile
 SET
@@ -475,45 +475,45 @@ WHERE
 -- POFiles without TranslationMessages have creation date as change date.
 UPDATE POFile SET date_changed = datecreated WHERE date_changed IS NULL;
 
+ALTER TABLE POFile ALTER COLUMN date_changed
+    SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
 ALTER TABLE POFile ALTER COLUMN date_changed SET NOT NULL;
 
 -- SELECT 'Retiring POTemplateName', statement_timestamp(); -- DEBUG
 
 -- Merge POTemplateName into POTemplate
-ALTER TABLE POTemplate ADD COLUMN name text;
-ALTER TABLE POTemplate ADD COLUMN translation_domain text;
+ALTER TABLE POTemplate
+    ADD COLUMN name text, ADD COLUMN translation_domain text;
 
 UPDATE POTemplate
     SET name = ptn.name, translation_domain = ptn.translationdomain
 FROM POTemplateName ptn
 WHERE potemplatename = ptn.id;
 
-ALTER TABLE POTemplate DROP COLUMN potemplatename;
+CREATE INDEX potemplate__name__idx ON POTemplate(name);
 
-CREATE UNIQUE INDEX potemplate__distrorelease__name__key
-    ON POTemplate(distrorelease, sourcepackagename, name);
+ALTER TABLE POTemplate DROP COLUMN potemplatename,
+    ALTER name SET NOT NULL, ALTER translation_domain SET NOT NULL,
+    ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
+
+CREATE UNIQUE INDEX potemplate__distroseries__sourcepackagename__name__key
+    ON POTemplate(distroseries, sourcepackagename, name);
 
 CREATE UNIQUE INDEX potemplate__productseries__name__key
     ON POTemplate(productseries, name);
 
-CREATE INDEX potemplate__name__idx ON POTemplate(name);
-
-ALTER TABLE POTemplate ALTER name SET NOT NULL;
-ALTER TABLE POTemplate ALTER translation_domain SET NOT NULL;
-
 DROP TABLE POTemplateName;
-
-ALTER TABLE POTemplate
-    ADD CONSTRAINT potemplate_valid_name CHECK (valid_name(name));
 
 
 -- SELECT 'Retiring POMsgIDSighting', statement_timestamp(); -- DEBUG
 
--- Remove unused fields.
-ALTER TABLE POTMsgSet DROP alternative_msgid;
--- Merge POMsgIDSighting into POTMsgSet
+ALTER TABLE POTMsgSet
+    -- Remove unused fields.
+    DROP alternative_msgid,
+    ADD COLUMN msgid_plural integer;
+    -- Merge POMsgIDSighting into POTMsgSet
 ALTER TABLE POTMsgSet RENAME primemsgid TO msgid_singular;
-ALTER TABLE POTMsgSet ADD COLUMN msgid_plural integer;
+
 ALTER TABLE POTMsgSet
     ADD CONSTRAINT potmsgset__msgid_plural__fk
     FOREIGN KEY (msgid_plural) REFERENCES POMsgID(id);
@@ -532,7 +532,7 @@ CREATE VIEW POExport(
     id,
     productseries,
     sourcepackagename,
-    distrorelease,
+    distroseries,
     potemplate,
     template_header,
     languagepack,
@@ -563,7 +563,7 @@ SELECT
     COALESCE(potmsgset.id::text, 'X'::text) || '.'::text || COALESCE(translationmessage.id::text, 'X'::text) AS id,
     potemplate.productseries,
     potemplate.sourcepackagename,
-    potemplate.distrorelease,
+    potemplate.distroseries,
     potemplate.id AS potemplate,
     potemplate."header" AS template_theader,
     potemplate.languagepack,
@@ -575,7 +575,7 @@ SELECT
     pofile.fuzzyheader AS is_translation_header_fuzzy,
     potmsgset."sequence",
     potmsgset.id AS potmsgset,
-    translationmessage.comment_text AS "comment",
+    translationmessage.comment AS "comment",
     potmsgset.sourcecomment AS source_comment,
     potmsgset.filereferences AS file_references,
     potmsgset.flagscomment AS flags_comment,
@@ -614,7 +614,7 @@ CREATE VIEW POTExport(
     id,
     productseries,
     sourcepackagename,
-    distrorelease,
+    distroseries,
     potemplate,
     template_header,
     languagepack,
@@ -632,7 +632,7 @@ SELECT
     COALESCE(potmsgset.id::text, 'X'::text) AS id,
     potemplate.productseries,
     potemplate.sourcepackagename,
-    potemplate.distrorelease,
+    potemplate.distroseries,
     potemplate.id AS potemplate,
     potemplate."header" AS template_header,
     potemplate.languagepack,
@@ -655,12 +655,8 @@ FROM
 
 -- Clean up columns that were only for use during migration.
 ALTER TABLE TranslationMessage
-    DROP COLUMN msgsetid,
-    DROP COLUMN id0,
-    DROP COLUMN id1,
-    DROP COLUMN id2,
-    DROP COLUMN id3;
-
+    DROP COLUMN msgsetid, DROP COLUMN id0, DROP COLUMN id1,
+    DROP COLUMN id2, DROP COLUMN id3;
 
 -- SELECT 'Re-creating POFileTranslator', statement_timestamp(); -- DEBUG
 
@@ -682,17 +678,18 @@ FROM TranslationMessage
 ORDER BY submitter, pofile, date_created DESC, id DESC;
 
 ALTER TABLE POFileTranslator
-    ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id);
-ALTER TABLE POFileTranslator
+    ADD CONSTRAINT pofiletranslator_pkey PRIMARY KEY (id),
+
     ADD CONSTRAINT pofiletranslator__latest_message__fk
     FOREIGN KEY (latest_message) REFERENCES TranslationMessage(id)
-    DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE POFileTranslator
+    DEFERRABLE INITIALLY DEFERRED,
+
     ADD CONSTRAINT pofiletranslator__person__fk
-    FOREIGN KEY (person) REFERENCES Person(id);
-ALTER TABLE POFileTranslator
+    FOREIGN KEY (person) REFERENCES Person(id),
+
     ADD CONSTRAINT pofiletranslator__pofile__fk
     FOREIGN KEY (pofile) REFERENCES POFile(id);
+
 CREATE INDEX pofiletranslator__date_last_touched__idx
     ON POFileTranslator(date_last_touched);
 ALTER TABLE POFileTranslator
@@ -700,8 +697,9 @@ ALTER TABLE POFileTranslator
     UNIQUE (person, pofile);
 ALTER TABLE POFileTranslator CLUSTER ON pofiletranslator__person__pofile__key;
 
-DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
-DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
+-- Drop later
+-- DROP FUNCTION IF EXISTS mv_pofiletranslator_posubmission();
+-- DROP FUNCTION IF EXISTS mv_pofiletranslator_pomsgset();
 
 CREATE TRIGGER mv_pofiletranslator_translationmessage
     AFTER INSERT OR DELETE OR UPDATE ON TranslationMessage
@@ -711,4 +709,4 @@ CREATE TRIGGER mv_pofiletranslator_translationmessage
 -- SELECT 'Completing', statement_timestamp(); -- DEBUG
 
 -- ROLLBACK; -- DEBUG
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 17, 0);

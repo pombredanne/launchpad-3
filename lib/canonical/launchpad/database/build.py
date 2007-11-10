@@ -43,7 +43,7 @@ class Build(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchseries = ForeignKey(dbName='distroarchrelease',
+    distroarchseries = ForeignKey(dbName='distroarchseries',
         foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
@@ -81,7 +81,7 @@ class Build(SQLBase):
             PackagePublishingStatus.PENDING,
             PackagePublishingStatus.PUBLISHED)
         query = """
-        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease = %s AND
         SourcePackagePublishingHistory.archive = %s AND
         SourcePackagePublishingHistory.status IN %s
@@ -363,10 +363,10 @@ class BuildSet:
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         """See `IBuildSet`"""
-        clauseTables = ['DistroArchRelease']
+        clauseTables = ['DistroArchSeries']
         query = ('Build.sourcepackagerelease = %s '
-                 'AND Build.distroarchrelease = DistroArchRelease.id '
-                 'AND DistroArchRelease.architecturetag = %s'
+                 'AND Build.distroarchseries = DistroArchSeries.id '
+                 'AND DistroArchSeries.architecturetag = %s'
                  % sqlvalues(sourcepackagereleaseID, archtag)
                  )
 
@@ -480,10 +480,10 @@ class BuildSet:
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
-            condition_clauses = [('distroarchrelease=%s'
+            condition_clauses = [('distroarchseries=%s'
                                   % sqlvalues(arch_ids[0]))]
         else:
-            condition_clauses = [('distroarchrelease IN %s'
+            condition_clauses = [('distroarchseries IN %s'
                                   % sqlvalues(arch_ids))]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
@@ -536,14 +536,14 @@ class BuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.extend(["DistroArchRelease",
+        clauseTables.extend(["DistroArchSeries",
                              "Archive",
-                             "DistroRelease",
+                             "DistroSeries",
                              "Distribution"])
         condition_clauses.append("""
-            Build.distroarchrelease = DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = Distribution.id AND
+            Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
             Archive.purpose != %s AND
             Archive.id = Build.archive
