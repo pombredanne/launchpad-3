@@ -520,7 +520,7 @@ class TranslationImporter:
                 errors.append(error)
 
             translation_message.flags_comment = flags_comment
-            translation_message.comment_text = message.comment
+            translation_message.comment = message.comment
             if translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)

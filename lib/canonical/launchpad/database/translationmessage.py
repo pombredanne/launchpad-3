@@ -79,7 +79,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.msgstr1 = None
         self.msgstr2 = None
         self.msgstr3 = None
-        self.comment_text = None
+        self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
         self.is_current = True
@@ -124,8 +124,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         foreignKey='POTranslation', dbName='msgstr2', notNull=True)
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
-    comment_text = StringCol(
-        dbName='comment_text', notNull=False, default=None)
+    comment = StringCol(
+        dbName='comment', notNull=False, default=None)
     origin = EnumCol(
         dbName='origin', notNull=True, schema=RosettaTranslationOrigin)
     validation_status = EnumCol(

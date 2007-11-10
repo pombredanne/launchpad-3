@@ -1313,7 +1313,7 @@ class CurrentTranslationMessageView(LaunchpadView):
     @property
     def comment(self):
         """Return the translator comments for this ITranslationMessage."""
-        return self.context.comment_text
+        return self.context.comment
 
     @property
     def file_references(self):
