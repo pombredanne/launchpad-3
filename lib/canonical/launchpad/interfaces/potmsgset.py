@@ -1,7 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Object, Text
+from zope.schema import Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pomsgid import IPOMsgID
@@ -21,7 +21,9 @@ class BrokenTextError(ValueError):
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
-    id = Attribute("""An identifier for this POTMsgSet""")
+    id = Int(
+        title=_("The identifier of this POTMsgSet."),
+        readonly=True, required=True)
 
     context = Text(
         title=u"String used to disambiguate messages with identical msgids.")

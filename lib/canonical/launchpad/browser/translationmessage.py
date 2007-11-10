@@ -896,7 +896,7 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
-        self.error = self._storeTranslations(self.context)
+        self.error = self._storeTranslations(self.context.potmsgset)
         if self.error:
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided. "
