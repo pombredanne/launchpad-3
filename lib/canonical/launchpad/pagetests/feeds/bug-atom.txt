@@ -238,6 +238,7 @@ of the feeds servers.
     >>> from canonical.lazr.feed.feed import FeedBase
     >>> from zope.app.datetimeutils import rfc1123_date
     >>> import time
+    >>> old_time = time.time
     >>> time.time = lambda: 17
     >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
     >>> config.launchpad.max_bug_feed_cache_minutes
@@ -246,3 +247,4 @@ of the feeds servers.
     'Thu, 01 Jan 1970 00:30:17 GMT'
     >>> browser.headers['Cache-Control']
     'max-age=1800'
+    >>> time.time = old_time
