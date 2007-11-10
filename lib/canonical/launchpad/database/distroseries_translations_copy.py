@@ -6,8 +6,6 @@ __metaclass__ = type
 
 __all__ = [ 'copy_active_translations' ]
 
-import logging
-
 from psycopg import ProgrammingError
 from zope.interface import implements
 

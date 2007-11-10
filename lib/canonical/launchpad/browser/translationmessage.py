@@ -520,8 +520,12 @@ class BaseTranslationView(LaunchpadView):
         # to its current active translation.
         for index in translations:
             if index not in plural_indices_to_store:
-                if self.context.translations[index] is not None:
-                    translations[index] = self.context.translations[index]
+                translationmessage = potmsgset.getCurrentTranslationMessage(
+                    self.pofile.language)
+                if (translationmessage is not None and
+                    translationmessage.translations[index] is not None):
+                    translations[index] = (
+                        translationmessage.translations[index])
                 else:
                     translations[index] = u''
 
