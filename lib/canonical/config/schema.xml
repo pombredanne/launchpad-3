@@ -203,6 +203,19 @@ k            </description>
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
+        <key name="max_feed_cache_minutes" required="no"
+            datatype="integer" default="60">
+            <description>
+            The maximum number of minutes that feeds should be cached for.
+            This is used to set the Expires and Cache-Control headers.
+            </description>
+        </key>
+        <key name="max_bug_feed_cache_minutes" required="no"
+            datatype="integer" default="30">
+            <description>
+            The maximum number of minutes that Bug feeds should be cached for.
+            </description>
+        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
