@@ -132,8 +132,9 @@ class BugImporter:
         # We require an email address:
         email = node.get('email')
         if email is None:
-            raise BugXMLSyntaxError('element %s (name=%s) has no email address'
-                                    % (node.tag, name))
+            raise BugXMLSyntaxError(
+                'element %s (name=%s) has no email address'
+                % (node.tag, name))
 
         displayname = get_text(node)
         if not displayname:
@@ -282,7 +283,8 @@ class BugImporter:
 
         # set up bug
         bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
-        bug.security_related = get_value(bugnode, 'security_related') == 'True'
+        bug.security_related = (
+            get_value(bugnode, 'security_related') == 'True')
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:
