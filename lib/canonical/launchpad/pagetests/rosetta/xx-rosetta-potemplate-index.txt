@@ -29,7 +29,7 @@ that represents, when the translation was updated, and by whom.
     Japanese        095.45  21 21        0 ...       0 ...   ...     Carlos...
     Sotho, Southern 100.00  22 22        0 ...       0 ...   &mdash; &mdash;
     Spanish         068.18  15 15        0 ...       1 1     ...     Foo Bar
-    Xhosa           100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+    Xhosa           100.00  22 22        0 ...       0 ...   ...     &mdash;
     Zulu            100.00  22 22        0 ...       0 ...   &mdash; &mdash;
 
 The 'Template details' portlet summarizes the state of the POTemplate.

@@ -1191,7 +1191,7 @@ class DummyPOFile(POFileMixIn):
         self.fuzzyheader = False
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
-        self.date_changed  = datetime.datetime.now(UTC)
+        self.date_changed  = None
         self.license = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert

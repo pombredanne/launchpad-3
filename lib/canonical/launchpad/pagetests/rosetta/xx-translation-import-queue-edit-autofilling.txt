@@ -35,7 +35,8 @@ the form is completely empty.
 
 Let's fill the information.
 
-  >>> browser.getControl(name='field.name').value = 'alsa-utils'
+  >>> browser.getControl('Template name').value = 'alsa-utils'
+  >>> browser.getControl('Translation domain').value = 'alsa-utils'
   >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
   'http://translations.launchpad.dev/+imports'
@@ -67,7 +68,8 @@ the same entry, previous_url holds current value.
 
   >>> previous_url = browser.getLink('test/es.po').url
 
-  >>> browser.getControl(name='field.name').value = 'alsa-utils'
+  >>> browser.getControl('Template name').value = 'alsa-utils'
+  >>> browser.getControl('Translation domain').value = 'alsa-utils'
   >>> browser.getControl(name='field.path').value = 'po/es.po'
   >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
