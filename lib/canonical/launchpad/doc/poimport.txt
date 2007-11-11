@@ -12,7 +12,6 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -50,7 +49,6 @@ Now, is time to create the new potemplate
     >>> release.productseries.product.name
     u'firefox'
     >>> series = release.productseries
-    >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
     >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
@@ -61,7 +59,7 @@ Here's the person who'll be doing the import.
 And this is the POTemplate where the import will be done.
 
     >>> potemplate = subset.new(
-    ...     potemplatename=ptn,
+    ...     name='firefox',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
@@ -644,9 +642,8 @@ translations for a distroseries.
     >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
     >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
     ...     distroseries=warty)
-    >>> ptn = getUtility(IPOTemplateNameSet).new('firefox-warty', 'ForWarty')
     >>> potemplate = subset.new(
-    ...     potemplatename=ptn,
+    ...     name='firefox-warty',
     ...     path='po/firefox.pot',
     ...     owner=person)
 

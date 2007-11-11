@@ -28,23 +28,23 @@ Let's check the values we get by default from the .pot file. As we can see,
 the form is completely empty.
 
   >>> browser.open('http://translations.launchpad.dev/+imports/4')
-  >>> browser.getControl(name='field.potemplatename').value
+  >>> browser.getControl(name='field.name').value
   ''
   >>> browser.getControl(name='field.path').value
   ''
 
 Let's fill the information.
 
-  >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
+  >>> browser.getControl(name='field.name').value = 'alsa-utils'
   >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
   'http://translations.launchpad.dev/+imports'
 
-Now, as we already know the potemplatename, a new form load should
+Now, as we already know the name, a new form load should
 give us that field with information.
 
   >>> browser.open('http://translations.launchpad.dev/+imports/4')
-  >>> browser.getControl(name='field.potemplatename').value
+  >>> browser.getControl(name='field.name').value
   'alsa-utils'
 
 Let's move to the .po file. By default, we don't know anything about it,
@@ -52,7 +52,7 @@ but we can guess the language. As it's a guessed value, we warn the user so
 he checks that it's ok.
 
   >>> browser.open('http://translations.launchpad.dev/+imports/3')
-  >>> browser.getControl(name='field.potemplatename').value
+  >>> browser.getControl(name='field.name').value
   ''
   >>> browser.getControl(name='field.path').value
   ''
@@ -67,7 +67,7 @@ the same entry, previous_url holds current value.
 
   >>> previous_url = browser.getLink('test/es.po').url
 
-  >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
+  >>> browser.getControl(name='field.name').value = 'alsa-utils'
   >>> browser.getControl(name='field.path').value = 'po/es.po'
   >>> browser.getControl(name='field.actions.attach').click()
   >>> browser.url
@@ -76,7 +76,7 @@ the same entry, previous_url holds current value.
 Reloading the form shows all the submitted information applied.
 
   >>> browser.open('http://translations.launchpad.dev/+imports/3')
-  >>> browser.getControl(name='field.potemplatename').value
+  >>> browser.getControl(name='field.name').value
   'alsa-utils'
   >>> browser.getControl(name='field.language').value
   ['es']

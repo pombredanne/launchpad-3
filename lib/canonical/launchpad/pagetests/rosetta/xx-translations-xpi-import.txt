@@ -35,7 +35,7 @@ Now, lets upload this file.
   <a href="http://translations.launchpad.dev/firefox/trunk/+imports">Translation
   Import Queue</a>
 
-Lets check the import queue to edit this entry and set potemplatename.
+Lets check the import queue to edit this entry and set the name.
 
   >>> browser.getLink('Translation Import Queue').click()
   >>> print browser.getLink(url='en-US.xpi').url

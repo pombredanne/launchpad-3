@@ -49,7 +49,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
         if self.context.potemplate is not None:
-            field_values['potemplatename'] = (
+            field_values['name'] = (
                 self.context.potemplate.name)
             field_values['translation_domain'] = (
                 self.context.potemplate.translation_domain)
@@ -84,7 +84,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
-        self.field_names = ['sourcepackagename', 'potemplatename',
+        self.field_names = ['sourcepackagename', 'name',
                             'translation_domain', 'path', 'language',
                             'variant']
 
@@ -121,7 +121,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     @action("Attach")
     def change_action(self, action, data):
         """Process the form we got from the submission."""
-        potemplatename = data.get('potemplatename')
+        name = data.get('name')
         translation_domain = data.get('translation_domain')
         path = data.get('path')
         sourcepackagename = data.get('sourcepackagename')
@@ -145,10 +145,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             potemplate_subset = potemplate_set.getSubset(
                 productseries=self.context.productseries)
         try:
-            potemplate = potemplate_subset[potemplatename]
+            potemplate = potemplate_subset[name]
         except NotFoundError:
             potemplate = potemplate_subset.new(
-                potemplatename,
+                name,
                 translation_domain,
                 self.context.path,
                 self.context.importer)
