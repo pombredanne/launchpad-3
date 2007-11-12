@@ -274,7 +274,8 @@ class POTMsgSet(SQLBase):
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
-            # or if the current message came from import
+            # or if the current message came from import (and is not a
+            # non-fuzzy message being replaced by a fuzzy one)
             # or if current message is empty (deactivated translation)
             if (current_message is None or
                 (current_message.is_imported and
