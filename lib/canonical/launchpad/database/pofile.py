@@ -722,12 +722,10 @@ class POFile(SQLBase, POFileMixIn):
                 (SELECT COALESCE(current.date_reviewed, current.date_created)
                     FROM TranslationMessage current
                     WHERE current.potmsgset = POTMsgSet.id AND
-                          current.pofile = TranslationMessage.pofile AND
-                          current.id != TranslationMessage.id AND
-                          current.is_current IS TRUE
-                    LIMIT 1),
+                          current.pofile = %s AND
+                          current.is_current IS TRUE),
                 TIMESTAMP '1970-01-01 00:00:00')
-            ''' % sqlvalues(self.potemplate, self),
+            ''' % sqlvalues(self.potemplate, self, self),
             clauseTables=['TranslationMessage'],
             orderBy='POTmsgSet.sequence',
             distinct=True)
