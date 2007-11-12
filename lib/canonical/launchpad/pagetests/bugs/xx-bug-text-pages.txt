@@ -161,40 +161,40 @@ Get bug text page for a product.
 
 == Private bugs ==
 
-  >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
-  >>> print admin_browser.contents
-  bug: 14
-  title: jokosher exposes personal details in its actions portlet
-  date-reported: Thu, 09 Aug 2007 11:39:16 -0000
-  date-updated: Thu, 09 Aug 2007 11:39:16 -0000
-  reporter: Karl Tilbury (karl)
-  duplicate-of:
-  duplicates:
-  private: yes
-  security: yes
-  attachments:
-  tags: lunch-money
-  subscribers:
-   Karl Tilbury (karl)
-   Dafydd Harries (daf)
-  <BLANKLINE>
-  task: jokosher
-  status: New
-  date-created: Thu, 09 Aug 2007 11:39:16 -0000
-  reporter: Karl Tilbury (karl)
-  importance: Undecided
-  assignee:
-  milestone:
-  <BLANKLINE>
-  Content-Type: multipart/mixed; boundary="...
-  MIME-Version: 1.0
-  <BLANKLINE>
-  --...
-  Content-Type: text/plain; charset="utf-8"
-  Content-Transfer-Encoding: quoted-printable
-  <BLANKLINE>
-  Jokosher discloses to any passerby the fact that I am single and unwed
-  in its actions portlet. Please fix this blatant violacion of privacy
-  now!!
-  --...
+    >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
+    >>> print admin_browser.contents
+    bug: 14
+    title: jokosher exposes personal details in its actions portlet
+    date-reported: Thu, 09 Aug 2007 11:39:16 -0000
+    date-updated: Thu, 09 Aug 2007 11:39:16 -0000
+    reporter: Karl Tilbury (karl)
+    duplicate-of:
+    duplicates:
+    private: yes
+    security: yes
+    attachments:
+    tags: lunch-money
+    subscribers:
+        Karl Tilbury (karl)
+        Dafydd Harries (daf)
+    <BLANKLINE>
+    task: jokosher
+    status: New
+    date-created: Thu, 09 Aug 2007 11:39:16 -0000
+    reporter: Karl Tilbury (karl)
+    importance: Undecided
+    assignee:
+    milestone:
+    <BLANKLINE>
+    Content-Type: multipart/mixed; boundary="...
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --...
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: quoted-printable
+    <BLANKLINE>
+    Jokosher discloses to any passerby the fact that I am single and unwed
+    in its actions portlet. Please fix this blatant violacion of privacy
+    now!!
+    --...
 
