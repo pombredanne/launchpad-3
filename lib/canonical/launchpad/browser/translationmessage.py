@@ -556,7 +556,7 @@ class BaseTranslationView(LaunchpadView):
         translations = {}
         # Get translations that the user typed in the form.
         posted = self.form_posted_translations.get(
-            current_translation_message, None)
+            current_translation_message.potmsgset, None)
         # Get the flags set by the user to note whether 'New suggestion'
         # should be taken in consideration.
         plural_indices_to_store = (
@@ -880,7 +880,7 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
         # TranslationMessage (a device of
         # BaseTranslationView._storeTranslations) via _submitTranslations.
         self.error = None
-        self.pomsgset_view = None
+        self.translationmessage_view = None
 
         BaseTranslationView.initialize(self)
 
@@ -895,7 +895,7 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
 
     def _initializeTranslationMessageViews(self):
         """See `BaseTranslationView._initializeTranslationMessageViews`."""
-        self.pomsgset_view = self._prepareView(
+        self.translationmessage_view = self._prepareView(
             CurrentTranslationMessageZoomedView, self.context, self.error)
 
     def _submitTranslations(self):
@@ -1042,7 +1042,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'plural_index': index,
                 'current_translation': text_to_html(
                     current_translation, self.context.potmsgset.flags()),
-                'translation': submitted_translation,
+                'submitted_translation': submitted_translation,
                 'imported_translation': text_to_html(
                     imported_translation, self.context.potmsgset.flags()),
                 'imported_translation_message': (
