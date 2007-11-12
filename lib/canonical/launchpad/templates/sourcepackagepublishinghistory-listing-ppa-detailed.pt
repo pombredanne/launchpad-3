@@ -6,13 +6,18 @@
 
   <tr class="ppa_package_row">
      <td style="white-space: nowrap"><a href="#"
-            tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img 
+            tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img
                 src="/@@/treeCollapsed" alt=""
-                tal:attributes="id string:pub${context/id}-arrow" /></a><span 
+                tal:attributes="id string:pub${context/id}-arrow" /></a><span
         tal:content="context/sourcepackagerelease/title">foo - 1.0</span></td>
      <td>
-          <a tal:condition="context/sourcepackagerelease/upload_changesfile"
-             tal:attributes="href context/sourcepackagerelease/upload_changesfile/http_url">(changes)</a>
+          <tal:view_changesfile
+             define="source context/sourcepackagerelease"
+             condition="context/archive/required:launchpad.Edit">
+             <a tal:condition="source/upload_changesfile"
+                tal:attributes="href source/upload_changesfile/http_url"
+                 >(changesfile)</a>
+          </tal:view_changesfile>
      </td>
      <td tal:condition="context/archive/owner/isTeam">
          <a tal:attributes="href context/sourcepackagerelease/dscsigningkey/owner/fmt:url"

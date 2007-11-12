@@ -158,7 +158,6 @@ The data:
     breezy-autotest
     editors
     commercialpackage - 1.0-1
-    (changes)
     Pending
     warty
     devel
@@ -172,6 +171,39 @@ The data:
     Published
     warty
     editors
+
+Note that the changesfile link is only presented for users with edit
+permissions in the PPA in question, i.e, admins or cprov (ppa owner).
+We have to restrict public changefile access in order to prevent
+'replay attacks', as described in bug #159304.
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> for ppa_row in find_tags_by_class(admin_browser.contents,
+    ...                                   'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    cdrkit - 1.0
+    ...
+    commercialpackage - 1.0-1
+    (changesfile)
+    Pending
+    warty
+    devel
+    ...
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> for ppa_row in find_tags_by_class(cprov_browser.contents,
+    ...                                   'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    cdrkit - 1.0
+    ...
+    commercialpackage - 1.0-1
+    (changesfile)
+    Pending
+    warty
+    devel
+    ...
 
 
 == Searching an archive ==

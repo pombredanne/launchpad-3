@@ -20,7 +20,7 @@
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
-    
+
     <script>
     <!--
         function updateSeries(select) {
@@ -31,7 +31,6 @@
         }
     //-->
     </script>
-
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
@@ -57,7 +56,7 @@
 
       <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
 deb <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /> <span id="series-deb" 
+       tal:content="context/archive_url" /> <span id="series-deb"
              tal:content="context/distribution/currentseries/name">gutsy</span> main
 deb-src <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url" /> <span id="series-deb-src"
