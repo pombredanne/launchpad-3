@@ -345,7 +345,11 @@ class BugTaskContextMenu(BugContextMenu):
 
 class BugTaskTextView(BugTextView):
     """View for a simple text page displaying information about a bug task."""
-    pass
+
+    def render(self):
+        """Return a text representation of the parent bug."""
+        self.context = self.context.bug
+        return super(BugTaskTextView, self).render()
 
 
 class BugTaskView(LaunchpadView, CanBeMentoredView):
