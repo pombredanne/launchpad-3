@@ -109,10 +109,10 @@ class POSubmissionSet:
                     POTemplate.productseries = ProductSeries.id
                 LEFT JOIN Product ON
                     ProductSeries.product = Product.id
-                LEFT JOIN DistroRelease ON
-                    POTemplate.distrorelease = DistroRelease.id
+                LEFT JOIN DistroSeries ON
+                    POTemplate.distroseries = DistroSeries.id
                 LEFT JOIN Distribution ON
-                    DistroRelease.distribution = Distribution.id
+                    DistroSeries.distribution = Distribution.id
                 WHERE
                     %(one_of_ours)s AND
                     (Product.official_rosetta OR
@@ -142,7 +142,6 @@ class POSubmissionSet:
         # This is not a good thing, and if it's any faster than a single big
         # query, that's pure coincidence.
         parameters['temp_table'] = 'temp_suggestion_pomsgset'
-        postgresql.drop_tables(cur, [parameters['temp_table']])
         cur.execute("""
             CREATE TEMP TABLE %(temp_table)s
             ON COMMIT DROP
@@ -157,10 +156,10 @@ class POSubmissionSet:
                 POTemplate.productseries = ProductSeries.id
             LEFT JOIN Product ON
                 ProductSeries.product = Product.id
-            LEFT JOIN DistroRelease ON
-                POTemplate.distrorelease = DistroRelease.id
+            LEFT JOIN DistroSeries ON
+                POTemplate.distroseries = DistroSeries.id
             LEFT JOIN Distribution ON
-                DistroRelease.distribution = Distribution.id
+                DistroSeries.distribution = Distribution.id
             WHERE
                 POFile.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND

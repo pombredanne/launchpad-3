@@ -11,7 +11,8 @@ import zipfile
 from zope.component import getUtility
 
 import canonical.launchpad
-from canonical.database.sqlbase import commit, flush_database_caches
+from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
     ITranslationImportQueue, RosettaImportStatus)
@@ -105,9 +106,6 @@ class XpiTestCase(unittest.TestCase):
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()
-        # We need this flush call here to prevent random failures of the tests
-        # because it was showing a non importing template.
-        flush_database_caches()
 
         return entry
 
@@ -131,9 +129,6 @@ class XpiTestCase(unittest.TestCase):
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()
-        # We need this flush call here to prevent random failures of the tests
-        # because it was showing a non importing template.
-        flush_database_caches()
 
         return entry
 
@@ -169,6 +164,7 @@ class XpiTestCase(unittest.TestCase):
         self.firefox_template.importFromQueue()
 
         # The status is now IMPORTED:
+        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
@@ -261,6 +257,8 @@ class XpiTestCase(unittest.TestCase):
         self.spanish_firefox.importFromQueue()
 
         # The status is now IMPORTED:
+        sync(translation_entry)
+        sync(template_entry)
         self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
 

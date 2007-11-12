@@ -46,9 +46,10 @@ aren't allowed.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
-  Invalid name 'testttrac!'. Names must start with a letter or number
-  and be lowercase. The characters +, - and . are also allowed after the
+  There is 1 error.
+  Invalid name 'testttrac!'. Names must start with a letter or
+  number and be lowercase. The characters +,
+  - and . are also allowed after the
   first character.
 
 If a bug tracker is already registered with the same URL, the user is
@@ -62,7 +63,7 @@ informed about it.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
+  There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
 After successfully registering the bug tracker, the user is redirect to
@@ -95,8 +96,7 @@ bugtracker without them is acceptable.
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
 
   >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import BugTrackerType
-  >>> from canonical.launchpad.interfaces import IBugTrackerSet
+  >>> from canonical.launchpad.interfaces import BugTrackerType, IBugTrackerSet
   >>> from canonical.launchpad.ftests import login, logout
   >>> login('test@canonical.com')
   >>> bugtrackerset = getUtility(IBugTrackerSet)
@@ -149,7 +149,7 @@ tracker uses.
 
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
-  >>> for message in get_feedback_messages(user_browser):
+  >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.

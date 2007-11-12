@@ -1,6 +1,10 @@
-<div class="portlet" id="portlet-country-langs"
-     tal:condition="view/requestCountry"
-     tal:define="country view/requestCountry">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-country-langs"
+  tal:condition="view/requestCountry"
+  tal:define="country view/requestCountry">
 
   <h2>Languages in <span tal:replace="country/name">country</span></h2>
 

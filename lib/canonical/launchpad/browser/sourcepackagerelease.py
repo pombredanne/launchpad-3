@@ -55,28 +55,12 @@ class SourcePackageReleaseView(LaunchpadView):
                     replace_text, FormattersAPI._linkify_substitution(match))
         return changelog
 
-    def _linkify_packagename(self, changelog, sourcepkgnametxt):
-        """Linkify a package name and its version in changelog text."""
-        escaped_name = re.escape(sourcepkgnametxt)
-        matches = re.findall(r'%s (\(([^)]+)\) (\w+));' % escaped_name,
-            changelog)
-        for match_text, version, distroseries in matches:
-            # Rather ugly to construct this URL, but it avoids the need to
-            # look up database objects for each matching line of text here.
-            url = '../../../%s/+source/%s/%s' % (
-                distroseries, sourcepkgnametxt, version)
-            changelog = changelog.replace(match_text,
-                '(<a href="%s">%s</a>) %s' % (url, version, distroseries))
-
-        return changelog
-
     def _linkify_changelog(self, changelog, sourcepkgnametxt):
         """Linkify source packages and bug numbers in changelogs."""
         if changelog is None:
             return ''
         changelog = self._obfuscate_email(changelog)
         changelog = cgi.escape(changelog)
-        changelog = self._linkify_packagename(changelog, sourcepkgnametxt)
         changelog = self._linkify_bug_numbers(changelog)
         return changelog
 

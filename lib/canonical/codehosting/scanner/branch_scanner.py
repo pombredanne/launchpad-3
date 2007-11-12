@@ -16,7 +16,7 @@ from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranchSet
-from canonical.launchpad.scripts.bzrsync import BzrSync
+from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 

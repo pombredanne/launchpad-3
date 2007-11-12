@@ -54,6 +54,7 @@ class BugComment:
         self.display_title = False
         self.datecreated = message.datecreated
         self.owner = message.owner
+        self.rfc822msgid = message.rfc822msgid
 
         self.chunks = []
         self.bugattachments = []

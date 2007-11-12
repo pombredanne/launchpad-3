@@ -1,122 +1,145 @@
+= Sprint Registration =
+
 It should be possible to register yourself to attend the sprint:
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
 
-  >>> browser.open('http://launchpad.dev/sprints/ubz')
+    >>> browser.open('http://launchpad.dev/sprints/ubz')
 
-  >>> browser.getLink('Register yourself').click()
-  >>> browser.url
-  'http://launchpad.dev/sprints/ubz/+attend'
+    >>> browser.getLink('Register yourself').click()
+    >>> browser.url
+    'http://launchpad.dev/sprints/ubz/+attend'
 
-  >>> browser.title
-  'Register your attendance at Ubuntu Below Zero'
+    >>> browser.title
+    'Register your attendance at Ubuntu Below Zero'
 
 Invalid dates, for instance entering a starting date after the ending date,
 are reported as errors to the users. (See also the tests in
 lib/canonical/launchpad/doc/sprintattendance-pages.txt)
 
-  >>> browser.getControl('Starting At').value = '2006-01-10 10:30:00'
-  >>> browser.getControl('Finishing At').value = '2005-02-04 20:11:00'
-  >>> browser.getControl('Register').click()
+    >>> browser.getControl('Starting At').value = '2006-01-10 10:30:00'
+    >>> browser.getControl('Finishing At').value = '2005-02-04 20:11:00'
+    >>> browser.getControl('Register').click()
 
-  >>> print browser.url
-  http://launchpad.dev/sprints/ubz/+attend
-  >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag.renderContents()
-  There is 1 error.
-  <BLANKLINE>
-  The end time must be after the start time.
+    >>> print browser.url
+    http://launchpad.dev/sprints/ubz/+attend
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    <BLANKLINE>
+    The end time must be after the start time.
 
 An attendance that starts after the end of the sprint is also an error:
 
-  >>> browser.getControl('Starting At').value = '2010-01-10 10:30:00'
-  >>> browser.getControl('Finishing At').value = '2010-07-10 22:11:00'
-  >>> browser.getControl('Register').click()
-  
-  >>> print browser.url
-  http://launchpad.dev/sprints/ubz/+attend
-  >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag.renderContents()
-  There is 1 error.
-  Choose an arrival time before the end of the meeting.
+    >>> browser.getControl('Starting At').value = '2010-01-10 10:30:00'
+    >>> browser.getControl('Finishing At').value = '2010-07-10 22:11:00'
+    >>> browser.getControl('Register').click()
+
+    >>> print browser.url
+    http://launchpad.dev/sprints/ubz/+attend
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    Choose an arrival time before the end of the meeting.
 
 Similarly, an attendance that ends before the start of a sprint is an
 error:
 
-  >>> browser.getControl('Starting At').value = '1980-01-10 10:30:00'
-  >>> browser.getControl('Finishing At').value = '1990-07-10 22:11:00'
-  >>> browser.getControl('Register').click()
-  
-  >>> print browser.url
-  http://launchpad.dev/sprints/ubz/+attend
-  >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag.renderContents()
-  There is 1 error.
-  Choose a departure time after the start of the meeting.
+    >>> browser.getControl('Starting At').value = '1980-01-10 10:30:00'
+    >>> browser.getControl('Finishing At').value = '1990-07-10 22:11:00'
+    >>> browser.getControl('Register').click()
+
+    >>> print browser.url
+    http://launchpad.dev/sprints/ubz/+attend
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    Choose a departure time after the start of the meeting.
 
 With the dates fixed, Sample person can attend the sprint.  The user
 is staying an extra week past the end of the sprint, which is fine
 since the date range overlaps that of the sprint.
 
-  >>> browser.getControl('Starting At').value = '2006-01-10 10:30:00'
-  >>> browser.getControl('Finishing At').value = '2006-02-19 20:11:00'
-  >>> browser.getControl('Register').click()
-  >>> browser.url
-  'http://launchpad.dev/sprints/ubz'
+    >>> browser.getControl('Starting At').value = '2006-01-10 10:30:00'
+    >>> browser.getControl('Finishing At').value = '2006-02-19 20:11:00'
+    >>> browser.getControl('Register').click()
+    >>> browser.url
+    'http://launchpad.dev/sprints/ubz'
 
 Now, Sample Person should be listed as an attendee.
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> def print_attendees(sprint_page):
-  ...     """Print the attendees listed in the attendees portlet."""
-  ...     soup = BeautifulSoup(sprint_page)
-  ...     attendees_portlet_headers = soup.fetchText('Attendees')
-  ...     assert len(attendees_portlet_headers) == 1
-  ...     attendees_portlet = attendees_portlet_headers[0].parent.parent
-  ...     for li in attendees_portlet.fetch('ul')[0].fetch('li'):
-  ...         print li.a.string.encode('ascii', 'xmlcharrefreplace')
+    >>> def print_attendees(sprint_page):
+    ...     """Print the attendees listed in the attendees portlet."""
+    ...     attendees_portlet = find_portlet(sprint_page, 'Attendees')
+    ...     for li in attendees_portlet.fetch('ul')[0].fetch('li'):
+    ...         print li.a.string.encode('ascii', 'xmlcharrefreplace')
 
-  >>> print_attendees(browser.contents)
-  Sample Person
+    >>> print_attendees(browser.contents)
+    Sample Person
 
 If we return to the "Register Yourself" form, the previously entered
 dates are prefilled (they have been clamped to the sprint duration):
 
-  >>> browser.getLink('Register yourself').click()
-  >>> print browser.getControl('Starting At').value
-  2006-01-10 10:30:00
-  >>> print browser.getControl('Finishing At').value
-  2006-02-12 17:00:00
+    >>> browser.getLink('Register yourself').click()
+    >>> print browser.getControl('Starting At').value
+    2006-01-10 10:30:00
+    >>> print browser.getControl('Finishing At').value
+    2006-02-12 17:00:00
 
 Also, it is possible to register someone else. Let's register Carlos.
 
-  >>> browser.open('http://launchpad.dev/sprints/ubz')
-  >>> browser.getLink('Register someone else').click()
-  >>> browser.url
-  'http://launchpad.dev/sprints/ubz/+register'
+    >>> browser.open('http://launchpad.dev/sprints/ubz')
+    >>> browser.getLink('Register someone else').click()
+    >>> browser.url
+    'http://launchpad.dev/sprints/ubz/+register'
 
-  >>> browser.getControl('Attendee').value = 'carlos@canonical.com'
-  >>> browser.getControl('Starting At').value = '2006-01-10 18:30:00'
-  >>> browser.getControl('Finishing At').value = '2006-02-12 15:11:00'
-  >>> browser.getControl('Register').click()
+    >>> browser.getControl('Attendee').value = 'carlos@canonical.com'
+    >>> browser.getControl('Starting At').value = '2006-01-10 18:30:00'
+    >>> browser.getControl('Finishing At').value = '2006-02-12 15:11:00'
+    >>> browser.getControl('Register').click()
 
-  >>> browser.url
-  'http://launchpad.dev/sprints/ubz'
+    >>> browser.url
+    'http://launchpad.dev/sprints/ubz'
 
 And lets ensure Carlos is now listed:
 
-  >>> print_attendees(browser.contents)
-  Carlos Perell&#243; Mar&#237;n
-  Sample Person
+    >>> print_attendees(browser.contents)
+    Carlos Perell&#243; Mar&#237;n
+    Sample Person
 
 In order to make it easy to organize a meeting, we provide a facility
-for exporting the list of attendees in CSV format.
+for exporting the list of attendees in CSV format to registered users,
+drivers, owners, and admins.
 
-  >>> browser.open('http://launchpad.dev/sprints/ubz/+attendees-csv')
-  >>> print browser.headers['content-type']
-  text/csv
-  >>> print browser.contents
-  Launchpad username,Display name,Email,Phone,Organization,City,Country,Timezone,Arriving,Leaving
-  carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,UTC,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
-  name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
-  <BLANKLINE>
+    >>> browser.getLink('Export attendees to CSV').click()
+    >>> print browser.headers['content-type']
+    text/csv
+    >>> print browser.contents
+    Launchpad username,Display name,Email,Phone,Organization,City,Country,Timezone,Arriving,Leaving
+    carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,UTC,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
+    name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
+    <BLANKLINE>
+
+    >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> carlos_browser.open('http://launchpad.dev/sprints/ubz')
+    >>> carlos_browser.getLink('Export attendees to CSV').click()
+    >>> print browser.headers['content-type']
+    text/csv
+
+    >>> admin_browser.open('http://launchpad.dev/sprints/ubz')
+    >>> admin_browser.getLink('Export attendees to CSV').click()
+    >>> print browser.headers['content-type']
+    text/csv
+
+Unregistered and anonymous users cannot access the CSV report.
+
+    >>> user_browser.open('http://launchpad.dev/sprints/ubz')
+    >>> user_browser.getLink('Export attendees to CSV').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open('http://launchpad.dev/sprints/ubz/+attendees-csv')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...

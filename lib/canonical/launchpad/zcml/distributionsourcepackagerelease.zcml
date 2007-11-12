@@ -49,7 +49,7 @@
     <browser:page
       name="+changes"
       facet="overview"
-      template="../templates/distrosourcepackagerelease-changes.pt"
+      template="../templates/distributionsourcepackagerelease-changes.pt"
       />
   </browser:pages>
 

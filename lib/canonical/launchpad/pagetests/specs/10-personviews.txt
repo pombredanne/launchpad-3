@@ -10,8 +10,7 @@ involving that person.
   >>> browser.open('http://blueprints.launchpad.dev/~name16')
   >>> browser.title
   'Blueprints involving Foo Bar'
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> soup('h1')
   [<h1>Blueprints involving Foo Bar</h1>]
 
@@ -22,7 +21,7 @@ that the user is supposed to approve.
   >>> browser.getLink('Approver').click()
   >>> browser.url
   '.../~name16/+specs?role=approver'
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
   No feature specifications match your criteria.
@@ -34,7 +33,7 @@ to the person.
   >>> browser.getLink('Assignee').click()
   >>> browser.url
   '.../~name16/+specs?role=assignee'
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
   No feature specifications match your criteria.
@@ -55,7 +54,7 @@ person drafted.
   >>> browser.getLink('Drafter').click()
   >>> browser.url
   '.../~name16/+specs?role=drafter'
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
   No feature specifications match your criteria.
@@ -78,7 +77,7 @@ the person was asked to review.
   '.../~name16/+specfeedback'
   >>> browser.title
   'Feature feedback requests for Foo Bar'
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> soup('p')
   [... 1 specification(s) listed...]
 

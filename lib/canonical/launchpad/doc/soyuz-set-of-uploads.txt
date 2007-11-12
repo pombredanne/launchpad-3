@@ -179,19 +179,19 @@ given upload into the published state, so here's a very simplistic publisher
   >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     srcs_to_publish = SPPH.select("""
-  ...         SourcePackagePublishingHistory.distrorelease = DistroRelease.id
-  ...     AND DistroRelease.distribution = Distribution.id
+  ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
+  ...     AND DistroSeries.distribution = Distribution.id
   ...     AND Distribution.name = '%s'
   ...     AND SourcePackagePublishingHistory.status = 1""" % distro,
-  ...         clauseTables=['DistroRelease', 'Distribution'])
+  ...         clauseTables=['DistroSeries', 'Distribution'])
   ...     bins_to_publish = BPPH.select("""
-  ...         BinaryPackagePublishingHistory.distroarchrelease =
-  ...             DistroArchRelease.id
-  ...     AND DistroArchRelease.distrorelease = DistroRelease.id
-  ...     AND DistroRelease.distribution = Distribution.id
+  ...         BinaryPackagePublishingHistory.distroarchseries =
+  ...             DistroArchSeries.id
+  ...     AND DistroArchSeries.distroseries = DistroSeries.id
+  ...     AND DistroSeries.distribution = Distribution.id
   ...     AND Distribution.name = '%s'
   ...     AND BinaryPackagePublishingHistory.status = 1""" % distro,
-  ...         clauseTables=['DistroArchRelease', 'DistroRelease',
+  ...         clauseTables=['DistroArchSeries', 'DistroSeries',
   ...                       'Distribution'])
   ...     published_one = False
   ...     for src in srcs_to_publish:
@@ -220,7 +220,7 @@ We can also define another helper function...
   ...     punt_upload_into_queue(leafname, distro=distro)
   ...     assert (process_uploads(upload_policy, build_id, series),
   ...             "Upload processes failed")
-  ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
+  ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should only contain a lockfile: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:
@@ -338,7 +338,7 @@ Check the email recipient for displayname containing special chars,
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1.0-4 (source)
+  DEBUG       Subject: Accepted: bar 1.0-4 (source)
   DEBUG       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
@@ -362,7 +362,7 @@ changer and the distroseries changes maillisting.
   DEBUG   Changes file is unsigned, adding changer as recipient
   DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
   DEBUG   Sent a mail:
-  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Subject: Accepted: bar 1.0-5 (source)
   DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
   DEBUG    Announcing to breezy-changes@ubuntu.com
@@ -370,7 +370,7 @@ changer and the distroseries changes maillisting.
   DEBUG    Thank you for your contribution to Ubuntu Test.
   ...
   DEBUG    Sent a mail:
-  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Subject: Accepted: bar 1.0-5 (source)
   DEBUG       Recipients: breezy-changes@ubuntu.com
   ...
   <BLANKLINE>
@@ -422,7 +422,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1:1.0-7 (source)
+  DEBUG       Subject: Accepted: bar 1:1.0-7 (source)
   ...
 
   >>> expect_okays('bar_1.0-8', upload_policy='sync')
@@ -431,7 +431,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1:1.0-8 (source)
+  DEBUG       Subject: Accepted: bar 1:1.0-8 (source)
   ...
 
 == Pocket Version Consistency ==
@@ -519,9 +519,8 @@ found in i386/RELEASE, because it's the only one available.
   DEBUG   Initialising connection.
   ...
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
-  DEBUG   foo: (binary) exists in i386/RELEASE
+  DEBUG   foo-1.0-1 (binary) exists in i386/RELEASE
   ...
-
 
 Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to

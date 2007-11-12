@@ -119,8 +119,8 @@ Each queue item has a hidden 'filelist' section which is
 toggled via javascript by clicking in the 'expand' arrow
 image:
 
-  >>> print find_tag_by_id(user_browser.contents, 'queue4-filelist-view')
-  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-view" />
+  >>> print find_tag_by_id(user_browser.contents, 'queue4-filelist-arrow')
+  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-arrow" />
 
 The 'filelist' is a expanded as another table row, right below the
 clicked item:
@@ -144,7 +144,7 @@ candidates):
 
   >>> filelist = find_tag_by_id(user_browser.contents, 'queue2-filelist')
   >>> print extract_text(filelist)
-  NEW pmount_1.9-1_all.deb (3 bytes)
+  pmount_1.9-1_all.deb (3 bytes) NEW
 
 XXX cprov 20070726: we should extend the test when we are able to
 probe javascripts events.

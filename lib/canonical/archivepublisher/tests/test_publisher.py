@@ -60,6 +60,7 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
         self.layer.txn.commit()
 
+        pub_source.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
@@ -152,6 +153,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(force_publishing=False)
         self.layer.txn.commit()
 
+        pub_source.sync()
+        pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('hoary-test', 'RELEASE')], publisher.dirty_pockets)
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
@@ -182,6 +185,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(force_publishing=False)
         self.layer.txn.commit()
 
+        pub_source.sync()
+        pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'UPDATES')], publisher.dirty_pockets)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
@@ -280,6 +285,7 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
         self.layer.txn.commit()
 
+        pub_source.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
@@ -683,10 +689,6 @@ class TestPublisher(TestNativePublishingBase):
              '114 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        print
-        for line in release_contents:
-            print line
-
         gz_sources_md5_line = release_contents[md5_header_index + 6]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 

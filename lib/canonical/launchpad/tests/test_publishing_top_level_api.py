@@ -105,6 +105,8 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         self._publish(pocket=pocket)
 
         # source and binary PUBLISHED in database.
+        pub_source.sync()
+        pub_bin.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
 

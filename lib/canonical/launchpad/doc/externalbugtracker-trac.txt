@@ -13,10 +13,9 @@ IExternalBugTracker.
     >>> from canonical.launchpad.components.externalbugtracker import Trac
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugtracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
     >>> verifyObject(IExternalBugtracker, trac)
     True
