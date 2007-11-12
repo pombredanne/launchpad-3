@@ -157,17 +157,18 @@ class ITranslationFormatImporter(Interface):
         required=True, readonly=True)
 
     def parse(translation_import_queue_entry):
-        """Parse an `ITranslationImportQueueEntry` into an `ITranslationFile`.
+        """Parse an `ITranslationImportQueueEntry` into an
+        `ITranslationFileData`.
 
         :param translation_import_queue: An `ITranslationImportQueueEntry` to
             parse.
-        :return: An `ITranslationFile` representing the parsed file.
+        :return: An `ITranslationFileData` representing the parsed file.
         """
 
     def getHeaderFromString(header_string):
-        """Return the `ITranslationHeader` for the given header string.
+        """Return the `ITranslationHeaderData` for the given header string.
 
         :param header_string: A text representing a header for this concrete
             file format.
-        :return: An `ITranslationHeader` based on the header string.
+        :return: An `ITranslationHeaderData` based on the header string.
         """

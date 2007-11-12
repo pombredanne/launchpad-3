@@ -19,7 +19,7 @@
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers mentoring_offers
                            canMentor isMentor getNullBugTask
-                           is_complete"
+                           is_complete who_made_private date_made_private"
                            />
         <require
             permission="launchpad.View"
@@ -43,12 +43,12 @@
                         linkCVE unlinkCVE findCvesInText newMessage
                         linkMessage addBranch addAttachment unsubscribeFromDupes
                         subscribe unsubscribe addNomination
-                        expireNotifications setStatus"
+                        expireNotifications setStatus setPrivate"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
-                            activitytimestamp activity initial_message private
-                            security_related tags"
+                            activitytimestamp activity initial_message
+                            security_related tags who_made_private date_made_private"
             />
         <require
             permission="launchpad.AnyPerson"

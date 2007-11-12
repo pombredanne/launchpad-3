@@ -290,7 +290,8 @@ Both Sample Person and Foo Bar can access and set the attributes, though:
 
 Now let's make the bug private instead:
 
-    >>> bug_one.private = True
+    >>> bug_one.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
 Foo Bar isn't explicitly subscribed to the bug, BUT he is an admin, so he can
 access and set the attachment's attributes:
@@ -336,7 +337,8 @@ the attributes:
 
 Let's make the bug public again:
 
-    >>> bug_one.private = False
+    >>> bug_one.setPrivate(False, getUtility(ILaunchBag).user)
+    True
 
 
 Search for attachments

@@ -84,7 +84,7 @@ distribution owner.
 Now one of the mirror administrators goes and make this an official mirror,
 leaving a comment on the whiteboard (which is visible to mirror admins and to
 the mirror owner, but can only be edited by mirror admins).
- 
+
     >>> karl_browser = setupBrowser(
     ...     auth='Basic karl@canonical.com:test')
     >>> karl_browser.open(

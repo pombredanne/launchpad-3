@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="portlet" id="portlet-translatable-branches"
      tal:condition="context/translatable_series">
   <h2>All translatable branches</h2>
@@ -35,4 +41,4 @@
   </div>
 
 </div>
-
+</tal:root>
