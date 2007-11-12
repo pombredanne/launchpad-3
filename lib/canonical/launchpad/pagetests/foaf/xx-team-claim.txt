@@ -1,8 +1,9 @@
 = Claiming an automatically created team =
 
 Sometimes (mostly when processing package uploads) Launchpad will create new
-people when in fact they should've been teams.  When that happens, it should
-be possible for users to claim that profile turning it into a team.
+people when in fact it should have created teams.  When that happens, it
+should be possible for a user to claim these profiles and turn them into a
+teams.
 
 On the home page of any automatically created person, there's a link which
 allow the logged in user to claim that profile, but if we have any

@@ -1,8 +1,9 @@
 = Converting people into teams =
 
-There's a script which allows us to turn any person whose account_status
-is NOACCOUNT into a team.  The script takes the name of the person to be
-converted into a team and the name of the team owner as arguments.
+There's a script which allows us to turn any person whose account_status is
+NOACCOUNT (which means the person has never actually logged into Launchpad)
+into a team.  The script takes the name of the person to be converted into a
+team and the name of the team owner as arguments.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -23,8 +24,9 @@ converted into a team and the name of the team owner as arguments.
     0
 
     # XXX: The script already committed its transaction but for some reason
-    # we need to do another commit here. -- Guilherme Salgado, 2007-10-25
-    >>> import transaction; transaction.commit()
+    # we need to forcibly begin another transaction here.
+    # -- Guilherme Salgado, 2007-10-25
+    >>> import transaction; transaction.abort()
 
     # Flush the caches because our objects were changed in another
     # transaction.

@@ -83,10 +83,9 @@ from canonical.launchpad.interfaces import (
     DistroSeriesStatus, EmailAddressStatus, IBugTask, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
-    ILaunchBag, IMailingList, IMailingListSet, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
-    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus)
+    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask, LanguagePackType, MailingListStatus)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
