@@ -9,9 +9,8 @@ himself, even though he has never used Launchpad.
 He was wondering who created that when he saw a very proeminent link, saying
 'Hey, I'm Alexander Limi'.  He promptly clicked on it.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> import re
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print re.sub(r'\s+', ' ', soup('h1')[0].findNext('p').renderContents())
     Alexander Limi does not use Launchpad. This page was created...
     ...2005-06-06...<strong>when importing bugs from 
@@ -30,10 +29,10 @@ given email address is not associated with that profile.
 
     >>> browser.getControl('Email address').value = 'non@existent.org'
     >>> browser.getControl('E-mail Me').click()
-    >>> for msg in get_feedback_messages(browser):
-    ...     msg
-    u'There is 1 error.'
-    u"We couldn't find this email address. Please try another one that could
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('div', 'message'):
+    ...     print tag.renderContents()
+    We couldn't find this email address. Please try another one that could
     possibly be associated with this profile. Note that this profile's
     name (limi) was generated based on the email address it's associated
     with."
@@ -42,26 +41,28 @@ Then he tries with Sample Person's email address.
 
     >>> browser.getControl('Email address').value = 'test@canonical.com'
     >>> browser.getControl('E-mail Me').click()
-    >>> for msg in get_feedback_messages(browser):
-    ...     msg
-    u'There is 1 error.'
-    u"This email address is associated with yet another Launchpad profile,
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('div', 'message'):
+    ...     print tag.renderContents()
+    This email address is associated with yet another Launchpad profile,
     which you seem to have used at some point. If that's the case, you can
     combine this profile with the other one (you'll have to log in with the
     other profile first, though). If that's not the case, please try with a
-    different email address."
+    different email address.
 
 And once again he tries with an email address he found in Launchpad, but
 this one is associated with an unvalidated profile.
 
     >>> browser.getControl('Email address').value = 'morten@wtf.dk'
     >>> browser.getControl('E-mail Me').click()
-    >>> for msg in get_feedback_messages(browser):
-    ...     msg
-    u'There is 1 error.'
-    u"Although this email address is not associated with this profile, it's
-    associated with yet another one. You can claim that other profile and
-    then later combine both of them into a single one."
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('div', 'message'):
+    ...     print tag.renderContents()
+    Although this email address is not associated with this profile, it's
+    associated with yet another one. You can <a
+    href="http://launchpad.dev/~morten/+claim">claim that other
+    profile</a> and then later <a href="/people/+requestmerge">combine</a>
+    both of them into a single one.
 
 Now he finally remembered his email address.
 
@@ -88,9 +89,10 @@ Now he finally remembered his email address.
 
     >>> browser.url
     'http://launchpad.dev/~limi'
-    >>> for msg in get_feedback_messages(browser):
-    ...     msg
-    u'Profile claimed successfully'
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('div', 'informational message'):
+    ...     print tag.renderContents()
+    Profile claimed successfully
 
 
 It's also possible that a person tries to claim an account that has a
@@ -133,7 +135,8 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
 
     >>> anon_browser.url
     'http://launchpad.dev/~spiv'
-    >>> for msg in get_feedback_messages(anon_browser):
-    ...     msg
-    u'Profile claimed successfully'
+    >>> soup = find_main_content(anon_browser.contents)
+    >>> for tag in soup('div', 'informational message'):
+    ...     print tag.renderContents()
+    Profile claimed successfully
 

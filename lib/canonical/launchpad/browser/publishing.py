@@ -84,13 +84,14 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         urls = set()
         for f in files:
             d = {}
-            if f.archive_url in urls:
+            url = f.libraryfilealias.http_url
+            if url in urls:
                 # Don't print out the same file multiple times. This
                 # actually happens for arch-all builds, and is
                 # particularly irritating for PPAs.
                 continue
-            urls.add(f.archive_url)
-            d["archive_url"] = f.archive_url
+            urls.add(url)
+            d["url"] = url
             d["filename"] = f.libraryfilealias.filename
             d["filesize"] = f.libraryfilealias.content.filesize
             ret.append(d)

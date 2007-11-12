@@ -231,14 +231,14 @@ Let's define a helper function for the exports.
 
     >>> def export_with_format(translation_file, format):
     ...     from canonical.launchpad.interfaces import (
-    ...         ITranslationExporter,  ITranslationFile)
+    ...         ITranslationExporter,  ITranslationFileData)
     ...     from zope.proxy import removeAllProxies
     ...
     ...     translation_exporter = getUtility(ITranslationExporter)
     ...     translation_format_exporter = (
     ...         translation_exporter.getExporterProducingTargetFileFormat(
     ...             format))
-    ...     requested_file = ITranslationFile(translation_file)
+    ...     requested_file = ITranslationFileData(translation_file)
     ...     exported_file = translation_format_exporter.exportTranslationFiles(
     ...         [requested_file])
     ...     return removeAllProxies(exported_file)._content_file.read()

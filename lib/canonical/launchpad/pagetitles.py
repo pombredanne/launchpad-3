@@ -784,8 +784,8 @@ person_answer_contact_for = ContextDisplayName(
 person_bounties = ContextDisplayName('Bounties for %s')
 
 def person_branches(context, view):
-    """Return the view's page_title."""
-    return view.page_title
+    """Return the view's heading."""
+    return view.heading
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 

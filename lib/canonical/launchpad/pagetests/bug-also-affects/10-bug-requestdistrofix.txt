@@ -25,7 +25,7 @@ It should not be possible to add the same distrotask again.
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://bugs.launchpad.dev/ubuntu/+bug/6/+distrotask'
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
      u'This bug is already on Ubuntu. Please specify an affected package 
        in which the bug has not yet been reported.']
@@ -39,7 +39,7 @@ distro task to an appropriate source package.)
     >>> browser.getControl("Distribution").value = ["ubuntu"]
     >>> browser.getControl("Source Package Name").value = "mozilla-firefox"
     >>> browser.getControl("Continue").click()
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
      u'This bug is already open on Ubuntu with no package specified.
        You should fill in a package name for the existing bug.']
@@ -67,7 +67,7 @@ Ubuntu evolution, because there already is an evolution task open.
     ...     "+editstatus")
     >>> browser.getControl("Package").value = "evolution"
     >>> browser.getControl("Save Changes").click()
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [...There is 1 error in the data you entered...
      u'This bug has already been reported on evolution (ubuntu).']
 
@@ -98,7 +98,7 @@ error, because Ubuntu uses Launchpad as its bug tracker
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://bugs.launchpad.dev/debian/+source/alsa-utils/+bug/1/+distrotask'
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
      u'Bug watches can not be added for Ubuntu, as it uses Launchpad as
        its official bug tracker. Alternatives are to add a watch for
@@ -123,7 +123,7 @@ It's not possible to change a bugtask to a existing one.
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [...There is 1 error in the data you entered...
      u'This bug has already been reported on thunderbird (ubuntu).']
 
@@ -144,7 +144,7 @@ we really want to do this.
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1/+distrotask'
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [u"Debian doesn't use Launchpad as its bug tracker. ...]
 
 The form is shown as well, so it's possible to easily change the
@@ -159,7 +159,7 @@ notification will still be displayed.
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1/+distrotask'
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [u"Debian doesn't use Launchpad as its bug tracker. ...]
 
 If we confirm that we indeed want to add an unlinked task, we get
@@ -182,7 +182,7 @@ message saying so.
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://bugs.launchpad.dev/debian/+source/evolution/+bug/1/+distrotask'
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
      u'There is no package in Ubuntu named "no-such-package". If it should
        be here, report this as a bug.']

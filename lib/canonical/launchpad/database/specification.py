@@ -89,7 +89,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='ProductSeries', notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=False, default=None)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)

@@ -528,6 +528,33 @@ class ProductView(LaunchpadView):
         self.product = self.context
         self.status_message = None
 
+    @property
+    def freshmeat_url(self):
+        if self.context.freshmeatproject:
+            return "http://freshmeat.net/projects/%s" % self.context.freshmeatproject
+        return None
+
+    @property
+    def sourceforge_url(self):
+        if self.context.sourceforgeproject:
+            return "http://sourceforge.net/projects/%s" % self.context.sourceforgeproject
+        return None
+
+    @property
+    def has_external_links(self):
+        return (self.context.homepageurl or
+                self.context.sourceforgeproject or
+                self.context.freshmeatproject or
+                self.context.wikiurl or
+                self.context.screenshotsurl or
+                self.context.downloadurl)
+
+    @property
+    def should_display_homepage(self):
+        return (self.context.homepageurl and 
+                self.context.homepageurl not in 
+                    [self.freshmeat_url, self.sourceforge_url])
+
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
@@ -1150,16 +1177,16 @@ class ProductBranchesView(BranchListingView):
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:
