@@ -132,18 +132,18 @@ Check a bug that is a duplicate.
 
 Check the duplicate target.
 
-  >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
-  >>> anon_browser.url
-  'http://launchpad.dev/bugs/5/+text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
+    >>> anon_browser.url
+    'http://launchpad.dev/bugs/5/+text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
-  >>> print anon_browser.contents
-  bug: 5
-  ...
-  duplicate-of: 
-  duplicates: 6
-  ...
+    >>> print anon_browser.contents
+    bug: 5
+    ...
+    duplicate-of: 
+    duplicates: 6
+    ...
 
 Get bug text page for a product.
 
