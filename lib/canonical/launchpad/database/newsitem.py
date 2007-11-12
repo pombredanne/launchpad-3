@@ -21,6 +21,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import INewsItem
 
+from canonical.launchpad.webapp.authorization import check_permission
+
 
 class NewsItem(SQLBase):
     """A news item. These allow us to generate lists of recent news for
@@ -56,7 +58,7 @@ class HasNewsItems:
     """A mixin class for pillars that can have announcements."""
 
     def announce(self, user, title, summary=None, url=None,
-                 date_announced=None):
+                 publication_date=None):
         """See IHasNewsItems."""
 
         # establish the appropriate target
@@ -70,6 +72,15 @@ class HasNewsItems:
         else:
             raise AssertionError, 'Unsupported announcement target'
 
+        # figure out the correct date_announced by mapping from the provided
+        # publication date to a database value
+        if publication_date == 'NOW':
+            date_announced = UTC_NOW
+        elif publication_date == None:
+            date_announced = None
+        else:
+            date_announced = publication_date
+
         # create the news item
         return NewsItem(
             registrant = user,
@@ -81,4 +92,31 @@ class HasNewsItems:
             project = project,
             distribution = distribution
             )
+
+    def announcements(self, limit=5):
+        """See IHasNewsItems."""
+
+        # establish whether the user can see all news items, or only the
+        # published ones that are past their announcement date
+        privileged_user = check_permission('launchpad.Edit', self)
+
+        # create the SQL query, first fixing the anchor project
+        if IProduct.providedBy(self):
+            query = 'NewsItem.product = '
+        elif IProject.providedBy(self):
+            query = 'NewsItem.project = '
+        elif IDistribution.providedBy(self):
+            query = 'NewsItem.distribution = '
+        else:
+            raise AssertionError, 'Unsupported announcement target'
+        query += str(self.id)
+
+        # filter for published news items if necessary
+        if not privileged_user:
+            query += """ AND
+                NewsItem.date_announced < 'NOW'::timestamp AND
+                NewsItem.active IS TRUE
+                """
+        return NewsItem.select(query, limit=limit)
+
 

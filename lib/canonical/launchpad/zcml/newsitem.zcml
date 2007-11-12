@@ -7,7 +7,6 @@
     <!-- NewsItem -->
     <content class="canonical.launchpad.database.NewsItem">
         <allow interface="canonical.launchpad.interfaces.INewsItem" />
-        <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
             set_attributes="title summary url date_announced active" />

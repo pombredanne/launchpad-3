@@ -29,6 +29,26 @@
 
 <div metal:fill-slot="main">
 
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
+
+    <tal:per_announcement repeat="newsitem view/batchnav/currentBatch">
+      <h2 tal:content="newsitem/title">News item title</h2>
+
+      <p>
+        <strong tal:condition="newsitem/date_announced"
+                tal:content="newsitem/date_announced/fmt:date"
+                >22 Oct 2008</strong>
+        <strong tal:condition="not: newsitem/date_announced">
+            [Unpublished]
+        </strong>
+        by
+        <tal:registrant replace="structure newsitem/registrant/fmt:link" />
+        <tal:summary condition="newsitem/summary"
+                     tal:replace="structure newsitem/summary" />
+      </p>
+    </tal:per_announcement>
+
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
 
 </div>
 </body>

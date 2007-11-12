@@ -16,11 +16,10 @@ from zope.schema import Choice, Datetime
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _
-
-from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class IAnnouncementDateWidget(ISimpleInputWidget):
@@ -50,9 +49,11 @@ class AnnouncementDateWidget(SimpleInputWidget):
         self.announcement_date_widget = widgets['announcement_date']
 
     def __call__(self):
+        timezone = getUtility(ILaunchBag).timezone
         html = '<div>Publish this announcement:</div>\n'
-        html += "<p>%s</p><p>%s</p>" % (
-            self.action_widget(), self.announcement_date_widget())
+        html += "<p>%s</p><p>%s in the %s time zone</p>" % (
+            self.action_widget(), self.announcement_date_widget(),
+            timezone)
         return html
 
     def hasInput(self):

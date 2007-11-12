@@ -36,9 +36,13 @@ class NewsItemRetargetForm(Interface):
 class IHasNewsItems(Interface):
     """A mixin class for pillars that have announcements."""
 
-    def announce(registrant, title, summary=None, url=None,
-                 date_announced=None):
-        """Create a NewsItem for this project."""
+    def announce(user, title, summary=None, url=None,
+                 publication_date=None):
+        """Create a NewsItem for this project.
+
+        The user is the person making the announcement. The publication date
+        is either 'NOW', or None (a future date), or a specified datetime.
+        """
 
     def announcements(user, limit=5):
         """Return a list of announcements visible to this user.

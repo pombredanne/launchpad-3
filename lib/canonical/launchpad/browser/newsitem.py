@@ -23,6 +23,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
@@ -41,6 +42,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
+
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.widgets import AnnouncementDateWidget
 from zope.app.form.browser import TextWidget
@@ -159,4 +162,12 @@ class NewsItemSHP(StructuralHeaderPresentation):
 class HasNewsItemsView(LaunchpadView):
     """A view class for pillars which have news items."""
 
+    @property
+    def announcements(self):
+        return self.context.announcements(limit=None)
+
+    def initialize(self):
+        self.batchnav = BatchNavigator(
+            self.announcements, self.request,
+            size=config.launchpad.default_batch_size)
 
