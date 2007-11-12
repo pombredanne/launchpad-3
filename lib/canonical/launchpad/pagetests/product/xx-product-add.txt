@@ -1,5 +1,6 @@
 Test that the page to add a new product loads.
 
+    >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> user_browser.open("http://launchpad.dev/projects/+new")
     >>> h1 = find_main_content(user_browser.contents).find('h1')
     >>> print h1.renderContents()
@@ -128,6 +129,8 @@ The mail is sent when the transaction gets commited:
     'Launchpad <noreply@launchpad.net>'
     >>> msg['Subject']
     'Project License Submitted'
+    >>> msg['Reply-To']
+    'test@canonical.com'
 
 
 Now let's try to insert a product with the same name (testing).

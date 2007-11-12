@@ -202,7 +202,8 @@ class ProductLicenseMixin:
 
             simple_sendmail(fromaddress,
                             'feedback@launchpad.net',
-                            subject, message)
+                            subject, message,
+                            headers={'Reply-To': user.preferredemail.email})
 
             self.request.response.addInfoNotification(_(
                 "Launchpad is free to use for software under approved "
