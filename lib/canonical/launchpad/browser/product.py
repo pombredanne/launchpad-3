@@ -275,7 +275,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'administer', 'branch_visibility', 'rdf']
+        'series_add', 'announce', 'administer', 'branch_visibility',
+        'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -321,6 +322,12 @@ class ProductOverviewMenu(ApplicationMenu):
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
 
     def branch_add(self):
         text = 'Register branch'

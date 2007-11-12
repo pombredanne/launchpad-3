@@ -30,6 +30,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.newsitem import HasNewsItems
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -44,7 +45,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    IHasIcon, IHasLogo, IHasMugshot, IHasNewsItems, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
     IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
@@ -797,3 +798,5 @@ class ProductLicense(SQLBase):
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     license = EnumCol(dbName='license', notNull=True, schema=License)
+
+

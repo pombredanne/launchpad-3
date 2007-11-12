@@ -65,29 +65,29 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.10</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new here?</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FasterTranslationsImports">
-                <strong>Faster translation imports:</strong> shorter queues,
-                even at busy times.</a>
+              <a href="https://help.launchpad.net/ProjectNews">
+                <strong>Project announcements:</strong><br />
+                Publish your news in Launchpad and via RSS.</a>
             </li>
             <li>
               <a
                 href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
-                <strong>Zope 2 switches to Launchpad:</strong> &#8220;Launchpad works
-                great ... allows us to focus on creating a great Zope
-                platform&#8221;.</a>
+                <strong>CMF adopts Launchpad:</strong><br />
+                Easy collaboration between Zope and CMF.</a>
             </li>
             <li>
               <a
                 href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
-                <strong>Come learn more:</strong> introductory IRC tutorial
-                sessions about Launchpad.</a>
+                <strong>Come learn more:</strong><br />
+                Introductory IRC tutorial sessions about Launchpad.</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
-                <strong>Launchpad Beta:</strong> participate in our beta program
+                <strong>Launchpad Beta:</strong><br />
+                Participate in our beta program
                 and get access to pre-release features.</a>
             </li>
           </ul>

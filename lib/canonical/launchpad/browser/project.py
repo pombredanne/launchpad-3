@@ -215,7 +215,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'branch_visibility', 'rdf']
+        'mentorship', 'announce', 'administer', 'branch_visibility',
+        'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -250,6 +251,12 @@ class ProjectOverviewMenu(ApplicationMenu):
         # circumstances.
         return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
 
     def rdf(self):
         text = structured(

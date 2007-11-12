@@ -29,6 +29,7 @@ from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.newsitem import HasNewsItems
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
@@ -61,11 +62,12 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities, IQuestionTarget,
-    ISourcePackageName, MirrorContent, PackagePublishingStatus,
-    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
+    IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, IHasNewsItems,
+    ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName,
+    MirrorContent, PackagePublishingStatus, PackageUploadStatus,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
@@ -75,13 +77,14 @@ from canonical.archivepublisher.debversion import Version
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
-class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, HasTranslationImportsMixin,
-                   KarmaContextMixin, QuestionTargetMixin):
+class Distribution(SQLBase, BugTargetBase, HasNewsItems,
+                   HasSpecificationsMixin, HasSprintsMixin,
+                   HasTranslationImportsMixin, KarmaContextMixin,
+                   QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
-        IHasLogo, IHasMugshot, IHasIcon)
+        IDistribution, IFAQTarget, IHasBuildRecords,
+        IHasIcon, IHasLogo, IHasMugshot, IHasNewsItems, IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'

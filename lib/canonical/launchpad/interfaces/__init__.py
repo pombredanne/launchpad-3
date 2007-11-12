@@ -94,6 +94,7 @@ from canonical.launchpad.interfaces.mailinglist import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
+from canonical.launchpad.interfaces.newsitem import *
 from canonical.launchpad.interfaces.openidserver import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *

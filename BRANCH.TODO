@@ -1,4 +1,17 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
+ * Add database table and corresponding content class for NewsItem
+ * Add page to create a news item
+ * Add page that lists news items
+   * people who can edit them see all of them and active status
+   * people who cannot edit them see only active news items
+   * editors can click to edit news items
+ * Ability to retarget announcements
+ * Add up to 5 news items to project/product/distro home page
+ * Make sure publishing / retraction workflow is smooth
+   * Consider using "published" or "visible" instead of "active"
+ * Add RSS feeds for project news
+ * Clean up announcement date widget cargo culted code
+ * TESTS
 

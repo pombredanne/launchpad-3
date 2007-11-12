@@ -12,22 +12,15 @@
 
 <body>
 
-<div tal:replace="nothing">
-  This page uses the launchpad-addform.pt METAL. Copy this page to your
-  object-add.pt and then tweak the various bits below to make it all look
-  nice.
-</div>
-
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 tal:condition="view/label"
         tal:content="view/label"

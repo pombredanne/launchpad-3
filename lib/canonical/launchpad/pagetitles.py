@@ -547,6 +547,8 @@ def hasmentoringoffers_mentoring(context, view):
     else:
         return 'Mentoring available in %s' % context.displayname
 
+hasnewsitems_announcements = ContextDisplayName('%s news and announcements')
+
 def hasspecifications_specs(context, view):
     """Return the secifications title for the context."""
     if IPerson.providedBy(context):
@@ -724,6 +726,10 @@ milestone_add = ContextTitle('Add new milestone for %s')
 milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
+
+newsitem_add = 'Make an announcement'
+
+newsitem_edit = 'Modify an announcement'
 
 notification_test = 'Notification test'
 
