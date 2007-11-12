@@ -22,14 +22,14 @@ Add some attachments to bug 1:
 
 And cycle through all statuses so the dates are present:
 
-  >>> from canonical.launchpad.interfaces import BugTaskStatus
-  >>> t0 = bug.bugtasks[0]
-  >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
-  >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
-  >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
-  >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
-  >>> logout()
-  >>> flush_database_updates()
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> t0 = bug.bugtasks[0]
+    >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
+    >>> logout()
+    >>> flush_database_updates()
 
 == The Text Page ==
 
