@@ -35,11 +35,11 @@ And cycle through all statuses so the dates are present:
 
 Get text page for a single bug.
 
-  >>> anon_browser.open('http://launchpad.dev/bugs/1/+text')
-  >>> anon_browser.url
-  'http://launchpad.dev/bugs/1/+text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/bugs/1/+text')
+    >>> anon_browser.url
+    'http://launchpad.dev/bugs/1/+text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
   >>> print anon_browser.contents
   bug: 1
