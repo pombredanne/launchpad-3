@@ -150,8 +150,11 @@ The headings:
 
 The data:
 
-    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
-    ...    print extract_text(ppa_row)
+    >>> def print_ppa_package_rows(contents):
+    ...     for ppa_row in find_tags_by_class(contents, 'ppa_package_row'):
+    ...         print extract_text(ppa_row)
+
+    >>> print_ppa_package_rows(browser.contents)
     cdrkit - 1.0
     2007-07-09
     Published
@@ -172,15 +175,18 @@ The data:
     warty
     editors
 
-Note that the changesfile link is only presented for users with edit
-permissions in the PPA in question, i.e, admins or cprov (ppa owner).
-We have to restrict public changefile access in order to prevent
-'replay attacks', as described in bug #159304.
+Note that the changesfile link is not presented for anonymous access.
+
+It will only presented for users with edit permissions in the PPA in
+question, i.e, admins or cprov (ppa owner). We have to restrict public
+changesfile access in order to prevent 'replay attacks', as described
+in bug #159304.
+
+The changesfile link is presented when the cprov's PPA page is accessed
+by a LP-admins user.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> for ppa_row in find_tags_by_class(admin_browser.contents,
-    ...                                   'ppa_package_row'):
-    ...    print extract_text(ppa_row)
+    >>> print_ppa_package_rows(admin_browser.contents)
     cdrkit - 1.0
     ...
     commercialpackage - 1.0-1
@@ -190,12 +196,12 @@ We have to restrict public changefile access in order to prevent
     devel
     ...
 
+It's also presented when accessed by 'cprov' user, the PPA owner.
+
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> for ppa_row in find_tags_by_class(cprov_browser.contents,
-    ...                                   'ppa_package_row'):
-    ...    print extract_text(ppa_row)
+    >>> print_ppa_package_rows(cprov_browser.contents)
     cdrkit - 1.0
     ...
     commercialpackage - 1.0-1
@@ -309,8 +315,7 @@ The package row headings show an Uploader column:
 
 The package row data shows the uploader:
 
-    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
-    ...    print extract_text(ppa_row)
+    >>> print_ppa_package_rows(browser.contents)
     mozilla-firefox - 0.9
     name16
     Pending
