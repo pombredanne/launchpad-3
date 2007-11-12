@@ -6,7 +6,8 @@ First, we need some imports.
 
     >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_caches, flush_database_updates)
     >>> from canonical.launchpad.database import (
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from canonical.launchpad.interfaces import (
@@ -148,7 +149,7 @@ update.
 But first, let's see current values.
 
     >>> pofile_es.updateStatistics()
-    (7, 1, 0, 1)
+    (7, 1, 0, 0)
     >>> pofile_es.currentCount()
     7
     >>> pofile_es.updatesCount()
@@ -156,7 +157,7 @@ But first, let's see current values.
     >>> pofile_es.rosettaCount()
     0
     >>> pofile_es.unreviewedCount()
-    1
+    0
 
 Now we do a submission with new translations:
 
@@ -186,12 +187,8 @@ Now we do a submission with new translations:
 
 And check again.
 
-    >>> pofile_es.currentCount()
-    7
-    >>> pofile_es.updatesCount()
-    2
-    >>> pofile_es.rosettaCount()
-    1
+    >>> pofile_es.updateStatistics()
+    (7, 2, 1, 0)
 
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
@@ -258,6 +255,7 @@ their sequence is 0.
     ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
+    >>> flush_database_caches()
 
 And we can see that we didn't get errors.
 
