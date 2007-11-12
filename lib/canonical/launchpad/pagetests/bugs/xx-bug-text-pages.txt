@@ -147,17 +147,17 @@ Check the duplicate target.
 
 Get bug text page for a product.
 
-  >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
-  >>> anon_browser.url
-  'http://launchpad.dev/firefox/+bugs-text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
+    >>> anon_browser.url
+    'http://launchpad.dev/firefox/+bugs-text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
-  >>> print anon_browser.contents
-  1
-  4
-  5
-  6
+    >>> print anon_browser.contents
+    1
+    4
+    5
+    6
 
 == Private bugs ==
 
