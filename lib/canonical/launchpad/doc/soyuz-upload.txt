@@ -349,7 +349,7 @@ Let's check if packages were uploaded correctly.
   'DPKG'
   >>> spr.urgency.name
   'LOW'
-  >>> spr.uploaddistroseries.name
+  >>> spr.upload_distroseries.name
   u'breezy-autotest'
 
 
@@ -379,7 +379,7 @@ Same thing for etherwake:
   'DPKG'
   >>> spr.urgency.name
   'LOW'
-  >>> spr.uploaddistroseries.name
+  >>> spr.upload_distroseries.name
   u'breezy-autotest'
 
 
@@ -614,7 +614,7 @@ component 'universe'.
   >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> etherwake = breezy_autotest.getSourcePackage('etherwake')
   >>> etherwake_drspr = etherwake.currentrelease
-  >>> etherwake_drspr.current_published.changeOverride(
+  >>> override = etherwake_drspr.current_published.changeOverride(
   ...     new_component=getUtility(IComponentSet)['universe'])
 
 Check if we have new pending publishing record as expected

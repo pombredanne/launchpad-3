@@ -18,7 +18,7 @@ export from.
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> alsa_mantis = Mantis(
     ...     new_bugtracker(BugTrackerType.MANTIS))
 

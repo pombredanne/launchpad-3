@@ -429,7 +429,7 @@ class DistroSeriesAddView(AddView):
             description = data['description'],
             version = data['version'],
             distribution = self.context,
-            parentseries = data['parentseries'],
+            parent_series = data['parent_series'],
             owner = owner
             )
         notify(ObjectCreatedEvent(distroseries))
