@@ -3003,6 +3003,7 @@ class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
     extra_columns = ('author', 'product', 'role')
+    heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
@@ -3030,7 +3031,7 @@ class PersonAuthoredBranchesView(BranchListingView):
     """View for branch listing for a person's authored branches."""
 
     extra_columns = ('product',)
-    title_prefix = 'Authored'
+    heading_template = 'Bazaar branches authored by %(displayname)s'
     no_sort_by = (BranchListingSort.AUTHOR,)
 
     def _branches(self):
@@ -3043,7 +3044,7 @@ class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
     extra_columns = ('author', 'product')
-    title_prefix = 'Registered'
+    heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self):
@@ -3056,7 +3057,7 @@ class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     extra_columns = ('author', 'product')
-    title_prefix = 'Subscribed'
+    heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(

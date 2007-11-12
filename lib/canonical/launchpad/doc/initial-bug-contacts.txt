@@ -310,7 +310,9 @@ bug is reassigned to a different package.
     ...     SQLObjectToBeModifiedEvent(
     ...         bug_one_in_ubuntu_firefox.bug, {"private": True}))
 
-    >>> bug_one_in_ubuntu_firefox.bug.private = True
+    >>> bug_one_in_ubuntu_firefox.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
 
 So, if Martin Pitt becomes a bug contact for ubuntu mozilla-firefox:
 

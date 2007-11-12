@@ -44,7 +44,7 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.codehosting import branch_id_to_path
 
 
 class Branch(SQLBase):
@@ -409,7 +409,7 @@ class Branch(SQLBase):
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
             prefix = config.codehosting.branches_root
-            return os.path.join(prefix, split_branch_id(self.id))
+            return os.path.join(prefix, branch_id_to_path(self.id))
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -492,10 +492,13 @@ class BranchWithSortKeys(Branch):
         instead, we ask the view for the rows with the same ids as the
         branches returned by the generated query.
         """
+        tables = ['Branch']
+        if clauseTables is not None:
+            tables.extend(clauseTables)
         query = """BranchWithSortKeys.id IN
-                   (SELECT Branch.id FROM Branch WHERE %s)""" % (query,)
-        return super(BranchWithSortKeys, cls).select(
-            query, clauseTables=clauseTables, orderBy=orderBy)
+                   (SELECT Branch.id FROM %s WHERE %s)""" % (
+                ', '.join(tables), query)
+        return super(BranchWithSortKeys, cls).select(query, orderBy=orderBy)
 
 
 LISTING_SORT_TO_COLUMN = {
@@ -504,10 +507,10 @@ LISTING_SORT_TO_COLUMN = {
     BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
-    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: 'last_scanned',
-    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
-    BranchListingSort.NEWEST_FIRST: 'date_created',
-    BranchListingSort.OLDEST_FIRST: '-date_created',
+    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-last_scanned',
+    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'last_scanned',
+    BranchListingSort.NEWEST_FIRST: '-date_created',
+    BranchListingSort.OLDEST_FIRST: 'date_created',
     }
 
 

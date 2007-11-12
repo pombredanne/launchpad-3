@@ -538,6 +538,7 @@ holding tables do not have any referential constraints.
 
 Only the non-inert extracted rows will be copied.
 
+    >>> cur = cursor()
     >>> cur.execute("""
     ...     SELECT t, count(*)
     ...     FROM textual

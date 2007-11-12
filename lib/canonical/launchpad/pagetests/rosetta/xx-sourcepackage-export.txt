@@ -56,8 +56,7 @@ native file format.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database.potemplate import POTemplateSubset
     >>> from canonical.launchpad.database.distribution import DistributionSet
-    >>> from canonical.launchpad.interfaces.translationfileformat import (
-    ...     TranslationFileFormat)
+    >>> from canonical.launchpad.interfaces import TranslationFileFormat
     >>> ubuntu = DistributionSet().getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
     >>> hoary_subset = POTemplateSubset(distroseries=hoary)

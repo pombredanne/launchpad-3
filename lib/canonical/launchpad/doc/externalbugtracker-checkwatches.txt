@@ -20,7 +20,7 @@ for a particular bugtracker.
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     get_external_bugtracker, UnknownBugTrackerTypeError)
     >>> from canonical.launchpad.scripts import log
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
 
 get_external_bugtracker supports four external bug tracker types:
 
