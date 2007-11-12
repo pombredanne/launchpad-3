@@ -96,6 +96,25 @@ class POTMsgSet(SQLBase):
             AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
 
+    def getNewSuggestions(self, language):
+        """See `IPOTMsgSet`."""
+        current = self.getCurrentTranslationMessage(language)
+        if current is not None:
+            query = """
+                TranslationMessage.potmsgset = %s AND
+                POFile.id = TranslationMessage.pofile AND
+                POFile.language = %s AND
+                TranslationMessage.date_created > %s
+                """ % sqlvalues(self, language, current.date_created)
+        else:
+            query = """
+                TranslationMessage.potmsgset = %s AND
+                POFile.id = TranslationMessage.pofile AND
+                POFile.language = %s
+                """ % sqlvalues(self, language)
+        result = TranslationMessage.select(query, clauseTables=['POFile'])
+        return shortlist(result, longest_expected=20, hardlimit=100)
+
     def flags(self):
         if self.flagscomment is None:
             return []
@@ -120,7 +139,11 @@ class POTMsgSet(SQLBase):
             """ % sqlvalues(self, language)
         current = self.getCurrentTranslationMessage(language)
         if current is not None:
-            query += " AND date_created > %s" % sqlvalues(current.date_reviewed)
+            if current.date_reviewed is None:
+                comparing_date = current.date_created
+            else:
+                comparing_date = current.date_reviewed
+            query += " AND date_created > %s" % sqlvalues(comparing_date)
         return TranslationMessage.select(query, clauseTables=['POFile'])
 
     def hasTranslationChangedInLaunchpad(self, language):

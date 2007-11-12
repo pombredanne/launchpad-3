@@ -3,9 +3,10 @@
 
 import _pythonpath
 import sys
+
 from optparse import OptionParser
 from zope.component import getUtility
-from canonical.config import config
+
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -22,7 +23,7 @@ def parse_options(args):
         default='ubuntu',
         help="The distribution we want to check.")
     parser.add_option("-r", "--release", dest="release",
-        help="The distrorelease that we want to check.")
+        help="The distroseries that we want to check.")
 
     logger_options(parser)
 
@@ -30,15 +31,15 @@ def parse_options(args):
 
     return options
 
-def compare_translations(orig_distrorelease, dest_distrorelease):
+def compare_translations(orig_distroseries, dest_distroseries):
 
     from difflib import unified_diff
 
     orig_templates = sorted(
-        orig_distrorelease.potemplates,
+        orig_distroseries.potemplates,
         key=lambda x: (x.name, x.sourcepackagename.name))
     dest_templates = sorted(
-        dest_distrorelease.potemplates,
+        dest_distroseries.potemplates,
         key=lambda x: (x.name, x.sourcepackagename.name))
 
     for i in range(len(orig_templates)):
@@ -81,7 +82,7 @@ def main(argv):
     release = distribution[options.release]
 
     logger_object.info('Starting...')
-    output = compare_translations(release.parentrelease, release)
+    output = compare_translations(release.parent_series, release)
     if output is not None:
         logger_object.error(output)
     logger_object.info('Done...')

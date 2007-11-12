@@ -95,7 +95,7 @@
         label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="name description priority owner"
+        fields="description priority owner"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 

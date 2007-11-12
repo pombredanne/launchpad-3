@@ -257,4 +257,3 @@ a suggested translation.
 
     >>> potmsgset.getLocalTranslationMessages(spanish).count()
     1
-

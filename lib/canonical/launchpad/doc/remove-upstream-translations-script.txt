@@ -84,7 +84,7 @@ script and the test system is not able to detect the database changes.
     >>> LaunchpadTestSetup().force_dirty_database()
     >>> LaunchpadTestSetup().tearDown()
 
-Or even with a concrete IPOTemplateName.
+Or even with a concrete template name.
 
     >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
 

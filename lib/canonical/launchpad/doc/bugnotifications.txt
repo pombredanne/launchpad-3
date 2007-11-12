@@ -26,8 +26,7 @@ those notifications look like.
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
-    ...     SQLObjectCreatedEvent)
+    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IPersonSet, IDistributionSet, IDistroSeriesSet,
     ...     ISourcePackageNameSet, IBugSet, CreateBugParams)
