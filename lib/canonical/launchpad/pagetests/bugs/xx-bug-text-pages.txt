@@ -4,21 +4,21 @@
 
 Add some attachments to bug 1:
 
-  >>> import StringIO
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests.ppa import publishToPPA
-  >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-  >>> from canonical.launchpad.database import Bug, Person
-  >>> login("foo.bar@canonical.com")
-  >>> mark = Person.selectOneBy(name="sabdfl")
-  >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
-  >>> bug = Bug.get(1)
-  >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
-  >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
-  ...   content_type="text/html")
-  >>> content = StringIO.StringIO("do we need to")
-  >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
-  ...   "file with space.txt", content_type="text/plain")
+    >>> import StringIO
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.database import Bug, Person
+    >>> login("foo.bar@canonical.com")
+    >>> mark = Person.selectOneBy(name="sabdfl")
+    >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
+    >>> bug = Bug.get(1)
+    >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
+    >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
+    ...     content_type="text/html")
+    >>> content = StringIO.StringIO("do we need to")
+    >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
+    ...     "file with space.txt", content_type="text/plain")
 
 And cycle through all statuses so the dates are present:
 
