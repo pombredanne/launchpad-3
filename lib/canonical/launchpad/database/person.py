@@ -39,21 +39,21 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, ArchivePurpose, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
-    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
-    IHasLogo, IHasMugshot, IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID,
-    IJabberIDSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
-    ILoginTokenSet, IMailingListSet, INACTIVE_ACCOUNT_STATUSES,
-    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
-    ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey, ISSHKeySet,
-    ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus,
-    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES)
+    AccountStatus, ArchivePurpose, BugTaskSearchParams, BugTaskStatus,
+    EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
+    IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
+    IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
+    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
+    IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.lp.dbschema import BugTaskImportance
 
@@ -1824,6 +1824,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return Archive.selectOneBy(owner=self)
 
+    def isBugContributor(self, user=None):
+        """See `IPerson`."""
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = self.searchTasks(search_params).count()
+        return bugtask_count > 0
+
+    def isBugContributorInTarget(self, user=None, target=None):
+        """See `IPerson`."""
+        assert IBugTarget.providedBy(target), (
+            "%s isn't a valid bug target." % target)
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = target.searchTasks(search_params).count()
+        return bugtask_count > 0
 
 class PersonSet:
     """The set of persons."""
