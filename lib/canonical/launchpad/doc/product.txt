@@ -413,6 +413,7 @@ We can create and associate a new potemplate with Firefox 1.0.
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_10)
     >>> firefox_10_pot = potemplatesubset.new('firefox',
+    ...                                       'firefox',
     ...                                       'firefox.pot',
     ...                                       translations_admin)
 
@@ -433,6 +434,7 @@ translatable because it's a series with development focus.
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_trunk)
     >>> firefox_trunk_pot = potemplatesubset.new('firefox',
+    ...                                          'firefox',
     ...                                          'firefox.pot',
     ...                                          translations_admin)
     >>> print firefox.primary_translatable.displayname

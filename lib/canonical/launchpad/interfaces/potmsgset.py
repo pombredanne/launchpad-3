@@ -99,10 +99,11 @@ class IPOTMsgSet(Interface):
         not a 'changed' translation, just a 'new' translation in Launchpad.
         """
 
-    def isTranslationNewerThan(language, timestamp):
+    def isTranslationNewerThan(pofile, timestamp):
         """Whether a current translation is newer than the `timestamp`.
 
-        :param language: language for which translations we are asking about.
+        :param pofile: translation file for which translations we are asking
+            about.
         :param timestamp: a timestamp we are comparing to.
 
         Returns True if there is a current and newer translation, and False
