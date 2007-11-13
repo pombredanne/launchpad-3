@@ -2100,13 +2100,13 @@ class BugTargetView(LaunchpadView):
 
 
 
-class TextualBugTaskSearchListingView(LaunchpadView):
+class TextualBugTaskSearchListingView(BugTaskSearchListingView):
     """Textual view for searchable bug listings."""
 
     def render(self):
         """Render the BugTarget for text display."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
+        tasks = self.searchUnbatched()
 
         # We use task.bugID rather than task.bug.id here as the latter
         # would require an extra query per task.
