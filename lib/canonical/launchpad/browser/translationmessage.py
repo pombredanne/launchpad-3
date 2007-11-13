@@ -561,7 +561,7 @@ class BaseTranslationView(LaunchpadView):
         # should be taken in consideration.
         plural_indices_to_store = (
             self.form_posted_translations_has_store_flag.get(
-                current_translation_message, []))
+                current_translation_message.potmsgset, []))
         # We are going to prepare the content of the translation form.
         for plural_index in range(current_translation_message.plural_forms):
             if posted is not None and posted[plural_index] is not None:
@@ -574,9 +574,10 @@ class BaseTranslationView(LaunchpadView):
 
         # Check the values we got with the submit for the 'Needs review' flag
         # so we prepare the new render with the same values.
-        if self.form_posted_needsreview.has_key(current_translation_message):
+        if self.form_posted_needsreview.has_key(
+            current_translation_message.potmsgset):
             is_fuzzy = self.form_posted_needsreview[
-                current_translation_message]
+                current_translation_message.potmsgset]
         else:
             is_fuzzy = current_translation_message.is_fuzzy
 

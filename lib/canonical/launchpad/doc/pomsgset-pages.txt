@@ -78,7 +78,7 @@ The subview: POMsgSetView
 For the next tests, we grab the subview which is what holds information
 that pertains to the POMsgSet rendering itself:
 
-    >>> subview = pomsgset_page_view.pomsgset_view
+    >>> subview = pomsgset_page_view.translationmessage_view
     >>> subview.initialize()
 
 The request didn't get any argument, and because that, we should get the
@@ -363,6 +363,6 @@ ignored:
 
 And since this was a POST, we don't even build the subview:
 
-    >>> pomsgset_page_view.pomsgset_view is None
+    >>> pomsgset_page_view.translationmessage_view is None
     True
 
