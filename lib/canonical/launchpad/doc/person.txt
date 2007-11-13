@@ -196,7 +196,6 @@ teams.
     >>> not_a_person.account_status
     <DBItem AccountStatus.NOACCOUNT...
     >>> not_a_person.convertToTeam(team_owner=ddaa)
-    >>> flush_database_updates()
     >>> not_a_person.isTeam()
     True
     >>> ITeam.providedBy(not_a_person)
@@ -226,6 +225,11 @@ account_status is NOACCOUNT, though.
     Traceback (most recent call last):
     ...
     AssertionError: Only Person entries whose account_status is NOACCOUNT...
+
+    >>> not_a_person.convertToTeam(team_owner=landscape_devs)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't convert a team to a team.
 
 === Team members ===
 
@@ -874,7 +878,6 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')

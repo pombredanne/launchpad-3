@@ -1202,8 +1202,6 @@ class BeginTeamClaimView(PersonClaimView):
     of the team and we email further instructions to that address.
     """
 
-    schema = IPersonClaim
-
     @action(_("Continue"), name="confirm")
     def confirm_action(self, action, data):
         email = data['emailaddress']

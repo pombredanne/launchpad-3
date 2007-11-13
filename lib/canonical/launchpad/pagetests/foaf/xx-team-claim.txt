@@ -5,7 +5,7 @@ people when in fact it should have created teams.  When that happens, it
 should be possible for a user to claim these profiles and turn them into a
 teams.
 
-On the home page of any automatically created person, there's a link which
+On the home page of any automatically created person, there is a link which
 allow the logged in user to claim that profile, but if we have any
 indication the profile may actually represent a team, we instead provide a
 link to turn it into a team.
@@ -15,50 +15,44 @@ definitely doesn't seem to be a team.
 
     >>> browser.open('http://launchpad.dev/~limi')
     >>> browser.getLink(url='+claim')
-    <Link text="Hey, I'm Alexander Limi"...
+    <Link text="Hey, I'm Alexander Limi."...
 
-If we mutate that profile a bit, though, to make it look more like a team,
-the link will change.  Currently we're only checking for the occurence of
-'@lists.' on any email address associated with the person in question as a
-sign that this could be a team instead, so we'll just add a new email
-address to Limi.
+If a profile does look like a team and there is a logged in user, the link
+is different.
 
-    >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
-    >>> limi = PersonSet().getByName('limi')
-    >>> email = EmailAddressSet().new('foo@lists.host.com', limi)
-
-    >>> browser.reload()
+    >>> from canonical.launchpad.database import PersonSet
+    >>> doc_team = PersonSet().getByName('doc')
+    >>> [email.email for email in doc_team.guessedemails]
+    [u'doc@lists.ubuntu.com']
+    >>> browser.open('http://launchpad.dev/~doc')
     >>> browser.getLink(url='+claimteam')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> browser.getLink(url='+claim')
-    <Link text="Hey, I'm Alexander Limi"...
+    <Link text="Hey, I'm Ubuntu Doc Team."...
 
-As we see above, though, the link didn't change, but that's because only
-logged in users can convert a person into a team.
-
-    >>> user_browser.open('http://launchpad.dev/~limi')
+    >>> user_browser.open('http://launchpad.dev/~doc')
     >>> user_browser.getLink('Hey, this is a team I run').click()
     >>> user_browser.title
     'Claim team'
 
-Now we enter any of limi's email address to continue the process of turning
-him into a team.
+Now we enter the doc team's email address to continue the process of
+turning that profile into a team.
 
-    >>> user_browser.getControl('Email address').value = 'foo@lists.host.com'
+    >>> user_browser.getControl('Email address').value = 'doc@lists.ubuntu.com'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.title
-    'Alexander Limi does not use Launchpad'
+    'Ubuntu Doc Team does not use Launchpad'
 
-    >>> for msg in get_feedback_messages(user_browser):
+    >>> for msg in get_feedback_messages(user_browser.contents):
     ...     print msg
-    A confirmation message has been sent to 'foo@lists.host.com'. Follow the
-    instructions in that message to finish claiming this team. (If the above
-    address is from a mailing list, it may be necessary to talk with one of
-    its admins to accept the message from Launchpad so that you can finish
-    the process.)
+    A confirmation message has been sent to 'doc@lists.ubuntu.com'. Follow
+    the instructions in that message to finish claiming this team. (If the
+    above address is from a mailing list, it may be necessary to talk with
+    one of its admins to accept the message from Launchpad so that you can
+    finish the process.)
 
     # Follow the link sent to us by email.
     >>> from canonical.launchpad.mail import stub
@@ -66,7 +60,7 @@ him into a team.
     ...     get_token_url_from_email)
     >>> from_addr, to_addr, msg = stub.test_emails.pop()
     >>> to_addr
-    ['foo@lists.host.com']
+    ['doc@lists.ubuntu.com']
     >>> token_url = get_token_url_from_email(msg)
     >>> token_url
     'http://launchpad.dev/token/...'
@@ -87,13 +81,13 @@ him into a team.
     ...     soup.find(attrs={'for': 'field.teamowner'}).findPrevious('tr'))
     Team Owner: No Privileges Person...
 
-    >>> user_browser.getControl('Display Name').value = 'Not Limi'
-    >>> user_browser.getControl('Team Description').value = 'Not Limi'
+    >>> user_browser.getControl('Display Name').value = 'Ubuntu Doc Team'
+    >>> user_browser.getControl('Team Description').value = 'The doc team'
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.title
-    'Not Limi in Launchpad'
-    >>> for msg in get_feedback_messages(user_browser):
+    'Ubuntu Doc Team in Launchpad'
+    >>> for msg in get_feedback_messages(user_browser.contents):
     ...     print msg
     Team claimed successfully
 
@@ -101,6 +95,6 @@ him into a team.
     ...     find_tag_by_id(user_browser.contents, 'membership-summary'))
     Team and membership summary
     Team owner: No Privileges Person
-    Membership: 1 (Moderated Team)
+    Membership: 1 active members
     ...
 

@@ -3,14 +3,14 @@
 __metaclass__ = type
 
 __all__ = [
-    'LoginTokenSetNavigation',
-    'LoginTokenView',
-    'ResetPasswordView',
-    'ValidateEmailView',
-    'NewAccountView',
-    'MergePeopleView',
     'ClaimProfileView',
     'ClaimTeamView',
+    'LoginTokenSetNavigation',
+    'LoginTokenView',
+    'MergePeopleView',
+    'NewAccountView',
+    'ResetPasswordView',
+    'ValidateEmailView',
     'ValidateGPGKeyView',
     ]
 
@@ -33,7 +33,7 @@ from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView)
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.openidserver import OpenIdMixin
 from canonical.launchpad.browser.team import HasRenewalPolicyMixin

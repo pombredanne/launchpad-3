@@ -431,15 +431,15 @@
         <tal:cannot-be-team condition="not: view/context_is_probably_a_team">
           <a tal:attributes="
             href string:/people/+requestmerge?field.dupeaccount=${context/name}"
-          >Hey, I'm <span tal:replace="context/browsername" /></a>
+          >Hey, I'm <span tal:replace="context/browsername" />.</a>
         </tal:cannot-be-team>
         <tal:can-be-team condition="view/context_is_probably_a_team">
-          <a href="+claimteam">Hey, this is a team I run</a>
+          <a href="+claimteam">Hey, this is a team I run.</a>
         </tal:can-be-team>
       </tal:logged-in>
 
       <tal:not-logged-in condition="not: request/lp:person">
-        <a href="+claim">Hey, I'm <span tal:replace="context/browsername" /></a>
+        <a href="+claim">Hey, I'm <span tal:replace="context/browsername" />.</a>
       </tal:not-logged-in>
     </tal:noaccount>
 
