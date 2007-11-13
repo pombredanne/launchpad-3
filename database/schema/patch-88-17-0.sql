@@ -322,6 +322,9 @@ WHERE
 
 -- SELECT 'Migrating POMsgSets without POSubmissions', statement_timestamp(); -- DEBUG
 
+-- Create empty TranslationMessage rows for pomsgset with reviewers that don't
+-- have any active translation but have, at least, one non active, which means
+-- that some one decided to revert something to the empty translation.
 INSERT INTO TranslationMessage(
     pofile, potmsgset, origin, submitter, reviewer, validation_status,
     is_current, is_imported, was_obsolete_in_last_import,
@@ -348,9 +351,29 @@ SELECT
     m.commenttext AS comment,
     m.id AS msgsetid
 FROM POMsgSet m
-        LEFT OUTER JOIN POSubmission ON POSubmission.pomsgset = m.id
+        JOIN POSubmission ON POSubmission.pomsgset = m.id
+        LEFT OUTER JOIN POSubmission AS s0 ON
+            s0.pomsgset = m.id AND
+            s0.pluralform = 0 AND
+            s0.active
+        LEFT OUTER JOIN POSubmission AS s1 ON
+            s1.pomsgset = m.id AND
+            s1.pluralform = 1 AND
+            s1.active
+        LEFT OUTER JOIN POSubmission AS s2 ON
+            s2.pomsgset = m.id AND
+            s2.pluralform = 2 AND
+            s2.active
+        LEFT OUTER JOIN POSubmission AS s3 ON
+            s3.pomsgset = m.id AND
+            s3.pluralform = 3 AND
+            s3.active
 WHERE
-    POSubmission.id IS NULL AND reviewer IS NOT NULL;
+    s0.id IS NULL AND
+    s1.id IS NULL AND
+    s2.id IS NULL AND
+    s3.id IS NULL AND
+    reviewer IS NOT NULL;
 
 -- SELECT 'Patching up ValidationStatus', statement_timestamp(); -- DEBUG
 
