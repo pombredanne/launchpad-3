@@ -1,8 +1,11 @@
-= Bug Text pages =
+= Bug Text Pages =
 
-== Data setup ==
+Launchpad provides a way for users to view textual descriptions of bug reports,
+as an alternative to the graphical user interface.
 
-Add some attachments to bug 1:
+To demonstrate this feature, we'll use bug 1.
+
+We'll start by adding some attachments to the bug:
 
     >>> import StringIO
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -20,7 +23,7 @@ Add some attachments to bug 1:
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
     ...     "file with space.txt", content_type="text/plain")
 
-And cycle through all statuses so the dates are present:
+Next, we'll cycle through all statuses so the dates are present:
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> t0 = bug.bugtasks[0]
@@ -31,9 +34,15 @@ And cycle through all statuses so the dates are present:
     >>> logout()
     >>> flush_database_updates()
 
-== The Text Page ==
 
-Get text page for a single bug.
+== Text Pages from a Bug Context ==
+
+Users can view a textual description of any bug at that bug's text page,
+according to the following URL pattern:
+
+    http://launchpad.dev/bugs/<bug-number>/+text
+
+For example, users can view a textual description of bug 1:
 
     >>> anon_browser.open('http://launchpad.dev/bugs/1/+text')
     >>> anon_browser.url
@@ -41,7 +50,11 @@ Get text page for a single bug.
     >>> print anon_browser.headers['content-type']
     text/plain;charset=utf-8 
 
-    >>> print anon_browser.contents
+The textual description contains basic information about that bug, along with
+all tasks related to that bug, presented in an easy-to-digest format:
+
+    >>> text_bug = anon_browser.contents
+    >>> print text_bug
     bug: 1
     title: Firefox does not support SVG
     date-reported: Thu, 01 Jan 2004 20:58:04 -0000
@@ -116,7 +129,50 @@ Get text page for a single bug.
     comment for file with space
     --...
 
-Check a bug that is a duplicate.
+
+== Text Pages from a Bug Task Context ==
+
+Users can also view a textual description of a bug from the context of a task
+relating to that bug, according to the following URL pattern:
+
+   http://launchpad.dev/<target>/+bug/<number>/+text
+
+For example, since bug 1 affects Mozilla Firefox, users can view the textual
+description of bug 1 directly from the Mozilla Firefox-specific text page:
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+bug/1/+text')
+    >>> anon_browser.url
+    'http://launchpad.dev/firefox/+bug/1/+text'
+
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8
+
+The textual description contains the same information as before:
+
+    >>> text_bug_task = anon_browser.contents
+    >>> print text_bug_task
+    bug: 1
+    title: Firefox does not support SVG
+    ...
+
+Apart from the multi-part separator strings (necessary to delimit individual
+comments from one another), both descriptions contain the same information:
+
+    >>> import re
+    >>> separator_regex = re.compile(
+    ...     'Content-Type: multipart/mixed; boundary\\="([^"]+)"')
+
+    >>> separator_bug      = separator_regex.findall(text_bug)     [0]
+    >>> separator_bug_task = separator_regex.findall(text_bug_task)[0]
+    
+    >>> text_bug.split(separator_bug) == text_bug_task.split(separator_bug_task)
+    True
+
+
+== Duplicate Bugs ==
+
+When one bug duplicates another bug, the textual description includes the
+duplicated bug's ID:
 
     >>> anon_browser.open('http://launchpad.dev/bugs/6/+text')
     >>> anon_browser.url
@@ -130,7 +186,8 @@ Check a bug that is a duplicate.
     duplicate-of: 5
     ...
 
-Check the duplicate target.
+When a bug has duplicate bugs, the textual description includes a list of the
+duplicate bug IDs:
 
     >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
     >>> anon_browser.url
@@ -145,7 +202,15 @@ Check the duplicate target.
     duplicates: 6
     ...
 
-Get bug text page for a product.
+
+== Bug Lists ==
+
+Users can also see a list of all bug IDs for a given target by viewing that
+product's bugs text page, according to the following URL pattern:
+
+   http://launchpad.dev/<target>/+bugs-text
+
+For example, users can see the list of bug IDs for Mozilla Firefox:
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
     >>> anon_browser.url
@@ -159,7 +224,10 @@ Get bug text page for a product.
     5
     6
 
+
 == Private bugs ==
+
+When a bug is private, the textual description reflects this:
 
     >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
     >>> print admin_browser.contents
