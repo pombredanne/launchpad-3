@@ -131,11 +131,11 @@ class SystemErrorView:
 
 
 class ProtocolErrorView(SystemErrorView):
-    """Helper class for views on protocol errors: problems to do with
-    an HTTP request that need to be handled more subtly than with a
-    500 response code.
+    """View for protocol errors.
 
-    Used to handle a `ProtocolErrorException`.
+    Problems to do with an HTTP request that need to be handled more
+    subtly than with a 500 response code. Used to handle a
+    `ProtocolErrorException`.
     """
 
     def __call__(self):

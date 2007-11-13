@@ -340,7 +340,7 @@ the registered factories.)
     ...     publication_classname = type(publication).__name__.split('.')[-1]
     ...     if isinstance(publication, ProtocolErrorPublication):
     ...         print "%s: status=%d" % (
-    ...         publication_classname, publication.status)
+    ...             publication_classname, publication.status)
     ...         for name, value in publication.headers.items():
     ...             print "  %s: %s" % (name, value)
     ...     else:
