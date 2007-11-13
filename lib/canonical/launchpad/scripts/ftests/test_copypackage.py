@@ -78,6 +78,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_distribution='ubuntu', from_suite='warty',
                   to_distribution='ubuntu', to_suite='hoary',
+                  component=None, from_ppa=None, to_ppa=None,
+                  from_partner=False, to_partner=False,
                   confirm_all=True, include_binaries=True):
         """Return a PackageCopier instance.
 
@@ -97,6 +99,21 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         if sourceversion is not None:
             test_args.extend(['-e', sourceversion])
+
+        if component is not None:
+            test_args.extend(['-c', component])
+
+        if from_partner:
+            test_args.append('-j')
+
+        if to_partner:
+            test_args.append('--to-partner')
+
+        if from_ppa is not None:
+            test_args.extend(['-p', from_ppa])
+
+        if to_ppa is not None:
+            test_args.extend(['--to-ppa', to_ppa])
 
         test_args.append(sourcename)
 
@@ -144,7 +161,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
                 "'%s' was not raised" % exception_name)
 
     def testSourceLookupFailure(self):
-        """Check if it raises when the target source can't be found."""
+        """Check if it raises when the target source can't be found.
+
+        SoyuzScriptError is raised when a lookup fails.
+        """
         copy_helper = self.getCopier(sourcename='zaphod')
 
         self.assertRaisesWithContent(
@@ -153,8 +173,24 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             "Primary Archive for Ubuntu Linux: warty-RELEASE",
             copy_helper.mainTask)
 
+    def testFailIfValidPackageButNotInSpecifiedSuite(self):
+        """It fails if the package is not published in the source location.
+
+        SoyuzScriptError is raised when a lookup fails
+        """
+        copy_helper = self.getCopier(from_suite="breezy-autotest")
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Could not find source 'mozilla-firefox/None' in "
+            "Primary Archive for Ubuntu Linux: breezy-autotest-RELEASE",
+            copy_helper.mainTask)
+
     def testFailIfSameLocations(self):
-        """It fails if the source and destination locations are the same."""
+        """It fails if the source and destination locations are the same.
+
+        SoyuzScriptError is raise when the copy cannot be performed.
+        """
         copy_helper = self.getCopier(from_suite='warty', to_suite='warty')
 
         self.assertRaisesWithContent(
@@ -164,18 +200,11 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             "'Primary Archive for Ubuntu Linux: warty-RELEASE'",
             copy_helper.mainTask)
 
-    def testFailIfValidPackageButNotInSpecifiedSuite(self):
-        """It fails if the package is not published in the source location."""
-        copy_helper = self.getCopier(from_suite="breezy-autotest")
-
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Could not find source 'mozilla-firefox/None' in "
-            "Primary Archive for Ubuntu Linux: breezy-autotest-RELEASE",
-            copy_helper.mainTask)
-
     def testBadDistributionDestination(self):
-        """Check if it raises if the distro is invalid."""
+        """Check if it raises if the distribution is invalid.
+
+        PackageLocationError is raised for unknown destination distribution.
+        """
         copy_helper = self.getCopier(to_distribution="beeblebrox")
 
         self.assertRaisesWithContent(
@@ -184,12 +213,91 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copy_helper.mainTask)
 
     def testBadSuiteDestination(self):
-        """Check that it fails when specifying a bad distro release."""
+        """Check that it fails when specifying a bad distroseries.
+
+        PackageLocationError is raised for unknown destination distroseries.
+        """
         copy_helper = self.getCopier(to_suite="slatibartfast")
 
         self.assertRaisesWithContent(
             PackageLocationError,
             "Could not find suite 'slatibartfast'",
+            copy_helper.mainTask)
+
+    def testBadPPADestination(self):
+        """Check that it fails when specifying a bad PPA destination.
+
+        PackageLocationError is raised for unknown destination PPA.
+        """
+        copy_helper = self.getCopier(to_ppa="slatibartfast")
+
+        self.assertRaisesWithContent(
+            PackageLocationError,
+            "Could not find a PPA for slatibartfast",
+            copy_helper.mainTask)
+
+    def testCrossPartnerCopiesFails(self):
+        """Check that it fails when cross-PARTNER copies are requested.
+
+        SoyuzScriptError is raised for cross-PARTNER copies, packages
+        published in PARTNER archive can only be copied within PARTNER
+        archive.
+        """
+        copy_helper = self.getCopier(from_partner=True)
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Cross-PARTNER copies are not allowed.",
+            copy_helper.mainTask)
+
+        copy_helper = self.getCopier(to_partner=True)
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Cross-PARTNER copies are not allowed.",
+            copy_helper.mainTask)
+
+    def testCrossPartnerCopiesFails(self):
+        """Check that it fails when cross-PARTNER copies are requested.
+
+        SoyuzScriptError is raised for cross-PARTNER copies, packages
+        published in PARTNER archive can only be copied within PARTNER
+        archive.
+        """
+        copy_helper = self.getCopier(from_partner=True)
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Cross-PARTNER copies are not allowed.",
+            copy_helper.mainTask)
+
+        copy_helper = self.getCopier(to_partner=True)
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Cross-PARTNER copies are not allowed.",
+            copy_helper.mainTask)
+
+    def testPpaPartnerInconsistentLocations(self):
+        """Check if PARTNER and PPA inconsistent arguments are caught.
+
+        SoyuzScriptError is raised for when inconsistences in the PARTNER
+        and PPA location or destinations are spotted.
+        """
+        copy_helper = self.getCopier(
+            from_partner=True, from_ppa='cprov', to_partner=True)
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Cannot operate with location PARTNER and PPA simultaneously.",
+            copy_helper.mainTask)
+
+        copy_helper = self.getCopier(
+            from_partner=True, to_ppa='cprov', to_partner=True)
+
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
 

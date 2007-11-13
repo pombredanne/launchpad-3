@@ -1149,6 +1149,29 @@ class PackageCopier(SoyuzScript):
             '--to-partner', dest='to_partner', default=False,
             action='store_true', help='Destination set to PARTNER archive.')
 
+    def checkCopyOptions(self):
+        """Check if the locations options are sane.
+
+         * Catch Cross-PARTNER copies, they are not allowed.
+         * Catch simulataneous PPA and PARTNER locations or destinations,
+           results are unpredictable (in fact, the code will ignore PPA and
+           operate only in PARTNER, but that's odd)
+        """
+        if ((self.options.partner_archive and not self.options.to_partner)
+            or (self.options.to_partner and not self.options.partner_archive)):
+            raise SoyuzScriptError(
+                "Cross-PARTNER copies are not allowed.")
+
+        if self.options.archive_owner_name and self.options.partner_archive:
+            raise SoyuzScriptError(
+                "Cannot operate with location PARTNER and PPA "
+                "simultaneously.")
+
+        if self.options.to_ppa and self.options.to_partner:
+            raise SoyuzScriptError(
+                "Cannot operate with destination PARTNER and PPA "
+                "simultaneously.")
+
     def mainTask(self):
         """Execute package copy procedure.
 
@@ -1166,6 +1189,8 @@ class PackageCopier(SoyuzScript):
         assert self.location, (
             "location is not available, call PackageCopier.setupLocation() "
             "before dealing with mainTask.")
+
+        self.checkCopyOptions()
 
         sourcename = self.args[0]
 
