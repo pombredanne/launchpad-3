@@ -1456,13 +1456,12 @@ class ShippingRun(SQLBase):
         # to set them manually.
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
-                        'ship Ubuntu quantity Mac',
                         'ship Kubuntu quantity PC',
                         'ship Kubuntu quantity 64-bit PC',
-                        'ship Kubuntu quantity Mac',
                         'ship Edubuntu quantity PC',
                         'ship Edubuntu quantity 64-bit PC',
-                        'ship Edubuntu quantity Mac',
+                        'ship Server quantity PC',
+                        'ship Server quantity 64-bit PC',
                         'token', 'Ship via', 'display']
         row.extend('"%s"' % field for field in extra_fields)
         csv_writer.writerow(row)
@@ -1470,8 +1469,8 @@ class ShippingRun(SQLBase):
         ubuntu = ShipItFlavour.UBUNTU
         kubuntu = ShipItFlavour.KUBUNTU
         edubuntu = ShipItFlavour.EDUBUNTU
+        server = ShipItFlavour.SERVER
         x86 = ShipItArchitecture.X86
-        ppc = ShipItArchitecture.PPC
         amd64 = ShipItArchitecture.AMD64
         for request in self.requests:
             row = []
@@ -1503,8 +1502,8 @@ class ShippingRun(SQLBase):
             # The order that the flavours and arches appear in the following
             # two for loops must match the order the headers appear in
             # extra_fields.
-            for flavour in [ubuntu, kubuntu, edubuntu]:
-                for arch in [x86, amd64, ppc]:
+            for flavour in [ubuntu, kubuntu, edubuntu, server]:
+                for arch in [x86, amd64]:
                     requested_cds = all_requested_cds[flavour][arch]
                     if requested_cds is None:
                         quantityapproved = 0
