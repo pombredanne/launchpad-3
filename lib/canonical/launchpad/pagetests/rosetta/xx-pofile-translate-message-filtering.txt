@@ -70,13 +70,14 @@ The set of messages that are untranslated in the second batch:
 Now, we are going to select messages with new suggestions submitted after
 they were last reviewed.
 
-  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
-  >>> user_browser.getControl('Filter').click()
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
-
-  >>> print_shown_messages(user_browser)
-  134: '<samp> </samp>caratas'
+# XXX Disabled until suggestions are enabled again
+#  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
+#  >>> user_browser.getControl('Filter').click()
+#  >>> user_browser.url
+#  'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
+#
+#  >>> print_shown_messages(user_browser)
+#  134: '<samp> </samp>caratas'
 
 
 === Messages needing review ===
