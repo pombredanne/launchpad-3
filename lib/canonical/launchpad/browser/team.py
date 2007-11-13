@@ -174,7 +174,7 @@ class TeamContactAddressView(MailingListRelatedView):
                 hosted_list_term_index = i
                 break
         if (config.mailman.expose_hosted_mailing_lists
-            and self.can_be_contact_method):
+            and self.list_can_be_contact_method):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
@@ -333,12 +333,6 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
 
         self.next_url = canonical_url(self.context)
 
-    def request_list_creation_validator(self, action, data):
-        if self.getListInState(MailingListStatus.DECLINED,
-                               MailingListStatus.INACTIVE) is not None:
-            self.addError(
-                "There is an application for a mailing list already.")
-
     def cancel_list_creation_validator(self, action, data):
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
         if (mailing_list is None
@@ -353,7 +347,13 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
 
-    @action('Apply for Mailing List', name='request_list',
+    def request_list_creation_validator(self, action, data):
+        if self.getListInState(MailingListStatus.DECLINED,
+                               MailingListStatus.INACTIVE) is not None:
+            self.addError(
+                "There is an application for a mailing list already.")
+
+    @action('Apply for Mailing List', name='request_list_creation',
             validator=request_list_creation_validator)
     def request_list_creation(self, action, data):
         list_set = getUtility(IMailingListSet)

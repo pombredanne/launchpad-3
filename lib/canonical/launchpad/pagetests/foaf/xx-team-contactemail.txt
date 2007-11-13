@@ -74,16 +74,12 @@ Follow the token link, to confirm the new email address.
     >>> browser.getControl(name='field.contact_address').value
     'foo@example.com'
 
-To change that to a hosted mailing list, we first need to request the
-mailing list to be activated.
+To change the contact address to a hosted mailing list, we first need
+to request that the mailing list be activated.
 
-    >>> description = 'The Launchpad mailing list for this team - '
-    >>> browser.getControl(description).disabled
-    True
-    >>> browser.getControl(description).selected = True
-    Traceback (most recent call last):
-    ...
-    AttributeError: item is disabled
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.title
+    'Configure mailing list'
 
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
@@ -110,7 +106,7 @@ not shown anymore.
 
 If the application is declined, the button won't be shown either. Instead,
 we'll ask the user to contact a Launchpad admin.
-    
+
     # We don't use getUtility(IMailingListSet) here because we want
     # non-security-proxied objects so that we can call syncUpdate on them
     # and change their status at our discretion.

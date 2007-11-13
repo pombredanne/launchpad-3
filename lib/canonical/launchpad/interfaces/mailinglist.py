@@ -285,7 +285,8 @@ class IMailingList(Interface):
     welcome_message = Text(
         title=_('Welcome message text'),
         description=_('Any instructions or links that should be sent to new '
-                      'subscribers to this mailing list.')
+                      'subscribers to this mailing list.'),
+        required=False,
         )
 
     address = TextLine(
