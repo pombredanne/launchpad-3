@@ -149,6 +149,14 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+text"
+        class="canonical.launchpad.browser.BugTaskTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
+
     <!-- NullBugTask -->
     <content class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
