@@ -156,7 +156,7 @@ The textual description contains the same information as before:
     ...
 
 Apart from the multi-part separator strings (necessary to delimit individual
-comments from one another), both descriptions contain the same information:
+comments from one another), both textual reports contain the same information:
 
     >>> import re
     >>> separator_regex = re.compile(
