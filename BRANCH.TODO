@@ -3,7 +3,7 @@
 
  = Database table and corresponding content class for NewsItem
  = Page to create a news item
- * Page that lists news items
+ = Page that lists news items
    * people who can edit them see all of them and active status
    * people who cannot edit them see only active news items
  * Editors can click to edit news items

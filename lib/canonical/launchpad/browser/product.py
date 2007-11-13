@@ -275,8 +275,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'announce', 'administer', 'branch_visibility',
-        'rdf']
+        'series_add', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -328,6 +328,11 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Make announcement'
         summary = 'Publish an item of news for this project'
         return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Announcements'
+        enabled = self.context.announcements().count()
+        return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
         text = 'Register branch'

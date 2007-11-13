@@ -90,6 +90,9 @@ class INewsItem(Interface):
     url = Attribute("The web location of your announcement.")
     active = Attribute("Whether or not this announcement is published.")
 
+    # attributes
+    future = Attribute("Whether or not this announcement is yet public.")
+
     def retarget(product=None, distribution=None, project=None):
         """Retarget the news item to a new project. One and only one of the
         arguments must not be None.

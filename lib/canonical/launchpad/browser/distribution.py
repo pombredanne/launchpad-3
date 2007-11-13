@@ -191,7 +191,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'announce', 'upload_admin', 'ppas']
+             'announce', 'announcements', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -290,6 +290,11 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Make announcement'
         summary = 'Publish an item of news for this project'
         return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Announcements'
+        enabled = self.context.announcements().count()
+        return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
         text = 'Builds'

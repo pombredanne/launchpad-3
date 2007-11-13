@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = ['NewsItem', ]
 
 import operator
+import time, pytz, datetime
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -28,6 +29,7 @@ class NewsItem(SQLBase):
     """A news item. These allow us to generate lists of recent news for
     projects, products and distributions.
     """
+    _defaultOrder = ['-date_announced', '-date_created']
 
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
@@ -52,6 +54,13 @@ class NewsItem(SQLBase):
             return self.project
         elif self.distribution is not None:
             return self.distribution
+
+    @property
+    def future(self):
+        if self.date_announced is None:
+            return True
+        return self.date_announced.replace(tzinfo=None) > \
+               self.date_announced.utcnow()
 
 
 class HasNewsItems:
@@ -114,7 +123,7 @@ class HasNewsItems:
         # filter for published news items if necessary
         if not privileged_user:
             query += """ AND
-                NewsItem.date_announced < 'NOW'::timestamp AND
+                NewsItem.date_announced <= timezone('UTC'::text, now()) AND
                 NewsItem.active IS TRUE
                 """
         return NewsItem.select(query, limit=limit)

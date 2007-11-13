@@ -29,22 +29,36 @@
 
 <div metal:fill-slot="main">
 
-    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
-
     <tal:per_announcement repeat="newsitem view/batchnav/currentBatch">
       <h2 tal:content="newsitem/title">News item title</h2>
 
       <p>
+        <img src="/@@/warning" title="Announcement is not yet public"
+             tal:condition="newsitem/future" />
+        <strong tal:condition="not: newsitem/active">
+            [Retracted]
+        </strong>
         <strong tal:condition="newsitem/date_announced"
                 tal:content="newsitem/date_announced/fmt:date"
                 >22 Oct 2008</strong>
         <strong tal:condition="not: newsitem/date_announced">
-            [Unpublished]
+            No publishing date set.
         </strong>
-        by
-        <tal:registrant replace="structure newsitem/registrant/fmt:link" />
+        <strong tal:condition="not: newsitem/active">
+            Retracted.
+        </strong>
         <tal:summary condition="newsitem/summary"
                      tal:replace="structure newsitem/summary" />
+        <a tal:condition="newsitem/url"
+           tal:attributes="href newsitem/url">Read more...</a>
+        <br />
+        <a tal:condition="newsitem/required:launchpad.Edit"
+           tal:attributes="href newsitem/fmt:url">
+           <img src="/@@/edit" alt="[Edit]" />
+           Edit this announcement.
+        </a>
+        Created by
+        <tal:registrant replace="structure newsitem/registrant/fmt:link" />
       </p>
     </tal:per_announcement>
 

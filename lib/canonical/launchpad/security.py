@@ -11,19 +11,21 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
-    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
-    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
-    IPOTemplate, IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset,
-    IProduct, IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
-    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
-    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
-    ISprint, ISprintSpecification, IStandardShipItRequest,
-    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
-    ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
+    ICodeImportMachineSet, ICodeImportSet, IDistribution,
+    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
+    IFAQ, IFAQTarget, IHasBug, IHasDrivers, IHasOwner, IHWSubmission,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMilestone, INewsItem, IPackageUpload, IPackageUploadQueue, IPerson,
+    IPOFile, IPoll, IPollSubset, IPollOption, IPOTemplate, IPOTemplateName,
+    IPOTemplateNameSet, IPOTemplateSubset, IProduct, IProductRelease,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISourcePackage, ISpecification, ISpecificationSubscription, ISprint,
+    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
+    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
+    PackageUploadStatus)
+
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -657,6 +659,25 @@ class EditBugAttachment(
 
     def __init__(self, bugattachment):
         self.obj = bugattachment.bug
+
+
+class EditAnnouncement(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = INewsItem
+
+    def checkAuthenticated(self, user):
+        """Allow the project owner and drivers to edit any project news."""
+
+        assert self.obj.target
+        if self.obj.target.drivers:
+            for driver in self.obj.target.drivers:
+                if user.inTeam(driver):
+                    return True
+        if user.inTeam(self.obj.target.owner):
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class UseApiDoc(AuthorizationBase):
