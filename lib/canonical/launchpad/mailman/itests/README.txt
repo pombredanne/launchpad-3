@@ -11,6 +11,7 @@ Here are the steps to run these integration tests:
     var_dir /tmp/var/mailman
     smtp localhost:9025
     xmlrpc_runner_sleep 2
+    launch yes
 
   We'll make this better when the new config stuff lands.
   
