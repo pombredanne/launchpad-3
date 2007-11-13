@@ -12,7 +12,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IPackageUploadSet, QueueInconsistentStateError,
-    UnexpectedFormData, ILaunchpadCelebrities, PackageUploadStatus)
+    UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission

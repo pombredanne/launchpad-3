@@ -12,8 +12,7 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import (
-    datadir, insertFakeChangesFile)
+from canonical.archiveuploader.tests import insertFakeChangesFile
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
