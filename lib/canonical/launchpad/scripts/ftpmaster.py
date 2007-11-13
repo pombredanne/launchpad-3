@@ -1171,6 +1171,10 @@ class PackageCopier(SoyuzScript):
             raise SoyuzScriptError(
                 "Cannot operate with destination PARTNER and PPA "
                 "simultaneously.")
+        if ((self.options.archive_owner_name and not self.options.to_ppa)
+            and self.options.include_binaries):
+            raise SoyuzScriptError(
+                "Cannot copy binaries from PPA to PRIMARY archive.")
 
     def mainTask(self):
         """Execute package copy procedure.
@@ -1236,26 +1240,25 @@ class PackageCopier(SoyuzScript):
     def setupDestination(self):
         """Build PackageLocation for the destination context."""
         if self.options.to_partner:
-            destination = build_package_location(
+            self.destination = build_package_location(
                 self.options.to_distribution,
                 self.options.to_suite,
                 ArchivePurpose.PARTNER)
         elif self.options.to_ppa:
-            destination = build_package_location(
+            self.destination = build_package_location(
                 self.options.to_distribution,
                 self.options.to_suite,
                 ArchivePurpose.PPA,
                 self.options.to_ppa)
         else:
-            destination = build_package_location(
+            self.destination = build_package_location(
                 self.options.to_distribution,
                 self.options.to_suite)
 
-        if self.location == destination:
+        if self.location == self.destination:
             raise SoyuzScriptError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
-                self.location, destination))
-        self.destination = destination
+                self.location, self.destination))
 
 
 class LpQueryDistro(LaunchpadScript):

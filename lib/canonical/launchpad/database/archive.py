@@ -208,7 +208,7 @@ class Archive(SQLBase):
         return size
 
     def _getBinaryPublishingBaseClauses (
-        self, name=None, version=None,status=None, distroarchseries=None,
+        self, name=None, version=None, status=None, distroarchseries=None,
         exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
 
