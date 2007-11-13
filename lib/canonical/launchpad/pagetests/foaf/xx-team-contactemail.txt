@@ -392,6 +392,64 @@ What if the change fails to propagate? The user will know of this too.
     >>> print get_feedback_messages(browser)
     []
 
+
+== Deactivating and reactivating lists ==
+
+An active mailing list can be deactivated. If the deactivated mailing
+list was the team contact method, the contact method will be changed
+to 'each user individually'.
+
+    >>> browser.getControl('Deactivate this Mailing List').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Each member individually']
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list is being deactivated.
+
+    >>> print_actions(mailinglist_api.getPendingActions())
+    landscape-developers --> deactivate
+    >>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    True
+    >>> print_actions(mailinglist_api.getPendingActions())
+
+    >>> browser.reload()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list has been deactivated.
+
+An inactive mailing list can be reactivated.
+
+    >>> browser.getControl('Reactivate this Mailing List').click()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    The mailing list will be reactivated shortly.
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list will be available shortly.
+
+    >>> print_actions(mailinglist_api.getPendingActions())
+    landscape-developers --> create
+        {'welcome_message': u'This change will fail to propagate.'}
+    >>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    True
+    >>> print_actions(mailinglist_api.getPendingActions())
+
+    >>> browser.reload()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+
+This does not restore the mailing list as the team's contact method:
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Each member individually']
+
+
 == Hidden by config variable ==
 
 XXX: We don't really want all this functionality to be visible to users
@@ -406,7 +464,6 @@ functionality on production. -- Guilherme Salgado 2007-09-20
     >>> config.mailman.expose_hosted_mailing_lists
     True
 
-    >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayOptions
     ['\xa0The Launchpad mailing list for this team -
       landscape-developers@lists.launchpad.net',

@@ -79,9 +79,16 @@
       </div>
     </metal:widgets>
 
-    <div class="actions" metal:fill-slot="buttons"
-     tal:condition="view/list_can_be_contact_method">
-      <input tal:replace="structure view/save_action/render" />
+    <div class="actions" metal:fill-slot="buttons">
+      <p tal:condition="view/list_can_be_contact_method">
+        <input tal:replace="structure view/save_action/render" />
+      </p>
+      <p tal:condition="view/list_can_be_deactivated">
+        <input tal:replace="structure view/deactivate_list/render" />
+      </p>
+      <p tal:condition="view/list_can_be_reactivated">
+        <input tal:replace="structure view/reactivate_list/render" />
+      </p>
     </div>
   </div>
 </div>

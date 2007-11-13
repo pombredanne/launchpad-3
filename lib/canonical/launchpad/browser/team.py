@@ -359,6 +359,38 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
                 "inactive and will be reactivated shortly.")
         self.next_url = canonical_url(self.context)
 
+    def deactivate_list_validator(self, action, data):
+        """Adds an error if someone tries to deactivate a non-active list.
+
+        This can only happen by bypassing the UI.
+        """
+        if not self.list_can_be_deactivated:
+            self.addError("This list can't be deactivated.")
+
+    @action('Deactivate this Mailing List', name='deactivate_list',
+            validator=deactivate_list_validator)
+    def deactivate_list(self, action, data):
+        getUtility(IMailingListSet).get(self.context.name).deactivate()
+        self.request.response.addInfoNotification(
+            "The mailing list will be deactivated shortly.")
+        self.next_url = canonical_url(self.context)
+
+    def reactivate_list_validator(self, action, data):
+        """Adds an error if someone tries to reactivate a non-deactivated list.
+
+        This can only happen by bypassing the UI.
+        """
+        if not self.list_can_be_reactivated:
+            self.addError("Only a deactivated list can be reactivated.")
+
+    @action('Reactivate this Mailing List', name='reactivate_list',
+            validator=reactivate_list_validator)
+    def reactivate_list(self, action, data):
+        getUtility(IMailingListSet).get(self.context.name).reactivate()
+        self.request.response.addInfoNotification(
+            "The mailing list will be reactivated shortly.")
+        self.next_url = canonical_url(self.context)
+
     @property
     def list_could_be_contact_method_but_isnt(self):
         return (self.list_can_be_contact_method and
@@ -384,8 +416,9 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
                      'assistance.')
         elif self.mailing_list.status == MailingListStatus.ACTIVE:
             return None
-        elif self.mailing_list.status in [MailingListStatus.INACTIVE,
-                                     MailingListStatus.DEACTIVATING]:
+        elif self.mailing_list.status == MailingListStatus.DEACTIVATING:
+            return _("This team's mailing list is being deactivated.")
+        elif self.mailing_list.status == MailingListStatus.INACTIVE:
             return _("This team's mailing list has been deactivated.")
         elif self.mailing_list.status == MailingListStatus.FAILED:
             return _("This team's mailing list could not be created.")
@@ -428,11 +461,26 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
         """Can a mailing list be requested for this team?
 
         It can only be requested if there's no mailing list associated with
-        this team or if the associated one is in the INACTIVE state.
+        this team.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        return (mailing_list is None
-                or mailing_list.status == MailingListStatus.INACTIVE)
+        return mailing_list is None
+
+    @property
+    def list_can_be_deactivated(self):
+        """Is this team's list in a state where it can be deactivated?
+
+        The list must exist and be in the ACTIVE state.
+        """
+        return self.getListInState(MailingListStatus.ACTIVE) is not None
+
+    @property
+    def list_can_be_reactivated(self):
+        """Is this team's list in a state where it can be reactivated?
+
+        The list must exist and be in the INACTIVE state.
+        """
+        return self.getListInState(MailingListStatus.INACTIVE) is not None
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
