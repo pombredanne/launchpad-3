@@ -163,27 +163,36 @@ class TeamContactAddressView(MailingListRelatedView):
     def getContactMethodField(self):
         """Create the form.Fields to use for the contact_method field.
 
-        Check whether or not the HOSTED_LIST option of our
-        contact_method widget should be rendered, and change the
-        vocabulary accordingly.
+        If the team has a mailing list that can be the team contact
+        method, the full range of TeamContactMethod terms shows up
+        in the contact_method vocabulary. Otherwise, the HOSTED_LIST
+        term does not show up in the vocabulary.
         """
-        terms = [term for term in TeamContactMethod
-                 if term.value != TeamContactMethod.HOSTED_LIST]
+        terms = [term for term in TeamContactMethod]
+        for i, term in enumerate(TeamContactMethod):
+            if term.value == TeamContactMethod.HOSTED_LIST:
+                hosted_list_term_index = i
+                break
         if (config.mailman.expose_hosted_mailing_lists
-            and self.list_can_be_contact_method):
-            # The HOSTED_LIST option will be rendered normally by zope3, so
-            # we just need to change its title to include the actual email
-            # address of the mailing list.
+            and self.can_be_contact_method):
+            # The team's mailing list can be used as the contact
+            # address. However we need to change the title of the
+            # corresponding term to include the list's email address.
             title = ('The Launchpad mailing list for this team - '
                      '<strong>%s</strong>' % self.mailinglist_address)
             hosted_list_term = SimpleTerm(
                 TeamContactMethod.HOSTED_LIST,
                 TeamContactMethod.HOSTED_LIST.name, title)
-            terms.insert(0, hosted_list_term)
+            terms[hosted_list_term_index] = hosted_list_term
+        else:
+            # The team's mailing list does not exist or can't be
+            # used as the contact address. Remove the term from the
+            # field.
+            del(terms[hosted_list_term_index])
 
         return form.FormField(
             Choice(__name__='contact_method',
-                   title=_("How do people contact these team's members?"),
+                   title=_("How do people contact this team's members?"),
                    required=True, vocabulary=SimpleVocabulary(terms)),
             custom_widget=self.custom_widgets['contact_method'])
 
