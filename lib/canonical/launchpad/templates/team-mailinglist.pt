@@ -32,6 +32,11 @@
         </span>
       </div>
 
+      <p tal:condition="view/list_can_be_contact_method">
+        This team's mailing list is active at
+        <b><address tal:replace="view/mailinglist_address" /></b>.
+      </p>
+
       <div id="no_mailing_list"
          tal:condition="view/list_can_be_requested">
         <p>
@@ -67,11 +72,11 @@
                value="Set mailing list as contact address" />
       </p>
 
-       <div tal:condition="view/list_can_be_contact_method">
-        <tal:widget define="widget nocall:view/widgets/welcome_message">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
-       </div>
+      <div tal:condition="view/list_can_be_contact_method">
+       <tal:widget define="widget nocall:view/widgets/welcome_message">
+         <metal:block use-macro="context/@@launchpad_form/widget_row" />
+       </tal:widget>
+      </div>
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons"

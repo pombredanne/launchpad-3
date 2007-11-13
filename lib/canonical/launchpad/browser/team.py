@@ -126,6 +126,11 @@ class MailingListRelatedView(LaunchpadFormView):
         mailing_list = self._getList()
         return mailing_list and mailing_list.canBeContactMethod()
 
+    @property
+    def mailinglist_address(self):
+        """The address for this team's mailing list."""
+        return '%s@%s' % (self.context.name, MAILING_LISTS_DOMAIN)
+
 
 class TeamContactAddressView(MailingListRelatedView):
 
@@ -135,11 +140,6 @@ class TeamContactAddressView(MailingListRelatedView):
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
         'welcome_message', TextAreaWidget, width=72, height=10)
-
-    @property
-    def mailinglist_address(self):
-        """The address for this team's mailing list."""
-        return '%s@%s' % (self.context.name, MAILING_LISTS_DOMAIN)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.

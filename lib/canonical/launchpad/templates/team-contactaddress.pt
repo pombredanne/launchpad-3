@@ -27,7 +27,7 @@
     <metal:widgets fill-slot="widgets">
       <div tal:define="contact_method nocall:view/widgets/contact_method">
         <input tal:replace="structure contact_method" />:
-        <tal:email-widget 
+        <tal:email-widget
            define="contact_address nocall:view/widgets/contact_address;
                    field_name contact_address/context/__name__;
                    error python:view.getWidgetError(field_name);
@@ -46,6 +46,12 @@
     </div>
   </div>
 
-</div> 
+  <p>
+    If you <a href="+mailinglist">set up a mailing list for this
+    team</a>, you can use the mailing list as the team contact
+    address.
+  </p>
+
+</div>
 </body>
 </html>
