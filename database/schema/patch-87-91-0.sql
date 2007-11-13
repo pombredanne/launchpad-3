@@ -45,8 +45,8 @@ ALTER TABLE Branch
 
 ALTER TABLE Branch
   ADD CONSTRAINT branch_robotic_control
-  CHECK (merge_robot IS NULL AND merge_control_status = 1) OR
-        (merge_robot IS NOT NULL);
+  CHECK ((merge_robot IS NULL AND merge_control_status = 1) OR
+         (merge_robot IS NOT NULL));
 
 
 ALTER TABLE BranchMergeProposal
@@ -138,8 +138,8 @@ CREATE INDEX branchmergeproposal__reviewer__idx
   ON BranchMergeProposal(reviewer);
 CREATE INDEX branchmergeproposal__queuer__idx
   ON BranchMergeProposal(queuer);
-CREATE INDEX branchmergeproposal__reviewer__idx
-  ON BranchMergeProposal(reviewer);
+CREATE INDEX branchmergeproposal__merger__idx
+  ON BranchMergeProposal(merger);
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 91, 0);
