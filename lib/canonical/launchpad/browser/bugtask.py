@@ -2099,7 +2099,6 @@ class BugTargetView(LaunchpadView):
         return self.context.searchTasks(params)[:limit]
 
 
-
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
     """Textual view for searchable bug listings."""
 
