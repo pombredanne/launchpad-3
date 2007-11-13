@@ -103,6 +103,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "individual projects and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
+    drivers = Attribute("A list of drivers, to make Object.drivers a "
+        "standard pattern of access.")
+
     homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,

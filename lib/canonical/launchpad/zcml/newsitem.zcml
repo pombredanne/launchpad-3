@@ -40,6 +40,9 @@
       <browser:page
         name="+announcements"
         template="../templates/hasnewsitems-announcements.pt" />
+      <browser:page
+        name="+portlet-latestannouncements"
+        template="../templates/hasnewsitems-portlet-latestannouncements.pt" />
     </browser:pages>
 
     <browser:pages

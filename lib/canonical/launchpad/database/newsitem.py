@@ -29,6 +29,8 @@ class NewsItem(SQLBase):
     """A news item. These allow us to generate lists of recent news for
     projects, products and distributions.
     """
+    implements(INewsItem)
+
     _defaultOrder = ['-date_announced', '-date_created']
 
     date_created = UtcDateTimeCol(
@@ -37,10 +39,9 @@ class NewsItem(SQLBase):
         dbName='date_announced', default=UTC_NOW)
     registrant = ForeignKey(dbName='registrant',
                             foreignKey='Person', notNull=True)
-    product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
-    project = ForeignKey(dbName='project', foreignKey='Project', notNull=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey='distribution', notNull=True)
+    product = ForeignKey(dbName='product', foreignKey='Product')
+    project = ForeignKey(dbName='project', foreignKey='Project')
+    distribution = ForeignKey(dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)
     summary = StringCol(default=None)
     url = StringCol(default=None)
@@ -110,22 +111,32 @@ class HasNewsItems:
         privileged_user = check_permission('launchpad.Edit', self)
 
         # create the SQL query, first fixing the anchor project
-        if IProduct.providedBy(self):
-            query = 'NewsItem.product = '
-        elif IProject.providedBy(self):
-            query = 'NewsItem.project = '
-        elif IDistribution.providedBy(self):
-            query = 'NewsItem.distribution = '
-        else:
-            raise AssertionError, 'Unsupported announcement target'
-        query += str(self.id)
-
+        clauseTables = []
+        query = '1=1 '
         # filter for published news items if necessary
         if not privileged_user:
             query += """ AND
                 NewsItem.date_announced <= timezone('UTC'::text, now()) AND
                 NewsItem.active IS TRUE
                 """
+        if IProduct.providedBy(self):
+            if self.project is None:
+                query += """ AND
+                    NewsItem.product = %s""" % sqlvalues(self.id)
+            else:
+                query += """ AND
+                    (NewsItem.product = %s OR NewsItem.project = %s)
+                    """ % sqlvalues(self.id, self.project)
+        elif IProject.providedBy(self):
+            query += """ AND
+                (NewsItem.project = %s OR NewsItem.product IN
+                    (SELECT id FROM Product WHERE project = %s))
+                    """ % sqlvalues (self.id, self.id)
+        elif IDistribution.providedBy(self):
+            query = 'NewsItem.distribution = %s' % sqlvalues(self.id)
+        else:
+            raise AssertionError, 'Unsupported announcement target'
         return NewsItem.select(query, limit=limit)
+
 
 

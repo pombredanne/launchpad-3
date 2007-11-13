@@ -113,6 +113,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return None
 
     @property
+    def drivers(self):
+        if self.driver is not None:
+            return [self.driver]
+        return []
+
+    @property
     def mentoring_offers(self):
         """See `IProject`"""
         via_specs = MentoringOffer.select("""

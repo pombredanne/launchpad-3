@@ -70,6 +70,7 @@ class INewsItem(Interface):
     """A News Item."""
 
     # lifecycle
+    id = Attribute("The unique ID of this announcement")
     date_created = Attribute("The date this announcement was registered")
     registrant = Attribute("The person who registered this announcement")
     date_announced = Attribute(

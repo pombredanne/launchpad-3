@@ -91,6 +91,10 @@
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
         />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestannouncements"
+        />
         <div class="portlet" id="products">
           <h2>Projects</h2>
           <p tal:condition="not: context/products"> 

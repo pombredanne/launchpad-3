@@ -50,7 +50,8 @@
         <tal:summary condition="newsitem/summary"
                      tal:replace="structure newsitem/summary" />
         <a tal:condition="newsitem/url"
-           tal:attributes="href newsitem/url">Read more...</a>
+           tal:attributes="href newsitem/url">
+           <img src="/@@/link" alt="Link" /> Read more...</a>
         <br />
         <a tal:condition="newsitem/required:launchpad.Edit"
            tal:attributes="href newsitem/fmt:url">

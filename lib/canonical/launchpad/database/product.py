@@ -52,8 +52,8 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, TranslationPermission)
 
 
-class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
+class Product(SQLBase, BugTargetBase, HasNewsItems, HasSpecificationsMixin,
+              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 

@@ -4,13 +4,15 @@
  = Database table and corresponding content class for NewsItem
  = Page to create a news item
  = Page that lists news items
-   * people who can edit them see all of them and active status
-   * people who cannot edit them see only active news items
+   = people who can edit them see all of them and active status
+   = people who cannot edit them see only active news items
+   = Projects aggregate all product news
+   = Products also include project news
+ = Display up to 5 news items on project/product/distro home page
  * Editors can click to edit news items
- * Ability to retarget announcements
- * Display up to 5 news items on project/product/distro home page
  * Make sure publishing / retraction workflow is smooth
    * Consider using "published" or "visible" instead of "active"
+ * Ability to retarget announcements
  * Add RSS feeds for project news
  * Clean up announcement date widget cargo culted code
  * TESTS

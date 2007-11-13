@@ -166,6 +166,10 @@ class HasNewsItemsView(LaunchpadView):
     def announcements(self):
         return self.context.announcements(limit=None)
 
+    @property
+    def latest_announcements(self):
+        return self.context.announcements(limit=5)
+
     def initialize(self):
         self.batchnav = BatchNavigator(
             self.announcements, self.request,
