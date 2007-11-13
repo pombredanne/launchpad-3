@@ -297,7 +297,7 @@ currently the team's contact address.
     >>> welcome_message.value
     ''
     >>> welcome_message.value = 'Welcome to the test team mailing list.'
-    >>> browser.getControl('Change').click()
+    >>> browser.getControl('Save').click()
 
 Changes to the welcome message take effect in the database immediately.
 
@@ -351,7 +351,7 @@ address view.
 What if the change fails to propagate? The user will know of this too.
 
     >>> welcome_message.value = 'This change will fail to propagate.'
-    >>> browser.getControl('Change').click()
+    >>> browser.getControl('Save').click()
 
     >>> browser.getLink('Configure mailing list').click()
     >>> welcome_message = browser.getControl('Welcome message')

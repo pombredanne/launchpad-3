@@ -16,11 +16,9 @@
 <form tal:attributes="action string:${context/fmt:url}/+contactaddress"
       tal:condition="view/list_could_be_contact_method_but_isnt"
       method="POST" id="set_mailing_list_as_contact_address">
-  <input type="hidden"
-         id="field.contact_method.0" name="field.contact_method"
+  <input type="hidden" id="field.contact_method.0" name="field.contact_method"
          value="HOSTED_LIST" />
-  <input type="hidden"
-         name="field.actions.change" />
+  <input type="hidden" name="field.actions.change" />
 </form>
 
   <div metal:use-macro="context/@@launchpad_form/form">
@@ -56,7 +54,7 @@
 
     <div class="actions" metal:fill-slot="buttons"
      tal:condition="view/list_can_be_contact_method">
-      <input tal:replace="structure view/change_action/render" />
+      <input tal:replace="structure view/save_action/render" />
     </div>
   </div>
 </div>

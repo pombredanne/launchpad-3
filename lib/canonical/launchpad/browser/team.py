@@ -309,8 +309,8 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
 
-    @action('Change', name='change')
-    def change_action(self, action, data):
+    @action('Save', name='save')
+    def save_action(self, action, data):
         """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message', None)
         assert (self.mailing_list is not None
