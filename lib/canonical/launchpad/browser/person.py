@@ -968,9 +968,10 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+mailinglist'
         text = 'Configure mailing list'
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        enabled = config.mailman.expose_hosted_mailing_lists
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
-        return Link(target, text, summary, icon='edit')
+        return Link(target, text, summary, enabled=enabled, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):

@@ -287,16 +287,6 @@ class TeamContactAddressView(MailingListRelatedView):
 
         self.next_url = canonical_url(self.context)
 
-    @action('Set mailing list as contact address', name='listascontact')
-    def listascontact_action(self, action, data):
-        """A shunt action for the form from TeamMailingListConfigurationView.
-
-        TeamMailingListConfigurationView sometimes displays a button
-        that lets the user quickly set a team's mailing list as its
-        email contact. This action is the destination of that button.
-        """
-        self.change_action.success(data)
-
 class TeamMailingListConfigurationView(MailingListRelatedView):
 
     schema = IMailingList

@@ -224,8 +224,8 @@ the team's contact address.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser):
-    ...     print msg
+    >>> print find_tag_by_id(browser.contents,
+    ...                      'mailing_list_not_contact_address').contents[0]
     This team's mailing list is not set as the team contact address.
 
     >>> browser.getLink('Change contact address').click()
@@ -258,8 +258,8 @@ list configuration screen displays a message to this effect:
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> for msg in get_feedback_messages(browser):
-    ...     print msg
+    >>> print find_tag_by_id(browser.contents,
+    ...                      'mailing_list_not_contact_address').contents[0]
     This team's mailing list is not set as the team contact address.
 
 The mailing list configuration screen makes it easy to set the team
@@ -282,7 +282,7 @@ A project with a mailing list can have a custom welcome message. The
 welcome message is customizable whether or not the mailing list is
 currently the team's contact address.
 
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> welcome_message.value
     ''
     >>> welcome_message.value = 'Welcome to the test team mailing list.'
@@ -291,7 +291,7 @@ currently the team's contact address.
 Changes to the welcome message take effect in the database immediately.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
@@ -307,6 +307,8 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     print_actions)
     >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
     >>> mailinglist_api = xmlrpclib.ServerProxy(
     ...    private_root + 'mailinglists/',
@@ -331,7 +333,7 @@ address view.
     >>> browser.reload()
     >>> get_feedback_messages(browser)
     []
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
@@ -341,7 +343,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> welcome_message = browser.getControl('Welcome message.')
+    >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     This change will fail to propagate.
 
