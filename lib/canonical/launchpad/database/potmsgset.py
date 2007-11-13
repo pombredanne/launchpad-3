@@ -155,19 +155,16 @@ class POTMsgSet(SQLBase):
         else:
             return False
 
-    def isTranslationNewerThan(self, language, timestamp):
+    def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(language)
+        current = self.getCurrentTranslationMessage(pofile.language)
         if current is None:
             return False
         date_updated = current.date_created
         if (current.date_reviewed is not None and
             current.date_reviewed > date_updated):
             date_updated = current.date_reviewed
-        if date_updated is not None and date_updated > timestamp:
-            return True
-        else:
-            return False
+        return (date_updated is not None and date_updated > timestamp)
 
     def _list_of_msgids(self):
         """Return a list of [singular_text, plural_text] if the message

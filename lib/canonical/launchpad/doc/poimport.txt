@@ -170,7 +170,7 @@ A successful import is confirmed by email.
 The correct message IDs now show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
-    >>> [potmsgset.msgid_singular for potmsgset in potmsgsets]
+    >>> [potmsgset.msgid_singular.msgid for potmsgset in potmsgsets]
     [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
 
 The file references field should be there
