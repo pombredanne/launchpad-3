@@ -24,10 +24,10 @@ __all__ = [
     'BugTaskView',
     'get_sortorder_from_request',
     'get_buglisting_search_filter_url',
-    'BugTargetTextView',
     'BugListingBatchNavigator',
     'BugsBugTaskSearchListingView',
     'BugTaskSOP',
+    'TextualBugTaskSearchListingView',
     ]
 
 import cgi
@@ -2087,8 +2087,8 @@ class BugTargetView(LaunchpadView):
 
 
 
-class BugTargetTextView(LaunchpadView):
-    """View for simple text page showing bugs filed against a bug target."""
+class TextualBugTaskSearchListingView(LaunchpadView):
+    """Textual view for searchable bug listings."""
 
     def render(self):
         """Render the BugTarget for text display."""
