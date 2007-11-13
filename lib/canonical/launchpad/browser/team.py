@@ -370,12 +370,9 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
     def mailing_list_status_message(self):
         """A status message describing the state of the mailing list."""
         if not self.mailing_list:
-            return _("This team currently has no mailing list. You may "
-                     "apply for one and make it your team's contact address "
-                     "once it's approved.")
+            return None
         elif self.mailing_list.status == MailingListStatus.REGISTERED:
-            return _("The application for this team's mailing list is "
-                     "pending approval.")
+            return None
         elif self.mailing_list.status in [MailingListStatus.APPROVED,
                                           MailingListStatus.CONSTRUCTING]:
             return _("This team's mailing list will be available shortly.")
@@ -404,7 +401,7 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
                      "propagate.")
         else:
             raise AssertionError(
-                "Unknown mailing list status: %s" % mailing_list.status)
+                "Unknown mailing list status: %s" % self.mailing_list.status)
 
     @property
     def initial_values(self):

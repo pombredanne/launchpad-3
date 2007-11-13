@@ -92,8 +92,8 @@ By going to the mailing list configuration screen we can verify that
 the mailing list was created but has not been approved:
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> for msg in get_feedback_messages(browser):
-    ...     print msg
+    >>> print find_tag_by_id(browser.contents,
+    ...                      'mailing_list_pending_approval').p.string
     The application for this team's mailing list is pending approval.
 
 Once the mailing list is requested, the button to request its activation is
