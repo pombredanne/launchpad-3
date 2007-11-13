@@ -506,7 +506,7 @@ class POFile(SQLBase, POFileMixIn):
 
     # joins
     translation_messages = SQLMultipleJoin(
-        'TranslationMessage', joinColumn='pofile')
+        'TranslationMessage', joinColumn='pofile', orderBy='id')
 
     @property
     def title(self):
@@ -1268,10 +1268,6 @@ class DummyPOFile(POFileMixIn):
 
     def emptySelectResults(self):
         return POFile.select("1=2")
-
-    def getPOMsgSetsNotInTemplate(self):
-        """See `IPOFile`."""
-        return self.emptySelectResults()
 
     def getPOTMsgSetTranslated(self, slice=None):
         """See `IPOFile`."""
