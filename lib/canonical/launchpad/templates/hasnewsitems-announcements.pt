@@ -30,7 +30,13 @@
 <div metal:fill-slot="main">
 
     <tal:per_announcement repeat="newsitem view/batchnav/currentBatch">
-      <h2 tal:content="newsitem/title">News item title</h2>
+      <h2>
+        <tal:date tal:condition="newsitem/date_announced"
+                tal:content="newsitem/date_announced/fmt:date">
+            22 Oct 2008
+        </tal:date>:
+        <tal:title content="newsitem/title">News item title</tal:title>
+      </h2>
 
       <p>
         <img src="/@@/warning" title="Announcement is not yet public"
@@ -38,9 +44,6 @@
         <strong tal:condition="not: newsitem/active">
             [Retracted]
         </strong>
-        <strong tal:condition="newsitem/date_announced"
-                tal:content="newsitem/date_announced/fmt:date"
-                >22 Oct 2008</strong>
         <strong tal:condition="not: newsitem/date_announced">
             No publishing date set.
         </strong>
@@ -52,7 +55,8 @@
         <a tal:condition="newsitem/url"
            tal:attributes="href newsitem/url">
            <img src="/@@/link" alt="Link" /> Read more...</a>
-        <br />
+      </p>
+      <p>
         <a tal:condition="newsitem/required:launchpad.Edit"
            tal:attributes="href newsitem/fmt:url">
            <img src="/@@/edit" alt="[Edit]" />

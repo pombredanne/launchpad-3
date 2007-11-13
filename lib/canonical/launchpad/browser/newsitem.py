@@ -103,7 +103,30 @@ class NewsItemContextMenu(ContextMenu):
 
 class NewsItemEditView(LaunchpadFormView):
 
-    pass
+    schema = AddNewsItemForm
+    field_names = ['title', 'summary', 'url', ]
+    label = _('Modify this announcement')
+
+    @property
+    def initial_values(self):
+        return {
+            'title': self.context.title,
+            'summary': self.context.summary,
+            'url': self.context.url,
+            }
+
+    @action(_('Modify'), name='modify')
+    def modify_action(self, action, data):
+        self.context.title = data.get('title')
+        self.context.summary = data.get('summary')
+        self.context.url = data.get('url')
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    @property
+    def next_url(self):
+        return self._nextURL
+
+
 
 
 class NewsItemRetargetingView(LaunchpadFormView):

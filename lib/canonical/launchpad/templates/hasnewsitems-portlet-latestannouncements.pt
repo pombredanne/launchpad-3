@@ -15,7 +15,7 @@
         tal:content="announcement/title">
     </li>
   </ul>
-  <a href="+announcements">&raquo More announcements...</a>
+  <a href="+announcements">&raquo Details...</a>
   </div>
 </div>
 </tal:news>

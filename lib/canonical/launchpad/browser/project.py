@@ -70,6 +70,10 @@ class ProjectNavigation(Navigation):
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
 
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
+
 
 class ProjectDynMenu(DynMenu):
 

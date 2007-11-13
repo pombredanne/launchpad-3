@@ -114,6 +114,10 @@ class ProductNavigation(
     def traverse_release(self, name):
         return self.context.getRelease(name)
 
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
+
     def traverse(self, name):
         return self.context.getSeries(name)
 

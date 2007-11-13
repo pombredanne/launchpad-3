@@ -103,6 +103,13 @@ class HasNewsItems:
             distribution = distribution
             )
 
+    def getAnnouncement(self, name):
+        try:
+            announcement_id = int(name)
+        except ValueError:
+            return None
+        return NewsItem.get(announcement_id)
+
     def announcements(self, limit=5):
         """See IHasNewsItems."""
 

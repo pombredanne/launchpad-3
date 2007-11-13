@@ -44,6 +44,9 @@ class IHasNewsItems(Interface):
         is either 'NOW', or None (a future date), or a specified datetime.
         """
 
+    def getAnnouncement(id):
+        """Return the requested announcement."""
+
     def announcements(user, limit=5):
         """Return a list of announcements visible to this user.
 

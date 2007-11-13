@@ -95,6 +95,10 @@ class DistributionNavigation(
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
 
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
+
     @stepthrough('+spec')
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
