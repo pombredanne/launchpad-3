@@ -27,6 +27,9 @@ class ILibraryFileAlias(Interface):
     id = Int(
             title=_('Library File Alias ID'), required=True, readonly=True,
             )
+
+    date_created = Datetime(
+        title=_('Date created'), required=True, readonly=True)
     content = Attribute('Library file content')
     filename = TextLine(
             title=_('Filename'), required=True, readonly=True

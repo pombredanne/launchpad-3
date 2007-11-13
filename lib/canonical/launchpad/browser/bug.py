@@ -42,8 +42,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -490,7 +489,6 @@ class BugSecrecyEditView(BugEditViewBase):
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
         private = data.pop('private')
-        notify(SQLObjectToBeModifiedEvent(bug, dict(private=private)))
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
         if private_changed:

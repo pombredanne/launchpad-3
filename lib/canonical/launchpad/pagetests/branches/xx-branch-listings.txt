@@ -175,9 +175,17 @@ helpful message supplied.
     ['Mature']
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print message.renderContents()
-    There may be branches related to Launchpad Developers but none of
-    them match the current filter criteria for this page.
-    Try filtering on "Any Status".
+    There are branches related to Launchpad Developers...
+
+If the user does not have any branches, then we say so.
+
+    >>> browser.open('http://code.launchpad.dev/'
+    ...   '~no-priv?field.lifecycle=Mature')
+    >>> browser.getControl(name='field.lifecycle').displayValue
+    ['Mature']
+    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+    >>> print message.renderContents()
+    There are no branches related to No Privileges Person in Launchpad...
 
 
 == Branch Badge Decoration ==
