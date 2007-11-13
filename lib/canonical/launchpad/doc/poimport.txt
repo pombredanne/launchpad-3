@@ -170,13 +170,8 @@ A successful import is confirmed by email.
 The correct message IDs now show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
-    >>> for potmsgset in potmsgsets:
-    ...     print potmsgset.msgid_singular.msgid
-    foo
-    bar
-    baz
-    Foo %s
-    Singular %d
+    >>> [potmsgset.msgid_singular for potmsgset in potmsgsets]
+    [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
 
 The file references field should be there
 
@@ -653,7 +648,7 @@ translations for a distroseries.
     ...     distroseries=warty)
     >>> potemplate = subset.new(
     ...     name='firefox-warty',
-    ...     translation_domain='firefox',
+    ...     translation_domain='firefox-warty',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
