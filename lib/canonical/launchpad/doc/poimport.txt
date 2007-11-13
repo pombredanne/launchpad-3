@@ -246,8 +246,8 @@ This is the dbschema that controls the validation of a translation.
     >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
-template. Remember, we need to tell the system that this po file is a
-"published" one.
+template. Remember, we need to tell the system that this po file is an
+"imported" one.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_with_errors, True, person,
