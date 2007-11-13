@@ -31,4 +31,9 @@ ALTER TABLE BugBranch
 ALTER TABLE SpecificationBranch
     ALTER COLUMN registrant SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+-- Need indexes for people merge
+CREATE INDEX bugbranch__registrant__idx ON BugBranch(registrant);
+CREATE INDEX specificationbranch__registrant__idx
+    ON SpecificationBranch(registrant);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 20, 0);

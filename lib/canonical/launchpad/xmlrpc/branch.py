@@ -125,10 +125,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if not whiteboard:
             whiteboard = None
 
-        # Use the branch owner when creating the link here in order to
-        # maintain backward API compatability.  This should be right most of
-        # the time.
-        bug.addBranch(branch, registrant=branch.owner, whiteboard=whiteboard)
+        # Since this API is controlled using launchpad.AnyPerson there must be
+        # an authenticated person, so use this person as the registrant.
+        registrant = getUtility(ILaunchBag).user
+        bug.addBranch(branch, registrant=registrant, whiteboard=whiteboard)
         return canonical_url(bug)
 
 

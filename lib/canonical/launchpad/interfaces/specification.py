@@ -866,7 +866,7 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         :param branch: The branch to link to this specification.
         :param registrant: The user making the link.
         :param summary: Free form text which can be used to describe
-            implemenation details.
+            implementation details.
         """
 
 
