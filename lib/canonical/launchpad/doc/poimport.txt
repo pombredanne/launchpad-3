@@ -192,9 +192,9 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.path = u'po/cy.po'
 
-It's newly created, so it has no message sets yet.
+It's newly created, so it has no translated messages yet.
 
-    >>> pofile.currentMessageSets().count()
+    >>> pofile.getPOTMsgSetTranslated().count()
     0
 
 And the statistics reflect it.
@@ -241,8 +241,8 @@ This is the dbschema that controls the validation of a translation.
     >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
-template. Remember, we need to tell the system that this po file is a
-"published" one.
+template. Remember, we need to tell the system that this po file is an
+"imported" one.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_with_errors, True, person,
@@ -278,53 +278,56 @@ And the statistics reflect it.
     >>> pofile.currentCount()
     3
 
-Here's a current message set: i.e. it has a corresponding current message set
-in the PO template. It should not be publishedfuzzy.
+Here's a current message: i.e. it has a corresponding current message
+set in the PO template. It was not marked as fuzzy the last time it was
+imported.
 
-    >>> messageSets = list(pofile.currentMessageSets())
-    >>> messageSets[0].potmsgset.msgid
+    >>> message = pofile.translation_messages[0]
+    >>> message.potmsgset.msgid_singular.msgid
     u'foo'
-    >>> messageSets[0].publishedfuzzy
+    >>> message.was_fuzzy_in_last_import
     False
 
 And should be accepted by our validator.
 
-    >>> published = messageSets[0].getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.OK
+    >>> published = message.potmsgset.getImportedTranslationMessage(
+    ...     pofile.language)
+    >>> published.validation_status == TranslationValidationStatus.OK
     True
 
 And here's a non-current message set. It shouldn't be fuzzy either.
 
     >>> messageSets = list(pofile.getPOMsgSetsNotInTemplate())
-    >>> messageSets[0].potmsgset.msgid
+    >>> messageSets[0].potmsgset.msgid_singular.msgid
     u'balloon'
-    >>> messageSets[0].publishedfuzzy
+    >>> messageSets[0].was_fuzzy_in_last_import
     False
 
 This message set should be fuzzy, however.
 
-    >>> messageSet = pofile.getPOMsgSet(u'bar')
-    >>> messageSet.publishedfuzzy
+    >>> message = pofile[u'bar']
+    >>> message.was_fuzzy_in_last_import
     True
 
 And as we don't have a translation for it over the web, it should
 be the same for the active translation.
 
-    >>> messageSet.isfuzzy
+    >>> message.is_fuzzy
     True
 
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
     >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
+    >>> (published.validation_status ==
+    ...     TranslationValidationStatus.UNKNOWNERROR)
     True
 
 Check that the plural form was imported correctly.
 
     >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
     >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.OK
+    >>> published.validation_status == TranslationValidationStatus.OK
     True
     >>> messageSet.published_texts
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
