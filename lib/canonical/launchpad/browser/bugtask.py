@@ -81,7 +81,7 @@ from canonical.launchpad import helpers
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
-from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -361,6 +361,16 @@ class BugTaskSetNavigation(GetitemNavigation):
 class BugTaskContextMenu(BugContextMenu):
     """Context menu of actions that can be performed upon an `IBugTask`."""
     usedfor = IBugTask
+
+
+class BugTaskTextView(LaunchpadView):
+    """View for a simple text page displaying information about a bug task."""
+
+    def render(self):
+        """Return a text representation of the parent bug."""
+        view = BugTextView(self.context.bug, self.request)
+        view.initialize()
+        return view.render()
 
 
 class BugTaskView(LaunchpadView, CanBeMentoredView):
