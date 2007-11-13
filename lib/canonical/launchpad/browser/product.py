@@ -157,19 +157,19 @@ class ProductLicenseMixin:
             not license_widget.allow_pending_license):
             # License is optional on +edit page if not already set.
             self.setFieldError(
-                'licenses', 
+                'licenses',
                 'Select all licenses for this software or select '
                 'Other/Proprietary or Other/Open Source.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
-                    'license_info', 
+                    'license_info',
                     'A description of the "Other/Proprietary" '
                     'license you checked is required.')
         elif License.OTHER_OPEN_SOURCE in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
-                    'license_info', 
+                    'license_info',
                     'A description of the "Other/Open Source" '
                     'license you checked is required.')
         else:
@@ -551,8 +551,8 @@ class ProductView(LaunchpadView):
 
     @property
     def should_display_homepage(self):
-        return (self.context.homepageurl and 
-                self.context.homepageurl not in 
+        return (self.context.homepageurl and
+                self.context.homepageurl not in
                     [self.freshmeat_url, self.sourceforge_url])
 
     @cachedproperty
@@ -706,6 +706,23 @@ class ProductDownloadFilesView(LaunchpadView):
                                     file_.libraryfile.filename)
 
     @cachedproperty
+    def series_latest_first(self):
+        """Return a list of series for the product.
+
+        The list is sorted in reverse chronological order by date.
+        """
+        return sorted(self.product.serieses, key=datecreated, reverse=True)
+
+    @cachedproperty
+    def has_download_files(self):
+        """Across series and releases do any download files exist?"""
+        for series in self.product.serieses:
+            for release in series.releases:
+                if release.files.count() > 0:
+                    return True
+        return False
+
+    @cachedproperty
     def milestones(self):
         """A mapping between series and releases that are milestones."""
         result = dict()
@@ -745,7 +762,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     def setUpWidgets(self):
         super(ProductEditView, self).setUpWidgets()
-        # Licenses are optional on +edit page if they have not already 
+        # Licenses are optional on +edit page if they have not already
         # been set. Subclasses may not have 'licenses' widget.
         # ('licenses' in self.widgets) is broken.
         if (len(self.context.licenses) == 0 and
@@ -976,7 +993,7 @@ class ProductSetView(LaunchpadView):
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     """Abstract class for adding a new product.
 
-    ProductLicenseMixin requires the "product" attribute be set in the 
+    ProductLicenseMixin requires the "product" attribute be set in the
     child classes' action handler.
     """
 
@@ -1002,7 +1019,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 
 class ProductAddView(ProductAddViewBase):
 
-    field_names = (ProductAddViewBase.field_names 
+    field_names = (ProductAddViewBase.field_names
                    + ['owner', 'project', 'reviewed'])
 
     label = "Register an upstream open source project"

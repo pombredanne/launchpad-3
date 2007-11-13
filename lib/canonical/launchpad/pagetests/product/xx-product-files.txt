@@ -5,7 +5,10 @@ Launchpad can show you a product's downloadable files, by series, with links to 
 Look at a project with no releases and ensure the download page does
 not show any files.
 
-    >>> anon_browser.open('http://launchpad.dev/aptoncd/+download')
+    >>> anon_browser.open('http://launchpad.dev/aptoncd/')
+    >>> anon_browser.getLink('Download project files').click()
+    >>> anon_browser.url
+    'http://launchpad.dev/aptoncd/+download'
     >>> anon_browser.title
     'APTonCD project files'
     >>> content = find_main_content(anon_browser.contents)
@@ -20,7 +23,8 @@ not show any files.
 Look at a project with a release but no download files.  Ensure the download
 page does not show any files.
 
-    >>> anon_browser.open('http://launchpad.dev/alsa-utils/+download')
+    >>> anon_browser.open('http://launchpad.dev/alsa-utils/')
+    >>> anon_browser.getLink('Download project files').click()
     >>> anon_browser.url
     'http://launchpad.dev/alsa-utils/+download'
     >>> content = find_main_content(anon_browser.contents)
@@ -75,6 +79,28 @@ Now, login as a firefox admin and see the delete fields.
     Download
     Release
     Description
+
+A project owner should not see the delete button when there are no files.
+
+    >>> alsa_owner = setupBrowser(
+    ...     auth='Basic foo.bar@canonical.com:test')
+    >>> alsa_owner.open('http://launchpad.dev/alsa-utils/')
+    >>> alsa_owner.getLink('Download project files').click()
+    >>> alsa_owner.title
+    'alsa-utils project files'
+    >>> content = find_main_content(alsa_owner.contents)
+    >>> form = content('form')[0]
+    >>> h2 = form('h2')[0]
+    >>> print h2.string.strip()
+    Release series &#8220;trunk&#8221;
+    >>> p = form('p')[0]
+    >>> print p.contents[0].string.strip()
+    Add download file for release:...
+    >>> alsa_owner.getControl('Delete Files')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Delete Files'
+
 
 == Adding new files ==
 

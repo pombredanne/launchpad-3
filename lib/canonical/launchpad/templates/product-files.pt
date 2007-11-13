@@ -15,11 +15,6 @@
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-top-contributors" />
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
    <h1>Download project files</h1>
 </metal:heading>
@@ -85,16 +80,18 @@
         </table>
 
       </tal:seriesfilesexist>
+
       <tal:not_owner condition="not: has_edit">
         <p tal:condition="not: series/release_files">
           No download files are linked to this series.
         </p>
       </tal:not_owner>
     </tal:series>
-    <input tal:condition="has_edit"
-           type="submit"
-           name="delete_files"
-           value="Delete Files" />
+    <input tal:condition="python: has_edit and view.has_download_files"
+        type="submit"
+        name="delete_files"
+        value="Delete Files" />
+
   </form>
 
 </div>
