@@ -1660,6 +1660,19 @@ class BugTaskSearchListingView(LaunchpadFormView):
         search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
+        unbatchedTasks = self.searchUnbatched(searchtext, context, extra_params)
+        return self._getBatchNavigator(unbatchedTasks)
+
+    def searchUnbatched(self, searchtext=None, context=None, extra_params=None):
+        """Return an IBugTaskSet for the GET search criteria.
+
+        If :searchtext: is None, the searchtext will be gotten from the
+        request.
+
+        :extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in :extra_params: take
+        precedence over request params.
+        """
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
@@ -1667,7 +1680,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         tasks = context.searchTasks(search_params)
-        return self._getBatchNavigator(tasks)
+        return tasks
 
     def getWidgetValues(
         self, vocabulary_name=None, vocabulary=None, default_values=()):
