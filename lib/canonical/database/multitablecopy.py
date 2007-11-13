@@ -124,7 +124,7 @@ class MultiTableCopy:
     and Y to the algorithm, then x2's instance of that foreign key will refer
     not to y1 but to the new y2.  Any rows in X whose associated rows of Y are
     not copied, are also not copied.  This can be useful when copying data in
-    entire sub-trees of the schema graph, e.g. "one distrorelease and all the
+    entire sub-trees of the schema graph, e.g. "one distroseries and all the
     translations associated with it."
 
     All this happens in a two-stage process:
