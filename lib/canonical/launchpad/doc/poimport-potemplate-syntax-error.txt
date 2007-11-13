@@ -50,6 +50,7 @@ Now, is time to create the new potemplate
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.new(
   ...     name='firefox',
+  ...     translation_domain='firefox',
   ...     path='po/firefox.pot',
   ...     owner=person)
 
