@@ -147,7 +147,8 @@ description of bug 1 directly from the Mozilla Firefox-specific text page:
     >>> print anon_browser.headers['content-type']
     text/plain;charset=utf-8
 
-The textual description contains the same information as before:
+The textual report contains the same information as the report provided by the
+parent bug context:
 
     >>> text_bug_task = anon_browser.contents
     >>> print text_bug_task
@@ -155,16 +156,25 @@ The textual description contains the same information as before:
     title: Firefox does not support SVG
     ...
 
-Apart from the multi-part separator strings (necessary to delimit individual
-comments from one another), both textual reports contain the same information:
+Although the bug task's textual report contains identical information to the
+parent bug's textual report, it's not possible to show this by comparing the
+response strings to one another directly. This is because each report contains
+multiple sections separated by a pseudo-random string that changes from one
+request to another.
+
+However, we can show that the reports are identical by comparing the sections
+that comprise them. First, we use a regular expression to extract the pseudo-
+random separator string for each report:
 
     >>> import re
     >>> separator_regex = re.compile(
     ...     'Content-Type: multipart/mixed; boundary\\="([^"]+)"')
 
-    >>> separator_bug      = separator_regex.findall(text_bug)     [0]
+    >>> separator_bug = separator_regex.findall(text_bug)[0]
     >>> separator_bug_task = separator_regex.findall(text_bug_task)[0]
-    
+
+Now we can show that the individual sections are identical for each report:
+
     >>> text_bug.split(separator_bug) == text_bug_task.split(separator_bug_task)
     True
 
