@@ -133,11 +133,11 @@ class IPackageUpload(Interface):
     def setRejected():
         """Set queue state to REJECTED."""
 
-    def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
-        """Call setAccepted, commit transaction and send notification email."""
+    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+        """Call setAccepted, do a syncUpdate, and send notification email."""
 
-    def rejectFromQueue(self, logger=None, dry_run=False):
-        """Call setRejected, commit transaction and send notification email."""
+    def rejectFromQueue(logger=None, dry_run=False):
+        """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it
