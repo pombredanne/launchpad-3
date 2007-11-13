@@ -94,16 +94,19 @@ def generateTokenAndValidationEmail(email, team):
     token.sendTeamEmailAddressValidationEmail(user)
 
 
-class MailingListRelatedView(LaunchpadFormView):
-    """Contains common functionality for retrieving and checking the
-    state of mailing lists."""
+class MailingListTeamBaseView(LaunchpadFormView):
+    """A base view for manipulating a team's mailing list.
+
+    This class contains common functionality for retrieving and
+    checking the state of mailing lists.
+    """
 
     def _getList(self):
-        """Return this team's mailing list."""
-        return getUtility(IMailingListSet).get(self.context.name)
+        """Try to find a mailing list for this team.
 
-    def _getList(self):
-        """Return this team's mailing list."""
+        :return: The mailing list object, or None if this team has no
+        mailing list.
+        """
         return getUtility(IMailingListSet).get(self.context.name)
 
     def getListInState(self, *statuses):
@@ -120,19 +123,28 @@ class MailingListRelatedView(LaunchpadFormView):
         return None
 
     @property
-    def list_can_be_contact_method(self):
-        """See `MailingList.canBeContactMethod`.
+    def list_is_or_could_be_contact_method(self):
+        """Checks whether or not
+
+        The list must exist and must be in a state acceptable to
+        MailingList.canBeContactMethod.
         """
         mailing_list = self._getList()
-        return mailing_list and mailing_list.canBeContactMethod()
+        return mailing_list is not None and mailing_list.canBeContactMethod()
 
     @property
     def mailinglist_address(self):
         """The address for this team's mailing list."""
-        return '%s@%s' % (self.context.name, MAILING_LISTS_DOMAIN)
+        mailing_list = self._getList()
+        if mailing_list is None:
+            raise AssertionError(
+                "Attempt to find address of nonexistent mailing list.")
+        else:
+            return mailing_list.address
 
 
-class TeamContactAddressView(MailingListRelatedView):
+class TeamContactAddressView(MailingListTeamBaseView):
+    """A view for manipulating the team's contact address."""
 
     schema = ITeamContactAddressForm
     label = "Contact address"
@@ -174,7 +186,7 @@ class TeamContactAddressView(MailingListRelatedView):
                 hosted_list_term_index = i
                 break
         if (config.mailman.expose_hosted_mailing_lists
-            and self.list_can_be_contact_method):
+            and self.list_is_or_could_be_contact_method):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
@@ -204,7 +216,7 @@ class TeamContactAddressView(MailingListRelatedView):
         This also ensures the mailing list is active if the HOSTED_LIST option
         has been chosen.
         """
-        if data.get('contact_method') == TeamContactMethod.EXTERNAL_ADDRESS:
+        if data['contact_method'] == TeamContactMethod.EXTERNAL_ADDRESS:
             email = data['contact_address']
             if not email:
                 self.setFieldError(
@@ -287,7 +299,14 @@ class TeamContactAddressView(MailingListRelatedView):
 
         self.next_url = canonical_url(self.context)
 
-class TeamMailingListConfigurationView(MailingListRelatedView):
+
+class TeamMailingListConfigurationView(MailingListTeamBaseView):
+    """A team for creating and configuring a team's mailing list.
+
+    Allows creating a request for a list, cancelling the request,
+    setting the welcome message, deactivating, and reactivating the
+    list.
+    """
 
     schema = IMailingList
     field_names = ['welcome_message']
@@ -324,28 +343,40 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
         self.next_url = canonical_url(self.context)
 
     def cancel_list_creation_validator(self, action, data):
+        """Validator for the `cancel_list_creation` action.
+
+        Adds an error if someone tries to cancel a request that's
+        already been approved or declined. This can only happen
+        through bypassing the UI.
+        """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if (mailing_list is None
-            or mailing_list.status != MailingListStatus.REGISTERED):
+        if self.getListInState(MailingListStatus.REGISTERED) is None:
             self.addError("This application can't be cancelled.")
 
     @action('Cancel Application', name='cancel_list_creation',
             validator=cancel_list_creation_validator)
     def cancel_list_creation(self, action, data):
+        """Cancels a pending mailing list registration."""
         getUtility(IMailingListSet).get(self.context.name).cancelRegistration()
         self.request.response.addInfoNotification(
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
 
     def request_list_creation_validator(self, action, data):
-        if self.getListInState(MailingListStatus.DECLINED,
-                               MailingListStatus.INACTIVE) is not None:
+        """Validator for the `request_list_creation` action.
+
+        Adds an error if someone tries to request a mailing list for a
+        team that already has one. This can only happen through
+        bypassing the UI.
+        """
+        if not self.list_can_be_requested:
             self.addError(
-                "There is an application for a mailing list already.")
+                "You cannot request a new mailing list for this team.")
 
     @action('Apply for Mailing List', name='request_list_creation',
             validator=request_list_creation_validator)
     def request_list_creation(self, action, data):
+        """Creates a new mailing list."""
         list_set = getUtility(IMailingListSet)
         mailing_list = list_set.get(self.context.name)
         if mailing_list is None:
@@ -353,16 +384,15 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
             self.request.response.addInfoNotification(
                 "Mailing list requested and queued for approval.")
         else:
-            mailing_list.reactivate()
-            self.request.response.addInfoNotification(
-                "This team's Launchpad mailing list is currently "
-                "inactive and will be reactivated shortly.")
+            raise AssertionError(
+                "Tried to create a mailing list for a team that "
+                "already has one.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
         """Adds an error if someone tries to deactivate a non-active list.
 
-        This can only happen by bypassing the UI.
+        This can only happen through bypassing the UI.
         """
         if not self.list_can_be_deactivated:
             self.addError("This list can't be deactivated.")
@@ -370,6 +400,7 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
     @action('Deactivate this Mailing List', name='deactivate_list',
             validator=deactivate_list_validator)
     def deactivate_list(self, action, data):
+        """Deactivates a mailing list."""
         getUtility(IMailingListSet).get(self.context.name).deactivate()
         self.request.response.addInfoNotification(
             "The mailing list will be deactivated shortly.")
@@ -378,7 +409,7 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
     def reactivate_list_validator(self, action, data):
         """Adds an error if someone tries to reactivate a non-deactivated list.
 
-        This can only happen by bypassing the UI.
+        This can only happen through bypassing the UI.
         """
         if not self.list_can_be_reactivated:
             self.addError("Only a deactivated list can be reactivated.")
@@ -393,14 +424,26 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
 
     @property
     def list_could_be_contact_method_but_isnt(self):
-        return (self.list_can_be_contact_method and
-                (not self.context.preferredemail or
+        """The list could be the contact method for its team, but isn't.
+
+        The list exists and is in a compatible state, but isn't set as
+        the contact method.
+        """
+
+        return (self.list_is_or_could_be_contact_method and
+                (self.context.preferredemail is None or
                  self.mailing_list.address !=
                  self.context.preferredemail.email))
 
     @property
     def mailing_list_status_message(self):
-        """A status message describing the state of the mailing list."""
+        """A status message describing the state of the mailing list.
+
+        This status message helps a user be aware of behind-the-scenes
+        processes that would otherwise manifest only as mysterious
+        failures and inconsistencies.
+        """
+
         if not self.mailing_list:
             return None
         elif self.mailing_list.status == MailingListStatus.REGISTERED:
@@ -421,17 +464,23 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
         elif self.mailing_list.status == MailingListStatus.INACTIVE:
             return _("This team's mailing list has been deactivated.")
         elif self.mailing_list.status == MailingListStatus.FAILED:
-            return _("This team's mailing list could not be created.")
+            return _("This team's mailing list could not be created. Please "
+                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                     'contact a Launchpad administrator</a> for further '
+                     'assistance.')
         elif self.mailing_list.status == MailingListStatus.MODIFIED:
-            return _("Some changes to this team's mailing list are pending "
-                     "an update and have not yet taken effect.")
+            return _("An update to this team's mailing list is pending "
+                     "and has not yet taken effect.")
         elif self.mailing_list.status == MailingListStatus.UPDATING:
-            return _("Changes to this team's mailing list are currently "
-                     "being propagated.")
+            return _("A change to this team's mailing list is currently "
+                     "being applied.")
         elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
             return _("This team's mailing list is in an inconsistent state "
-                     "because changes to its configuration failed to "
-                     "propagate.")
+                     'because a change to its configuration was not applied. '
+                     'Please '
+                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                     'contact a Launchpad administrator</a> for further '
+                     'assistance.')
         else:
             raise AssertionError(
                 "Unknown mailing list status: %s" % self.mailing_list.status)

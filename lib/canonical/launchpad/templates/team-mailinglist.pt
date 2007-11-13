@@ -32,7 +32,7 @@
         </span>
       </div>
 
-      <p tal:condition="view/list_can_be_contact_method">
+      <p tal:condition="view/list_is_or_could_be_contact_method">
         This team's mailing list is active at
         <b><address tal:replace="view/mailinglist_address" /></b>.
       </p>
@@ -72,7 +72,7 @@
                value="Set mailing list as contact address" />
       </p>
 
-      <div tal:condition="view/list_can_be_contact_method">
+      <div tal:condition="view/list_is_or_could_be_contact_method">
        <tal:widget define="widget nocall:view/widgets/welcome_message">
          <metal:block use-macro="context/@@launchpad_form/widget_row" />
        </tal:widget>
@@ -80,7 +80,7 @@
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons">
-      <p tal:condition="view/list_can_be_contact_method">
+      <p tal:condition="view/list_is_or_could_be_contact_method">
         <input tal:replace="structure view/save_action/render" />
       </p>
       <p tal:condition="view/list_can_be_deactivated">
