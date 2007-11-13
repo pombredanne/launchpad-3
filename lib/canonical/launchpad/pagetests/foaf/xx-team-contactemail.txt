@@ -264,17 +264,28 @@ list configuration screen displays a message to this effect:
 
 The mailing list configuration screen makes it easy to set the team
 contact address directly, rather than going through the contact
-address screen:
+address screen. The form works through Javascript; to test it I'll
+verify the button's script and then carry out the intent of that
+script.
 
-    >>> browser.getControl('Set mailing list as contact address').click()
+    >>> print find_tag_by_id(browser.contents,
+    ...                      'submit_contact_address_form')['onclick']
+    document.forms.set_mailing_list_as_contact_address.submit();
+    >>> browser.getForm('set_mailing_list_as_contact_address').submit()
+
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> get_feedback_messages(browser)
-    []
+
+The message about the team's mailing list is gone, as is the button.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> get_feedback_messages(browser)
-    []
+    >>> find_tag_by_id(browser.contents,
+    ...                'mailing_list_not_contact_address') is None
+    True
+    >>> browser.getControl('submit_contact_address_form')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
 
 == Customizing the welcome message ==
 
