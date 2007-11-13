@@ -60,6 +60,7 @@ And this is the POTemplate where the import will be done.
 
     >>> potemplate = subset.new(
     ...     name='firefox',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
@@ -169,8 +170,13 @@ A successful import is confirmed by email.
 The correct message IDs now show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
-    >>> [potmsgset.msgid for potmsgset in potmsgsets]
-    [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
+    >>> for potmsgset in potmsgsets:
+    ...     print potmsgset.msgid_singular.msgid
+    foo
+    bar
+    baz
+    Foo %s
+    Singular %d
 
 The file references field should be there
 
@@ -191,9 +197,9 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.path = u'po/cy.po'
 
-It's newly created, so it has no message sets yet.
+It's newly created, so it has no translated messages yet.
 
-    >>> pofile.currentMessageSets().count()
+    >>> pofile.getPOTMsgSetTranslated().count()
     0
 
 And the statistics reflect it.
@@ -277,53 +283,56 @@ And the statistics reflect it.
     >>> pofile.currentCount()
     3
 
-Here's a current message set: i.e. it has a corresponding current message set
-in the PO template. It should not be publishedfuzzy.
+Here's a current message: i.e. it has a corresponding current message
+set in the PO template. It was not marked as fuzzy the last time it was
+imported.
 
-    >>> messageSets = list(pofile.currentMessageSets())
-    >>> messageSets[0].potmsgset.msgid
+    >>> message = pofile.translation_messages[0]
+    >>> message.potmsgset.msgid_singular.msgid
     u'foo'
-    >>> messageSets[0].publishedfuzzy
+    >>> message.was_fuzzy_in_last_import
     False
 
 And should be accepted by our validator.
 
-    >>> published = messageSets[0].getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.OK
+    >>> published = message.potmsgset.getImportedTranslationMessage(
+    ...     pofile.language)
+    >>> published.validation_status == TranslationValidationStatus.OK
     True
 
 And here's a non-current message set. It shouldn't be fuzzy either.
 
     >>> messageSets = list(pofile.getPOMsgSetsNotInTemplate())
-    >>> messageSets[0].potmsgset.msgid
+    >>> messageSets[0].potmsgset.msgid_singular.msgid
     u'balloon'
-    >>> messageSets[0].publishedfuzzy
+    >>> messageSets[0].was_fuzzy_in_last_import
     False
 
 This message set should be fuzzy, however.
 
-    >>> messageSet = pofile.getPOMsgSet(u'bar')
-    >>> messageSet.publishedfuzzy
+    >>> message = pofile[u'bar']
+    >>> message.was_fuzzy_in_last_import
     True
 
 And as we don't have a translation for it over the web, it should
 be the same for the active translation.
 
-    >>> messageSet.isfuzzy
+    >>> message.is_fuzzy
     True
 
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
     >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
+    >>> (published.validation_status ==
+    ...     TranslationValidationStatus.UNKNOWNERROR)
     True
 
 Check that the plural form was imported correctly.
 
     >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
     >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.OK
+    >>> published.validation_status == TranslationValidationStatus.OK
     True
     >>> messageSet.published_texts
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
@@ -644,6 +653,7 @@ translations for a distroseries.
     ...     distroseries=warty)
     >>> potemplate = subset.new(
     ...     name='firefox-warty',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
