@@ -14,7 +14,6 @@ CREATE TABLE BranchMergeRobot
   registrant INT REFERENCES Person NOT NULL,
   owner INT REFERENCES Person NOT NULL,
   name TEXT NOT NULL,
-  status INT NOT NULL, -- 1: Manual, 2: Automatic
   whiteboard TEXT,
   date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
     DEFAULT timezone('UTC'::text, now()),
@@ -27,12 +26,27 @@ a the branch through the CODE_APPROVED stage.
 */
 ALTER TABLE Branch
   ADD COLUMN reviewer INT REFERENCES Person;
+
 /*
 A null queue means that there is no landing bot, and the owner
 of the branch can control the queue positions.
 */
 ALTER TABLE Branch
   ADD COLUMN merge_robot INT REFERENCES BranchMergeRobot;
+/*
+When there is no merge_robot set, the merge_control_status
+must be set to Manual.  If a merge_robot is set, then the branch
+merge_control_status can be set to Automatic which means that the
+merge robot will start merging the branches.
+*/
+ALTER TABLE Branch
+  ADD COLUMN merge_control_status INT NOT NULL DEFAULT 1;
+-- 1: Manual, 2: Automatic
+
+ALTER TABLE Branch
+  ADD CONSTRAINT branch_robotic_control
+  CHECK (merge_robot IS NULL AND merge_control_status = 1) OR
+        (merge_robot IS NOT NULL);
 
 
 ALTER TABLE BranchMergeProposal
@@ -102,27 +116,30 @@ ALTER TABLE BranchMergeProposal
 
 /*
 If the merge proposal is being merged by a bot, then these
-two fields will be populated, otherwise they will stay null.
+fields will be populated, otherwise they will stay null.
 */
 ALTER TABLE BranchMergeProposal
   ADD COLUMN date_merge_started TIMESTAMP WITHOUT TIME ZONE;
 ALTER TABLE BranchMergeProposal
+  ADD COLUMN date_merge_finished TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE BranchMergeProposal
   ADD COLUMN merge_log_file INT REFERENCES LibraryFileAlias;
 
-/*
-Moving to revision ids rather than solely revision numbers.
-For all branch types other than REMOTE we can show the user
-the revision number from a revision id, and if the branch
-is a remote, then the user will be able to store a number
-in the text file.
 
-If being updated from the bzr command line (as we will want
-to be able to do when the APIs are availalble) then bzrlib
-has easy access to the revision ids.
-*/
-ALTER TABLE BranchMergeProposal
-  DROP COLUMN merged_revno;
-ALTER TABLE BranchMergeProposal
-  DROP COLUMN merge_reporter;
+-- Need indexes for people merge
+CREATE INDEX branchmergerobot__registrant__idx
+  ON BranchMergeRobot(registrant);
+CREATE INDEX branchmergerobot__owner__idx
+  ON BranchMergeRobot(owner);
+
+CREATE INDEX branch__reviewer__idx ON Branch(reviewer);
+
+CREATE INDEX branchmergeproposal__reviewer__idx
+  ON BranchMergeProposal(reviewer);
+CREATE INDEX branchmergeproposal__queuer__idx
+  ON BranchMergeProposal(queuer);
+CREATE INDEX branchmergeproposal__reviewer__idx
+  ON BranchMergeProposal(reviewer);
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 91, 0);
