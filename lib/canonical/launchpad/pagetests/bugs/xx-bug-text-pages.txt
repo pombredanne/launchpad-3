@@ -232,16 +232,14 @@ For example, users can see the IDs of open bugs on Mozilla Firefox:
     5
     4
 
-The textual bugs page supports advanced searches in the same way as the 
-graphical bugs page. To perform an advanced search, users can append the
-same search parameters to any textual bugs page URL:
+The textual bugs page supports advanced searches in the same way as the
+graphical bugs page. To perform an advanced search, users can append any
+of the standard set of search parameters to a textual bugs page URL:
 
     >>> base_url = 'http://launchpad.dev/firefox/+bugs-text'
     >>> search_parameters = 'field.status:list=FIXRELEASED'
     >>> url = base_url + '?' + search_parameters
     >>> anon_browser.open(url)
-    >>> anon_browser.url == url
-    True
     >>> print anon_browser.headers['content-type']
     text/plain;charset=utf-8
 
