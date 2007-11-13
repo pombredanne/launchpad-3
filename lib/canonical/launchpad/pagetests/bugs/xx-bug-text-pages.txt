@@ -4,190 +4,197 @@
 
 Add some attachments to bug 1:
 
-  >>> import StringIO
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests.ppa import publishToPPA
-  >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-  >>> from canonical.launchpad.database import Bug, Person
-  >>> login("foo.bar@canonical.com")
-  >>> mark = Person.selectOneBy(name="sabdfl")
-  >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
-  >>> bug = Bug.get(1)
-  >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
-  >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
-  ...   content_type="text/html")
-  >>> content = StringIO.StringIO("do we need to")
-  >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
-  ...   "file with space.txt", content_type="text/plain")
+    >>> import StringIO
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.database import Bug, Person
+    >>> login("foo.bar@canonical.com")
+    >>> mark = Person.selectOneBy(name="sabdfl")
+    >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
+    >>> bug = Bug.get(1)
+    >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
+    >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
+    ...     content_type="text/html")
+    >>> content = StringIO.StringIO("do we need to")
+    >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
+    ...     "file with space.txt", content_type="text/plain")
 
 And cycle through all statuses so the dates are present:
 
-  >>> from canonical.launchpad.interfaces import BugTaskStatus
-  >>> t0 = bug.bugtasks[0]
-  >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
-  >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
-  >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
-  >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
-  >>> logout()
-  >>> flush_database_updates()
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> t0 = bug.bugtasks[0]
+    >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
+    >>> logout()
+    >>> flush_database_updates()
 
 == The Text Page ==
 
 Get text page for a single bug.
 
-  >>> anon_browser.open('http://launchpad.dev/bugs/1/+text')
-  >>> anon_browser.url
-  'http://launchpad.dev/bugs/1/+text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/bugs/1/+text')
+    >>> anon_browser.url
+    'http://launchpad.dev/bugs/1/+text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
-  >>> print anon_browser.contents
-  bug: 1
-  title: Firefox does not support SVG
-  date-reported: Thu, 01 Jan 2004 20:58:04 -0000
-  date-updated: ...
-  reporter: Sample Person (name12)
-  duplicate-of: 
-  duplicates: 
-  attachments:
-   http://.../file_a.txt text/html
-   http://.../file%20with%20space.txt text/plain
-  subscribers: 
-   Steve Alexander (stevea)
-   Sample Person (name12)
-  <BLANKLINE>
-  task: firefox
-  status: Fix Released
-  date-created: Fri, 02 Jan 2004 03:49:22 -0000
-  date-confirmed: ...
-  date-assigned: 2005-01-02 11:07:20.330975+00:00
-  date-inprogress: ...
-  date-closed: ...
-  reporter: Sample Person (name12)
-  importance: Low
-  assignee: M...rk Sh...ttlew...rth (sabdfl)
-  milestone: 
-  <BLANKLINE>
-  task: mozilla-firefox (Ubuntu)
-  status: New
-  date-created: Sat, 17 Jan 2004 01:15:48 -0000
-  date-assigned: 2005-01-17 01:15:48.241836+00:00
-  reporter: Foo Bar (name16)
-  importance: Medium
-  component: main
-  assignee: 
-  milestone: 
-  <BLANKLINE>
-  task: mozilla-firefox (Debian)
-  status: Confirmed
-  date-created: Sun, 04 Jan 2004 03:49:22 -0000
-  date-assigned: 2005-01-04 11:07:20.584746+00:00
-  reporter: Sample Person (name12)
-  watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
-  importance: Low
-  assignee: 
-  milestone: 
-  <BLANKLINE>
-  Content-Type: multipart/mixed; boundary="...
-  MIME-Version: 1.0
-  <BLANKLINE>
-  --...
-  Content-Type: text/plain; charset="utf-8"
-  Content-Transfer-Encoding: quoted-printable
-  <BLANKLINE>
-  Firefox needs to support embedded SVG images, now that the standard has been finalised.
-  <BLANKLINE>
-  The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.
-  --...
-  ...
-  --...
-  Content-Type: text/plain; charset="utf-8"
-  Content-Transfer-Encoding: quoted-printable
-  Author: ... (sabdfl)
-  Date: ...
-  Message-Id: ...
-  <BLANKLINE>
-  comment for file with space
-  --...
+    >>> print anon_browser.contents
+    bug: 1
+    title: Firefox does not support SVG
+    date-reported: Thu, 01 Jan 2004 20:58:04 -0000
+    date-updated: ...
+    reporter: Sample Person (name12)
+    duplicate-of: 
+    duplicates: 
+    attachments:
+        http://.../file_a.txt text/html
+        http://.../file%20with%20space.txt text/plain
+    tags: 
+    subscribers: 
+        Steve Alexander (stevea)
+        Sample Person (name12)
+    <BLANKLINE>
+    task: firefox
+    status: Fix Released
+    date-created: Fri, 02 Jan 2004 03:49:22 -0000
+    date-confirmed: ...
+    date-assigned: 2005-01-02 11:07:20.330975+00:00
+    date-inprogress: ...
+    date-closed: ...
+    reporter: Sample Person (name12)
+    importance: Low
+    assignee: M...rk Sh...ttlew...rth (sabdfl)
+    milestone: 
+    <BLANKLINE>
+    task: mozilla-firefox (Ubuntu)
+    status: New
+    date-created: Sat, 17 Jan 2004 01:15:48 -0000
+    date-assigned: 2005-01-17 01:15:48.241836+00:00
+    reporter: Foo Bar (name16)
+    importance: Medium
+    component: main
+    assignee: 
+    milestone: 
+    <BLANKLINE>
+    task: mozilla-firefox (Debian)
+    status: Confirmed
+    date-created: Sun, 04 Jan 2004 03:49:22 -0000
+    date-assigned: 2005-01-04 11:07:20.584746+00:00
+    reporter: Sample Person (name12)
+    watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
+    importance: Low
+    assignee: 
+    milestone: 
+    <BLANKLINE>
+    Content-Type: multipart/mixed; boundary="...
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --...
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: quoted-printable
+    <BLANKLINE>
+    Firefox needs to support embedded SVG images, now that the standard has
+    been finalised.
+    <BLANKLINE>
+    The SVG standard 1.0 is complete, and draft implementations for Firefox
+    exist. One of these implementations needs to be integrated with the base
+    install of Firefox. Ideally, the implementation needs to include support
+    for the manipulation of SVG objects from JavaScript to enable interactive
+    and dynamic SVG drawings.
+    --...
+    ...
+    --...
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: quoted-printable
+    Author: ... (sabdfl)
+    Date: ...
+    Message-Id: ...
+    <BLANKLINE>
+    comment for file with space
+    --...
 
 Check a bug that is a duplicate.
 
-  >>> anon_browser.open('http://launchpad.dev/bugs/6/+text')
-  >>> anon_browser.url
-  'http://launchpad.dev/bugs/6/+text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/bugs/6/+text')
+    >>> anon_browser.url
+    'http://launchpad.dev/bugs/6/+text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
-  >>> print anon_browser.contents
-  bug: 6
-  ...
-  duplicate-of: 5
-  ...
+    >>> print anon_browser.contents
+    bug: 6
+    ...
+    duplicate-of: 5
+    ...
 
 Check the duplicate target.
 
-  >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
-  >>> anon_browser.url
-  'http://launchpad.dev/bugs/5/+text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
+    >>> anon_browser.url
+    'http://launchpad.dev/bugs/5/+text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
-  >>> print anon_browser.contents
-  bug: 5
-  ...
-  duplicate-of: 
-  duplicates: 6
-  ...
+    >>> print anon_browser.contents
+    bug: 5
+    ...
+    duplicate-of: 
+    duplicates: 6
+    ...
 
 Get bug text page for a product.
 
-  >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
-  >>> anon_browser.url
-  'http://launchpad.dev/firefox/+bugs-text'
-  >>> print anon_browser.headers['content-type']
-  text/plain;charset=utf-8 
+    >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
+    >>> anon_browser.url
+    'http://launchpad.dev/firefox/+bugs-text'
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8 
 
-  >>> print anon_browser.contents
-  1
-  4
-  5
-  6
+    >>> print anon_browser.contents
+    1
+    4
+    5
+    6
 
 == Private bugs ==
 
-  >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
-  >>> print admin_browser.contents
-  bug: 14
-  title: jokosher exposes personal details in its actions portlet
-  date-reported: Thu, 09 Aug 2007 11:39:16 -0000
-  date-updated: Thu, 09 Aug 2007 11:39:16 -0000
-  reporter: Karl Tilbury (karl)
-  duplicate-of:
-  duplicates:
-  private: yes
-  security: yes
-  attachments:
-  subscribers:
-   Karl Tilbury (karl)
-   Dafydd Harries (daf)
-  <BLANKLINE>
-  task: jokosher
-  status: New
-  date-created: Thu, 09 Aug 2007 11:39:16 -0000
-  reporter: Karl Tilbury (karl)
-  importance: Undecided
-  assignee:
-  milestone:
-  <BLANKLINE>
-  Content-Type: multipart/mixed; boundary="...
-  MIME-Version: 1.0
-  <BLANKLINE>
-  --...
-  Content-Type: text/plain; charset="utf-8"
-  Content-Transfer-Encoding: quoted-printable
-  <BLANKLINE>
-  Jokosher discloses to any passerby the fact that I am single and unwed
-  in its actions portlet. Please fix this blatant violacion of privacy
-  now!!
-  --...
+    >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
+    >>> print admin_browser.contents
+    bug: 14
+    title: jokosher exposes personal details in its actions portlet
+    date-reported: Thu, 09 Aug 2007 11:39:16 -0000
+    date-updated: Thu, 09 Aug 2007 11:39:16 -0000
+    reporter: Karl Tilbury (karl)
+    duplicate-of:
+    duplicates:
+    private: yes
+    security: yes
+    attachments:
+    tags: lunch-money
+    subscribers:
+        Karl Tilbury (karl)
+        Dafydd Harries (daf)
+    <BLANKLINE>
+    task: jokosher
+    status: New
+    date-created: Thu, 09 Aug 2007 11:39:16 -0000
+    reporter: Karl Tilbury (karl)
+    importance: Undecided
+    assignee:
+    milestone:
+    <BLANKLINE>
+    Content-Type: multipart/mixed; boundary="...
+    MIME-Version: 1.0
+    <BLANKLINE>
+    --...
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: quoted-printable
+    <BLANKLINE>
+    Jokosher discloses to any passerby the fact that I am single and unwed
+    in its actions portlet. Please fix this blatant violacion of privacy
+    now!!
+    --...
 

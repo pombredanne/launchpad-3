@@ -10,8 +10,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=299009
 
     >>> def print_tags(browser, tags):
     ...     """Find and print [tags] in browser.contents. End each with '--'."""
-    ...     from BeautifulSoup import BeautifulSoup
-    ...     soup = BeautifulSoup(browser.contents)
+    ...     soup = find_main_content(browser.contents)
     ...     for tag in soup.findAll(attrs={'id': tags}):
     ...         print "%s\n--\n" % tag.renderContents()
 

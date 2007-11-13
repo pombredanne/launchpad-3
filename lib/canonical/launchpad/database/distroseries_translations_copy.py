@@ -79,7 +79,7 @@ def _copy_active_translations_to_new_series(
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distrorelease = %s AND iscurrent' % quote(child.parentseries)
+    where = 'distroseries = %s AND iscurrent' % quote(child.parent_series)
     copier.extract('POTemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
@@ -91,7 +91,7 @@ def _copy_active_translations_to_new_series(
     cursor().execute('''
         UPDATE %s
         SET
-            distrorelease = %s,
+            distroseries = %s,
             datecreated =
                 timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone)
@@ -765,9 +765,9 @@ def _copy_active_translations_as_update(child, transaction, logger):
         WHERE
             pt1.potemplatename = pt2.potemplatename AND
             pt1.sourcepackagename = pt2.sourcepackagename AND
-            pt1.distrorelease = %s AND
-            pt2.distrorelease = %s
-        """ % sqlvalues(child.parentseries, child))
+            pt1.distroseries = %s AND
+            pt2.distroseries = %s
+        """ % sqlvalues(child.parent_series, child))
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_template_pkey "
         "ON temp_equiv_template(id)")
@@ -913,7 +913,7 @@ def copy_active_translations(child_series, transaction, logger):
     message, we don't have a way to figure whether the change was originally
     made in the parent or the child distroseries, so we don't migrate that.
     """
-    if child_series.parentseries is None:
+    if child_series.parent_series is None:
         # We don't have a parent from where we could copy translations.
         return
 
