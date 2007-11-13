@@ -26,6 +26,8 @@ from canonical.launchpad.interfaces.pomsgset import IPOMsgSet
 from canonical.launchpad.interfaces.posubmission import IPOSubmission
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+from canonical.launchpad.interfaces.translationgroup import (
+    TranslationPermission)
 
 
 class ZeroLengthPOExportError(Exception):
@@ -122,7 +124,7 @@ class IPOFile(IRosettaStats):
             This is inherited from the product, project and/or distro in which
             the pofile is found.
             '''),
-        vocabulary='TranslationPermission')
+        vocabulary=TranslationPermission)
 
     fuzzy_count = Int(
         title=_('The number of fuzzy messages in this po file.'),
@@ -165,7 +167,7 @@ class IPOFile(IRosettaStats):
         """Return an iterator over Current `IPOMessageSets` in this PO file."""
 
     def getHeader():
-        """Return an `ITranslationHeader` representing its header."""
+        """Return an `ITranslationHeaderData` representing its header."""
 
     def getPOMsgSet(msgid_text, only_current=False, context=None):
         """Return the `IPOMsgSet` in this `IPOFile` by msgid_text or None.

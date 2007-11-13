@@ -42,8 +42,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import BugTaskImportance
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -112,6 +112,8 @@ The "target" of an IBugTask is one of the following things:
 
     >>> upstream_task.target == evolution
     True
+    >>> print upstream_task.getPackageComponent()
+    None
 
   * a product series
 
@@ -122,6 +124,8 @@ The "target" of an IBugTask is one of the following things:
 
     >>> productseries_task = bugtaskset.createTask(
     ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
+    >>> print productseries_task.getPackageComponent()
+    None
     >>> IProductSeriesBugTask.providedBy(productseries_task)
     True
 
@@ -132,17 +136,26 @@ The "target" of an IBugTask is one of the following things:
 
     >>> distro_task.target == ubuntu
     True
+    >>> print distro_task.getPackageComponent()
+    None
 
   * a distroseries
 
     >>> distro_series_task.target == warty
     True
+    >>> print distro_series_task.getPackageComponent()
+    None
 
   * a distribution sourcepackage
 
     >>> from canonical.launchpad.database.distributionsourcepackage import DistributionSourcePackage
     >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
+    >>> distro_sp_task = bugtaskset.get(17)
+    >>> print distro_sp_task.getPackageComponent().name
+    main
     >>> distro_sp_task = bugtaskset.get(4)
+    >>> print distro_sp_task.getPackageComponent()
+    None
     >>> expected_target = DistributionSourcePackage(
     ...     distro_sp_task.distribution,
     ...     distro_sp_task.sourcepackagename)
@@ -159,6 +172,8 @@ The "target" of an IBugTask is one of the following things:
     >>> from canonical.launchpad.database import SourcePackage
     >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
+    >>> print distro_series_sp_task.getPackageComponent().name
+    main
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,
     ...     sourcepackagename=distro_series_sp_task.sourcepackagename)
@@ -703,11 +718,10 @@ to anyone.
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
-== Privacy and Unpriviledged Users ==
+== Privacy and Unprivileged Users ==
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
@@ -728,12 +742,11 @@ entitled _Privacy and Team Awareness_):
     >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
     ...     ubuntu_team)
 
-    >>> notify(SQLObjectToBeModifiedEvent(
-    ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
-
     >>> old_state = Snapshot(
     ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
-    >>> bug_upstream_firefox_no_svg_support.bug.private = True
+    >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
@@ -989,103 +1002,6 @@ target uses Malone as its official bugtracker.
     mozilla-firefox (Ubuntu)       True
     Ubuntu Warty                   True
     mozilla-firefox (Debian)       False
-
-
-== findExpirableBugTasks ==
-
-BugTaskSet provides findExpirableBugTasks to find bugtasks that
-qualify for expiration. The bugtasks must have the status of
-Incomplete, be unassigned, and affecting a distribution or
-product that uses Malone.
-
-
-findExpirableBugTasks requires a parameter for the minimum days old
-(min_days_old) that the bugtask has been in the Incomplete status.
-
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
-    Traceback (most recent call last):
-    ...
-    TypeError: findExpirableBugTasks() takes exactly 2 arguments (1 given)
-
-There are no expirable bugtasks in the sampledata.
-
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(9999)
-    >>> len(expirable_bugtasks)
-    0
-
-Let's make some bugtasks that qualify for expiration. A Jokosher
-bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
-will suffice.
-
-    >>> # date_incomplete and date_confirmed are guarded by bugtasks's
-    >>> # transition logic and ZCML. This function will change the
-    >>> # underlying SQLObject's value for a column.
-    >>> from canonical.launchpad.ftests import set_so_attr
-
-    >>> from datetime import datetime, timedelta
-    >>> from pytz import UTC
-    >>> now = datetime.now(UTC)    
-    
-    # ubuntu_hoary_bugtask has a conjoined slave, Bugtask 26.
-    >>> ubuntu_hoary_bugtask = bugtaskset.get(28)
-    >>> ubuntu_hoary_bugtask.transitionToStatus(
-    ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> set_so_attr(ubuntu_hoary_bugtask,
-    ...     'date_incomplete', now - timedelta(days=351))
-
-    # ubuntu_bugtask is a conjoined slave to Bugtask 26.
-    >>> ubuntu_bugtask = bugtaskset.get(26)
-    >>> set_so_attr(ubuntu_bugtask,
-    ...     'date_incomplete', now - timedelta(days=351))
-
-    # A bugtask for a product that is expirable.
-    >>> jokosher_bugtask = bugtaskset.get(31)
-    >>> jokosher_bugtask.transitionToStatus(
-    ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> set_so_attr(jokosher_bugtask,
-    ...     'date_incomplete', now - timedelta(days=145))
-
-    >>> def summarize_bugtask(bugtasks):
-    ...     print 'AFFECTS  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS  MALONE'
-    ...     for bugtask in bugtasks:
-    ...         print ('%s  %s  %s  %s  %s  %s' %
-    ...             (bugtask.bugtargetdisplayname,
-    ...              bugtask.id, bugtask.assignee is None,
-    ...              (now - bugtask.date_incomplete).days,
-    ...              bugtask.status.title, bugtask.target_uses_malone))
-    >>> bugtasks = [ubuntu_hoary_bugtask, ubuntu_bugtask, jokosher_bugtask]
-    >>> summarize_bugtask(bugtasks)
-    AFFECTS       BUGTASK  UNASSIGNED  DAYS_OLD  STATUS      MALONE
-    Ubuntu Hoary  28       True        351       Incomplete  True
-    Ubuntu        26       True        351       Incomplete  True
-    Jokosher      31       True        145       Incomplete  True
-
-    # Flush the caches so that the bugtasks defined above get
-    # their content from the modified DB.
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
-
-The value of the min_days_old controls the bugtasks that are returned.
-The ubuntu_bugtask is never returned; it is a conjoined slave to the
-ubuntu_hoary_bugtask. Slave bugtasks cannot be directly expired because
-only the master bugtask can change the status.
-
-    # No bugtask is older than 352 days.
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(352)
-    >>> len(expirable_bugtasks)
-    0
-
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
-    >>> len(expirable_bugtasks)
-    1
-    >>> [bugtask.bugtargetdisplayname for bugtask in expirable_bugtasks]
-    [u'Ubuntu Hoary']
-
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(144)
-    >>> len(expirable_bugtasks)
-    2
-    >>> [bugtask.bugtargetdisplayname for bugtask in expirable_bugtasks]
-    [u'Jokosher', u'Ubuntu Hoary']
 
 
 == Handling IntegrityError and ProgrammingError ==

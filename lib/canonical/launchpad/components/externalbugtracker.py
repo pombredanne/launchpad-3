@@ -26,11 +26,10 @@ from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugWatchSet,
-    IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
+    BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
+    IBugWatchSet, IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
     IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
@@ -252,31 +251,33 @@ class ExternalBugTracker:
         for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
+                new_remote_status = None
+                new_malone_status = None
+                error = None
+
                 # XXX: 2007-10-17 Graham Binns
                 #      This nested set of try:excepts isn't really
                 #      necessary and can be refactored out when bug
                 #      136391 is dealt with.
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
-                    error = None
+                    new_malone_status = self.convertRemoteStatus(
+                        new_remote_status)
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
-                    new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
                     log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
-                    new_remote_status = UNKNOWN_REMOTE_STATUS
-                new_malone_status = self.convertRemoteStatus(
-                    new_remote_status)
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = error
-                    bug_watch.updateStatus(new_remote_status,
-                        new_malone_status)
+                    if new_malone_status is not None:
+                        bug_watch.updateStatus(new_remote_status,
+                                               new_malone_status)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -304,11 +305,13 @@ class Bugzilla(ExternalBugTracker):
     """A class that deals with communications with a remote Bugzilla system."""
 
     implements(IExternalBugtracker)
+    batch_query_threshold = 0 # Always use the batch method.
 
     def __init__(self, bugtracker, version=None):
-        ExternalBugTracker.__init__(self, bugtracker)
+        super(Bugzilla, self).__init__(bugtracker)
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
+        self.remote_bug_status = {}
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -456,6 +459,13 @@ class Bugzilla(ExternalBugTracker):
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
+        # XXX: GavinPanella 2007-10-25 bug=153532: The modification of
+        # self.remote_bug_status later on is a side-effect that should
+        # really not be in this method, but for the fact that
+        # getRemoteStatus needs it at other times. Perhaps
+        # getRemoteBug and getRemoteBugBatch could return RemoteBug
+        # objects which have status properties that would replace
+        # getRemoteStatus.
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
             data = {'download_type' : 'browser',
@@ -497,7 +507,6 @@ class Bugzilla(ExternalBugTracker):
             raise UnparseableBugData('Failed to parse XML description for '
                 '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
 
-        self.remote_bug_status = {}
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
             # We use manual iteration to pick up id_tags instead of
@@ -578,7 +587,7 @@ class DebBugs(ExternalBugTracker):
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
     def __init__(self, bugtracker, db_location=None):
-        ExternalBugTracker.__init__(self, bugtracker)
+        super(DebBugs, self).__init__(bugtracker)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -1345,7 +1354,7 @@ class Roundup(ExternalBugTracker):
         Python and in fact behaves rather more like SourceForge than
         Roundup.
         """
-        ExternalBugTracker.__init__(self, bugtracker)
+        super(Roundup, self).__init__(bugtracker)
 
         if self.isPython():
             # The bug export URLs differ only from the base Roundup ones

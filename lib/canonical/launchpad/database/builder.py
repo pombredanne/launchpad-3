@@ -80,7 +80,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['name']
+    _defaultOrder = ['processor', '-trusted', 'name']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -302,7 +302,14 @@ class Builder(SQLBase):
                 build_queue_item.build.distroseries.name,
                 build_queue_item.build.distroarchseries.architecturetag)
             raise CannotBuild
-        # The main distribution has policies prevent uploads to some pockets
+
+        # XXX cprov 20071025: We silently ignore SECURITY builds until we
+        # have a proper infrastructure to build (EMBARGO archive) and
+        # reviewed the UI to hide their information until public disclosure.
+        if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
+            raise CannotBuild
+
+        # The main distribution has policies to prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
         # lifecycle. These do not apply to PPA builds (which are untrusted)
         # nor any archive that allows release pocket updates.
