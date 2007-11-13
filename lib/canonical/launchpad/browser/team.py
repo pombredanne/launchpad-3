@@ -33,10 +33,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet, IPersonSet, ITeamContactAddressForm, ITeamCreation,
-    ITeamMember, ITeam, LoginTokenType,
-    MailingListStatus, MAILING_LISTS_DOMAIN, TeamContactMethod,
-    TeamMembershipStatus, UnexpectedFormData)
+    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, ITeamMember, LoginTokenType, MAILING_LISTS_DOMAIN,
+    MailingListStatus, TeamContactMethod, TeamMembershipStatus,
+    UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -97,7 +97,11 @@ def generateTokenAndValidationEmail(email, team):
 class MailingListRelatedView(LaunchpadFormView):
     """Contains common functionality for retrieving and checking the
     state of mailing lists."""
-    
+
+    def _getList(self):
+        """Return this team's mailing list."""
+        return getUtility(IMailingListSet).get(self.context.name)
+
     def _getList(self):
         """Return this team's mailing list."""
         return getUtility(IMailingListSet).get(self.context.name)
@@ -119,7 +123,7 @@ class MailingListRelatedView(LaunchpadFormView):
     def list_can_be_contact_method(self):
         """See `MailingList.canBeContactMethod`.
         """
-        mailing_list = self._getList() 
+        mailing_list = self._getList()
         return mailing_list and mailing_list.canBeContactMethod()
 
 
@@ -149,7 +153,7 @@ class TeamContactAddressView(MailingListRelatedView):
         self.form_fields = (
             form.FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
-            
+
         mailing_list = self.getListInState(MailingListStatus.ACTIVE,
                                            MailingListStatus.MODIFIED,
                                            MailingListStatus.UPDATING)
@@ -218,7 +222,7 @@ class TeamContactAddressView(MailingListRelatedView):
     @property
     def initial_values(self):
         """Infer the contact method from this team's preferredemail.
-        
+
         Return a dictionary representing the contact_address and
         contact_method so inferred.
         """
@@ -226,7 +230,7 @@ class TeamContactAddressView(MailingListRelatedView):
         if context.preferredemail is None:
             return dict(contact_method=TeamContactMethod.NONE)
         mailing_list = getUtility(IMailingListSet).get(context.name)
-        if (mailing_list is not None 
+        if (mailing_list is not None
             and mailing_list.address == context.preferredemail.email):
             return dict(contact_method=TeamContactMethod.HOSTED_LIST)
         return dict(contact_address=context.preferredemail.email,
@@ -234,16 +238,21 @@ class TeamContactAddressView(MailingListRelatedView):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Changes the contact address for this mailing list."""
         context = self.context
         email_set = getUtility(IEmailAddressSet)
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
         if contact_method == TeamContactMethod.NONE:
             if context.preferredemail is not None:
+                # The user wants the mailing list to stop being the
+                # team's contact address, but not to be deactivated
+                # altogether. So we demote the list address from
+                # 'preferred' address to being just a regular address.
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert (mailing_list is not None 
+            assert (mailing_list is not None
                     and mailing_list.canBeContactMethod()), (
                 "A team can only use an active mailing list as its contact "
                 "address.")
@@ -294,8 +303,7 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
         list might not take effect immediately. First, the mailing
         list may not actually be set as the team contact
         address. Second, the mailing list may be in a transitional
-        state: between MODIFIED and 
-        
+        state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
         super(TeamMailingListConfigurationView,
               self).__init__(context, request)
@@ -304,8 +312,9 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message', None)
-        assert (self.mailing_list is not None 
+        assert (self.mailing_list is not None
                 and self.mailing_list.canBeContactMethod()), (
             "Only an active mailing list can be configured.")
 
@@ -314,7 +323,6 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
             self.mailing_list.welcome_message = welcome_message
 
         self.next_url = canonical_url(self.context)
-
 
     def request_list_creation_validator(self, action, data):
         if self.getListInState(MailingListStatus.DECLINED,
@@ -350,7 +358,7 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
             self.request.response.addInfoNotification(
                 "This team's Launchpad mailing list is currently "
                 "inactive and will be reactivated shortly.")
-        self.next_url = canonical_url(self.context)    
+        self.next_url = canonical_url(self.context)
 
     @property
     def list_could_be_contact_method_but_isnt(self):
@@ -402,11 +410,11 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
     @property
     def initial_values(self):
         """The initial value of welcome_message comes from the database.
-        
+
         :return: A dictionary containing the current welcome message.
         """
         context = self.context
-        if self.mailing_list is not None:            
+        if self.mailing_list is not None:
             return dict(welcome_message=self.mailing_list.welcome_message)
         else:
             return {}
@@ -429,7 +437,8 @@ class TeamMailingListConfigurationView(MailingListRelatedView):
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
         return (mailing_list is None
                 or mailing_list.status == MailingListStatus.INACTIVE)
-        
+
+
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation

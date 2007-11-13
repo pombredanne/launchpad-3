@@ -414,38 +414,9 @@ any other state can't though.
 
 == Mailing list permissions ===
 
-Random people can't edit a mailing list:
+Permissions on a team's mailing list are not tracked separately from
+permissions on the team.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
-
-    >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.Edit', list_one)
-    False
-
-    >>> login('test@canonical.com')
-    >>> check_permission('launchpad.Edit', list_one)
-    False
-
-An administrator of the team whose list it is can edit the list:
-
-    >>> sample_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> team_one.addMember(
-    ...     sample_user, reviewer=carlos, status=TeamMembershipStatus.ADMIN)
-    >>> flush_database_updates()
-    >>> check_permission('launchpad.Edit', list_one)
-    True
-
-The owner of the team whose list it is can edit the list:
-
-    >>> login('carlos@canonical.com')
-    >>> check_permission('launchpad.Edit', list_one)
-    True
-
-So can a Launchpad administrator:
-
-    >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.Edit', list_one)
-    True    
 
 == Welcome messages ==
 
@@ -454,8 +425,10 @@ they subscribe to a list.  The welcome message can contain any text.
 
     >>> print list_one.welcome_message
     None
+    >>> login('foo.bar@canonical.com')
     >>> list_one.welcome_message = """\
     ... Welcome to the Team One mailing list."""
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_one.welcome_message
     u'Welcome to the Team One mailing list.'
@@ -495,7 +468,9 @@ a particular welcome message.
 
     >>> team_five = new_team('team-five')
     >>> list_five = list_set.new(team_five)
+    >>> login('foo.bar@canonical.com')
     >>> list_five.welcome_message = u'Welcome to Team Five'
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_five.status.name
     'REGISTERED'
@@ -503,6 +478,7 @@ a particular welcome message.
 You cannot change the welcome message text for a mailing list in anything but
 ACTIVE or REGISTERED status.
 
+    >>> login('foo.bar@canonical.com')
     >>> list_two.welcome_message = """\
     ... This list has been declined."""
     Traceback (most recent call last):

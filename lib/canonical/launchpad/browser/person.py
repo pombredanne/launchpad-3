@@ -108,17 +108,17 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BranchListingSort, BugTaskSearchParams, BugTaskStatus,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
-    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
-    ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet, IGPGHandler,
+    IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet, ILaunchBag,
+    ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
-    ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
-    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
-    NotFoundError, PersonCreationRationale, QuestionParticipation,
-    SpecificationFilter, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -884,7 +884,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'configuremailinglist', 'editlanguages', 'polls',
+             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
              'add_poll', 'joinleave', 'mentorships', 'reassign',
              'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
 
@@ -976,6 +976,19 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
                        check_permission('launchpad.Admin', self.context))
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
+        return Link(target, text, summary, enabled=enabled, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_mailing_list(self):
+        target = '+mailinglist'
+        text = 'Configure mailing list'
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        enabled = (config.mailman.expose_hosted_mailing_lists
+                   and mailing_list is not None
+                   and mailing_list.canBeContactMethod())
+        summary = (
+            'The welcome message for the mailing list associated with %s' %
+            self.context.browsername)
         return Link(target, text, summary, enabled=enabled, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

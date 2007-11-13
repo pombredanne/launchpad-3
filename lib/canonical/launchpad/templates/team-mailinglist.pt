@@ -13,21 +13,21 @@
 
 <div metal:fill-slot="main">
 
-    <div class="informational message"
+    <p id="mailing_list_not_contact_address" metal:fill-slot="extra_info"
          tal:condition="view/list_could_be_contact_method_but_isnt">
-        This team's mailing list is not set as the team contact address.
-        <form tal:attributes="action 
-                              string:${context/fmt:url}/+contactaddress"
-              method="POST">
-          <input type="hidden" 
-           id="field.contact_method.0" name="field.contact_method" 
-           value="HOSTED_LIST" />
-          <input type="submit" class="button" 
-                 id="field.actions.listascontact" 
-                 name="field.actions.listascontact" 
-                 value="Set mailing list as contact address" />
-        </form>
-    </div>
+      This team's mailing list is not set as the team contact address.
+      <form tal:attributes="action
+                            string:${context/fmt:url}/+contactaddress"
+            method="POST">
+        <input type="hidden"
+         id="field.contact_method.0" name="field.contact_method"
+         value="HOSTED_LIST" />
+        <input type="submit" class="button"
+               id="field.actions.listascontact"
+               name="field.actions.listascontact"
+               value="Set mailing list as contact address" />
+      </form>
+    </p>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
