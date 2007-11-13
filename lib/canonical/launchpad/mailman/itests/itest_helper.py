@@ -9,8 +9,10 @@ import errno
 import base64
 import signal
 import socket
+import mailbox
 import datetime
 
+from email import message_from_file
 from subprocess import Popen, PIPE
 
 __all__ = [
@@ -20,6 +22,7 @@ __all__ = [
     'TOP',
     'create_transaction_manager',
     'make_browser',
+    'mbox_iterator'
     'run_mailman',
     'transactionmgr',
     'wait_for_mailman',
@@ -194,3 +197,12 @@ class LogWatcher:
     def resync(self):
         """Re-sync the file size so that we can watch it again."""
         self._last_size = get_size(self._log_path)
+
+
+def mbox_iterator(mbox_filename):
+    """Iterate over the messages in a mailbox."""
+    # We have to use Python 2.4's icky mailbox module until Launchpad upgrades
+    # Zope to a Python 2.5 compatible version.
+    mbox = mailbox.UnixMailbox(open(mbox_filename), message_from_file)
+    for message in mbox:
+        yield message

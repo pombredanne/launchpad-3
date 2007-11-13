@@ -109,7 +109,6 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.INACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be inactive or failed')
-            self._clearSubscriptions()
         else:
             raise AssertionError(
                 'Not a valid state transition: %s -> %s'
@@ -219,19 +218,16 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def _clearSubscriptions(self):
-        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
-        for subscription in subscriptions:
-            subscription.destroySelf()
-
     def getAddresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
             """mailing_list = %s AND
-               team = %s AND
+               TeamParticipation.team = %s AND
+               MailingList.status <> %s AND
+               MailingList.id = MailingListSubscription.mailing_list AND
                TeamParticipation.person = MailingListSubscription.person
-            """ % sqlvalues(self, self.team),
-            distinct=True, clauseTables=['TeamParticipation'])
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
         for subscription in subscriptions:
             yield subscription.subscribed_address.email
 

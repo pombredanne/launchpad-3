@@ -69,6 +69,6 @@ gzip'd tarfile containing the list's pickle data.
     >>> import tarfile
     >>> tarball = tarfile.open(backup_file, 'r:gz')
     >>> tarball.list()
-    -.../lists/itest-one/
-    -.../lists/itest-one/config.pck
-    -.../lists/itest-one/config.pck.last
+    -... itest-one/
+    -... itest-one/config.pck
+    -... itest-one/config.pck.last
