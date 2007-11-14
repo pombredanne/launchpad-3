@@ -1652,39 +1652,17 @@ COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL 
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
 -- StructuralSubscription
-/*
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
 COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
 COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
 COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
 COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
 COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
-COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution release.';
-COMMENT ON COLUMN StructuralSubscription.sourcepackagerelease IS 'The subscription\`s target, when it is a source-package release';
-COMMENT ON COLUMN StructuralSubscription.binarypackagerelease IS 'The subscription\`s target, when it is a binary-package release';
+COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution series.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
 COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
 COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
-COMMENT ON COLUMN StructuralSubscription.specification_flavour IS 'The volume and type of notification this subscription will generate for specifications related to the target. The value is an item of the enumeration `StructuralSubscriptionSpecificationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.bug_flavour IS 'The volume and type of notification this subscription will generate for bugs related to the target. The value is an item of the enumeration `StructuralSubscriptionBugsFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.translation_flavour IS 'The volume and type of notification this subscription will generate for translations related to the target. The value is an item of the enumeration `StructuralSubscriptionTranslationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.code_flavour IS 'The volume and type of notification this subscription will generate for branches related to the target. The value is an item of the enumeration `StructuralSubscriptionCodeFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.registry_flavour IS 'The volume and type of notification this subscription will generate for registry changes related to the target. The value is an item of the enumeration `StructuralSubscriptionRegistryFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.is_verbose IS 'A flag determining whether the notifications resulting from this subscription will contain the item\`s metadata and change history, or only the last change.';
+COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
+COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
-
--- Notification
-COMMENT ON TABLE Notification IS 'A notification to a user, resulting from a subscription to a structure or an application item.';
-COMMENT ON COLUMN Notification.bug IS 'The bug this notification is about.';
-COMMENT ON COLUMN Notification.specification IS 'The specification this notification is about.';
-COMMENT ON COLUMN Notification.branch IS 'The branch this notification is about.';
-COMMENT ON COLUMN Notification.translationgroup IS 'The translation this notification is about.';
-COMMENT ON COLUMN Notification.question IS 'The question this notification is about.';
-COMMENT ON COLUMN Notification.message IS 'The message to be sent for this notification.';
-COMMENT ON COLUMN Notification.date_emailed IS 'The date this notification was emailed, or NULL if it hasn\'t yet been sent.';
-COMMENT ON COLUMN Notification.structuralsubscription IS 'The subscription for which this notification was generated, when it is a structural subscription.';
-COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which this notification was generated, when it is a bug subscription.';
-COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
-COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
-COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
-*/
-
+COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
