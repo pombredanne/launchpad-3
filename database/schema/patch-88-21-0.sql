@@ -21,6 +21,6 @@ WHERE date_last_modified IS NULL;
 ALTER TABLE Branch
   ALTER COLUMN date_last_modified SET NOT NULL,
   ALTER COLUMN date_last_modified SET DEFAULT
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 21, 0);
