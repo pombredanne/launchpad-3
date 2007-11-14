@@ -25,8 +25,8 @@ from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugTaskSet, ILanguageSet, ILaunchBag,
-    IPersonSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
+    ILanguageSet, ILaunchBag, IPersonSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -184,6 +184,7 @@ def _createUbuntuBugTaskLinkedToQuestion():
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     ubuntu.addAnswerContact(ubuntu_team)
     ubuntu_question = ubuntu.newQuestion(
         sample_person, "Can't install Ubuntu",
