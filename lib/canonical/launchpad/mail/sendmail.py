@@ -19,7 +19,7 @@ __all__ = [
     'raw_sendmail']
 
 import sets
-from email.Utils import make_msgid, formatdate, parseaddr, formataddr
+from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText

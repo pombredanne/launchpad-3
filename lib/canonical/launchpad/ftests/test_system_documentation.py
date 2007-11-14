@@ -12,7 +12,7 @@ import transaction
 import unittest
 
 from zope.component import getUtility, getView
-from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
