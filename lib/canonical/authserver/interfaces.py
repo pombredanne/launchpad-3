@@ -31,8 +31,14 @@ READ_ONLY = 'r'
 WRITABLE = 'w'
 
 
-# Values for the faultCode of Faults raised by createBranch.
-# I borrow the numbers from HTTP for familiarity, there's nothing deep in it.
+# Values for the faultCode of Faults raised by the authserver.
+#
+# We borrow the numbers from HTTP for familiarity, there's nothing deep in it.
+#
+# Currently, Faults are only raised by createBranch().  If more methods get
+# converted to raise Faults, they should use these values if appropriate or
+# define more codes here if not.
+
 PERMISSION_DENIED_FAULT_CODE = 403
 NOT_FOUND_FAULT_CODE = 404
 

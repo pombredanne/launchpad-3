@@ -46,7 +46,6 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.validators import LaunchpadValidationError
 

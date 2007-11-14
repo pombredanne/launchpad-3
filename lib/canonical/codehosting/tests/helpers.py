@@ -86,7 +86,8 @@ def exception_names(exceptions):
         for exc in exceptions:
             names.extend(exception_names(exc))
     elif exceptions is TransportNotPossible:
-        # OMG hack!
+        # Unfortunately, not all exceptions render themselves as their name.
+        # More cases like this may need to be added
         names = ["Transport operation not possible"]
     else:
         names = [exceptions.__name__]
@@ -284,10 +285,14 @@ def deferToThread(f):
 
 
 class FakeLaunchpad:
-    """Stub RPC interface to Launchpad."""
+    """Stub RPC interface to Launchpad.
 
-    # If failing_branch_name is set and createBranch is called with that
-    # branch name, a Fault with the given code and string will be raised.
+    If the 'failing_branch_name' attribute is set and createBranch() is called
+    with its value for the branch_name parameter, a Fault will be raised with
+    code and message taken from the 'failing_branch_code' and
+    'failing_branch_string' attributes respectively.
+    """
+
     failing_branch_name = None
     failing_branch_code = None
     failing_branch_string = None
@@ -325,7 +330,11 @@ class FakeLaunchpad:
         return new_id
 
     def createBranch(self, login_id, user, product, branch_name):
-        """See IHostedBranchStorage.createBranch."""
+        """See `IHostedBranchStorage.createBranch`.
+
+        Also see the description of 'failing_branch_name' in the class
+        docstring.
+        """
         if self.failing_branch_name == branch_name:
             raise Fault(self.failing_branch_code, self.failing_branch_string)
         for user_id, user_info in self._person_set.iteritems():

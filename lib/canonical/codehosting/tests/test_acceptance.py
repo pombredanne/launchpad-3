@@ -498,10 +498,10 @@ class SmartserverTests(SSHTestCase):
         # sensibly by the client.  We test this by pushing to a product that
         # does not exist (the other error message possibilities are covered by
         # unit tests).
-        remote_url = self.getTransportURL('~sabdfl/firefax/branch')
+        remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         error = self.assertTransportRaises(
             TransportNotPossible, self.push, remote_url)
-        self.assertIn("Product 'firefax' does not exist.", str(error))
+        self.assertIn("Product 'no-such-product' does not exist.", str(error))
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (

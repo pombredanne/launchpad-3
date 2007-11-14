@@ -263,41 +263,55 @@ class TestLaunchpadTransport(TestCase):
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
 
-    def test_createBranch_errors(self):
-        # The various Faults that createBranch can raise should be translated
-        # into bzrlib exceptions that are suitable for presentation to the
-        # user.
-        message = "Branch exploding, as requested."
-        transport = get_transport(self.server.get_url())
-        self.authserver.failing_branch_name = 'explode!'
+    def setFailingBranchDetails(self, name, code, message):
+        """Arrange that calling createBranch with a given branch name fails.
+
+        After calling this, calling self.authserver.createBranch with a
+        branch_name of 'name' with raise a fault with 'code' and 'message' as
+        faultCode and faultString respectively.
+        """
+        self.authserver.failing_branch_name = name
+        self.authserver.failing_branch_code = code
         self.authserver.failing_branch_string = message
 
-        for code, bzrliberror in [
-            # See transport.py for why we translate not-found errors
-            # into TransportNotPossible.
-            (NOT_FOUND_FAULT_CODE, errors.TransportNotPossible),
-            (PERMISSION_DENIED_FAULT_CODE, errors.PermissionDenied)]:
+    def assertRaisesWithSubstring(self, exc_type, msg, callable, *args, **kw):
+        """Assert that calling callable(*args, **kw) fails in a certain way.
 
-            # This should possibly be in a test for FakeLaunchpad, if there
-            # were such things.
-            self.authserver.failing_branch_code = code
-            try:
-                self.authserver.createBranch(
-                    self.user_id, 'testuser', 'thunderbird', 'explode!')
-            except Fault, f:
-                self.assertEqual(f.faultCode, code)
-                self.assertEqual(f.faultString, message)
-            else:
-                self.fail("createBranch() did not raise!")
+        This method is like assertRaises() but in addition checks that 'msg'
+        is a substring of the str() of the raise exception."""
+        try:
+            callable(*args, **kw)
+        except exc_type, error:
+            if msg not in str(error):
+                self.fail("%r not found in %r" % (msg, str(error)))
+        else:
+            self.fail("%s(*%r, **%r) did not raise!" % (callable, args, kw))
 
-            # This is what we're really testing: the translation from Fault to
-            # bzrlib exception.
-            try:
-                transport.mkdir('~testuser/thunderbird/explode!')
-            except bzrliberror, error:
-                self.failUnless(message in str(error))
-            else:
-                self.fail("mkdir() did not raise!")
+    def test_createBranch_not_found_error(self):
+        # When createBranch raises an exception with faultCode
+        # NOT_FOUND_FAULT_CODE, the transport should translate this to
+        # a TransportNotPossible exception (see the comment in
+        # transport.py for why we translate to TransportNotPossible
+        # and not NoSuchFile).
+        transport = get_transport(self.server.get_url())
+        message = "Branch exploding, as requested."
+        self.setFailingBranchDetails(
+            'explode!', NOT_FOUND_FAULT_CODE, message)
+        self.assertRaisesWithSubstring(
+            errors.TransportNotPossible, message,
+            transport.mkdir, '~testuser/thunderbird/explode!')
+
+    def test_createBranch_permission_denied_error(self):
+        # When createBranch raises an exception with faultCode
+        # PERMISSION_DENIED_FAULT_CODE, the transport should translate
+        # this to a PermissionDenied exception.
+        transport = get_transport(self.server.get_url())
+        message = "Branch exploding, as requested."
+        self.setFailingBranchDetails(
+            'explode!', PERMISSION_DENIED_FAULT_CODE, message)
+        self.assertRaisesWithSubstring(
+            errors.PermissionDenied, message,
+            transport.mkdir, '~testuser/thunderbird/explode!')
 
     def lockBranch(self, unique_name):
         """Simulate locking a branch."""
