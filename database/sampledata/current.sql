@@ -902,9 +902,9 @@ ALTER TABLE bugattachment ENABLE TRIGGER ALL;
 
 ALTER TABLE bugbranch DISABLE TRIGGER ALL;
 
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL);
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL);
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard, registrant) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL, 12);
+INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard, registrant) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL, 1);
+INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard, registrant) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL, 12);
 
 
 ALTER TABLE bugbranch ENABLE TRIGGER ALL;
@@ -7244,7 +7244,7 @@ ALTER TABLE specification ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
 
-INSERT INTO specificationbranch (id, datecreated, specification, branch, summary) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue');
+INSERT INTO specificationbranch (id, datecreated, specification, branch, summary, registrant) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue', 12);
 
 
 ALTER TABLE specificationbranch ENABLE TRIGGER ALL;
