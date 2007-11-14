@@ -32,15 +32,11 @@ from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
-from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
 from canonical.launchpad.database.potemplate import *
 from canonical.launchpad.database.potmsgset import *
 from canonical.launchpad.database.pomsgid import *
-from canonical.launchpad.database.pomsgidsighting import *
-from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
-from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.infestation import *
@@ -70,6 +66,7 @@ from canonical.launchpad.database.language import *
 from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
+from canonical.launchpad.database.translationmessage import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.branch import *

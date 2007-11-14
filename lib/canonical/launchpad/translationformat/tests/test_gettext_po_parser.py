@@ -26,7 +26,7 @@ class POBasicTestCase(unittest.TestCase):
             '%smsgid "foo"\nmsgstr "bar"\n' % DEFAULT_HEADER)
         messages = translation_file.messages
         self.assertEqual(len(messages), 1, "incorrect number of messages")
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar", "incorrect msgstr")
@@ -37,7 +37,7 @@ class POBasicTestCase(unittest.TestCase):
         translation_file = self.parser.parse(
             '%smsgid "foo"\nmsgstr "bar"' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar", "incorrect translation")
@@ -92,7 +92,7 @@ class POBasicTestCase(unittest.TestCase):
             '%smsgid "foo\\"bar\\nbaz\\\\xyzzy"\nmsgstr"z"\n' % (
                 DEFAULT_HEADER))
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, 'foo"bar\nbaz\\xyzzy')
+        self.assertEqual(messages[0].msgid_singular, 'foo"bar\nbaz\\xyzzy')
 
     # Lalo doesn't agree with this test
     # def badEscapeTest(self):
@@ -110,7 +110,7 @@ class POBasicTestCase(unittest.TestCase):
             msgstr[0] "bar"
             msgstr[1] "bars"''' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(messages[0].msgid_plural, "foos",
             "incorrect msgid_plural")
         assert messages[0].translations, "missing translations."
@@ -126,7 +126,7 @@ class POBasicTestCase(unittest.TestCase):
         translation_file = self.parser.parse(
             '%s#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"\n' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar", "incorrect msgstr")
@@ -137,7 +137,7 @@ class POBasicTestCase(unittest.TestCase):
         translation_file = self.parser.parse(
             '%s#~ msgid "foo"\n#~ msgstr ""\n#~ "bar"\n' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo")
+        self.assertEqual(messages[0].msgid_singular, "foo")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar")
@@ -255,7 +255,8 @@ class POBasicTestCase(unittest.TestCase):
         self.assertEqual(len(messages), foos, "incorrect number of messages")
         for n in range(1,foos):
             msgidn = "foo%d" % n
-            self.assertEqual(messages[n-1].msgid, msgidn, "incorrect msgid")
+            self.assertEqual(
+                messages[n-1].msgid_singular, msgidn, "incorrect msgid")
             self.assertEqual(
                 messages[n-1].translations[TranslationConstants.SINGULAR_FORM],
                 "bar", "incorrect msgstr")

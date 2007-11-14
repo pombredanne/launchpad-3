@@ -516,10 +516,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         result = POTemplate.selectBy(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return shortlist(result.orderBy(['-priority','name']), 300)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -532,10 +529,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             Distribution.official_rosetta IS TRUE
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
             clauseTables = ['DistroSeries', 'Distribution'])
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return shortlist(result.orderBy(['-priority','name']), 300)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -547,7 +541,4 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
             clauseTables = ['DistroSeries', 'Distribution'])
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return shortlist(result.orderBy(['-priority','name']), 300)

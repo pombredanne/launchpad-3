@@ -1554,16 +1554,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def translation_history(self):
         """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
+        query = ['POFileTranslator.person = %s' % sqlvalues(self),
+                 'POFileTranslator.pofile = POFile.id',
+                 'POFile.language = Language.id',
+                 "Language.code != 'en'"]
         history = POFileTranslator.select(
-            "POFileTranslator.person = %s AND "
-            "POFileTranslator.pofile = POFile.id AND "
-            "POFile.language = Language.id AND "
-            "Language.code != 'en'" % sqlvalues(self),
+            ' AND '.join(query),
             prejoins=[
-                "pofile.potemplate",
-                "latest_posubmission",
-                "latest_posubmission.pomsgset.potmsgset.primemsgid_",
-                "latest_posubmission.potranslation"],
+                'pofile.potemplate',
+                'latest_message',
+                'latest_message.potmsgset.msgid_singular',
+                'latest_message.msgstr0'],
             clauseTables=['Language', 'POFile'],
             orderBy="-date_last_touched")
         return history
@@ -2536,14 +2537,20 @@ class PersonSet:
             ''' % vars())
         skip.append(('poexportrequest', 'person'))
 
-        # Update the POSubmissions. They should not conflict since each of
-        # them is independent
+        # Update the TranslationMessage. They should not conflict since each
+        # of them are independent
         cur.execute('''
-            UPDATE POSubmission
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
+            UPDATE TranslationMessage
+            SET submitter=%(to_id)d
+            WHERE submitter=%(from_id)d
             ''' % vars())
-        skip.append(('posubmission', 'person'))
+        skip.append(('translationmessage', 'submitter'))
+        cur.execute('''
+            UPDATE TranslationMessage
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d
+            ''' % vars())
+        skip.append(('translationmessage', 'reviewer'))
 
         # Handle the POFileTranslator cache by doing nothing. As it is
         # maintained by triggers, the data migration has already been done

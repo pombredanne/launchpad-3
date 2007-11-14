@@ -428,7 +428,7 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit', 'imports', 'translationdownload']
+    links = ['translators', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -437,11 +437,6 @@ class ProductTranslationsMenu(ApplicationMenu):
     def translators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def edit(self):
-        text = 'Edit template names'
-        return Link('+potemplatenames', text, icon='edit')
 
     def translationdownload(self):
         text = 'Download translations'
@@ -630,15 +625,6 @@ class ProductView(LaunchpadView):
             return []
         return [product for product in self.context.project.products
                         if product.id != self.context.id]
-
-    def potemplatenames(self):
-        potemplatenames = set([])
-
-        for series in self.context.serieses:
-            for potemplate in series.getTranslationTemplates():
-                potemplatenames.add(potemplate.potemplatename)
-
-        return sorted(potemplatenames, key=lambda item: item.name)
 
     def sorted_serieses(self):
         """Return the series list of the product with the dev focus first."""

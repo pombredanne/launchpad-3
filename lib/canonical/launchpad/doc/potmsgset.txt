@@ -1,5 +1,4 @@
-POTMsgSet tests
-===============
+= POTMsgSet tests =
 
 POTMsgSet represents messages to translate that a POTemplate file has.
 
@@ -7,43 +6,27 @@ We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.database import POTemplate, TranslationMessage
     >>> potemplate = POTemplate.get(1)
     >>> potmsgsets = potemplate.getPOTMsgSets()
     >>> potmsgset = potmsgsets[0]
 
+Verify interface.
 
-POTMsgSet.getPOMsgSet
----------------------
-
-A request for a POMsgSet with a variant field value should not break.
-
-    >>> potmsgset.getPOMsgSet('en', 'boldquot') is None
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPersonSet, IPOTMsgSet, IProductSet)
+    >>> verifyObject(IPOTMsgSet, potmsgset)
     True
 
+We also need some time and date functions to do translation updates.
 
-POTMsgSet.getDummyPOMsgSet
---------------------------
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> from canonical.database.sqlbase import flush_database_caches
 
-Some times, there are POMsgSet objects that are not yet created in our
-database and thus, we need to get dummy ones for read operations.
-This method give us such dummy objects.
-
-
-    >>> potmsgset.getDummyPOMsgSet('es_ES') is None
-    False
-
-But, if we already have such POMsgSet in our database, and we request
-a dummy one, that's broken and we should detect it.
-
-    >>> potmsgset.getDummyPOMsgSet('es')
-    Traceback (most recent call last):
-    ...
-    AssertionError: There is already a valid IPOMsgSet ...
-
-
-POTMsgSet.normalizeWhitespaces
--------------------------------
+== POTMsgSet.normalizeWhitespaces ==
 
 This function copies the leading and trailing whitespaces from
 POTMsgSet's msgid into the 'text' argument.
@@ -51,7 +34,7 @@ POTMsgSet's msgid into the 'text' argument.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string')
+    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string', None)
     >>> text = u'another normal string'
 
     In this case, it should not change.
@@ -70,7 +53,7 @@ every test.
     should have it too.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with leading newline')
+    ...     u'\nnormal string with leading newline', None)
     >>> potmsgset.normalizeWhitespaces(text)
     u'\na string with \n whitespaces'
 
@@ -86,52 +69,52 @@ every test.
     >>> potmsgset.normalizeWhitespaces(None) is None
     True
 
-POTMsgSet.convertDotToSpace
-------------------------------
+== POTMsgSet.convertDotToSpace ==
 
 This method changes the u'\u2022' char by the normal white space.
 
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string without the point')
+    >>> potmsgset = potemplate.createMessageSetFromText(
+    ...     u'normal string without the point', None)
     >>> text = u'another normal string'
 
-    In this case, it should not change.
+In this case, it should not change.
 
     >>> potmsgset.convertDotToSpace(text)
     u'another normal string'
 
-    Let's try with a 'text' that has the char.
+Let's try with a 'text' that has the char.
 
     >>> text = u'a string with the char \u2022'
     >>> potmsgset.convertDotToSpace(text)
     u'a string with the char  '
 
-    Now, msgid will have also that char, so 'text' should not change.
+Now, msgid will have also that char, so 'text' should not change.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...    u'normal string with the char \u2022')
+    ...    u'normal string with the char \u2022', None)
     >>> potmsgset.convertDotToSpace(text)
     u'a string with the char \u2022'
 
 
-POTMsgSet.normalizeNewLines
-------------------------------
+== POTMsgSet.normalizeNewLines ==
+
 
 This method syncs the new line chars to use the same as the associated msgid.
 
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset_windows = potemplate.createMessageSetFromText(u'\r\n')
-    >>> potmsgset_unix = potemplate.createMessageSetFromText(u'\n')
-    >>> potmsgset_mac = potemplate.createMessageSetFromText(u'\r')
+    >>> potmsgset_windows = potemplate.createMessageSetFromText(u'\r\n', None)
+    >>> potmsgset_unix = potemplate.createMessageSetFromText(u'\n', None)
+    >>> potmsgset_mac = potemplate.createMessageSetFromText(u'\r', None)
     >>> text_windows = u'\r\n'
     >>> text_unix = u'\n'
     >>> text_mac = u'\r'
 
-    If both are the same, the text should not change.
+If both are the same, the text should not change.
 
     >>> potmsgset_windows.normalizeNewLines(text_windows) == text_windows
     True
@@ -140,7 +123,7 @@ every test.
     >>> potmsgset_unix.normalizeNewLines(text_unix) == text_unix
     True
 
-    Let's mix some of them and see how they became always as the potmsgset.
+Let's mix some of them and see how they became always as the potmsgset.
 
     >>> potmsgset_windows.normalizeNewLines(text_mac) == text_windows
     True
@@ -155,7 +138,7 @@ every test.
     >>> potmsgset_unix.normalizeNewLines(text_windows) == text_unix
     True
 
-    And finally, check to be sure that the broken options are detected.
+And finally, check to be sure that the broken options are detected.
 
     >>> potmsgset_windows.normalizeNewLines(text_mac+text_windows)
     Traceback (most recent call last):
@@ -170,8 +153,7 @@ every test.
     ...
     BrokenTextError: ...
 
-POTMsgSet.applySanityFixes
---------------------------
+== POTMsgSet.applySanityFixes ==
 
 This function applies all checks we know to fix broken input
 
@@ -179,7 +161,7 @@ As this test is very, we wil create a msgid just for this test. We are going
 to use a msgid with a leading and a trailing newline.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with\nleading and trailing newline\n')
+    ...     u'\nnormal string with\nleading and trailing newline\n', None)
 
 And the text we are going to check will have them too, but we are going to
 use '\r\n' like when we get a form submission.
@@ -187,3 +169,646 @@ use '\r\n' like when we get a form submission.
     >>> text = u'\r\nTranslation\r\nto test\r\n'
     >>> potmsgset.applySanityFixes(text)
     u'\nTranslation\nto test\n'
+
+== POTMsgSet.updateTranslation ==
+
+This method is the core piece of Translations infrastructure: it
+updates a single language translation for a POTMsgSet, and modifies a
+lot of metadata depending on many different conditions.  It is used
+from both web UI and from import code.
+
+We are going to work with Evolution.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
+
+Carlos is a privileged translator that will do the updates.
+
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> login('carlos@canonical.com')
+
+We will be working with Catalan (ca) translations, with the new PO file.
+
+    >>> upstream_pofile = evolution_potemplate.newPOFile('ca')
+    >>> catalan = upstream_pofile.language
+
+And, any changes we'd do will be in 'evolution addressbook' message.
+
+    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+
+At this time, there is no current or imported translation and no suggestions.
+
+    >>> print upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    None
+    >>> print upstream_potmsgset.getImportedTranslationMessage(catalan)
+    None
+    >>> list(upstream_potmsgset.getLocalTranslationMessages(catalan))
+    []
+
+Let's add a fuzzy translation.
+
+    >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
+    ...     carlos, {0: u'foo'}, is_fuzzy=True, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+
+Since this message came from the import, it doesn't have a reviewer, but
+it does note a person which last changed it.
+
+    >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> print current.reviewer
+    None
+    >>> print current.date_reviewed
+    None
+    >>> current.submitter.displayname
+    u'Carlos Perell\xf3 Mar\xedn'
+    >>> current.date_created is None
+    False
+
+Now it should appear as current and marked as imported.
+
+    >>> current.translations
+    [u'foo']
+    >>> current.is_imported
+    True
+    >>> current == upstream_potmsgset.getImportedTranslationMessage(catalan)
+    True
+
+And also, the fuzzy flag should be set for the message.
+
+    >>> current.is_fuzzy
+    True
+
+However, was_fuzzy_in_last_import is only set in the translation import code,
+instead of being set in the potmsgset.updateTranslation.  To emulate that, we
+set it directly here.
+
+    >>> current.was_fuzzy_in_last_import
+    False
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(current).was_fuzzy_in_last_import = True
+    >>> current.was_fuzzy_in_last_import
+    True
+
+=== Unsetting a translation from the import ===
+
+A translation can be removed from the import by being set to an empty string.
+
+    >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
+    ...     carlos, {0: u''}, is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+
+A current translation is kept since we don't remove anything from Launchpad
+even if it came from the import.
+
+    >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> current.translations
+    [u'foo']
+
+But the imported one is unset using an 'empty' TranslationMessage.
+
+    >>> imported = upstream_potmsgset.getImportedTranslationMessage(catalan)
+    >>> imported.translations
+    [None]
+
+An empty TranslationMessage has all the translations set to None.
+
+    >>> print imported.msgstr0
+    None
+    >>> print imported.msgstr1
+    None
+    >>> print imported.msgstr2
+    None
+    >>> print imported.msgstr3
+    None
+
+And same with the fuzzy flags.
+
+    >>> current.is_fuzzy
+    True
+    >>> current.is_imported
+    False
+
+=== Activating an existing suggestion ===
+
+Foo Bar is a privileged translator who can do reviews and submit translations
+directly, while No Privileges user can only submit suggestions.
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+
+We'll be working with Spanish PO file for Evolution, again handling
+'evolution addressbook' message.
+
+  >>> pofile_es = evolution_potemplate.getPOFileByLang('es')
+  >>> spanish = pofile_es.language
+  >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+  ...     u'evolution addressbook')
+
+At the moment, there are no suggestions for this message.
+
+  >>> suggested = potmsgset.getLocalTranslationMessages(spanish)
+  >>> len(list(suggested))
+  0
+
+A No Privileges user updates a translation.
+
+  >>> new_message = potmsgset.updateTranslation(
+  ...     pofile_es, no_priv, {0: u'test string'}, is_fuzzy=False,
+  ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+
+This message is not made current or marked as imported.
+
+  >>> new_message.is_current
+  False
+  >>> new_message.is_imported
+  False
+
+Now, we should have one extra suggestion.
+
+  >>> suggested = potmsgset.getLocalTranslationMessages(spanish)
+  >>> len(list(suggested))
+  1
+
+That is the one that no_priv submitted.
+
+  >>> suggested[0].translations
+  [u'test string']
+
+And the active translation is not the one we suggested.
+
+  >>> current = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> current.translations
+  [u'libreta de direcciones de Evolution']
+
+And the reviewer for that message was Carlos:
+
+  >>> current.reviewer.name
+  u'carlos'
+
+Now, Foo Bar, a translator with permissions, is going to approve that
+new suggestion.
+
+  >>> new_message = potmsgset.updateTranslation(
+  ...     pofile_es, foobar, {0: u'test string'}, is_fuzzy=False,
+  ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+
+We don't have any suggestion newer than the new active translation
+
+  >>> suggested = potmsgset.getLocalTranslationMessages(spanish)
+  >>> len(list(suggested))
+  0
+
+And the active translation is now the one from no-priv user.
+
+  >>> current = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> current.submitter.name
+  u'no-priv'
+  >>> current.translations
+  [u'test string']
+
+Also, we should have Foo Bar as the reviewer of that translation.
+
+  >>> current.reviewer.displayname
+  u'Foo Bar'
+
+== Plural forms ==
+
+Let's focus on handling of messages with plural forms.
+
+We use a DummyPOMsgSet when we don't have a POMsgSet for a given POFile
+and POTMsgSet. First we'll get a DummyPOFile:
+
+  >>> pt_BR_dummypofile = evolution_potemplate.getDummyPOFile('pt_BR')
+
+We get a POTMsgSet and verify it's a singular form:
+
+  >>> potmsgset = pt_BR_dummypofile.potemplate.getPOTMsgSetByMsgIDText(
+  ...     u'evolution addressbook')
+  >>> potmsgset.msgid_plural is None
+  True
+
+  >>> current = potmsgset.getCurrentTranslationMessage(
+  ...     pt_BR_dummypofile.language)
+  >>> print current
+  None
+  >>> pt_BR_dummy_current = potmsgset.getCurrentDummyTranslationMessage(
+  ...     pt_BR_dummypofile.language)
+  >>> pt_BR_dummy_current.plural_forms
+  1
+  >>> pt_BR_dummy_current.translations
+  [None]
+  >>> pt_BR_dummy_current.is_imported
+  False
+
+A TranslationMessage knows what language it is in.
+
+  >>> print pt_BR_dummy_current.pofile.language.code
+  pt_BR
+
+Using another dummy pofile we'll get a POTMsgset that's not a singular
+form:
+
+  >>> apa_dummypofile = evolution_potemplate.getDummyPOFile('apa')
+  >>> plural_potmsgset = apa_dummypofile.potemplate.getPOTMsgSetByMsgIDText(
+  ...     u'%d contact')
+  >>> print apa_dummypofile.language.code
+  apa
+
+We don't know anything about pluralforms for this language, so we fall
+back to the most common case:
+
+  >>> print apa_dummypofile.language.pluralforms
+  None
+  >>> apa_dummy_current = plural_potmsgset.getCurrentDummyTranslationMessage(
+  ...     apa_dummypofile.language)
+  >>> apa_dummy_current.plural_forms
+  2
+  >>> apa_dummy_current.translations
+  [None, None]
+
+We can guess the pluralforms for this language through ILanguage.pluralforms:
+
+  >>> ru_dummypofile = evolution_potemplate.getDummyPOFile('ru')
+  >>> ru_dummy_current = plural_potmsgset.getCurrentDummyTranslationMessage(
+  ...     ru_dummypofile.language)
+
+  >>> print ru_dummypofile.language.pluralforms
+  3
+  >>> ru_dummy_current.plural_forms
+  3
+  >>> ru_dummy_current.translations
+  [None, None, None]
+
+
+== isTranslationNewerThan ==
+
+This method tells us whether the active translation was reviewed after
+the given timestamp.
+
+  >>> from datetime import datetime
+  >>> from pytz import UTC
+  >>> from canonical.launchpad.interfaces import TranslationConstants
+  >>> translationmessage = TranslationMessage.get(2)
+  >>> potmsgset = translationmessage.potmsgset
+  >>> pofile = translationmessage.pofile
+  >>> translationmessage.date_reviewed.isoformat()
+  '2005-04-07T13:19:17.601068+00:00'
+  >>> potmsgset.isTranslationNewerThan(pofile,
+  ...     datetime(2004, 11, 30, 7, 0, 0, tzinfo=UTC))
+  True
+  >>> potmsgset.isTranslationNewerThan(pofile,
+  ...     datetime(2006, 11, 30, 7, 0, 0, tzinfo=UTC))
+  False
+
+
+== POTMsgSet.getExternalTranslationMessage ==
+XXX Danilo: unported, from pomsgset.getCurrentSubmissions
+
+This method returns all submissions that are currently used in other
+translation files for the same message IPOMsgSet is translating.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPOTemplateSet, IProductSet,
+    ...     TranslationConstants)
+
+Suggestions between modules depend also on whether the other translation
+template is available to all users or should be ignored because
+either the product or distribution where it's attached is not using
+translations anymore or the translation template is not current anymore.
+
+We will use this helper function to print all suggestions found:
+
+    >>> def print_suggestions(suggestions):
+    ...     """Print IPOFile title, translation and where is it used."""
+    ...     for suggestion in suggestions:
+    ...         usage = []
+    ...         if suggestion.is_current:
+    ...             usage.append('Launchpad')
+    ...         if suggestion.is_imported:
+    ...             usage.append('Upstream')
+    ...         if not usage:
+    ...             usage.append('None')
+    ...         print '%s: %s (%s)' % (
+    ...             suggestion.pofile.title,
+    ...             suggestion.translations[0],
+    ...             ' & '.join(usage))
+
+On one side, we have a translation template for the evolution product.
+
+    >>> evo_product_template = evolution_potemplate
+    >>> print evo_product_template.title
+    Template "evolution-2.2" in Evolution trunk
+
+On the other, we have a translation template for the evolution package in
+Ubuntu Hoary distribution.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+    >>> evo_hoary_package = ubuntu_hoary.getSourcePackage('evolution')
+    >>> evo_distro_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=evo_hoary_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
+    >>> print evo_distro_template.title
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+
+Both, product and distribution use Launchpad Translations.
+
+    >>> evolution.official_rosetta
+    True
+    >>> ubuntu.official_rosetta
+    True
+
+And both translation templates are current
+
+    >>> evo_product_template.iscurrent
+    True
+    >>> evo_distro_template.iscurrent
+    True
+
+We have the same message in both templates but with different
+translations in Spanish:
+
+    >>> evo_product_message = evo_product_template.getPOTMsgSetByMsgIDText(
+    ...     ' cards')
+    >>> evo_product_translation = (
+    ...     evo_product_message.getCurrentTranslationMessage(spanish))
+    >>> evo_product_translation.translations
+    [u' tarjetas']
+    >>> evo_distro_message = evo_distro_template.getPOTMsgSetByMsgIDText(
+    ...     ' cards')
+    >>> evo_distro_translation = (
+    ...     evo_distro_message.getCurrentTranslationMessage(spanish))
+    >>> evo_distro_translation.translations
+    [u' caratas']
+
+We are defining a helper method to fetch all translation suggestions together.
+
+    >>> def getAllSuggestions(potmsgset, language):
+    ...     local = list(potmsgset.getLocalTranslationMessages(language))
+    ...     external = list(potmsgset.getExternalTranslationMessages(language))
+    ...     return local+external
+
+XXX: 2007-11-14 DaniloSegan: suggestions are not working yet
+
+#    >>> suggestions = getAllSuggestions(evo_product_message, spanish)
+#    >>> print_suggestions(suggestions)
+#    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  caratas (Launchpad)
+#    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
+
+#    >>> suggestions = evo_distro_message.getLocalTranslationMessages(spanish)
+#    >>> print_suggestions(suggestions)
+#    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
+#    Spanish (es) translation of evolution-2.2 in Evolution trunk:  tarjetas (Launchpad & Upstream)
+
+We need to be logged in as an admin to do some special attribute
+changes:
+
+    >>> login('carlos@canonical.com')
+
+When a translation template is set as not current, those translations
+are not available as suggestions anymore:
+
+#    >>> evo_distro_template.iscurrent = False
+#    >>> flush_database_updates()
+#    >>> suggestions = evo_product_message.getCurrentSubmissions(
+#    ...     TranslationConstants.SINGULAR_FORM)
+#    >>> len(suggestions)
+#    0
+
+The same happens if the distribution is not officially using
+translations.
+
+     >>> ubuntu.official_rosetta = False
+
+#     # We set the template as current again so we are sure that we don't show
+#     # suggestions just due to the change to the official_rosetta flag.
+#     >>> evo_distro_template.iscurrent = True
+#     >>> flush_database_updates()
+#     >>> suggestions = evo_product_message.getCurrentSubmissions(
+#     ...     TranslationConstants.SINGULAR_FORM)
+#     >>> len(suggestions)
+#     0
+
+And products not using translations officially have the same behaviour.
+
+#     >>> evolution.official_rosetta = False
+#     >>> flush_database_updates()
+#     >>> suggestions = evo_distro_message.getCurrentSubmissions(
+#     ...     TranslationConstants.SINGULAR_FORM)
+#     >>> len(suggestions)
+#     0
+
+Let's restore the flags for next section.
+
+    >>> ubuntu.official_rosetta = True
+    >>> evolution.official_rosetta = True
+    >>> flush_database_updates()
+
+== getWikiSubmissions ==
+XXX Danilo: unported, from pomsgset.getCurrentSubmissions
+
+This method returns a set of submissions that have translations for the
+same msgid as the given IPOMsgSet across the whole system.
+
+    # This will be needed to call a private method to invalidate an internal
+    # cache.
+    >>> from zope.security.proxy import removeSecurityProxy
+
+We are going to work with the 'man' template in evolution package for
+Ubuntu Hoary distribution.
+
+    >>> evo_man_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=evo_hoary_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
+
+Let's take a message 'test man page' that is translated into Spanish.
+
+#     >>> pomsgset_translated = evo_man_template.getPOTMsgSetByMsgIDText(
+#     ...     'test man page').getPOMsgSet('es')
+#     >>> print pomsgset_translated.pofile.title
+#     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+#     >>> pomsgset_translated.active_texts
+#     [u'just a translation']
+
+It doesn't return other submissions done in the given IPOMsgSet because
+the 'wiki' space is for any submission done outside that IPOMsgSet.
+
+#     # There is no other message with the same msgid in our system that has a
+#     # non active submission.
+#     >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
+#     >>> len(wiki_submissions)
+#     0
+
+Now, we get a dummy message that has the same msgid as the previous one.
+A dummy message is one that is not yet stored in our database, we use
+them to be able to render those messages in our UI, once we get a
+submission with a value for it, it's created in our database so it's not
+dummy anymore.
+
+#     >>> pmount_hoary_package = ubuntu_hoary.getSourcePackage('pmount')
+#     >>> pmount_man_template = getUtility(IPOTemplateSet).getSubset(
+#     ...     sourcepackagename=pmount_hoary_package.sourcepackagename,
+#     ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
+#     >>> pomsgset_untranslated = pmount_man_template.getPOTMsgSetByMsgIDText(
+#     ...     'test man page').getDummyPOMsgSet('es')
+#     >>> print pomsgset_untranslated.pofile.title
+#     Spanish (es) translation of man in Ubuntu Hoary package "pmount"
+
+Given that it doesn't exist in our database, is impossible to have a
+submission already for it.
+
+#     >>> pomsgset_untranslated.active_texts
+#     [None]
+#     >>> pomsgset_untranslated.published_texts
+#     [None]
+
+This other dummy IPOMsgSet though, will get all submissions done in
+pomsgset_translated (except ones with the same translation that is already
+active) as it's another context.
+
+#     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+#     >>> print_suggestions(wiki_submissions)
+#     Spanish (es) translation of man in Ubuntu Hoary package "evolution": blah, blah, blah (None)
+#     Spanish (es) translation of man in Ubuntu Hoary package "evolution": lalalala (None)
+
+However, if the hoary template version is not current and thus hidden,
+we get no suggestions.
+
+#     >>> pomsgset_translated.pofile.potemplate.iscurrent = False
+#     >>> flush_database_updates()
+
+#     # We need to invalidate the cache that handle suggestions using a private
+#     # method, otherwise our changes will not affect cached values.
+#     >>> removeSecurityProxy(pomsgset_untranslated)._invalidateSubmissionsCaches()
+#     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+#     >>> len(wiki_submissions)
+#     0
+
+Nor do we get any suggestions if the Ubuntu distribution is not using
+Launchpad for translations.
+
+#     # We set the template as current again so we are sure that we don't show
+#     # suggestions just due to the change to the official_rosetta flag.
+#     >>> pomsgset_translated.pofile.potemplate.iscurrent = True
+#     >>> ubuntu.official_rosetta = False
+#     >>> flush_database_updates()
+
+#     # We need to invalidate the cache that handle suggestions using a private
+#     # method, otherwise our changes will not affect cached values.
+#     >>> removeSecurityProxy(pomsgset_untranslated)._invalidateSubmissionsCaches()
+#     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
+#     >>> len(wiki_submissions)
+#     0
+
+
+== latest_change_date ==
+XXX Danilo: we may want to reintroduce this on TranslationMessage instead,
+but only as a property.  Commented out for now.
+
+With latest_change_date we are able to know when the message's last
+time updates was.
+
+It works for messages without plural forms.
+
+#     >>> pomsgset_translated.potmsgset.msgid_plural is None
+#     True
+#     >>> print pomsgset_translated.latest_change_date
+#     2007-01-24 19:16:06.386519+00:00
+
+Is newer or equal than the translation is use.
+
+#     >>> (pomsgset_translated.latest_change_date >=
+#     ...  pomsgset_translated.getActiveSubmission(0).datecreated)
+#     True
+
+And, in this case, given that it is a review timestamp, it matches
+date_reviewed.
+
+#     >>> pomsgset_translated.latest_change_date == (
+#     ...     pomsgset_translated.date_reviewed)
+#     True
+
+And with messages with plural forms.
+
+#     >>> pofile_es = upstream_evo.getPOFileByLang('es')
+#     >>> pomsgset_with_plurals = pofile_es.getPOMsgSet(u'%d contact')
+#     >>> pomsgset_with_plurals.potmsgset.msgid_plural is None
+#     False
+
+It's always newer than the all existing translations create time...
+
+#     >>> for plural_form in range(pomsgset_with_plurals.pluralforms):
+#     ...     active_submission = pomsgset_with_plurals.getActiveSubmission(
+#     ...         plural_form)
+#     ...     assert (
+#     ...         pomsgset_with_plurals.latest_change_date >=
+#     ...         active_submission.datecreated), (
+#     ...             'latest_change_date is older than plural form'
+#     ...             ' %d datecreated' % active_submission.datecreated)
+
+... or equal to the last review time of the message.
+
+#     >>> print pomsgset_with_plurals.date_reviewed
+#     2005-10-11 20:18:55.981500+00:00
+#     >>> pomsgset_with_plurals.latest_change_date == (
+#     ...     pomsgset_with_plurals.date_reviewed)
+#     True
+
+There are some cases, when we don't have a date_reviewed.
+
+#     >>> pomsgset_with_plurals.date_reviewed = None
+#     >>> pomsgset_with_plurals.reviewer = None
+
+but the field is still not None.
+
+#     >>> print pomsgset_with_plurals.latest_change_date
+#     2005-04-07 13:19:17.601068+00:00
+
+Even when we miss some plural forms.
+
+#     # Remove the active submission for the plural form 1.
+#     >>> pomsgset_with_plurals.setActiveSubmission(1, None)
+
+We still get a latest_change_date.
+
+#    >>> print pomsgset_with_plurals.latest_change_date
+#    2005-04-07 13:19:17.601068+00:00
+
+Except when there is no active translations...
+
+#     >>> pomsgset_with_plurals.setActiveSubmission(0, None)
+
+#     # We know there are no more active submissions because we only have
+#     # two plural forms and both have been disabled.
+#     >>> pomsgset_with_plurals.pluralforms
+#     2
+
+#     >>> print pomsgset_with_plurals.latest_change_date
+#     None
+
+
+
+
+POTMsgSet.getDummyPOMsgSet
+--------------------------
+
+XXX: needs porting to DummyTranslationMessage instead
+
+Some times, there are POMsgSet objects that are not yet created in our
+database and thus, we need to get dummy ones for read operations.
+This method give us such dummy objects.
+
+    >>> spanish_in_mexico = getUtility(ILanguageSet).getLanguageByCode('es_MX')
+    >>> potmsgset.getCurrentDummyTranslationMessage(spanish_in_mexico) is None
+    False
+
+But, if we already have such POMsgSet in our database, and we request
+a dummy one, that's broken and we should detect it.
+
+    >>> potmsgset.getCurrentDummyTranslationMessage(spanish)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is already a translation message ...
+

@@ -62,13 +62,15 @@
               translating into the first.
             </tal:comment>
             <label>Make suggestions from:</label>
-            <tal:language-widget content="structure view/alternative_language_widget" />
-            <input type="submit" name="select_alternate_language" value="Change" />
+            <tal:language-widget
+              content="structure view/alternative_language_widget" />
+            <input
+              type="submit" name="select_alternate_language" value="Change" />
           </form>
         </div>
 
         <!-- The translation form. -->
-        <form method="POST" action="">
+        <form method="post" accept-charset="UTF-8" action="">
           <!-- the hidden elements -->
           <input type="hidden" name="lock_timestamp" value=""
                  tal:condition="view/form_is_writeable"
@@ -78,7 +80,9 @@
               <tr class="results">
                 <td colspan="5">
                   <!-- Paging doodads. -->
-                  <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
+                  <tal:navigation
+                    replace="structure view/batchnav/@@+navigation-links-upper"
+                    />
                 </td>
               </tr>
             </thead>
@@ -105,7 +109,8 @@
 
         </form>
         <!-- Paging doodads. -->
-        <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
+        <tal:navigation
+          replace="structure view/batchnav/@@+navigation-links-lower" />
       </tal:havepluralforms>
     </div>
 
