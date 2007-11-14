@@ -63,13 +63,13 @@ list of emails to send:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    -- 
+    ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
     To: mark@hbd.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
@@ -77,12 +77,12 @@ list of emails to send:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    -- 
+    ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug assignee.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
@@ -90,13 +90,13 @@ list of emails to send:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    -- 
+    ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
 
 
 You can see that the message above contains the bug's initial comment's
@@ -187,7 +187,7 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
-    -- 
+    ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
@@ -561,7 +561,7 @@ well:
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
@@ -569,11 +569,11 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
-    --
+    ...
     Blackhole Trash folder
     http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant for Tomcat.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -587,7 +587,7 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
-    --
+    ...
     Blackhole Trash folder
     http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a bug assignee.
@@ -596,15 +596,15 @@ well:
     To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
-    --
+    ...
     Blackhole Trash folder
     http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant for Tomcat.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -621,7 +621,7 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
-    --
+    ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
@@ -648,7 +648,7 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
-    --
+    ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug contact for
@@ -660,14 +660,6 @@ well:
     To: test@canonical.com
     ...
     ----------------------------------------------------------------------
-
-If we take a closer look at a notification, we can see that
-X-Launchpad-Bug headers were added:
-
-    >>> sorted(message.get_all('X-Launchpad-Bug'))
-    [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
-     u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     u'product=firefox; status=Unconfirmed; importance=Low;...']
 
 There's a blank line before the signature, and the signature marker has
 a trailing space.
@@ -755,20 +747,20 @@ initial message of the bug, it will result in a bug filed notification:
     ...         print_notification(message)
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     Public bug reported:
     <BLANKLINE>
     a description of the bug.
     <BLANKLINE>
-    ** Affects: Ubuntu
+    ** Affects: ubuntu
          Importance: Undecided
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
@@ -798,7 +790,7 @@ top of the email:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu) via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -808,14 +800,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -825,14 +817,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Assignee via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -842,14 +834,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a bug assignee (via
     bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -859,7 +851,7 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
@@ -933,7 +925,7 @@ makes it write out the emails it sends.
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
     ...
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Tomcat)
     ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
@@ -982,4 +974,43 @@ makes it write out the emails it sends.
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
+
+The X-Launchpad-Bug header
+--------------------------
+
+When a notification is sent out about a bug, the X-Launchpad-Bug header is
+filled with data about that bug:
+
+    >>> from canonical.launchpad.interfaces import IMilestoneSet
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> subscription = bug_three.subscribe(sample_person)
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a short comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_three.addCommentNotification(comment)
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+If we take a closer look at a notification, we can see that
+X-Launchpad-Bug headers were added:
+
+    >>> [(bug_notifications, messages)] = get_email_notifications(
+    ...     notifications)
+    >>> [message] = messages
+    >>> sorted(message.get_all('X-Launchpad-Bug'))
+    [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
+     u'distribution=debian; distroseries=woody;...',
+     u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
+
+The milestone field in X-Launchpad-Bug won't be filled where no milestone is 
+specified:
+
+    >>> for line in sorted(message.get_all('X-Launchpad-Bug')):
+    ...     'milestone' in line
+    True
+    False
+    False
 

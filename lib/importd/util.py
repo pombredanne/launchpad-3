@@ -19,12 +19,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import ProductSeries
-from canonical.launchpad.interfaces import IProductSeriesSet
+from canonical.launchpad.interfaces import IProductSeriesSet, ImportStatus
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.lp import initZopeless
-
-from canonical.lp.dbschema import ImportStatus
 
 
 def _interval_to_seconds(interval):
@@ -144,22 +142,25 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix):
         jobseries = ProductSeries.select(clause)
         jobs = list(jobsFromSeries(
             jobseries=jobseries,
-            slave_home = slave_home,
+            slave_home=slave_home,
             archive_mirror_dir=archive_mirror_dir,
-            push_prefix = push_prefix))
+            push_prefix=push_prefix,
+            autotest=autotest))
         getTxnManager().abort()
     except:
         tryToAbortTransaction()
         raise
     return jobs
 
-def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix,
+                   autotest):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
         job.push_prefix = push_prefix
+        job.autotest = autotest
         # Record the canonical url of the series now, althought it is only
         # needed for oops reporting, so we can record BuildFailure OOPSes even
         # without database access. To use canonical_url we need to have run
@@ -296,15 +297,15 @@ class NotifyingBuild(ConfigurableBuild):
         # build failures even without database access.
         request = errorlog.ScriptRequest([
             ('series.id', self.importDJob.seriesID)],
-            # XXX: It would be nice to show step.words() and the step log here
+            # XXX: DavidAllouche 2007-04-05:
+            # It would be nice to show step.words() and the step log here
             # when recording a build failure. But I do not know how to retrieve
             # this data. I tried looking at the buildbot code, but then the
             # magic smoke started to escape out of my ears.
-            # -- DavidAllouche 2007-04-05
             URL=self.importDJob.series_url)
-        # XXX: We should be using step.words() as the BuildFailure argument to
+        # XXX: DavidAllouche 2007-04-05:
+        # We should be using step.words() as the BuildFailure argument to
         # produce good oops summaries, but we do not have this data.
-        # -- DavidAllouche 2007-04-05
         reportOops(self.importd_autotest,
             (BuildFailure, BuildFailure(), None), request)
 

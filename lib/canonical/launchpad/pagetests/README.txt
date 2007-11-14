@@ -36,6 +36,20 @@ e.g.
 
   ./test.py -vv --test=xx-bug-index.txt
 
+A post-mortem debugger is available, which stops right after your first
+test error:
+
+  ./test.py -Dvv --test=xx-bug-index.txt
+
+You can also run tests inside specified subdirectories by using dotted
+paths:
+
+  ./test.py -vv . pagetests.rosetta
+  ./test.py -vv . pagetests.rosetta.xx-translation-credits
+  ./test.py -vv . doc.teammembership
+
+If you run with -vvv you also get timings output at the end of the test
+suite.
 
 Footnotes
 =========
@@ -60,46 +74,48 @@ the above browser objects log in as for these tests.
 You can use the following authorization lines:
 
   for Foo Bar (an admin user):
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
 
   for Sample Person (a normal user):
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
 
   for No Privileges Person (a normal user who is not the owner of anything):
-    >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
 
   for No Team Memberships (a person who is a member of NO teams):
-    >>> browser.addHeader("Authorization", "Basic no-team-memberships@test.com:test")
+    >>> browser = setupBrowser(auth="Basic no-team-memberships@test.com:test")
 
   for One Team Membership (a person who is a member of only one team, the
                            simple-team which has no special privileges):
-    >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+    >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
 
   for Mark Shuttleworth: (launchpad admin, registry admin, mirror admin,
                           ubuntu team, testing spanish team)
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
 
   for Carlos: (launchpad admin, rosetta admin, ubuntu translators, testing
                spanish team)
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
 
   for Salgado: (launchpad admin)
-    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
 
   for Daf: (launchpad admin, rosetta admin)
-    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
 
   for Jblack: (launchpad admins)
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic james.blackwell@ubuntulinux.com:jblack')
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
 
   for Jdub: (ubuntu team)
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
 
   for Cprov (ubuntu team and launchpad-buildd-admin)
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
 
   for Marilize Coetzee (shipit admin)
-    >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
+
+  for David Allouche (member of vcs-imports)
+    >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')

@@ -1,44 +1,81 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-bugcontacts" />
-    <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-latestbugs" />
     <div tal:replace="structure context/@@+portlet-latestquestions" />
   </metal:leftportlets>
-
 
   <metal:rightportlets fill-slot="portlets_two">
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Publishing history</h1>
+  <h1><span tal:replace="context/name" /> in
+      <span tal:replace="context/distribution/displayname" /></h1>
+
+  <h2>Published versions and upstream associations</h2>
+
   <table class="listing">
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Status</th>
-            <th>Target</th>
-            <th>Pocket</th>
-            <th>Component</th>
-            <th>Section</th>
-            <th>Version</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tal:block repeat="publishing context/publishing_history"
-                     replace="structure publishing/@@+listing-detailed">
-          </tal:block>
-        </tbody>
-      </table>
-    </div>
-  </body>
+    <thead>
+      <tr>
+        <th colspan="4">
+          <span tal:replace="context/distribution/displayname" /> version
+        </th>
+        <th>Upstream version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="row view/version_listing">
+        <td><span tal:condition="row/series"
+                  tal:content="row/series/name">hoary</span></td>
+        <td><span tal:condition="row/series"
+                  tal:content="row/series/status/name/fmt:lower" /></td>
+        <td tal:content="row/pocket">release</td>
+        <td><a tal:content="row/package/version"
+               tal:attributes="href row/package/fmt:url">2.2.1-1</a>
+        </td>
+        <td>
+          <tal:distroseries_row condition="row/series">
+            <span tal:condition="row/packaging"
+                  tal:replace="row/packaging/productseries/title" />
+            <tal:no_direct condition="not: row/packaging">
+              None defined
+            </tal:no_direct>
+            <a tal:attributes="
+               href string:${row/sourcepackage/fmt:url}/+edit-packaging"
+               title="Edit upstream association">
+              <img src="/@@/edit" />
+            </a>
+          </tal:distroseries_row>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="text-align: right">
+    <a href="+publishinghistory">See full publishing history...</a>
+  </p>
+
+  <h2>Version history</h2>
+
+  <tal:block
+    repeat="dspr context/releases"
+    replace="structure dspr/@@+changes">
+  </tal:block>
+
+</div>
+</body>
 </html>
 

@@ -1,25 +1,95 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces including and related to IDistroSeries."""
 
 __metaclass__ = type
 
 __all__ = [
+    'DistroSeriesStatus',
     'IDistroSeries',
     'IDistroSeriesSet',
     ]
 
-from zope.schema import Bool, Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.languagepack import ILanguagePack
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+class DistroSeriesStatus(DBEnumeratedType):
+    """Distribution Release Status
+
+    A DistroSeries (warty, hoary, or grumpy for example) changes state
+    throughout its development. This schema describes the level of
+    development of the distroseries. The typical sequence for a
+    distroseries is to progress from experimental to development to
+    frozen to current to supported to obsolete, in a linear fashion.
+    """
+
+    EXPERIMENTAL = DBItem(1, """
+        Experimental
+
+        This distroseries contains code that is far from active
+        release planning or management. Typically, distroseriess
+        that are beyond the current "development" release will be
+        marked as "experimental". We create those so that people
+        have a place to upload code which is expected to be part
+        of that distant future release, but which we do not want
+        to interfere with the current development release.
+        """)
+
+    DEVELOPMENT = DBItem(2, """
+        Active Development
+
+        The distroseries that is under active current development
+        will be tagged as "development". Typically there is only
+        one active development release at a time. When that freezes
+        and releases, the next release along switches from "experimental"
+        to "development".
+        """)
+
+    FROZEN = DBItem(3, """
+        Pre-release Freeze
+
+        When a distroseries is near to release the administrators
+        will freeze it, which typically means that new package uploads
+        require significant review before being accepted into the
+        release.
+        """)
+
+    CURRENT = DBItem(4, """
+        Current Stable Release
+
+        This is the latest stable release. Normally there will only
+        be one of these for a given distribution.
+        """)
+
+    SUPPORTED = DBItem(5, """
+        Supported
+
+        This distroseries is still supported, but it is no longer
+        the current stable release. In Ubuntu we normally support
+        a distroseries for 2 years from release.
+        """)
+
+    OBSOLETE = DBItem(6, """
+        Obsolete
+
+        This distroseries is no longer supported, it is considered
+        obsolete and should not be used on production systems.
+        """)
+
 
 class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
@@ -53,12 +123,14 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The distribution for which this is a series."))
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
+    upload_components = Attribute("The series components that can be "
+                                  "uploaded to.")
     sections = Attribute("The series sections.")
     status = Choice(
         title=_("Status"), required=True,
-        vocabulary='DistroSeriesStatus')
+        vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
-    parentseries = Choice(
+    parent_series = Choice(
         title=_("Parent series"),
         description=_("The series from which this one was branched."),
         required=True,
@@ -79,20 +151,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
-        title = _("Defer translation imports"),
-        description = _("Suspends any translation imports for this series"),
-        default = True,
-        required = True
+        title=_("Defer translation imports"),
+        description=_("Suspends any translation imports for this series"),
+        default=True,
+        required=True
         )
     binarycount = Attribute("Binary Packages Counter")
-    potemplates = Attribute("The set of potemplates in the series")
-    currentpotemplates = Attribute("The set of potemplates in the series "
-        "with the iscurrent flag set")
+
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("The architectures in this series.")
     nominatedarchindep = Attribute(
-        "DistroArchRelease designed to build architecture-independent "
+        "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
     milestones = Attribute(_(
         "The visible milestones associated with this series, "
@@ -112,14 +182,57 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
         "series.")
-    datelastlangpack = Attribute(
-        "The date of the last base language pack export for this series.")
+
     hide_all_translations = Bool(
-        title=u'Hide all translations', required=True,
+        title=u'Hide translations for this release', required=True,
         description=(
-            u"Hide all this distro seriess's translations from the UI."
-            "Admins will still be able to see them."),
+            u"You may hide all translation for this distribution series so"
+             " that only Launchpad administrators will be able to see them."
+             " For example, you should hide these translations while they are"
+             " being imported from a previous series so that translators"
+             " will not be confused by imports that are in progress."),
         default=True)
+
+    language_pack_base = Choice(
+        title=_('Language pack base'), required=False,
+        description=_('''
+            Language pack export with the export of all translations available
+            for this `IDistroSeries` when it was generated. Next delta exports
+            will be generated based on this one.
+            '''), vocabulary='FilteredFullLanguagePack')
+
+    language_pack_delta = Choice(
+        title=_('Language pack delta'), required=False,
+        description=_('''
+            Language pack export with the export of all translation updates
+            available for this `IDistroSeries` since language_pack_base was
+            generated.
+            '''), vocabulary='FilteredDeltaLanguagePack')
+
+    language_pack_proposed = Choice(
+        title=_('Proposed language pack update'), required=False,
+        description=_('''
+            Base or delta language pack export that is being tested and
+            proposed to be used as the new language_pack_base or
+            language_pack_delta for this `IDistroSeries`.
+            '''), vocabulary='FilteredLanguagePack')
+
+    language_pack_full_export_requested = Bool(
+        title=_('Request a full language pack export'), required=True,
+        description=_('''
+            Whether next language pack generation will be a full export. This
+            is useful when delta packages are too big and want to merge all
+            those changes in the base package.
+            '''))
+
+    last_full_language_pack_exported = Object(
+        title=_('Latest exported language pack with all translation files.'),
+        required=False, readonly=True, schema=ILanguagePack)
+
+    last_delta_language_pack_exported = Object(
+        title=_(
+            'Lastest exported language pack with updated translation files.'),
+        required=False, readonly=True, schema=ILanguagePack)
 
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
@@ -130,11 +243,22 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     binary_package_caches = Attribute("All of the cached binary package "
         "records for this distroseries.")
 
+    language_packs = Attribute(
+        "All language packs associated with this distribution series.")
+
     # other properties
     previous_serieses = Attribute("Previous series from the same "
         "distribution.")
 
     main_archive = Attribute('Main Archive')
+
+    supported = Attribute(
+        "Whether or not this series is currently supported.")
+
+    active = Attribute(
+        "Whether or not this series is stable and supported, or under "
+        "current development. This excludes series which are experimental "
+        "or obsolete.")
 
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.
@@ -157,11 +281,14 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 warty-updates -> ALLOW
                 edgy-security -> DENY
 
+        Note that FROZEN is not considered either 'stable' or 'unstable' state.
+        Uploads to a FROZEN distroseries will end up in UNAPPROVED queue.
+
         Return True if the upload is allowed and False if denied.
         """
 
-    def getLastUploads():
-        """Return the last five source uploads for this DistroSeries.
+    def getLatestUploads():
+        """Return the latest five source uploads for this DistroSeries.
 
         It returns a list containing up to five elements as
         IDistroSeriesSourcePackageRelease instances
@@ -211,8 +338,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None,
                              archive=None):
-        """Given a SourcePackageName, return a list of the currently
-        published SourcePackageReleases as SourcePackagePublishing records.
+        """Return the SourcePackagePublishingHistory(s)
+
+        Given a ISourcePackageName or name.
 
         If pocket is not specified, we look in all pockets.
 
@@ -230,7 +358,17 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def getSourcesPublishedForAllArchives():
-        """Return all sourcepackage published across all the archives.
+        """Return all sourcepackages published across all the archives.
+
+        It's only used in the buildmaster/master.py context for calculating
+        the publication that are still missing build records.
+
+        It will consider all publishing records in PENDING or PUBLISHED status
+        as part of the 'build-unpublished-source' specification.
+
+        For 'main_archive' candidates it will automatically exclude RELEASE
+        pocket records of released distroseries (ensuring that we won't waste
+        time with records that can't be accepted).
 
         Return a SelectResult of SourcePackagePublishingHistory.
         """
@@ -255,9 +393,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, manifest,
-        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, archive, dateuploaded=None):
+        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
+        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
+        dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -273,9 +411,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * component: IComponent
          * section: ISection
          * urgency: dbschema.SourcePackageUrgency
-         * manifest: IManifest
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
+         * copyright: string, the original debian/copyright content
          * changelog: string, changelog extracted from the changesfile
          * architecturehintlist: string, DSC architectures
          * builddepends: string, DSC build dependencies
@@ -303,9 +441,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         list for this distroseries.
         """
 
-    def addComponent(component):
-        """SQLObject provided method to fill a related join key component."""
-
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""
 
@@ -326,7 +461,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getSourcePackagePublishing(status, pocket, component=None,
                                    archive=None):
-        """Return a selectResult of ISourcePackagePublishing.
+        """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
@@ -383,7 +518,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     def initialiseFromParent():
@@ -415,15 +550,15 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm=None):
+    def copyMissingTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore
         the one from parent.
 
-        If a transaction manager ztm is passed, it may be used for
-        intermediate commits to break up large copying jobs into palatable
-        smaller chunks.
+        The supplied transaction manager will be used for intermediate
+        commits to break up large copying jobs into palatable smaller
+        chunks.
         """
 
 class IDistroSeriesSet(Interface):
@@ -471,5 +606,5 @@ class IDistroSeriesSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+            version, parent_series, owner):
         """Creates a new distroseries"""

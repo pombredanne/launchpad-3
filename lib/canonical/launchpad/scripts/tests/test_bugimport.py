@@ -1,5 +1,4 @@
 
-import datetime
 import os
 import pytz
 import re
@@ -14,12 +13,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    IBugSet, IEmailAddressSet, IPersonSet, IProductSet)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, IBugSet,
+    IEmailAddressSet, IPersonSet, IProductSet, PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout
@@ -60,13 +57,13 @@ class UtilsTestCase(unittest.TestCase):
         node = ET.fromstring('<a>x<b/></a>')
         self.assertRaises(bugimport.BugXMLSyntaxError,
                           bugimport.get_text, node)
-        
+
 
     def test_get_enum_value(self):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
         # not found.
-        from canonical.lp.dbschema import BugTaskStatus
+        from canonical.launchpad.interfaces import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
                          BugTaskStatus.FIXRELEASED)
@@ -132,7 +129,7 @@ class UtilsTestCase(unittest.TestCase):
         # list items are bar elements:
         self.assertEqual(bugimport.get_all(node, 'bar')[0].tag,
                          '{https://launchpad.net/xmlns/2006/bugs}bar')
-        
+
 
 class GetPersonTestCase(unittest.TestCase):
     """Tests for the BugImporter.getPerson() method."""
@@ -297,9 +294,6 @@ sample_bug = '''\
   <importance>HIGH</importance>
   <milestone>future</milestone>
   <assignee email="bar@example.com">Bar User</assignee>
-  <urls>
-    <url href="https://launchpad.net/">Launchpad</url>
-  </urls>
   <cves>
     <cve>2005-2736</cve>
     <cve>2005-2737</cve>
@@ -308,6 +302,11 @@ sample_bug = '''\
     <tag>foo</tag>
     <tag>bar</tag>
   </tags>
+  <bugwatches>
+    <bugwatch href="http://bugzilla.mozilla.org/show_bug.cgi?id=42" />
+    <!-- The following tracker has not been registered -->
+    <bugwatch href="http://bugzilla.gnome.org/show_bug.cgi?id=43" />
+  </bugwatches>
   <subscriptions>
     <subscriber email="test@canonical.com">Sample Person</subscriber>
     <subscriber name="nobody">Nobody (will not get imported)</subscriber>
@@ -381,7 +380,7 @@ public_security_bug = '''\
   <title>A non private security bug</title>
   <description>Description</description>
   <reporter name="foo" email="foo@example.com">Foo User</reporter>
-  <status>CONFIRMED</status>
+  <status>TRIAGED</status>
   <importance>LOW</importance>
   <comment>
     <sender name="foo" email="foo@example.com">Foo User</sender>
@@ -425,9 +424,6 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(bug.private, True)
         self.assertEqual(bug.security_related, True)
         self.assertEqual(bug.name, 'some-bug')
-        self.assertEqual(bug.externalrefs.count(), 1)
-        self.assertEqual(bug.externalrefs[0].url, 'https://launchpad.net/')
-        self.assertEqual(bug.externalrefs[0].title, 'Launchpad')
         self.assertEqual(sorted(cve.sequence for cve in bug.cves),
                          ['2005-2730', '2005-2736', '2005-2737'])
         self.assertEqual(bug.tags, ['bar', 'foo'])
@@ -435,6 +431,11 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(sorted(person.preferredemail.email
                                 for person in bug.getDirectSubscribers()),
                          ['foo@example.com', 'test@canonical.com'])
+        # There are two bug watches
+        self.assertEqual(bug.watches.count(), 2)
+        self.assertEqual(sorted(watch.url for watch in bug.watches),
+                         ['http://bugzilla.gnome.org/bugs/show_bug.cgi?id=43',
+                          'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
 
         # There should only be one bug task (on netapplet):
         self.assertEqual(len(bug.bugtasks), 1)

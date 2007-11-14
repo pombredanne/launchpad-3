@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -39,6 +39,8 @@ class SprintNameField(ContentNameField):
 
 class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
+
+    id = Int(title=_('The Sprint ID'))
 
     name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
@@ -134,7 +136,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     # subscription-related methods
     def attend(person, time_starts, time_ends):
         """Record that this person will be attending the Sprint."""
-        
+
     def removeAttendance(person):
         """Remove the person's attendance record."""
 
@@ -144,6 +146,15 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
 
     def unlinkSpecification(spec):
         """Remove this specification from the sprint spec list."""
+
+    def isDriver(user):
+        """Returns True if and only if the specified user
+        is a driver of this sprint.
+
+        A driver for a sprint is either the person in the
+        `driver` attribute, a person who is memeber of a team
+        in the `driver` attribute or an administrator.
+        """
 
 
 class IHasSprints(Interface):

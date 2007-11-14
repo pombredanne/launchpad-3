@@ -15,7 +15,8 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, name_validator
+from canonical.foaf import nickname
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -261,7 +262,7 @@ class UniqueField(TextLine):
 
     @property
     def _content_iface(self):
-        """Return the content interface. 
+        """Return the content interface.
 
         Override this in subclasses.
         """
@@ -274,22 +275,32 @@ class UniqueField(TextLine):
         """
         raise NotImplementedError
 
+    def _isValueTaken(self, value):
+        """Returns true if and only if the specified value is already taken."""
+        return self._getByAttribute(value) is not None
+
     def _validate(self, input):
         """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A attribute is not available if it's already in use by another object 
-        of this same context. The 'input' should be valid as per TextLine.
+        A attribute is not available if it's already in use by another
+        object of this same context. The 'input' should be valid as per
+        TextLine.
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+
+        # If we are editing an existing object and the attribute is
+        # unchanged...
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
-            # The attribute wasn't changed.
+            # ...then do nothing: we already know the value is unique.
             return
 
-        contentobj = self._getByAttribute(input)
-        if contentobj is not None:
+        # Now we know we are dealing with either a new object, or an
+        # object whose attribute is going to be updated. We need to
+        # ensure the new value is unique.
+        if self._isValueTaken(input):
             raise LaunchpadValidationError(self.errormessage % input)
 
 
@@ -301,6 +312,11 @@ class ContentNameField(UniqueField):
     def _getByAttribute(self, name):
         """Return the content object with the given name."""
         return self._getByName(name)
+
+    def _validate(self, name):
+        """Check that the given name is valid (and by delegation, unique)."""
+        name_validator(name)
+        UniqueField._validate(self, name)
 
 
 class BlacklistableContentNameField(ContentNameField):
@@ -314,16 +330,12 @@ class BlacklistableContentNameField(ContentNameField):
         super(BlacklistableContentNameField, self)._validate(input)
 
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
             # The attribute wasn't changed.
             return
 
-        name = input.encode('UTF-8')
-        cur = cursor()
-        cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
-        blacklisted = cur.fetchone()[0]
-        if blacklisted:
+        if nickname.is_blacklisted(name=input):
             raise LaunchpadValidationError(
                     "The name '%(input)s' has been blocked by the "
                     "Launchpad administrators" % vars()
@@ -475,7 +487,7 @@ class BaseImageUpload(Bytes):
     def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
- 
+
     def getCurrentImage(self):
         if self.context is None:
             raise FieldNotBoundError("This field must be bound to an object.")

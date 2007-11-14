@@ -12,11 +12,9 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackageRelease)
+    IDistroArchSeriesBinaryPackageRelease, PackagePublishingStatus)
 
 from canonical.database.sqlbase import sqlvalues
-
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -70,10 +68,9 @@ class DistroArchSeriesBinaryPackageRelease:
             self.distribution,
             self.build.sourcepackagerelease)
 
-    # XXX: I'd like to rename this to
+    # XXX: kiko, 2006-02-01: I'd like to rename this to
     # current_published_publishing_record, because that's what it
     # returns, but I don't want to do that right now.
-    #   -- kiko, 2006-02-01
     @property
     def current_publishing_record(self):
         """See IDistroArchSeriesBinaryPackageRelease."""
@@ -81,29 +78,34 @@ class DistroArchSeriesBinaryPackageRelease:
         record = self._latest_publishing_record(status=status)
         return record
 
+# XXX cprov 20071026: heavy queries should be moved near to the related
+# content classes in order to be better maintained. In this specific case
+# the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
-        query = ("binarypackagerelease = %s AND distroarchrelease = %s "
-                 "AND archive = %s"
-                 % sqlvalues(self.binarypackagerelease,
-                             self.distroarchseries,
-                             self.distroarchseries.main_archive))
+        query = ("binarypackagerelease = %s AND distroarchseries = %s "
+                 "AND archive IN %s"
+                 % sqlvalues(
+                    self.binarypackagerelease,
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids))
         if status is not None:
             query += " AND status = %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+            query, orderBy=['-datecreated', '-id'])
 
     @property
     def publishing_history(self):
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
-            distroarchrelease = %s AND
-            archive = %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
             binarypackagerelease = %s
-            """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
-                            self.binarypackagerelease),
-            orderBy='-datecreated')
+            """ % sqlvalues(
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    self.binarypackagerelease),
+            orderBy=['-datecreated', '-id'])
 
     @property
     def pocket(self):
@@ -219,16 +221,6 @@ class DistroArchSeriesBinaryPackageRelease:
         return self.binarypackagerelease.installedsize
 
     @property
-    def copyright(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.copyright
-
-    @property
-    def licence(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.licence
-
-    @property
     def architecturespecific(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.architecturespecific
@@ -242,4 +234,3 @@ class DistroArchSeriesBinaryPackageRelease:
     def files(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.files
-

@@ -5,14 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSeriesNavigation',
-    'DistroSeriesDynMenu',
-    'DistroSeriesSOP',
-    'DistroSeriesFacets',
-    'DistroSeriesView',
-    'DistroSeriesEditView',
     'DistroSeriesAddView',
+    'DistroSeriesDynMenu',
+    'DistroSeriesEditView',
+    'DistroSeriesFacets',
+    'DistroSeriesFullLanguagePackRequestView',
+    'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesNavigation',
+    'DistroSeriesSOP',
     'DistroSeriesTranslationsAdminView',
+    'DistroSeriesView',
     ]
 
 from zope.component import getUtility
@@ -24,7 +26,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
@@ -36,10 +38,11 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
+from canonical.launchpad.browser.translations import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -51,6 +54,12 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
+        """Retrieve the DistroSeriesLanguage or a dummy if one it is None."""
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if langcode == 'en':
+            raise NotFoundError(langcode)
+
         langset = getUtility(ILanguageSet)
         try:
             lang = langset[langcode]
@@ -62,16 +71,17 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if distroserieslang is None:
             # There is no IDistroSeriesLanguage yet for this IDistroSeries,
             # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get it in the
+            # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(self.context, lang)
+            distroserieslang = distroserieslangset.getDummy(
+                self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this distroseries.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress.  Only administrators '
+                'may view translations for this distribution series.')
 
         return distroserieslang
 
@@ -90,6 +100,20 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def package(self, name):
         return self.context.getBinaryPackage(name)
 
+    @stepto('+latest-full-language-pack')
+    def latest_full_language_pack(self):
+        if self.context.last_full_language_pack_exported is None:
+            return None
+        else:
+            return self.context.last_full_language_pack_exported.file
+
+    @stepto('+latest-delta-language-pack')
+    def redirect_latest_delta_language_pack(self):
+        if self.context.last_delta_language_pack_exported is None:
+            return None
+        else:
+            return self.context.last_delta_language_pack_exported.file
+
 
 class DistroSeriesSOP(StructuralObjectPresentation):
 
@@ -100,14 +124,14 @@ class DistroSeriesSOP(StructuralObjectPresentation):
         return self.context.fullseriesname
 
     def listChildren(self, num):
-        # XXX mpt 20061004: list architectures, alphabetically
+        # XXX mpt 2006-10-04: list architectures, alphabetically
         return []
 
     def countChildren(self):
         return 0
 
     def listAltChildren(self, num):
-        # XXX mpt 20061004: list series, most recent first
+        # XXX mpt 2006-10-04: list series, most recent first
         return None
 
     def countAltChildren(self):
@@ -183,20 +207,20 @@ class DistroSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = ['new', 'cve']
-
-    def new(self):
-        return Link('+filebug', 'Report a bug', icon='add')
+    links = ['cve', 'nominations']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
 
 
 class DistroSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['roadmap', 'table', 'setgoals', 'listdeclined',]
+    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -230,19 +254,44 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, icon='info')
 
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
+
 
 class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
-    links = ['admin']
+    links = [
+        'admin', 'imports', 'language_packs', 'admin_language_packs',
+        'full_language_pack_request']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Edit translation options', icon='edit')
+        return Link('+admin', 'Administer translation options', icon='edit')
+
+    def language_packs(self):
+        return Link('+language-packs', 'See language packs')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def admin_language_packs(self):
+        return Link(
+            '+admin-language-packs', 'Administer language packs', icon='edit')
+
+    @enabled_with_permission('launchpad.LanguagePacksAdmin')
+    def full_language_pack_request(self):
+        return Link(
+            '+full-language-pack-request',
+            'Request a full language pack export')
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
         self.text = self.request.form.get('text')
@@ -253,15 +302,30 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         if self.text:
             self.searchrequested = True
 
+        self.displayname = '%s %s' % (
+            self.context.distribution.displayname,
+            self.context.version)
+
+        self.label = 'Language packs for %s' % self.displayname
+
     @cachedproperty
     def cached_packagings(self):
         # +packaging hits this many times, so avoid redoing the query
         # multiple times, in particular because it's gnarly.
         return list(self.context.packagings)
 
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
+    @cachedproperty
+    def unused_language_packs(self):
+        unused_language_packs = helpers.shortlist(self.context.language_packs)
+
+        if self.context.language_pack_base is not None:
+            unused_language_packs.remove(self.context.language_pack_base)
+        if self.context.language_pack_delta is not None:
+            unused_language_packs.remove(self.context.language_pack_delta)
+        if self.context.language_pack_proposed is not None:
+            unused_language_packs.remove(self.context.language_pack_proposed)
+
+        return unused_language_packs
 
     def searchresults(self):
         """Try to find the packages in this distro series that match
@@ -279,8 +343,9 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         language prefs indicate might be interesting.
         """
         distroserieslangs = []
-        for language in self.languages:
-            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(language)
+        for language in self.translatable_languages:
+            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(
+                language)
             distroserieslangs.append(distroserieslang)
         return distroserieslangs
 
@@ -308,9 +373,10 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         # existing languages, and add a dummydistroserieslanguage for each
         # of them
         distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-        for lang in self.languages:
+        for lang in self.translatable_languages:
             if lang not in existing_languages:
-                distroserieslang = distroserieslangset.getDummy(self.context, lang)
+                distroserieslang = distroserieslangset.getDummy(
+                    self.context, lang)
                 distroserieslangs.append(distroserieslang)
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)
@@ -363,7 +429,7 @@ class DistroSeriesAddView(AddView):
             description = data['description'],
             version = data['version'],
             distribution = self.context,
-            parentseries = data['parentseries'],
+            parent_series = data['parent_series'],
             owner = owner
             )
         notify(ObjectCreatedEvent(distroseries))
@@ -396,6 +462,66 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+        self.next_url = canonical_url(self.context)
+
+
+class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to manage used language packs."""
+    schema = IDistroSeries
+
+    field_names = ['language_pack_base', 'language_pack_delta',
+                   'language_pack_proposed']
+
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change language packs of %s' % self.context.title
+        self.page_title = self.label
+
+    @action("Change")
+    def change_action(self, action, data):
+        if ('language_pack_base' in data and
+            data['language_pack_base'] != self.context.language_pack_base):
+            # language_pack_base changed, the delta one must be invalidated.
+            data['language_pack_delta'] = None
+
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+
+        self.next_url = '%s/+language-packs' % canonical_url(self.context)
+
+
+class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
+    """Browser view to store whether next export should be a full one."""
+    schema = IDistroSeries
+
+    field_names = ['language_pack_full_export_requested']
+
+    def initialize(self):
+        self.old_value = self.context.language_pack_full_export_requested
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Request a full language pack export of %s' % (
+            self.context.title)
+        self.page_title = self.label
+
+    @action("Request")
+    def request_action(self, action, data):
+        self.updateContextFromData(data)
+        if self.old_value != self.context.language_pack_full_export_requested:
+            # There are changes.
+            if self.context.language_pack_full_export_requested:
+                self.request.response.addInfoNotification('''
+Your request has been noted. Next language pack export will include all
+available translations.
+''')
+            else:
+                self.request.response.addInfoNotification('''
+Your request has been noted. Next language pack export will be made relative
+to the current base language pack.
+''')
+        else:
+            self.request.response.addInfoNotification(
+                "You didn't change anything.")
+
+        self.next_url = '/'.join(
+            [canonical_url(self.context), '+language-packs'])

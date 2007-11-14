@@ -92,8 +92,6 @@ All custom requests with less than $max_size_for_auto_approval CDs are
 automatically approved.
 
   >>> max_cds = ShipItConstants.max_size_for_auto_approval
-  >>> max_cds
-  39
 
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS

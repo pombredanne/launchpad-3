@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -11,14 +11,12 @@ import mimetypes
 import urlparse
 import urllib
 
-from hct.util import path
+from cscvs.dircompare import path
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IProductSet, IProductReleaseSet)
+    ILibraryFileAliasSet, IProductSet, IProductReleaseSet, UpstreamFileType)
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (

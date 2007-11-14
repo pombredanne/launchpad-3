@@ -1,15 +1,27 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-binaries">
 
   <h2>Resulting binaries</h2>
 
   <div class="portletBody portletContent">
 
-    <ul>
-      <li tal:repeat="binpkg context/binarypackages">
-        <a tal:attributes="href binpkg/name">
-           <span tal:replace="binpkg/name">foopkg</span>
-           <span tal:replace="binpkg/version">1.2-3</span>
+    <ul tal:condition="context/is_trusted">
+      <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
+        <a tal:attributes="href binpkg/fmt:url"
+           tal:content="string:${binpkg/name} ${binpkg/version}">
+           foopkg 1.2-3
         </a>
+      </li>
+    </ul>
+
+    <ul tal:condition="not:context/is_trusted">
+      <li tal:repeat="binpkg context/binarypackages">
+         <span tal:content="string:${binpkg/name} ${binpkg/version}">
+           foopkg 1.2-3
+         </span>
       </li>
     </ul>
 

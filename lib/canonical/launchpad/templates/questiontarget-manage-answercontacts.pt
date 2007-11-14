@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -24,7 +29,7 @@
     <p metal:fill-slot="extra_top">
     An <em>answer contact</em> is implicitly subscribed to all
     questions. By checking the box below, you will receive changes
-    related to all questions (written in English or one of your <a
+    related to all questions (written in one of your <a
     tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
     >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
@@ -77,6 +82,14 @@
   <p>If you don't want to receive notifications anymore, simply remove
     yourself and/or your teams as answer contact by unchecking the
     appropriate checkbox.
+  </p>
+  <p>Answer contacts must tell Launchpad in which languages they provide help.
+     If you have not already set your
+    <a
+      tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
+      >preferred languages</a>, they will be automatically set to your
+      browser languages. In the case of a team, only English will be set as 
+      the preferred language.
   </p>
 </metal:help>
 </body>

@@ -1,0 +1,71 @@
+= Launchpad Single-Signon Workflow: Authorize =
+
+If a user has logged into Launchpad and then wants to log in to a
+Launchpad-SSO web site, they are not prompted for a password.
+
+First we will set up the helper view that lets us test the final
+portion of the authentication process:
+
+    >>> from canonical.launchpad.ftests.openid import (
+    ...     install_consumer, uninstall_consumer)
+    >>> install_consumer()
+
+The authentication process is started by the relying party issuing a
+checkid_setup request, sending the user to Launchpad.  We will
+authenticate before starting the login procedure:
+
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+
+    >>> from urllib import urlencode
+    >>> args = urlencode({
+    ...     'openid.mode': 'checkid_setup',
+    ...     'openid.identity':
+    ...         'http://specs.openid.net/auth/2.0/identifier_select',
+    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+    ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
+    ...     })
+    >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
+    >>> browser.open(setup_url)
+
+At this point, the user is presented with a form asking if they want
+to authenticate to the relying party
+
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/+openid-consumer
+
+By clicking the "Sign In" button, the user is returned to the relying
+party with their identity URL:
+
+    >>> browser.getControl('Sign In', index=0).click()
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> print browser.contents
+    Consumer received GET
+    ...
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
+    openid.mode:id_res
+    openid.return_to:http://launchpad.dev/+openid-consumer
+    ...
+
+
+== Declining to Authenticate ==
+
+Alternatively, the user could have declined to authenticate.  This
+time, we will cancel the authentication request:
+
+    >>> browser.open(setup_url)
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/+openid-consumer
+    >>> browser.getControl("Not Now").click()
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> print browser.contents
+    Consumer received GET
+    openid.mode:cancel
+    <BLANKLINE>
+
+
+== Cleanup ==
+
+    >>> uninstall_consumer()
+

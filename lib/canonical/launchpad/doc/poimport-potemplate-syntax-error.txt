@@ -24,7 +24,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-  >>> from canonical.lp.dbschema import RosettaImportStatus
+  >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -48,14 +48,15 @@ Now, is time to create the new potemplate
   >>> release.productseries.product.name
   u'firefox'
   >>> series = release.productseries
-  >>> ptn = getUtility(IPOTemplateNameSet).new('firefox', 'Whatever')
+  >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.new(
   ...     potemplatename=ptn,
   ...     path='po/firefox.pot',
   ...     owner=person)
 
-Let's import a .pot file that misses its header. That's a POSyntaxError
+Let's import a .pot file that is missing its header. That's a 
+TranslationFormatSyntaxError
 
   >>> potemplate_contents = r'''
   ... msgid "foo"

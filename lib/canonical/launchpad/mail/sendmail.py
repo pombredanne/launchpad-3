@@ -53,8 +53,9 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     An AssertionError will be raised if one of the parameters is
     invalid.
     """
-    # XXX: These checks need to be migrated upstream if this bug
-    # still exists in modern Z3 -- StuartBishop 20050319
+    # XXX StuartBishop 2005-03-19:
+    # These checks need to be migrated upstream if this bug
+    # still exists in modern Z3.
     assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert zisinstance(from_addr, basestring), 'Invalid From: %r' % from_addr
@@ -105,8 +106,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     # It's the caller's responsibility to encode the address fields to
     # ASCII strings.
-    # XXX CarlosPerelloMarin 20060320: Spiv is working on fixing this so we
-    # can provide a Unicode string and get the right encoding.
+    # XXX CarlosPerelloMarin 2006-03-20: Spiv is working on fixing this
+    # so we can provide a Unicode string and get the right encoding.
     for address in [from_addr] + list(to_addrs):
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
@@ -225,7 +226,7 @@ def sendmail(message, to_addrs=None):
                 # (because actual delivery is done later).
                 smtp = SMTP(
                     config.zopeless.smtp_host, config.zopeless.smtp_port)
-                
+
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
                 smtp.sendmail(config.bounce_address, to_addrs, raw_message)

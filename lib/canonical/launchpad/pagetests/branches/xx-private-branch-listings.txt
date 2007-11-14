@@ -1,0 +1,310 @@
+= Private Branch Listings =
+
+All pages that show branch listings to users should only show branches
+that the user is allowed to see.
+
+The main places branch listings occur are the code tabs for people and
+products, but there are also portlets to show branches on blueprint
+pages (for associated branches), the product overview pages (for
+recently created branches), the code homepage (for recently updated,
+created and imported branches), on the bug details page for bug-branch
+links, and on the blueprint pages when branches are associated with the
+blueprint.
+
+
+== Additional sample data ==
+
+Adding a private branch that is only visible by No Privileges Person
+(and Launchpad administrators).
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, IPersonSet, IProductSet)
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> landscape = getUtility(IProductSet).getByName('landscape')
+    >>> branch = getUtility(IBranchSet).new(
+    ...     BranchType.HOSTED, name='testing-branch', creator=no_priv,
+    ...     owner=no_priv, product=None, url=None, title='A Private Branch')
+    >>> branch.private = True
+    >>> branch.product = landscape
+    >>> flush_database_updates()
+    >>> logout()
+
+
+== The code home page ==
+
+The code home page shows lists of recently imported, changed, and
+registered branches.
+
+    >>> def print_recently_registered_branches(browser):
+    ...     browser.open('http://code.launchpad.dev')
+    ...     branches = find_tag_by_id(browser.contents, 'recently-registered')
+    ...     for list_item in branches.ul.fetch('li'):
+    ...         print "%r" % list_item.renderContents()
+
+When there is no logged in user, only public branches should be visible.
+
+    >>> print_recently_registered_branches(anon_browser)
+    '...~sabdfl/+junk/testdoc...'
+    '...~name12/gnome-terminal/scanned...'
+    '...~name12/gnome-terminal/mirrored...'
+    '...~name12/gnome-terminal/pushed...'
+    '...Launchpad support for Gnome Terminal...'
+
+Logged in users should only be able to see public branches, and private
+branches that they are subscribed to or are the owner of.
+
+    >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> print_recently_registered_branches(no_priv_browser)
+    '...A Private Branch...<img...src="/@@/private"...'
+    '...~sabdfl/+junk/testdoc...'
+    '...~name12/gnome-terminal/scanned...'
+    '...~name12/gnome-terminal/mirrored...'
+    '...~name12/gnome-terminal/pushed...'
+
+The private branches in the sample data belong to Landscape, and are
+subscribed to by Landscape developers.  Sample Person is a Landscape
+developer.
+
+    >>> landscape_dev_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> print_recently_registered_branches(landscape_dev_browser)
+    '...~name12/landscape/feature-x...<img...src="/@@/private"...'
+    '...Landscape trunk...<img...src="/@@/private"...'
+    '...~sabdfl/+junk/testdoc...'
+    '...~name12/gnome-terminal/scanned...'
+    '...~name12/gnome-terminal/mirrored...'
+
+Launchpad administrators are able to see all private branches.
+
+    >>> print_recently_registered_branches(admin_browser)
+    '...A Private Branch...<img...src="/@@/private"...'
+    '...~name12/landscape/feature-x...<img...src="/@@/private"...'
+    '...Landscape trunk...<img...src="/@@/private"...'
+    '...~sabdfl/+junk/testdoc...'
+    '...~name12/gnome-terminal/scanned...'
+
+
+== Product overview pages ==
+
+On the product overview page there is a portlet to show recently registered
+branches.
+
+    >>> def print_landscape_overview_branches(browser):
+    ...     browser.open('http://launchpad.dev/landscape')
+    ...     branches = find_portlet(browser.contents, 'Latest branches')
+    ...     if branches is None:
+    ...         print 'Latest code portlet not shown'
+    ...     else:
+    ...         for list_item in branches.fetch('li'):
+    ...             print "%r" % list_item.renderContents()
+
+    >>> print_landscape_overview_branches(anon_browser)
+    Latest code portlet not shown
+
+    >>> print_landscape_overview_branches(no_priv_browser)
+    '.../landscape/testing-branch...<img src="/@@/private"...'
+
+    >>> print_landscape_overview_branches(landscape_dev_browser)
+    '.../landscape/feature-x...<img...src="/@@/private"...'
+    '.../landscape/trunk...<img...src="/@@/private"...'
+
+    >>> print_landscape_overview_branches(admin_browser)
+    '.../landscape/testing-branch...<img...src="/@@/private"...'
+    '.../landscape/feature-x...<img...src="/@@/private"...'
+    '.../landscape/trunk...<img...src="/@@/private"...'
+
+
+== Landscape code listing page ==
+
+One of the most obvious places to hide private branches are the code
+listing tab.
+
+    >>> def print_landscape_code_listing(browser):
+    ...     browser.open('http://code.launchpad.dev/landscape')
+    ...     table = find_tag_by_id(browser.contents, 'branchtable')
+    ...     for row in table.tbody.fetch('tr'):
+    ...         print extract_text(row)
+
+    >>> print_landscape_code_listing(anon_browser)
+    There are no branches registered for The Landscape Project in Launchpad
+    today...
+
+    >>> print_landscape_code_listing(no_priv_browser)
+    testing-branch             ... New
+
+    >>> print_landscape_code_listing(landscape_dev_browser)
+    feature-x  Sample Person   ... New
+    trunk      Sample Person   ... New
+
+    >>> print_landscape_code_listing(admin_browser)
+    feature-x  Sample Person   ... New
+    trunk      Sample Person   ... New
+    testing-branch             ... New
+
+
+== Person code listing pages ==
+
+The person code listings is the other obvious place to filter out the
+viewable branches.
+
+    >>> def print_person_code_listing(browser, url=''):
+    ...     # The batch argument is given to override the default batch
+    ...     # size of five.
+    ...     full_url = 'http://code.launchpad.dev/~name12%s?batch=15' % url
+    ...     browser.open(full_url)
+    ...     table = find_tag_by_id(browser.contents, 'branchtable')
+    ...     branches = []
+    ...     for row in table.tbody.fetch('tr'):
+    ...         branches.append(extract_text(row))
+    ...     landscape_branches = [branch for branch in branches
+    ...                           if 'landscape' in branch]
+    ...     print "Total of %d branches listed" % len(branches)
+    ...     if landscape_branches:
+    ...         for branch in landscape_branches:
+    ...             print branch
+    ...     else:
+    ...         print "No landscape branches"
+
+    >>> print_person_code_listing(anon_browser)
+    Total of 10 branches listed
+    No landscape branches
+    >>> print_person_code_listing(anon_browser, '/+authoredbranches')
+    Total of 3 branches listed
+    No landscape branches
+
+    >>> print_person_code_listing(no_priv_browser)
+    Total of 10 branches listed
+    No landscape branches
+    >>> print_person_code_listing(no_priv_browser, '/+authoredbranches')
+    Total of 3 branches listed
+    No landscape branches
+
+    >>> print_person_code_listing(landscape_dev_browser)
+    Total of 12 branches listed
+    feature-x ... landscape Author
+    trunk ... landscape Author
+    >>> print_person_code_listing(landscape_dev_browser, '/+authoredbranches')
+    Total of 5 branches listed
+    feature-x ... landscape
+    trunk ... landscape
+
+    >>> print_person_code_listing(admin_browser)
+    Total of 12 branches listed
+    feature-x ... landscape Author
+    trunk ... landscape Author
+    >>> print_person_code_listing(admin_browser, '/+authoredbranches')
+    Total of 5 branches listed
+    feature-x ... landscape
+    trunk ... landscape
+
+
+== Bug branch links ==
+
+When a private branch is linked to a bug, the bug branch link is only
+visible to those that would be able to see the branch.
+
+    >>> landscape_dev_browser.open('http://launchpad.dev/bugs/10')
+
+There are no branches linked to this bug.
+
+    >>> def printBugBranchLinks(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     if len(tags) == 0:
+    ...         print 'No bug branch links'
+    ...     else:
+    ...         for tag in tags:
+    ...             print extract_text(tag)
+
+    >>> printBugBranchLinks(landscape_dev_browser)
+    No bug branch links
+
+Now link to a private branch.
+
+    >>> landscape_dev_browser.getLink('Add branch').click()
+    >>> landscape_dev_browser.getControl('Branch').value = (
+    ...     '~landscape-developers/landscape/trunk')
+    >>> landscape_dev_browser.getControl('Continue').click()
+    >>> printBugBranchLinks(landscape_dev_browser)
+    ~landscape-developers/landscape/trunk (New) - Fix In Progress
+
+Since the link is to a private branch, the entire section is not
+visible to a user that isn't able to see the branch itself.
+
+    >>> anon_browser.open('http://launchpad.dev/bugs/10')
+    >>> printBugBranchLinks(anon_browser)
+    No bug branch links
+
+
+== Blueprint branch links ==
+
+Links between blueprints and branches are shown in a portlet on the
+blueprint index page.
+
+    >>> landscape_dev_browser.open(
+    ...     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan')
+    >>> print find_portlet(landscape_dev_browser.contents, 'Branches')
+    None
+
+Link a private branch to this blueprint.
+
+    >>> landscape_dev_browser.getLink('Link branch').click()
+    >>> landscape_dev_browser.getControl('Branch').value = (
+    ...     '~landscape-developers/landscape/trunk')
+    >>> landscape_dev_browser.getControl('Link to Specification').click()
+
+XXX: thumper 2007-06-12
+Specification text should be changed to blueprints.
+
+    >>> portlet = find_portlet(landscape_dev_browser.contents, 'Branches')
+    >>> print extract_text(portlet)
+    Branches
+    Landscape trunk
+
+The portlet is not shown at all to users that cannot see the associated
+branches.
+
+    >>> anon_browser.open(
+    ...     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan')
+    >>> print find_portlet(anon_browser.contents, 'Branches')
+    None
+
+
+== Branches set as primary branches for product series ==
+
+When a branch is set as the user branch for product series, the details
+must be visible to those that are entitled to see it, but hidden from
+those who shouldn't be able to see it.
+
+    >>> admin_browser.open('http://launchpad.dev/landscape/trunk')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~landscape-developers/landscape/trunk')
+    >>> admin_browser.getControl('Change').click()
+
+Since the admin user is able to see all private branches the branch details
+are shown.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
+    Landscape trunk - Sample Person
+
+Landscape developers can see it.
+
+    >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
+    >>> print extract_text(find_tag_by_id(
+    ...     landscape_dev_browser.contents, 'branch-details'))
+    Landscape trunk - Sample Person
+
+But normal people can't.
+
+    >>> anon_browser.open('http://launchpad.dev/landscape/trunk')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'branch-details'))
+    No revision control details recorded for trunk.
+    If upstream is maintained in CVS or SVN, you can
+    specify the location of the upstream branch to
+    import it as a Bazaar branch.

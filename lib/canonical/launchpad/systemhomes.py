@@ -3,20 +3,35 @@
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
-    'RegistryApplication', 'ShipItApplication', 'MaloneApplication',
-    'BazaarApplication', 'RosettaApplication']
+    'AuthServerApplication',
+    'BazaarApplication',
+    'FeedsApplication',
+    'MailingListApplication',
+    'MaloneApplication',
+    'RegistryApplication',
+    'RosettaApplication',
+    'ShipItApplication',
+    ]
 
 __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from canonical.launchpad.interfaces import (
-    IRegistryApplication, IMaloneApplication, IBazaarApplication,
-    IShipItApplication, IRosettaApplication, IProductSet, IDistroSeriesSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet,
-    IBugSet, IBugWatchSet, IBugExternalRefSet,
-    IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams,
-    IBranchSet, ILanguageSet)
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
+    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
+    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
+    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
+    IOpenIdApplication, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
+
+
+class AuthServerApplication:
+    """AuthServer End-Point."""
+    implements(IAuthServerApplication)
+
+    title = "Auth Server"
 
 
 class RegistryApplication:
@@ -25,6 +40,14 @@ class RegistryApplication:
 
 class ShipItApplication:
     implements(IShipItApplication)
+
+
+class MailingListApplication:
+    implements(IMailingListApplication)
+
+
+class FeedsApplication:
+    implements(IFeedsApplication)
 
 
 class MaloneApplication:
@@ -45,10 +68,6 @@ class MaloneApplication:
     @property
     def bugwatch_count(self):
         return getUtility(IBugWatchSet).search().count()
-
-    @property
-    def bugextref_count(self):
-        return getUtility(IBugExternalRefSet).search().count()
 
     @property
     def bugtask_count(self):
@@ -84,6 +103,12 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
+
+
+class OpenIdApplication:
+    implements(IOpenIdApplication)
+
+    title = 'Launchpad Login Service'
 
 
 class RosettaApplication:
@@ -150,3 +175,5 @@ class RosettaApplication:
         return stats.value('translator_count')
 
 
+class HWDBApplication:
+    implements(IHWDBApplication)

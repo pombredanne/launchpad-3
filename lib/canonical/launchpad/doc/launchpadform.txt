@@ -409,6 +409,58 @@ error, the generated script will focus the first widget with an error:
   // -->
 
 
+== Hidden widgets ==
+
+Any widget can be hidden in a LaunchpadFormView while still having its
+value POSTed with the values of the other (visible) ones. The widget's
+visibility is controlled by its 'visible' attribute, which can be set
+through a custom_widget() call.
+
+First we'll create a fake pagetemplate which doesn't use Launchpad's main
+template and thus is way simpler.
+
+  >>> from zope.app.pagetemplate import ViewPageTemplateFile
+  >>> from StringIO import StringIO
+  >>> from tempfile import mkstemp
+  >>> file, filename = mkstemp()
+  >>> f = open(filename, 'w')
+  >>> f.write(u'<div metal:use-macro="context/@@launchpad_form/form" />')
+  >>> f.close()
+
+By default, all widgets are visible.
+
+  >>> class TestWidgetVisibility(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['displayname']
+  ...     template = ViewPageTemplateFile(filename)
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = TestWidgetVisibility(context, request)
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(view())
+  >>> for input in soup.findAll('input'):
+  ...     print input
+  <input ... name="field.displayname" ... type="text" ...
+
+If we change a widget's 'visible' flag to False, that widget is rendered
+using its hidden() method, which should return a hidden <input> tag.
+
+  >>> class TestWidgetVisibility2(TestWidgetVisibility):
+  ...     custom_widget('displayname', TextWidget, visible=False)
+
+  >>> view = TestWidgetVisibility2(context, request)
+
+  >>> soup = BeautifulSoup(view())
+  >>> for input in soup.findAll('input'):
+  ...     print input
+  <input ... name="field.displayname" type="hidden" ...
+
+  >>> import os
+  >>> os.remove(filename)
+
+
 == Safe Actions ==
 
 By default, LaunchpadFormView requires that form submissions be done

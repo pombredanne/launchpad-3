@@ -1,30 +1,47 @@
-While doing translations, there is a functionality that allows to the user
-to filter the kind of messages that should be showed.
+= Message Filters on +translate Page =
+
+While doing translations, there is a functionality that allows the user
+to filter the kind of messages that should be shown.
 
 For this test, we know that the valid msgsets that this form uses are the ones
 with the ids between 130 and 151 and, by default, the batch are of 10 items.
 
+  # This describes the HTML tag ids we'll be looking for below.
+  >>> match_translation_id = 'msgset_([0-9]+)_es_translation_0$'
+
   # This function will be used to check the content of the browser.
   >>> def print_shown_messages(browser):
   ...     """Print the id/value of all shown translations on the page."""
-  ...     from BeautifulSoup import BeautifulSoup
+  ...     import re
   ...
-  ...     for msgset_id in range(130, 152):
-  ...         translation = find_tag_by_id(
-  ...             browser.contents, 'msgset_%d_es_translation_0' % msgset_id)
-  ...         if translation is None:
-  ...             continue
-  ...         print "%s: '%s'" % (
+  ...     # Map msgset_ids to HTML tags
+  ...     translations = {}
+  ...
+  ...     soup = find_main_content(browser.contents)
+  ...     for tag in soup.findAll('label'):
+  ...         id = tag.get('id')
+  ...         if id is not None:
+  ...             match = re.match(match_translation_id, id)
+  ...             if match:
+  ...                 translations[int(match.group(1))] = tag
+  ...
+  ...     # Print matching HTML tags, in numeric order of msgset id
+  ...     for msgset_id in sorted(translations.keys()):
+  ...         translation = translations[msgset_id]
+  ...         print "%d: '%s'" % (
   ...             msgset_id, translation.renderContents().strip())
+
+
+== Filters ==
+
+=== Untranslated ===
 
 Let's see the list of untranslated messsages that the pofile has with the
 first batch of entries:
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=untranslated')
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=untranslated'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?show=untranslated')
 
   >>> print_shown_messages(user_browser)
   133: '(no translation yet)'
@@ -41,45 +58,165 @@ first batch of entries:
 The set of messages that are untranslated in the second batch:
 
   >>> user_browser.getLink('Next').click()
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_messages(user_browser)
   149: '(no translation yet)'
   150: '(no translation yet)'
   151: '(no translation yet)'
 
+
+=== Messages with new suggestions ===
+
+Now, we are going to select messages with new suggestions submitted after
+they were last reviewed.
+
+  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
+  >>> user_browser.getControl('Filter').click()
+  >>> user_browser.url
+  'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
+
+  >>> print_shown_messages(user_browser)
+  134: '<samp> </samp>caratas'
+
+
+=== Messages needing review ===
+
 Now, we are going to select the amount of entries that need to be reviewed.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=need_review')
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=need_review'
-
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?show=need_review')
   >>> print_shown_messages(user_browser)
   132: 'tiene<samp> </samp>'
   146: '<code>%d</code> foo'
+
+
+=== Messages changed in Launchpad ===
+
+Next, lets see entries which have changed in Launchpad.
+
+  >>> user_browser.getControl('Show:').displayValue = ['changed in Launchpad']
+  >>> user_browser.getControl('Filter').click()
+  >>> user_browser.url
+  'http://.../evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
+
+  >>> print_shown_messages(user_browser)
+  134: '<samp> </samp>caratas'
 
 We are now at the end of this template. Let's try the form submission
 to be sure that we don't redirect to a broken URL but to the first batch.
 
   >>> user_browser.getControl('Save & Continue').click()
   >>> user_browser.url
-  'http://...evolution-2.2/es/+translate?show=need_review&start=10'
+  'http://...evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
+
+
+== Batch parameters when changing filters ==
 
 Another thing that filtering should do is to move to the start of the set of
 messages when the filtering rule changes but preserving batch size.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate')
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate')
   >>> user_browser.getLink('Last').click()
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?start=20'
   >>> user_browser.getControl('Show').value = ['untranslated']
   >>> user_browser.getControl('Filter').click()
   >>> user_browser.url
   'http://.../evolution-2.2/es/+translate?batch=10&show=untranslated'
+
+
+== Filters and error display ==
+
+When we find errors in translations the user is submitting, we display a
+general error message at the top of the page, plus individual error messages
+for the individual problematic translations.
+
+Thus it's important for the error page to show the same messages that the user
+submitted for: it should be the same batch, shown with the same filter (see
+bug 112308).
+
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?show=untranslated')
+
+The user submits a bad translation, one that lacks conversion specifications
+the original message has, and is shown an error.
+
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_142_singular').renderContents()
+  Migrating ...%s...
+
+  >>> user_browser.getControl(
+  ...     name='msgset_142_es_translation_0_radiobutton').value = [
+  ...         'msgset_142_es_translation_0_new']
+  >>> user_browser.getControl(name='msgset_142_es_translation_0_new').value = (
+  ...     'Migrando...')
+  >>> user_browser.getControl(name='submit_translations').click()
+
+The exact same batch of messages is shown again, but with the error.
+
+  >>> user_browser.url
+  'http://.../evolution-2.2/es/+translate?show=untranslated'
+  >>> print_shown_messages(user_browser)
+  133: '(no translation yet)'
+  135: '(no translation yet)'
+  136: '(no translation yet)'
+  137: '(no translation yet)'
+  138: '(no translation yet)'
+  139: '(no translation yet)'
+  140: '(no translation yet)'
+  141: '(no translation yet)'
+  142: '(no translation yet)'
+  148: '(no translation yet)'
+
+  >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
+  ...     print tag.renderContents()
+  There is an error in a translation you provided.
+  Please correct it before continuing.
+  ...Error in Translation:...
+  number of format specifications in 'msgid' and 'msgstr' does not match
+  ...
+
+
+== Filters and alternative languages ==
+
+Handling of http parameters gets a bit more complex when we post forms.
+Nonetheless we can submit translations while combining message filters with
+alternative suggestion languages.
+
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/zh_CN/+translate?show=untranslated')
+  >>> user_browser.getControl('Spanish (es)').selected = True
+  >>> user_browser.getControl(name='select_alternate_language').click()
+
+  >>> user_browser.getControl(
+  ...     name='msgset_161_zh_CN_translation_0_radiobutton').value = [
+  ...         'msgset_161_zh_CN_translation_0_new']
+  >>> user_browser.getControl(
+  ...     name='msgset_161_zh_CN_translation_0_new').value = 'Chinese!'
+  >>> user_browser.getControl(name='submit_translations').click()
+
+If we browse back to the page we just submitted translations for, we don't
+see our own translation since we are only showing untranslated strings.
+
+  >>> user_browser.getLink("Previous").click()
+
+  >>> text = extract_text(find_main_content(user_browser.contents))
+  >>> import re
+  >>> re.search('Chinese!', text) == None
+  True
+
+We do, however, see Spanish suggestions.
+
+  >>> print text
+  Template ...
+  English: evolution addressbook
+  Current Chinese (China): (no translation yet)
+  Suggestions:
+  ...
+  libreta de direcciones de Evolution
+  Spanish
+  ...
+

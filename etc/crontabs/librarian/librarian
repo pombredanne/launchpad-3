@@ -1,0 +1,2 @@
+MAILTO=launchpad-error-reports@lists.canonical.com
+15 18 * * * LPCONFIG=librarian python /srv/librarian.ubuntu.com/launchpad/cronscripts/librarian-gc.py

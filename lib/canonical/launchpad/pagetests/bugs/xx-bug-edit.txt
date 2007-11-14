@@ -1,0 +1,92 @@
+Sample person tries to change the bug's nickname to a existing one and gets a nice error message. 
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
+  >>> user_browser.getLink(text="Edit description").click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
+  >>> user_browser.getControl('Nickname').value = 'blackhole'
+  >>> user_browser.getControl('Change').click()
+  >>> print user_browser.contents
+  <...
+  ...There is 1 error...
+  ...
+  ...blackhole is already in use by another bug...
+
+And now we show that any logged-in user can edit public bugs. 
+
+  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+  >>> browser.open(
+  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
+  >>> browser.getLink(text="Edit description").click()
+  >>> browser.url
+  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
+  >>> browser.getControl('Summary').value = 'New Summary'
+  >>> browser.getControl('Nickname').value = 'testbug'
+  >>> browser.getControl('Description').value = 'New description.'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://.../debian/+source/mozilla-firefox/+bug/3'
+  >>> print browser.contents
+  <...testbug...
+  ...New Summary...
+  ...New description...
+
+
+Editing bug tags
+----------------
+
+When editing bug tags, we want to discourage people from adding new
+tags. Therefore, if you try to add a tag that hasn't been used in the
+current context before, you have to confirm that you indeed want to add
+the tag.
+
+  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+  >>> user_browser.getLink(text="Edit description").click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+
+  >>> user_browser.getControl('Tags').value = 'new-tag'
+  >>> user_browser.getControl('Change').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+  >>> print user_browser.contents
+  <...The tag "new-tag" hasn't yet been used by Mozilla Firefox before.
+  Is this a new tag?...
+
+Here we can confirm that we want to add the tag, or change the tag name
+and submit the form again.
+
+  >>> user_browser.getControl('Yes, define new tag') is not None
+  True
+  >>> user_browser.getControl('Change') is not None
+  True
+
+Let's edit it, changing it to an existing tag.
+
+  >>> user_browser.getControl('Tags').value = 'layout-test'
+  >>> user_browser.getControl('Change').click()
+
+Now we are back at the bug page, and the tag has been added.
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+  >>> 'layout-test' in user_browser.contents
+  True
+  >>> 'new-tag' in user_browser.contents
+  False
+
+Now, let's add 'new-tag' again, and confirm it this time.
+
+  >>> user_browser.getLink(text="Edit description").click()
+  >>> user_browser.getControl('Tags').value = 'new-tag'
+  >>> user_browser.getControl('Change').click()
+
+  >>> user_browser.getControl('Yes, define new tag').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+  >>> 'layout-test' in user_browser.contents
+  False
+  >>> 'new-tag' in user_browser.contents
+  True
+

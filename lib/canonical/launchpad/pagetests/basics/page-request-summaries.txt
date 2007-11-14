@@ -1,0 +1,23 @@
+Launchpad pages end with a comment that displays how many queries we've issued
+to render the page. Note that we say "at least" because unfortunately
+some queries may be issued after the page may finish rendering -- the
+authoritative source is in OOPS reports or in the web app's stderr.
+
+  >>> browser.open('http://launchpad.dev/')
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...
+  <!-- at least ... queries issued in ... seconds -->
+  <BLANKLINE>
+  ...
+
+It's available for any page:
+
+
+  >>> browser.open('http://launchpad.dev/~sabdfl/')
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...
+  <!-- at least ... queries issued in ... seconds -->
+  <BLANKLINE>
+  <BLANKLINE>

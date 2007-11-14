@@ -1,0 +1,57 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:block fill-slot="auth">
+      <form action="/+login-register" method="post" accept-charset="UTF-8">
+        <tal:widget replace="structure view/widgets/nonce/hidden" />
+
+        <p class="error message"
+          tal:repeat="form_wide_error view/form_wide_errors"
+          tal:content="structure form_wide_error">
+          Schema validation errors.
+        </p>
+
+          <div>
+            <h2>What is your e-mail address?</h2>
+
+        <div>
+          <tal:widget replace="structure view/widgets/email" />
+        </div>
+
+          </div>
+          <div>
+            <h2>Do you have a Launchpad password?</h2>
+
+        <div>
+          <div>
+            <tal:widget replace="structure view/login_radio_button" /><br />
+            <tal:widget replace="structure view/widgets/password" />
+          </div>
+          <div>
+            <tal:widget replace="structure view/createaccount_radio_button" />
+          </div>
+          <div>
+            <tal:widget replace="structure view/resetpassword_radio_button" />
+          </div>
+        </div>
+
+          <div>
+            <tal:submit replace="structure view/continue_action/render" />
+          </div>
+
+          </div>
+
+      </form>
+    </metal:block>
+  </body>
+</html>
+

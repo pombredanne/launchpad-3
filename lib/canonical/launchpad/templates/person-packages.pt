@@ -1,27 +1,29 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <h1>Package maintenance report</h1>
 
-  <table class="listing" id="packages">
-  <tal:maintained-packages condition="context/latestMaintainedPackages">
+  <div id="packages">
+
+  <tal:maintained-packages condition="context/getLatestMaintainedPackages">
+
+  <h2>Maintained packages</h2>
+
+  <table class="listing">
     <thead>
-      <tr>
-        <td colspan="7"><h2>Maintained packages</h2></td>
-      </tr>
       <tr>
         <th>Name</th>
         <th>Uploaded to</th>
@@ -34,18 +36,20 @@
     </thead>
     <tbody>
     <tal:block define="
-        sourcepackagereleases context/latestMaintainedPackages">
+        sourcepackagereleases context/getLatestMaintainedPackages">
       <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
     </tal:block>
     </tbody>
+  </table>
   </tal:maintained-packages>
 
   <tal:uploaded-packages
-    condition="context/latestUploadedButNotMaintainedPackages">
+    condition="context/getLatestUploadedButNotMaintainedPackages">
+
+  <h2>Uploaded packages</h2>
+
+  <table class="listing">
     <thead>
-      <tr>
-        <td colspan="7"><h2>Uploaded packages</h2></td>
-      </tr>
       <tr>
         <th>Name</th>
         <th>Uploaded to</th>
@@ -58,11 +62,38 @@
     </thead>
 
     <tal:block define="
-        sourcepackagereleases context/latestUploadedButNotMaintainedPackages">
+        sourcepackagereleases context/getLatestUploadedButNotMaintainedPackages">
       <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
     </tal:block>
-  </tal:uploaded-packages>
   </table>
+  </tal:uploaded-packages>
+
+  <tal:ppa-packages
+    condition="context/getLatestUploadedPPAPackages">
+
+  <h2>PPA packages</h2>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Uploaded to</th>
+        <th>Version</th>
+        <th>When</th>
+        <th>Failures</th>
+        <th>Bugs</th>
+        <th>Questions</th>
+      </tr>
+    </thead>
+
+    <tal:block define="
+        sourcepackagereleases context/getLatestUploadedPPAPackages">
+      <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
+    </tal:block>
+  </table>
+  </tal:ppa-packages>
+
+  </div>
 
 </div>
 
@@ -74,19 +105,22 @@
   </tal:comment>
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
   <tal:block define="spr sourcepackagerelease;
-                     distroseries spr/uploaddistroseries">
+                     distroseries spr/upload_distroseries">
     <td>
-      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
+         class="distrosrcpackage"
          tal:content="spr/sourcepackagename/name">
       </a>
     </td>
     <td>
-      <a tal:attributes="href distroseries/fmt:url"
+      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+         class="distroseriessrcpackage"
          tal:content="distroseries/fullseriesname">
       </a>
     </td>
     <td>
-      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}/${spr/version}"
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
+         class="distrosrcpackagerelease"
          tal:content="spr/version">
       </a>
     </td>
@@ -110,15 +144,60 @@
       </tal:block>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string: ${spr/distrosourcepackage/fmt:url}/+bugs"
+      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
          tal:content="python: spr.countOpenBugsInUploadedDistro(view.user)">
       </a>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+questions"
+      <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
          tal:content="spr/@@+open_questions_count">
       </a>
     </td>
+  </tal:block>
+  </tr>
+</metal:macro>
+
+<metal:macro define-macro="sourcepackagerelease-ppa-rows">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :sourcepackagereleases: A list of SourcePackageRelease objects
+  </tal:comment>
+  <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
+  <tal:block define="spr sourcepackagerelease;
+                     distroseries spr/upload_distroseries;
+                     ppa spr/upload_archive">
+    <td tal:content="spr/sourcepackagename/name">
+      iceweasel
+    </td>
+    <td>
+      <a tal:attributes="href ppa/fmt:url" tal:content="ppa/title" /> -
+      <a class="distroseries" tal:attributes="href distroseries/fmt:url"
+         tal:content="distroseries/fullseriesname" />
+    </td>
+    <td tal:content="spr/version">
+      1.0
+    </td>
+    <td
+      tal:attributes="title spr/dateuploaded/fmt:datetime"
+      tal:content="spr/dateuploaded/fmt:approximatedate">
+      2005-10-24
+    </td>
+    <td>
+      <tal:block condition="spr/needs_building">
+          Not yet built
+      </tal:block>
+      <tal:block condition="not: spr/needs_building">
+          <tal:block repeat="build spr/failed_builds">
+             <a tal:attributes="href build/fmt:url"
+                tal:content="build/distroarchseries/architecturetag" />
+          </tal:block>
+          <tal:block condition="not: spr/failed_builds">
+             None
+          </tal:block>
+      </tal:block>
+    </td>
+    <td style="text-align: right">-</td>
+    <td style="text-align: right">-</td>
   </tal:block>
   </tr>
 </metal:macro>

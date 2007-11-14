@@ -1,0 +1,23 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="canonical.lazr">
+
+    <!-- Enumerated types and items -->
+    <class class="canonical.lazr.enum.MetaEnum">
+      <allow interface="zope.schema.interfaces.IVocabularyTokenized" />
+      <allow interface="canonical.lazr.enum.IEnumeratedType" />
+    </class>
+    <class class="canonical.lazr.enum.Item">
+        <allow attributes="name title description enum sortkey __sqlrepr__" />
+    </class>
+
+    <class class="canonical.lazr.enum.MetaDBEnum">
+      <allow interface="zope.schema.interfaces.IVocabularyTokenized" />
+      <allow interface="canonical.lazr.enum.IEnumeratedType" />
+    </class>
+    <class class="canonical.lazr.enum.DBItem">
+        <allow attributes="name title value description sortkey enum __sqlrepr__" />
+    </class>
+
+</configure>

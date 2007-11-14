@@ -2,10 +2,18 @@
 
 __metaclass__ = type
 
-__all__ = ['IDistributionMirror', 'IMirrorDistroArchSeries',
-           'IMirrorDistroSeriesSource', 'IMirrorProbeRecord',
-           'IDistributionMirrorSet', 'IMirrorCDImageDistroSeries',
-           'PROBE_INTERVAL', 'UnableToFetchCDImageFileList']
+__all__ = [
+'IDistributionMirror',
+'IMirrorDistroArchSeries',
+'IMirrorDistroSeriesSource',
+'IMirrorProbeRecord',
+'IDistributionMirrorSet',
+'IMirrorCDImageDistroSeries',
+'PROBE_INTERVAL',
+'UnableToFetchCDImageFileList',
+'MirrorContent',
+'MirrorSpeed',
+'MirrorStatus']
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
@@ -17,10 +25,163 @@ from canonical.launchpad.fields import ContentNameField, URIField, Whiteboard
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
+
+
+class MirrorContent(DBEnumeratedType):
+    """The content that is mirrored."""
+
+    ARCHIVE = DBItem(1, """
+        Archive
+
+        This mirror contains source and binary packages for a given
+        distribution. Mainly used for APT-based system.
+        """)
+
+    RELEASE = DBItem(2, """
+        CD Image
+
+        Mirror containing released installation images for a given
+        distribution.
+        """)
+
+
+class MirrorSpeed(DBEnumeratedType):
+    """The speed of a given mirror."""
+
+    S128K = DBItem(10, """
+        128 Kbps
+
+        The upstream link of this mirror can make up to 128Kb per second.
+        """)
+
+    S256K = DBItem(20, """
+        256 Kbps
+
+        The upstream link of this mirror can make up to 256Kb per second.
+        """)
+
+    S512K = DBItem(30, """
+        512 Kbps
+
+        The upstream link of this mirror can make up to 512Kb per second.
+        """)
+
+    S1M = DBItem(40, """
+        1 Mbps
+
+        The upstream link of this mirror can make up to 1Mb per second.
+        """)
+
+    S2M = DBItem(50, """
+        2 Mbps
+
+        The upstream link of this mirror can make up to 2Mb per second.
+        """)
+
+    S10M = DBItem(60, """
+        10 Mbps
+
+        The upstream link of this mirror can make up to 10Mb per second.
+        """)
+
+    S45M = DBItem(65, """
+        45 Mbps
+
+        The upstream link of this mirror can make up to 45 Mb per second.
+        """)
+
+    S100M = DBItem(70, """
+        100 Mbps
+
+        The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+    S1G = DBItem(80, """
+        1 Gbps
+
+        The upstream link of this mirror can make up to 1 gigabit per second.
+        """)
+
+    S2G = DBItem(90, """
+        2 Gbps
+
+        The upstream link of this mirror can make up to 2 gigabit per second.
+        """)
+
+    S4G = DBItem(100, """
+        4 Gbps
+
+        The upstream link of this mirror can make up to 4 gigabit per second.
+        """)
+
+    S10G = DBItem(110, """
+        10 Gbps
+
+        The upstream link of this mirror can make up to 10 gigabits per second.
+        """)
+
+    S20G = DBItem(120, """
+        20 Gbps
+
+        The upstream link of this mirror can make up to 20 gigabits per second.
+        """)
+
+
+class MirrorStatus(DBEnumeratedType):
+    """The status (freshness) of a given mirror."""
+
+    UP = DBItem(1, """
+        Up to date
+
+        This mirror is up to date with the original content.
+        """)
+
+    ONEHOURBEHIND = DBItem(2, """
+        One hour behind
+
+        This mirror's content seems to have been last updated one hour ago.
+        """)
+
+    TWOHOURSBEHIND = DBItem(3, """
+        Two hours behind
+
+        This mirror's content seems to have been last updated two hours ago.
+        """)
+
+    SIXHOURSBEHIND = DBItem(4, """
+        Six hours behind
+
+        This mirror's content seems to have been last updated six hours ago.
+        """)
+
+    ONEDAYBEHIND = DBItem(5, """
+        One day behind
+
+        This mirror's content seems to have been last updated one day ago.
+        """)
+
+    TWODAYSBEHIND = DBItem(6, """
+        Two days behind
+
+        This mirror's content seems to have been last updated two days ago.
+        """)
+
+    ONEWEEKBEHIND = DBItem(7, """
+        One week behind
+
+        This mirror's content seems to have been last updated one week ago.
+        """)
+
+    UNKNOWN = DBItem(8, """
+        Unknown freshness
+
+        We couldn't determine when this mirror's content was last updated.
+        """)
 
 
 class DistributionMirrorNameField(ContentNameField):
@@ -121,17 +282,17 @@ class IDistributionMirror(Interface):
         required=False, readonly=False, default=False)
     speed = Choice(
         title=_('Link Speed'), required=True, readonly=False,
-        vocabulary='MirrorSpeed')
+        vocabulary=MirrorSpeed)
     country = Choice(
         title=_('Location'), required=True, readonly=False,
         vocabulary='CountryName')
     content = Choice(
-        title=_('Content'), required=True, readonly=False, 
+        title=_('Content'), required=True, readonly=False,
         description=_(
             'Choose "CD Image" if this mirror contains CD images of '
             'this distribution. Choose "Archive" if this is a '
             'mirror of packages for this distribution.'),
-        vocabulary='MirrorContent')
+        vocabulary=MirrorContent)
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True)
@@ -153,8 +314,8 @@ class IDistributionMirror(Interface):
         title=_('Date Created'), required=True, readonly=True)
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
-        description=_('Notes on the current status of the mirror (only '
-                      'visible to admins).'))
+        description=_("Notes on the current status of the mirror (only "
+                      "visible to admins and the mirror's registrant)."))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -162,7 +323,7 @@ class IDistributionMirror(Interface):
             raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
     def getSummarizedMirroredSourceSerieses():
-        """Return a summarized list of this distribution_mirror's 
+        """Return a summarized list of this distribution_mirror's
         MirrorDistroSeriesSource objects.
 
         Summarized, in this case, means that it ignores pocket and components
@@ -171,7 +332,7 @@ class IDistributionMirror(Interface):
         """
 
     def getSummarizedMirroredArchSerieses():
-        """Return a summarized list of this distribution_mirror's 
+        """Return a summarized list of this distribution_mirror's
         MirrorDistroArchSeries objects.
 
         Summarized, in this case, means that it ignores pocket and components
@@ -194,7 +355,7 @@ class IDistributionMirror(Interface):
     def isOfficial():
         """Return True if this is an official mirror."""
 
-    def shouldDisable(self, expected_file_count=None):
+    def shouldDisable(expected_file_count=None):
         """Should this mirror be marked disabled?
 
         If this is a RELEASE mirror then expected_file_count must not be None,
@@ -260,7 +421,7 @@ class IDistributionMirror(Interface):
         """
 
     def deleteMirrorCDImageSeries(arch_series, flavour):
-        """Delete the MirrorCDImageDistroSeries with the given arch 
+        """Delete the MirrorCDImageDistroSeries with the given arch
         series and flavour, in case it exists.
         """
 
@@ -294,7 +455,7 @@ class IDistributionMirrorSet(Interface):
     def __getitem__(mirror_id):
         """Return the DistributionMirror with the given id."""
 
-    def getMirrorsToProbe(content_type, ignore_last_probe=False):
+    def getMirrorsToProbe(content_type, ignore_last_probe=False, limit=None):
         """Return all official mirrors with the given content type that need
         to be probed.
 
@@ -302,8 +463,12 @@ class IDistributionMirrorSet(Interface):
         it wasn't probed in the last PROBE_INTERVAL hours.
 
         If ignore_last_probe is True, then all official mirrors of the given
-        content type will be probed even if they were probed in the last 
+        content type will be probed even if they were probed in the last
         PROBE_INTERVAL hours.
+
+        If limit is not None, then return at most limit mirrors, giving
+        precedence to never probed ones followed by the ones probed longest
+        ago.
         """
 
     def getBestMirrorsForCountry(country, mirror_type):
@@ -336,7 +501,7 @@ class IMirrorDistroArchSeries(Interface):
         vocabulary='FilteredDistroArchSeries')
     status = Choice(
         title=_('Status'), required=True, readonly=False,
-        vocabulary='MirrorStatus')
+        vocabulary=MirrorStatus)
     # Is it possible to use a Choice here without specifying a vocabulary?
     component = Int(title=_('Component'), required=True, readonly=True)
     pocket = Choice(
@@ -364,7 +529,7 @@ class IMirrorDistroSeriesSource(Interface):
         vocabulary='FilteredDistroSeries')
     status = Choice(
         title=_('Status'), required=True, readonly=False,
-        vocabulary='MirrorStatus')
+        vocabulary=MirrorStatus)
     # Is it possible to use a Choice here without specifying a vocabulary?
     component = Int(title=_('Component'), required=True, readonly=True)
     pocket = Choice(

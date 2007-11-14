@@ -1,9 +1,19 @@
-<div class="builds_list" tal:condition="not: view/setupBuildList">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="builds_list" tal:condition="not: view/setupBuildList">
 
   <tal:batch define="batch view/complete_builds">
 
+    <div style="padding: 0em 1em 2em 0em">
      <form name="build_records_state" action="" method="GET">
-          <label for="build_state">Show builds which are:</label>
+          <tal:searchname condition="view/searchName">
+            Package:
+            <input id="build_text" title="Package Name" size="20"
+                   type="text" name="build_text"
+                   tal:attributes="value view/text"/>
+          </tal:searchname>
 
           <select id="build_state" name="build_state" size="1">
           <option tal:repeat="option view/available_states"
@@ -11,19 +21,12 @@
                                   value option/value"
                   tal:content="option/name" />
           </select>
-
-          <tal:searchname condition="view/searchName">
-            <label for="build_text">with names containing:</label>
-
-            <input id="build_text" title="Package Name" size="20"
-                   type="text" name="build_text"
-                   tal:attributes="value view/text"/>
-          </tal:searchname>
-
           <input type="submit" value="Update" />
      </form>
+    </div>
 
-  <tal:navigation_top replace="structure view/batchnav/@@+navigation-links-upper" />
+  <tal:navigation_top
+     replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <table class="listing" tal:condition="batch">
     <tbody>
@@ -105,10 +108,15 @@
 
   <tal:navigation_bottom replace="structure view/batchnav/@@+navigation-links-lower" />
 
-  <div id="empty-result" tal:condition="not: batch">
-     No <span tal:replace="view/state/title|nothing" /> builds for <span
-     tal:replace="context/title" />.
+  <div id="empty-result" tal:condition="view/no_results">
+     No matching builds.
   </div>
+  <div tal:condition="not: view/no_results">
+    <tal:form_submitted condition="not: view/form_submitted">
+     No packages currently building.
+    </tal:form_submitted>
+  </div>
+
 
   </tal:batch>
 </div>

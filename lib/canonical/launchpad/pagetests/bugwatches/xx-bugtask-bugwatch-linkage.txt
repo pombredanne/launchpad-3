@@ -44,7 +44,7 @@ Of course we can't edit the importance or assignee either.
     LookupError: name 'debian_mozilla-firefox.assignee'
 
 If we remove the bug watch, we'll be able to edit the status, which has
-been reset to Unconfirmed.
+been reset to New.
 
     >>> bugwatch_control.displayValue = []
     >>> submit_button = browser.getControl('Save Changes')
@@ -55,14 +55,14 @@ been reset to Unconfirmed.
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
-    ['Unconfirmed']
+    ['New']
 
     >>> browser.getControl(name='debian_mozilla-firefox.assignee') is not None
     True
 
 Let's try to actually edit the status to see that it works:
 
-    >>> status_control.displayValue = ['Rejected']
+    >>> status_control.displayValue = ['Invalid']
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
@@ -71,7 +71,7 @@ Let's try to actually edit the status to see that it works:
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
-    ['Rejected']
+    ['Invalid']
 
 From the edit page we can also create a new bug watch:
 
@@ -96,14 +96,13 @@ From the edit page we can also create a new bug watch:
 
 The Debian task is linked to the newly created bug watch.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> debian_link = soup.first(
     ...     'a',
     ...     {'href': 'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
     >>> debian_tr = debian_link.parent.parent
     >>> td_tags = debian_tr.findAll('td')
-    >>> target, bugwatch = td_tags[1], td_tags[-1]
+    >>> target, bugwatch = td_tags[0], td_tags[-2]
     >>> print "%s -> %s" % (extract_text(target), extract_text(bugwatch))
     mozilla-firefox (Debian) -> debbugs #1
 

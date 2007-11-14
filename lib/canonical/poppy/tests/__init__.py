@@ -83,7 +83,7 @@ class PoppyTestSetup:
                 timelimit = time.time() + 60
                 chunk = os.read(self.process.stdout.fileno(), 4096)
                 buffer += chunk
-                # XXX: 2007-02-20 jamesh
+                # XXX: jamesh 2007-02-20:
                 # We might have an incomplete line at the end of the
                 # buffer.  This doesn't seem to be a problem for the
                 # amount of data being written in the tests though.

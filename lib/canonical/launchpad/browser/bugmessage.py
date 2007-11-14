@@ -55,8 +55,8 @@ class BugMessageAddFormView(LaunchpadFormView):
         if data.get('email_me'):
             bug.subscribe(self.user)
 
-        # XXX: Write proper FileUpload field and widget instead of this
-        # hack. -- Bjorn Tillenius, 2005-06-16
+        # XXX: Bjorn Tillenius 2005-06-16:
+        # Write proper FileUpload field and widget instead of this hack.
         file_ = self.request.form.get(self.widgets['filecontent'].name)
 
         message = None

@@ -9,11 +9,12 @@ Let's find a build that produced some binaries:
   >>> browser.open("http://launchpad.dev/ubuntu/+builds")
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
+  >>> browser.getLink("Next").click()
   >>> browser.getLink(
   ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
   ...     'warty RELEASE').click()
   >>> browser.url
-  'http://launchpad.dev/+builds/+build/2'
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
 
 This build produced one BinaryPackage, called 'mozilla-firefox 0.9',
 which is presented in the right portlet, called 'Resulting Binaries'.
@@ -22,7 +23,7 @@ Let's just check if the page is presented without errors (see bug
 
   >>> browser.getLink('mozilla-firefox 0.9').click()
   >>> browser.url
-  'http://launchpad.dev/+builds/+build/2/mozilla-firefox'
+  'http://launchpad.dev/ubuntu/warty/i386/mozilla-firefox/0.9'
 
 When rendering package relationships only existent packages contain
 links to within LP application, not found packages are rendered as

@@ -50,7 +50,7 @@ Now we serialise it as XML, and print it:
   <BLANKLINE>
   The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.</description>
   <reporter name="name12">Sample Person</reporter>
-  <status>UNCONFIRMED</status>
+  <status>NEW</status>
   <importance>LOW</importance>
   <assignee name="sabdfl">Mark Shuttleworth</assignee>
   <subscriptions>
@@ -157,7 +157,8 @@ By default a bug export will not include any private bugs.  However,
 they can be included by passing the --include-private flag to the
 import script.  To test this, we'll make a bug private:
 
-  >>> bug1.private = True
+  >>> bug1.setPrivate(True, getUtility(ILaunchBag).user)
+  True
   >>> ztm.commit()
 
 

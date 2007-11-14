@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
   <body>
 
@@ -18,7 +25,7 @@
 
     <div metal:fill-slot="main">
 
-      <tal:notloggedin condition="not:request/lp:person">
+      <tal:form-not-writeable condition="not:view/form_is_writeable">
         <div>
           <a tal:attributes="href context/potemplate/fmt:url"
              tal:content="context/potemplate/title">
@@ -32,8 +39,8 @@
           </tal:language>
           translation
         </h1>
-      </tal:notloggedin>
-      <tal:loggedin condition="request/lp:person">
+      </tal:form-not-writeable>
+      <tal:form-writeable condition="view/form_is_writeable">
         <div>
           <a tal:attributes="href context/potemplate/fmt:url"
              tal:content="context/potemplate/title">
@@ -46,7 +53,7 @@
             Spanish
           </tal:language>
         </h1>
-      </tal:loggedin>
+      </tal:form-writeable>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -119,6 +126,18 @@
               >
               translated
             </option>
+            <option value="new_suggestions"
+              tal:attributes="selected
+              request/htmlform:show/selected/new_suggestions"
+              >
+              with new suggestions
+            </option>
+            <option value="changed_in_launchpad"
+              tal:attributes="selected
+              request/htmlform:show/selected/changed_in_launchpad"
+              >
+              changed in Launchpad
+            </option>
           </select>
           <input
             type="submit" value="Filter" />
@@ -134,12 +153,14 @@
         <tal:block condition="view/batchnav/currentBatch">
           <form method="POST" action="">
             <!-- the hidden elements -->
+            <input type="hidden" name="show" value=""
+                   tal:attributes="value view/show" />
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
             <input type="hidden" name="lock_timestamp" value=""
-                   tal:condition="request/lp:person"
+                   tal:condition="view/form_is_writeable"
                    tal:attributes="value view/lock_timestamp/isoformat" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
@@ -156,7 +177,7 @@
                 </tal:loop>
               </tbody>
               <tfoot>
-                <tr tal:condition="request/lp:person">
+                <tr tal:condition="view/form_is_writeable">
                   <th colspan="5">
                     <tal:review
                       condition="not: view/user_is_official_translator"

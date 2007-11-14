@@ -12,8 +12,8 @@
     <allow
         attributes="id title description status priority owner assignee
                     answerer answer datecreated datedue datelastquery
-                    datelastresponse dateanswered language messages whiteboard
-                    product distribution sourcepackagename
+                    datelastresponse date_solved faq language messages
+                    whiteboard product distribution sourcepackagename
                     target can_be_reopened reopenings canReject
                     can_request_info can_give_info can_give_answer
                     can_confirm_answer can_reopen
@@ -26,7 +26,7 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="requestInfo giveAnswer expireQuestion addComment
+      attributes="requestInfo giveAnswer expireQuestion addComment linkFAQ
                   subscribe unsubscribe"
       set_attributes="title description datedue target language"
       />
@@ -54,17 +54,17 @@
   <content class="canonical.launchpad.database.QuestionMessage">
     <allow interface="canonical.launchpad.interfaces.IQuestionMessage"/>
   </content>
-             
-  <class class="canonical.launchpad.mailnotification.QuestionNotificationRecipientSet">
-    <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
-  </class>
 
   <adapter
     for="canonical.launchpad.interfaces.IQuestion"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.question_to_questiontarget"
+    factory="canonical.launchpad.components.answertracker.question_to_questiontarget"
     />
-
+  <adapter
+    for="canonical.launchpad.interfaces.IQuestion"
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    factory="canonical.launchpad.components.answertracker.question_to_faqtarget"
+    />
   <adapter
     for="canonical.launchpad.interfaces.IQuestion"
     provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
@@ -184,6 +184,22 @@
     class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
     template="../templates/question-unlinkbugs.pt"
+    />
+
+  <browser:page
+    name="+linkfaq"
+    for="canonical.launchpad.interfaces.IQuestion"
+    class="canonical.launchpad.browser.QuestionLinkFAQView"
+    permission="launchpad.AnyPerson"
+    template="../templates/question-linkfaq.pt"
+    />
+
+  <browser:page
+    name="+createfaq"
+    for="canonical.launchpad.interfaces.IQuestion"
+    class="canonical.launchpad.browser.QuestionCreateFAQView"
+    permission="launchpad.Moderate"
+    template="../templates/question-createfaq.pt"
     />
 
   <browser:page

@@ -1,0 +1,127 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<tal:do-this-first tal:content="view/process_form" />
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+  <body>
+    <div metal:fill-slot="body">
+    
+      <tal:block condition="not: request/lp:person">
+              
+        <tal:block condition="not: view/login_success">
+
+          <tal:block condition="view/login_error">
+            <h1>Your login was unsuccessful</h1>
+            <p class="error" tal:content="view/login_error" />
+          </tal:block>
+
+          <h1 tal:condition="not: view/login_error">
+            Welcome to ShipIt for <tal:flavor replace="view/flavour/title" />
+          </h1>
+
+          <tal:is-open condition="view/is_open">
+          <p>ShipIt lets you request 
+            <strong><span tal:replace="view/flavour/title" />
+            <span tal:replace="view/series/title" /></strong> CDs that
+            will be posted to you free of charge.
+          </p>
+          <p
+            tal:condition="view/announcement|nothing"
+            tal:content="view/announcement"
+            class="informational message"
+          />
+
+          <p>To make requests, or view or change existing requests, first
+          sign in using your <a href="https://launchpad.net">Launchpad</a>
+          account.
+          <br />
+          You can 
+          <a tal:attributes="
+              href string:https://launchpad.net/+login?origin=${view/origin}"
+          >create a new account</a> if you don't have one already.</p>
+
+          <p>
+            If you have questions about shipments and dates please refer to the
+            <a href="http://www.ubuntu.com/getubuntu/shipit-faq">ShipIt FAQ</a>.
+          </p>
+          <br />
+
+          </tal:is-open>
+
+          <tal:is-closed condition="not: view/is_open">
+          <p class="informational message">
+            ShipIt is currently closed while we prepare for the
+            <span tal:replace="view/flavour/title" />
+            <span tal:replace="view/series/title" /> release. We'll be
+            back in a few days.
+          </p>
+          <p>To view existing requests, first sign in using your
+          <a href="https://launchpad.net">Launchpad</a> account.</p>
+          </tal:is-closed>
+
+          <form name="login" method="POST">
+            <table style="max-width: 20em; margin: 0 auto;">
+              <tr>
+                <th>
+                  <label for="email">E-mail address:</label>
+                </th>
+                <td>
+                  <input type="text"
+                    name="loginpage_email"
+                    id="email"
+                    size="30"
+                    tal:attributes="value request/email | nothing"
+                  />
+                  <script>
+                  <!--
+                      document.forms['login'].loginpage_email.focus();
+                  //-->
+                  </script>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="password">Password:</label></th>
+                <td> <input
+                    type="password"
+                    id="password"
+                    name="loginpage_password"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th></th>
+                <td>
+                  <div>
+                    <input
+                      type="submit"
+                      name="loginpage_submit_login"
+                      value="Log In" />
+                    (<a href="https://launchpad.net/+forgottenpassword"
+                      >Forgotten your password?</a>)
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <tal:replacement replace="structure view/preserve_query">
+              This preserves extra query parameters as hidden fields.
+            </tal:replacement>
+          </form>
+        </tal:block>
+      </tal:block>
+    </div>
+  </body>
+</html>
+</tal:root>

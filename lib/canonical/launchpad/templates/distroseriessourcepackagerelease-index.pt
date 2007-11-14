@@ -1,12 +1,18 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">pmount 0.1-1 in Fooix 6.04</h1>
-    </metal:heading>
+<metal:heading fill-slot="pageheading">
+  <h1>Source package overview</h1>
+</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -19,18 +25,13 @@
 
 <div metal:fill-slot="main">
 
-  <h2>Changelog</h2>
+  <h2>Publishing history</h2>
 
-  <tal:changelog replace="structure context/sourcepackagerelease/@@+changelog" />
-
-   <div id="changesfile" tal:define="changesfile context/changesfile">
-     <p tal:condition="changesfile">
-        <a tal:attributes="href changesfile/http_url">
-           View changesfile
-        </a>
-     </p>
-     <p tal:condition="not: changesfile">No changesfile available.</p>
-   </div>
+  <div id="publishing_history">
+    <tal:block repeat="publishing context/publishing_history"
+               replace="structure publishing/@@+listing-detailed">
+    </tal:block>
+  </div>
 
   <h2>Download</h2>
 
@@ -43,6 +44,20 @@
         </li>
      </ul>
      <p tal:condition="not:context/files">No files available for download.</p>
+   </div>
+
+  <h2>Changelog</h2>
+
+  <tal:pre
+       replace="structure context/sourcepackagerelease/@@+changelog" />
+
+   <div id="changesfile" tal:define="changesfile context/changesfile">
+     <p tal:condition="changesfile">
+        <a tal:attributes="href changesfile/http_url">
+           View changesfile
+        </a>
+     </p>
+     <p tal:condition="not: changesfile">No changesfile available.</p>
    </div>
 
 </div>

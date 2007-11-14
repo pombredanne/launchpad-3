@@ -1,0 +1,82 @@
+= Downloading Source Package Translations =
+
+Launchpad lets you request a downloadable tarball of all current templates and
+translations for a source package.
+
+
+== Where to request ==
+
+The option is shown in the Translations action bar for a source package.  The
+link is called "Download translations."
+
+    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
+    >>> user_browser.getLink('Download translations').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+export
+
+
+== Anonymous access ==
+
+In order to request a download, a user must be logged in.  This protects us
+from overload by spambots.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
+    >>> anon_browser.getLink('Download translations').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+
+== Making the request ==
+
+The "Download translations" link leads to a page that lets the user select an
+export format, and request the download.
+
+    >>> print user_browser.title
+    Download translations for "mozilla in Ubuntu Hoary"
+
+    >>> user_browser.getControl('Request Download').click()
+
+    >>> print user_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla
+
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    Your request has been received. Expect to receive an email shortly.
+
+== Mixed formats ==
+
+We only support exports in a single, chosen file format.  If the source
+package has templates in different formats, the request page shows a warning
+about this.
+
+Evolution's package in Hoary has two current templates, both with PO as their
+native file format.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database.potemplate import POTemplateSubset
+    >>> from canonical.launchpad.database.distribution import DistributionSet
+    >>> from canonical.launchpad.interfaces import TranslationFileFormat
+    >>> ubuntu = DistributionSet().getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> hoary_subset = POTemplateSubset(distroseries=hoary)
+    >>> an_evolution_template = hoary_subset.getPOTemplateByPath(
+    ...     'po/evolution-2.2.pot')
+
+If the file format for one of these templates were different from the other's,
+a warning would appear on the export request form that wasn't there before.
+
+    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+
+    >>> an_evolution_template.source_file_format = TranslationFileFormat.MO
+    >>> flush_database_updates()
+
+    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    This package has templates with different native file formats.  If you
+    proceed, all translations will be exported in the single format you
+    specify.
+

@@ -13,7 +13,8 @@ import sys
 
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.lp.dbschema import PersonCreationRationale, TicketStatus
+from canonical.launchpad.interfaces import (
+    PersonCreationRationale, QuestionStatus)
 
 def close_account(con, log, username):
     """Close a person's account.
@@ -22,13 +23,13 @@ def close_account(con, log, username):
     """
     cur = con.cursor()
     cur.execute("""
-        SELECT Person.id, name, calendar, teamowner
+        SELECT Person.id, name, teamowner
         FROM Person LEFT OUTER JOIN EmailAddress
             ON Person.id = EmailAddress.person
         WHERE name=%(username)s or lower(email)=lower(%(username)s)
         """, vars())
     try:
-        person_id, username, calendar_id, teamowner = cur.fetchone()
+        person_id, username, teamowner = cur.fetchone()
     except TypeError:
         log.fatal("User %s does not exist" % username)
         return False
@@ -53,23 +54,14 @@ def close_account(con, log, username):
     cur.execute("""
         UPDATE Person
         SET displayname='Removed by request', password=NULL,
-            name=%(new_name)s, language=NULL, calendar=NULL, timezone='UTC',
+            name=%(new_name)s, language=NULL, timezone='UTC',
             addressline1=NULL, addressline2=NULL, organization=NULL,
             city=NULL, province=NULL, country=NULL, postcode=NULL,
-            phone=NULL, homepage_content=NULL, emblem=NULL, gotchi=NULL,
-            hide_email_addresses=TRUE, registrant=NULL, gotchi_heading=NULL,
+            phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
+            hide_email_addresses=TRUE, registrant=NULL, logo=NULL,
             creation_rationale=%(unknown_rationale)s, creation_comment=NULL
         WHERE id=%(person_id)s
         """, vars())
-
-    # Trash their calendar.
-    # XXX: Can't do this until we make the CalendarSubsciption
-    # ON DELETE CASCADE -- StuartBishop 20070131
-    # table_notification('Calendar')
-    # if calendar_id is not None:
-    #     cur.execute("""
-    #             DELETE FROM Calendar WHERE id=%(calendar_id)s""", vars()
-    #             )
 
     # Reassign their bugs
     table_notification('BugTask')
@@ -77,16 +69,16 @@ def close_account(con, log, username):
         UPDATE BugTask SET assignee=NULL WHERE assignee=%(person_id)s
         """, vars())
 
-    # Reassign tickets assigned to the user, and close all their tickets
+    # Reassign questions assigned to the user, and close all their questions
     # since nobody else can
-    table_notification('Ticket')
+    table_notification('Question')
     cur.execute("""
-        UPDATE Ticket SET assignee=NULL WHERE assignee=%(person_id)s
+        UPDATE Question SET assignee=NULL WHERE assignee=%(person_id)s
         """, vars())
-    closed_ticket_status = TicketStatus.SOLVED.value
+    closed_question_status = QuestionStatus.SOLVED.value
     cur.execute("""
-        UPDATE Ticket
-        SET status=%(closed_ticket_status)s, whiteboard=
+        UPDATE Question
+        SET status=%(closed_question_status)s, whiteboard=
             'Closed by Launchpad due to owner requesting account removal'
         WHERE owner=%(person_id)s
         """, vars())
@@ -108,7 +100,7 @@ def close_account(con, log, username):
         ('BountySubscription', 'person'),
         ('BranchSubscription', 'person'),
         ('BugSubscription', 'person'),
-        ('TicketSubscription', 'person'),
+        ('QuestionSubscription', 'person'),
         ('POSubscription', 'person'),
         ('SpecificationSubscription', 'person'),
 
@@ -131,7 +123,7 @@ def close_account(con, log, username):
 
         # Contacts
         ('PackageBugContact', 'bugcontact'),
-        ('SupportContact', 'person'),
+        ('AnswerContact', 'person'),
 
         # Pending items in queues
         ('POExportRequest', 'person'),

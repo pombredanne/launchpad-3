@@ -8,8 +8,9 @@ import shutil
 
 from twisted.spread import pb
 
-from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.interfaces import (
+    ImportStatus, RevisionControlSystems)
 from importd import JobStrategy
 from importd.bzrmanager import BzrManager
 
@@ -74,7 +75,7 @@ class Job:
         self.RCS = 'package'
         self.TYPE = 'sourcerer'
         self.product_id = sp.product.id
-        # XXX sabdfl 12/04/05 these are commented out until the Packaging
+        # XXX sabdfl 2005-04-12: these are commented out until the Packaging
         # table has been fixed to support series-level granularity
         #assert sp.productseries is not None, ("Attempt to import %s %s %s "
         #        "which is not mapped to an upstream "

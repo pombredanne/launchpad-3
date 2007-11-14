@@ -25,7 +25,7 @@ import the bunch of required database classes:
   ...      PocketChroot, DistroArchSeries, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
-  >>> from canonical.lp.dbschema import (
+  >>> from canonical.launchpad.interfaces import (
   ...      PackagePublishingPocket, PackagePublishingStatus,
   ...      SourcePackageFileType)
 
@@ -117,7 +117,6 @@ createMissingBuilds() method. Additionally if the target is an already
 released distroseries it can only be visible if published in in
 special pocket (UPDATES, SECURITY or BACKPORTS)
 
-  >>> from canonical.launchpad.database import Manifest
   >>> count = 1
   >>> def createPackageAndPublication(name, series, architecturehintlist,
   ...     archive=None):
@@ -126,7 +125,6 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...     Return a tuple with (SourcePackageRelease, publication)
   ...     """
   ...     global count
-  ...     manifest = Manifest(uuid="fake %d" % count)
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
   ...     release_pocket = PackagePublishingPocket.UPDATES
@@ -138,14 +136,14 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         section=1,
   ...         maintainer=1,
   ...         component=1,
-  ...         uploaddistroseries=1,
+  ...         upload_distroseries=1,
   ...         sourcepackagename=name,
   ...         architecturehintlist=architecturehintlist,
   ...         builddependsindep='foo (<< 1.0)',
   ...         builddepends=None,
   ...         dsc=None,
+  ...         copyright='placeholder ...',
   ...         changelog=None,
-  ...         manifest=manifest,
   ...         dscsigningkey=None,
   ...         dsc_format="1.0",
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
@@ -267,16 +265,31 @@ And a source listing which causes us to produce no builds:
 Binary PAS
 ----------
 
-To check binary PAS listings we'll use a publication for
-mozilla-firefox, which already has its data set up.
+To check binary PAS listings we'll use a source publication for
+iceweasel which produces mozilla-firefox binaries in warty and already
+has its data set up.
 
   >>> warty = DistroSeries.selectOneBy(name="warty")
-  >>> firefox_pub = SecureSourcePackagePublishingHistory.get(18)
+  >>> firefox_pub = SecureSourcePackagePublishingHistory.get(28)
+  >>> print firefox_pub.sourcepackagerelease.title
+  iceweasel - 1.0
+  >>> print firefox_pub.sourcepackagerelease.architecturehintlist
+  any
+  >>> iceweasel_binaries = warty.getSourcePackage('iceweasel')['1.0'].binaries
+  >>> [b.title for b in iceweasel_binaries]
+  [u'mozilla-firefox-1.0']
+
   >>> legal_archs = set(warty.architectures)
+  >>> sorted([a.architecturetag for a in legal_archs], reverse=True)
+  [u'i386', u'hppa']
+
+Restrict iceweasel targets to i386 and sparc, since the latter is not
+present in warty, we will only create a build for i386:
+
   >>> pas_verify = getPASVerifier("mozilla-firefox: i386 sparc", dar=warty)
-  >>> [a.architecturetag for a in
-  ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
-  ...                                     pas_verify)]
+  >>> permitted_archs = determineArchitecturesToBuild(
+  ...      firefox_pub, legal_archs, warty, pas_verify)
+  >>> [a.architecturetag for a in permitted_archs]
   [u'i386']
 
 And a binary PAS listing that tries to exclude i386 and hppa from an
@@ -284,9 +297,9 @@ arch-any build. The exclusion of i386 is ignored; see comment in
 pas.py:_handleBinaryPAS for more information on why.
 
   >>> pas_verify = getPASVerifier("mozilla-firefox: !i386 !hppa", dar=warty)
-  >>> [a.architecturetag for a in
-  ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
-  ...                                     pas_verify)]
+  >>> permitted_archs = determineArchitecturesToBuild(
+  ...      firefox_pub, legal_archs, warty, pas_verify)
+  >>> [a.architecturetag for a in permitted_archs]
   [u'i386']
 
 
@@ -344,7 +357,7 @@ the default score value of 0:
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-  >>> bq.component_name
+  >>> bq.build.current_component.name
   u'main'
   >>> bq.build.sourcepackagerelease.component.name
   u'main'
@@ -356,14 +369,6 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
 
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)
@@ -377,12 +382,12 @@ And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 buildmaster/master.py code. The job presented should won
-exactly ** 995 ** points last turn (5 for the default urgency 'LOW'
-1000 for the 'Main' component and -10 for one unsatisfied dependency,
-further tests for scoring are in buildd-scoring.txt)
+exactly ** 1005 ** points last turn (5 for the default urgency 'LOW'
+and 1000 for the 'Main' component, further tests for scoring are in
+buildd-scoring.txt)
 
   >>> job.lastscore
-  995
+  1005
 
 == PPA work ==
 
@@ -403,7 +408,7 @@ the sample data:
 
   >>> name6 = SourcePackageName(name="test-ppa")
   >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
-  ...     name6, hoary, "i386", archive=cprov.archive)
+  ...     name6, hoary, "i386 hppa", archive=cprov.archive)
 
 Now we create builds and buildqueues and check their contents:
 
@@ -418,19 +423,15 @@ Check that we only created new Build entry for ppa publication:
   ...   print build.title
   i386 build of test-ppa 674 in ubuntu hoary UPDATES
 
+Note that it did not create a build for 'hppa' as is requested in the
+given 'architeturehintlist' ('i386 hppa'). Only 'i386' and 'amd64' are
+allowed for PPA (see further comments in buildmaster/master.py).
+
 Check if BuildQueue are also created for ppa_builds:
 
   >>> bm.addMissingBuildQueueEntries()
   >>> jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
+
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)
   1

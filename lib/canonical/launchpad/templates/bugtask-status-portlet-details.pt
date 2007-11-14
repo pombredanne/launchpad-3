@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
 
   <h2>Details</h2>
 
@@ -10,7 +14,7 @@
       <a tal:replace="structure context/owner/fmt:link" /><br />
 
       <b>In:</b>
-      <a tal:content="context/targetname"
+      <a tal:content="context/bugtargetname"
          tal:attributes="href string:${context/target/fmt:url}/+bugs">ubuntu</a><br />
 
       <b>When:</b>

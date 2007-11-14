@@ -31,7 +31,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-    class="canonical.launchpad.browser.DistributionSourcePackageReleaseView"
+    class="canonical.launchpad.webapp.LaunchpadView"
     permission="zope.Public"
     >
     <browser:page
@@ -45,6 +45,11 @@
       name="+portlet-details"
       facet="overview"
       template="../templates/distributionsourcepackagerelease-portlet-details.pt"
+      />
+    <browser:page
+      name="+changes"
+      facet="overview"
+      template="../templates/distributionsourcepackagerelease-changes.pt"
       />
   </browser:pages>
 

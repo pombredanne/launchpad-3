@@ -4,9 +4,9 @@ __metaclass__ = type
 
 import unittest
 
-from zope.publisher.browser import TestRequest
-from zope.component import getView
+from zope.component import getMultiAdapter, getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.systemhomes import ShipItApplication
@@ -14,10 +14,12 @@ from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
-    ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
-from canonical.launchpad.interfaces import ShippingRequestPriority
-from canonical.lp.dbschema import (
-    ShipItDistroSeries, ShipItFlavour, ShippingRequestStatus)
+    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+from canonical.launchpad.interfaces import (
+    ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
+    ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
+    ShippingRequestType)
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):
@@ -42,6 +44,10 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         ShipItFlavour.UBUNTU: ShipItUbuntuLayer,
         ShipItFlavour.KUBUNTU: ShipItKUbuntuLayer,
         ShipItFlavour.EDUBUNTU: ShipItEdUbuntuLayer}
+
+    # Currently we don't allow users to request the Ubuntu Server edition.
+    flavours_that_can_be_requested = [
+        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU]
 
     def _get_standard_option(self, flavour):
         return StandardShipItRequest.selectBy(flavour=flavour)[0]
@@ -75,21 +81,21 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
                 'ordertype': str(standardoption.id),
                 'FORM_SUBMIT': 'Request',
                 }
-        request = TestRequest(form=form)
-        request.notifications = []
+        request = LaunchpadTestRequest(form=form)
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
-        view = getView(ShipItApplication(), 'myrequest', request)
+        view = getMultiAdapter(
+            (ShipItApplication(), request), name='myrequest')
         if distroseries is not None:
             view.series = distroseries
         view.renderStandardrequestForm()
         errors = getattr(view, 'errors', None)
-        self.failUnlessEqual(errors, None)
+        self.assertEqual(errors, None)
         return view.current_order
 
     def test_first_request_is_approved(self):
         """The first request of a given flavour should always be approved."""
-        for flavour in ShipItFlavour.items:
+        for flavour in self.flavours_that_can_be_requested:
             request = self._make_new_request_through_web(flavour)
             self.failUnless(request.isApproved(), flavour)
             self._ship_request(request)
@@ -97,7 +103,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
 
     def test_second_request_is_marked_pending(self):
         """The second request of a given flavour is always marked PENDING."""
-        for flavour in ShipItFlavour.items:
+        for flavour in self.flavours_that_can_be_requested:
             first_request = self._create_request_and_ship_it(flavour)
             second_request = self._make_new_request_through_web(flavour)
             self.failUnless(second_request.isAwaitingApproval(), flavour)
@@ -107,7 +113,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         """The third request of a given flavour is always marked
         PENDINGSPECIAL.
         """
-        for flavour in ShipItFlavour.items:
+        for flavour in self.flavours_that_can_be_requested:
             first_request = self._create_request_and_ship_it(flavour)
             second_request = self._create_request_and_ship_it(flavour)
             third_request = self._make_new_request_through_web(flavour)
@@ -151,26 +157,26 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # when creating the previous account.
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
-            distroseries=ShipItDistroSeries.GUTSY)
+            distroseries=ShipItDistroSeries.DAPPER)
         self.failUnless(request2.isApproved(), flavour)
         self.failIfEqual(request.distroseries, request2.distroseries)
-        self.failUnlessEqual(
+        self.assertEqual(
             request2.normalized_address, request.normalized_address)
 
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
             flavour, user_email='karl@canonical.com', form=form)
-        self.failUnlessEqual(request.distroseries, request3.distroseries)
+        self.assertEqual(request.distroseries, request3.distroseries)
         self.failUnless(request3.isDuplicatedAddress(), flavour)
-        self.failUnlessEqual(
+        self.assertEqual(
             request3.normalized_address, request.normalized_address)
 
         # The same happens for any subsequent requests for that release with
         # the same address.
         request4 = self._make_new_request_through_web(
             flavour, user_email='carlos@canonical.com', form=form)
-        self.failUnlessEqual(request.distroseries, request3.distroseries)
+        self.assertEqual(request.distroseries, request3.distroseries)
         self.failUnless(request4.isDuplicatedAddress(), flavour)
 
         # As we said, this happens because all requests are considered to have
@@ -206,12 +212,100 @@ class TestShippingRun(LaunchpadFunctionalTestCase):
 
 class TestShippingRequest(LaunchpadFunctionalTestCase):
 
-    def test_requests_that_can_be_approved_denied_or_changed(self):
-        requestset = ShippingRequestSet()
+    def setUp(self):
+        self.requestset = ShippingRequestSet()
+        LaunchpadFunctionalTestCase.setUp(self)
 
+    def _get_standard_option(self, flavour):
+        return StandardShipItRequest.selectBy(flavour=flavour)[0]
+
+    def _createRequest(self):
+        """Create a ShippingRequest as the Sample Person user."""
+        sample_person = getUtility(IPersonSet).getByName('name12')
+        brazil = getUtility(ICountrySet)['BR']
+        city = 'Sao Carlos'
+        addressline = 'Antonio Rodrigues Cajado 1506'
+        name = 'Guilherme Salgado'
+        phone = '+551635015218'
+        request = self.requestset.new(
+            sample_person, name, brazil, city, addressline, phone)
+        return request
+
+    def test_type_tracking_for_unapproved_requests(self):
+        """Unapproved requests can be standard or custom, depending on the
+        number of requested CDs.
+        """
+        UBUNTU = ShipItFlavour.UBUNTU
+        template = self._get_standard_option(UBUNTU)
+        request = self._createRequest()
+        # If we use the quantities of one of our standard templates, the
+        # request will be considered standard.
+        quantities = template.quantities
+        request.setRequestedQuantities({UBUNTU: quantities})
+        self.assertEqual(request.type, ShippingRequestType.STANDARD)
+
+        # If the quantities don't match the quantities of one of our standard
+        # templates, though, the request is marked as custom.
+        quantities[ShipItArchitecture.X86] += 1
+        request.setRequestedQuantities({UBUNTU: quantities})
+        self.assertEqual(request.type, ShippingRequestType.CUSTOM)
+
+    def test_type_tracking_for_approved_requests(self):
+        """Approved (including shipped) requests can be standard or custom,
+        depending on the number of approved CDs.
+        """
+        UBUNTU = ShipItFlavour.UBUNTU
+        template = self._get_standard_option(UBUNTU)
+        request = self._createRequest()
+        # If we use the quantities of one of our standard templates, the
+        # request will be considered standard.
+        quantities = template.quantities
+        request.approve()
+        request.setQuantities({UBUNTU: quantities})
+        self.assertEqual(
+            request.getTotalApprovedCDs(), request.getTotalCDs())
+        self.assertEqual(request.type, ShippingRequestType.STANDARD)
+
+        # If the approved CDs don't match the quantities of one of our
+        # standard templates, though, the request is marked as custom.
+        quantities[ShipItArchitecture.X86] += 1
+        request.setApprovedQuantities({UBUNTU: quantities})
+        self.assertEqual(request.type, ShippingRequestType.CUSTOM)
+
+    def test_recipient_email_for_users(self):
+        # If a user is active, its requests will have his preferred email as
+        # the recipient_email.
+        requests = self.requestset.search(recipient_text='Kreutzmann')
+        self.failIf(requests.count() == 0)
+        request = requests[0]
+        self.assertEqual(
+            request.recipient.preferredemail.email, request.recipient_email)
+
+        # If the user becomes inactive (which can be done by having his
+        # account closed by an admin or by the user himself), though, the
+        # recipient_email will be just a piece of text explaining that.
+        request.recipient.preferredemail.destroySelf()
+        # Need to clean the cache because preferredemail is a cached property.
+        request.recipient._preferredemail_cached = None
+        self.failIf(request.recipient.preferredemail is not None)
+        self.assertEqual(
+            u'inactive account -- no email address', request.recipient_email)
+
+    def test_recipient_email_for_shipit_admins(self):
+        # Requests made using the admin interface will have the shipit admins
+        # team as the recipient and thus its recipient_email property will
+        # return config.shipit.admins_email_address no matter what the email
+        # address for that team is.
+        requests = self.requestset.search(recipient_text='shipit-admins')
+        self.failIfEqual(requests.count(), 0)
+        for request in requests:
+            self.assertEqual(
+                request.recipient_email, config.shipit.admins_email_address)
+
+    def test_requests_that_can_be_approved_denied_or_changed(self):
         # Requests pending approval can be approved and denied but not
         # changed.
-        pending_request = requestset.getOldestPending()
+        pending_request = self.requestset.getOldestPending()
         self.failUnless(pending_request.isAwaitingApproval())
         self.failUnless(pending_request.canBeApproved())
         self.failUnless(pending_request.canBeDenied())
@@ -242,7 +336,8 @@ class TestShippingRequest(LaunchpadFunctionalTestCase):
         # denied.
         shipped_request = cancelled_request
         shipped_request.status = ShippingRequestStatus.APPROVED
-        shippingrun = requestset._create_shipping_run([shipped_request.id])
+        shippingrun = self.requestset._create_shipping_run(
+            [shipped_request.id])
         flush_database_updates()
         self.failUnless(shipped_request.isShipped())
         self.failIf(shipped_request.canBeApproved())

@@ -10,13 +10,9 @@ First a helper to set up a browser object that doesn't handle the
 mechanize browser object here because Zope's test browser does not
 expose the required functionality:
 
-  >>> from zope.testbrowser.testing import Browser
   >>> def setupBrowserWithReferrer(referrer):
-  ...      browser = Browser()
-  ...      browser.handleErrors = False
+  ...      browser = setupBrowser("Basic no-priv@canonical.com:test")
   ...      browser.mech_browser.set_handle_referer(False)
-  ...      browser.addHeader("Authorization",
-  ...                        "Basic no-priv@canonical.com:test")
   ...      if referrer is not None:
   ...          browser.addHeader("Referer", referrer)
   ...      return browser
@@ -29,7 +25,7 @@ If we try to create a new team with with the referrer set to
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team1'
   >>> browser.getControl('Display Name').value = 'Team 1'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   Traceback (most recent call last):
     ...
   OffsiteFormPostError: http://evil.people.com/
@@ -41,7 +37,7 @@ Similarly, posting with a garbage referer fails:
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team2'
   >>> browser.getControl('Display Name').value = 'Team 2'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   Traceback (most recent call last):
     ...
   OffsiteFormPostError: not a url
@@ -53,7 +49,7 @@ We do allow the post if there is no referrer:
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team3'
   >>> browser.getControl('Display Name').value = 'Team 3'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   >>> print browser.url
   http://launchpad.dev/~team3
 
@@ -64,6 +60,6 @@ Or if the referrer is from a site managed by launchpad:
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team4'
   >>> browser.getControl('Display Name').value = 'Team 4'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   >>> print browser.url
   http://launchpad.dev/~team4

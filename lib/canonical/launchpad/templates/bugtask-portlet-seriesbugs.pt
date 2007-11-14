@@ -1,5 +1,9 @@
-<div class="portlet"
-     tal:define="series_buglistings view/series_buglistings">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-release-critical-bugs"
+  tal:define="series_buglistings view/series_buglistings">
 
   <h2>Release-critical bugs</h2>
 

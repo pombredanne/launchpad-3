@@ -1,0 +1,20 @@
+Non-ascii characters in specification titles are allowed.
+
+  >>> admin_browser.open(
+  ...     'http://blueprints.launchpad.dev/firefox/+spec/e4x/+edit')
+
+  >>> admin_browser.getControl(
+  ...     'Title').value = 'A title with non-ascii characters áã'
+  >>> admin_browser.getControl('Change').click()
+  >>> admin_browser.url
+  'http://blueprints.launchpad.dev/firefox/+spec/e4x'
+
+And they're correctly displayed in the dependency graph imagemap.
+
+  >>> anon_browser.open('http://launchpad.dev/firefox/+spec/canvas/+deptreeimgtag')
+  >>> ('http://blueprints.launchpad.dev/firefox/+spec/e4x' in
+  ...     anon_browser.contents)
+  True
+  >>> ('http://blueprints.launchpad.dev/firefox/+spec/svg&#45;support' in
+  ...     anon_browser.contents)
+  True

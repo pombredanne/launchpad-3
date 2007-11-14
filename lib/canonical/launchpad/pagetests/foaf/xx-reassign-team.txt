@@ -11,11 +11,7 @@ launchpad user or team.
     ...
     Unauthorized: ...
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
@@ -33,8 +29,17 @@ administrator of the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
-    Team owner: Celso Providelo
-    Membership: 3 (Moderated Team)
+    Team owner:
+    Celso Providelo
+    Membership:
+    3
+    active members
+    1 proposed members
+    1 invited members
+    2 inactive members
+    Moderated Team:
+    All subscriptions for this team are subject to approval by one of
+    the team's administrators.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
@@ -56,9 +61,7 @@ Now Sample Person can't change the owner anymore.
     
 But cprov can.
 
-    >>> browser = Browser()
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
@@ -73,8 +76,11 @@ But cprov can.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
-    Team owner: Ubuntu Team
-    Membership: 11 (Moderated Team)
+    Team owner:
+    Ubuntu Team
+    ...
+    Moderated Team:
+    ...
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))

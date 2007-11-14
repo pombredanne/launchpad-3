@@ -12,8 +12,8 @@ SourcePackageName will be returned by getInputValue(). In order for us
 to map the package names, we need a distribution, so we give the widget
 a distribution task to work with.
 
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.interfaces import IBugSet, IDistroBugTask
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> ubuntu_task = bug_one.bugtasks[-2]
     >>> ubuntu_task.distribution.name
@@ -21,7 +21,8 @@ a distribution task to work with.
 
     >>> package_field = IDistroBugTask['sourcepackagename'].bind(ubuntu_task)
 
-    >>> request = TestRequest(form={'field.sourcepackagename': 'evolution'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.sourcepackagename': 'evolution'})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
     >>> widget.getInputValue()
@@ -33,7 +34,8 @@ a distribution task to work with.
 If we pass in a binary package name, which can be mapped to a source
 package name, the corresponding SourcePackageName is returned.
 
-    >>> request = TestRequest(form={'field.sourcepackagename': 'linux-2.6.12'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.sourcepackagename': 'linux-2.6.12'})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
     >>> widget.getInputValue()
@@ -57,7 +59,8 @@ At that point we'll fallback to the vocabulary, so a SourcePackageName
 will still be returned.
 
     >>> package_field = IDistroBugTask['sourcepackagename'].bind(debian_task)
-    >>> request = TestRequest(form={'field.sourcepackagename': 'evolution'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.sourcepackagename': 'evolution'})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
     >>> widget.getInputValue()
@@ -68,7 +71,8 @@ will still be returned.
 If we pass in a package name that doesn't exist in Launchpad, we get a
 ConversionError saying that the package name doesn't exist.
 
-    >>> request = TestRequest(form={'field.sourcepackagename': 'no-package'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.sourcepackagename': 'no-package'})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
     >>> widget.getInputValue()

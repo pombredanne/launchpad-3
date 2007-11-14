@@ -7,7 +7,7 @@ revision control portlet should show 'None given'
 
   >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
   >>> print find_portlet(anon_browser.contents, 'Revision control details')
-  <div class="portlet">
+  <div class="portlet" id="...">
   ...<i>None given</i>...
   </div>
 
@@ -16,7 +16,7 @@ revision control portlet should show 'None given'
 
 Now if the registrant associates a branch it should be there:
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/trunk')
   >>> browser.getLink('Change details').click()
   >>> browser.url
@@ -29,6 +29,6 @@ Should now be back at the main series page
   >>> browser.url
   'http://launchpad.dev/firefox/trunk'
   >>> print find_portlet(browser.contents, 'Revision control details')
-  <div class="portlet">
+  <div class="portlet" id="...">
   ...<a href="http://code.launchpad.dev/~name12/firefox/main">Mozilla Firefox Mainline</a>...
   </div>

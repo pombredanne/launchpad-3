@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
 <p tal:condition="not: view/workload">
   <i><span tal:replace="context/browsername">James Blackwell</span> is not
@@ -34,17 +39,17 @@
                tal:attributes="href spec/fmt:url">foo-bar</a>
           </td>
           <td width="80">
-            <span class="sortkey" tal:content="spec/status/sortkey" />
-            <span tal:content="spec/status/title"
+            <span class="sortkey" tal:content="spec/definition_status/sortkey" />
+            <span tal:content="spec/definition_status/title"
                   tal:attributes="
-                  class string:specstatus${spec/status/name}">Approved
+                  class string:specstatus${spec/definition_status/name}">Approved
             </span>
           </td>
           <td width="80">
-            <span class="sortkey" tal:content="spec/delivery/sortkey" />
-            <span tal:content="spec/delivery/title"
+            <span class="sortkey" tal:content="spec/implementation_status/sortkey" />
+            <span tal:content="spec/implementation_status/title"
                   tal:attributes="
-                  class string:specdelivery${spec/delivery/name}">Slow
+                  class string:specdelivery${spec/implementation_status/name}">Slow
             </span>
           </td>
           <tal:not_assignee condition="not: personspec/assignee">
@@ -77,4 +82,4 @@
   </table>
     
 </tal:workload>
-
+</tal:root>

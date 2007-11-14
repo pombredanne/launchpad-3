@@ -1,9 +1,13 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
 
@@ -50,11 +54,11 @@
                     class string:specpriority${spec/priority/name}" 
                     tal:content="spec/priority/title">High</span><br />
               <span tal:attributes="
-                    class string:specstatus${spec/status/name}"
-                    tal:content="spec/status/title">New</span><br />
+                    class string:specstatus${spec/definition_status/name}"
+                    tal:content="spec/definition_status/title">New</span><br />
               <span tal:attributes="
-                    class string:specdelivery${spec/delivery/name}"
-                    tal:content="spec/delivery/title">New</span><br />
+                    class string:specdelivery${spec/implementation_status/name}"
+                    tal:content="spec/implementation_status/title">New</span><br />
             </td>
             <td>
               <label tal:attributes="for string:spec_${spec/name}">

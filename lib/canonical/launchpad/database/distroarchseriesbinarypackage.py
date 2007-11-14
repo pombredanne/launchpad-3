@@ -11,9 +11,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease
     )
@@ -24,15 +22,15 @@ from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache
     )
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory
+    BinaryPackagePublishingHistory
     )
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackage,NotFoundError
+    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus
     )
 
 
 class DistroArchSeriesBinaryPackage:
-    """A Binary Package in the context of a Distro Arch Series. 
+    """A Binary Package in the context of a Distro Arch Series.
 
     Binary Packages are "magic": they don't really exist in the
     database. Instead, they are synthesized based on information from
@@ -104,16 +102,17 @@ class DistroArchSeriesBinaryPackage:
     def __getitem__(self, version):
         """See IDistroArchSeriesBinaryPackage."""
         query = """
-        BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.distroarchseries = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.binarypackagerelease =
             BinaryPackageRelease.id AND
         BinaryPackageRelease.version = %s AND
         BinaryPackageRelease.binarypackagename = %s
-        """ % sqlvalues(self.distroarchseries,
-                        self.distroarchseries.main_archive,
-                        version,
-                        self.binarypackagename)
+        """ % sqlvalues(
+                self.distroarchseries,
+                self.distribution.all_distro_archive_ids,
+                version,
+                self.binarypackagename)
 
         bpph = BinaryPackagePublishingHistory.selectFirst(
             query, clauseTables=['binarypackagerelease'],
@@ -130,14 +129,15 @@ class DistroArchSeriesBinaryPackage:
     def releases(self):
         """See IDistroArchSeriesBinaryPackage."""
         ret = BinaryPackageRelease.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
-                            self.binarypackagename),
+            """ % sqlvalues(
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    self.binarypackagename),
             orderBy='-datecreated',
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory'])
@@ -159,14 +159,14 @@ class DistroArchSeriesBinaryPackage:
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
                 BinaryPackagePublishingHistory.binarypackagerelease AND
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.binarypackagename,
-                            self.distroarchseries,
-                            self.distroarchseries.main_archive,
-                            PackagePublishingStatus.PUBLISHED,
-                            ),
+            """ % sqlvalues(
+                    self.binarypackagename,
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.PUBLISHED),
             orderBy='datecreated',
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',])
@@ -182,14 +182,15 @@ class DistroArchSeriesBinaryPackage:
     def publishing_history(self):
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = 
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
-                            self.binarypackagename),
+            """ % sqlvalues(
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    self.binarypackagename),
             distinct=True,
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
@@ -198,16 +199,17 @@ class DistroArchSeriesBinaryPackage:
     def current_published(self):
         """See IDistroArchSeriesBinaryPackage."""
         current = BinaryPackagePublishingHistory.selectFirst("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
-                            self.binarypackagename,
-                            PackagePublishingStatus.PUBLISHED),
+            """ % sqlvalues(
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    self.binarypackagename,
+                    PackagePublishingStatus.PUBLISHED),
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
 
@@ -219,73 +221,3 @@ class DistroArchSeriesBinaryPackage:
 
         return current
 
-    def changeOverride(self, new_component=None, new_section=None,
-                       new_priority=None):
-        """See IDistroArchSeriesBinaryPackage."""
-
-        # Check we have been asked to do something
-        if (new_component is None and new_section is None
-            and new_priority is None):
-            raise AssertionError("changeOverride must be passed a new"
-                                 "component, section and/or priority.")
-
-        # Retrieve current publishing info
-        current = self.current_published
-
-        # Check there is a change to make
-        if new_component is None:
-            new_component = current.component
-        if new_section is None:
-            new_section = current.section
-        if new_priority is None:
-            new_priority = current.priority
-
-        if (new_component == current.component and
-            new_section == current.section and
-            new_priority == current.priority):
-            return
-
-        # Append the modified package publishing entry
-        SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=current.binarypackagerelease,
-            distroarchseries=current.distroarchseries,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False,
-            pocket=current.pocket,
-            component=new_component,
-            section=new_section,
-            priority=new_priority,
-            archive=current.archive
-            )
-
-    def supersede(self):
-        """See IDistroArchSeriesBinaryPackage."""
-        # Retrieve current publishing info
-        current = self.current_published
-        current = SecureBinaryPackagePublishingHistory.get(current.id)
-        current.status = PackagePublishingStatus.SUPERSEDED
-        current.datesuperseded = UTC_NOW
-
-        return current
-
-    def copyTo(self, distroseries, pocket):
-        """See IDistroArchSeriesBinaryPackage."""
-        # Both lookups may raise NotFoundError; it should be handled in
-        # the caller.
-        current = self.current_published
-        target_dar = distroseries[current.distroarchseries.architecturetag]
-
-        copy = SecureBinaryPackagePublishingHistory(
-            archive=current.archive,
-            binarypackagerelease=current.binarypackagerelease,
-            distroarchseries=target_dar,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False
-        )
-        return copy

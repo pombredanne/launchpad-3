@@ -21,20 +21,19 @@ QRUNNERS = [
 ##     ('ArchRunner',     1), # messages for the archiver
     ('BounceRunner',   1), # for processing the qfile/bounces directory
 ##     ('CommandRunner',  1), # commands and bounces from the outside world
-##     ('IncomingRunner', 1), # posts from the outside world
+    ('IncomingRunner', 1), # posts from the outside world
 ##     ('NewsRunner',     1), # outgoing messages to the nntpd
     ('OutgoingRunner', 1), # outgoing messages to the smtpd
     ('VirginRunner',   1), # internally crafted (virgin birth) messages
     ('RetryRunner',    1), # retry temporarily failed deliveries
-    # Non-standard runners we've added.  XXX BarryWarsaw: not yet implemented.
-##     ('POPRunner',      1), # POP new messages to us
-##     ('XMLRPCRunner',   1), # Poll for XMLRPC requests
+    # Non-standard runners we've added.
+    ('XMLRPCRunner',   1), # Poll for XMLRPC requests
     ]
 
 # Other list defaults.
 DEFAULT_GENERIC_NONMEMBER_ACTION = 3 # Discard
 DEFAULT_SEND_REMINDERS = No
-DEFAULT_SEND_WELCOME_MSG = No
+DEFAULT_SEND_WELCOME_MSG = Yes
 DEFAULT_SEND_GOODBYE_MSG = No
 DEFAULT_DIGESTABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No

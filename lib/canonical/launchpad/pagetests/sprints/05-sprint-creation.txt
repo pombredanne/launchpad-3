@@ -10,7 +10,7 @@ We should also be able to create a new sprint. We do this off the Sprints
 
 First we'll test the name field validator.
 
-  >>> user_browser.getControl('Name').value = 'LTSponsteroids'
+  >>> user_browser.getControl('Name').value = 'ltsp_on_steroids!'
   >>> user_browser.getControl('Title').value = 'LTSP On Steroids'
   >>> summary = 'This is a sprint summary. Some words about the sprint'
   >>> user_browser.getControl('Summary').value = summary
@@ -27,7 +27,7 @@ First we'll test the name field validator.
   ...     print tag.renderContents()
   There is 1 error.
   <BLANKLINE>
-  Invalid name 'LTSponsteroids'. Names must start with a letter or
+  Invalid name 'ltsp_on_steroids!'. Names must start with a letter or
   number and be lowercase. The characters <samp>+</samp>,
   <samp>-</samp> and <samp>.</samp> are also allowed after the
   first character.

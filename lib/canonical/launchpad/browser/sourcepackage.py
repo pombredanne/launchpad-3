@@ -1,43 +1,41 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Browser views for sourcepackages."""
+
 __metaclass__ = type
 
 __all__ = [
     'SourcePackageNavigation',
     'SourcePackageSOP',
     'SourcePackageFacets',
+    'SourcePackageTranslationsExportView',
     'SourcePackageView',
-    'linkify_changelog'
     ]
 
-# Python standard library imports
-import cgi
-import re
 from apt_pkg import ParseSrcDepends
-
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.dbschema import PackagePublishingPocket
-
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-
+from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IPackaging, ICountry, ISourcePackage,
+    PackagePublishingPocket)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     GetitemNavigation, stepto, redirection)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -56,9 +54,9 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
         if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this sourcepackage.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress. Only administrators '
+                'may view translations for this source package.')
 
         return sourcepackage_pots
 
@@ -72,20 +70,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-def linkify_changelog(changelog, sourcepkgnametxt):
-    if changelog is None:
-        return changelog
-    changelog = cgi.escape(changelog)
-    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder. Also we need an specification describing the syntax for
-    # changelog linkification and processing (mostly bug interface),
-    # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
-                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    return changelog
-
-
 class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -96,7 +80,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
         return self.context.sourcepackagename
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Versions published, earliest first
+        # XXX mpt 2006-10-04: Versions published, earliest first.
         return []
 
     def countChildren(self):
@@ -135,17 +119,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+builds', text, icon='info')
 
 
-class SourcePackageBugsMenu(ApplicationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'bugs'
-    links = ['reportbug']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
-
-
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
     usedfor = ISourcePackage
@@ -161,7 +134,16 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates']
+    links = ['help', 'templates', 'imports', 'translationdownload']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
+
+    def translationdownload(self):
+        text = 'Download translations'
+        enabled = (len(self.context.getCurrentTranslationTemplates()) > 0)
+        return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
@@ -171,7 +153,33 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageTranslationsExportView(BaseExportView):
+    """Request tarball export of all translations for source package.
+    """
+
+    def processForm(self):
+        """Process form submission requesting translations export."""
+        templates = self.context.getCurrentTranslationTemplates()
+        pofiles = []
+        for template in templates:
+            pofiles += list(template.pofiles)
+        return (templates, pofiles)
+
+    def getDefaultFormat(self):
+        templates = self.context.getCurrentTranslationTemplates()
+        if not templates:
+            return None
+        format = templates[0].source_file_format
+        for template in templates:
+            if template.source_file_format != format:
+                self.request.response.addInfoNotification(
+                    "This package has templates with different native "
+                    "file formats.  If you proceed, all translations will be "
+                    "exported in the single format you specify.")
+        return format
+
+
+class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -184,11 +192,8 @@ class SourcePackageView(BuildRecordsView):
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.status_message = None
+        self.error_message = None
         self.processForm()
-
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
 
     def processForm(self):
         # look for an update to any of the things we track
@@ -201,7 +206,7 @@ class SourcePackageView(BuildRecordsView):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid series given.'
+                self.error_message = 'Invalid series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
@@ -266,10 +271,18 @@ class SourcePackageView(BuildRecordsView):
         return helpers.browserLanguages(self.request)
 
     def potemplatenames(self):
-        potemplates = self.context.potemplates
+        potemplates = self.context.getTranslationTemplates()
         potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 
     def searchName(self):
         return False
 
+    def defaultBuildState(self):
+        """Default build state for sourcepackage builds.
+
+        This overrides the default that is set on BuildRecordsView."""
+        # None maps to "all states". The reason we display all states on
+        # this page is because it's unlikely that there will be so
+        # many builds that the listing will be overwhelming.
+        return None

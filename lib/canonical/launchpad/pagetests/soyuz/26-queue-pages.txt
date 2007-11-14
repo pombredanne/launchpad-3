@@ -1,15 +1,7 @@
 Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroSeriess.
-
-  >>> from zope.testbrowser.testing import Browser
-
 Setup a browser as the upload manager:
-
-  >>> upload_manager_browser = Browser()
-  >>> upload_manager_browser.handleErrors = False
-  >>> upload_manager_browser.addHeader(
-  ...     "Authorization", "Basic carlos@canonical.com:test")
 
 Change ubuntu's upload manager to be carlos:
 
@@ -88,6 +80,8 @@ Page access denied also for empty queues (bug #74965):
 
 Allow access from upload managers and admins:
 
+  >>> upload_manager_browser = setupBrowser(
+  ...       auth="Basic carlos@canonical.com:test")
   >>> upload_manager_browser.open(
   ...     "http://localhost/ubuntu/breezy-autotest/+queue")
   >>> upload_manager_browser.getControl(
@@ -117,6 +111,44 @@ normal user auth:
   ...netapplet...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
+
+
+== Queue item filelist ==
+
+Each queue item has a hidden 'filelist' section which is
+toggled via javascript by clicking in the 'expand' arrow
+image:
+
+  >>> print find_tag_by_id(user_browser.contents, 'queue4-filelist-arrow')
+  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-arrow" />
+
+The 'filelist' is a expanded as another table row, right below the
+clicked item:
+
+  >>> filelist = find_tag_by_id(user_browser.contents, 'queue4-filelist')
+
+It contains a list of files related to the queue item clicked followed
+by its size, one file per line:
+
+  >>> print extract_text(filelist)
+  alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
+
+And each filename links to its respective librarian URL:
+
+  >>> print filelist.find('a')
+  <a href="http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc">alsa-utils_1.0.9a-4ubuntu1.dsc</a>
+
+On binary queue items we also present the stamp 'NEW' for files never
+published in the archive (it helps archive-admins when reviewing
+candidates):
+
+  >>> filelist = find_tag_by_id(user_browser.contents, 'queue2-filelist')
+  >>> print extract_text(filelist)
+  pmount_1.9-1_all.deb (3 bytes) NEW
+
+XXX cprov 20070726: we should extend the test when we are able to
+probe javascripts events.
+
 
 Inspect the ACCEPTED queue
 

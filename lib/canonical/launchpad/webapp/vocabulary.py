@@ -19,8 +19,6 @@ __all__ = [
     'vocab_factory'
 ]
 
-import operator
-
 from sqlobject import AND, CONTAINSSTRING
 
 from zope.interface import implements, Attribute
@@ -43,15 +41,16 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
         'A name for this vocabulary, to be displayed in the popup window.')
 
     def searchForTerms(query=None):
-        """Return an iterable of SimpleTerms that match the search string.
-
-        The iterable must have a count() method.
+        """Return a `CountableIterator` of `SimpleTerm`s that match the query.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
         """
 
 
+# XXX flacoste 2007-07-06: A proper interface should be implemented for
+# this, either ISelectResults or define an interface expressing the
+# required subset.
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 
@@ -60,7 +59,7 @@ class CountableIterator:
     BatchNavigator.
     """
 
-    def __init__(self, count, iterator, item_wrapper):
+    def __init__(self, count, iterator, item_wrapper=None):
         """Construct a CountableIterator instance.
 
         Arguments:
@@ -83,12 +82,15 @@ class CountableIterator:
         This is used when building the <select> menu of options that is
         generated when we post a form.
         """
-        # XXX: we can actually raise an AssertionError here because we
-        # shouldn't need to iterate over all the results, ever; this is
-        # currently here because popup.py:matches() doesn't slice into
-        # the results, though it should. -- kiko, 2007-01-18
+        # XXX kiko 2007-01-18: We can actually raise an AssertionError here
+        # because we shouldn't need to iterate over all the results, ever;
+        # this is currently here because popup.py:matches() doesn't slice
+        # into the results, though it should.
         for item in self._iterator:
-            yield self._item_wrapper(item)
+            if self._item_wrapper is not None:
+                yield self._item_wrapper(item)
+            else:
+                yield item
 
     def __getitem__(self, arg):
         """Return a slice or item of my collection.
@@ -96,25 +98,27 @@ class CountableIterator:
         This is used by BatchNavigator when it slices into us; we just
         pass on the buck down to our _iterator."""
         for item in self._iterator[arg]:
-            yield self._item_wrapper(item)
+            if self._item_wrapper is not None:
+                yield self._item_wrapper(item)
+            else:
+                yield item
 
     def __len__(self):
-        # XXX: __len__ is required to make BatchNavigator work; we
-        # should probably change that to either check for the presence
-        # of a count() method, or for a simpler interface than
+        # XXX kiko 2007-01-16: __len__ is required to make BatchNavigator
+        # work; we should probably change that to either check for the
+        # presence of a count() method, or for a simpler interface than
         # ISelectResults, but I'm not going to do that today.
-        #   -- kiko, 2007-01-16
         return self._count
 
 
 class BatchedCountableIterator(CountableIterator):
     """A wrapping iterator with a hook to create descriptions for its terms."""
-    # XXX: note that this class doesn't use the item_wrapper at all. I
-    # hate compatibility shims. We can't remove it from the __init__
+    # XXX kiko 2007-01-18: note that this class doesn't use the item_wrapper
+    # at all. I hate compatibility shims. We can't remove it from the __init__
     # because it is always supplied by NamedSQLObjectHugeVocabulary, and
     # we don't want child classes to have to reimplement it.  This
     # probably indicates we need to reconsider how these classes are
-    # split.. -- kiko, 2007-01-18
+    # split.
     def __iter__(self):
         """See CountableIterator"""
         return iter(self.getTermsWithDescriptions(self._iterator))
@@ -159,13 +163,13 @@ class SQLObjectVocabularyBase:
     def __init__(self, context=None):
         self.context = context
 
-    # XXX: note that the method searchForTerms is part of
+    # XXX kiko 2007-01-16: note that the method searchForTerms is part of
     # IHugeVocabulary, and so should not necessarily need to be
     # implemented here; however, many of our vocabularies depend on
     # searchForTerms for popup functionality so I have chosen to just do
     # that. It is possible that a better solution would be to have the
     # search functionality produce a new vocabulary restricted to the
-    # desired subset. -- kiko, 2007-01-16
+    # desired subset.
     def searchForTerms(self, query=None):
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
@@ -201,14 +205,14 @@ class SQLObjectVocabularyBase:
         if zisinstance(obj, SQLBase):
             clause = self._table.q.id == obj.id
             if self._filter:
-                # XXX: this code is untested -- kiko, 2007-01-16
+                # XXX kiko 2007-01-16: this code is untested.
                 clause = AND(clause, self._filter)
             found_obj = self._table.selectOne(clause)
             return found_obj is not None and found_obj == obj
         else:
             clause = self._table.q.id == int(obj)
             if self._filter:
-                # XXX: this code is untested -- kiko, 2007-01-16
+                # XXX kiko 2007-01-16: this code is untested.
                 clause = AND(clause, self._filter)
             found_obj = self._table.selectOne(clause)
             return found_obj is not None
@@ -311,9 +315,9 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
             self.displayname = 'Select %s' % self.__class__.__name__
 
     def search(self, query):
-        # XXX: this is a transitional shim; we're going to get rid of
-        # search() altogether, but for now we've only done it for the
-        # NamedSQLObjectHugeVocabulary. -- kiko, 2007-01-17
+        # XXX kiko 2007-01-17: this is a transitional shim; we're going to
+        # get rid of search() altogether, but for now we've only done it for
+        # the NamedSQLObjectHugeVocabulary.
         raise NotImplementedError
 
     def searchForTerms(self, query):
@@ -330,7 +334,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
 
 # TODO: Make DBSchema classes provide an interface, so we can directly
 # adapt IDBSchema to IVocabulary
-def vocab_factory(schema, noshow=[]):
+def vocab_factory(schema, noshow=None):
     """Factory for IDBSchema -> IVocabulary adapters.
 
     This function returns a callable object that creates vocabularies
@@ -338,28 +342,27 @@ def vocab_factory(schema, noshow=[]):
 
     The items appear in value order, lowest first.
     """
+    if noshow is None:
+        noshow = []
     def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
-        # XXX kiko: we should use sort's built-in DSU here.
-        items = [(item.value, item.title, item)
-            for item in schema.items
-            if item not in noshow]
-        items.sort()
-        items = [(title, value) for sortkey, title, value in items]
+        items = [(item.title, item) for item in schema.items
+                 if item not in noshow]
         return SimpleVocabulary.fromItems(items)
     return factory
 
-def sortkey_ordered_vocab_factory(schema, noshow=[]):
+def sortkey_ordered_vocab_factory(schema, noshow=None):
     """Another factory for IDBSchema -> IVocabulary.
 
     This function returns a callable object that creates a vocabulary
     from a dbschema ordered by that schema's sortkey.
     """
+    if noshow is None:
+        noshow = []
     def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
         items = [(item.title, item)
-                 for item in sorted(
-                     schema.items, key=operator.attrgetter('sortkey'))
+                 for item in schema.items
                  if item not in noshow]
         return SimpleVocabulary.fromItems(items)
     return factory

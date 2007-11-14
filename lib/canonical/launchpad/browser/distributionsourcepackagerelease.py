@@ -6,23 +6,24 @@ __all__ = [
     'DistributionSourcePackageReleaseFacets',
     'DistributionSourcePackageReleaseNavigation',
     'DistributionSourcePackageReleaseShortLink',
-    'DistributionSourcePackageReleaseView',
     ]
 
 from zope.component import getUtility
 
-from canonical.launchpad.browser.launchpad import DefaultShortLink
+from canonical.launchpad.browser.launchpad import (
+    DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackageRelease, ILaunchBag)
+    IDistributionSourcePackageRelease, ILaunchBag, IBuildSet, NotFoundError)
 
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation)
+    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation,
+    GetitemNavigation, stepthrough)
 
 
 class DistributionSourcePackageReleaseFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: a DistributionSourcePackageRelease is not a structural
+    # XXX mpt 2006-10-04: a DistributionSourcePackageRelease is not a structural
     # object: it should inherit all navigation from its source package.
 
     usedfor = IDistributionSourcePackageRelease
@@ -42,14 +43,20 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
     def breadcrumb(self):
         return self.context.version
 
-class DistributionSourcePackageReleaseView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return getUtility(IBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
 
 
 class DistributionSourcePackageReleaseShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.sourcepackagerelease.version
+

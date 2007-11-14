@@ -1,8 +1,5 @@
 = Answer Tracker Introduction Page =
 
-The Answer Tracker main page present a short introduction to the
-application.
-
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
     Launchpad Answers
@@ -30,3 +27,46 @@ As well as the 5 latest questions solved:
     >>> for row in latest_questions_solved.fetch('tr', 'noted'):
     ...     row.first('a').renderContents()
     'mailto: problem in webpage'
+
+The application footer also contains a sample of stats for the application:
+
+    # Replace numbers with X in output.
+    >>> import re
+    >>> print re.sub('\d+', 'X', extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'application-footer')))
+    X questions answered and X questions solved out of
+    X questions asked across X projects
+
+The page also contains the projects actively using the Answer tracker.
+(Since sample data contains no projects with a question asked in the
+last 60 days, this list is empty):
+
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'most-active-projects'))
+    Most active projects
+
+Add some recent questions so that this listing contains something.
+
+    >>> from canonical.launchpad.ftests.answertracker import QuestionFactory
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('no-priv@canonical.com')
+    >>> QuestionFactory.createManyByProject([
+    ...    ('ubuntu', 2),
+    ...    ('firefox', 1)])
+    >>> logout()
+
+    >>> anon_browser.open('http://answers.launchpad.dev/')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'most-active-projects'))
+    Most active projects
+    Ubuntu
+    Mozilla Firefox
+
+Clicking on these project links will bring the user to the project
+Answers front page:
+
+    >>> anon_browser.getLink('Ubuntu').click()
+    >>> print anon_browser.url
+    http://answers.launchpad.dev/ubuntu
+    >>> print anon_browser.title
+    Questions for Ubuntu

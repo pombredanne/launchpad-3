@@ -1,22 +1,27 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:do-this-first tal:content="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/pillarindex"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <tal:block condition="not: view/dupe">
-        <h1>No account found to merge</h1>
-      </tal:block>
-      <h1 tal:condition="view/dupe">Merge accounts</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
-
-  <tal:block condition="view/dupe">
-    <tal:block tal:condition="not: view/form_processed">
+    <h1 metal:fill-slot="heading">People and teams</h1>
+    <div metal:fill-slot="main">
+      <h1 tal:condition="not: view/dupe">No account found to merge</h1>
+      <tal:duplicate condition="view/dupe">
+        <tal:block tal:condition="not: view/form_processed">
+          <h1>Merge accounts</h1>
 
       <p>
         The account <code tal:content="view/dupe/name">foo</code>,
@@ -35,7 +40,7 @@
       <table>
         <tr tal:repeat="email view/dupeemails">
           <td>
-            <input type="checkbox" name="selected" checked
+            <input type="checkbox" name="selected" checked="checked"
                    tal:attributes="value email/email" />
           </td>
           <td tal:content="email/email">
@@ -51,7 +56,7 @@
     </tal:block>
 
     <tal:block tal:condition="view/form_processed">
-      <h1>Merge accounts</h1>
+      <h1>Confirmation mail sent</h1>
 
       <p>Individual email messages were sent to
         <tal:block repeat="email view/notified_addresses">
@@ -63,9 +68,9 @@
       </p>
     </tal:block>
 
-  </tal:block>
+  </tal:duplicate>
 </div> 
 
 </body>
 </html>
-
+</tal:root>

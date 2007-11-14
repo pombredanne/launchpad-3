@@ -12,11 +12,11 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Recently approved
+    Launchpad Beta Testers (launchpad-beta-testers)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
     Jeff Waugh (jdub)
     Colin Watson (kamion)
-    Steve Alexander (stevea)
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
@@ -27,9 +27,14 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
-    Team owner: Mark Shuttleworth
-    Membership: 8 (Moderated Team)
-    Wiki: UbuntuTeam
+    Team owner:
+    Mark Shuttleworth
+    Membership:
+    ...
+    Wiki:
+    https://wiki.ubuntu.com/UbuntuTeam
+    Moderated Team:
+    ...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
@@ -40,7 +45,7 @@ In the above case there's no user logged in, so it doesn't actually show
 what's the user's involvement with the team. If the user logs in, he'll see
 that, though.
 
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
@@ -50,9 +55,7 @@ that, though.
 If the logged in user is an indirect member of the team, we'll say that and
 will even show the path from the user to the team.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name18')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
@@ -63,7 +66,7 @@ will even show the path from the user to the team.
 
 It is also possible to view the set of mugshots of the people in the team.
 
-    >>> browser = Browser()
+    >>> browser = setupBrowser()
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+mugshots')
     >>> print find_main_content(browser.contents)
     <...

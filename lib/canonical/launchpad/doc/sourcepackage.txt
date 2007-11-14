@@ -44,6 +44,68 @@ If the package doesn't exist, queryByName returns None:
     None
 
 
+=== Latest published component ===
+
+The 'latest_published_component' attribute indicates the component where
+the package was last published.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
+    >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_warty.latest_published_component.name
+    u'main'
+
+It's worth noting that the returned component is the one in the latest
+publishing record, not the component where the package was last
+uploaded. After a package has been uploaded, and a SourcePackageRelease
+record has been created, the component may be changed. The
+SourcePackageRelease will still have the same component as the original
+upload, even though it gets changed in the publishing record.
+
+    # Remove the security proxy to access the non-public
+    # _getPublishingHistory method.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> publishing_history = removeSecurityProxy(
+    ...     firefox_warty)._getPublishingHistory()
+    >>> for publishing in publishing_history:
+    ...     print publishing.status.name, publishing.component.name
+    PENDING main
+    PUBLISHED main
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from canonical.launchpad.database import Component
+    >>> from canonical.launchpad.database import (
+    ...     SecureSourcePackagePublishingHistory)
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    # SourcePackagePublishingHistory is just a view on
+    # SecureSourcePackagePublishingHistory with some rows removed, so need
+    # to update the SecureSourcePackagePublishingHistory table.
+    >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
+    ...     publishing_history[-1].id)
+    >>> universe = Component.byName('universe')
+    >>> latest_publishing.component = universe
+    >>> syncUpdate(latest_publishing)
+    >>> flush_database_caches()
+
+    >>> for release in firefox_warty.distinctreleases:
+    ...     print release.component.name
+    main
+    >>> firefox_warty.latest_published_component.name
+    u'universe'
+
+Only PUBLISHED records are considered when looking the latest published
+component. If there are no PUBLISHED records, None is returned.
+
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+
+    >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
+    >>> syncUpdate(latest_publishing)
+    >>> print firefox_warty.latest_published_component
+    None
+
+
 == Distribution Source Packages ==
 
 In some cases it's useful to be able to refer to a source package at a
@@ -86,10 +148,10 @@ Distro sourcepackages know how to compare to each other:
 You can search for bugs in an IDistroSourcePackage using the
 .searchTasks method:
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, BugTaskStatus)
     >>> params = BugTaskSearchParams(
-    ...     status=dbschema.BugTaskStatus.UNCONFIRMED, user=None)
+    ...     status=BugTaskStatus.NEW, user=None)
     >>> tasks = ubuntu_firefox.searchTasks(params)
     >>> tasks.count()
     1
@@ -174,7 +236,7 @@ Now verify we still get a product for that source package
 And if we want to link that productseries to a source package in that
 distroseries
 
-    >>> from canonical.lp.dbschema import PackagingType
+    >>> from canonical.launchpad.interfaces import PackagingType
     >>> from canonical.launchpad.database import Person
     >>> foobar = Person.byName('name16')
     >>> PackagingUtil().createPackaging(
@@ -191,6 +253,9 @@ distroseries
     True
 
 Linkified changelogs are available through SourcePackageReleaseView:
+XXX julian 2007-09-17
+This is duplicating the page test. Instead it should be more like the bug
+number linkification just below.
 
     >>> from zope.component import queryView
     >>> from zope.publisher.browser import TestRequest
@@ -199,29 +264,49 @@ Linkified changelogs are available through SourcePackageReleaseView:
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog()
+    >>> print spr_view.changelog
     This is a placeholder changelog for pmount 0.1-2
 
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog()
-    pmount (<a href="0.1-1">0.1-1</a>) hoary; urgency=low
+    >>> print spr_view.changelog
+    pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)
      * Fix warty (Warty Ubuntu #1)
     <BLANKLINE>
-     -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
+     -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
     <BLANKLINE>
     <BLANKLINE>
+
+The view will linkify bug numbers of the format "LP: #number" in the changelog
+if number is a valid bug ID (also see Soyuz page tests
+24-sourcepackage-changelog.txt).  The changelog() method calls a method
+_linkify_bug_numbers() to do this.
+
+Zero or more spaces may appear between the ":" and the "#".
+
+    >>> spr_view._linkify_bug_numbers("LP: #10")
+    u'<a href="/bugs/10" title="another test bug">LP: #10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP:         #10")
+    u'<a href="/bugs/10" title="another test bug">LP:         #10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP:#10")
+    u'<a href="/bugs/10" title="another test bug">LP:#10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP: #999")
+    '<a href="/bugs/999" title="No such bug">LP: #999</a>'
+
+    >>> spr_view._linkify_bug_numbers("garbage")
+    'garbage'
+
 
 Checking handy Sourcepackage properties:
 
 XXX cprov 20060125: it's still very primitive test but it's better
 than nothing ... bug # 29659
-
-    >>> sp.manifest.uuid
-    u'e0451064-b405-4f52-b387-ebfc1a7ee298'
 
     >>> len(sp.releases)
     2
@@ -248,6 +333,7 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> hoary_firefox_one == warty_firefox
     False
 
+
 == Direct Packagings ==
 
     >>> print sp.direct_packaging
@@ -257,8 +343,20 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
+
 == Release History ==
 
     >>> len(list(hoary_firefox_one.distinctreleases))
     1
 
+== Interface implementation ==
+
+SourcePackageName implements IHasTranslationImports interface:
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IHasTranslationImports)
+    >>> IHasTranslationImports.providedBy(warty_firefox)
+    True
+    >>> verifyObject(IHasTranslationImports, warty_firefox)
+    True

@@ -1,5 +1,4 @@
-Package Bug Contact
-===================
+= Package Bug Contact =
 
 The package bug contact is zero, one, or more people or teams that get
 explicitly Cc'd to all public bugs filed on a package.
@@ -86,8 +85,8 @@ appropriate PackageBugContact record or False:
     >>> debian_firefox.isBugContact(foobar)
     False
 
-Package Bug Contacts and Bug Tasks
-----------------------------------
+
+== Package Bug Contacts and Bug Tasks ==
 
 Often a bug gets reported on package foo, when it should have been
 reported on bar. When a user, likely a bug triager or developer, changes
@@ -129,8 +128,7 @@ when a bug contact for the new package is already subscribed to the bug:
     >>> from zope.event import notify
 
     >>> import transaction
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroBugTask, IDistroSeriesBugTask)
@@ -160,7 +158,11 @@ With the source package changed, we can see that daf is now subscribed:
 
 daf is sent an email giving him complete information about the bug that
 has just been retargeted, including the title, description, status,
-importance, etc.
+importance, etc. The References header of the email contains the
+msgid of the initial bug report (as if daf was a original recipient of
+the bug notification). The email has the X-Launchpad-Message-Rationale
+header to track why daf received the email. The rational is repeated
+in the footer of the email with the bug title and URL.
 
     >>> import email
 
@@ -179,6 +181,11 @@ importance, etc.
     ['daf@canonical.com']
 
     >>> msg = email.message_from_string(raw_message)
+    >>> msg['References'] == (
+    ...     bug_one_in_ubuntu_firefox.bug.initial_message.rfc822msgid)
+    True
+    >>> msg['X-Launchpad-Message-Rationale']
+    'Bug Contact (pmount in ubuntu)'
     >>> msg['Subject']
     '[Bug 1] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
@@ -193,14 +200,14 @@ importance, etc.
     for the manipulation of SVG objects from JavaScript to enable
     interactive and dynamic SVG drawings.
     <BLANKLINE>
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
          Importance: Low
-           Assignee: Mark Shuttleworth
-             Status: Unconfirmed
+           Assignee: Mark Shuttleworth (sabdfl)
+             Status: New
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Affects: mozilla-firefox (Debian)
          Importance: Low
@@ -209,6 +216,14 @@ importance, etc.
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
+    You received this bug notification because you
+    are a bug contact for pmount in ubuntu.
+
+Since the reporter didn't do anything to trigger this change, the bug
+address is used as the From address.
+
+    >>> print msg['From']
+    Launchpad Bug Tracker <1@bugs.launchpad.net>
 
     >>> stub.test_emails = []
 
@@ -290,11 +305,9 @@ The Ubuntu Gnome team was subscribed to the bug:
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package.
 
-    >>> notify(
-    ...     SQLObjectToBeModifiedEvent(
-    ...         bug_one_in_ubuntu_firefox.bug, {"private": True}))
-
-    >>> bug_one_in_ubuntu_firefox.bug.private = True
+    >>> bug_one_in_ubuntu_firefox.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
 
 So, if Martin Pitt becomes a bug contact for ubuntu mozilla-firefox:
 
@@ -324,8 +337,8 @@ the bug contacts remain unchanged:
      u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team',
      u'Ubuntu Team']
 
-Product Bug Contacts and Bug Tasks
-----------------------------------
+
+== Product Bug Contacts and Bug Tasks ==
 
 Like reassigning a bug task to another package, reassigning a bug task
 to another product will subscribe any new product bug contacts to the
@@ -348,7 +361,7 @@ Bar gets subscribed to the bug in the process:
     >>> print bug_two_in_ubuntu.bug.id
     2
     >>> print bug_two_in_ubuntu.product.name
-    ubuntu-product
+    tomcat
 
     >>> sorted(
     ...     [subscription.person.displayname for subscription in
@@ -372,7 +385,8 @@ With the product changed, we can see that Foo Bar is now subscribed:
     [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
 
 And Foo Bar gets an email containing complete information about the bug
-report:
+report. It states that he received the email because he is the bug
+contact for Mozilla Firefox.
 
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
@@ -391,5 +405,42 @@ report:
     >>> print msg.get_payload(decode=True)
     You have been subscribed to a public bug:
     ...
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
     ...
+    --
+    Blackhole Trash folder
+    http://bugs.launchpad.dev/bugs/2
+    You received this bug notification because you
+    are the bug contact for Mozilla Firefox.
+
+
+== Teams as bug contacts ==
+
+The list of teams that a user may add to a package as a bug contact will
+only contain those teams of which the user is an administrator.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> package = ubuntu.getSourcePackage('mozilla-firefox')
+
+    >>> login('test@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> view = getMultiAdapter((package, request), name='+subscribe') 
+
+Sample person is a member of two teams:
+
+    >>> sample_person = view.user
+    >>> ["%s: %s" % (membership.team.displayname, membership.status.name)
+    ...  for membership in sample_person.myactivememberships]
+    [u'Landscape Developers: ADMIN', u'Warty Security Team: APPROVED']
+
+But is only an administrator of Landscape Developers, so that is the only
+team that will be listed when the user is changing a package bug contact:
+
+    >>> for team in view.user.getAdministratedTeams():
+    ...     print team.displayname
+    Landscape Developers
+

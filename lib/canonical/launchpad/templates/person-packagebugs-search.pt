@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
 
@@ -39,9 +45,6 @@
       condition="not: view/shouldShowAdvancedForm">
       <div tal:content="structure context/@@+portlet-otherpackages" />
     </tal:do_not_show_portlets_advanced_form>
-    <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </tal:show_portlets_advanced>
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
@@ -56,8 +59,8 @@
         <div tal:define="advanced_search_url view/getBugContactPackageAdvancedSearchURL">
           <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form">
             <div metal:fill-slot="extra-search-widgets">
-              <tal:widget content="structure view/distribution_widget/hidden" />
-              <tal:widget content="structure view/sourcepackagename_widget/hidden" />
+              <tal:widget content="structure view/widgets/distribution/hidden" />
+              <tal:widget content="structure view/widgets/sourcepackagename/hidden" />
             </div>
           </div>
         </div>

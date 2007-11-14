@@ -17,8 +17,34 @@ for either a product or a package in a distribution.
     >>> user_browser.getControl('Package') is not None
     True
 
+If we select a distribution that doesn't use Launchpad Bugs we will be
+presented with a warning.
+
+    >>> user_browser.getControl('Distribution').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['debian']
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    ...     print extract_text(message)
+    Debian does not use...
+    ...
+    You can refine and resubmit your bug report.
+
+A link will be included to take the user back to the +filebug page:
+
+    >>> user_browser.getLink('refine and resubmit').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/bugs/+filebug'
+
+    >>> user_browser.getControl('Summary').value
+    ''
+
 After we selected a target and entered a summary, a list of possible
 duplicates are presented.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
 
     >>> user_browser.getControl('Distribution').selected = True
     >>> user_browser.getControl(
@@ -26,9 +52,10 @@ duplicates are presented.
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Continue').click()
 
-    >>> from canonical.launchpad.ftests.bug import print_bugs_table
-    >>> print_bugs_table(user_browser.contents, "similar-bugs")
-    9 Thunderbird crashes
+    >>> from canonical.launchpad.ftests.bug import print_bugs_list
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #9 Thunderbird crashes
+    Open, last updated 2006-07-14
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -39,6 +66,7 @@ page.
     'http://bugs.launchpad.dev/ubuntu/+bug/...'
     >>> user_browser.title
     'Bug #... in Ubuntu: ...Evolution crashes...'
+
 
 == Bug on distribution, later switching to product ==
 
@@ -51,9 +79,9 @@ location as it is (which is Ubuntu, no package):
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/+filebug'
-    >>> [ tag.renderContents().strip() for tag in
-    ...      find_tags_by_class(user_browser.contents, 'message') ]
-    ['No similar bugs were found.']
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
 
 Changing the bug location to a project, without choosing a specific
 project, will fail form validation, where previously this caused an
@@ -64,10 +92,12 @@ OOPS.
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/+filebug'
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
     >>> tags = find_tags_by_class(user_browser.contents, 'message')
     >>> for tag in tags:
     ...     print tag.renderContents()
-    No similar bugs were found.
     There is 1 error.
     Required input is missing.
 
@@ -75,12 +105,13 @@ Specifying a project and submitting will file the bug on the project
 and not on the distribution:
 
     >>> user_browser.getControl(
-    ...     name='field.bugtarget.product').value = 'iso-codes'
+    ...     name='field.bugtarget.product').value = 'firefox'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/iso-codes/+bug/...'
+    'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in iso-codes (upstream)...'
+    'Bug #... in Mozilla Firefox...'
+
 
 == Advanced filebug page ==
 
@@ -103,3 +134,23 @@ filebug page and file a bug directly.
     'http://bugs.launchpad.dev/ubuntu/+bug/...'
     >>> user_browser.title
     'Bug #... in Ubuntu: ...Ubuntu crashes...'
+
+Trying to file a bug against a distribution that doesn't use 
+Launchpad Bugs results in an informational page being displayed.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['debian']
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.package').value = 'alsa-utils'
+    >>> user_browser.getControl('Summary').value = 'Alsa crashes'
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    ...     print extract_text(message)
+    Debian does not use...
+    ...
+    You can refine and resubmit your bug report.
+

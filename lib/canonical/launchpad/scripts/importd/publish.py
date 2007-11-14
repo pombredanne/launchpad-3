@@ -20,7 +20,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import begin, commit
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
+    BranchType, ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -75,7 +75,8 @@ def create_branch_for_series(series):
     name = series.name
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
-    branch = getUtility(IBranchSet).new(name, vcs_imports, product, url=None)
+    branch = getUtility(IBranchSet).new(
+        BranchType.IMPORTED, name, vcs_imports, vcs_imports, product, url=None)
     return branch
 
 

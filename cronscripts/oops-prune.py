@@ -40,7 +40,7 @@ class OOPSPruner(LaunchpadCronScript):
 
         self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
         for oops_directory in oops_directories:
-            for oops_path in unwanted_oops_files(oops_directory, 90, self.logger):
+            for oops_path in unwanted_oops_files(oops_directory, 40, self.logger):
                 self.logger.info("Removing %s", oops_path)
                 if not self.options.dry_run:
                     os.unlink(oops_path)

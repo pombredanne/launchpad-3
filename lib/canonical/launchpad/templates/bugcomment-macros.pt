@@ -1,11 +1,14 @@
-<div metal:define-macro="comment-box"
-     class="boardComment">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="comment-box"
+  class="boardComment">
 
   <div class="boardCommentDetails">
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
-    said
+    wrote
     <span
       tal:attributes="title comment/datecreated/fmt:datetime"
       tal:content="comment/datecreated/fmt:displaydate">
@@ -24,15 +27,24 @@
           class="download">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title">foo.txt</a>
-        (<span tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />, <span tal:replace="attachment/libraryfile/mimetype" />)
+        (<span
+           tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
+        <span tal:replace="attachment/libraryfile/mimetype" />)
       </li>
     </ul>
 
     <div style="font-family: monospace;"
-      tal:content="structure comment/text_for_display/fmt:text-to-html">
+      tal:condition="view/user"
+      tal:content="structure comment/text_for_display/fmt:email-to-html">
       Comment text.
     </div>
 
+    <div style="font-family: monospace;"
+      tal:condition="not:view/user"
+      tal:content="structure
+        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+      Comment text.
+    </div>
     <p tal:condition="comment/was_truncated">
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>

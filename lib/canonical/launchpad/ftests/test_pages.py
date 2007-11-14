@@ -12,7 +12,7 @@ import re
 import unittest
 
 from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
-    NavigableString, PageElement, ProcessingInstruction, Tag)
+    NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -57,9 +57,9 @@ class DuplicateIdError(Exception):
 
 def find_tag_by_id(content, id):
     """Find and return the tag with the given ID"""
-    soup = BeautifulSoup(content)
-    elements_with_id = soup.findAll(attrs={'id': id})
-    if not elements_with_id:
+    elements_with_id = [tag for tag in BeautifulSoup(
+        content, parseOnlyThese=SoupStrainer(id=id))]
+    if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
         return elements_with_id[0]
@@ -68,15 +68,25 @@ def find_tag_by_id(content, id):
             'Found %d elements with id %r' % (len(elements_with_id), id))
 
 
-def find_tags_by_class(content, class_):
-    """Find and return the tags matching the given class(s)"""
+def first_tag_by_class(content, class_):
+    """Find and return the first tag matching the given class(es)"""
+    return find_tags_by_class(content, class_, True)
+
+
+def find_tags_by_class(content, class_, only_first=False):
+    """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
         if value is None: return False
         classes = set(value.split())
         return match_classes.issubset(classes)
-    soup = BeautifulSoup(content)
-    return soup.findAll(attrs={'class': class_matcher})
+    soup = BeautifulSoup(
+        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
+    if only_first:
+        find=BeautifulSoup.find
+    else:
+        find=BeautifulSoup.findAll
+    return find(soup, attrs={'class': class_matcher})
 
 
 def find_portlet(content, name):
@@ -96,24 +106,17 @@ def find_portlet(content, name):
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
-    soup = BeautifulSoup(content)
-    tag = soup.find(attrs={'id': 'maincontent'}) # standard page with portlets
-    if tag:
-        return tag
-    return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
+    return find_tag_by_id(content, 'maincontent')
 
-def get_feedback_messages(browser):
+
+def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
-    soup = BeautifulSoup(browser.contents)
-    feedback_messages = []
-    for div_tag in soup('div',
-        {'class': ['message',
-                   'informational message',
-                   'error message']}):
-        feedback_messages.append(div_tag.string)
-
-    return feedback_messages
-
+    message_classes = [
+        'message', 'informational message', 'error message', 'warning message']
+    soup = BeautifulSoup(
+        content,
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+    return [extract_text(tag) for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -166,8 +169,9 @@ def extract_text(content):
     return text.strip()
 
 
-# XXX cprov 20070207: This function seems to be more specific to a particular
-# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+# XXX cprov 2007-02-07: This function seems to be more specific to a
+# particular product (soyuz) than the rest. Maybe it belongs to
+# somewhere else.
 def parse_relationship_section(content):
     """Parser package relationship section.
 
@@ -203,8 +207,19 @@ def print_action_links(content):
     actions = find_portlet(content, 'Actions')
     entries = actions.findAll('li')
     for entry in entries:
-        print '%s: %s' % (entry.a.string, entry.a['href'])
+        if entry.a:
+            print '%s: %s' % (entry.a.string, entry.a['href'])
+        elif entry.strong:
+            print entry.strong.string
 
+def print_comments(page):
+    """Print the comments on a BugTask index page."""
+    main_content = find_main_content(page)
+    for comment in main_content('div', 'boardCommentBody'):
+        for li_tag in comment('li'):
+            print "Attachment: %s" % li_tag.a.renderContents()
+        print comment.div.renderContents()
+        print "-"*40
 
 def setUpGlobs(test):
     # Our tests report being on a different port.
@@ -228,6 +243,7 @@ def setUpGlobs(test):
         auth="Basic foo.bar@canonical.com:test")
 
     test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
@@ -236,6 +252,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_comments'] = print_comments
 
 
 class PageStoryTestCase(unittest.TestCase):

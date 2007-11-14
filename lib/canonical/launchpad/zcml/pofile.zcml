@@ -17,6 +17,11 @@
         <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IPOFile"
+        provides="canonical.launchpad.interfaces.ITranslationFileData"
+        factory="canonical.launchpad.database.POFileToTranslationFileDataAdapter" />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="POFileNavigation"
@@ -43,13 +48,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOFile"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.launchpad.browser.POFileView"
-        >
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+index"
             template="../templates/pofile-index.pt"
@@ -80,6 +86,15 @@
         class="canonical.launchpad.browser.POFileUploadView"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-upload.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.IPOFile"
+        facet="overview"
+        class="canonical.launchpad.browser.TranslateRedirectView"
+        permission="zope.Public"
         />
 
     <browser:page
@@ -88,6 +103,7 @@
         permission="zope.Public"
         template="../templates/pofile-translate.pt"
         class="canonical.launchpad.browser.POFileTranslateView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -96,6 +112,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/pofile-export.pt"
         class="canonical.launchpad.browser.POExportView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <!-- Note: This is a POMsgSet page. This registration is duplicated
@@ -104,7 +121,8 @@
     <browser:pages
       for="canonical.launchpad.interfaces.IPOFile"
       class="canonical.launchpad.browser.POMsgSetView"
-      permission="launchpad.AnyPerson">
+      permission="launchpad.AnyPerson"
+      layer="canonical.launchpad.layers.TranslationsLayer" >
       <browser:page
         name="+pomsgset-translate"
         template="../templates/pomsgset-translate.pt" />

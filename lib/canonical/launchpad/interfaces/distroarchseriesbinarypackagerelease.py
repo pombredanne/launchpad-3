@@ -8,7 +8,7 @@ __all__ = [
     'IDistroArchSeriesBinaryPackageRelease',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute
 
 from canonical.launchpad.interfaces import IBinaryPackageRelease
 
@@ -53,4 +53,3 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
     current_publishing_record = Attribute("The current PUBLISHED record "
         "of this binary package release in this distro arch release, or "
         "None if there is not one.")
-

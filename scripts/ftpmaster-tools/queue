@@ -17,12 +17,14 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
+from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 
 
 def main():
     parser = OptionParser()
+    logger_options(parser)
 
     parser.add_option("-Q", "--queue",
                       dest="queue_name", metavar="QUEUE", default="new",
@@ -36,7 +38,7 @@ def main():
                       dest="suite_name", metavar="DISTRORELEASE",
                       default=None,
                       help=("Which distrorelease to look in, defaults "
-                            "to distribution 'currentrelease'."))
+                            "to distribution 'currentseries'."))
 
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
@@ -65,18 +67,24 @@ def main():
     parser.add_option("-f", "--file", metavar="FILE", default=None,
                       help="file containing a sequence of command lines.")
 
+    parser.add_option("-c", "--component", dest="component_name",
+                      metavar="COMPONENT", default=None,
+                      help="When overriding, move package to COMPONENT")
+
+    parser.add_option("-x", "--section", dest="section_name",
+                      metavar="SECTION", default=None,
+                      help="When overriding, move package to SECTION")
+
+    parser.add_option("-p", "--priority", dest="priority_name",
+                      metavar="PRIORITY", default=None,
+                      help="When overriding, move package to PRIORITY")
+
     options, args = parser.parse_args()
+    log = logger(options, "ftpmaster.queue")
 
     if options.queue_name not in name_queue_map:
         print 'Unable to map queue name "%s"' % options.queue_name
         return 1
-
-    distribution_name = options.distribution_name
-    suite_name = options.suite_name
-    exact_match = options.exact_match
-    dryrun = options.dryrun
-    announcelist = options.announcelist
-    ign_errors = options.ignore_errors
 
     no_mail = options.dryrun or options.nomail
     queue = name_queue_map[options.queue_name]
@@ -88,7 +96,9 @@ def main():
         args_list = [args]
 
     cmd_runner = CommandRunner(
-        queue, distribution_name, suite_name, announcelist, no_mail)
+        queue, options.distribution_name, options.suite_name,
+        options.announcelist, no_mail, options.component_name,
+        options.section_name, options.priority_name, log=log)
 
     print ("Initialising connection to queue %s" % options.queue_name)
 
@@ -98,10 +108,10 @@ def main():
 
     for single_args in args_list:
         try:
-            cmd_runner.execute(single_args, exact_match)
+            cmd_runner.execute(single_args, options.exact_match)
         except CommandRunnerError, info:
             print (info)
-            if ign_errors:
+            if options.ignore_errors:
                 continue
             ztm.abort()
             print 'Aborting current transaction'

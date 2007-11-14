@@ -1,24 +1,34 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="bazaar"
+>
   <body>
     <h1 metal:fill-slot="heading">Code in branches</h1>
     <div metal:fill-slot="main">
       <h2>Projects with active branches</h2>
 
-                        <div><strong><a href="/">&laquo; Back</a></strong></div>
+      <div><strong><a href="/">&laquo; Back</a></strong></div>
 
-                        <a tal:repeat="product view/products"
-                           tal:attributes="href product/fmt:url;
-                                           class product/html_class;
-                                           title product/html_title"
-                           tal:content="product/name">project</a>
-
+      <div id="project-tags">
+        <a tal:repeat="product view/products"
+           tal:attributes="href product/fmt:url;
+                           class product/html_class;
+                           title product/html_title"
+           tal:content="product/name">project</a>
+      </div>
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
         All projects that have active hosted or mirrored branches
         are shown here.
       </p>
-        
       <p>
         The size of the tag in the cloud is defined by the number of
         branches that the project has.

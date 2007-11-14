@@ -17,8 +17,6 @@ __all__ = ['BuilderSetNavigation',
 import datetime
 import pytz
 
-from sqlobject import SQLObjectNotFound
-
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
@@ -28,14 +26,12 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet
+    BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
     )
-
-from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
-    ApplicationMenu, enabled_with_permission)
+    ApplicationMenu, enabled_with_permission, canonical_url)
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 
@@ -53,9 +49,11 @@ class BuilderSetNavigation(GetitemNavigation):
         except ValueError:
             return None
         try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
-        except SQLObjectNotFound:
+            build = getUtility(IBuildSet).getByBuildID(build_id)
+        except NotFoundError:
             return None
+        else:
+            return self.redirectSubTree(canonical_url(build))
 
 
 class BuilderNavigation(Navigation):
@@ -152,12 +150,12 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         builder_id = self.request.form.get('BUILDERID')
         if not builder_id:
             return
-        # XXX cprov 20051014
+        # XXX cprov 2005-10-14
         # The 'self.context.slave.abort()' seems to work with the new
         # BuilderSlave class added by dsilvers, but I won't release it
         # until we can test it properly, since we can only 'abort' slaves
         # in BUILDING state it does depends of the major issue for testing
-        # Auto Build System, getting slave building something sane. 
+        # Auto Build System, getting slave building something sane.
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
     def defaultBuildState(self):
@@ -195,7 +193,7 @@ class BuilderSetAddView(AddView):
 
         # grab a BuilderSet utility
         builder_util = getUtility(IBuilderSet)
-        # XXX cprov 20050621
+        # XXX cprov 2005-06-21
         # expand dict !!
         builder = builder_util.new(**kw)
         notify(ObjectCreatedEvent(builder))

@@ -61,8 +61,13 @@ and the rejection message is added to the question board.
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
 
+The call to help with this problem is not displayed.
+
+    >>> print content.find(id='can-you-help-with-this-problem')
+    None
+
 Selecting the 'Reject' action again, will simply display a message
-stating that the quesiton is already rejected:
+stating that the question is already rejected:
 
     >>> admin_browser.getLink('Reject question').click()
     >>> print admin_browser.url
@@ -98,7 +103,7 @@ The change status form is available to an administrator through the
 
 The form has a select widget displaying the current status.
 
-    >>> admin_browser.getControl('Status', index=0).value
+    >>> admin_browser.getControl('Status', index=0).displayValue
     ['Invalid']
 
 The user needs to select a status and enter a message explaining the
@@ -114,7 +119,7 @@ status change:
 To correct the mistake of the previous example, the administrator would
 select back the 'Open' status and provide an appropriate message:
 
-    >>> admin_browser.getControl('Status', index=0).value = ['Open']
+    >>> admin_browser.getControl('Status', index=0).displayValue = ['Open']
     >>> admin_browser.getControl('Message').value = (
     ...     "Setting status back to 'Open'. Questions similar to a bug "
     ...     "report should be linked to it, not rejected.")

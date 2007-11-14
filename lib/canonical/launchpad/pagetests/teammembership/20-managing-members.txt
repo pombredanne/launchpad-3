@@ -37,7 +37,7 @@ Now we'll change some of the memberships of our newly created team (myemail).
 James Blackwell wants to join the team and we know he made some contributions
 in the past, so we'll approve his membership.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail/+members')
     >>> print_members(browser.contents, 'proposedmembers')
     James Blackwell
@@ -91,11 +91,10 @@ Karl Tilbury has made no contributions lately, so we'll deactivate his
 membership for now.
 
     # We want to test concurrency here, so keep two browsers around:
-    # XXX: As per bug 68655, it would be nice to be able to clone the browser
-    # and not do the manual copy.
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser2 = Browser()
-    >>> browser2.addHeader("Authorization", "Basic test@canonical.com:test")
+    # XXX: Guilherme Salgado 2007-02-28 bug=68655:
+    # It would be nice to be able to clone the browser and not do
+    # the manual copy.
+    >>> browser2 = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser2.open("http://launchpad.dev/~myemail/+member/karl")
 
     >>> browser.open("http://launchpad.dev/~myemail/+member/karl")
@@ -109,7 +108,6 @@ membership for now.
 Attempt to deactivate the user again using our original browser2
 instance. No crashes in sight:
 
-  >>> browser2.handleErrors = False
   >>> browser2.getControl('Deactivate').click()
   >>> browser2.url
   'http://launchpad.dev/~myemail/+members'
@@ -142,7 +140,6 @@ possible.
 A second submission for reactivation should not crash but will print an
 error message:
 
-    >>> browser2.handleErrors = False
     >>> browser2.getControl(name="expires").value = ["date"]
     >>> browser2.getControl(name="day").value = ["16"]
     >>> browser2.getControl(name="month").value = ["4"]

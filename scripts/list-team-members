@@ -1,43 +1,54 @@
 #!/usr/bin/python2.4
-
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
-"""list all team members: name, preferred email address. Usage:
-
-  ./list-team-members <teamname>
-"""
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
+import logging
 import sys
 
-# zope bits
-from zope.component import getUtility
+import _pythonpath
 
-# canonical launchpad modules
-from canonical.lp import initZopeless
+from canonical.config import config
+
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-    
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.listteammembers import process_team, NoSuchTeamError
 
-def main(args):
-    execute_zcml_for_scripts()
-    ztm = initZopeless()
-    people = getUtility(IPersonSet)
-    teamname = sys.argv[1]
-    memberset = people.getByName(teamname)
-    if memberset == None:
-        print 'No such team:', teamname
-        return 1
-    for member in memberset.allmembers:
-        prefmail = member.preferredemail
-        if prefmail is not None:
-            email = prefmail.email
-        else:
-            email = '--none--'
-        print '%s, %s' % (member.name, email)
-    return 0
+
+class ListTeamMembersScript(LaunchpadScript):
+
+    description = "Create a list of members of a team."
+    usage = "usage: %s [-e|--email-only|-f|--full-details] team-name [team-name-2] .. [team-name-n]" % sys.argv[0]
+    loglevel = logging.INFO
+
+    def add_my_options(self):
+        self.parser.set_defaults(format='simple')
+        self.parser.add_option(
+            '-e', '--email-only', action='store_const', const='email',
+            help='Only print email addresses', dest='format')
+        self.parser.add_option(
+            '-f', '--full-details', action='store_const', const='full',
+            help='Print full details', dest='format')
+
+    def main(self):
+
+        display_option = self.options.format
+        teamnames = self.args
+
+        if not teamnames:
+            self.parser.error('No team specified')
+
+        member_details = []
+        for teamname in teamnames:
+            try:
+                member_details.extend(process_team(teamname, display_option))
+            except NoSuchTeamError:
+                print "Error, no such team: %s" % teamname
+                return 1
+        # We don't want duplicates, so use "set" get unique only
+        print "\n".join(sorted(list(set(member_details))))
+        return 0
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
-
+    script = ListTeamMembersScript('canonical.launchpad.scripts.listteammembers', dbuser='listteammembers')
+    script.run()

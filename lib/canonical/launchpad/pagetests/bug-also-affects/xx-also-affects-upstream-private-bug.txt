@@ -1,0 +1,28 @@
+= Notification of Confidentiality on Upstream Bugfix Requests =
+
+When a user files an upstream bugfix request against a bug that is 
+confidential but not a security vulnerability, the user will be told that the
+upstream bug contact won't be notified. They will also be given a link to
+the Subscribe someone else page.
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugcontact')
+    >>> admin_browser.getControl('Bug Contact').value = 'name16'
+    >>> admin_browser.getControl('Change').click()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+secrecy')
+    >>> admin_browser.getControl(
+    ...     'This bug report should be private').selected = True
+    >>> admin_browser.getControl('Change').click()
+    
+    >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product')
+    >>> admin_browser.getControl('Project:').value = 'firefox'
+    >>> admin_browser.getControl('Continue').click()
+
+    >>> print admin_browser.contents
+    <!DOCTYPE...
+    ...This is a private bug...Foo Bar...won&rsquo;t be notified...
+
+    >>> admin_browser.getLink('additional contacts').click()
+    >>> 'Page not found' not in admin_browser.contents
+    True
+

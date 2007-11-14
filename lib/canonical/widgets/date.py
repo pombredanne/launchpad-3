@@ -28,13 +28,14 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
 
-# TODO: Abstract out common functionality to simplify widget definition
+# XXX daniels 2004-12-14:
+# Abstract out common functionality to simplify widget definition.
 
 class IDateWidget(IDisplayWidget, IInputWidget, IBrowserWidget):
     """A date selection widget
-    
+
     Date with no time or timezone information
-    
+
     """
     minyear = Int(title=_('Minimum Year'), required=True, default=1900)
     maxyear = Int(title=_('Maximum Year'), required=True, default=2038)
@@ -94,7 +95,7 @@ class DateWidget(BrowserWidget):
             return True
         else:
             return False
-  
+
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget"""
         if '%s.day'%self.name in self.request.form:

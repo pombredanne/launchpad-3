@@ -44,7 +44,8 @@ if __name__ == '__main__':
 
     product = products[0]
 
-    # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
+    # XXX daniels 2004-12-14:
+    # https://bugzilla.canonical.com/bugzilla/show_bug.cgi?id=1968
     poTemplate = POTemplate(
         product=product,
         name=options.name,

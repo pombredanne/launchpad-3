@@ -42,7 +42,7 @@ Regular users can't approve items to be discussed in a sprint.
 It's possible to delegate the approval of a sprint agenda items to somebody else.
 First choose a driver for the UDS Guacamole sprint.
 
-  >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+  >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
   >>> browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> browser.getLink('Change details').click()
   >>> browser.url
@@ -62,16 +62,11 @@ First choose a driver for the UDS Guacamole sprint.
 Any member of the Ubuntu-Team can now approve and/or decline items to the UDS 
 Guacamole agenda.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> cprov_browser = Browser()
-  >>> cprov_browser.handleErrors = False
-  >>> cprov_browser.addHeader(
-  ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
+  >>> cprov_browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
   >>> cprov_browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> cprov_browser.getLink('Blueprints').click()
   >>> cprov_browser.url
   'http://blueprints.launchpad.dev/sprints/uds-guacamole/'
-
   >>> cprov_browser.getLink('Set agenda').click()
 
   >>> cprov_browser.title

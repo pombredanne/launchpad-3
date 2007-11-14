@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="view/macro:page/applicationhome"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad"
 >
 
 <body>
@@ -123,6 +129,7 @@
       <tr>
         <td>add-large</td>
         <td><img alt="" src="/@@/add-large" /></td>
+      </tr>
       <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
@@ -237,17 +244,6 @@
         <td>A link to a resource outside of Launchpad.</td>
       </tr>
       <tr>
-        <td>locked</td>
-        <td><img alt="" src="/@@/locked" /></td>
-        <td rowspan="2">
-          This item is private, visible only to a subset of people
-          (such as a private bug or specification).
-        </td>
-      </tr>
-      <tr>
-        <td>locked-large</td>
-        <td><img alt="" src="/@@/locked-large" /></td>
-      <tr>
         <td>mail</td>
         <td><img src="/@@/mail" /></td>
         <td>Mail or an email address.</td>
@@ -303,6 +299,18 @@
         <td><img alt="" src="/@@/person-inactive-mugshot" /></td>
       </tr>
       <tr>
+        <td>private</td>
+        <td><img alt="" src="/@@/private" /></td>
+        <td rowspan="2">
+          This item is private, visible only to a subset of people
+          (such as a private bug or specification).
+        </td>
+      </tr>
+      <tr>
+        <td>private-large</td>
+        <td><img alt="" src="/@@/private-large" /></td>
+      </tr>
+      <tr>
         <td>product-badge</td>
         <td><img alt="" src="/@@/product-badge" /></td>
         <td>
@@ -341,6 +349,11 @@
         <td><img alt="" src="/@@/project-mugshot" /></td>
       </tr>
       <tr>
+        <td>read-only</td>
+        <td><img alt="" src="/@@/read-only" /></td>
+        <td>The adjacent element cannot be changed.</td>
+      </tr>
+      <tr>
         <td>remove</td>
         <td><img src="/@@/remove" /></td>
         <td>Can be clicked to "remove" data from the system. Is sometimes
@@ -352,6 +365,15 @@
         <td>search</td>
         <td><img src="/@@/search" /></td>
         <td>Search - used to indicate search fields or tags.</td>
+      </tr>
+      <tr>
+        <td>security</td>
+        <td><img src="/@@/security" /></td>
+        <td rowspan="2">The associated object is security-related.</td>
+      </tr>
+      <tr>
+        <td>security-large</td>
+        <td><img src="/@@/security-large" /></td>
       </tr>
       <tr>
         <td>stop</td>
@@ -472,6 +494,7 @@
             other people using their code on the fixes for those bugs.
           </strong>
         </td>
+      </tr>
       <tr>
         <td>bug</td>
         <td><img src="/@@/bug" /></td>

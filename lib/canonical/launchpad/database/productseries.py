@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -7,30 +7,18 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
-
 import datetime
-from warnings import warn
-
-from zope.interface import implements
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+from warnings import warn
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-
-from canonical.lp.dbschema import (
-    ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
-    SpecificationStatus)
-
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError)
-
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -39,6 +27,15 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (
+    IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
+    IProductSeriesSourceAdmin, NotFoundError, PackagingType,
+    RevisionControlSystems, SpecificationSort, SpecificationGoalStatus,
+    SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus)
 
 
 class NoImportBranchError(Exception):
@@ -59,9 +56,12 @@ class DatePublishedSyncError(Exception):
     """
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
+class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                    HasTranslationImportsMixin):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSourceAdmin)
+    implements(
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -78,7 +78,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                              default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
-    rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
+    rcstype = EnumCol(dbName='rcstype', enum=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
@@ -135,9 +135,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.product
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return "%s %s" % (self.product.displayname, self.name)
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
+        return "%s/%s" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -164,18 +169,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         if self.user_branch is not None:
             return self.user_branch
         return self.import_branch
-
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(productseries=self)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(productseries=self, iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -259,7 +252,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'definition_status', 'name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -294,7 +287,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -320,9 +314,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
+                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                                  SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -376,7 +370,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         for pkg in self.sourcepackages:
             if pkg.distroseries == distroseries:
                 return pkg
-        # XXX sabdfl 23/06/05 this needs to search through the ancestry of
+        # XXX sabdfl 2005-06-23: This needs to search through the ancestry of
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
 
@@ -420,9 +414,51 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         elif self.rcstype == RevisionControlSystems.SVN:
             self.syncinterval = datetime.timedelta(hours=6)
         else:
-            raise AssertionError('Unknown default sync interval for rcs type: %s'
-                                 % self.rcstype.title)
+            raise AssertionError(
+                'Unknown default sync interval for rcs type: %s'
+                % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
+
+    def markTestFailed(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.TESTFAILED
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.syncinterval = None
+
+    def markDontSync(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.DONTSYNC
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.datestarted = None
+        self.datefinished = None
+        self.syncinterval = None
+
+    def deleteImport(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = None
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.datepublishedsync = None
+        self.syncinterval = None
+        self.datestarted = None
+        self.datefinished = None
+        self.rcstype = None
+        self.cvsroot = None
+        self.cvsmodule = None
+        self.cvsbranch = None
+        self.cvstarfileurl = None
+        self.svnrepository = None
 
     def syncCertified(self):
         """Return true or false indicating if the sync is enabled"""
@@ -433,7 +469,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """Enable autosyncing?"""
+        """Enable autosyncing."""
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
@@ -479,12 +515,50 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 and self.datelastsynced < self.import_branch.last_mirrored):
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
+        self.import_branch.requestMirror()
 
-
-    def newMilestone(self, name, dateexpected=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
-        return Milestone(name=name, dateexpected=dateexpected,
-                         product=self.product, productseries=self)
+        return Milestone(
+            name=name, dateexpected=dateexpected, description=description,
+            product=self.product, productseries=self)
+
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(productseries=self)
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            iscurrent IS TRUE AND
+            ProductSeries.product = Product.id AND
+            Product.official_rosetta IS TRUE
+            ''' % sqlvalues(self),
+            clauseTables = ['ProductSeries', 'Product'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            ProductSeries.product = Product.id AND
+            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
+            ''' % sqlvalues(self),
+            clauseTables = ['ProductSeries', 'Product'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
 
 class ProductSeriesSet:
@@ -506,64 +580,47 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-    def search(self, ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        query, clauseTables = self._querystr(
-            ready, text, forimport, importstatus)
-        return ProductSeries.select(query, distinct=True,
-                   clauseTables=clauseTables)[start:length]
+    def searchImports(self, text=None, importstatus=None):
+        """See `IProductSeriesSet`."""
+        query = self.composeQueryString(text, importstatus)
+        return ProductSeries.select(
+            query, distinct=True, clauseTables=['Product', 'Project'])
 
-    def importcount(self, status=None):
-        return self.search(forimport=True, importstatus=status).count()
+    def composeQueryString(self, text=None, importstatus=None):
+        """Build SQL "where" clause for `ProductSeries` search.
 
-    def _querystr(self, ready=None, text=None,
-                  forimport=None, importstatus=None):
-        """Return a querystring and clauseTables for use in a search or a
-        get or a query. Arguments:
-          ready - boolean indicator of whether or not to limit the search
-                  to products and projects that have been reviewed and are
-                  active.
-          text - text to search for in the product and project titles and
-                 descriptions
-          forimport - whether or not to limit the search to series which
-                      have RCS data on file
-          importstatus - limit the list to series which have the given
-                         import status.
+        :param text: Text to search for in the product and project titles and
+            descriptions.
+        :param importstatus: If specified, limit the list to series which have
+            the given import status; if not specified or None, limit to series
+            with non-NULL import status.
         """
-        queries = []
-        clauseTables = set()
-        # deal with the cases which require project and product
-        if ( ready is not None ) or text:
-            if text:
-                queries.append('Product.fti @@ ftq(%s)' % quote(text))
-            if ready is not None:
-                queries.append('Product.active IS TRUE')
-                queries.append('Product.reviewed IS TRUE')
-            queries.append("ProductSeries.product = Product.id")
+        conditions = []
+        if text == u'':
+            text = None
 
-            # The subquery restricts the query to a project that matches
-            # the text supplied.
-            subqueries = []
-            subqueries.append('Product.project = Project.id')
-            if text:
-                subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
-            if ready is not None:
-                subqueries.append('Project.active IS TRUE')
-                subqueries.append('Project.reviewed IS TRUE')
-            queries.append('(Product.project IS NULL OR (%s))' %
-                           " AND ".join(subqueries))
+        # First filter on product: match text, if necessary, and only consider
+        # active projects.
+        if text is not None:
+            conditions.append('Product.fti @@ ftq(%s)' % quote(text))
+        conditions.append('Product.active IS TRUE')
+        conditions.append("ProductSeries.product = Product.id")
 
-            clauseTables.add('Project')
-            clauseTables.add('Product')
+        # Then filter on project in the same way, if any.
+        product_match = "Product.project = Project.id AND Project.active"
+        if text is not None:
+            product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
+        conditions.append("((%s) OR project IS NULL)" % product_match)
 
-        # now just add filters on import status
-        if forimport or importstatus:
-            queries.append('ProductSeries.importstatus IS NOT NULL')
-        if importstatus:
-            queries.append('ProductSeries.importstatus = %d' % importstatus)
+        # Now just add the filter on import status.
+        if importstatus is None:
+            conditions.append('ProductSeries.importstatus IS NOT NULL')
+        else:
+            conditions.append('ProductSeries.importstatus = %s'
+                              % sqlvalues(importstatus))
 
-        query = " AND ".join(queries)
-        return query, clauseTables
+        query = " AND ".join(conditions)
+        return query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
         """See IProductSeriesSet."""

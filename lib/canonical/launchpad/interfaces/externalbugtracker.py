@@ -13,8 +13,9 @@ from zope.interface import Interface
 
 # This is a text string which indicates that the remote status is
 # unknown for some reason.
-# XXX: We should store the actual reason for the error somewhere. This
-#      would allow us to get rid of this text constant. Bug XXX.
+# XXX: Bjorn Tillenius 2006-04-06:
+#      We should store the actual reason for the error somewhere. This
+#      would allow us to get rid of this text constant.
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 
 

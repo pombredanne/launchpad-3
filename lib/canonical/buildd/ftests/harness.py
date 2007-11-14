@@ -49,7 +49,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
         os.mkdir(filecache)
         os.environ['HOME'] = self.root
         os.environ['BUILDD_SLAVE_CONFIG'] = conffile
-        # XXX cprov 200505630
+        # XXX cprov 2005-05-30:
         # When we are about running it seriously we need :
         # * install sbuild package
         # * to copy the scripts for sbuild
@@ -57,7 +57,8 @@ class BuilddSlaveTestSetup(TacTestSetup):
     def tearDown(self):
         """Tear down the system normally and additionaly remove the root."""
         TacTestSetup.tearDown(self)
-        shutil.rmtree(self.root)
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
 
     @property
     def root(self):

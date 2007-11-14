@@ -14,20 +14,21 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
-
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL)
+    BugTaskImportance, BugTrackerType, BugWatchErrorType, IBugTrackerSet,
+    IBugWatch, IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
+    NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -44,6 +45,7 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -63,6 +65,7 @@ class BugWatch(SQLBase):
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+            BugTrackerType.MANTIS:      'view.php?id=%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -86,13 +89,16 @@ class BugWatch(SQLBase):
         for linked_bugtask in self.bugtasks:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
-            linked_bugtask.transitionToStatus(malone_status)
+            linked_bugtask.transitionToStatus(
+                malone_status,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
             # We don't yet support updating the following values.
             linked_bugtask.importance = BugTaskImportance.UNKNOWN
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(
-                    linked_bugtask, old_bugtask, ['status'])
+                    linked_bugtask, old_bugtask, ['status'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 notify(event)
 
     def destroySelf(self):
@@ -100,13 +106,51 @@ class BugWatch(SQLBase):
         assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
 
+    def getLastErrorMessage(self):
+        """See `IBugWatch`."""
+
+        if not self.last_error_type:
+            return None
+
+        error_message_mapping = {
+            BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+                "%(bug)s appears not to exist. Check that the bug "
+                "number is correct.",
+            BugWatchErrorType.CONNECTION_ERROR: "Launchpad couldn't "
+                "connect to %(bugtracker)s.",
+            BugWatchErrorType.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
+                "valid on %(bugtracker)s. Check that the bug ID is "
+                "correct.",
+            BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
+                "%(bugtracker)s timed out.",
+            BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
+                "extract a status from %(bug)s on %(bugtracker)s.",
+            BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
+                "couldn't determine the version of %(bugtrackertype)s "
+                "running on %(bugtracker)s.",
+            BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+                "doesn't support importing bugs from %(bugtrackertype)s"
+                " bug trackers."}
+
+        if self.last_error_type in error_message_mapping:
+            message = error_message_mapping[self.last_error_type]
+        else:
+            message = ("Launchpad couldn't import bug #%(bug)s from "
+                "%(bugtracker)s.")
+
+        error_data = {
+            'bug': self.remotebug,
+            'bugtracker': self.bugtracker.title,
+            'bugtrackertype': self.bugtracker.bugtrackertype.title}
+
+        return message % error_data
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
     table = BugWatch
-    url_pattern = re.compile(r'(\bhttps?://.+/\S*)\.?\b')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
@@ -117,6 +161,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
@@ -133,13 +178,13 @@ class BugWatchSet(BugSetBase):
         """See IBugTrackerSet.fromText."""
         newwatches = []
         # Let's find all the URLs and see if they are bug references.
-        matches = self.url_pattern.findall(text)
+        matches = list(find_uris_in_text(text))
         if len(matches) == 0:
             return []
 
         for url in matches:
             try:
-                bugtracker, remotebug = self.extractBugTrackerAndBug(url)
+                bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
@@ -177,7 +222,7 @@ class BugWatchSet(BugSetBase):
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         return BugWatch(
-            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
+            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
 
     def parseBugzillaURL(self, scheme, host, path, query):
@@ -191,6 +236,19 @@ class BugWatchSet(BugSetBase):
         elif query.get('issue'):
             # This is a Issuezilla URL.
             remote_bug = query['issue']
+        else:
+            return None
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseMantisURL(self, scheme, host, path, query):
+        """Extract the Mantis base URL and bug ID."""
+        bug_page = 'view.php'
+        if not path.endswith(bug_page):
+            return None
+        if query.get('id'):
+            remote_bug = query['id']
         else:
             return None
         base_path = path[:-len(bug_page)]
@@ -251,7 +309,8 @@ class BugWatchSet(BugSetBase):
         return the global SF instance. This makes it possible for people
         to use alternative host names, like sf.net.
         """
-        if not path.startswith('/tracker/'):
+        if (not path.startswith('/support/tracker.php') and
+            not path.startswith('/tracker/index.php')):
             return None
         if not query.get('aid'):
             return None

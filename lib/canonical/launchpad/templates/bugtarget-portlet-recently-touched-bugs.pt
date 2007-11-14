@@ -1,6 +1,10 @@
-<div class="portlet"
-     tal:define="recently_updated_bugtasks view/getMostRecentlyUpdatedBugTasks"
-     tal:condition="recently_updated_bugtasks">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-recently-touched-bugs"
+  tal:define="recently_updated_bugtasks view/getMostRecentlyUpdatedBugTasks"
+  tal:condition="recently_updated_bugtasks">
   <h2>Latest bugs touched</h2>
   <div class="portletBody portletContent">
 

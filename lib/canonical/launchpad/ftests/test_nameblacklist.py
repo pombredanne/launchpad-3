@@ -6,8 +6,10 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
-
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
+from canonical.database.sqlbase import sqlvalues
+from canonical.foaf.nickname import is_blacklisted
 
 class TestNameBlacklist(LaunchpadTestCase):
     def setUp(self):
@@ -27,12 +29,13 @@ class TestNameBlacklist(LaunchpadTestCase):
             """)
 
     def tearDown(self):
-        self.con.rollback()
+        """Tear down the test and reset the database."""
         self.con.close()
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadTestCase.tearDown(self)
 
     def name_blacklist_match(self, name):
-        '''Call the name_blacklist_match stored procedure and return the result
-        '''
+        '''Return the result of the name_blacklist_match stored procedure.'''
         self.cur.execute("SELECT name_blacklist_match(%(name)s)", vars())
         return self.cur.fetchone()[0]
 
@@ -68,6 +71,14 @@ class TestNameBlacklist(LaunchpadTestCase):
                 "UPDATE NameBlacklist SET regexp='nomatch2' where id=-100"
                 )
         self.failUnless(self.name_blacklist_match("foobar") is None)
+
+    def test_is_blacklisted(self):
+        # is_blacklisted is a method in canonical.foaf.nickname
+        # which corresponds to is_blacklisted_name in this test
+        # except that it also allows unicode strings.
+        self.failUnless(is_blacklisted(u"foo", self.cur))
+        self.failIf(is_blacklisted(u"bar", self.cur))
+        self.failIf(is_blacklisted(u"bar\u0434", self.cur))
 
     def test_is_blacklisted_name(self):
         # is_blacklisted_name() is just a wrapper around name_blacklist_match

@@ -1,26 +1,47 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-</metal:leftportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-latestspecs" />
+    </metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
                  has_any_specs view/has_any_specifications">
+
+  <tal:block condition="view/is_project">
+    <tal:block condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message">
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or associate
+        an existing project with it.
+      </p>
+    </tal:block>
+  </tal:block>
 
   <h1 tal:condition="view/is_person"
      >Blueprints involving <tal:person replace="context/title" /></h1>
   <h1 tal:condition="not:view/is_person"
      >Blueprints for <tal:software replace="context/displayname" /></h1>
 
-  <tal:no_specs condition="not: has_any_specs">
+  <div style="float: right;"
+       tal:content="structure context/@@+register-a-blueprint-button|nothing" />
 
+  <tal:no_specs condition="not: has_any_specs">
     <p>
       Launchpad lets projects track the features they intend to implement over
       the next few releases. We call each feature proposal a "blueprint",
@@ -128,7 +149,7 @@
   </tal:no_specs>
   <tal:has_specs condition="has_any_specs">
     <div>
-      <form name="spec_search" method="GET">
+      <form name="spec_search" class="primary search" method="GET">
 
         Show only blueprints containing:
 
@@ -144,6 +165,7 @@
           />
       </form>
     </div>
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
     <table class="listing sortable" id="speclisting"
           tal:condition="view/specs">
       <thead>
@@ -159,7 +181,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="spec view/specs">
+        <tr tal:repeat="spec view/batchnav/currentBatch">
           <td tal:condition="view/show_priority">
             <span class="sortkey" tal:content="spec/priority/sortkey" />
             <span tal:content="spec/priority/title"
@@ -175,16 +197,16 @@
                  tal:replace="structure spec/image:badges" />
           </td>
           <td tal:condition="view/show_design">
-            <span class="sortkey" tal:content="spec/status/sortkey" />
-            <span tal:content="spec/status/title"
+            <span class="sortkey" tal:content="spec/definition_status/sortkey" />
+            <span tal:content="spec/definition_status/title"
                   tal:attributes="
-                  class string:specstatus${spec/status/name}">Approved</span>
+                  class string:specstatus${spec/definition_status/name}">Approved</span>
           </td>
           <td tal:condition="view/show_implementation">
-            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span class="sortkey" tal:content="spec/implementation_status/sortkey" />
             <span
-              tal:attributes="class string:specdelivery${spec/delivery/name}"
-              tal:content="spec/delivery/title">Deployed</span>
+              tal:attributes="class string:specdelivery${spec/implementation_status/name}"
+              tal:content="spec/implementation_status/title">Deployed</span>
           </td>
           <td tal:condition="view/show_assignee">
             <a tal:condition="spec/assignee"
@@ -211,13 +233,10 @@
         </tr>
       </tbody>
     </table>
-
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
+  
     <tal:nomatches condition="not: view/specs"
                    replace="structure context/@@+nomatches" />
-
-    <p tal:condition="view/specs">
-      <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
-    </p>
 
     <p tal:condition="view/is_series">
       You can

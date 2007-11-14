@@ -17,14 +17,12 @@ import sys
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    BuildStatus, IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, BuildStatus)
 
 
 def main():
@@ -106,7 +104,7 @@ def main():
         BuildStatus.CHROOTWAIT : options.chrootwait,
         }
 
-    # XXX cprov 20060831: one query per requested state
+    # XXX cprov 2006-08-31: one query per requested state
     # could organise it in a single one nicely if I have
     # an empty SQLResult instance, than only iteration + union()
     # would work.
@@ -116,7 +114,7 @@ def main():
 
         log.info("Processing builds in '%s'" % target_state.title)
         target_builds = build_provider.getBuildRecords(
-            status=target_state, pocket=pocket)
+            build_state=target_state, pocket=pocket)
 
         for build in target_builds:
 

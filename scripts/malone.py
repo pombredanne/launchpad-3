@@ -106,7 +106,8 @@ class Launchpad:
     def sourcepackages(self, distroname):
         """return a dictionary mapping sourcepackagename to a sourcepackage in
         the given distribution"""
-        # XXX this should rather look at the publishing table
+        # XXX David Allouche 2005-01-26:
+        # This should rather look at the publishing table.
         clauseTables = ['SourcePackage', 'Distribution']
         query = '''SourcePackage.distro = Distribution.id AND
                    Distribution.name = %s

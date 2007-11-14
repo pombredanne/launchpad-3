@@ -1,9 +1,12 @@
 <div
-    xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:metal="http://xml.zope.org/namespaces/metal"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    i18n:domain="launchpad" xml:lang="en">
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad">
 
   <div metal:define-macro="form">
 
@@ -22,7 +25,7 @@
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.
-          This text will be in bold, beneath the title of the add form,
+          This text will be in bold, beneath the title of the form,
           and should give any introductory information required.
           Don't use it to state the bleeding obvious!
         </p>
@@ -85,37 +88,16 @@
                   error python:view.getWidgetError(field_name);
                   error_class python:error and 'error' or None;
                   show_optional python:view.showOptionalMarker(field_name)">
-    <tr tal:condition="python: view.isSingleLineLayout(field_name)">
-      <th><label tal:attributes="for widget/name"
-                 tal:content="string:${widget/label}:">
-        Label</label></th>
-      <td tal:attributes="class error_class" width="100%">
-        <div>
-          <input tal:replace="structure widget" />
-          <span tal:condition="show_optional"
-                class="fieldRequired">(Optional)</span>
-        </div>
-        <div class="message" tal:condition="error"
-             tal:content="structure error">Error message</div>
-        <p class="formHelp"
-           tal:condition="widget/hint"
-           tal:content="widget/hint">Some Help Text
-        </p>
-      </td>
-    </tr>
-    <tal:block condition="python: view.isMultiLineLayout(field_name)">
-      <tr>
-        <th colspan="2" style="text-align: left"><label
-            tal:attributes="for widget/name"
-            tal:content="string:${widget/label}:">Label:</label>
-          <span tal:condition="show_optional"
-                class="fieldRequired">(Optional)</span>
-        </th>
-      </tr>
-      <tr>
-        <td colspan="2" tal:attributes="class error_class">
-          <div tal:content="structure widget">
-            <input type="text" style="width: 100%" />
+    <tal:is-visible condition="widget/visible">
+      <tr tal:condition="python: view.isSingleLineLayout(field_name)">
+        <th><label tal:attributes="for widget/name"
+                   tal:content="string:${widget/label}:">
+          Label</label></th>
+        <td tal:attributes="class error_class" width="100%">
+          <div>
+            <input tal:replace="structure widget" />
+            <span tal:condition="show_optional"
+                  class="fieldRequired">(Optional)</span>
           </div>
           <div class="message" tal:condition="error"
                tal:content="structure error">Error message</div>
@@ -125,21 +107,49 @@
           </p>
         </td>
       </tr>
-    </tal:block>
-    <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
-      <th></th>
-      <td tal:attributes="class error_class" width="100%">
-        <input type="checkbox" tal:replace="structure widget" />
-        <label tal:attributes="for widget/name"
-               tal:content="widget/label">Label</label>
-        <div class="message" tal:condition="error"
-             tal:content="structure error">Error message</div>
-        <p class="formHelp"
-           tal:condition="widget/hint"
-           tal:content="widget/hint">Some Help Text
-        </p>
-      </td>
-    </tr>
+      <tal:block condition="python: view.isMultiLineLayout(field_name)">
+        <tr>
+          <th colspan="2" style="text-align: left"><label
+              tal:attributes="for widget/name"
+              tal:content="string:${widget/label}:">Label:</label>
+            <span tal:condition="show_optional"
+                  class="fieldRequired">(Optional)</span>
+          </th>
+        </tr>
+        <tr>
+          <td colspan="2" tal:attributes="class error_class">
+            <div tal:content="structure widget">
+              <input type="text" style="width: 100%" />
+            </div>
+            <div class="message" tal:condition="error"
+                 tal:content="structure error">Error message</div>
+            <p class="formHelp"
+               tal:condition="widget/hint"
+               tal:content="widget/hint">Some Help Text
+            </p>
+          </td>
+        </tr>
+      </tal:block>
+      <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
+        <th></th>
+        <td tal:attributes="class error_class" width="100%">
+          <input type="checkbox" tal:replace="structure widget" />
+          <label tal:attributes="for widget/name"
+                 tal:content="widget/label">Label</label>
+          <div class="message" tal:condition="error"
+               tal:content="structure error">Error message</div>
+          <p class="formHelp"
+             tal:condition="widget/hint"
+             tal:content="widget/hint">Some Help Text
+          </p>
+        </td>
+      </tr>
+    </tal:is-visible>
+    <tal:not-visible condition="not: widget/visible">
+      <tr>
+        <td tal:content="structure widget/hidden" />
+      </tr>
+    </tal:not-visible>
   </metal:macro>
 
       </tal:block>

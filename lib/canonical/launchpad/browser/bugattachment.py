@@ -10,14 +10,11 @@ __all__ = [
 from cStringIO import StringIO
 
 from zope.component import getUtility
-from zope.interface import implements
 
-from canonical.lp.dbschema import BugAttachmentType
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces import (
-    IBugAttachmentSet, ILibraryFileAliasSet,
+    BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     IBugAttachmentEditForm, ILaunchBag)
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 
@@ -83,9 +80,9 @@ class BugAttachmentEditView(LaunchpadFormView):
         old_filealias = self.context.libraryfile
         # Download the file and upload it again with the new content
         # type.
-        # XXX: It should be possible to simply create a new filealias
+        # XXX: Bjorn Tillenius 2005-06-30:
+        # It should be possible to simply create a new filealias
         # with the same content as the old one.
-        # -- Bjorn Tillenius, 2005-06-30
         old_content = old_filealias.read()
         self.context.libraryfile = filealiasset.create(
             name=old_filealias.filename, size=len(old_content),

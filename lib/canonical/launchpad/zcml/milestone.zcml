@@ -10,7 +10,7 @@
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name dateexpected visible" />
+            set_attributes="name dateexpected description visible" />
         <require
             permission="launchpad.Admin"
             set_attributes="productseries distroseries" />
@@ -54,7 +54,7 @@
         class="canonical.launchpad.browser.milestone.MilestoneEditView"
         facet="overview"
         schema="canonical.launchpad.interfaces.IMilestone"
-        fields="name dateexpected visible"
+        fields="name dateexpected visible description"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
         />
@@ -76,5 +76,10 @@
         provides="canonical.launchpad.interfaces.IMilestoneSet">
         <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
     </securedutility>
+
+    <!-- ProjectMilestone -->
+    <content class="canonical.launchpad.database.milestone.ProjectMilestone">
+        <allow interface="canonical.launchpad.interfaces.IProjectMilestone" />
+    </content>
 
 </configure>

@@ -25,12 +25,11 @@ from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
 from canonical.launchpad.webapp.interfaces import (
-    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import (
-    SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -70,6 +69,10 @@ class LaunchpadFormView(LaunchpadView):
     render_context = False
 
     form_result = None
+    # The for_input is passed through to create the fields.  If this value
+    # is set to true in derived classes, then fields that are marked
+    # read only will have editable widgets created for them.
+    for_input = None
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -122,15 +125,16 @@ class LaunchpadFormView(LaunchpadView):
 
         This will be called in the case of a validation error.
         """
-        # XXX: 20060802 jamesh
+        # XXX jamesh 2006-08-02:
         # This should really be dooming the transaction rather than
         # aborting.  What we really want is to prevent more work being
         # done and then committed.
         transaction.abort()
 
     def setUpFields(self):
-        assert self.schema is not None, "Schema must be set for LaunchpadFormView"
-        self.form_fields = form.Fields(self.schema,
+        assert self.schema is not None, (
+            "Schema must be set for LaunchpadFormView")
+        self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
@@ -145,7 +149,7 @@ class LaunchpadFormView(LaunchpadView):
         If no context is given, the view's context is used."""
         if context is None:
             context = self.context
-        # XXX: 20060802 jamesh
+        # XXX: jamesh 2006-08-02:
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, context, self.request,
@@ -161,7 +165,7 @@ class LaunchpadFormView(LaunchpadView):
     def action_url(self):
         """Set the default action URL for the form."""
 
-        # XXX: 20070413 bac
+        # XXX: bac 2007-04-13:
         # Rather than use a property it is tempting to just cache the value of
         # request.getURL.  This caching cannot be done in __init__ as the full
         # URL has not been traversed at instantiation time.  It could be
@@ -191,8 +195,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
-        # XXXX 2006-09-26 jamesh
-
+        # XXX jamesh 2006-09-26:
         # If a form field is disabled, then no data will be sent back.
         # getWidgetsData() raises an exception when this occurs, even
         # if the field is not marked as required.
@@ -229,7 +232,7 @@ class LaunchpadFormView(LaunchpadView):
             else:
                 widget = self.widgets.get(field.__name__)
                 if widget and widget.error():
-                    count +=1
+                    count += 1
 
         if count == 0:
             return ''
@@ -324,8 +327,6 @@ class LaunchpadEditFormView(LaunchpadFormView):
             context = self.context
         context_before_modification = Snapshot(
             context, providing=providedBy(context))
-
-        notify(SQLObjectToBeModifiedEvent(context, data))
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -8,22 +8,32 @@ __all__ = [
     'DatabaseBranchDetailsStorage',
     ]
 
-import os
+import datetime
+import pytz
 
+import transaction
+
+from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues
-from canonical.database.constants import UTC_NOW
-from canonical.lp import dbschema
-from canonical.config import config
+from canonical.launchpad.database import ScriptActivity
+from canonical.launchpad.interfaces import (
+    BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
+    UnknownBranchTypeError)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+
+from twisted.internet.threads import deferToThread
+from twisted.python.util import mergeFunctionMetadata
+
+UTC = pytz.timezone('UTC')
 
 
 def utf8(x):
@@ -32,145 +42,147 @@ def utf8(x):
     return x
 
 
+def read_only_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    def transacted(*args, **kwargs):
+        transaction.begin()
+        clear_current_connection_cache()
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+            transaction.abort()
+    return mergeFunctionMetadata(function, transacted)
+
+
+def writing_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    def transacted(*args, **kwargs):
+        transaction.begin()
+        clear_current_connection_cache()
+        login(ANONYMOUS)
+        try:
+            ret = function(*args, **kwargs)
+        except:
+            logout()
+            transaction.abort()
+            raise
+        logout()
+        transaction.commit()
+        return ret
+    return mergeFunctionMetadata(function, transacted)
+
+
+def run_as_requester(function):
+    """Decorate 'function' by logging in as the user identified by its first
+    parameter, the `Person` object is then passed in to the function instead of
+    the login ID.
+
+    Assumes that 'function' is on an object that implements a '_getPerson'
+    method similar to `UserDetailsStorageMixin._getPerson`.
+    """
+    def as_user(self, loginID, *args, **kwargs):
+        requester = self._getPerson(loginID)
+        login(requester.preferredemail.email)
+        try:
+            return function(self, requester, *args, **kwargs)
+        finally:
+            logout()
+    as_user.__name__ = function.__name__
+    as_user.__doc__ = function.__doc__
+    return as_user
+
+
 class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
 
-    def _getEmailAddresses(self, transaction, personID):
+    def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
-        transaction.execute(utf8('''
-            SELECT EmailAddress.email FROM EmailAddress
-            WHERE EmailAddress.person = %s
-            AND EmailAddress.status IN (%s, %s)
-            ORDER BY (EmailAddress.status = %s) DESC, EmailAddress.email'''
-            % sqlvalues(personID, dbschema.EmailAddressStatus.PREFERRED,
-                        dbschema.EmailAddressStatus.VALIDATED,
-                        dbschema.EmailAddressStatus.PREFERRED))
-        )
-        return [row[0] for row in transaction.fetchall()]
+        emails = [person.preferredemail] + list(person.validatedemails)
+        return (
+            [person.preferredemail.email] +
+            [email.email for email in person.validatedemails])
 
-    def getSSHKeys(self, archiveName):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getSSHKeysInteraction, archiveName)
+    def getSSHKeys(self, loginID):
+        return deferToThread(self._getSSHKeysInteraction, loginID)
 
-    def _getSSHKeysInteraction(self, transaction, loginID):
-        """The interaction for getSSHKeys."""
-        if '@' in loginID:
-            # Bazaar 1.x logins.  Deprecated.
-            archiveName = loginID
-            # The PushMirrorAccess table explicitly says that a person may
-            # access a particular push mirror.
-            transaction.execute(utf8('''
-                SELECT keytype, keytext
-                FROM SSHKey
-                JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person
-                WHERE PushMirrorAccess.name = %s'''
-                % sqlvalues(archiveName))
-            )
-            authorisedKeys = transaction.fetchall()
+    @read_only_transaction
+    def _getSSHKeysInteraction(self, loginID):
+        """The synchronous implementation of `getSSHKeys`.
 
-            # A person can also access any archive named after a validated email
-            # address.
-            if '--' in archiveName:
-                email, suffix = archiveName.split('--', 1)
-            else:
-                email = archiveName
+        See `IUserDetailsStorage`.
+        """
+        person = self._getPerson(loginID)
+        if person is None:
+            return []
+        return [(key.keytype.title, key.keytext) for key in person.sshkeys]
 
-            transaction.execute(utf8('''
-                SELECT keytype, keytext
-                FROM SSHKey
-                JOIN EmailAddress ON SSHKey.person = EmailAddress.person
-                WHERE EmailAddress.email = %s
-                AND EmailAddress.status in (%s, %s)'''
-                % sqlvalues(email, dbschema.EmailAddressStatus.VALIDATED,
-                            dbschema.EmailAddressStatus.PREFERRED))
-            )
-            authorisedKeys.extend(transaction.fetchall())
-        else:
-            transaction.execute(utf8('''
-                SELECT keytype, keytext
-                FROM SSHKey
-                JOIN Person ON SSHKey.person = Person.id
-                WHERE Person.name = %s'''
-                % sqlvalues(loginID))
-            )
-            authorisedKeys = transaction.fetchall()
+    def _getPerson(self, loginID):
+        """Look up a person by loginID.
 
-        # Replace keytype with correct DBSchema items.
-        authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
-                          for keytype, keytext in authorisedKeys]
-        return authorisedKeys
+        The loginID will be first tried as an email address, then as a numeric
+        ID, then finally as a nickname.
 
-    def _getPerson(self, transaction, loginID):
-        # We go through some contortions with assembling the SQL to ensure that
-        # the OUTER JOIN happens after the INNER JOIN.  This should allow
-        # postgres to optimise the query as much as possible (approx 10x faster
-        # according to my tests with EXPLAIN on the production database).
-        select = '''
-            SELECT Person.id, Person.displayname, Person.name, Person.password,
-                   Wikiname.wikiname
-            FROM Person '''
-
-        wikiJoin = ('''
-            LEFT OUTER JOIN Wikiname ON Wikiname.person = Person.id
-            AND Wikiname.wiki = %s '''
-            % sqlvalues(UBUNTU_WIKI_URL))
-
-        # First, try to look the person up by using loginID as an email
-        # address
+        :returns: a `Person` or None if not found.
+        """
         try:
             if not isinstance(loginID, unicode):
                 # Refuse to guess encoding, so we decode as 'ascii'
                 loginID = str(loginID).decode('ascii')
         except UnicodeDecodeError:
-            row = None
-        else:
-            transaction.execute(utf8(
-                select +
-                "INNER JOIN EmailAddress ON EmailAddress.person = Person.id " +
-                wikiJoin +
-                ("WHERE lower(EmailAddress.email) = %s "
-                 "AND EmailAddress.status IN (%s, %s) "
-                % sqlvalues(loginID.lower(),
-                            dbschema.EmailAddressStatus.PREFERRED,
-                            dbschema.EmailAddressStatus.VALIDATED)))
-            )
+            return None
 
-            row = transaction.fetchone()
+        person_set = getUtility(IPersonSet)
 
-        if row is None:
-            # Fallback: try looking up by id, rather than by email
+        # Try as email first.
+        person = person_set.getByEmail(loginID)
+
+        # If email didn't work, try as id.
+        if person is None:
             try:
-                personID = int(loginID)
+                person_id = int(loginID)
             except ValueError:
                 pass
             else:
-                transaction.execute(utf8(
-                    select + wikiJoin +
-                    ("WHERE Person.id = %s " % sqlvalues(personID)))
-                )
-                row = transaction.fetchone()
-        if row is None:
-            # Fallback #2: try treating loginID as a nickname
-            transaction.execute(utf8(
-                select + wikiJoin +
-                ("WHERE Person.name = %s " % sqlvalues(loginID)))
-            )
-            row = transaction.fetchone()
-        if row is None:
-            # Fallback #3: give up!
-            return None
+                person = person_set.get(person_id)
 
-        row = list(row)
-        assert isinstance(row[1], unicode)
+        # If id didn't work, try as nick-name.
+        if person is None:
+            person = person_set.getByName(loginID)
 
-        passwordDigest = row[3]
-        if passwordDigest:
-            salt = saltFromDigest(passwordDigest)
+        return person
+
+    def _getPersonDict(self, person):
+        """Return a dict representing 'person' to be returned over XML-RPC.
+
+        See `IUserDetailsStorage`.
+        """
+        if person is None:
+            return {}
+
+        if person.password:
+            salt = saltFromDigest(person.password)
         else:
             salt = ''
 
-        return row + [salt]
+        wikiname = getattr(person.ubuntuwiki, 'wikiname', '')
+        return {
+            'id': person.id,
+            'displayname': person.displayname,
+            'emailaddresses': self._getEmailAddresses(person),
+            'wikiname': wikiname,
+            'salt': salt,
+        }
+
+    def getUser(self, loginID):
+        return deferToThread(self._getUserInteraction, loginID)
+
+    @read_only_transaction
+    def _getUserInteraction(self, loginID):
+        """The interaction for getUser."""
+        return self._getPersonDict(self._getPerson(loginID))
 
 
 class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
@@ -188,68 +200,32 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
 
-    def getUser(self, loginID):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getUserInteraction, loginID)
-
-    def _getUserInteraction(self, transaction, loginID):
-        """The interaction for getUser."""
-        row = self._getPerson(transaction, loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname, salt = row
-        except TypeError:
-            # No-one found
-            return {}
-
-        emailaddresses = self._getEmailAddresses(transaction, personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'salt': salt,
-        }
-
     def authUser(self, loginID, sshaDigestedPassword):
-        ri = self.connectionPool.runInteraction
-        return ri(self._authUserInteraction, loginID,
-                  sshaDigestedPassword.encode('base64'))
+        """See `IUserDetailsStorage`."""
+        return deferToThread(
+            self._authUserInteraction, loginID,
+            sshaDigestedPassword.encode('base64'))
 
-    def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
-        """The interaction for authUser."""
-        row = self._getPerson(transaction, loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname, salt = row
-        except TypeError:
-            # No-one found
+    @read_only_transaction
+    def _authUserInteraction(self, loginID, sshaDigestedPassword):
+        """Synchronous implementation of `authUser`.
+
+        See `IUserDetailsStorage`.
+        """
+        person = self._getPerson(loginID)
+
+        if person is None:
             return {}
 
-        if passwordDigest is None:
+        if person.password is None:
             # The user has no password, which means they can't login.
             return {}
 
-        if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
+        if person.password.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
 
-        emailaddresses = self._getEmailAddresses(transaction, personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'salt': salt,
-        }
+        return self._getPersonDict(person)
 
 
 def saltFromDigest(digest):
@@ -277,188 +253,168 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
 
-    def _getTeams(self, transaction, personID):
+    def _getTeams(self, person):
         """Get list of teams a person is in.
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
         """
-        transaction.execute(utf8('''
-            SELECT TeamParticipation.team, Person.name, Person.displayname
-            FROM TeamParticipation
-            INNER JOIN Person ON TeamParticipation.team = Person.id
-            WHERE TeamParticipation.person = %s
-            '''
-            % sqlvalues(personID))
-        )
-        return [{'id': row[0], 'name': row[1], 'displayname': row[2]}
-                for row in transaction.fetchall()]
+        teams = [
+            dict(id=person.id, name=person.name,
+                 displayname=person.displayname)]
 
-    def getUser(self, loginID):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getUserInteraction, loginID)
+        return teams + [
+            dict(id=team.id, name=team.name, displayname=team.displayname)
+            for team in person.teams_participated_in]
 
-    def _getUserInteraction(self, transaction, loginID):
-        """The interaction for getUser."""
-        row = self._getPerson(transaction, loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname = row
-        except TypeError:
-            # No-one found
+    def _getPersonDict(self, person):
+        person_dict = UserDetailsStorageMixin._getPersonDict(self, person)
+        if person_dict == {}:
             return {}
-
-        emailaddresses = self._getEmailAddresses(transaction, personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'name': name,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'teams': self._getTeams(transaction, personID),
-        }
-
-    def _getPerson(self, transaction, loginID):
-        """Look up a person by loginID.
-
-        The loginID will be first tried as an email address, then as a numeric
-        ID, then finally as a nickname.
-
-        :returns: a tuple of (person ID, display name, password, wikiname) or
-            None if not found.
-        """
-        row = UserDetailsStorageMixin._getPerson(self, transaction, loginID)
-        if row is None:
-            return None
-        else:
-            # Remove the salt from the result; the v2 API doesn't include it.
-            return row[:-1]
+        del person_dict['salt']
+        person_dict['name'] = person.name
+        person_dict['teams'] = self._getTeams(person)
+        return person_dict
 
     def authUser(self, loginID, password):
-        ri = self.connectionPool.runInteraction
-        return ri(self._authUserInteraction, loginID, password)
+        """See `IUserDetailsStorageV2`."""
+        return deferToThread(self._authUserInteraction, loginID, password)
 
-    def _authUserInteraction(self, transaction, loginID, password):
-        """The interaction for authUser."""
-        row = self._getPerson(transaction, loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname = row
-        except TypeError:
-            # No-one found
+    @read_only_transaction
+    def _authUserInteraction(self, loginID, password):
+        """Synchronous implementation of `authUser`.
+
+        See `IUserDetailsStorageV2`.
+        """
+        person = self._getPerson(loginID)
+        if person is None:
             return {}
 
-        if not self.encryptor.validate(password, passwordDigest):
+        if not self.encryptor.validate(password, person.password):
             # Wrong password
             return {}
 
-        emailaddresses = self._getEmailAddresses(transaction, personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'name': name,
-            'displayname': displayname,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'teams': self._getTeams(transaction, personID),
-        }
+        return self._getPersonDict(person)
 
     def getBranchesForUser(self, personID):
-        """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._getBranchesForUserInteraction, personID)
+        """See `IHostedBranchStorage`."""
+        return deferToThread(self._getBranchesForUserInteraction, personID)
 
-    def _getBranchesForUserInteraction(self, transaction, personID):
-        """The interaction for getBranchesForUser."""
-        transaction.execute(utf8('''
-            SELECT Product.id, Product.name, Branch.id, Branch.name
-            FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
-            WHERE Branch.owner = %s AND Branch.url IS NULL
-            ORDER BY Product.id
-            '''
-            % sqlvalues(personID))
-        )
-        branches = []
-        prevProductID = 'x'  # can never be equal to a real integer ID.
-        rows = transaction.fetchall()
-        for productID, productName, branchID, branchName in rows:
-            if productID != prevProductID:
-                prevProductID = productID
-                currentBranches = []
-                if productID is None:
-                    assert productName is None
-                    # Replace Nones with '', because standards-compliant XML-RPC
-                    # can't handle None :(
-                    productID, productName = '', ''
-                branches.append((productID, productName, currentBranches))
-            currentBranches.append((branchID, branchName))
-        return branches
+    @read_only_transaction
+    @run_as_requester
+    def _getBranchesForUserInteraction(self, person):
+        """Synchronous implementation of `getBranchesForUser`.
+
+        See `IHostedBranchStorage`.
+        """
+        branches = getUtility(
+            IBranchSet).getHostedBranchesForPerson(person)
+        branches_summary = {}
+        for branch in branches:
+            by_product = branches_summary.setdefault(branch.owner.id, {})
+            if branch.product is None:
+                product_id, product_name = '', ''
+            else:
+                product_id = branch.product.id
+                product_name = branch.product.name
+            by_product.setdefault((product_id, product_name), []).append(
+                (branch.id, branch.name))
+        return [(person_id, by_product.items())
+                for person_id, by_product in branches_summary.iteritems()]
 
     def fetchProductID(self, productName):
-        """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._fetchProductIDInteraction, productName)
+        """See `IHostedBranchStorage`."""
+        return deferToThread(self._fetchProductIDInteraction, productName)
 
-    def _fetchProductIDInteraction(self, transaction, productName):
-        """The interaction for fetchProductID."""
-        transaction.execute(utf8('''
-            SELECT id FROM Product WHERE name = %s'''
-            % sqlvalues(productName))
-        )
-        row = transaction.fetchone()
-        if row is None:
-            # No product by that name in the DB.
-            productID = ''
+    @read_only_transaction
+    def _fetchProductIDInteraction(self, productName):
+        """The synchronous implementation of `fetchProductID`.
+
+        See `IHostedBranchStorage`.
+        """
+        product = getUtility(IProductSet).getByName(productName)
+        if product is None:
+            return ''
         else:
-            (productID,) = row
-        return productID
+            return product.id
 
-    def createBranch(self, personID, productID, branchName):
-        """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._createBranchInteraction, personID, productID,
-                  branchName)
+    def createBranch(self, loginID, personName, productName, branchName):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(
+            self._createBranchInteraction, loginID, personName, productName,
+            branchName)
 
-    def _createBranchInteraction(self, transaction, personID, productID,
+    @writing_transaction
+    @run_as_requester
+    def _createBranchInteraction(self, requester, personName, productName,
                                  branchName):
-        """The interaction for createBranch."""
-        # Convert pseudo-None to real None (damn XML-RPC!)
-        if productID == '':
-            productID = None
+        """The synchronous implementation of `createBranch`.
 
-        # Get the ID of the new branch
-        transaction.execute(
-            "SELECT NEXTVAL('branch_id_seq'); "
-        )
-        branchID = transaction.fetchone()[0]
+        See `IHostedBranchStorage`.
+        """
+        if productName == '+junk':
+            product = None
+        else:
+            product = getUtility(IProductSet).getByName(productName)
+            if product is None:
+                return ''
 
-        transaction.execute(utf8('''
-            INSERT INTO Branch (id, owner, product, name, author)
-            VALUES (%s, %s, %s, %s, %s)'''
-            % sqlvalues(branchID, personID, productID, branchName, personID))
-        )
-        return branchID
+        person_set = getUtility(IPersonSet)
+        owner = person_set.getByName(personName)
+
+        branch_set = getUtility(IBranchSet)
+        try:
+            branch = branch_set.new(
+                BranchType.HOSTED, branchName, requester, owner,
+                product, None, None, author=requester)
+        except BranchCreationException:
+            return ''
+        else:
+            return branch.id
 
     def requestMirror(self, branchID):
-        """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._requestMirrorInteraction, branchID)
+        """See `IHostedBranchStorage`."""
+        return deferToThread(self._requestMirrorInteraction, branchID)
 
-    def _requestMirrorInteraction(self, transaction, branchID):
-        """The interaction for requestMirror."""
-        transaction.execute("""
-            UPDATE Branch
-            SET mirror_request_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            WHERE id = %s
-        """ % sqlvalues(branchID))
-        # xmlrpc doesn't let us return None. True is an acceptable substitute.
+    @writing_transaction
+    def _requestMirrorInteraction(self, branchID):
+        """The synchronous implementation of `requestMirror`.
+
+        See `IHostedBranchStorage`.
+        """
+        branch = getUtility(IBranchSet).get(branchID)
+        branch.requestMirror()
         return True
+
+    def getBranchInformation(self, loginID, userName, productName, branchName):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(
+            self._getBranchInformationInteraction, loginID, userName,
+            productName, branchName)
+
+    @read_only_transaction
+    @run_as_requester
+    def _getBranchInformationInteraction(self, requester, userName,
+                                         productName, branchName):
+        """The synchronous implementation of `getBranchInformation`.
+
+        See `IHostedBranchStorage`.
+        """
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~%s/%s/%s' % (userName, productName, branchName))
+        if branch is None:
+            return '', ''
+        try:
+            branch_id = branch.id
+        except Unauthorized:
+            return '', ''
+        if (requester.inTeam(branch.owner)
+            and branch.branch_type == BranchType.HOSTED):
+            return branch_id, WRITABLE
+        elif branch.branch_type == BranchType.REMOTE:
+            # Can't even read remote branches.
+            return '', ''
+        else:
+            return branch_id, READ_ONLY
 
 
 class DatabaseBranchDetailsStorage:
@@ -473,141 +429,121 @@ class DatabaseBranchDetailsStorage:
         """
         self.connectionPool = connectionPool
 
-    def getBranchPullQueue(self):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getBranchPullQueueInteraction)
+    def _getBranchPullInfo(self, branch):
+        """Return the information that the branch puller needs to pull this
+        branch.
 
-    def _getBranchPullQueueInteraction(self, transaction):
-        """The interaction for getBranchPullQueue."""
-        # The following types of branches are included in the queue:
-        # - any branches which have not yet been mirrored
-        # - any branches that were last mirrored over 6 hours ago
-        # - any hosted branches which have requested that they be mirrored
-        # - any import branches which have been synced since their last mirror
+        This is outside of the IBranch interface so that the authserver can
+        access the information without logging in as a particular user.
 
-        # XXX Andrew Bennetts 2006-06-14:
-        # 'vcs-imports' should not be hard-coded in this function.  Instead this
-        # ought to use getUtility(LaunchpadCelebrities), but the authserver
-        # currently does not setup sqlobject etc.  Even nicer would be if the
-        # Branch table had an enum column for the branch type.
+        :return: (id, url, unique_name), where `id` is the branch database ID,
+            `url` is the URL to pull from and `unique_name` is the
+            `unique_name` property without the initial '~'.
+        """
+        branch = removeSecurityProxy(branch)
+        if branch.branch_type == BranchType.REMOTE:
+            raise AssertionError(
+                'Remote branches should never be in the pull queue.')
+        return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
-        # XXX Andrew Bennetts 2006-06-15:
-        # This query special cases hosted branches (url is NULL AND Person.name
-        # <> 'vcs-imports') so that they are always in the queue, regardless of
-        # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
-        # need to do something more scalable eventually.
+    def getBranchPullQueue(self, branch_type):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(self._getBranchPullQueueInteraction, branch_type)
 
-        # NOTE: The import-branch case is separated by testing
-        # ProductSeries.id, but the 'vcs-imports' test is still relevant to
-        # prevent obsolete vcs-imports branches that are no longer associated
-        # to a ProductSeries from being mirrored every time.
-        # -- DavidAllouche 2006-12-22
+    @read_only_transaction
+    def _getBranchPullQueueInteraction(self, branch_type):
+        """The synchronous implementation for `getBranchPullQueue`.
 
-        # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
-        # mirrored if their mirror_request_time is not NULL or if they haven't
-        # been mirrored in the last 6 hours. The latter behaviour is a
-        # fail-safe and should probably be removed once we trust the
-        # mirror_request_time behavior. See test_mirror_stale_hosted_branches.
-        # -- jml, 2007-01-31
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
-        transaction.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name
-            FROM Branch INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN ProductSeries
-                ON ProductSeries.import_branch = Branch.id
-            LEFT OUTER JOIN Product
-                ON Branch.product = Product.id
-            WHERE (ProductSeries.id is NULL AND (
-                      last_mirror_attempt is NULL
-                      OR (%(utc_now)s - last_mirror_attempt > '6 hours')
-                      OR (url is NULL AND Person.name <> 'vcs-imports'
-                          AND mirror_request_time IS NOT NULL)))
-                   OR (ProductSeries.id IS NOT NULL AND (
-                      (datelastsynced IS NOT NULL
-                          AND last_mirror_attempt IS NULL)
-                       OR (datelastsynced > last_mirror_attempt)
-                       OR (datelastsynced IS NULL
-                          AND (%(utc_now)s - last_mirror_attempt > '1 day'))))
-            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % {'utc_now': UTC_NOW}))
-        result = []
-        for row in transaction.fetchall():
-            branch_id, branch_name, url, owner_name, product_name = row
-            # XXX - this logic is almost identical to that in
-            # Branch.unique_name. Ideally, they should use the same code. Also,
-            # it would be nice to guarantee that this points to a branch.
-            # Jonathan Lange, 2007-03-01
-            if product_name is None:
-                product_name = u'+junk'
-            unique_name = u'%s/%s/%s' % (owner_name, product_name, branch_name)
-
-            if url is not None:
-                # This is a pull branch, hosted externally.
-                pull_url = url
-            elif owner_name == 'vcs-imports':
-                # This is an import branch, imported into bzr from
-                # another RCS system such as CVS.
-                prefix = config.launchpad.bzr_imports_root_url
-                pull_url = urlappend(prefix, '%08x' % branch_id)
-            else:
-                # This is a push branch, hosted on the supermirror
-                # (pushed there by users via SFTP).
-                prefix = config.codehosting.branches_root
-                pull_url = os.path.join(prefix, split_branch_id(branch_id))
-            result.append((branch_id, pull_url, unique_name))
-        return result
+        See `IBranchDetailsStorage`.
+        """
+        try:
+            branch_type = BranchType.items[branch_type]
+        except KeyError:
+            raise UnknownBranchTypeError(
+                'Unknown branch type: %r' % (branch_type,))
+        branches = getUtility(IBranchSet).getPullQueue(branch_type)
+        return [self._getBranchPullInfo(branch) for branch in branches]
 
     def startMirroring(self, branchID):
-        """See IBranchDetailsStorage"""
-        ri = self.connectionPool.runInteraction
-        return ri(self._startMirroringInteraction, branchID)
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(self._startMirroringInteraction, branchID)
 
-    def _startMirroringInteraction(self, transaction, branchID):
-        """The interaction for startMirroring."""
-        transaction.execute(utf8("""
-            UPDATE Branch
-              SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-              WHERE id = %d""" % (branchID,)))
-        # how many rows were updated?
-        assert transaction.rowcount in [0, 1]
-        return transaction.rowcount == 1
+    @writing_transaction
+    def _startMirroringInteraction(self, branchID):
+        """The synchronous implementation of `startMirroring`.
+
+        See `IBranchDetailsStorage`.
+        """
+        branch = getUtility(IBranchSet).get(branchID)
+        if branch is None:
+            return False
+        # The puller runs as no user and may pull private branches. We need to
+        # bypass Zope's security proxy to set the mirroring information.
+        removeSecurityProxy(branch).startMirroring()
+        return True
 
     def mirrorComplete(self, branchID, lastRevisionID):
-        """See IBranchDetailsStorage"""
-        ri = self.connectionPool.runInteraction
-        return ri(self._mirrorCompleteInteraction, branchID, lastRevisionID)
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(
+            self._mirrorCompleteInteraction, branchID, lastRevisionID)
 
-    def _mirrorCompleteInteraction(self, transaction, branchID,
-                                   lastRevisionID):
-        """The interaction for mirrorComplete."""
-        transaction.execute(utf8("""
-            UPDATE Branch
-              SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
-                  mirror_status_message = NULL, mirror_request_time = NULL,
-                  last_mirrored_id = %s
-              WHERE id = %s""" % sqlvalues(lastRevisionID, branchID)))
-        # how many rows were updated?
-        assert transaction.rowcount in [0, 1]
-        return transaction.rowcount == 1
+    @writing_transaction
+    def _mirrorCompleteInteraction(self, branchID, lastRevisionID):
+        """The synchronous implementation of `mirrorComplete`.
+
+        See `IBranchDetailsStorage`.
+        """
+        branch = getUtility(IBranchSet).get(branchID)
+        if branch is None:
+            return False
+        # See comment in _startMirroringInteraction.
+        removeSecurityProxy(branch).mirrorComplete(lastRevisionID)
+        return True
 
     def mirrorFailed(self, branchID, reason):
-        """See IBranchDetailsStorage"""
-        ri = self.connectionPool.runInteraction
-        return ri(self._mirrorFailedInteraction, branchID, reason)
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(self._mirrorFailedInteraction, branchID, reason)
 
-    def _mirrorFailedInteraction(self, transaction, branchID, reason):
-        """The interaction for mirrorFailed."""
-        transaction.execute(utf8("""
-            UPDATE Branch
-              SET mirror_failures = mirror_failures + 1,
-                  mirror_status_message = %s, mirror_request_time = NULL
-              WHERE id = %s""" % sqlvalues(reason, branchID)))
-        # how many rows were updated?
-        assert transaction.rowcount in [0, 1]
-        return transaction.rowcount == 1
+    @writing_transaction
+    def _mirrorFailedInteraction(self, branchID, reason):
+        """The synchronous implementation of `mirrorFailed`.
 
+        See `IBranchDetailsStorage`.
+        """
+        branch = getUtility(IBranchSet).get(branchID)
+        if branch is None:
+            return False
+        # See comment in _startMirroringInteraction.
+        removeSecurityProxy(branch).mirrorFailed(reason)
+        return True
+
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(
+            self._recordSuccessInteraction, name, hostname, date_started,
+            date_completed)
+
+    @writing_transaction
+    def _recordSuccessInteraction(self, name, hostname, started_tuple,
+                                  completed_tuple):
+        """The synchronous implementation of `recordSuccess`.
+
+        See `IBranchDetailsStorage`.
+        """
+        date_started = datetime_from_tuple(started_tuple)
+        date_completed = datetime_from_tuple(completed_tuple)
+        ScriptActivity(
+            name=name, hostname=hostname, date_started=date_started,
+            date_completed=date_completed)
+        return True
+
+
+def datetime_from_tuple(time_tuple):
+    """Create a datetime from a sequence that quacks like time.struct_time.
+
+    The tm_isdst is (index 8) is ignored. The created datetime uses tzinfo=UTC.
+    """
+    [year, month, day, hour, minute, second, unused, unused, unused] = (
+        time_tuple)
+    return datetime.datetime(
+        year, month, day, hour, minute, second, tzinfo=UTC)

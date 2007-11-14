@@ -32,7 +32,7 @@ working comparisons::
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
@@ -49,8 +49,8 @@ XXX: stevea: 20051018: Rewrite this test to use security proxies directly
 XXX: bug 3315
 DB schema objects should be comparable correctly when proxied...
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> from canonical.lp.dbschema import DistroSeriesStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     DistroSeriesStatus, IDistroSeriesSet)
     >>> hoary = getUtility(IDistroSeriesSet).get(3)
     >>> print hoary.status.name
     DEVELOPMENT

@@ -152,7 +152,7 @@ class RequestExpiredView(SystemErrorView):
 
 class TranslationUnavailableView(SystemErrorView):
 
-    response_code = 403
+    response_code = 503
 
     def __call__(self):
         return self.index()

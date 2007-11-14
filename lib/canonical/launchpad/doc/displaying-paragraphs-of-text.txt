@@ -1,5 +1,4 @@
-Displaying Paragraphs of Text with ZPT
-======================================
+= Displaying Paragraphs of Text with ZPT =
 
 To display paragraphs of text in HTML, use fmt:text-to-html. For details,
 see <https://launchpad.canonical.com/DisplayingParagraphsOfText>.
@@ -239,7 +238,15 @@ To check a private bug, we need to log in and set a bug to be private.
     >>> bugset = getUtility(IBugSet)
     >>> firefox_crashes = bugset.get(6)
     >>> login("test@canonical.com")
-    >>> firefox_crashes.private = True
+    >>> current_user = getUtility(ILaunchBag).user
+    >>> firefox_crashes.setPrivate(True, current_user)
+    True
+
+Bug.setPrivate adds all indirect subscribers to the bug as direct
+subscribers, but we want to see what the bug looks like if we're not a
+subscriber.
+
+    >>> firefox_crashes.unsubscribe(current_user)
 
 A private bug has a title "private bug".
 
@@ -345,8 +352,8 @@ Testing a bunch of URL links.
     <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr></wbr>foo@jabber.<wbr></wbr>example.<wbr></wbr>com</a>)<br />
     Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
 
-regex helper functions
-----------------------
+
+== Regex helper functions ==
 
 The _substitute_matchgroup_for_spaces() static method is part of the
 fmt:text-to-html code.  It is a helper for writing regular expressions where

@@ -3,9 +3,9 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import IDistroBugTask, IDistroSeriesBugTask
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, IDistribution, IProduct, QuestionAction)
 from canonical.launchpad.mailnotification import get_bug_delta
-from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
 
 def bug_created(bug, event):
@@ -39,7 +39,7 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     actionname to the given person.
     """
     for task in bug.bugtasks:
-        if task.status == BugTaskStatus.REJECTED:
+        if task.status == BugTaskStatus.INVALID:
             continue
         _assign_karma_using_bugtask_context(person, task, actionname)
 
@@ -76,11 +76,6 @@ def cve_added(cve, event):
     _assignKarmaUsingBugContext(event.user, cve.bug, 'bugcverefadded')
 
 
-def extref_added(extref, event):
-    """Assign karma to the user which added :extref:."""
-    _assignKarmaUsingBugContext(event.user, extref.bug, 'bugextrefadded')
-
-
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
     user = event.user
@@ -90,7 +85,7 @@ def bugtask_modified(bugtask, event):
 
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
-        BugTaskStatus.REJECTED: 'bugrejected',
+        BugTaskStatus.INVALID: 'bugrejected',
         BugTaskStatus.CONFIRMED: 'bugaccepted'}
 
     if task_delta.status:
@@ -191,3 +186,31 @@ def question_bug_added(questionbug, event):
     question = questionbug.question
     _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
 
+# XXX flacoste 2007-07-13 bug=125849:
+# This should go away once bug #125849 is fixed.
+def get_karma_context_parameters(context):
+    """Return the proper karma context parameters based on the object."""
+    params = dict(product=None, distribution=None)
+    if IProduct.providedBy(context):
+        params['product'] = context
+    elif IDistribution.providedBy(context):
+        params['distribution'] = context
+    else:
+        raise AssertionError('Unknown karma context: %r' % context)
+    return params
+
+
+def faq_created(faq, event):
+    """Assign karma to the user who created the FAQ."""
+    context = get_karma_context_parameters(faq.target)
+    faq.owner.assignKarma('faqcreated', **context)
+
+
+def faq_edited(faq, event):
+    """Assign karma to user who edited a FAQ."""
+    user = event.user
+    old_faq = event.object_before_modification
+
+    context = get_karma_context_parameters(faq.target)
+    if old_faq.content != faq.content or old_faq.title != faq.title:
+        user.assignKarma('faqedited', **context)

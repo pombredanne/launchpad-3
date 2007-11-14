@@ -1,16 +1,30 @@
-Launchpad's front page
+== Launchpad front page ==
+
+The front page includes buttons for the main applications
 
   >>> browser.open('http://launchpad.dev/')
   >>> browser.url
   'http://launchpad.dev/'
-
-should include buttons for the main applications
 
   >>> print browser.contents
   <!DOCTYPE...
   ...Register your project...
   ...Publish your code...
   ...
+
+  >>> register_link = browser.getLink(url='/projects')
+  >>> register_link.url
+  'http://launchpad.dev/projects/'
+
+  >>> register_link.text
+  'register[IMG]'
+
+  >>> code_link = browser.getLink(url='code')
+  >>> code_link.url
+  'http://code.launchpad.dev/'
+
+  >>> code_link.text
+  'code[IMG]'
 
 a search form
 
@@ -19,8 +33,14 @@ a search form
 
 and lists of featured projects and marketing material.
 
-  >>> 'Featured projects' in browser.contents
-  True
-  
-  'More about Launchpad' in browser.contents
-  True
+  >>> for tag in find_tags_by_class(browser.contents, 'three column right'):
+  ...     print extract_text(tag.renderContents())
+  Featured projects
+  Ubuntu
+  ...
+
+  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
+  ...     print extract_text(tag.renderContents())
+  What is Launchpad?
+  ...
+

@@ -9,6 +9,12 @@
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackageRelease"
+        path_expression="string:${version}"
+        attribute_to_parent="sourcepackage"
+        />
+
     <browser:pages
       for="canonical.launchpad.interfaces.ISourcePackageRelease"
       permission="zope.Public">
@@ -49,12 +55,16 @@
       name="+changelog"
       template="../templates/sourcepackagerelease-changelog.pt"
     />
+    <browser:page
+      name="+change_summary"
+      template="../templates/sourcepackagerelease-change-summary.pt"
+    />
   </browser:pages>
 
-   <adapter
+  <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.sourcepackagerelease_to_questiontarget"
+    factory="canonical.launchpad.components.answertracker.sourcepackagerelease_to_questiontarget"
     />
 
 </configure>

@@ -31,9 +31,19 @@ sent:
     >>> len(notifications)
     1
 
+Note that the From address uses the submitter's name with the
+question's email address. Answer's uses real names to help the
+questioner and the answerers communicate. The Reply-To address
+is the question's address. When using the mail client's reply
+feature, the user should clearly see that he is replying to the
+question and not the user.
+[sic] Kiko and Danilo have a story worth telling.
+
     >>> add_notification = notifications[0]
     >>> add_notification['From']
     'Sample Person <question...@answers.launchpad.net>'
+    >>> add_notification['Reply-To']
+    'question...@answers.launchpad.net'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
@@ -60,7 +70,7 @@ contains information about the question.
     distribution=ubuntu; sourcepackage=None; status=Open;
     assignee=None; priority=Normal; language=en
 
-As welll as the standard 'X-Launchpad-Message-Rationale' header that
+As well as the standard 'X-Launchpad-Message-Rationale' header that
 contains in short format the reason for the user to be contacted.
 
     >>> print add_notification['X-Launchpad-Message-Rationale']
@@ -69,8 +79,9 @@ contains in short format the reason for the user to be contacted.
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
 
@@ -101,7 +112,7 @@ will be sent.
     >>> libstdcplusplus_sourcepackage = ubuntu.getSourcePackage('libstdc++')
     >>> ubuntu_question.target = libstdcplusplus_sourcepackage
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, 
+    ...     ubuntu_question, unmodified_question,
     ...     ['title', 'description', 'target']))
 
 Three copies of the notification got sent, one to Sample Person, one to
@@ -135,10 +146,10 @@ Foo Bar, and one to Ubuntu Team:
     You received this question notification because you are the assignee for
     this question.
 
-XXX flacoste 2006/09/19 Add checks for notification of change to
-assignee, status whiteboard, priority. For example, if a question is
-transfered to another QuestionTarget and priority is changed,
-the notification does not include priority.
+# XXX flacoste 2006-09-19: Add checks for notification of change to
+# assignee, status whiteboard, priority. For example, if a question is
+# transferred to another QuestionTarget and priority is changed,
+# the notification does not include priority.
 
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
@@ -216,57 +227,6 @@ bug that has been linked to it:
     You received this question notification because you are a member of
     Ubuntu Team, which is an answer contact for Ubuntu.
 
-=== Linked Bug Status Changed Notification ===
-
-While a bug is linked to a question , its subscribers will be notified
-of changes to the bug status:
-
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> bugtask = bug.bugtasks[0]
-    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
-    >>> bugtask.statusexplanation = 'This bug really happened to me.'
-    >>> notify(SQLObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['status', 'statusexplanation']))
-
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    2
-    >>> [notification['To'] for notification in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notifications[0]['Subject']
-    [Question #...]: Status of bug #... changed to 'Confirmed' in Ubuntu
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Bug #... status changed in Ubuntu:
-    <BLANKLINE>
-        Unconfirmed => Confirmed
-    <BLANKLINE>
-    Status change explanation given by No Privileges Person:
-    <BLANKLINE>
-    This bug really happened to me.
-    <BLANKLINE>
-    http://.../ubuntu/+bug/...
-    "Installer fails on a Mac PPC"
-    <BLANKLINE>
-    This bug is linked to #14.
-    Installer doesn't work on a Mac
-    http://.../ubuntu/+question/...
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
-
-Only a change in status triggers a notification.
-
-    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToAssignee(sample_person)
-    >>> notify(SQLObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['assignee', 'dateassigned']))
-
-    >>> len(pop_notifications())
-    0
-
 === Bug Unlinked Notification ===
 
 A notification is also sent when a bug is unlinked from the question:
@@ -288,13 +248,21 @@ A notification is also sent when a bug is unlinked from the question:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Removed link to bug: #13
-        http://.../bugs/13
+        Removed link to bug: #...
+        http://.../bugs/...
         "Installer fails on a Mac PPC"
     <BLANKLINE>
     --...
     You received this question notification because you are a member of
     Ubuntu Team, which is an answer contact for Ubuntu.
+
+
+=== Linked Bug Status Changed Notification ===
+
+When a question is linked to a bug, the question's subscribers are
+notified of changes of the bug status. See
+answer-tracker-notifications-linked-bug.txt for more information.
+
 
 == Workflow Notifications ==
 
@@ -705,7 +673,7 @@ Notification received by the owner:
 
 === Notifications for setStatus() ===
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
@@ -746,6 +714,72 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
+
+=== Notifications for linkFAQ() ===
+
+When a user links a FAQ to a question, the notification includes that
+information before the message.
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_question = firefox.newQuestion(
+    ...     no_priv, 'How can I play Flash?', 'I want Flash!')
+
+    # Discard notifications.
+    >>> notifications = pop_notifications()
+
+    >>> login('test@canonical.com')
+    >>> firefox_faq = firefox.getFAQ(10)
+    >>> print firefox_faq.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+    >>> message = firefox_question.linkFAQ(
+    ...     sample_person, firefox_faq, "Read the FAQ.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['no-priv@canonical.com']
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your question #... on Mozilla Firefox changed:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+        Status: Open => Answered
+    <BLANKLINE>
+        Related FAQ set to:
+        How do I install plugins (Shockwave, QuickTime, etc.)?
+        http://answers.launchpad.dev/firefox/+faq/10
+    <BLANKLINE>
+    Sample Person proposed the following answer:
+    Read the FAQ.
+    <BLANKLINE>
+    --...
+
+If the FAQ is unlinked, the notification will look like:
+
+    >>> message = firefox_question.linkFAQ(
+    ...     sample_person, None, "Sorry, this wasn't so useful.")
+
+    >>> notifications = pop_notifications()
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['no-priv@canonical.com']
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Your question #... on Mozilla Firefox changed:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+        Related FAQ was removed:
+        How do I install plugins (Shockwave, QuickTime, etc.)?
+        http://answers.launchpad.dev/firefox/+faq/10
+    <BLANKLINE>
+    Sample Person proposed the following answer:
+    Sorry, this wasn't so useful.
+    <BLANKLINE>
+    --...
+
+
 == Notifications and Teams ==
 
 When a team is subscribed to a question, there are two cases two consider.
@@ -779,6 +813,7 @@ will receives only one notification:
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+
 
 == Notifications and Localized Questions ==
 
@@ -848,12 +883,23 @@ sent to the support list about that question:
     >>> notifications[0]['Subject']
     "[Question #...]: (French) Impossible d'installer Ubuntu"
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
+    # Define a function that will replace non-ascii character with
+    # its unicoded encoded value.
+    # Effectively replace u'\xe9' by '\\e9'.
+    >>> import re
+    >>> def escape_utf8_payload(message):
+    ...     charset = message.get_content_charset()
+    ...     content = unicode(message.get_payload(decode=True), charset)
+    ...     return content.encode('us-ascii', 'backslashreplace')
+
+    >>> notification_body = escape_utf8_payload(notifications[0])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     A question was asked in a language (French) spoken by
     none of the registered Ubuntu answer contacts.
     <BLANKLINE>
     http://.../ubuntu/+question/...
+    <BLANKLINE>
+    Le CD ne semble pas fonctionn\xe9...
     --...
     You received this question notification because you are an answer
     contact for Ubuntu.
@@ -863,15 +909,6 @@ the question is in a language spoken by none of the answer contacts:
 
     >>> notifications[-1]['Subject']
     "[Question #...]: Impossible d'installer Ubuntu"
-
-    # Define a function that will replace non-ascii character with
-    # its unicoded encoded value.
-    # Effectively replace u'\xe9' by '\\e9'.
-    >>> import re
-    >>> def escape_utf8_payload(message):
-    ...     charset = message.get_content_charset()
-    ...     content = unicode(message.get_payload(decode=True), charset)
-    ...     return content.encode('us-ascii', 'backslashreplace')
 
     >>> notification_body = escape_utf8_payload(notifications[-1])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -918,22 +955,20 @@ with a warning appended to it.
 
 === Localized Questions and Teams ===
 
-There are some tricky issues when sending notifications to teams about a
-question. There are some cases to consider.
+We will notify the team only if the question language is in one of
+the team's preferred languages. The languages spoken by the team
+members is unimportant.
 
-First, when the team has an explicit email address (which will be a
-mailing list usually), we will notify the team only if the question
-language is in one of the team spoken languages. The team spoken
-languages is either the list of languages associated to the team or
-the list of the languages spoken by the team members.
-
-For example, the rosetta admins team doesn't have any languages
-configured. But among its members, Carlos speaks Spanish. So, the team
-will be notified if a Spanish question is created.
+For example, the rosetta admins team becomes an Answer contact for
+English questions. Carlos speaks Spanish, and he is an answer contact
+for Ubuntu. He is also a member of the rosetta admins team. The team
+wont receive emails because of his membership when they become answer
+contacts too.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
     >>> [lang.code for lang in rosetta_admins.languages]
     []
+    >>> rosetta_admins.addLanguage(getUtility(ILanguageSet)['en'])
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> carlos.inTeam(rosetta_admins)
     True
@@ -941,6 +976,8 @@ will be notified if a Spanish question is created.
     >>> spanish in carlos.languages
     True
 
+    >>> ubuntu.addAnswerContact(carlos)
+    True
     >>> ubuntu.addAnswerContact(rosetta_admins)
     True
     >>> spanish_question = ubuntu.newQuestion(
@@ -950,11 +987,14 @@ will be notified if a Spanish question is created.
     >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
-    ['rosetta@launchpad.net', 'test@canonical.com']
+    ['carlos@canonical.com', 'test@canonical.com']
+
+    >>> ubuntu.removeAnswerContact(carlos)
+    True
 
 But if the team languages attribute is set, this set of languages will
 be used. So, if the team only officially speaks French, it will only
-receives notifications about French (and English) questions.
+receive notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
     >>> notify(SQLObjectCreatedEvent(french_question))
@@ -962,8 +1002,7 @@ receives notifications about French (and English) questions.
     >>> [email_msg['To'] for email_msg in notifications]
     ['rosetta@launchpad.net', 'test@canonical.com']
 
-The second case to consider is when the team doesn't use an explicit
-address. When the team has configured its supported languages, all
+When the team doesn't use an explicit address. All
 team members will be contacted if the question language is supported.
 For example, the Launchpad Developers team doesn't have any preferred
 email address set. Its only member, Foo Bar will receive a notification
@@ -982,62 +1021,3 @@ if the team supported languages includes the question language:
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
-
-But when the team didn't configured its supported language set, only the
-team members that speaks the language of the question will be notified.
-For example, Carlos is a member of the admins team which doesn't have
-a preferred address. So, he'll be the only member of the admin team
-to be notified when a question in Spanish is posted.
-
-    >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> list(admins.languages)
-    []
-    >>> carlos.inTeam(admins)
-    True
-    >>> ubuntu.addAnswerContact(admins)
-    True
-
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['carlos@canonical.com', 'foo.bar@canonical.com',
-     'test@canonical.com']
-
-When a team is a member of a team with no email address, these rules
-are applied recursively. So, if we make GuadaMen team a member of the
-admin team, its notification will be computed according to that
-team settings. That is a notification will be sent to its preferred
-address if Spanish is among its preferred languages:
-
-    >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
-    >>> list(guadamen.languages)
-    []
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
-
-    # This call also generates email notifications, so we'll clean up
-    # stub.test_emails after it
-    >>> admins.addMember(guadamen, reviewer=foobar)
-
-    # We need to accept the invitation sent by the addMember() call in
-    # order to make guadamen an actual member of admins.
-    >>> login(guadamen.teamowner.preferredemail.email)
-    >>> guadamen.acceptInvitationToBeMemberOf(admins, comment='something')
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> transaction.commit()
-    >>> from canonical.launchpad.mail import stub
-    >>> stub.test_emails = []
-
-    >>> guadamen.addLanguage(spanish)
-
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
-    >>> guadamen_email = getUtility(IEmailAddressSet).new(
-    ...     'maintainers@guadalinex.com', guadamen)
-    >>> guadamen.validateAndEnsurePreferredEmail(guadamen_email)
-
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['carlos@canonical.com', 'foo.bar@canonical.com',
-     'maintainers@guadalinex.com', 'test@canonical.com']

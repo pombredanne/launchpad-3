@@ -5,8 +5,9 @@ PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+VERBOSITY=-vv
 
-TESTFLAGS=-p -v
+TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=${PYTHON} utilities/shhh.py
@@ -23,17 +24,23 @@ default: inplace
 
 schema: build
 	$(MAKE) -C database/schema
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build dbfreeze_check check importdcheck
-    # should normally also do: hctcheck check_sourcecode_dependencies
+check_launchpad_on_merge: build dbfreeze_check check importdcheck check_sourcecode_dependencies
 
 check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+check_loggerhead_on_merge:
+	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
+	# depends on it (yet).
+	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
@@ -44,7 +51,7 @@ dbfreeze_check:
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
 
-check_merge: check_not_a_ui_merge build check importdcheck hctcheck
+check_merge: check_not_a_ui_merge build check importdcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be
@@ -54,24 +61,16 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_ui: build check importdcheck hctcheck
+check_merge_ui: build check importdcheck
 	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_edge: check_no_dbupdates check_merge
+check_merge_edge: dbfreeze_check check_merge
 	# Allow the merge if there are no database updates, including
 	# database patches or datamigration scripts (which should live
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
-
-check_no_dbupdates:
-	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
-
-hctcheck: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	    ${PYTHON} -t ./test_on_merge.py -vv \
-	        --dir hct --dir sourcerer
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -81,18 +80,13 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vv
+	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
 
 lint:
 	@bash ./utilities/lint.sh
 
-#lintmerge:
-#	@# Thank Stuart, not me!
-#	@baz diff -s rocketfuel@canonical.com/launchpad--devel--0 | \
-#		grep -v "^*" | \
-#		grep -v "{arch}" | \
-#		cut -c4- | \
-#		xargs sh ./utilities/lint.sh
+check-configs:
+	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -141,6 +135,23 @@ run_all: inplace stop bzr_version_info
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
 		 -C $(CONFFILE)
+
+pull_branches: bzr_version_info
+	# Mirror the hosted branches in the development upload area to the
+	# mirrored area.
+	$(PYTHON) cronscripts/supermirror-pull.py upload
+
+rewritemap:
+	# Build rewrite map that maps friendly branch names to IDs. Necessary
+	# for http access to branches and for the branch scanner.
+	mkdir -p /var/tmp/sm-ng/config
+	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
+
+scan_branches: rewritemap
+	# Scan branches from the filesystem into the database.
+	$(PYTHON) cronscripts/branch-scanner.py
+
+sync_branches: pull_branches scan_branches
 
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
@@ -202,6 +213,9 @@ launchpad.pot:
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
 
+static:
+	$(PYTHON) scripts/make-static.py
+
 TAGS:
 	ctags -e -R lib
 
@@ -211,5 +225,6 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge hctcheck check_merge_ui
+		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
+		sync_branches check_loggerhead_on_merge
 

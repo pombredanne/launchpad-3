@@ -1,0 +1,60 @@
+Now No Privileges Person is still the Welsh translator for the PolyGlot
+translation group, and they are the translation group for Ubuntu, which we
+are going to set as having Restricted translations. This means that No
+Privileges Person should be able to translate any strings in Ubuntu to
+Welsh. In other languages, No Privileges Person should be warned that he
+is not a designated translator.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/+changetranslators')
+
+  >>> admin_browser.getControl(
+  ...     'Translation Permission System').value = ['RESTRICTED']
+  >>> admin_browser.getControl('Change').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/+changetranslators
+  >>> for tag in find_tags_by_class(
+  ...     admin_browser.contents, 'informational message'):
+  ...     print tag.renderContents()
+  Updated on ...
+
+Let's see if No Privileges Person can see the translated strings in Southern
+Sotho. We expect them to be told they can only make contributions:
+
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/st/+translate')
+  >>> 'Your translations will be held for review' in browser.contents
+  True
+
+However, in Welsh, No Privileges Person DOES have the ability to edit
+directly.
+
+First, we show that the message 137 is not translated.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/cy/8/+translate')
+  >>> '(no translation yet)' in browser.contents
+  True
+
+Now, we need to show that it is translated after a post. Let's go ahead and
+POST and see that all goes well:
+
+  >>> browser.getControl(
+  ...     name='msgset_137_cy_translation_0_radiobutton').value = [
+  ...         'msgset_137_cy_translation_0_new']
+  >>> browser.getControl(
+  ...     name='msgset_137_cy_translation_0_new').value = 'evolution minikaart'
+  >>> browser.getControl(name='submit_translations').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/9/+translate
+
+And finally, let's take a look again, and we should have a translation added.
+
+  >>> browser.getLink('Previous').click()
+  >>> '(no translation yet)' in browser.contents
+  False
+  >>> 'evolution minikaart' in browser.contents
+  True

@@ -9,16 +9,15 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import BugTrackerType
+    BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
+class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
     """Test base for testing BugWatchSet.extractBugTrackerAndBug."""
+    layer = LaunchpadFunctionalLayer
 
     # A URL to an unregistered bug tracker.
     base_url = None
@@ -33,7 +32,6 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
     bug_id = None
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
         login(ANONYMOUS)
         self.bugwatch_set = getUtility(IBugWatchSet)
         self.bugtracker_set = getUtility(IBugTrackerSet)
@@ -78,6 +76,15 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
         else:
             self.fail(
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
+
+
+class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
+
+    bugtracker_type = BugTrackerType.MANTIS
+    bug_url = 'http://some.host/bugs/view.php?id=3224'
+    base_url = 'http://some.host/bugs/'
+    bug_id = '3224'
 
 
 class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
@@ -171,6 +178,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     return suite
 
 

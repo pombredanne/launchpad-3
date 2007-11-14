@@ -1,4 +1,10 @@
-<div class="portlet" tal:condition="context/is_valid_person_or_team">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<div class="portlet" id="portlet-details"
+     tal:condition="context/is_valid_person">
   <h2 tal:content="context/browsername" />
 
   <div class="portletBody portletContent">
@@ -18,7 +24,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/locked" alt="" /> 
+                <img src="/@@/private" alt="" /> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />
@@ -69,3 +75,4 @@
   </div>
 
 </div>
+</tal:root>

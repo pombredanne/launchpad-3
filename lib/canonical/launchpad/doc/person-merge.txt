@@ -1,5 +1,4 @@
-Merging
-=======
+= Merging =
 
 For many reasons (i.e. a gina run) we could have duplicated accounts in
 Launchpad. Once a duplicated account is identified, we need to allow the user
@@ -20,37 +19,23 @@ different email address.
     >>> marilize = personset.getByName('marilize')
 
 
-Sanity checks
--------------
+== Sanity checks ==
 
-We can't merge teams
-
-    >>> personset.merge(admins, name16)
-    Traceback (most recent call last):
-    ...
-    TypeError: ...
-
-    >>> personset.merge(name16, admins)
-    Traceback (most recent call last):
-    ...
-    TypeError: ...
-
-Nor can we merge an account that still has email addresses attached to it
+We can't merge an account that still has email addresses attached to it
 
     >>> personset.merge(marilize, sample)
     Traceback (most recent call last):
     ...
-    ValueError: ...
+    AssertionError: ...
 
 
-Preparing test person for the merge
------------------------------------
+== Preparing test person for the merge ==
 
 Merging people involves updating the merged person relationships. Let's
 put the person we will merge into some of those.
 
-    (To assign marilize as the ubuntu team owner, we must log on as the
-    previous owner.)
+    # To assign marilize as the ubuntu team owner, we must log on as the
+    # previous owner.
     >>> login('mark@hbd.com')
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
@@ -67,8 +52,9 @@ Marilize and save it for later comparison.
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> marilize_karma = marilize.assignKarma('bugfixed', product=firefox)
-    >>> marilize_karma.id, marilize_karma.person.name
-    (62L, u'marilize')
+    >>> saved_marilize_karma_id = marilize_karma.id
+    >>> print marilize_karma.person.name
+    marilize
     >>> sampleperson_old_karma = sample.karma
 
 Branches whose owner is being merged are uniquified by appending '-N' where N
@@ -84,13 +70,18 @@ be renamed since it will not conflict.
 That is not a particularly sensible way of renaming branches, but it is simple
 to implement, and it be should extremely rare for the case to occur.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from canonical.launchpad.interfaces import BranchType, IBranchSet
     >>> branchset = getUtility(IBranchSet)
-    >>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
-    >>> peoplemerge1 = branchset.new('peoplemerge-1', sample, None, None)
-    >>> peoplemerge0 = branchset.new('peoplemerge-0', marilize, None, None)
-    >>> peoplemerge2 = branchset.new('peoplemerge', marilize, None, None)
-    >>> peoplemerge11 = branchset.new('peoplemerge-1', marilize, None, None)
+    >>> peoplemerge = branchset.new(
+    ...     BranchType.HOSTED, 'peoplemerge', sample, sample, None, None)
+    >>> peoplemerge1 = branchset.new(
+    ...     BranchType.HOSTED, 'peoplemerge-1', sample, sample, None, None)
+    >>> peoplemerge0 = branchset.new(
+    ...     BranchType.HOSTED, 'peoplemerge-0', marilize, marilize, None, None)
+    >>> peoplemerge2 = branchset.new(
+    ...     BranchType.HOSTED, 'peoplemerge', marilize, marilize, None, None)
+    >>> peoplemerge11 = branchset.new(
+    ...     BranchType.HOSTED, 'peoplemerge-1', marilize, marilize, None, None)
 
 'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
 while marilize is an active member. After the merge, 'Sample Person' will be an
@@ -102,19 +93,17 @@ active member of that team.
     True
 
 
-Do the merge!
--------------
+== Do the merge! ==
 
-    (Now we remove the only email address marilize had, so that we can merge
-    it)
+    # Now we remove the only email address marilize had, so that we can merge
+    # it.
     >>> marilize.preferredemail.destroySelf()
     >>> flush_database_updates()
 
     >>> personset.merge(marilize, sample)
 
 
-Merge results
--------------
+== Merge results ==
 
 Check that 'Sample Person' has indeed become an active member of 'Ubuntu
 Translators'
@@ -142,8 +131,10 @@ The Karma that was previously assigned to marilize is now assigned to name12
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
-    >>> marilize_karma.id, marilize_karma.person.name
-    (62L, u'name12')
+    >>> saved_marilize_karma_id == marilize_karma.id
+    True
+    >>> print marilize_karma.person.name
+    name12
 
 Note that we don't bother migrating karma caches - it will just be reset next
 time the caches are rebuilt.
@@ -184,4 +175,90 @@ merged accounts from lists etc.
     >>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
     >>> cur.fetchone()[0] is None
     True
+
+
+== Merging teams ==
+
+Merging of teams is also possible and uses the same API used for merging
+people.  Note, though, that when merging teams, its polls will not be
+carried over to the remaining team.  Team memberships, on the other hand,
+are carried over just like when merging people.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
+    >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
+    >>> launchpad_devs = personset.getByName('launchpad')
+    >>> launchpad_devs.addMember(
+    ...     test_team, reviewer=launchpad_devs.teamowner, force_team_add=True)
+    >>> today = datetime.now(pytz.timezone('UTC'))
+    >>> tomorrow = today + timedelta(days=1)
+    >>> poll = IPollSubset(test_team).new(
+    ...     'test-poll', 'Title', 'Proposition', today, tomorrow,
+    ...     PollSecrecy.OPEN, allowspoilt=True)
+
+    # test_team has a superteam, one active member and a poll.
+    >>> [team.name for team in test_team.getSuperTeams()]
+    [u'launchpad']
+    >>> test_team.teamowner.name
+    u'name12'
+    >>> [member.name for member in test_team.allmembers]
+    [u'name12']
+    >>> list(IPollSubset(test_team).getAll())
+    [<Poll at ...]
+
+    # Landscape-developers has no super teams, two members and no polls.
+    >>> landscape = personset.getByName('landscape-developers')
+    >>> [team.name for team in landscape.getSuperTeams()]
+    []
+    >>> landscape.teamowner.name
+    u'name12'
+    >>> [member.name for member in landscape.allmembers]
+    [u'salgado', u'name12']
+    >>> list(IPollSubset(landscape).getAll())
+    []
+
+Now we try to merge them, but since test_team has active members it can't be
+merged.
+
+    >>> personset.merge(test_team, landscape)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only teams without active members can be merged
+
+For cases like this we have an API which takes care of deactivating all
+active members of the team so that we can perform the merge.
+
+    # Only admins can use that API, though, so we need to login as an admin.
+    >>> login('foo.bar@canonical.com')
+
+    >>> comment = "We're merging this team into another one."
+    >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
+    >>> flush_database_caches()
+    >>> personset.merge(test_team, landscape)
+
+    # The resulting Landscape-developers has now a super team, but has
+    # no polls and its members are still the same two from before the
+    # merge.
+    >>> landscape.teamowner.name
+    u'name12'
+    >>> [member.name for member in landscape.allmembers]
+    [u'salgado', u'name12']
+    >>> [team.name for team in landscape.getSuperTeams()]
+    [u'launchpad']
+    >>> list(IPollSubset(landscape).getAll())
+    []
+
+A team can't be merged into another one if it has an associated mailing
+list.  This is for the sole reason that it's very unlikely to happen and
+we don't really want to write code to support things that will probably
+never be needed.
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> mailing_list = getUtility(IMailingListSet).new(landscape)
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> personset.merge(landscape, ubuntu_team)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't merge teams which have mailing lists...
 

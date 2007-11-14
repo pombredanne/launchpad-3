@@ -5,12 +5,17 @@
 __metaclass__ = type
 
 __all__ = ['ITeamMembership', 'ITeamMembershipSet', 'ITeamMember',
-           'ITeamParticipation']
+           'ITeamParticipation', 'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT']
 
 from zope.schema import Choice, Int, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
+
+# One week before a membership expires we send a notification to the member,
+# either inviting him to renew his own membership or asking him to get a team
+# admin to do so, depending on the team's renewal policy.
+DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 
 
 class ITeamMembership(Interface):
@@ -38,6 +43,47 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
+    def canChangeExpirationDate(person):
+        """Can the given person change this membership's expiration date?
+
+        A membership's expiration date can be changed by the team owner, by a
+        Launchpad admin or by a team admin. In the latter case, though, the
+        expiration date can only be changed if the admin is not changing his
+        own membership.
+        """
+
+    def setExpirationDate(date, user):
+        """Set this membership's expiration date.
+
+        The given date must be None or in the future and the given user must
+        be allowed to change this membership's expiration date as per the
+        rules defined in canChangeExpirationDate().
+        """
+
+    def canBeRenewedByMember():
+        """Can this membership be renewed by the member himself?
+
+        A membership can be renewed if the team's renewal policy is ONDEMAND,
+        the membership itself is active (status = [ADMIN|APPROVED]) and it's
+        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+    def sendSelfRenewalNotification():
+        """Send an email to the team admins notifying that this membership
+        has been renewed by the member himself.
+
+        This method must not be called if the team's renewal policy is not
+        ONDEMAND.
+        """
+
+    def sendAutoRenewalNotification():
+        """Send an email to the member and to team admins notifying that this
+        membership has been automatically renewed.
+
+        This method must not be called if the team's renewal policy is not
+        AUTOMATIC.
+        """
+
     def sendExpirationWarningEmail():
         """Send an email to the member warning him that this membership will
         expire soon.
@@ -45,7 +91,7 @@ class ITeamMembership(Interface):
 
     def setStatus(status, reviewer, reviewercomment=None):
         """Set the status of this membership.
-        
+
         Also sets the reviewer and reviewercomment, filling or cleaning
         the TeamParticipation table if necessary.
 
@@ -55,6 +101,14 @@ class ITeamMembership(Interface):
 
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
+
+    def handleMembershipsExpiringToday(reviewer):
+        """Expire or renew the memberships flagged to expire today.
+
+        If the team's renewal policy is AUTOMATIC, renew the membership
+        (keeping the same status) and send a notification to the member and
+        team admins. Otherwise flag the membership as expired.
+        """
 
     def getMembershipsToExpire(when=None):
         """Return all TeamMemberships that should be expired.
@@ -74,11 +128,11 @@ class ITeamMembershipSet(Interface):
         filling the TeamParticipation table.
         """
 
-    def getByPersonAndTeam(personID, team, default=None):
+    def getByPersonAndTeam(person, team):
         """Return the TeamMembership object for the given person and team.
 
-        If there's no TeamMembership for this person in this team, return the
-        default value.
+        If the given person or team is None, there will obviously be no
+        TeamMembership and I'll return None.
         """
 
 

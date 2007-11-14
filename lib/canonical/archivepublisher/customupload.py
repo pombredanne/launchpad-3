@@ -20,7 +20,7 @@ import stat
 import tarfile
 import tempfile
 
-from sourcerer.deb.version import Version as make_version
+from canonical.archivepublisher.debversion import Version as make_version
 
 
 class CustomUploadError(Exception):
@@ -58,10 +58,10 @@ class CustomUpload:
     targetdir = None
     version = None
 
-    def __init__(self, archive_root, tarfile_path, distrorelease):
+    def __init__(self, archive_root, tarfile_path, distroseries):
         self.archive_root = archive_root
         self.tarfile_path = tarfile_path
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
 
         self.tmpdir = None
 
@@ -141,7 +141,7 @@ class CustomUpload:
                 if os.path.islink(sourcepath):
                     os.symlink(os.readlink(sourcepath), destpath)
 
-                # XXX cprov 20070327: We don't want to create empty
+                # XXX cprov 2007-03-27: We don't want to create empty
                 # directories, some custom formats rely on this, DDTP,
                 # for instance. We may end up with broken links
                 # but that's more an uploader fault than anything else.

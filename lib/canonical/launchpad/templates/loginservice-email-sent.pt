@@ -1,0 +1,58 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <h1 tal:content="view/email_heading" />
+      <p>
+        We&rsquo;ve just e-mailed
+        <code tal:content="view/token/email">email</code> (from
+        <code>noreply@launchpad.net</code>)
+        <span tal:replace="view/email_reason" />
+      </p>
+      <p>
+        To continue, follow the link in that message.
+      </p>
+      <h2>Haven&rsquo;t received it?</h2>
+      <p>
+        If you don&rsquo;t receive the message within a few
+        minutes, it might be because:
+      </p>
+      <ul>
+        <li>
+          <p>
+            Your mail provider uses &ldquo;greylisting&rdquo; to reduce
+            spam. If so, you&rsquo;ll need to wait an hour or two
+            for the message to arrive.
+          </p>
+        </li>
+        <li>
+          <p>
+            Your mail provider mistakenly blocks messages from Launchpad.
+            Try signing up using a service like
+            <a href="http://gmail.com/">Gmail</a> or
+            <a href="http://mail.yahoo.com/">Yahoo Mail</a>.
+            If that works, complain to your usual mail provider.
+          </p>
+        </li>
+        <li>
+          <p>
+            If neither of those work, the Login Service might be having a
+            problem. Let us know on the <a href=
+            "https://lists.canonical.com/mailman/listinfo/launchpad-users"
+            >launchpad-users mailing list</a> (requires subscription).
+          </p>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+

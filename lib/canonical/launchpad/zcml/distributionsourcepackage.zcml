@@ -8,28 +8,33 @@
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       attributes="distribution sourcepackagename name displayname title
-                  distro by_distroseriess subscribers currentrelease
+                  distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   searchTasks isBugContact open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks getUsedBugTags
-                  getUsedBugTagsWithOpenCounts bugtargetname
-                  getMostCommonBugs getBugCounts" />
+                  new_bugtasks all_bugtasks getUsedBugTags
+                  getUsedBugTagsWithOpenCounts bugtargetdisplayname
+                  bugtargetname getMostCommonBugs getBugCounts" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug" />
 
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
-        answer_contacts direct_answer_contacts getSupportedLanguages
-        getQuestionLanguages"
-	/>
+      answer_contacts direct_answer_contacts
+      getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
+      />
     <require permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact" />
   </content>
-
+  <adapter
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.components.answertracker.distrosourcepackage_to_faqtarget"
+    />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />
@@ -70,11 +75,16 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    class="canonical.launchpad.browser.DistributionSourcePackageView"
     permission="zope.Public">
     <browser:page
       name="+index"
       facet="overview"
       template="../templates/distributionsourcepackage-index.pt" />
+    <browser:page
+      name="+publishinghistory"
+      facet="overview"
+      template="../templates/distributionsourcepackage-publishinghistory.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page

@@ -1,4 +1,13 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="bazaar">
   <body>
     <h1 metal:fill-slot="heading">Code in branches</h1>
     <div metal:fill-slot="main">
@@ -50,8 +59,18 @@
                           <a href="/+about">Learn more&#8230;</a>
                         </p>
 
+      <div id="project-cloud-preview">
+        <h2>Projects with active branches</h2>
+        <a tal:repeat="product view/short_product_tag_cloud"
+           tal:attributes="href product/fmt:url;
+                           class product/html_class;
+                           title product/html_title"
+           tal:content="product/name">project</a>
+        <p><a href="/+project-cloud">more&#8230;</a></p>
+      </div>
+
                         <div class="columns">
-                          <div class="three column left">
+                          <div class="three column left" id="recent-imports">
                             <h2>Recent imports</h2>
                             <ul class="branch">
                               <li tal:repeat="
@@ -59,28 +78,46 @@
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
+                                <img
+                                  src="/@@/private"
+                                  alt="(private branch)"
+                                  tal:condition="branch/private"
+                                />
                               </li>
                             </ul>
+                            <p><a href="/+recently-imported-branches">more&#8230;</a></p>
                           </div>
-                          <div class="three column middle">
+                          <div class="three column middle" id="recently-registered">
                             <h2>Recently registered</h2>
                             <ul class="branch">
                               <li tal:repeat="branch view/recently_registered_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
+                                <img
+                                  src="/@@/private"
+                                  alt="(private branch)"
+                                  tal:condition="branch/private"
+                                />
                               </li>
                             </ul>
+                            <p><a href="/+recently-registered-branches">more&#8230;</a></p>
                           </div>
-                          <div class="three column right">
+                          <div class="three column right" id="recently-changed">
                             <h2>Recently changed</h2>
                             <ul class="branch">
                               <li tal:repeat="branch view/recently_changed_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
+                                <img
+                                  src="/@@/private"
+                                  alt="private branch"
+                                  tal:condition="branch/private"
+                                />
                               </li>
                             </ul>
+                            <p><a href="/+recently-changed-branches">more&#8230;</a></p>
                           </div>
                         </div>
                         <div class="clear"></div>

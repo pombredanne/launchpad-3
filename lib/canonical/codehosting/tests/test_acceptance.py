@@ -1,308 +1,73 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Acceptance tests for Supermirror SFTP server's bzr support.
-"""
+"""Acceptance tests for Supermirror SFTP server's bzr support."""
 
 __metaclass__ = type
 
-import unittest
-import tempfile
+from StringIO import StringIO
 import os
-import signal
-import shutil
-import gc
-import threading
+import sys
+import thread
+import unittest
+import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseWithMemoryTransport
-from bzrlib.tests.repository_implementations.test_repository import (
-    TestCaseWithRepository)
-# XXX -- Unused, but needed to work-around bug in bzr 0.11
-# Jonathan Lange, 2007-03-22
-##from bzrlib.tests import blackbox
-from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
-from bzrlib.transport import get_transport
-from bzrlib.transport import sftp, ssh
+from bzrlib.builtins import cmd_push
+from bzrlib.errors import (
+    BzrCommandError, NotBranchError, ReadOnlyError, TransportNotPossible)
 from bzrlib.urlutils import local_path_from_url
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
-from twisted.conch.ssh import keys
-from twisted.internet import defer, threads
-from twisted.python.util import sibpath
-from twisted.trial.unittest import TestCase as TrialTestCase
-
-from canonical.config import config
-from canonical.database.sqlbase import cursor, commit
+from canonical.codehosting.tests.helpers import (
+    adapt_suite, deferToThread, ServerTestCase)
+from canonical.codehosting.tests.servers import (
+    make_bzr_ssh_server, make_sftp_server)
+from canonical.codehosting import branch_id_to_path
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
-from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.codehosting.sftponly import (
-    BazaarFileTransferServer, SFTPOnlyAvatar)
-from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedLayer
 
 
-def deferToThread(f):
-    """Run the given callable in a separate thread and return a Deferred which
-    fires when the function completes.
-    """
-    def decorated(*args, **kwargs):
-        d = defer.Deferred()
-        def runInThread():
-            return threads._putResultInDeferred(d, f, args, kwargs)
+class SSHTestCase(ServerTestCase, TestCaseWithTransport):
 
-        t = threading.Thread(target=runInThread)
-        t.start()
-        return d
-    return decorated
+    layer = TwistedLayer
+    server = None
 
-
-class TestSFTPService(SFTPService):
-    """SFTP service that uses the the TestSFTPOnlyAvatar and installs the test
-    keys in a place that the SFTP server can find them.
-
-    This class, TestSFTPOnlyAvatar and TestBazaarFileTransferServer work
-    together to provide a threading event which is set when the first
-    connecting client closes its connection to the SFTP server.
-    """
-
-    root = '/tmp/sftp-test'
-    _connectionLostEvent = None
-    _connectionMadeEvent = None
-    avatar = None
-
-    def getConnectionLostEvent(self):
-        return self._connectionLostEvent
-
-    def getConnectionMadeEvent(self):
-        return self._connectionMadeEvent
-
-    def setConnectionLostEvent(self, event):
-        self._connectionLostEvent = event
-
-    def setConnectionMadeEvent(self, event):
-        self._connectionMadeEvent = event
-
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-        shutil.copytree(sibpath(__file__, 'keys'),
-                        os.path.join(self.root, 'keys'))
-
-    def makeRealm(self):
-        realm = SFTPService.makeRealm(self)
-        realm.avatarFactory = self.makeAvatar
-        return realm
-
-    def makeAvatar(self, avatarId, homeDirsRoot, userDict, launchpad):
-        self.avatar = TestSFTPOnlyAvatar(self, avatarId, homeDirsRoot,
-                                         userDict, launchpad)
-        return self.avatar
-
-    def makeService(self):
-        self.setUpRoot()
-        return SFTPService.makeService(self)
-
-
-class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
-    """SFTP avatar that uses the TestBazaarFileTransferServer."""
-    def __init__(self, service, avatarId, homeDirsRoot, userDict, launchpad):
-        SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
-                                launchpad)
-        self.service = service
-        self.subsystemLookup = {'sftp': self.makeFileTransferServer}
-
-    def getConnectionLostEvent(self):
-        return self.service.getConnectionLostEvent()
-
-    def getConnectionMadeEvent(self):
-        return self.service.getConnectionMadeEvent()
-
-    def makeFileTransferServer(self, data=None, avatar=None):
-        return TestBazaarFileTransferServer(data, avatar)
-
-
-class TestBazaarFileTransferServer(BazaarFileTransferServer):
-    """BazaarFileTransferServer that sets a threading event when it loses its
-    first connection.
-    """
-    def __init__(self, data=None, avatar=None):
-        BazaarFileTransferServer.__init__(self, data=data, avatar=avatar)
-        self.avatar = avatar
-
-    def getConnectionLostEvent(self):
-        return self.avatar.getConnectionLostEvent()
-
-    def getConnectionMadeEvent(self):
-        return self.avatar.getConnectionMadeEvent()
-
-    def connectionMade(self):
-        event = self.getConnectionMadeEvent()
-        if event is not None:
-            event.set()
-
-    def connectionLost(self, reason):
-        d = self.sendMirrorRequests()
-        event = self.getConnectionLostEvent()
-        if event is not None:
-            d.addBoth(lambda ignored: event.set())
-        return d
-
-
-class SSHKeyMixin:
-    """Mixin for tests that need to do SSH key-based authentication."""
-
-    def prepareTestUser(self):
-        """Prepare 'testuser' and 'testteam' Persons, giving 'testuser' a known
-        SSH key.
-        """
-        # insert SSH keys for testuser -- and insert testuser!
-        cur = cursor()
-        cur.execute(
-            "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
-        cur.execute(
-            "UPDATE Person SET name = 'testteam' WHERE name = 'name18';")
-        cur.execute("""
-            INSERT INTO SSHKey (person, keytype, keytext, comment)
-            VALUES (7, 2,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
-            'testuser');
-            """)
-        commit()
-
-    def getPrivateKey(self):
-        """Return the private key object used by 'testuser' for auth."""
-        return keys.getPrivateKeyObject(
-            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
-
-    def getPublicKey(self):
-        """Return the public key string used by 'testuser' for auth."""
-        return keys.getPublicKeyString(
-            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
-
-
-class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
+    def installServer(self, server):
+        super(SSHTestCase, self).installServer(server)
+        self.default_user = server.authserver.testUser
+        self.default_team = server.authserver.testTeam
 
     def setUp(self):
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        super(SFTPTestCase, self).setUp()
+        super(SSHTestCase, self).setUp()
+        self._main_thread_id = thread.get_ident()
 
-        self.prepareTestUser()
-
-        # Point $HOME at a test ssh config and key.
-        self.userHome = os.path.abspath(tempfile.mkdtemp())
-        os.makedirs(os.path.join(self.userHome, '.ssh'))
-        shutil.copyfile(
-            sibpath(__file__, 'id_dsa'),
-            os.path.join(self.userHome, '.ssh', 'id_dsa'))
-        shutil.copyfile(
-            sibpath(__file__, 'id_dsa.pub'),
-            os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
-        self.realHome = os.environ['HOME']
-        os.environ['HOME'] = self.userHome
-
-        # XXX spiv 2005-01-13:
-        # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
-        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
-        def restore_vendor_manager():
-            ssh._ssh_vendor_manager._cached_ssh_vendor = _old_vendor_manager
-        self.addCleanup(restore_vendor_manager)
-        ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
-
-        # Start authserver.
-        self.authserver = AuthserverService()
-        self.authserver.startService()
-
-        # Start the SFTP server
-        self.server = TestSFTPService()
-        self.server.startService()
-        self.server_base = 'sftp://testuser@localhost:22222/'
+        # Create a local branch with one revision
+        tree = self.make_branch_and_tree('.')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
 
     def tearDown(self):
-        # Undo setUp.
-        self.server.stopService()
+        TestCaseWithTransport.tearDown(self)
+        return ServerTestCase.tearDown(self)
 
-        # XXX: spiv 2006-02-09: manually break cycles in uncollectable garbage
-        # caused by the server shutting down while paramiko clients still have
-        # connections to it.  This bug has been fixed in upstream paramiko, so
-        # soon this will be unnecessary.
-        gc.collect()
-        obj = None
-        for obj in gc.garbage:
-            if getattr(obj, 'auth_handler', None) is not None:
-                obj.auth_handler = None
-        del obj
-        del gc.garbage[:]
-        gc.collect()
+    def assertNotInMainThread(self, function_name):
+        self.assertNotEqual(
+            thread.get_ident(), self._main_thread_id,
+            "%s cannot be run in the main thread.")
 
-        os.environ['HOME'] = self.realHome
-        self.authserver.stopService()
-        # XXX spiv 2006-04-27: We need to do bzrlib's tear down first, because
-        # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
-        # handlers, causing it to blow up.  See bug #41697.
-        super(SFTPTestCase, self).tearDown()
-
-        shutil.rmtree(self.userHome)
-        shutil.rmtree(self.server.root)
-        # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
-        # is "a little bogus".  Because we aren't using the bzr test runner, we
-        # have to manually clean up the test????.tmp dirs.
-        shutil.rmtree(TestCaseWithMemoryTransport.TEST_ROOT)
-        TestCaseWithMemoryTransport.TEST_ROOT = None
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
-
-    def getTransport(self, path=None):
-        """Get a paramiko transport pointing to `path` on the base server."""
-        if path is None:
-            path = ''
-        transport = get_transport(self.server_base + path)
-        self.addCleanup(transport._sftp.close)
-        self.addCleanup(transport._sftp.sock.transport.close)
-        return transport
-
-    def closeAllConnections(self):
-        """Closes all open bzrlib SFTP connections.
-
-        bzrlib doesn't provide a facility for closing sftp connections. The
-        closest it gets is clearing the connection cache and forcing the
-        connection objects to be garbage collected. This means that this method
-        won't actually close a connection if a reference to it is still around.
-        """
-        for client in sftp._connected_hosts.values():
-            client.close()
-            client.sock.transport.close()
-        sftp.clear_connection_cache()
-        gc.collect()
-
-    def run_and_wait_for_sftp_session_close(self, func, *args, **kwargs):
-        """Run the given function, close all SFTP connections, and wait for the
-        server to acknowledge the end of the session.
-        """
+    def runInChdir(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
-            ever_connected = threading.Event()
-            done = threading.Event()
-            self.server.setConnectionMadeEvent(ever_connected)
-            self.server.setConnectionLostEvent(done)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                self.closeAllConnections()
-                # done.wait() can block forever if func() never actually
-                # connects, so only wait if we are sure that the client
-                # connected.
-                if ever_connected.isSet():
-                    done.wait()
+            return func(*args, **kwargs)
         finally:
             os.chdir(old_dir)
-        return result
 
     def push(self, remote_url):
         """Push the local branch to the given URL.
@@ -314,40 +79,77 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        self.run_and_wait_for_sftp_session_close(
-            self.run_bzr_captured, ['push', remote_url], retcode=None)
+        self.assertNotInMainThread('push')
+        output = StringIO()
+        push_command = cmd_push()
+        push_command.outf = output
+        self.runInChdir(
+            self.server.runAndWaitForDisconnect, push_command.run, remote_url)
+        return output.getvalue()
 
-    def get_last_revision(self, remote_url):
+    def getLastRevision(self, remote_url):
         """Get the last revision at the given URL.
 
         Do NOT run this method in the main thread! It does a blocking read from
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        return self.run_and_wait_for_sftp_session_close(
+        self.assertNotInMainThread('getLastRevision')
+        return self.runInChdir(
+            self.server.runAndWaitForDisconnect,
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
 
+    def getTransportURL(self, relpath=None, username=None):
+        """Return the base URL for the tests."""
+        if relpath is None:
+            relpath = ''
+        return self.server.get_url(username) + relpath
 
-class AcceptanceTests(SFTPTestCase):
-    """
-    These are the agreed acceptance tests for the Supermirror SFTP system's
-    initial implementation of bzr support, converted from the English at
+    def getDatabaseBranch(self, personName, productName, branchName):
+        """Look up and return the specified branch from the database."""
+        owner = database.Person.byName(personName)
+        if productName is None:
+            product = None
+        else:
+            product = database.Product.selectOneBy(name=productName)
+        return database.Branch.selectOneBy(
+            owner=owner, product=product, name=branchName)
+
+    def pushNewBranch(self, user, product, branch, creator=None,
+                      branch_root=None):
+        """Create a new branch in the database and push our test branch there.
+
+        Used to create branches that the test user is not able to create, and
+        might not even be able to view.
+        """
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        if creator is None:
+            creator_id = authserver.getUser(user)['id']
+        else:
+            creator_id = authserver.getUser(creator)['id']
+        if branch_root is None:
+            branch_root = self.server._mirror_root
+        branch_id = authserver.createBranch(creator_id, user, product, branch)
+        branch_url = 'file://' + os.path.abspath(
+            os.path.join(branch_root, branch_id_to_path(branch_id)))
+        self.runInChdir(
+            self.run_bzr, ['push', '--create-prefix', branch_url],
+            retcode=None)
+        return branch_url
+
+
+class AcceptanceTests(SSHTestCase):
+    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
+
+    Originally converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = TwistedLayer
 
-    def setUp(self):
-        super(AcceptanceTests, self).setUp()
-
-        # Create a local branch with one revision
-        tree = self.make_branch_and_tree('.')
-        self.local_branch = tree.branch
-        self.build_tree(['foo'])
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
+    def getDefaultServer(self):
+        return make_sftp_server()
 
     @deferToThread
-    def _test_1_bzr_sftp(self):
+    def test_bzr_sftp(self):
         """
         The bzr client should be able to read and write to the Supermirror SFTP
         server just like another other SFTP server.  This means that actions
@@ -357,76 +159,33 @@ class AcceptanceTests(SFTPTestCase):
         (and/or their bzrlib equivalents) and so on should work, so long as the
         user has permission to read or write to those URLs.
         """
-        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
-        self.assertEqual(self.local_branch.last_revision(),
-                         remote_revision)
-
-    def test_1_bzr_sftp(self):
-        return self._test_1_bzr_sftp()
+        remote_revision = self.getLastRevision(remote_url)
+        self.assertEqual(self.local_branch.last_revision(), remote_revision)
 
     @deferToThread
-    def _test_bzr_push_again(self):
+    def test_bzr_push_again(self):
         """Pushing to an existing branch must work.
 
         test_1_bzr_sftp tests that the initial push works. Here we test that
         pushing further revisions to an existing branch works as well.
         """
         # Initial push.
-        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, 'rev1')
         # Add a single revision to the local branch.
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
         # Push the new revision.
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, 'rev2')
 
-    def test_bzr_push_again(self):
-        return self._test_bzr_push_again()
-
     @deferToThread
-    def _test_2_namespace_restrictions(self):
-        """
-        The namespace restrictions described in
-        SupermirrorFilesystemHierarchy should be enforced. So operations
-        such as:
-            * `bzr push sftp://testinstance/~user/missing-product/new-branch`
-            * `bzr push sftp://testinstance/~not-my-team/real-product/some-branch`
-            * `bzr push sftp://testinstance/~team/+junk/anything`
-        should fail.
-        """
-        # Cannot push branches to products that don't exist
-        self._test_missing_parent_directory(
-            '~testuser/product-that-does-not-exist/hello')
-
-        # Teams do not have +junk products
-        self._test_missing_parent_directory('~testteam/+junk/hello')
-
-        # Cannot push to team directories that the user isn't a member of --
-        # they cannot see them at all.
-        self._test_missing_parent_directory('~not-my-team/real-product/hello')
-
-        # XXX spiv 2006-01-11: what about lp-incompatible branch dir names (e.g.
-        # capital Letters) -- Are they disallowed or accepted?  If accepted,
-        # what will that branch's Branch.name be in the database?  Probably just
-        # disallow, and try to have a tolerable error.
-
-    def test_2_namespace_restrictions(self):
-        return self._test_2_namespace_restrictions()
-
-    def _test_missing_parent_directory(self, relpath):
-        transport = self.getTransport(relpath).clone('..')
-        self.assertRaises((NoSuchFile, PermissionDenied),
-                          self.run_and_wait_for_sftp_session_close,
-                          transport.mkdir, 'hello')
-
-    @deferToThread
-    def _test_3_db_rename_branch(self):
+    def test_db_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
         those renames should be immediately reflected in subsequent SFTP
@@ -437,68 +196,53 @@ class AcceptanceTests(SFTPTestCase):
         """
 
         # Push the local branch to the server
-        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
-        testuser = database.Person.byName('testuser')
-        branch = database.Branch.selectOneBy(
-            ownerID=testuser.id, name='test-branch')
-        self.branch_id = branch.id
+        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
+        branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
         # Assign to a different product in the database. This is
         # effectively a Rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(self.branch_id)
+        branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.assertRaises(
             NotBranchError,
-            self.run_and_wait_for_sftp_session_close,
+            self.runInChdir,
+            self.server.runAndWaitForDisconnect,
             bzrlib.branch.Branch.open,
-            self.server_base + '~testuser/+junk/renamed-branch')
+            self.getTransportURL('~testuser/+junk/renamed-branch'))
 
-        remote_revision = self.get_last_revision(
-            self.server_base + '~testuser/firefox/renamed-branch')
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~testuser/firefox/renamed-branch'))
         self.assertEqual(remote_revision,
                          self.local_branch.last_revision())
 
         # Rename person in the database. Again, the URL changes (and so
         # does the username we have to connect as!).
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(self.branch_id)
+        branch = database.Branch.get(branch_id)
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
 
-        server_base = self.server_base.replace('testuser', 'renamed-user')
-        remote_revision = self.get_last_revision(
-            server_base + '~renamed-user/firefox/renamed-branch')
-        self.assertEqual(remote_revision,
-                         self.local_branch.last_revision())
-
-    def test_3_db_rename_branch(self):
-        return self._test_3_db_rename_branch()
-
-
-    # Test 4: URL for mirroring
-    #    There should be an API that can generate a URL for a branch for
-    #    copy-to-mirror script to use. For example, for a branch with a database
-    #    ID of 0xabcdef12, the URL may be something like
-    #    `/srv/codehosting/branches/ab/cd/ef/12`.
-    # This is covered by
-    # canonical.launchpad.ftests.test_branchpulllist.test_branch_pull_render
-
+        url = self.getTransportURL(
+            '~renamed-user/firefox/renamed-branch', 'renamed-user')
+        remote_revision = self.getLastRevision(url)
+        self.assertEqual(remote_revision, self.local_branch.last_revision())
 
     @deferToThread
-    def _test_5_mod_rewrite_data(self):
+    def test_mod_rewrite_data(self):
         """
         A mapping file for use with Apache's mod_rewrite should be generated
         correctly.
@@ -510,57 +254,257 @@ class AcceptanceTests(SFTPTestCase):
         # values in the database.
 
         # Push branch to sftp server
-        self.push(self.server_base + '~testuser/+junk/test-branch')
+        self.push(self.getTransportURL('~testuser/+junk/test-branch'))
 
-        # Retrieve the branch from the database.  selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
+        # Retrieve the branch from the database.
+        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
 
         self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
         # database.
 
-    def test_5_mod_rewrite_data(self):
-        return self._test_5_mod_rewrite_data()
-
     @deferToThread
-    def _test_push_team_branch(self):
-        remote_url = self.server_base + '~testteam/firefox/a-new-branch'
+    def test_push_team_branch(self):
+        remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         # Check that the pushed branch looks right
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
-    def test_push_team_branch(self):
-        return self._test_push_team_branch()
+    @deferToThread
+    def test_push_new_branch_creates_branch_in_database(self):
+        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        self.push(remote_url)
+
+        # Retrieve the branch from the database.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        LaunchpadZopelessTestSetup().txn.abort()
+
+        self.assertEqual(
+            '~testuser/+junk/totally-new-branch', branch.unique_name)
+
+    @deferToThread
+    def test_push_triggers_mirror_request(self):
+        # Pushing new data to a branch should trigger a mirror request.
+        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        self.push(remote_url)
+
+        # Retrieve the branch from the database.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        # Confirm that the branch hasn't had a mirror requested yet. Not core
+        # to the test, but helpful for checking internal state.
+        self.assertNotEqual(None, branch.mirror_request_time)
+        branch.mirror_request_time = None
+        LaunchpadZopelessTestSetup().txn.commit()
+
+        # Add a single revision to the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+
+        # Push the new revision.
+        self.push(remote_url)
+
+        # Retrieve the branch from the database.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        self.assertNotEqual(None, branch.mirror_request_time)
+        LaunchpadZopelessTestSetup().txn.abort()
+
+    @deferToThread
+    def test_cant_access_private_branch(self):
+        # Trying to get information about a private branch should fail as if
+        # the branch doesn't exist.
+
+        # 'salgado' is a member of landscape-developers.
+        salgado = database.Person.selectOneBy(name='salgado')
+        landscape_dev = database.Person.selectOneBy(
+            name='landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be a member of landscape-developers, but isn't.")
+
+        # Make a private branch.
+        branch_url = self.pushNewBranch(
+            'landscape-developers', 'landscape', 'some-branch',
+            creator='salgado')
+        # Sanity checking that the branch is actually there. We don't care
+        # about the result, only that the call succeeds.
+        self.getLastRevision(branch_url)
+
+        # Check that testuser can't access the branch.
+        remote_url = self.getTransportURL(
+            '~landscape-developers/landscape/some-branch')
+        self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
+
+    def makeDatabaseBranch(self, owner_name, product_name, branch_name,
+                           branch_type=BranchType.HOSTED, private=False):
+        """Create a new branch in the database."""
+        owner = database.Person.selectOneBy(name=owner_name)
+        if product_name is '+junk':
+            product = None
+        else:
+            product = database.Product.selectOneBy(name=product_name)
+        if branch_type == BranchType.MIRRORED:
+            url = 'http://google.com'
+        else:
+            url = None
+        return database.Branch(
+            name=branch_name, owner=owner, author=owner, product=product,
+            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            summary=None, home_page=None, whiteboard=None, private=private,
+            date_created=UTC_NOW, branch_type=branch_type)
+
+    @deferToThread
+    def test_can_push_to_existing_hosted_branch(self):
+        # If a hosted branch exists in the database, but not on the filesystem,
+        # and is writable by the user, then the user is able to push to it.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.push(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
+        self.assertEqual(self.local_branch.last_revision(), remote_revision)
+
+    def captureStderr(self, function, *args, **kwargs):
+        real_stderr, sys.stderr = sys.stderr, StringIO()
+        try:
+            ret = function(*args, **kwargs)
+        finally:
+            captured_stderr, sys.stderr = sys.stderr, real_stderr
+        return ret, captured_stderr.getvalue()
+
+    @deferToThread
+    def test_cant_push_to_existing_mirrored_branch(self):
+        # Users cannot push to mirrored branches.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch(
+            'testuser', 'firefox', 'some-branch', BranchType.MIRRORED)
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        # The Bazaar client forwards the error from the SFTP server. We don't
+        # care about that error for this test, so just swallow it. The error we
+        # care about is the one that cmd_push raises.
+        self.captureStderr(
+            self.assertRaises,
+            (BzrCommandError, TransportNotPossible), self.push, remote_url)
+
+    @deferToThread
+    def test_cant_push_to_existing_unowned_hosted_branch(self):
+        # Users can only push to hosted branches that they own.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.assertRaises(
+            (BzrCommandError, TransportNotPossible), self.push, remote_url)
+
+    def addRevisionToBranch(self, branch):
+        """Add a new revision in the database to the given database branch."""
+        # We don't care who the author is. Just find someone.
+        author = database.RevisionAuthor.selectFirst(orderBy='id')
+        revision = database.Revision(
+            revision_id='rev1', log_body='', revision_date=UTC_NOW,
+            revision_author=author, owner=branch.owner)
+        database.BranchRevision(branch=branch, sequence=1, revision=revision)
+        return revision
+
+    @deferToThread
+    def test_cant_push_to_existing_hosted_branch_with_revisions(self):
+        # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
+        # branches that have revisions in the database but not actual files:
+        # it's a pathological case.
+        #
+        # However, at the moment we don't provide any checking for this. We
+        # should in the future. Until then, this test is disabled.
+        return
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
+        self.addRevisionToBranch(branch)
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.assertRaises(
+            (BzrCommandError, TransportNotPossible), self.push, remote_url)
+
+
+class SmartserverTests(SSHTestCase):
+    """Acceptance tests for the smartserver component of Launchpad codehosting
+    service's Bazaar support.
+    """
+
+    def getDefaultServer(self):
+        return make_bzr_ssh_server()
+
+    def makeMirroredBranch(self, person_name, product_name, branch_name):
+        ro_branch_url = self.pushNewBranch(
+            person_name, product_name, branch_name)
+
+        # Mark as mirrored.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getDatabaseBranch(person_name, product_name, branch_name)
+        branch.branch_type = BranchType.MIRRORED
+        branch.url = "http://example.com/smartservertest/branch"
+        LaunchpadZopelessTestSetup().txn.commit()
+        return ro_branch_url
+
+    @deferToThread
+    def test_can_read_readonly_branch(self):
+        # We can get information from a read-only branch.
+        ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~sabdfl/+junk/ro-branch'))
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_cant_write_to_readonly_branch(self):
+        # We can't write to a read-only branch.
+        ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+
+        # Create a new revision on the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+
+        # Push the local branch to the remote url
+        remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
+        self.assertRaises(ReadOnlyError, self.push, remote_url)
+
+    @deferToThread
+    def test_can_read_mirrored_branch(self):
+        # Users should be able to read mirrored branches that they own.
+        # Added to catch bug 126245.
+        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~testuser/firefox/mirror'))
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_can_read_unowned_mirrored_branch(self):
+        # Users should be able to read mirrored branches even if they don't own
+        # those branches.
+        ro_branch_url = self.makeMirroredBranch('sabdfl', 'firefox', 'mirror')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~sabdfl/firefox/mirror'))
+        self.assertEqual(revision, remote_revision)
+
+
+def make_server_tests(base_suite, servers):
+    from canonical.codehosting.tests.helpers import (
+        CodeHostingTestProviderAdapter)
+    adapter = CodeHostingTestProviderAdapter(servers)
+    return adapt_suite(adapter, base_suite)
 
 
 def test_suite():
-    # Construct a test suite that runs AcceptanceTests with several different
-    # repository formats.
-    from bzrlib.repository import (
-        format_registry, RepositoryTestProviderAdapter)
-    from bzrlib.repofmt.weaverepo import RepositoryFormat6
-    from bzrlib.tests import default_transport, iter_suite_tests
-    supported_formats = [RepositoryFormat6()]
-    supported_formats.extend([
-        format_registry.get(k) for k in format_registry.keys()])
-    adapter = RepositoryTestProviderAdapter(
-        default_transport,
-        # None here will cause a readonly decorator to be created
-        # by the TestCaseWithTransport.get_readonly_transport method.
-        None,
-        [(format, format._matchingbzrdir) for format in
-         supported_formats])
-
+    base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
-    for test in iter_suite_tests(unittest.makeSuite(AcceptanceTests)):
-        suite.addTests(adapter.adapt(test))
+    suite.addTest(make_server_tests(
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(
+        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
     return suite
-
-
-# Be paranoid since we trash directories as part of this.
-assert config.default_section == 'testrunner', \
-        'Imported dangerous test harness outside of the test runner'

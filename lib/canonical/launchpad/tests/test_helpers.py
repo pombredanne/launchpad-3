@@ -2,13 +2,12 @@
 
 import unittest
 
-from zope.testing import doctest
 from zope.testing.doctest import DocTestSuite
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-from canonical.launchpad.components.poexport import RosettaWriteTarFile
+from canonical.launchpad.translationformat import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 
 
@@ -27,7 +26,7 @@ def make_test_tarball_1():
     True
     '''
 
-    return RosettaWriteTarFile.files_to_tarfile({
+    return LaunchpadWriteTarFile.files_to_tarfile({
         'uberfrob-0.1/README':
             'Uberfrob is an advanced frobnicator.',
         'uberfrob-0.1/po/cy.po':
@@ -74,7 +73,7 @@ def make_test_tarball_2():
         'msgstr "bar"',
         )
 
-    return RosettaWriteTarFile.files_to_tarfile({
+    return LaunchpadWriteTarFile.files_to_tarfile({
         'test/test.pot': pot,
         'test/cy.po': po,
         'test/es.po': po,
@@ -173,14 +172,14 @@ class DummyLaunchBag:
         self.user = user
 
 
-def test_request_languages():
+def test_preferred_or_request_languages():
     '''
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.launchpad.helpers import request_languages
+    >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.
 
@@ -190,7 +189,7 @@ def test_request_languages():
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
-    >>> languages = request_languages(DummyRequest())
+    >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
     1
     >>> languages[0].code
@@ -206,7 +205,7 @@ def test_request_languages():
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
-    >>> languages = request_languages(DummyRequest())
+    >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
     6
     >>> languages[0].code

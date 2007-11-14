@@ -12,8 +12,8 @@ from sqlobject import (
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.lp.dbschema import GPGKeyAlgorithm
-from canonical.launchpad.interfaces import IGPGKeySet, IGPGHandler, IGPGKey
+from canonical.launchpad.interfaces import (
+    IGPGKeySet, IGPGHandler, IGPGKey, GPGKeyAlgorithm)
 
 
 class GPGKey(SQLBase):
@@ -29,7 +29,7 @@ class GPGKey(SQLBase):
     keysize = IntCol(dbName='keysize', notNull=True)
 
     algorithm = EnumCol(dbName='algorithm', notNull=True,
-                        schema=GPGKeyAlgorithm)
+                        enum=GPGKeyAlgorithm)
 
     active = BoolCol(dbName='active', notNull=True)
 
@@ -74,11 +74,11 @@ class GPGKeySet:
         """See IGPGKeySet"""
         if active is False:
             query = """
-                active = false 
-                AND fingerprint NOT IN 
-                    (SELECT fingerprint FROM LoginToken 
-                     WHERE fingerprint IS NOT NULL 
-                           AND requester = %s 
+                active = false
+                AND fingerprint NOT IN
+                    (SELECT fingerprint FROM LoginToken
+                     WHERE fingerprint IS NOT NULL
+                           AND requester = %s
                            AND date_consumed is NULL
                     )
                 """ % sqlvalues(ownerid)

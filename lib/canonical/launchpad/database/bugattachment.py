@@ -8,14 +8,12 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 
-from canonical.lp import dbschema
-
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectDeletedEvent
 from canonical.launchpad.interfaces import (
-    IBugAttachmentSet, IBugAttachment, NotFoundError)
+    BugAttachmentType, IBugAttachmentSet, IBugAttachment, NotFoundError)
 
 
 class BugAttachment(SQLBase):
@@ -28,7 +26,7 @@ class BugAttachment(SQLBase):
     bug = ForeignKey(
         foreignKey='Bug', dbName='bug', notNull=True)
     type = EnumCol(
-        schema=dbschema.BugAttachmentType, notNull=True,
+        schema=BugAttachmentType, notNull=True,
         default=IBugAttachment['type'].default)
     title = StringCol(notNull=True)
     libraryfile = ForeignKey(
@@ -62,7 +60,7 @@ class BugAttachmentSet:
                attach_type=None):
         """See IBugAttachmentSet."""
         if attach_type is None:
-            # XXX kiko: this should use DEFAULT; depends on bug 1659
+            # XXX kiko 2005-08-03 bug=1659: this should use DEFAULT.
             attach_type = IBugAttachment['type'].default
         return BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,

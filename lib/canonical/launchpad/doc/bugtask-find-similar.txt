@@ -61,8 +61,6 @@ We can also search for distribution bugs:
     ...     print bugtask.bug.title
     Thunderbird crashes
     Firefox does not support SVG
-    Blackhole Trash folder
-
 
 As well as limiting it to a specific source package:
 
@@ -75,6 +73,7 @@ As well as limiting it to a specific source package:
     >>> similar_bugs.count()
     0
 
+
 == Private bugs ==
 
 Only bugs that the user has access to view will be searched. If we set
@@ -85,7 +84,8 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> login('test@canonical.com')
     >>> firefox_svg_bug = getUtility(IBugSet).get(1)
-    >>> firefox_svg_bug.private = True
+    >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(firefox_svg_bug)
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
@@ -99,11 +99,12 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
     Thunderbird crashes
-    Blackhole Trash folder
 
     >>> login('test@canonical.com')
-    >>> firefox_svg_bug.private = False
+    >>> firefox_svg_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(firefox_svg_bug)
+
 
 == Ordering of search results ==
 
@@ -124,8 +125,6 @@ summary or description that match the phrase will be displayed first.
     ...     print bugtask.bug.title
     another test bug
     Thunderbird crashes
-    Firefox does not support SVG
-    Blackhole Trash folder
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, "Another Thunderbird crash",

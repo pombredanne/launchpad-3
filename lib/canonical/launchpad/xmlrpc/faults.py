@@ -1,24 +1,37 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Launchpad XMLRPC faults."""
 
+# Note: When you add a fault to this file, be sure to add it to configure.zcml
+# in this directory.
+
 __metaclass__ = type
+
 __all__ = [
+    'BadStatus',
     'BranchAlreadyRegistered',
+    'BranchCreationForbidden',
+    'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
+    'InvalidBranchUrl',
+    'InvalidBranchIdentifier',
+    'NoSuchBranch',
+    'NoBranchForSeries',
+    'NoSuchBug',
     'NoSuchDistribution',
     'NoSuchPackage',
-    'NoSuchProduct',
     'NoSuchPerson',
-    'NoSuchBranch',
-    'NoSuchBug',
+    'NoSuchPersonWithUsername',
+    'NoSuchProduct',
+    'NoSuchSeries',
+    'NoSuchTeamMailingList',
     'RequiredParameterMissing',
+    'UnexpectedStatusReport',
     ]
 
 import xmlrpclib
 
-from canonical.lp.dbschema import BugTaskStatus
 
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.
@@ -103,7 +116,7 @@ class FileBugMissingProductOrDistribution(LaunchpadFault):
     error_code = 60
     msg_template = (
         "Required arguments missing. You must specify either a product or "
-        "distrubtion in which the bug exists.")
+        "distribution in which the bug exists.")
 
 
 class FileBugGotProductAndDistro(LaunchpadFault):
@@ -146,3 +159,116 @@ class RequiredParameterMissing(LaunchpadFault):
 
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
+class BranchCreationForbidden(LaunchpadFault):
+    """The user was not permitted to create a branch."""
+
+    error_code = 110
+    msg_template = (
+        "You are not allowed to create a branch for project: "
+        "%(parameter_name)s")
+
+    def __init__(self, parameter_name):
+        LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
+class InvalidBranchUrl(LaunchpadFault):
+    """The provided branch URL is not valid."""
+
+    error_code = 120
+    msg_template = "Invalid URL: %(branch_url)s\n%(message)s"
+
+    def __init__(self, branch_url, message):
+        LaunchpadFault.__init__(self, branch_url=branch_url, message=message)
+
+
+class BranchUniqueNameConflict(LaunchpadFault):
+    """There is already a branch with this unique name."""
+
+    error_code = 130
+    msg_template = "Unique name already in use: %(unique_name)s"
+
+    def __init__(self, unique_name):
+        LaunchpadFault.__init__(self, unique_name=unique_name)
+
+class NoSuchTeamMailingList(LaunchpadFault):
+    """There is no such team mailing list with the given name."""
+
+    error_code = 140
+    msg_template = 'No such team mailing list: %(team_name)s'
+
+    def __init__(self, team_name):
+        LaunchpadFault.__init__(self, team_name=team_name)
+
+
+class UnexpectedStatusReport(LaunchpadFault):
+    """A team mailing list received an unexpected status report.
+
+    In other words, the mailing list was not in a state that was awaiting such
+    a status report.
+    """
+
+    error_code = 150
+    msg_template = ('Unexpected status report "%(status)s" '
+                    'for team: %(team_name)s')
+
+    def __init__(self, team_name, status):
+        LaunchpadFault.__init__(self, team_name=team_name, status=status)
+
+
+class BadStatus(LaunchpadFault):
+    """A bad status string was received."""
+
+    error_code = 160
+    msg_template = 'Bad status string "%(status)s" for team: %(team_name)s'
+
+    def __init__(self, team_name, status):
+        LaunchpadFault.__init__(self, team_name=team_name, status=status)
+
+
+class NoBranchForSeries(LaunchpadFault):
+    """The series has no branch registered with it."""
+
+    error_code = 170
+    msg_template = (
+        'Series %(series_name)s on %(product_name)s has no branch associated '
+        'with it')
+
+    def __init__(self, series):
+        LaunchpadFault.__init__(
+            self, series_name=series.name, product_name=series.product.name)
+
+
+class NoSuchSeries(LaunchpadFault):
+    """There is no such series on a particular project."""
+
+    error_code = 180
+    msg_template = (
+        'Project %(product_name)s has no series called "%(series_name)s"')
+
+    def __init__(self, series_name, product):
+        LaunchpadFault.__init__(
+            self, series_name=series_name, product_name=product.name)
+
+
+class InvalidBranchIdentifier(LaunchpadFault):
+    """The branch identifier didn't begin with a tilde."""
+
+    error_code = 190
+    msg_template = (
+        'Invalid branch identifier: %(branch_path)r')
+
+    def __init__(self, branch_path):
+        LaunchpadFault.__init__(self, branch_path=branch_path)
+
+
+class NoSuchPersonWithUsername(LaunchpadFault):
+    """There's no Person with the specified login registered in Launchpad."""
+
+    error_code = 200
+    msg_template = 'No such person: %(username)s'
+
+    def __init__(self, username):
+        LaunchpadFault.__init__(self, username=username)
+

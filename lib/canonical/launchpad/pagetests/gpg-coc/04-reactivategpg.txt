@@ -14,16 +14,15 @@ Sample Person already has a deactivated key.
 
 Now he'll request his key to be reactivated.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> browser.getControl('Reactivate Key').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'error message'):
     ...     print tag.renderContents()
     No Key(s) selected for reactivation.
 
     >>> browser.getControl('1024D/DFD20543').selected = True
     >>> browser.getControl('Reactivate Key').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
     A message has been sent to test@canonical.com with instructions to reactivate...
@@ -58,7 +57,7 @@ token type (+validategpg).
 
 Now Sample Person confirms the reactivation.
 
-    >>> browser.getControl('Confirm').click()
+    >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/~name12'
 

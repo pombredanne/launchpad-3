@@ -1,24 +1,29 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getEnableRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
       pages.  However, you currently have this disabled.</p>
-      <p><button onclick="enable_beta_redirect()">Enable beta site
+      <p><button onclick="setBetaRedirect(true)">Enable beta site
       redirection</button></p>
     </tal:redirect_inhibited>
     <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getInhibitRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you will be
       redirected to the beta site when viewing Launchpad pages other
       than the front page.</p>
-      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      <p><button onclick="setBetaRedirect(false)">Disable redirection
       for 2 hours</button></p>
     </tal:redirect_enabled>
   </div>
@@ -29,7 +34,13 @@
         style="text-align: center;"
         action="/projects/"
         method="get"
+        accept-charset="UTF-8"
       >
+        <tal:comment replace="nothing">
+          Do not replace the line below: "Is your project registered yet?"
+          without contacting the IS team. It's used by Nagios to verify
+          the app servers are running.
+        </tal:comment>
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="20" />
         <input type="submit" value="Search" />
@@ -38,60 +49,81 @@
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            We make it easy to <strong>collaborate
+            Launchpad is a free software hosting and development
+            website. We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
-            <a href="/+about">Learn&nbsp;more&#8230;</a>
+            <br />
+            <center>
+              <a href="/+about">
+                <img
+                  alt="Take a tour"
+                  src="/+icing/but-lrg-takeatour.gif"
+                />
+              </a>
+            </center>
           </p>
         </div>
         <div class="three column middle">
-          <h2>What&#8217;s new</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.10</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/MentoringManagement">
-                NEW! Mentoring management to help new contributors to your
-                project
-              </a>
+              <a href="https://help.launchpad.net/FasterTranslationsImports">
+                <strong>Faster translation imports:</strong> shorter queues,
+                even at busy times.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FeatureHighlights/">
-                Feature Highlight Guide for Launchpad 1.0 (web
-                and PDF)
-              </a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/KarmaCalculation">
-                Learn how we calculate your Launchpad karma
-              </a>
-            </li>
-            <li>
-              <a href="/~launchpad-beta-testers/">
-                Join the Launchpad Beta Testers team to help test and debug
-                new Launchpad features
-              </a>
-            </li>
-            <li tal:replace="nothing">
               <a
-              href="">
-              </a>
+                href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
+                <strong>Zope 2 switches to Launchpad:</strong> &#8220;Launchpad works
+                great ... allows us to focus on creating a great Zope
+                platform&#8221;.</a>
+            </li>
+            <li>
+              <a
+                href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
+                <strong>Come learn more:</strong> introductory IRC tutorial
+                sessions about Launchpad.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
+                <strong>Launchpad Beta:</strong> participate in our beta program
+                and get access to pre-release features.</a>
             </li>
           </ul>
+          <div class="discreet" style="text-align: right">
+            Updated 2007-10-24.
+            <a href="http://news.launchpad.net">More...</a>
+          </div>
         </div>
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
             <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-            <li class="product"><a href="/upstart">Upstart</a></li>
-            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
         </div>
     </div><!--main-->
-    <p metal:fill-slot="help">
+    <div metal:fill-slot="help">
+      <p>
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
-    </p>
+      </p>
+      <p>
+      You can browse our dedicated help site, <a
+      href="https://help.launchpad.net/">help.launchpad.net</a>, for a
+      complete set of documents about Launchpad 
+      </p>
+      <p>
+      You can also find help on the <a
+      href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
+      users mailing list</a> or online via IRC, on <a
+      href="http://freenode.net/">Freenode</a>, channel #launchpad.
+      </p>
+    </div>
   </body>
 </html>
 <!-- 1-0 inprogress Needs images and marketing material -->

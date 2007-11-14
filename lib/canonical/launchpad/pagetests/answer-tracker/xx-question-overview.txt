@@ -42,8 +42,7 @@ available from the 'Answers' facet.
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Answers').click()
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.first('h1').renderContents()
     Questions for Mozilla Firefox
     >>> browser.getLink('Firefox loses focus and gets stuck').url
@@ -69,7 +68,7 @@ question page.
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> browser.title
     'Mozilla Firefox question #2:...'
-    >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
+    >>> print find_main_content(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 
 == Distributions ==
@@ -119,7 +118,7 @@ On that facet, we will find the same common listings:
     >>> browser.getLink('My questions').url
     '.../ubuntu/+myquestions'
 
-== Distroreleases ==
+== DistroSeries ==
 
 On a distroseries there is a "Ask Question" link, but note that it
 points at its distro, not itself. Questions are linked to distro,
@@ -210,7 +209,7 @@ questions opened by that person.
 
     >>> browser.open('http://launchpad.dev/~name16')
     >>> find_portlet(browser.contents, 'Latest questions')
-    <div class="portlet">
+    <div class="portlet" id="...">
         <h2>Latest questions</h2>
         ...
     </div>
@@ -227,7 +226,7 @@ involving that person.
     >>> browser.getLink('Answers').click()
     >>> browser.title
     'Questions involving Foo Bar'
-    >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
+    >>> print find_main_content(browser.contents).first('h1').renderContents()
     Questions involving Foo Bar
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+question/7'
@@ -237,3 +236,56 @@ involving that person.
     >>> browser.getLink('Next').click()
     >>> browser.getLink('Firefox loses focus').url
     '.../firefox/+question/4'
+
+== Accessing a question directly ==
+
+You can access any question by its ID using the URL
+http://answers.launchpad.dev/questions/<id>. This URL will redirect
+to the proper context where the question can be found:
+
+    >>> browser.open('http://answers.launchpad.dev/questions/1')
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+question/1
+    >>> print find_main_content(browser.contents).find('h1').renderContents()
+    Firefox cannot render Bank Site
+
+Asking for a non-existent question or an invalid ID will still
+raise a 404 though:
+
+    >>> browser.open('http://answers.launchpad.dev/questions/255')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+    >>> browser.open('http://answers.launchpad.dev/questions/bad_id')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+Also If you access a question through the wrong context, you'll be
+redirected to the question in the proper context. (For example, this
+is useful after a question was retargeted.)
+
+    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/1')
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+question/1
+
+It also works with pages below that URL:
+
+    >>> browser.open(
+    ...     'http://answers.launchpad.dev/ubuntu/+question/1/+history')
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+question/1/+history
+
+But again, an invalid ID still raises a 404:
+
+    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/255')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+    >>> browser.open(
+    ...     'http://answers.launchpad.dev/ubuntu/+question/bad_id')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...

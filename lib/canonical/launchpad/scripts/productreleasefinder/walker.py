@@ -20,10 +20,10 @@ from urlparse import urlsplit, urljoin
 
 from BeautifulSoup import BeautifulSoup
 
-from hct.util import log
-from hct.util.path import as_dir, subdir, under_only
+from cscvs.dircompare.path import as_dir, subdir, under_only
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.scripts.productreleasefinder import log
 
 
 class WalkerError(Exception): pass
@@ -204,7 +204,7 @@ class FTPWalker(WalkerBase):
         dirnames = []
         filenames = []
         for line in listing:
-            # XXX: Assume UNIX listings for now --keybuk 24jun05
+            # XXX keybuk 2005-06-24: Assume UNIX listings for now.
             words = line.split(None, 8)
             if len(words) < 6:
                 self.log.debug("Ignoring short line: %s", line)

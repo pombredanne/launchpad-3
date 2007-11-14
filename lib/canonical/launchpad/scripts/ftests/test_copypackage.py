@@ -8,8 +8,6 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopyError, PackageCopier)
@@ -21,10 +19,12 @@ from canonical.launchpad.database.publishing import (
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
 
-    def runCopyPackage(self, extra_args=[]):
+    def runCopyPackage(self, extra_args=None):
         """Run copy-package.py, returning the result and output.
         Returns a tuple of the process's return code, stdout output and
         stderr output."""
+        if extra_args is None:
+            extra_args = []
         script = os.path.join(
             config.root, "scripts", "ftpmaster-tools", "copy-package.py")
         args = [sys.executable, script, '-y']
@@ -57,8 +57,8 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         self.assertEqual(0, returncode)
 
         # Test that the database has been modified.  We're only checking
-        # that the number of rows has updated by one; content checks are
-        # done in other tests.
+        # that the number of rows has increase; content checks are done
+        # in other tests.
         self.layer.txn.abort()
 
         num_source_pub_after = SecureSourcePackagePublishingHistory.select(
@@ -66,8 +66,9 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         num_bin_pub_after = SecureBinaryPackagePublishingHistory.select(
             "True").count()
 
-        self.assertEqual(num_source_pub+1, num_source_pub_after)
-        self.assertEqual(num_bin_pub+1, num_bin_pub_after)
+        self.assertEqual(num_source_pub + 1, num_source_pub_after)
+        # 'mozilla-firefox' source produced 2 binaries.
+        self.assertEqual(num_bin_pub + 2, num_bin_pub_after)
 
 
 class TestCopyPackage(LaunchpadZopelessTestCase):
@@ -117,8 +118,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         # Check locations.  They should be the same as the defaults defined
         # in the getCopier method.
-        self.assertEqual(str(from_location), 'ubuntu/warty/RELEASE')
-        self.assertEqual(str(to_location), 'ubuntu/hoary/RELEASE')
+        self.assertEqual(str(from_location),
+                         'Primary Archive for Ubuntu Linux: warty-RELEASE')
+        self.assertEqual(str(to_location),
+                         'Primary Archive for Ubuntu Linux: hoary-RELEASE')
 
         # Check target source title - this should be the package name in
         # the sample data for our source package.
@@ -131,13 +134,13 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         target_binary = from_binaries[0]
         self.assertEqual(
             target_binary.title,
-            u'Binary Package "mozilla-firefox" in The Warty Warthog '
-            'Release for i386 (x86)')
+            u'mozilla-firefox 0.9 (i386 binary) in ubuntu warty')
 
         # Check stored results.  The copied_source should be valid and
-        # the number of binaries copied should be one.
+        # the number of binaries copied should be four (2 binaries in 2
+        # architectures).
         self.assertEqual(bool(copied_source), True)
-        self.assertEqual(len(copied_binaries), 1)
+        self.assertEqual(len(copied_binaries), 4)
 
         # Inspect copied source, its title should be the same as the original
         # source.
@@ -150,7 +153,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copied_binary = copied_binaries[0]
         self.assertEqual(
             copied_binary.title,
-            u'mozilla-firefox 1.0 (i386 binary) in ubuntu hoary')
+            u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
@@ -175,7 +178,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Could not find any version of 'zaphod' in ubuntu/warty/RELEASE",
+            "Could not find any version of 'zaphod' in "
+            "Primary Archive for Ubuntu Linux: warty-RELEASE",
             copy_helper.doCopy)
 
     def testBadDistro(self):
@@ -202,8 +206,9 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Can not sync between the same locations: 'ubuntu/warty/RELEASE'"
-            " to 'ubuntu/warty/RELEASE'",
+            "Can not sync between the same locations: "
+            "'Primary Archive for Ubuntu Linux: warty-RELEASE' to "
+            "'Primary Archive for Ubuntu Linux: warty-RELEASE'",
             copy_helper.doCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
@@ -212,8 +217,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Could not find 'mozilla-firefox/None' in"
-            " ubuntu/breezy-autotest/RELEASE",
+            "Could not find 'mozilla-firefox/None' in "
+            "Primary Archive for Ubuntu Linux: breezy-autotest-RELEASE",
             copy_helper.doCopy)
 
 

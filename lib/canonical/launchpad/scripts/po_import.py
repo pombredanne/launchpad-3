@@ -1,48 +1,84 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Functions used with the Rosetta PO import script."""
 
 __metaclass__ = type
 
+
+import time
+
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ITranslationImportQueue
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.launchpad.interfaces import (
+    ITranslationImportQueue, RosettaImportStatus)
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
 
-    def __init__(self, ztm, logger):
+    def __init__(self, ztm, logger, max_seconds=3600):
         """Initialize the ImportProcess object.
 
-        Get two arguments, the Zope Transaction Manager and a logger for the
-        warning/errors messages.
+        Arguments:
+
+        :param ztm: transaction manager to commit our individual imports.
+
+        :param logger: logging object to log informational messages and errors
+        to.
+
+        :param max_seconds: "alarm clock": after this many seconds, the job
+        should finish up even if there is more work for it to do.  This is a
+        mere guideline; actual processing time may be longer.
         """
         self.ztm = ztm
         self.logger = logger
+        self.deadline = time.time() + max_seconds
 
     def run(self):
         """Execute the import of entries from the queue."""
         # Get the queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        # Get the list of each product or distroseries with pending imports
-        importqueues = (
-            translation_import_queue.getPillarObjectsWithApprovedImports() )
-        queues_empty = (len(importqueues) == 0)
+        # Get the list of each product or distroseries with pending imports.
+        # We'll serve these queues in turn, one request each, until either the
+        # queue is drained or our time is up.
+        importqueues = translation_import_queue.getPillarObjectsWithImports(
+            RosettaImportStatus.APPROVED)
 
-        while not queues_empty:
-            queues_empty = True
+        if not importqueues:
+            self.logger.info("No requests pending.")
+            return
+
+        # XXX: JeroenVermeulen 2007-06-20: How on Earth do we test that the
+        # deadline code works?  It's only a small thing, and of course we'll
+        # notice that it works when we stop getting errors about this script
+        # not finishing.  Meanwhile, SteveA has suggested a more general
+        # solution.
+        while importqueues and time.time() < self.deadline:
+            # For fairness, service all queues at least once; don't check for
+            # deadline.  If we stopped halfway through the list of queues, we
+            # would accidentally favour queues that happened to come out at
+            # the front of the list.
             for queue in importqueues:
                 entry_to_import = queue.getFirstEntryToImport()
                 if entry_to_import is None:
                     continue
-                elif queues_empty:
-                    queues_empty = False
 
-                assert entry_to_import.import_into is not None, (
-                    "Broken entry, it's Approved but lacks the place where it"
-                    " should be imported! Look at the top of the import queue")
+                if entry_to_import.import_into is None:
+                    if entry_to_import.sourcepackagename is not None:
+                        package = entry_to_import.sourcepackagename.name
+                    elif entry_to_import.productseries is not None:
+                        package = (
+                            entry_to_import.productseries.product.displayname)
+                    else:
+                        raise AssertionError(
+                            "Import queue entry %d has neither a "
+                            "source package name nor a product series."
+                            % entry_to_import.id)
+                    raise AssertionError(
+                        "Broken translation import queue entry %d (for %s): "
+                        "it's Approved but lacks the place where it should "
+                        "be imported!  A DBA will need to fix this by hand."
+                        % (entry_to_import.id, package))
 
                 # Do the import.
                 title = '[Unknown Title]'
@@ -54,12 +90,12 @@ class ImportProcess:
                     self.ztm.abort()
                     raise
                 except:
-                    # If we have any exception, log it, abort the transaction and
-                    # set the status to FAILED.
+                    # If we have any exception, log it, abort the transaction
+                    # and set the status to FAILED.
                     self.logger.error('Got an unexpected exception while'
                                       ' importing %s' % title, exc_info=1)
-                    # We are going to abort the transaction, need to save the id
-                    # of this entry to update its status.
+                    # We are going to abort the transaction, need to save the
+                    # id of this entry to update its status.
                     failed_entry_id = entry_to_import.id
                     self.ztm.abort()
                     # Get the needed objects to set the failed entry status as
@@ -89,6 +125,15 @@ class ImportProcess:
                                       ' committing the transaction', exc_info=1)
                     self.ztm.abort()
                     self.ztm.begin()
+            # Refresh the list of objects with pending imports.
+            importqueues = (
+                translation_import_queue.getPillarObjectsWithImports(
+                    RosettaImportStatus.APPROVED))
+
+        if not importqueues:
+            self.logger.info("Import requests completed.")
+        else:
+            self.logger.info("Used up available time.")
 
 class AutoApproveProcess:
     """Attempt to approve some PO/POT imports without human intervention."""

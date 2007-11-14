@@ -8,8 +8,7 @@
   >>> browser.url
   'http://launchpad.dev/ubuntu/+archivemirrors'
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  >>> print find_main_content(browser.contents).find('h1').renderContents()
   Official Archive Mirrors
   >>> for tr in find_tag_by_id(browser.contents, 'mirrors_list').findAll('tr'):
   ...     if tr.find('th'):
@@ -32,7 +31,7 @@
   >>> browser.url
   'http://launchpad.dev/ubuntu/+cdmirrors'
 
-  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  >>> print find_main_content(browser.contents).find('h1').renderContents()
   Official CD Mirrors
   >>> for tr in find_tag_by_id(browser.contents, 'mirrors_list').findAll('tr'):
   ...     if tr.find('th'):
@@ -52,52 +51,39 @@
   There's a third page, accessible only to distro owners, mirror admins of the
   distro or launchpad admins.
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
   >>> browser.url
   'http://launchpad.dev/ubuntu/+disabledmirrors'
 
-  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  >>> print find_main_content(browser.contents).find('h1').renderContents()
   Disabled Mirrors
   >>> print find_tag_by_id(browser.contents, 'mainarea').renderContents()
   <BLANKLINE>
-  ...We don't know about any Disabled Mirrors of this distribution...
+  ...We don't know of any Disabled Mirrors of this distribution...
 
   
   And yet another page to list the non-official mirrors, which can be seen
   only by the distro owners, mirror admins of the distro or launchpad admins.
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
   >>> browser.url
   'http://launchpad.dev/ubuntu/+unofficialmirrors'
 
-  >>> print BeautifulSoup(browser.contents).find('h1').renderContents()
+  >>> print find_main_content(browser.contents).find('h1').renderContents()
   Unofficial Mirrors
   >>> print find_tag_by_id(browser.contents, 'mirrors_list').renderContents()
   <BLANKLINE>

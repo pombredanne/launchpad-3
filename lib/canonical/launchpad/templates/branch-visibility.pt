@@ -1,0 +1,114 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:condition="context/project | nothing"
+       tal:replace="structure context/project/@@+portlet-details" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Branch visibility policy</h1>
+
+  <p tal:condition="context/isUsingInheritedBranchVisibilityPolicy"
+     id="inherited">
+    Using inherted policy from
+    <strong>
+      <a tal:attributes="href context/project/fmt:url"
+         tal:content="context/project/displayname">
+        Project</a></strong>.
+  </p>
+
+  <div id="policy-items">
+  <p id="default-policy">
+    Default branch visibility for all branches in
+    <strong tal:content="context/displayname">Project</strong>
+    is <strong tal:content="view/base_visibility_rule/title">Public</strong>.
+  </p>
+
+  <tal:has-policies condition="view/team_policies">
+    <p>Except for the following teams:
+    </p>
+    <ul id="team-policies">
+      <li tal:repeat="item view/team_policies">
+        <tal:team replace="item/team/displayname"
+                  condition="item/team">Team Name</tal:team>:
+        <tal:team condition="not: item/team">Everyone</tal:team>
+        <tal:policy replace="item/rule/title">Public</tal:policy>
+      </li>
+    </ul>
+
+  </tal:has-policies>
+  </div>
+
+  <div style="padding-left: 1em" id="policy-actions">
+  <tal:using-inhertied-policy condition="context/isUsingInheritedBranchVisibilityPolicy">
+      <p>
+        <img src="/@@/edit" alt="edit" />
+        <a tal:define="inherited_url context/project/fmt:url"
+           tal:attributes="href string:${inherited_url}/+branchvisibility">
+          Edit inherited policy
+        </a>
+      </p>
+      <p>
+        <img src="/@@/add" alt="add" />
+        <a href="+addbranchvisibilitypolicy">Customise policy for
+          <tal:displayname replace="context/displayname">Project
+          </tal:displayname>
+        </a>
+      </p>
+  </tal:using-inhertied-policy>
+
+  <tal:no-inhertied-policy condition="not: context/isUsingInheritedBranchVisibilityPolicy">
+      <p>
+        <img src="/@@/add" alt="add" />
+        <a href="+addbranchvisibilitypolicy">Set policy for a team</a>
+      </p>
+
+      <tal:can-remove condition="view/can_remove_items">
+        <p>
+          <img src="/@@/remove" alt="remove" />
+          <a href="+removebranchvisibilitypolicy">Remove policy items</a>
+        </p>
+      </tal:can-remove>
+
+  </tal:no-inhertied-policy>
+  </div>
+
+  <p>NOTE: Changing the branch visibility policies for teams does not change
+  the visibility of any existing branches.</p>
+
+</div>
+
+<div metal:fill-slot="help">
+  <p>The branch visibility policy is used to define the default visibility
+  of branches when they are created.</p>
+
+  <p>Both projects and products can define a branch visibility policy.  If a
+  policy does not exist for a product, it uses the policy defined by its
+  project (if it exists).</p>
+
+  <p>There is an implicit policy defined for both products and projects.
+  The implicit policy is that everyone can create public branches.
+  In order to override this implicit policy you need to explicitly
+  define a policy for everyone, and this is done by
+  not specifying a team when adding a new policy.</p>
+</div>
+
+</body>
+</html>

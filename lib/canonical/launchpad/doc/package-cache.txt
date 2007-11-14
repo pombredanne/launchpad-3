@@ -28,12 +28,13 @@ DistributionSourcePackageCache table, including:
   ...     distribution=ubuntu)
 
   >>> ubuntu_caches.count()
-  9
+  10
 
   >>> for cache in ubuntu_caches.orderBy('name'):
   ...     print cache.name
   alsa-utils
   cnews
+  commercialpackage
   evolution
   foobar
   libstdc++
@@ -96,14 +97,14 @@ package-cache-script.txt.
 
 == Dealing with Source Caches ==
 
-A SourcePackage that has the status REMOVED will be deleted from the
+A SourcePackage that has the status DELETED will be deleted from the
 cache when it's updated.
 
   >>> foobar_in_ubuntu = ubuntu.getSourcePackage('foobar')
   >>> foobar_rel = foobar_in_ubuntu.releases[0]
   >>> foobar_pub = foobar_rel.publishing_history[0]
   >>> foobar_pub.status.name
-  'REMOVED'
+  'DELETED'
 
   >>> len(ubuntu.searchSourcePackages('foobar'))
   1
@@ -195,14 +196,14 @@ reached via searches:
 
 == Dealing with Binary Caches ==
 
-A BinaryPackage that has the status REMOVED will be deleted from the
+A BinaryPackage that has the status DELETED will be deleted from the
 cache when it's updated.
 
   >>> foobar_bin_in_warty = warty.getBinaryPackage('foobar')
   >>> foobar_bin_rel = foobar_in_ubuntu.releases[0]
   >>> foobar_bin_pub = foobar_rel.publishing_history[0]
   >>> foobar_bin_pub.status.name
-  'REMOVED'
+  'DELETED'
 
   >>> len(warty.searchPackages('foobar'))
   1
@@ -301,7 +302,7 @@ New values were stored:
   >>> warty.sourcecount
   5
   >>> warty.binarycount
-  5
+  6
 
 A similar mechanism is offered by IDistroArchSeries, but only for
 binaries (of course):
@@ -318,4 +319,4 @@ Invoke the counter updater on this architecture:
 New values were stored:
 
   >>> warty_i386.package_count
-  7
+  8

@@ -1,6 +1,13 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:block condition="not: context/rcstype">
-<tal:block condition="not: context/user_branch">
-  <p>
+<tal:block condition="not: view/user_branch_visible">
+  <div id="branch-details">
+  <p id="no-rcs-details">
     No revision control details recorded for <span
     tal:replace="context/displayname">evolution MAIN</span>.
   </p>
@@ -8,16 +15,16 @@
   <p>If upstream is maintained in CVS or SVN, you can
   specify the location of the upstream branch to
   <a tal:attributes="href string:${context/fmt:url}/+source">
-  import</a> it as a Bazaar branch.
-
+  import</a> it as a Bazaar branch.</p>
+  </div>
 </tal:block>
 </tal:block>
 
-<tal:block tal:condition="context/user_branch">
+<tal:block tal:condition="view/user_branch_visible">
   <p>The following branch has been registered as the mainline branch
   for this release series:</p>
 
-  <ul class="branch"
+  <ul class="branch" id="branch-details"
       tal:content="structure context/user_branch/@@+product-summary-listing" />
 </tal:block>
 
@@ -31,27 +38,28 @@
 	  </tr>
 	  <tr>
             <th>Root:</th>
-            <td tal:content="context/cvsroot">
+            <td id="cvs-root" tal:content="context/cvsroot">
               :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</td>
 	  </tr>
 	  <tr>
 	    <th>Module:</th>
-	    <td tal:content="context/cvsmodule">evolution</td>
+	    <td id="cvs-module" tal:content="context/cvsmodule">evolution</td>
           </tr>
           <tr>
             <th>Branch:</th>
-            <td tal:content="context/cvsbranch">MAIN</td>
+            <td id="cvs-branch" tal:content="context/cvsbranch">MAIN</td>
           </tr>
         </tal:block>
         <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
             <th>Subversion:</th>
-            <td tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
+            <td id="svn-url" tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
           </tr>
         </tal:block>
         <tr tal:condition="context/importstatus">
           <th>Import status:</th>
-          <td tal:content="context/importstatus/title">Syncing</td>
+          <td id="import-status"
+              tal:content="context/importstatus/title">Syncing</td>
         </tr>
         <tal:has-import-success condition="view/hasVcsImportSuccessStatus">
           <tr class="secondary">
@@ -86,3 +94,4 @@
     </tbody>
   </table>
 </tal:block>
+</tal:root>

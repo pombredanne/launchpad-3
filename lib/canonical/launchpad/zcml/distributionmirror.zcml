@@ -17,6 +17,9 @@
         <require
             permission="launchpad.Admin"
             set_attributes="official_approved owner whiteboard" />
+        <require
+            permission="launchpad.Admin"
+            attributes="destroySelf" />
     </content>
 
     <browser:defaultView
@@ -64,6 +67,14 @@
         permission="launchpad.Admin"
         class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
         template="../templates/distributionmirror-mark-official.pt">
+    </browser:page>
+
+    <browser:page
+        name="+delete"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.DistributionMirrorDeleteView"
+        template="../templates/distributionmirror-delete.pt">
     </browser:page>
 
     <browser:page

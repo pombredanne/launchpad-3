@@ -14,9 +14,8 @@ The icon is dependent on the importance of the IBugTask object.
 Let's use a few examples to demonstrate:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBugTaskSet
+  >>> from canonical.launchpad.interfaces import BugTaskImportance, IBugTaskSet
   >>> from canonical.launchpad.ftests import test_tales
-  >>> from canonical.lp.dbschema import BugTaskImportance
   >>> from canonical.launchpad.ftests import login
 
   >>> login("foo.bar@canonical.com")
@@ -66,8 +65,7 @@ you might prefer that to read, simply:
 We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
-  >>> from canonical.launchpad.interfaces import ILaunchBag
-  >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
   >>> from zope.component import getView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
@@ -88,23 +86,27 @@ Let's see some examples of how this works:
   'Confirmed (unassigned)'
 
   >>> test_task.transitionToAssignee(foobar)
-  >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.NEW, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
-  u'Unconfirmed, assigned to ...Foo Bar...'
+  u'New, assigned to ...Foo Bar...'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
   u'Confirmed, assigned to ...Foo Bar...'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
-  u'Rejected by ...Foo Bar...'
+  u'Invalid by ...Foo Bar...'
 
   >>> test_task.transitionToAssignee(None)
   >>> render_bugtask_status(test_task)
-  'Rejected (unassigned)'
+  'Invalid (unassigned)'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+  >>> test_task.transitionToStatus(
+  ...   BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
   >>> render_bugtask_status(test_task)
   'Fix released (unassigned)'
 
@@ -119,11 +121,12 @@ This code also works for null bug tasks:
   >>> netapplet = Product.selectOneBy(name="netapplet")
   >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
   >>> render_bugtask_status(null_bugtask)
-  u'Not reported in netapplet (upstream)'
+  u'Not reported in netapplet'
 
 Lastly, some cleanup:
 
-  >>> test_task.transitionToStatus(ORIGINAL_STATUS)
+  >>> test_task.transitionToStatus(
+  ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
   >>> test_task.transitionToAssignee(ORIGINAL_ASSIGNEE)
 
 Status Elsewhere
@@ -156,12 +159,14 @@ statuselsewhere value is affected:
 
   >>> related_task = bugtaskset.get(2).related_tasks[0]
   >>> ORIGINAL_STATUS = related_task.status
-  >>> related_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+  >>> related_task.transitionToStatus(
+  ...   BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
   >>> render_bugtask_status_elsewhere(bugtaskset.get(2))
   'fixed in 1 of 3 places'
 
-  >>> related_task.transitionToStatus(ORIGINAL_STATUS)
+  >>> related_task.transitionToStatus(
+  ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
 
 Null tasks are also supported:
 

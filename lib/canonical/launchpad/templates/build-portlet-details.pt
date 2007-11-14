@@ -1,14 +1,25 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
 
   <h2>Build details</h2>
 
   <div class="portletBody portletContent">
 
     <b>Package:</b>
-    <a tal:content="context/distributionsourcepackagerelease/displayname"
+    <a tal:condition="context/is_trusted"
+       tal:content="context/distributionsourcepackagerelease/displayname"
        tal:attributes="href context/distributionsourcepackagerelease/fmt:url">
        foobar
     </a>
+    <tal:ppa condition="not:context/is_trusted">
+       <span tal:replace="context/sourcepackagerelease/title" /> in 
+       <br />
+       <a tal:content="context/archive/owner/displayname"
+          tal:attributes="href context/archive/owner/fmt:url" /> PPA
+    </tal:ppa>
     <br />
 
     <b>Built on:</b>

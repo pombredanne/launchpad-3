@@ -8,7 +8,6 @@
   <!-- Product -->
   <content class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct" />
-    <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
@@ -18,9 +17,10 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_rosetta official_answers
+                      official_malone official_answers
                       releaseroot development_focus bugtracker
-                      homepage_content icon logo mugshot"
+                      homepage_content icon logo mugshot 
+                      license_info licenses"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -32,22 +32,38 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate"
+      set_attributes="name active reviewed autoupdate private_bugs"
+      />
+    <!-- Changes to official_rosetta must be available to Launchpad
+         Translations admins so we need its own permission. -->
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="official_rosetta"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
       />
-    <require 
+    <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact" 
+      attributes="newQuestion addAnswerContact removeAnswerContact"
+      />
+    <!-- IFAQTarget -->
+    <allow
+      interface="canonical.launchpad.interfaces.IFAQCollection"
+      attributes="findSimilarFAQs"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="newFAQ"
       />
   </content>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
-    name="+index" 
+    name="+index"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
@@ -67,12 +83,12 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
     layer="canonical.launchpad.layers.BugsLayer"
-    name="+bugs-index" 
+    name="+bugs-index"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
     layer="canonical.launchpad.layers.TranslationsLayer"
-    name="+translations" 
+    name="+translations"
     />
 
   <browser:menus
@@ -85,7 +101,8 @@
         "
         />
 
-  <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
+  <!-- XXX: Steve Alexander 2005-09-21:
+            ProductBugsMenu undeclared until layout bug is fixed -->
 
   <browser:navigation
     module="canonical.launchpad.browser"
@@ -104,6 +121,15 @@
     path_expression="name"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.NewSpecificationFromProductView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
@@ -125,14 +151,66 @@
       />
   </browser:pages>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+download"
+    class="canonical.launchpad.browser.ProductDownloadFilesView"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/product-files.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+download"
-        class="canonical.launchpad.browser.ProductDownloadFilesView"
-        permission="zope.Public"
-        facet="overview"
-        template="../templates/product-files.pt"
-        />
+      name="+translations"
+      facet="translations"
+      template="../templates/product-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translations"
+      facet="translations"
+      template="../templates/product-portlet-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translatables"
+      facet="translations"
+      template="../templates/product-portlet-translatables.pt"
+      />
+    <browser:page
+      name="+portlet-obsolete-translatables"
+      facet="translations"
+      template="../templates/product-portlet-obsolete-translatables.pt"
+      />
+  </browser:pages>
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
@@ -142,11 +220,6 @@
       name="+index"
       facet="overview"
       template="../templates/product-index.pt"
-      />
-    <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/product-translations.pt"
       />
     <browser:page
       name="+packages"
@@ -188,11 +261,6 @@
       template="../templates/product-portlet-series.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/product-portlet-translations.pt"
-      />
-    <browser:page
       name="+portlet-milestones"
       facet="overview"
       template="../templates/object-portlet-milestones.pt"
@@ -223,23 +291,13 @@
       template="../templates/object-portlet-summary.pt"
       />
     <browser:page
-      name="+portlet-translatables"
-      facet="translations"
-      template="../templates/product-portlet-translatables.pt"
+      name="+portlet-aboutcve"
+      template="../templates/portlet-aboutcve.pt"
       />
     <browser:page
-      name="+portlet-aboutcve"
-      template="../templates/portlet-aboutcve.pt" 
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
       />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public">
-      <browser:page
-        name="+portlet-latestbranches"
-        template="../templates/product-portlet-latestbranches.pt" 
-        />
   </browser:pages>
 
   <browser:page
@@ -248,7 +306,7 @@
     facet="branches"
     permission="zope.Public"
     name="+branches"
-    template="../templates/product-branches.pt" 
+    template="../templates/product-branches.pt"
     />
 
   <browser:page
@@ -265,7 +323,7 @@
     permission="zope.Public"
     name="+cve"
     facet="bugs"
-    template="../templates/product-cvereport.pt" 
+    template="../templates/product-cvereport.pt"
     />
 
   <browser:pages
@@ -282,7 +340,8 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
     permission="launchpad.Admin"
-    class="canonical.launchpad.browser.ProductView" >
+    class="canonical.launchpad.browser.ProductView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
       name="+potemplatenames"
       facet="translations"
@@ -306,7 +365,7 @@
     facet="overview"
     class="canonical.launchpad.browser.ProductEditView"
     permission="launchpad.Edit"
-    template="../templates/product-edit.pt" 
+    template="../templates/product-edit.pt"
     />
 
   <browser:page
@@ -315,16 +374,14 @@
     facet="overview"
     class="canonical.launchpad.browser.ProductBrandingView"
     permission="launchpad.Edit"
-    template="../templates/object-branding.pt" 
+    template="../templates/object-branding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IProduct"
-    schema="canonical.launchpad.interfaces.IProduct"
     facet="bugs"
     class="canonical.launchpad.browser.ProductBugContactEditView"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/product-bugcontact.pt"
     />
@@ -345,15 +402,7 @@
     class="canonical.launchpad.browser.ProductChangeTranslatorsView"
     permission="launchpad.Edit"
     template="../templates/product-translators.pt"
-    />
-
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:addform
@@ -369,7 +418,7 @@
     template="../templates/bounty-link.pt" >
     <browser:widget
       field="product"
-      class="canonical.widgets.ContextWidget" 
+      class="canonical.widgets.ContextWidget"
       />
   </browser:addform>
 
@@ -400,7 +449,7 @@
     class="canonical.launchpad.browser.ProductBranchAddView"
     facet="branches"
     permission="launchpad.AnyPerson"
-    template="../templates/product-branch-add.pt" 
+    template="../templates/product-branch-add.pt"
     />
 
   <!-- ProductSet-->
@@ -423,7 +472,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProductSet"
-    name="+index" 
+    name="+index"
     />
 
   <browser:navigation
@@ -434,7 +483,7 @@
   <browser:url
     for="canonical.launchpad.interfaces.IProductSet"
     path_expression="string:projects"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" 
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:page
@@ -452,15 +501,15 @@
     class="canonical.launchpad.browser.ProductSetView" >
     <browser:page
       name="+index"
-      template="../templates/products-index.pt" 
+      template="../templates/products-index.pt"
       />
     <browser:page
       name="+portlet-details"
-      template="../templates/products-portlet-details.pt" 
+      template="../templates/products-portlet-details.pt"
       />
     <browser:page
       name="+all"
-      template="../templates/products-all.pt" 
+      template="../templates/products-all.pt"
       />
   </browser:pages>
 

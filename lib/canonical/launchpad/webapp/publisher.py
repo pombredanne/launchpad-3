@@ -4,11 +4,23 @@
 """
 
 __metaclass__ = type
-__all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
-           'canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto', 'RedirectionView',
-           'RenamedView']
+__all__ = [
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'canonical_name',
+    'canonical_url',
+    'canonical_url_iterator',
+    'get_current_browser_request',
+    'nearest',
+    'Navigation',
+    'rootObject',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'RedirectionView',
+    'RenamedView',
+    'UserAttributeCache',
+    ]
 
 from zope.interface import implements
 from zope.component import getUtility, queryMultiAdapter
@@ -187,9 +199,16 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.template()
 
+    def _isRedirected(self):
+        """Return True if a redirect was requested.
+
+        Check if the response status is one of 301, 302, 303 or 307.
+        """
+        return self.request.response.getStatus() in [301, 302, 303, 307]
+
     def __call__(self):
         self.initialize()
-        if self.request.response.getStatus() in [301, 302, 303, 307]:
+        if self._isRedirected():
             # Don't render the page on redirects.
             return u''
         else:
@@ -268,8 +287,8 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken from
-    the root_url given in launchpad.conf.
+    If there is no request available, the protocol, host and port are taken
+    from the root_url given in launchpad.conf.
 
     Raises NoCanonicalUrl if a canonical url is not available.
     """
@@ -331,6 +350,21 @@ def canonical_url(
         ):
         return unicode('/' + path)
     return unicode(root_url + path)
+
+
+def canonical_name(name):
+    """Return the canonical form of a name used in a URL.
+
+    This helps us to deal with common mistypings of URLs.
+    Currently only accounts for uppercase letters.
+
+    >>> canonical_name('ubuntu')
+    'ubuntu'
+    >>> canonical_name('UbUntU')
+    'ubuntu'
+
+    """
+    return name.lower()
 
 
 def get_current_browser_request():
@@ -431,7 +465,7 @@ class Navigation:
             target = target + '?' + query_string
 
         return RedirectionView(target, self.request, status)
- 
+
     # The next methods are for use by the Zope machinery.
 
     def publishTraverse(self, request, name):

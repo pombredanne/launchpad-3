@@ -1,0 +1,33 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-related-projects"
+     tal:condition="view/firstFiveRelatedProjects">
+
+  <h2>Related projects</h2>
+  <table tal:define="pillarnames view/firstFiveRelatedProjects">
+    <tbody>
+      <tr tal:repeat="pillarname pillarnames">
+        <td class="icon left">
+          <img alt="" tal:replace="structure pillarname/pillar/image:icon" />
+        </td>
+        <td>
+          <div>
+            <a tal:attributes="href string:/${pillarname/pillar/name}"
+            tal:content="pillarname/pillar/title">Pillar title</a>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <a href="+projects">
+      &raquo; See all projects <span tal:replace="context/title">Foo Bar</span>
+      is involved with
+    </a>
+  </p>
+</div>
+</tal:root>

@@ -22,6 +22,7 @@ from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -288,17 +289,17 @@ class BugTaskBugWatchWidget(RadioWidget):
             'input_id': input_id,
             'input_label': label}
 
-    #XXX: This method is mostly copied from RadioWidget.renderItems() and
+    #XXX: Bjorn Tillenius 2006-04-26:
+    #     This method is mostly copied from RadioWidget.renderItems() and
     #     modified to actually work. RadioWidget.renderItems() should be
     #     fixed upstream so that we can override it and only do the last
     #     part locally, the part after "# Add an option for creating...".
     #     http://www.zope.org/Collectors/Zope3-dev/592
-    #     -- Bjorn Tillenius, 2006-04-26
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""
-        #XXX: This works around the fact that we incorrectly gets the form
-        #     value instead of a valid field value.
-        #     -- Bjorn Tillenius, 2006-04-26
+        # XXX: Bjorn Tillenius 2006-04-26
+        #      This works around the fact that we incorrectly gets the form
+        #      value instead of a valid field value.
         if value == self._missing:
             value = self.context.missing_value
         elif (isinstance(value, basestring) and
@@ -485,3 +486,17 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
+
+
+class NominationReviewActionWidget(LaunchpadRadioWidget):
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
+    """
+    orientation = "horizontal"
+
+    # The label will always be the empty string.
+    _joinButtonToMessageTemplate = '%s%s'
+
+    def textForValue(self, term):
+        return u''

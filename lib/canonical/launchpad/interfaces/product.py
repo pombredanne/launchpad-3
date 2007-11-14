@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces including and related to IProduct."""
 
@@ -7,24 +7,70 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
-    'IProductLaunchpadUsageForm',
+    'License',
     ]
 
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
-from canonical.launchpad.interfaces import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-    PillarNameField, IHasLogo, IHasMugshot, IHasIcon)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOwner, IHasSecurityContact)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.pillar import PillarNameField
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class License(DBEnumeratedType):
+    """Licenses in which a project's code can be released."""
+
+    ACADEMIC = DBItem(10, "Academic Free License")
+    AFFERO = DBItem(20, "Affero GPL")
+    APACHE = DBItem(30, "Apache License")
+    ARTISTIC = DBItem(40, "Artistic License")
+    BSD = DBItem(50, "BSD License (revised)")
+    CDDL = DBItem(60, "CDDL")
+    CECILL = DBItem(70, "CeCILL License")
+    COMMON_PUBLIC = DBItem(80, "Common Public License")
+    ECLIPSE = DBItem(90, "Eclipse Public License")
+    EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
+    EIFFEL = DBItem(110, "Eiffel Forum License")
+    GNAT = DBItem(120, "GNAT Modified GPL")
+    GPL = DBItem(130, "GPL")
+    IBM = DBItem(140, "IBM Public License")
+    LGPL = DBItem(150, "LGPL")
+    MIT = DBItem(160, "MIT / X / Expat License")
+    MPL = DBItem(170, "Mozilla Public License")
+    OPEN_CONTENT = DBItem(180, "Open Content License")
+    OPEN_SOFTWARE = DBItem(190, "Open Software License")
+    PERL = DBItem(200, "Perl License")
+    PHP = DBItem(210, "PHP License")
+    PUBLIC_DOMAIN = DBItem(220, "Public Domain")
+    PYTHON = DBItem(230, "Python License")
+    QPL = DBItem(240, "Q Public License")
+    SUN_PUBLIC = DBItem(250, "SUN Public License")
+    W3C = DBItem(260, "W3C License")
+    ZLIB = DBItem(270, "zlib/libpng License")
+    ZPL = DBItem(280, "Zope Public License")
+
+    OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
+    OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
 class ProductNameField(PillarNameField):
@@ -34,10 +80,11 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-               ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
-               IHasIcon):
+class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
+               IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
+               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -46,9 +93,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     Mozilla App Suite as Products, among others.
     """
 
-    # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
+    # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
-    # in SQLObject soon. 12/10/04
+    # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
     project = Choice(
@@ -102,7 +149,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a 
+        description=_("""The name of the project as it would appear in a
             paragraph."""))
 
     title = Title(
@@ -198,28 +245,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "on this project's home page in Launchpad. It should be no "
             "bigger than 100kb in size. "))
 
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this project. This group "
-            "is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
-
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are
         updated automatically."""))
@@ -230,6 +255,19 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this project has been reviewed."""))
 
+    private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
+        or not bugs reported into this project are private by default"""))
+
+    licenses = Set(
+        title=_('Licenses'),
+        value_type=Choice(vocabulary=License))
+
+    license_info = Description(
+        title=_('Description of additional licenses'),
+        required=False,
+        description=_(
+            "Description of licenses that do not appear in the list above."))
+
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 
@@ -237,29 +275,22 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
-        
-    bugtracker = Choice(title=_('Bug Tracker'), required=False,
-        vocabulary='BugTracker',
-        description=_(
-            "The external bug tracker this project uses, if it is not "
-            "Launchpad."))
-            
-    official_answers = Bool(title=_('Uses Answers Officially'), 
-        required=True, description=_('Check this box to indicate that this '
-            'project officially uses Launchpad for community support.'))
-            
-    official_malone = Bool(title=_('Uses Bugs Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Launchpad for bug tracking '
-        'upstream. This will remove the caution presented when people '
-        'file bugs on the project here in Launchpad.'
-        ))
 
-    official_rosetta = Bool(title=_('Uses Translations Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Launchpad for upstream '
-        'translation. This will remove the caution presented when '
-        'people contribute translations for the project in Launchpad.'))
+    bugtracker = ProductBugTracker(
+        title=_('Bugs are tracked'),
+        vocabulary="BugTracker")
+
+    official_answers = Bool(
+        title=_('Let people use Launchpad Answers to ask questions'),
+        required=True)
+
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
@@ -284,13 +315,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
 
-    milestones = Attribute(_(
-        "The visible milestones associated with this product, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this product, ordered by "
-        "date expected."))
-
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
@@ -300,6 +324,10 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     translatable_series = Attribute(
         "A list of the series of this product for which we have translation "
         "templates.")
+
+    obsolete_translatable_series = Attribute("""
+        A list of the series of this product with obsolete translation
+        templates.""")
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to "
@@ -320,11 +348,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
-    def getMilestone(name):
-        """Return a milestone with the given name for this product, or
-        None.
-        """
-
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
@@ -342,10 +365,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this product. Return None.
         """
-
-    def newBranch(name, title, url, home_page, lifecycle_status, summary,
-                  whiteboard):
-        """Create a new Branch for this product."""
 
 
 class IProductSet(Interface):
@@ -380,8 +399,24 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
-    def getProductsWithBranches():
-        """Return an iterator over all products that have branches."""
+    def getProductsWithBranches(num_products=None):
+        """Return an iterator over all products that have branches.
+
+        If num_products is not None, then the first `num_products` are
+        returned.
+        """
+
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
+
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
 
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
@@ -390,7 +425,10 @@ class IProductSet(Interface):
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
                       icon=None):
-        """Create and Return a brand new Product."""
+        """Create and Return a brand new Product.
+
+        The licenses parameter must not be an empty tuple.
+        """
 
     def forReview():
         """Return an iterator over products that need to be reviewed."""
@@ -452,14 +490,3 @@ class IProductSet(Interface):
         them.
         """
 
-
-
-class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta, Answers, or Bugs is used."""
-
-    official_rosetta = IProduct['official_rosetta']
-    official_answers = IProduct['official_answers']
-    bugtracker = ProductBugTracker(
-        title=_('Bug Tracker'),
-        description=_('Where are bugs primarily tracked?'),
-        vocabulary="BugTracker")

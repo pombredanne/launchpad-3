@@ -20,7 +20,7 @@ to the emails sent to a given email address. The process works as follows:
 
     >>> from canonical.launchpad.database.person import Person
     >>> from canonical.launchpad.database.logintoken import LoginTokenSet
-    >>> from canonical.lp.dbschema import LoginTokenType
+    >>> from canonical.launchpad.interfaces import LoginTokenType
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction

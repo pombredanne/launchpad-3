@@ -2,6 +2,8 @@
  * Source Package: %(source_name)s
  * Version: %(source_version)s
  * Architecture: %(architecturetag)s
+ * Archive: %(archive_tag)s
+ * Component: %(component_tag)s
  * State: %(build_state)s
  * Duration: %(build_duration)s
  * Build Log: %(buildlog_url)s

@@ -1,13 +1,17 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>
-        <tal:release replace="context/title" />
-      </h1>
+      <h1>Source package release</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -16,52 +20,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:has_packages condition="context/sample_binary_packages">
-    <p>
-      Binary packages produced in this distribution for this version of 
-      <a tal:attributes="href context/sourcepackage/fmt:url"
-         tal:content="context/sourcepackage/name"/>:
-    </p>
-
-    <ul class="binary package">
-      <li tal:repeat="drbp context/sample_binary_packages">
-        <a tal:attributes="href drbp/fmt:url">
-           <span tal:replace="drbp/name">apache-utils</span>:
-        </a>
-        <div style="font-size: 80%; margin-left: 30px;">
-           <b tal:content="drbp/summary">general utilities for apache</b>
-           <br />
-           <span tal:replace="drbp/description">
-             description goes here
-           </span>
-        </div>
-      </li>
-    </ul>
-  </tal:has_packages>
-
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
-
-  <h2>Publishing history</h2>
-  <table class="listing">
-  <thead>
-  <tr>
-    <th>Time</th>
-    <th>Status</th>
-    <th>Target</th>
-    <th>Pocket</th>
-    <th>Component</th>
-    <th>Section</th>
-    <th>Version</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tal:block repeat="publishing context/publishing_history"
-             replace="structure publishing/@@+listing-detailed">
-  </tal:block>
-  </tbody>
-  </table>
-
-  <h2>Download</h2>
+  <h2>Download source</h2>
 
    <div  tal:define="files context/sourcepackagerelease/files">
      <ul tal:condition="files">
@@ -75,6 +34,39 @@
      <i tal:condition="not:files">No files available for download.</i>
    </div>
 
+  <tal:has_packages condition="context/sample_binary_packages">
+    <p>
+      Binary packages produced in
+      <span tal:replace="context/distribution/displayname" />
+      for this version of
+      <a tal:attributes="href context/sourcepackage/fmt:url"
+         tal:content="context/sourcepackage/name"/>:
+    </p>
+
+    <ul class="binary package">
+      <li tal:repeat="drbp context/sample_binary_packages">
+        <strong>
+          <a tal:attributes="href drbp/fmt:url"
+             tal:content="drbp/name">apache-utils</a>:
+          <span tal:replace="drbp/summary">package summary</span>
+        </strong>
+        <div>
+           <span tal:replace="drbp/description">
+             description goes here
+           </span>
+        </div>
+      </li>
+    </ul>
+  </tal:has_packages>
+
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
+
+  <h2>Publishing history</h2>
+  <div id="publishing_history">
+    <tal:block repeat="publishing context/publishing_history"
+               replace="structure publishing/@@+listing-detailed">
+    </tal:block>
+  </div>
 
 </div>
 </body>

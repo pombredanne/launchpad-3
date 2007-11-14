@@ -14,23 +14,25 @@ Sample Person.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet, IPersonSet)
+    ...     BugTaskStatus, BugTaskSearchParams, IBugTaskSet,
+    ...     ILaunchBag, IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> params = BugTaskSearchParams(user=None, assignee=sample_person)
     >>> for task in getUtility(IBugTaskSet).search(params):
-    ...     task.transitionToStatus(BugTaskStatus.INPROGRESS)
+    ...     task.transitionToStatus(
+    ...         BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
 
 And the same for some blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationDelivery
+    >>> from canonical.launchpad.interfaces import (
+    ... SpecificationImplementationStatus)
     >>> from canonical.launchpad.database import Specification
     >>> spec = Specification.selectOneBy(name='media-integrity-check')
     >>> spec.assignee = sample_person
-    >>> spec.delivery = SpecificationDelivery.STARTED
+    >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
     >>> newstate = spec.updateLifecycleStatus(sample_person)
     >>> logout()
     >>> flush_database_updates()

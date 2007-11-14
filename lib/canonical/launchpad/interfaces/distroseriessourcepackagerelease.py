@@ -59,24 +59,12 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")
 
+    version = Attribute("The version of the source package release.")
+
     changesfile = Object(
         title=_("Correspondent changesfile."), schema=ILibraryFileAlias,
         readonly=True)
 
-    def changeOverride(new_component=None, new_section=None):
-        """Change the component and/or section.
-
-        It is changed only if the argument is not None.
-        """
-
-    def supersede():
-        """Supersede a DistroSeriesSourcePackageRelease.
-
-        Return the modified ISourcePackagePublishingHistory object.
-        """
-
-    def copyTo(distroseries, pocket):
-        """Copy a DistroSeriesSourcePackageRelease to another location.
-
-        Return the publishing record in the targeted location.
-        """
+    published_binaries = Attribute(
+        "A list of published `DistroArchSeriesBinaryPackageRelease` for "
+        "all relevant architectures.")

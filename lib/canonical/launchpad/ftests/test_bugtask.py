@@ -11,11 +11,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugSet, IDistributionSet, IUpstreamBugTask,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSet,
+    BugTaskStatus, IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
     ILaunchBag, IBugWatchSet, IProductSet)
-from canonical.launchpad.searchbuilder import any
-from canonical.lp.dbschema import BugTaskStatus
 
 
 class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
@@ -60,16 +57,18 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
         self.assert_(firefox_upstream.product.official_malone)
         self.old_firefox_status = firefox_upstream.status
-        firefox_upstream.transitionToStatus(BugTaskStatus.FIXRELEASED)
+        firefox_upstream.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
         self.firefox_upstream = firefox_upstream
 
         # Mark an upstream task on bug #9 "Fix Committed"
         bug_nine = bugset.get(9)
         thunderbird_upstream = self._getBugTaskByTarget(bug_nine, thunderbird)
         self.old_thunderbird_status = thunderbird_upstream.status
-        thunderbird_upstream.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+        thunderbird_upstream.transitionToStatus(
+            BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
         self.thunderbird_upstream = thunderbird_upstream
-        
+
         # Add a watch to a Debian bug for bug #2, and mark the task Fix
         # Released.
         bug_two = bugset.get(2)
@@ -88,7 +87,8 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         bug_two_in_debian_firefox = self._getBugTaskByTarget(
             bug_two, debian_firefox)
         bug_two_in_debian_firefox.bugwatch = watch_debbugs_327452
-        bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.FIXRELEASED)
+        bug_two_in_debian_firefox.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
         flush_database_updates()
 
@@ -99,9 +99,10 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
     def tearDownBugsElsewhereTests(self):
         """Resets the modified bugtasks to their original statuses."""
-        self.firefox_upstream.transitionToStatus(self.old_firefox_status)
+        self.firefox_upstream.transitionToStatus(
+            self.old_firefox_status, getUtility(ILaunchBag).user)
         self.thunderbird_upstream.transitionToStatus(
-            self.old_thunderbird_status)
+            self.old_thunderbird_status, getUtility(ILaunchBag).user)
         flush_database_updates()
 
     def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
@@ -119,21 +120,24 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             related_bugtask for related_bugtask in non_malone_using_bugtasks
             if related_bugtask.bugwatch is None
             ]
-        self.assert_(len(pending_bugwatch_bugtasks) > 0)
+        self.assert_(
+            len(pending_bugwatch_bugtasks) > 0,
+            'Bugtask %s on %s has no related bug watches elsewhere.' % (
+                bugtask.id, bugtask.target.displayname))
 
     def assertBugTaskIsResolvedUpstream(self, bugtask):
         """Make sure at least one of the related upstream tasks is resolved.
-        
+
         "Resolved", for our purposes, means either that one of the related
         tasks is an upstream task in FIXCOMMITTED or FIXRELEASED state, or
         it is a task with a bugwatch, and in FIXCOMMITTED, FIXRELEASED, or
-        REJECTED state.
+        INVALID state.
         """
         resolved_upstream_states = [
             BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
         resolved_bugwatch_states = [
             BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED,
-            BugTaskStatus.REJECTED]
+            BugTaskStatus.INVALID]
 
         # Helper functions for the list comprehension below.
         def _is_resolved_upstream_task(bugtask):
@@ -153,6 +157,47 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             ]
 
         self.assert_(len(resolved_related_tasks) > 0)
+        self.assert_(
+            len(resolved_related_tasks) > 0,
+            'Bugtask %s on %s has no resolved related tasks.' % (
+                bugtask.id, bugtask.target.displayname))
+
+
+    def assertBugTaskIsOpenUpstream(self, bugtask):
+        """Make sure at least one of the related upstream tasks is open.
+
+        "Open", for our purposes, means either that one of the related
+        tasks is an upstream task or a task with a bugwatch which has
+        one of the states listed in open_states.
+        """
+        open_states = [
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.UNKNOWN]
+
+        # Helper functions for the list comprehension below.
+        def _is_open_upstream_task(bugtask):
+            return (
+                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.status in open_states)
+
+        def _is_open_bugwatch_task(bugtask):
+            return (
+                bugtask.bugwatch and bugtask.status in
+                open_states)
+
+        open_related_tasks = [
+            related_task for related_task in bugtask.related_tasks
+            if (_is_open_upstream_task(related_task) or
+                _is_open_bugwatch_task(related_task))
+            ]
+
+        self.assert_(
+            len(open_related_tasks) > 0,
+            'Bugtask %s on %s has no open related tasks.' % (
+                bugtask.id, bugtask.target.displayname))
 
     def _hasUpstreamTask(self, bug):
         """Does this bug have an upstream task associated with it?
@@ -169,7 +214,10 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
         Returns True if yes, otherwise False.
         """
-        self.assert_(not self._hasUpstreamTask(bugtask.bug))
+        self.assert_(
+            not self._hasUpstreamTask(bugtask.bug),
+            'Bugtask %s on %s has upstream tasks.' % (
+                bugtask.id, bugtask.target.displayname))
 
 
 def test_suite():

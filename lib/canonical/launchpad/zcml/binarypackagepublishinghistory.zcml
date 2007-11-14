@@ -9,15 +9,19 @@
   <!-- BinaryPackagePublishingHistory -->
   <content class="canonical.launchpad.database.BinaryPackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory" />
-    <allow interface="canonical.launchpad.interfaces.IArchivePublisher" />
   </content>
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"
-    permission="zope.Public">
+    permission="zope.Public"
+    class="canonical.launchpad.browser.BinaryPublishingRecordView">
     <browser:page
       name="+listing-detailed"
       template="../templates/binarypackagepublishinghistory-listing-detailed.pt"
+      />
+    <browser:page
+      name="+record-details"
+      template="../templates/packagepublishing-details.pt"
       />
   </browser:pages>
 
@@ -25,8 +29,7 @@
   <content class="canonical.launchpad.database.BinaryPackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.IBinaryPackageFilePublishing"/>
-    <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
-    <!-- XXX cprov 20060614: missing security adapter -->
+    <!-- XXX cprov 2006-06-14: missing security adapter -->
   </content>
 
   <!-- SecureBinaryPackagePublishingHistory -->

@@ -19,7 +19,6 @@ from cStringIO import StringIO
 import datetime
 import logging
 import os
-import sys
 import time
 
 try:
@@ -34,14 +33,11 @@ from zope.app.content_types import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugActivitySet, IBugAttachmentSet, IBugSet, IBugTrackerSet, IBugWatchSet,
     ICveSet, IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessageSet, IMilestoneSet, IPersonSet, CreateBugParams,
-    NotFoundError)
+    IMessageSet, IPersonSet, NoBugTrackerFound, PersonCreationRationale)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
 
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')
@@ -127,7 +123,7 @@ class BugImporter:
         """Get the Launchpad user corresponding to the given XML node"""
         if node is None:
             return None
-        
+
         # special case for "nobody"
         name = node.get('name')
         if name == 'nobody':
@@ -136,13 +132,14 @@ class BugImporter:
         # We require an email address:
         email = node.get('email')
         if email is None:
-            raise BugXMLSyntaxError('element %s (name=%s) has no email address'
-                                    % (node.tag, name))
+            raise BugXMLSyntaxError(
+                'element %s (name=%s) has no email address'
+                % (node.tag, name))
 
         displayname = get_text(node)
         if not displayname:
             displayname = None
-        
+
         launchpad_id = self.person_id_cache.get(email)
         if launchpad_id is not None:
             person = getUtility(IPersonSet).get(launchpad_id)
@@ -209,7 +206,7 @@ class BugImporter:
     def haveImportedBug(self, bugnode):
         """Return True if the given bug has been imported already."""
         bug_id = int(bugnode.get('id'))
-        # XXX: 20070316 jamesh
+        # XXX: jamesh 2007-03-16:
         # This should be extended to cover other cases like identity
         # based on bug nickname.
         return bug_id in self.bug_id_map
@@ -267,13 +264,15 @@ class BugImporter:
             private=private or security_related,
             security_related=security_related,
             owner=owner))
-        bug.private = private
+        # Security related bugs must be created private, so we set it
+        # correctly after creation.
+        bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
 
         # Remaining setup for first comment
         self.createAttachments(bug, msg, commentnode)
-        bug.findCvesInText(msg.text_contents)
+        bug.findCvesInText(msg.text_contents, bug.owner)
 
         # Process remaining comments
         for commentnode in comments:
@@ -281,34 +280,41 @@ class BugImporter:
                                      defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
-            bug.findCvesInText(msg.text_contents)
 
         # set up bug
-        bug.private = get_value(bugnode, 'private') == 'True'
-        bug.security_related = get_value(bugnode, 'security_related') == 'True'
+        bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
+        bug.security_related = (
+            get_value(bugnode, 'security_related') == 'True')
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:
             bug.description = description
-
-        for urlnode in get_all(bugnode, 'urls/url'):
-            getUtility(IBugExternalRefSet).createBugExternalRef(
-                bug=bug,
-                url=urlnode.get('href'),
-                title=get_text(urlnode),
-                owner=bug.owner)
 
         for cvenode in get_all(bugnode, 'cves/cve'):
             cve = getUtility(ICveSet)[get_text(cvenode)]
             if cve is None:
                 raise BugXMLSyntaxError('Unknown CVE: %s' %
                                         get_text(cvenode))
-            bug.linkCVE(cve)
+            bug.linkCVE(cve, self.bug_importer)
 
         tags = []
         for tagnode in get_all(bugnode, 'tags/tag'):
             tags.append(get_text(tagnode))
         bug.tags = tags
+
+        # Create bugwatches
+        bugwatchset = getUtility(IBugWatchSet)
+        for watchnode in get_all(bugnode, 'bugwatches/bugwatch'):
+            try:
+                bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
+                    watchnode.get('href'))
+            except NoBugTrackerFound, exc:
+                logger.debug('Registering bug tracker for %s', exc.base_url)
+                bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
+                    exc.base_url, self.bug_importer, exc.bugtracker_type)
+                remotebug = exc.remote_bug
+            bugwatchset.createBugWatch(
+                bug, self.bug_importer, bugtracker, remotebug)
 
         for subscribernode in get_all(bugnode, 'subscriptions/subscriber'):
             person = self.getPerson(subscribernode)
@@ -320,7 +326,8 @@ class BugImporter:
         bugtask.importance = get_enum_value(BugTaskImportance,
                                             get_value(bugnode, 'importance'))
         bugtask.transitionToStatus(
-            get_enum_value(BugTaskStatus, get_value(bugnode, 'status')))
+            get_enum_value(BugTaskStatus, get_value(bugnode, 'status')),
+            self.bug_importer)
         bugtask.transitionToAssignee(
             self.getPerson(get_element(bugnode, 'assignee')))
         bugtask.milestone = self.getMilestone(get_value(bugnode, 'milestone'))

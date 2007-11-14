@@ -6,27 +6,21 @@ the Firefox product which was filed by 'Sample Person'.
 
     # We will use one browser objects for the owner, and one for the user
     # providing support, 'No Privileges Person' here.
-    >>> from zope.testbrowser.testing import Browser
-    >>> owner_browser = Browser()
-    >>> owner_browser.handleErrors = False
-    >>> owner_browser.addHeader(
-    ...     "Authorization", 'Basic test@canonical.com:test')
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
 
-    >>> support_browser = Browser()
-    >>> support_browser.handleErrors = False
-    >>> support_browser.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> support_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
 
     # Define some utility functions to retrieve easily the last comment
     # added and the status of the question.
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
-    ...     soup = BeautifulSoup(contents)
+    ...     soup = find_tag_by_id(contents, 'portlet-details')
     ...     return soup.find('b', text='Status:').next.strip()
     ...
     >>> def  find_last_comment(contents):
-    ...     soup = BeautifulSoup(contents)
+    ...     soup = find_main_content(contents)
     ...     return soup.fetch('div', 'boardCommentBody')[-1]
+
 
 == Logging In ==
 
@@ -39,18 +33,26 @@ To participate in a question, the user must be logged in.
     To post a message you must <a href="+login">log in</a>.
     ...
 
+
 == Requesting for More Information ==
 
 It's not unusual that the original message of a question is terse
-and quite vague. In these cases, to help the user, some more information
-will be required.
+and quite vague. In these cases, to help the user, some more
+information will be required.
 
-To request for more information from the question owner, a user enters
-the question in the 'Message' field and clicks on the
-'Add Information Request' button.
+No Privileges Person visits the question. He see the heading
+'Can you help with this problem?'. The problem is not clear, he
+needs more information. To request for more information from the
+question owner, No Privileges Person enters his question in the 
+'Message' field and clicks on the 'Add Information Request' button.
 
     >>> support_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     support_browser.contents, 'can-you-help-with-this-problem')
+    >>> print content.h2.renderContents()
+    Can you help with this problem?
+    
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
     >>> support_browser.getControl('Add Information Request').click()
@@ -68,19 +70,27 @@ Of course, if you don't add a message, clicking on the button will give
 you an error.
 
     >>> support_browser.getControl('Add Information Request').click()
-    >>> soup = BeautifulSoup(support_browser.contents)
+    >>> soup = find_main_content(support_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.
 
+
 == Answering with More Information ==
 
-When the question is in the 'Needs information' state, it means that the
-question owner should come back and provide more information. He can do
-so by entering the reply in the 'Message' box and clicking on the
-"I'm Providing More Information" button.
+When the question is in the 'Needs information' state, it means that
+the question owner should come back and provide more information. He
+can do so by entering the reply in the 'Message' box and clicking on
+the "I'm Providing More Information" button. Note that the question
+owner cannot see the 'Can you help with this problem?' heading because
+it is not relevant to his tasks.
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     owner_browser.contents, 'can-you-help-with-this-problem')
+    >>> content is None
+    True
+
     >>> owner_browser.getControl('Message').value = (
     ...     "The following SVG doesn't display properly:\n"
     ...     "http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg")
@@ -88,13 +98,14 @@ so by entering the reply in the 'Message' box and clicking on the
 
 Once the owner replied with the, hopefully, requested information, the
 status is changed to Open and his answer appended to the question
-discusson.
+discussion.
 
     >>> print find_request_status(owner_browser.contents)
     Open
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The following SVG doesn't display properly:<br />
     <a rel="nofollow" href="http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg">...</a></p>
+
 
 == Giving an Answer ==
 
@@ -119,6 +130,7 @@ answer to the end of the discussion:
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
 
+
 == Confirming an Answer ==
 
 When the owner comes back on the question page, he will now see a new
@@ -126,13 +138,22 @@ When the owner comes back on the question page, he will now see a new
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
      value="This Solved My Problem" />
 
-(Not altough we have three comments on the question, that's the only one
-that has this button. Only answers have this button.)
+(Note although we have three comments on the question, that's the only
+one that has this button. Only answers have this button.)
+
+There is also a hint below the form to the question owner about using
+the 'This Solved My Problem' button.
+
+    >>> answer_button_paragraph = find_tag_by_id(
+    ...     owner_browser.contents, 'answer-button-hint')
+    >>> print extract_text(answer_button_paragraph)
+    To confirm an answer, use the 'This Solved My Problem' button located at
+    the bottom of the answer.
 
 Clicking that button will confirm that the answer solved the problem.
 
@@ -143,7 +164,7 @@ This changes the status of the question to 'Solved' and mark
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> np = 'No Privileges Person'
     >>> np in extract_text(soup.first('b', text='Solved by:').findNext('a'))
     True
@@ -156,13 +177,15 @@ confirmation message was appended to the question discussion:
 
 The confirmed answer is also highlighted.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
     >>> print bestAnswer.first('img')
-    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
+    <img src="/@@/favourite-yes" ... title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
+
 
 == Adding a Comment ==
 
@@ -182,19 +205,20 @@ status:
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The example now displays correctly. Thanks.</p>
 
+
 == Reopening ==
 
-It can happen that, altough the owner confirmed the question was solved,
-the original problem reappears. In this case, he can reopen the question
-by entering a new message and clicking the
-"I'm Still Having This Problem" button.
+It can happen that, altough the owner confirmed the question was
+solved, the original problem reappears. In this case, he can reopen
+the question by entering a new message and clicking the
+"I Still Need an Answer" button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "Actually, there are still SVGs that do not display correctly. "
     ...     "For example, the following\n"
     ...     "http://people.w3.org/maxf/ChessGML/immortal.svg doesn't display "
     ...     "correctly.")
-    >>> owner_browser.getControl("I'm Still Having This Problem").click()
+    >>> owner_browser.getControl("I Still Need an Answer").click()
 
 This appends the new information to the question discussion and changes
 its status back to 'Open'.
@@ -210,7 +234,7 @@ its status back to 'Open'.
 This also removes the highlighting from the previous answer and sets
 the answerer back to None.
 
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> soup.first('b', text='Solved by:') is None
     True
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-4]
@@ -229,37 +253,66 @@ reopening portlet.
     >>> 'Sample Person' in extract_text(portlet.fetch('a')[-1])
     True
 
+
 == Self-Answer ==
 
-The owner can also gives an answer to his own question. He simply have
-to enter his answer in the 'Message' box and click the
-'I Solved the Problem on My Own' button.
+The owner can also gives the solution to his own question. He simply
+has to enter his solution in the 'Message' box and click the
+'Problem Solved' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "OK, this example requires some SVG features that will only be "
     ...     "available in Firefox 2.0.")
-    >>> owner_browser.getControl("I Solved the Problem on My Own").click()
+    >>> owner_browser.getControl("Problem Solved").click()
 
-This appends the message to the quesiton and sets its status to
-'Solved'.
+This appends the message to the question and sets its status to
+'Solved', and the answerer as the owner. We do not however mark a 
+message as the "Best answer".
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> 'Sample Person' in extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
+    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    Sample Person
+    >>> soup = find_main_content(owner_browser.contents)
+    >>> bestAnswer = soup.first('img', {'title': 'Marked as best answer'})
+    >>> None == bestAnswer
     True
 
+A message is displayed to the user confirming that the question is
+solved and suggesting that the user choose an answer that helped
+the question owner to solve the his problem.
 
-It also records the owner as the answerer and marks his answer with the
-"Best answer" flag.
+    >>> for message in soup.findAll('div', 'informational message'):
+    ...     print extract_text(message)
+    Your question is solved. If a particular message helped you solve the 
+    problem, use the 'This solved my problem' button.
 
-    >>> bestAnswer = soup.fetch('div', 'boardComment')[-1]
-    >>> print bestAnswer.first('img')
-    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
-    >>> print soup.first(
-    ...     'div', 'boardCommentBody highlighted').renderContents()
-    <p>OK, this example requires some SVG features that will only be available
-    in Firefox 2.0.</p>
+If the user chooses a best answer, the author of that answer
+is attributed as the answerer.
+
+    >>> owner_browser.getControl('This Solved My Problem').click()
+    >>> print find_request_status(owner_browser.contents)
+    Solved
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
+    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    No Privileges Person
+
+The answer's message is also highlighted as the best answer.
+
+    >>> soup = find_main_content(owner_browser.contents)
+    >>> bestAnswer = soup.find('img', {'title' : 'Marked as best answer'})
+    >>> print bestAnswer
+    <img src="/@@/favourite-yes" ... title="Marked as best answer" />
+    >>> answerer = bestAnswer.parent.find('a')
+    >>> print extract_text(answerer)
+    No Privileges Person
+    >>> message = bestAnswer.parent.parent.find(
+    ...     'div', 'boardCommentBody highlighted')
+    >>> print extract_text(message)
+    New version of the firefox package are available with SVG support
+    enabled. You can use apt-get or adept to upgrade.
+    
 
 = History =
 
@@ -273,7 +326,7 @@ The history of the question is available on the 'History' page.
 
 It lists all the actions performed through workflow on the question:
 
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> action_listing = soup.first('table', 'listing')
     >>> for header in action_listing.fetch('th'):
     ...     print header.renderContents()
@@ -294,4 +347,71 @@ It lists all the actions performed through workflow on the question:
     Sample Person        Comment                      Solved
     Sample Person        Reopen                       Open
     Sample Person        Confirm                      Solved
+    Sample Person        Confirm                      Solved
 
+
+== Solving a question without an answer ==
+
+The user that asks a questions may solve the question before another
+user can submit an answer. Without any answer messages, the user does
+not see a notification to choose a 'This solved my problem' button.
+
+Carlos has an open question that no one has submitted an answer for.
+He is able to solve the problem on his own, and submits the solution
+for other users with similar problems. He does not see a notice about
+choosing an answer that helped him solve his problem. 
+
+    >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
+    >>> print find_request_status(carlos_browser.contents)
+    Open
+
+    >>> answer_button_paragraph = find_tag_by_id(
+    ...     carlos_browser.contents, 'answer-button-hint')
+    >>> answer_button_paragraph is None
+    True
+    
+    >>> carlos_browser.getControl('Message').value = (
+    ...     "There is a bug in that version. SMP is fine after upgrading.")
+    >>> carlos_browser.getControl("Problem Solved").click()
+    >>> print find_request_status(carlos_browser.contents)
+    Solved
+
+    >>> content = find_main_content(carlos_browser.contents)
+    >>> messages = content.findAll('div', 'informational message')
+    >>> messages
+    []
+
+
+== Asking a separate question ==
+
+A user that is new to Answers is not familiar with the workflow. He
+may have a problem of his own, and has discovered an existing
+question. We want him to ask his own question instead of intruding
+into the workflow of existing questions.
+
+No Privileges Person (a different user from the one above) discovers
+the Firefox question. The solution does not work, but he thinks he has
+a similar problem so he asks his own question.
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
+ 
+    >>> content = find_main_content(user_browser.contents)
+    >>> print content.find(id='can-you-help-with-this-problem')
+    None
+ 
+    >>> print content.find(id='ask-your-own-question').h2.renderContents()
+    Got a question of your own?
+    
+    >>> user_browser.getLink('ask your own question separately').click()
+    >>> print user_browser.title
+    Ask a question about Mozilla Firefox
+
+The 'Got a question of your own?' section in not relevant to the 
+question owner, so Sample person does not see it.
+
+    >>> owner_browser.open('http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     owner_browser.contents, 'ask-your-own-question')
+    >>> content is None
+    True

@@ -2,11 +2,12 @@
 
 Karl will join the newly created team.
 
-    >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription_policy'))
-    This is an open team; any user can join and no approval is required.
+    Open Team:
+    Any user can join and no approval is required.
 
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -45,21 +46,20 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
-    >>> from zope.testbrowser.testing import Browser
     >>> from canonical.launchpad.database import Person
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> myemail = Person.selectOneBy(name='myemail')
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
     >>> myemail.syncUpdate()
 
-    >>> browser = Browser()
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic james.blackwell@ubuntulinux.com:jblack')
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription_policy'))
-    This is a moderated team; all subscriptions are subjected to approval by
-    one of the team's administrators.
+    Moderated Team:
+    All subscriptions for this team are subject to approval by one of
+    the team's administrators.
 
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -95,16 +95,15 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
     >>> myemail.syncUpdate()
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization',
-    ...     'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> browser.url
     'http://launchpad.dev/~myemail'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription_policy'))
-    This is a restricted team; new members can only be added by one of the
-    team's administrators.
+    Restricted Team:
+    New members can only be added by one of the team's administrators.
 
     >>> browser.getLink('Join the team')
     Traceback (most recent call last):

@@ -1,8 +1,20 @@
-<tal:do-this-first: tal:condition="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<tal:do-this-first tal:content="view/processForm" />
+
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
 <metal:heading fill-slot="pageheading">
@@ -10,13 +22,6 @@
         <tal:thing replace="view/contextName" />
   </h1>
 </metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -37,7 +42,7 @@
         <td>
           <span tal:replace="view/ownerOrMaintainer/browsername" />
         </td>
-      <tr>
+      </tr>
 
       <tr>
         <td align="right">New:</td>
@@ -49,7 +54,7 @@
         <td>
           <label for="existing">
             <input type="radio" value="existing" id="existing" 
-                   name="existing" checked />An existing person or team
+              name="existing" checked="checked" />An existing person or team
           </label>
           <br />
 
@@ -80,3 +85,4 @@
 
 </body>
 </html>
+</tal:root>

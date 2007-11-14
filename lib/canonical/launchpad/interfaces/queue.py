@@ -101,15 +101,15 @@ class IPackageUpload(Interface):
     sourcepackagerelease = Attribute(
         "The source package release for this item")
 
-    containsSource = Attribute("whether or not this upload contains sources")
-    containsBuild = Attribute("whether or not this upload contains binaries")
-    containsInstaller = Attribute(
+    contains_source = Attribute("whether or not this upload contains sources")
+    contains_build = Attribute("whether or not this upload contains binaries")
+    contains_installer = Attribute(
         "whether or not this upload contains installers images")
-    containsTranslation = Attribute(
+    contains_translation = Attribute(
         "whether or not this upload contains translations")
-    containsUpgrader = Attribute(
+    contains_upgrader = Attribute(
         "wheter or not this upload contains upgrader images")
-    containsDdtp = Attribute(
+    contains_ddtp = Attribute(
         "wheter or not this upload contains DDTP images")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
@@ -162,7 +162,7 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(announce_list=None, summary_text=None, 
+    def notify(announce_list=None, summary_text=None,
         changes_file_object=None, logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 
@@ -237,6 +237,28 @@ class IPackageUploadSource(Interface):
             title=_("The related source package release"), required=True,
             readonly=False,
             )
+
+    def verifyBeforeAccept():
+        """Perform overall checks before promoting source to ACCEPTED queue.
+
+        If two queue items have the same (name, version) pair there is
+        an inconsistency. To identify this situation we check the accepted
+        & done queue items for each distroseries for such duplicates and
+        raise an exception if any are found.
+        See bug #31038 & #62976 for details.
+        """
+
+    def verifyBeforePublish():
+        """Perform overall checks before publishing a source queue record.
+
+        Check if the source package files do not collide with the
+        ones already published in the archive. We need this to catch
+        inaccurate  *epoched* versions, which would pass the upload version
+        check but would collide with diff(s) or dsc(s) previously published
+        on disk. This inconsistency is well known in debian-like archives
+        and happens because filenames do not contain epoch. For further
+        information see bug #119753.
+        """
 
     def checkComponentAndSection():
         """Verify the current Component and Section via Selection table.

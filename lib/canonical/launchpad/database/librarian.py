@@ -40,7 +40,7 @@ class LibraryFileAlias(SQLBase):
     implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'
-
+    date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
             foreignKey='LibraryFileContent', dbName='content', notNull=True,
             )
@@ -116,7 +116,7 @@ class LibraryFileAlias(SQLBase):
         This method relies on the system clock being vaguely sane, but
         does not cause real harm if this is not the case.
         """
-        # XXX: Feature disabled due to Bug #86171 -- stub 20070410
+        # XXX: stub 2007-04-10 Bug=86171: Feature disabled due to.
         return
 
         # Update last_accessed no more than once every 6 hours.

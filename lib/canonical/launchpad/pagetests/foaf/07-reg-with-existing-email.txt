@@ -13,13 +13,11 @@ password page.
     ...     'test@canonical.com')
     >>> browser.getControl('Register').click()
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('p', 'error message'):
-    ...     print tag.renderContents()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
     Sorry, someone with the address test@canonical.com already has a
     Launchpad account. If this is you and you've forgotten your password,
-    Launchpad can <a href="/+forgottenpassword">reset it for you.</a>
+    Launchpad can reset it for you.
 
 
 On the other hand, if the email is assigned to a profile that has not
@@ -29,7 +27,7 @@ on with the registration process.
     >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
     >>> browser.getControl('Register').click()
 
-    >>> print browser.contents
+    >>> print find_tag_by_id(browser.contents, 'nonhelp')
     <...
     ...Instructions on completing your registration have been sent to...
 
@@ -45,7 +43,7 @@ on with the registration process.
     >>> browser.url == '%s/+newaccount' % token_url
     True
 
-    >>> browser.getControl('Display Name').value = 'My name'
+    >>> browser.getControl('Name').value = 'My name'
     >>> label = 'Hide my email addresses from other Launchpad users'
     >>> browser.getControl(label).selected = True
     >>> browser.getControl(name='field.password').value = 'foo'
@@ -55,9 +53,8 @@ on with the registration process.
     >>> browser.url
     'http://launchpad.dev'
 
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('div', 'informational message'):
-    ...     print tag.renderContents()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
     Registration completed successfully
 
 
@@ -71,9 +68,8 @@ this.
 
     (To see spiv's email we must be logged in, so we'll use user_browser)
     >>> user_browser.open('http://launchpad.dev/~spiv')
-    >>> print user_browser.contents
+    >>> print find_portlet(user_browser.contents, 'Confirmed e-mail addresses')
     <...
-    ...<a...Hey, I'm Andrew Bennetts</a>...
     ...Confirmed e-mail addresses...
     ...andrew.bennetts@ubuntulinux.com...
     ...
@@ -96,15 +92,14 @@ this.
     >>> anon_browser.url == "%s/+newaccount" % token_url
     True
 
-    >>> anon_browser.getControl('Display Name').value = 'My name'
+    >>> anon_browser.getControl('Name').value = 'My name'
     >>> anon_browser.getControl(name='field.password').value = 'foo'
     >>> anon_browser.getControl(name='field.password_dupe').value = 'foo'
     >>> anon_browser.getControl('Continue').click()
 
     >>> anon_browser.url
     'http://launchpad.dev'
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for tag in soup('div', 'informational message'):
-    ...     print tag.renderContents()
+    >>> for message in get_feedback_messages(anon_browser.contents):
+    ...     print message
     Registration completed successfully
 

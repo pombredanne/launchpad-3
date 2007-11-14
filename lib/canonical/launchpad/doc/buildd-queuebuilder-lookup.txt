@@ -1,0 +1,174 @@
+= Build Candidates Lookup =
+
+
+IDistroSeries.getSourcesPublishedForAllArchives method is used by the
+Build System ("queue-builder" to be precise) to retrieve the source
+publications that should be considered in its checks.
+
+'queue-builder' will verify if each retrieved publication has an
+associated Build and BuildQueue records based on their DSC and
+P-a-s (Package-architecture-specific) information. See further details
+in buildd-queuebuilder.txt.
+
+This document explains which source publishing information are
+returned by the method depending on the archive state.
+
+First, we will create some functions to help creating and inspecting
+publications for a given distroseries:
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.database.publishing import (
+    ...     SecureSourcePackagePublishingHistory)
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePurpose, IArchiveSet, IPersonSet, IDistributionSet,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     distribution=ubuntu, purpose=ArchivePurpose.PARTNER)
+
+    >>> dspr = ubuntu.getSourcePackage('mozilla-firefox')['0.9']
+    >>> the_spr = dspr.sourcepackagerelease
+
+    >>> initial_candidates = []
+
+Creating a single source publishing record:
+
+    >>> def create_publication(distroseries, pocket, archive, status):
+    ...     SecureSourcePackagePublishingHistory(
+    ...         sourcepackagerelease=the_spr, component=the_spr.component,
+    ...         section=the_spr.section, datecreated=UTC_NOW, embargo=False,
+    ...         distroseries=distroseries, status=status,
+    ...         pocket=pocket, archive=archive)
+
+Create a collection of source publishing records in different
+archives, pockets and statuses. This function creates:
+
+ * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, main_archive;
+ * 1 PUBLISHED and 1 PENDING records in UPDATES pocket, main_archive;
+ * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, PPA archive;
+ * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, PARTNER archive;
+
+    >>> def create_sample_publications(distroseries):
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           distroseries.main_archive, PackagePublishingStatus.PUBLISHED)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           distroseries.main_archive, PackagePublishingStatus.PENDING)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.UPDATES,
+    ...           distroseries.main_archive, PackagePublishingStatus.PUBLISHED)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.UPDATES,
+    ...           distroseries.main_archive, PackagePublishingStatus.PENDING)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           cprov.archive, PackagePublishingStatus.PUBLISHED)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           cprov.archive, PackagePublishingStatus.PENDING)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           partner_archive, PackagePublishingStatus.PUBLISHED)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           partner_archive, PackagePublishingStatus.PENDING)
+
+This function will store previous publishing records that will be
+ignored later when inspecting the example results (sampledata already
+contains other records that are not relevant for this example).
+
+    >>> def reset_candidates(distroseries):
+    ...      global initial_candidates
+    ...      initial_candidates =  [
+    ...          pub.id for pub in
+    ...          distroseries.getSourcesPublishedForAllArchives()]
+
+
+Inspect IDistroSeries.getSourcesPublishedForAllArchives ignoring
+previous results and printing a lines containing:
+
+   <STATUS> <POCKET> <IS_MAIN_ARCHIVE>
+
+for each new publishing record.
+
+    >>> def inspect_new_candidates(distroseries):
+    ...     global initial_candidates
+    ...     for pub in distroseries.getSourcesPublishedForAllArchives():
+    ...         if pub.id in initial_candidates:
+    ...             continue
+    ...         arch_purpose = pub.archive.purpose.name
+    ...         print pub.status.name, pub.pocket.name, arch_purpose
+
+Finally, a shortcut to do all the dirty-job:
+
+    >>> def probe_candidates(distroseries):
+    ...     reset_candidates(distroseries)
+    ...     create_sample_publications(distroseries)
+    ...     inspect_new_candidates(distroseries)
+
+
+== CURRENT DistroSeries ==
+
+For a distroseries in CURRENT state, which means STABLE, we expect to
+retrieve the following publications:
+
+ * All PPA publications (even those targeted to the RELEASE
+   pocket, since we don't allow post-release pocket in PPA).
+ * Only those targeted to post-release pockets (UPDATES, SECURITY,
+   BACKPORTS and PROPOSED) in main_archive (default ubuntu archive)
+ * All Partner archive publications since these can be targeted to
+   RELEASE.
+
+    >>> warty = ubuntu['warty']
+    >>> warty.status.name
+    'CURRENT'
+
+Both PUBLISHED and PENDING publication records are returned, this is
+important to accomplish building-accepted-sources specification:
+
+   https://launchpad.net/soyuz/+spec/build-unpublished-source
+
+This will give us only 6 of the test publications:
+
+    >>> probe_candidates(warty)
+    PUBLISHED UPDATES PRIMARY
+    PENDING UPDATES PRIMARY
+    PUBLISHED RELEASE PPA
+    PENDING RELEASE PPA
+    PUBLISHED RELEASE PARTNER
+    PENDING RELEASE PARTNER
+
+
+== DEVELOPMENT DistroSeries ==
+
+For a distroseries in DEVELOPMENT state, which means UNSTABLE, we
+expect to retrieve the following publications:
+
+ * All PPA publications
+ * All main archive publications, including RELEASE and post-release pockets
+
+    >>> hoary = ubuntu['hoary']
+    >>> hoary.status.name
+    'DEVELOPMENT'
+
+Note that, also the publications targeted to post-release pockets are
+returned, but they won't be dispatched until they can be accepted (see
+IDistroSeries.canUploadToPocket). This nuance will be more explored
+when fixing #67790 when we will start publishing and building
+post-release pocket in FROZEN state.
+
+Summing up, all the 8 test publications will be returned from the lookup:
+
+    >>> probe_candidates(hoary)
+    PUBLISHED RELEASE PRIMARY
+    PENDING RELEASE PRIMARY
+    PUBLISHED UPDATES PRIMARY
+    PENDING UPDATES PRIMARY
+    PUBLISHED RELEASE PPA
+    PENDING RELEASE PPA
+    PUBLISHED RELEASE PARTNER
+    PENDING RELEASE PARTNER
+

@@ -2,7 +2,7 @@
 
 Any administrator of a team can add new members to that team.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Add member').click()
     >>> browser.url
@@ -43,7 +43,7 @@ On the other hand, if the member is among the inactive/proposed members of
 the team, we'll simply change the membership's status and say that it was
 successfully added.
 
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> cprov_landscape_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
     >>> cprov_landscape_membership.syncUpdate()
@@ -104,10 +104,7 @@ Any admin of the team which receives an invitation can either accept or deny
 it. Although they get a link to the invitation's page, there's also a page
 listing all open invitation sent to a given team.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~launchpad')
     >>> browser.getLink('Show received invitations').click()
     >>> browser.url
@@ -156,6 +153,57 @@ Warty Security Team:
     ...     find_tags_by_class(browser.contents, 'informational')[0])
     Declined the invitation to join Ubuntu Team
 
+== Corner cases ==
+
+Given that team can have more than one admin, it's possible that at the time
+one admin is browsing the invitation page, another admin might be doing the
+same. When an admin accepts or declines an invitation, the other admin can't
+take action on that invitation anymore.
+
+First invite ubuntu-team to be member of the name21 team.
+
+    >>> browser.open('http://launchpad.dev/~name21/+addmember')
+    >>> browser.getControl('New member:').value = 'ubuntu-team'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Ubuntu Team (ubuntu-team) has been invited to join this team.
+
+Open the invitations page with one admin browser.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+invitation/name21')
+
+Open the same page with another admin browser.
+
+    >>> second_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> second_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+invitation/name21')
+
+Accept the invitation in the first browser.
+
+    >>> browser.getControl('Accept').click()
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team'
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    This team is now a member of Hoary Gnome Team
+
+Accepting the invitation in the second browser, redirects to the team page
+and a message is displayed.
+
+    >>> second_browser.getControl('Accept').click()
+    >>> second_browser.url
+    'http://launchpad.dev/~ubuntu-team'
+
+    >>> for tag in find_tags_by_class(second_browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    This invitation has already been processed.
+
 == Evil workarounds ==
 
 One thing to keep in mind is that we can't invite a team without active
@@ -175,9 +223,7 @@ the bug sice we could skip the notification sent to the team in this case.
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
     >>> carlos_translators_membership.syncUpdate()
 
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
     >>> browser.getControl('New member').value = 'ubuntu-translators'
     >>> browser.getControl('Add Member').click()

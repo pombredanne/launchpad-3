@@ -14,7 +14,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser.sprint"
-      classes="SprintFacets SprintOverviewMenu 
+      classes="SprintFacets SprintOverviewMenu
                SprintSpecificationsMenu SprintSetContextMenu
                SprintSetFacets"
       />
@@ -137,6 +137,20 @@
     template="../templates/sprint-meeting-export.pt"
     />
 
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.NewSpecificationFromSprintView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
+    name="+register-a-blueprint-button"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+    permission="zope.Public"
+  />
 
   <!-- IHasSprints -->
   <browser:pages
@@ -208,5 +222,13 @@
     class="canonical.launchpad.browser.SprintAddView"
     permission="launchpad.AnyPerson"
     template="../templates/sprint-new.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+attendees-csv"
+    class="canonical.launchpad.browser.sprint.SprintAttendeesCsvExportView"
+    permission="launchpad.AnyPerson"
+    attribute="__call__"
+    />
 
 </configure>

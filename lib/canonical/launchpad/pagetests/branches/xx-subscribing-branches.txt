@@ -2,122 +2,256 @@
 
 A quick helper function to list the subscribed people.
 
-  >>> def print_subscribers(contents):
-  ...     portlet = find_tags_by_class(contents, 'person')[0]
-  ...     people = portlet.fetch('a')
-  ...     for person in people:
-  ...         print person.renderContents()
+    >>> def print_subscribers(contents):
+    ...     portlet = find_tags_by_class(contents, 'person')[0]
+    ...     people = portlet.fetch('a')
+    ...     for person in people:
+    ...         print person.renderContents()
 
 Another to print the informational message.
 
-  >>> def print_informational_message(contents):
-  ...     message = find_tags_by_class(contents, 'informational message')
-  ...     if message:
-  ...         print message[0].renderContents()
+    >>> def print_informational_message(contents):
+    ...     message = find_tags_by_class(contents, 'informational message')
+    ...     if message:
+    ...         print extract_text(message[0])
+
 
 = Subscribing to Branches =
 
 In order to subscribe to a branch, the user must be logged in.
 
-  >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
-  >>> anon_browser.getLink('Subscribe')
-  Traceback (most recent call last):
-  ...
-  LinkNotFoundError
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> anon_browser.getLink('Subscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
 
 Initially there should be no subscribers.
 
-  >>> print_subscribers(browser.contents)
-  >>> browser.getLink('Subscribe').click()
-
-On the subscribe page there is a cancel button.  This will take us back
-to the main branch page, and not subscribe us.
-
-  >>> browser.getControl('Cancel').click()
-  >>> print_subscribers(browser.contents)
-  >>> print_informational_message(browser.contents)
-  >>> browser.title
-  '\xe2\x80\x9cGNOME Terminal Mainline\xe2\x80\x9d branch in Launchpad'
-
-Now we do want to subscribe, so back to the subscription page.
-
-  >>> browser.getLink('Subscribe').click()
+    >>> print_subscribers(browser.contents)
+    >>> browser.getLink('Subscribe').click()
 
 At this stage the defaults that are set for subscriptions
 are fairly arbitrary, so we'll explicitly choose the values.
 
-  >>> level_control = browser.getControl(name='field.notification_level')
-  >>> level_control.value = ['Branch attribute notifications only']
-  >>> diff_control = browser.getControl(name='field.max_diff_lines')
-  >>> diff_control.value = ['1000 lines']
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'Branch attribute notifications only']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '1000 lines']
 
-Now, post the subscription form. We should see a message that we have just
-subscribed.
+Now, post the subscription form. We should see a message that we have
+just subscribed.
 
-  >>> browser.getControl('Subscribe').click()
-  >>> print_informational_message(browser.contents)
-  You have subscribed to this branch with: 
-  <ul><li>Only send notifications for branch attribute changes such
-  as name, description and whiteboard.
-  </li></ul>
+    >>> browser.getControl('Subscribe').click()
+    >>> print_informational_message(browser.contents)
+    You have subscribed to this branch with:
+    Only send notifications for branch attribute changes such
+    as name, description and whiteboard.
 
-There should be only one person subscribed to the branch now.  
+There should be only one person subscribed to the branch now.
 
-  >>> print_subscribers(browser.contents)
-  Sample Person
+    >>> print_subscribers(browser.contents)
+    No Privileges Person
 
-Now the link should say "Edit subscription" in the actions menu.
-Lets go to that page.
+Now, press the back button, and post the subscription form again. We
+should see a message that we are already subscribed.
 
-  >>> browser.getLink('Edit subscription').click()
+    >>> browser.goBack(count=1)
+    >>> browser.getControl('Subscribe').click()
+    >>> print_informational_message(browser.contents)
+    You are already subscribed to this branch.
 
-Clicking 'Cancel' should take us back to the branch page, and not
-alter anything to do with our subscription.
+Now the subscription link should say "Edit subscription" in the actions
+menu.
 
-  >>> browser.getControl('Cancel').click()
-  >>> print_informational_message(browser.contents)
-  >>> print_subscribers(browser.contents)
-  Sample Person
-
-Now back to the editing page to change the details of our subscription.
-
-  >>> browser.getLink('Edit subscription').click()
+    >>> browser.getLink('Edit subscription').click()
 
 Let's change our subscription to getting emails for modifications, and diffs,
 and limit our diffs to 5000 lines.
 
-  >>> level_control = browser.getControl(name='field.notification_level')
-  >>> level_control.value = ['Branch attribute and revision notifications']
-  >>> diff_control = browser.getControl(name='field.max_diff_lines')
-  >>> diff_control.value = ['5000 lines']
-  >>> browser.getControl('Change').click()
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'Branch attribute and revision notifications']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '5000 lines']
+    >>> browser.getControl('Change').click()
 
 Now we should be taken back to the main branch page, with a nice
 informational message for us to see.
 
-  >>> print_informational_message(browser.contents)
-  Subscription updated to: <ul><li>Send notifications for both branch attribute updates
-  and new revisions added to the branch.
-  </li><li>Limit the generated diff to 5000 lines.
-  </li></ul>
+    >>> print_informational_message(browser.contents)
+    Subscription updated to:
+    Send notifications for both branch attribute updates
+    and new revisions added to the branch.
+    Limit the generated diff to 5000 lines.
 
-  >>> print_subscribers(browser.contents)
-  Sample Person
+    >>> print_subscribers(browser.contents)
+    No Privileges Person
 
-We do not really want to be subscribed. We load the edit subcription page.
+The page to edit a person's subscription also allows the user to
+unsubscribe.
 
-  >>> browser.getLink('Edit subscription').click()
+    >>> browser.getLink('Edit subscription').click()
+    >>> browser.getControl('Unsubscribe').click()
 
-And when we post this form, we see a message saying we are no longer a
-subscriber.
+The user is taken back to the branch details page, and a message is
+shown to the user.
 
-  >>> browser.getControl('Unsubscribe').click()
-  >>> print_informational_message(browser.contents)
-  You have unsubscribed from this branch.
-  >>> print_subscribers(browser.contents)
+    >>> print_informational_message(browser.contents)
+    You have unsubscribed from this branch.
+    >>> print_subscribers(browser.contents)
+
+Clicking the back button and then clicking on either Change or
+Unsubscribe will give a message that we are not subscribed.
+
+    >>> browser.goBack(count=1)
+    >>> browser.getControl('Change').click()
+    >>> print_informational_message(browser.contents)
+    You are not subscribed to this branch.
+
+    >>> browser.goBack(count=1)
+    >>> browser.getControl('Unsubscribe').click()
+    >>> print_informational_message(browser.contents)
+    You are not subscribed to this branch.
+
+
+== Subscribing someone else ==
+
+The 'Subscribe' action listed for branches is for subscribing the logged
+in user.  In order to be able to subscribe teams to branches there needs
+to be an different way to do this.  The 'Subscribe someone else' action
+can be used to subscribe individuals or teams.
+
+You need to be logged in to see the link.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> anon_browser.getLink('Subscribe someone else')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Any logged in user is able to subscribe others to a branch.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Subscribe someone else').click()
+
+The process of subscribing others is the same as subscribing the
+currently logged in user with the addition of the user needing to
+specify the person to subscribe.  The person field is required.
+
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'Branch attribute and revision notifications']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '5000 lines']
+    >>> browser.getControl('Subscribe').click()
+
+    >>> for error in find_tags_by_class(browser.contents, 'error'):
+    ...     print error.renderContents()
+    There is 1 error.
+    ...field.person...Required input is missing...
+
+    >>> browser.getControl('Person').value = 'sabdfl'
+    >>> browser.getControl('Subscribe').click()
+
+    >>> print_informational_message(browser.contents)
+    Mark Shuttleworth has been subscribed to this branch with:
+    Send notifications for both branch attribute updates
+    and new revisions added to the branch.
+    Limit the generated diff to 5000 lines.
+    >>> print_subscribers(browser.contents)
+    Mark Shuttleworth
+
+Subscribing a team is as simple as putting in the team name.
+
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'Branch attribute and revision notifications']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '1000 lines']
+    >>> browser.getControl('Person').value = 'landscape-developers'
+    >>> browser.getControl('Subscribe').click()
+
+The user can only subscribe teams that they are members of.
+
+    >>> for error in find_tags_by_class(browser.contents, 'error'):
+    ...     print error.renderContents()
+    There is 1 error.
+    ...field.person...You can only subscribe teams that you are a member of...
+
+Sample Person is a member of Landscape Developers.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'Branch attribute and revision notifications']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '1000 lines']
+    >>> browser.getControl('Person').value = 'landscape-developers'
+    >>> browser.getControl('Subscribe').click()
+    >>> print_informational_message(browser.contents)
+    Landscape Developers has been subscribed to this branch with:
+    Send notifications for both branch attribute updates
+    and new revisions added to the branch.
+    Limit the generated diff to 1000 lines.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print_subscribers(anon_browser.contents)
+    Landscape Developers
+    Mark Shuttleworth
+
+Launchpad administrators can edit anyones branch subsription.
+
+    >>> admin_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print_subscribers(admin_browser.contents)
+    Landscape Developers <img src="/@@/edit" alt="Edit subscription" />
+    Mark Shuttleworth <img src="/@@/edit" alt="Edit subscription" />
+
+== Editing a team subscription ==
+
+In order to edit a team subscription the logged in user needs to be
+a member of the team that is subscribed.  There is a link shown in
+the subscriptions portlet to edit the subscription of a team that
+the logged in user is a member of.
+
+XXX: thumper 2007-06-11
+There should be a central user subscriptions page.  This could then
+be used to traverse to the branch subscriptions instead of through
+the branch itself.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print_subscribers(browser.contents)
+    Landscape Developers  <img src="/@@/edit" alt="Edit subscription" />
+    Mark Shuttleworth
+
+    >>> browser.getLink(url='+subscription/landscape').click()
+    >>> main_content = find_main_content(browser.contents)
+    >>> print extract_text(main_content.h1)
+    Edit subscription to branch for Landscape Developers
+
+From this page the branch subscription can be altered...
+
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'No email']
+    >>> browser.getControl('Change').click()
+
+... or unsubscribed from.
+
+    >>> browser.getLink(url='+subscription/landscape').click()
+    >>> browser.getControl('Unsubscribe').click()
+    >>> print_informational_message(browser.contents)
+    Landscape Developers has been unsubscribed from this branch.
+    >>> print_subscribers(browser.contents)
+    Mark Shuttleworth
+

@@ -4,6 +4,10 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <content class="canonical.launchpad.database.PillarName">
+      <allow interface="canonical.launchpad.interfaces.IPillarName" />
+    </content>
+
     <securedutility
         class="canonical.launchpad.database.PillarNameSet"
         provides="canonical.launchpad.interfaces.IPillarNameSet">

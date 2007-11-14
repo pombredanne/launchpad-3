@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import QuestionStatus
+from canonical.launchpad.interfaces.questionenums import QuestionStatus
 
 
 QUESTION_STATUS_DEFAULT_SEARCH = (
@@ -60,7 +60,7 @@ class ISearchableByQuestionOwner(IQuestionCollection):
                         needs_attention_from=None):
         """Return the questions from the collection matching search criteria.
 
-        See IQuestionCollection for the description of the standard search
+        See `IQuestionCollection` for the description of the standard search
         parameters.
 
         :owner: The IPerson that created the question.
@@ -87,8 +87,17 @@ class IQuestionSet(IQuestionCollection):
     def findExpiredQuestions(days_before_expiration):
         """Return the questions that are expired.
 
-        This should return all the questions in the Open or Needs information
-        state, without an assignee, that didn't receive any new comments in
-        the last <days_before_expiration> days.
+        Return all the questions in the Open or Needs information state,
+        without an assignee or bug links, that did not receive any new
+        comments in the last <days_before_expiration> days.
         """
 
+    def getMostActiveProjects(limit=5):
+        """Return the list of projects that asked the most questions in
+        the last 60 days.
+
+        It should only return projects that officially uses the Answer
+        Tracker.
+
+        :param limit: The number of projects to return.
+        """

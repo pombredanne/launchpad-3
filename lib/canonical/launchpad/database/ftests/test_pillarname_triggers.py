@@ -7,18 +7,17 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.database.sqlbase import cursor
+from canonical.testing import LaunchpadZopelessLayer
 
 class PillarNameTriggersTestCase(unittest.TestCase):
-    def setUp(self):
-        LaunchpadTestSetup(dbuser='testadmin').setUp()
-        self.con = LaunchpadTestSetup(dbuser='testadmin').connect()
+    layer = LaunchpadZopelessLayer
 
-    def tearDown(self):
-        LaunchpadTestSetup(dbuser='testadmin').tearDown()
+    def setUp(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
 
     def testDistributionTable(self):
-        cur = self.con.cursor()
+        cur = cursor()
 
         # Ensure our sample data is valid and that each Distribution.name
         # has a corresponding entry in PillarName.name
@@ -46,11 +45,11 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         cur.execute("""
             INSERT INTO Distribution (
                 name, description, domainname, owner, displayname,
-                summary, title, members, mirror_admin, main_archive
+                summary, title, members, mirror_admin
                 )
                 VALUES (
                     'whatever', 'whatever', 'whatever', 1, 'whatever',
-                    'whatever', 'whatever', 1, 1, 1
+                    'whatever', 'whatever', 1, 1
                     )
             """)
         self.failUnless(is_in_sync('whatever'))
@@ -74,7 +73,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def testProductTable(self):
-        cur = self.con.cursor()
+        cur = cursor()
 
         # Ensure our sample data is valid and that each Product.name
         # has a corresponding entry in PillarName.name
@@ -126,7 +125,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def testProjectTable(self):
-        cur = self.con.cursor()
+        cur = cursor()
 
         # Ensure our sample data is valid and that each Project.name
         # has a corresponding entry in PillarName.name
@@ -156,7 +155,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 name, owner, displayname, title, summary, description
                 )
                 VALUES (
-                    'whatever', 1, 'whatever', 'whatever', 
+                    'whatever', 1, 'whatever', 'whatever',
                     'whatever', 'whatever'
                     )
             """)

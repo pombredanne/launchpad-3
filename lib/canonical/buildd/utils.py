@@ -6,7 +6,7 @@
 # For more information on how to use this module, see
 # lib/canonical/launchpad/doc/buildd-dbnotes.txt
 
-# XXX dsilvers 20050701: Can we replace all uses of notes with
+# XXX dsilvers 2005-07-01: Can we replace all uses of notes with
 # foo.non_db_attribute = 'bar' and perhaps also with properties on the
 # instances which DTRT?
 
@@ -17,14 +17,14 @@ __all__ = ['notes']
 class DBNote2:
     """Dictionary-style class which autovivifys real dicts based on
     ids used to index it."""
-    
+
     def __init__(self):
         self.notes = {}
 
     def __getitem__(self, id):
         self.notes.setdefault(id,{})
         return self.notes[id]
-    
+
 
 
 class DBNote:
@@ -35,7 +35,7 @@ class DBNote:
     without worrying about the fact that across transactions they might change
     their instance locations and thusly not be the same for keying in a dict.
     """
-    
+
     def __init__(self):
         self.notes = {}
 

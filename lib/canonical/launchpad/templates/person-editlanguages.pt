@@ -1,8 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
-
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -14,12 +20,18 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main" >
+ 
+  <h1 tal:condition="not: view/is_current_user">
+    <span tal:replace="context/displayname">Someone</span>'s
+    language preferences
+  </h1>
 
-  <h1>Your language preferences</h1>
+  <h1 tal:condition="view/is_current_user">
+    Your language preferences
+  </h1>
 
   <p class="documentDescription">
-    Your preferred languages will be used for translations and support
-    requests.
+    Preferred languages will be used for translations and support requests.
   </p>
 
   <form action="" method="post">

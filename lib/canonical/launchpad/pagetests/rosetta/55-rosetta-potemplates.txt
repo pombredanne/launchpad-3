@@ -12,9 +12,8 @@ languages, and we are testing behaviour when no languages are wanted).
 no GeoIP mappings.
 
     >>> anon_browser.addHeader('X-Forwarded-For', '192.168.0.1')
-    >>> anon_browser.open('http://launchpad.dev/evolution/trunk/+translations')
-    >>> anon_browser.url
-    'http://launchpad.dev/evolution/trunk/+translations'
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/evolution/trunk/+translations')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     True
 
@@ -22,37 +21,40 @@ When looking at a specific template with at least one translation, he
 will again see the legend.
 
     >>> anon_browser.open(
-    ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2')
-    >>> anon_browser.url
-    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2'
+    ...    'http://translations.launchpad.dev/evolution/trunk/+pots/'
+    ...    'evolution-2.2')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     False
 
 The same happens for template overview page for packages.
 
     >>> anon_browser.open(
-    ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations'
+    ...    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...    '+translations')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     True
 
 And with at least one translation, legend is shown.
 
     >>> anon_browser.open(
-    ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man'
+    ...    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...    '+pots/man')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     False
 
 When there are no translations in a single template, legend and
 headers will not be shown.
 
+    # To check this, we need to state that this project uses Launchpad for
+    # translations.
+    >>> admin_browser.open('http://launchpad.dev/netapplet/+edit')
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
     >>> anon_browser.open(
-    ...    'http://launchpad.dev/netapplet/trunk/+pots/netapplet')
-    >>> anon_browser.url
-    'http://launchpad.dev/netapplet/trunk/+pots/netapplet'
+    ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/'
+    ...     'netapplet')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     True
 
@@ -60,9 +62,8 @@ And likewise for PO template pages for templates without translations
 in packages:
 
     >>> anon_browser.open(
-    ...    'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/man')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/man'
+    ...    'http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/'
+    ...    '+pots/man')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     True
 
@@ -73,11 +74,10 @@ Carlos is a translator who translates things into Spanish and Catalan.
 When he looks at available translations for Evolution in Hoary, he
 should see Catalan in the list.
 
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations')
-    >>> browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations'
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+translations')
     >>> 'Catalan' in browser.contents
     True
 
@@ -91,8 +91,6 @@ Next, if he chooses to view all the languages, he should see Japanese
 among the languages on the page.
 
     >>> browser.getLink('View Template & All Languages...').click()
-    >>> browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
     >>> 'Japanese' in browser.contents
     True
 

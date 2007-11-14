@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Browser views for distributions."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -9,6 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionPPASearchView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -22,7 +25,7 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
-    'DistributionLaunchpadUsageEditView',
+    'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
@@ -39,32 +42,33 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    IArchiveSet, NotFoundError, IDistributionMirrorSet)
+    DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
+    IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
+    MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView)
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
+    StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistroSeriesStatus, MirrorContent
 
 
 class DistributionNavigation(
-    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin):
+    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    FAQTargetNavigationMixin):
 
     usedfor = IDistribution
 
@@ -187,11 +191,11 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'launchpad_usage', 'upload_admin', 'ppas']
+             'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
+        text = 'Change distribution details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -289,25 +293,16 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
-    def launchpad_usage(self):
-        text = 'Define Launchpad usage'
-        return Link('+launchpad', text, icon='edit')
-
 
 class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
+    links = ['bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE reports'
         return Link('+cve', text, icon='cve')
-
-    def new(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
@@ -360,19 +355,29 @@ class DistributionSpecificationsMenu(ApplicationMenu):
             icon='info')
 
     def new(self):
-        text = 'Register new blueprint'
-        return Link('+addspec', text, icon='add')
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit']
+    links = ['edit', 'imports', 'language_pack_admin']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def language_pack_admin(self):
+        text = 'Change language pack admins'
+        return Link('+select-language-pack-admin', text, icon='edit')
 
 
 class DistributionView(BuildRecordsView):
@@ -438,9 +443,24 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def getAllPPAs(self):
-        """Return alls Personal Package Archive available."""
-        return getUtility(IArchiveSet).getAllPPAs()
+
+class DistributionPPASearchView(LaunchpadView):
+    """Search PPAs belonging to the Distribution in question."""
+
+    def initialize(self):
+        self.name_filter = self.request.get('name_filter')
+        self.show_inactive = self.request.get('show_inactive')
+
+        # Preserve self.show_inactive state because it's used in the
+        # template and build a boolean field to be passed for
+        # searchPPAs.
+        show_inactive = (self.show_inactive == 'on')
+
+        ppas = self.context.searchPPAs(
+            text=self.name_filter, show_inactive=show_inactive)
+
+        self.batchnav = BatchNavigator(ppas, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -462,34 +482,6 @@ class DistributionBrandingView(BrandingChangeView):
     field_names = ['icon', 'logo', 'mugshot']
 
 
-class DistributionEditView(LaunchpadEditFormView):
-
-    schema = IDistribution
-    label = "Change distribution details"
-    field_names = ['displayname', 'title', 'summary', 'description',]
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
-
-
-class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
-    """View class for defining Launchpad usage."""
-
-    schema = IDistribution
-    field_names = ["official_answers", "official_malone", "official_rosetta"]
-    label = "Describe Launchpad usage"
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-
 class DistributionSetView:
 
     def __init__(self, context, request):
@@ -505,11 +497,11 @@ class DistributionAddView(LaunchpadFormView):
     schema = IDistribution
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
-                   "domainname", "members"]
+                   "domainname", "members",
+                   "official_malone", "official_rosetta", "official_answers"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -519,16 +511,43 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            main_archive=archive,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 
 
-class DistributionBugContactEditView(SQLObjectEditView):
+class DistributionEditView(LaunchpadEditFormView):
+
+    schema = IDistribution
+    label = "Change distribution details"
+    field_names = ['displayname', 'title', 'summary', 'description',
+                   'official_malone', 'official_rosetta', 'official_answers']
+
+    def isAdmin(self):
+        return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        if not self.isAdmin():
+            self.form_fields = self.form_fields.omit(
+                'official_malone', 'official_rosetta', 'official_answers')
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
+class DistributionBugContactEditView(LaunchpadEditFormView):
     """Browser view for editing the distribution bug contact."""
-    def changed(self):
-        """Redirect to the distribution page."""
+    schema = IDistribution
+    field_names = ['bugcontact']
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Save the new bug contact and display a notification."""
+        self.updateContextFromData(data)
+
         distribution = self.context
         contact_display_value = None
 
@@ -552,11 +571,26 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "bugmail. You can, of course, set a distribution bug "
                 "contact again whenever you want to.")
 
-        self.request.response.redirect(canonical_url(distribution))
+    @property
+    def next_url(self):
+        """Redirect to the distribution page."""
+        return canonical_url(self.context)
+
+
+class DistributionLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to change the language pack administrator."""
+
+    schema = IDistribution
+    label = "Change the language pack administrator"
+    field_names = ['language_pack_admin']
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
-    """A text/plain page which lists the mirrors in the country of the request.
+    """A text/plain page that lists the mirrors in the country of the request.
 
     If there are no mirrors located in the country of the request, we fallback
     to the main Ubuntu repositories.
@@ -579,17 +613,72 @@ class DistributionMirrorsView(LaunchpadView):
 
     show_status = True
 
-    def _groupMirrorsByCountry(self, mirrors):
+    @cachedproperty
+    def mirror_count(self):
+        return self.mirrors.count()
+
+    def _sum_throughput(self, mirrors):
+        """Given a list of mirrors, calculate the total bandwidth
+        available.
+        """
+        throughput = 0
+        # this would be a wonderful place to have abused DBItem.sort_key ;-)
+        for mirror in mirrors:
+            if mirror.speed == MirrorSpeed.S128K:
+                throughput += 128
+            elif mirror.speed == MirrorSpeed.S256K:
+                throughput += 256
+            elif mirror.speed == MirrorSpeed.S512K:
+                throughput += 512
+            elif mirror.speed == MirrorSpeed.S1M:
+                throughput += 1000
+            elif mirror.speed == MirrorSpeed.S2M:
+                throughput += 2000
+            elif mirror.speed == MirrorSpeed.S10M:
+                throughput += 10000
+            elif mirror.speed == MirrorSpeed.S45M:
+                throughput += 45000
+            elif mirror.speed == MirrorSpeed.S100M:
+                throughput += 100000
+            elif mirror.speed == MirrorSpeed.S1G:
+                throughput += 1000000
+            elif mirror.speed == MirrorSpeed.S2G:
+                throughput += 2000000
+            elif mirror.speed == MirrorSpeed.S4G:
+                throughput += 4000000
+            elif mirror.speed == MirrorSpeed.S10G:
+                throughput += 10000000
+            elif mirror.speed == MirrorSpeed.S20G:
+                throughput += 20000000
+            else:
+                # need to be made aware of new values in
+                # interfaces/distributionmirror.py MirrorSpeed
+                return 'Indeterminate'
+        if throughput < 1000:
+            return str(throughput) + ' Kbps'
+        elif throughput < 1000000:
+            return str(throughput/1000) + ' Mbps'
+        else:
+            return str(throughput/1000000) + ' Gbps'
+
+    @cachedproperty
+    def total_throughput(self):
+        return self._sum_throughput(self.mirrors)
+
+    def getMirrorsGroupedByCountry(self):
         """Given a list of mirrors, create and return list of dictionaries
         containing the country names and the list of mirrors on that country.
 
         This list is ordered by country name.
         """
         mirrors_by_country = {}
-        for mirror in mirrors:
+        for mirror in self.mirrors:
             mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
             mirrors.append(mirror)
-        return [dict(country=country, mirrors=mirrors)
+        return [dict(country=country,
+                     mirrors=mirrors,
+                     number=len(mirrors),
+                     throughput=self._sum_throughput(mirrors))
                 for country, mirrors in sorted(mirrors_by_country.items())]
 
 
@@ -597,8 +686,9 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.archive_mirrors
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -606,8 +696,9 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     heading = 'Official CD Mirrors'
     show_status = False
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.cdimage_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.cdimage_mirrors
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
@@ -628,7 +719,7 @@ class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     heading = 'Archive Mirrors'
 
-    @property
+    @cachedproperty
     def mirrors(self):
         return self.context.archive_mirrors
 
@@ -638,7 +729,7 @@ class DistributionSeriesMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     heading = 'CD Mirrors'
 
-    @property
+    @cachedproperty
     def mirrors(self):
         return self.context.cdimage_mirrors
 
@@ -649,11 +740,11 @@ class DistributionMirrorsAdminView(DistributionMirrorsView):
         """Raise an Unauthorized exception if the user is not a member of this
         distribution's mirror_admin team.
         """
-        # XXX: We don't want these pages to be public but we can't protect
+        # XXX: Guilherme Salgado 2006-06-16:
+        # We don't want these pages to be public but we can't protect
         # them with launchpad.Edit because that would mean only people with
         # that permission on a Distribution would be able to see them. That's
         # why we have to do the permission check here.
-        # -- Guilherme Salgado, 2006-06-16
         if not (self.user and self.user.inTeam(self.context.mirror_admin)):
             raise Unauthorized('Forbidden')
 
@@ -662,16 +753,18 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.unofficial_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.disabled_mirrors
 
 
 class DistributionDynMenu(
@@ -689,7 +782,8 @@ class DistributionDynMenu(
         """Show milestones more recently than one month ago,
         or with no due date.
         """
-        fairly_recent = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+        fairly_recent = (
+            datetime.datetime.utcnow() - datetime.timedelta(days=30))
         for milestone in self.context.milestones:
             if (milestone.dateexpected is None or
                 milestone.dateexpected > fairly_recent):

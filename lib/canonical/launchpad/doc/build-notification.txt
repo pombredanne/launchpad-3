@@ -14,9 +14,7 @@ All build states are supported by the current implementation, however
 only failures should be reported this time.
 
   >>> from canonical.launchpad.interfaces import IBuildSet
-  >>> from canonical.launchpad.mail import stub
-  >>> import transaction
-
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> buildset = getUtility(IBuildSet)
 
 To avoid consequences of modified sampledata, specially if we add
@@ -34,34 +32,46 @@ Notification for a FAILEDTOBUILD (failed) build record:
   u'sabdfl'
 
   >>> failed_candidate.notify()
-  >>> transaction.commit()
 
 Check how many email the system have sent:
 
-  >>> len(stub.test_emails)
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
   3
-
-We need to sort the list of emails by the second element, the recipient:
-
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['celso.providelo@canonical.com']
+  >>> notifications.pop(0)['To']
+  'celso.providelo@canonical.com'
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['foo.bar@canonical.com']
+  >>> notifications.pop(0)['To']
+  'foo.bar@canonical.com'
 
 The maintainer is notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['mark@hbd.com']
+  >>> build_notification = notifications.pop(0)
+  >>> build_notification['To']
+  'mark@hbd.com'
+
+Checking subject and extra headers:
+
+  >>> build_notification['Subject']
+  '[Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest\n\tRELEASE'
+
+  >>> build_notification['X-Launchpad-Build-State']
+  'FAILEDTOBUILD'
+
+  >>> build_notification['X-Creator-Recipient']
+  'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
 
 Let's check the notification content.  It should contain:
+
  * The source package name
  * The source package version
  * The build architecture
@@ -70,42 +80,32 @@ Let's check the notification content.  It should contain:
  * A link to the build log
  * A link to the build page
  * A link to the source page
+
 This same basic content applies to all types of notification.
 
-  >>> print raw_msg
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  X-Creator-Recipient: mark@hbd.com
-  X-Launchpad-Build-State: FAILEDTOBUILD
-  To: mark@hbd.com
-  From: Launchpad Buildd System <noreply@launchpad.net>
-  Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
-  ...
-  Reply-To: Launchpad Buildd System <noreply@launchpad.net>
-  Sender: bounces@canonical.com
-  Errors-To: bounces@canonical.com
-  Return-Path: bounces@canonical.com
-  Precedence: bulk
-  X-Generated-By: Launchpad (canonical.com)
+  >>> notification_body = build_notification.get_payload()
+  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: pmount
    * Version: 0.1-1
    * Architecture: i386
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Failed to build
    * Duration: three minutes
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/+builds/bob
    * Source: http://launchpad.dev/ubuntu/+source/pmount/0.1-1
   <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
   i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
-  http://launchpad.dev/+builds/+build/17
+  http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/17
   <BLANKLINE>
-
 
 Notification for a pending (NEEDSBUILD) build record:
 
@@ -118,70 +118,69 @@ Notification for a pending (NEEDSBUILD) build record:
   u'sabdfl'
 
   >>> pending_candidate.notify()
-  >>> transaction.commit()
 
 Check how many email the system have sent:
 
-  >>> len(stub.test_emails)
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
   3
-
-We need to sort the list of emails by the second element, the recipient:
-
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['celso.providelo@canonical.com']
+  >>> notifications.pop(0)['To']
+  'celso.providelo@canonical.com'
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['foo.bar@canonical.com']
+  >>> notifications.pop(0)['To']
+  'foo.bar@canonical.com'
 
 The maintainer is notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['mark@hbd.com']
+  >>> build_notification = notifications.pop(0)
+  >>> build_notification['To']
+  'mark@hbd.com'
+
+Checking subject and extra headers:
+
+  >>> build_notification['Subject']
+  '[Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary\n\tRELEASE'
+
+  >>> build_notification['X-Launchpad-Build-State']
+  'NEEDSBUILD'
+
+  >>> build_notification['X-Creator-Recipient']
+  'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
 
 Check the notification content:
 
-  >>> print raw_msg
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  X-Creator-Recipient: mark@hbd.com
-  X-Launchpad-Build-State: NEEDSBUILD
-  To: mark@hbd.com
-  From: Launchpad Buildd System <noreply@launchpad.net>
-  Subject: [Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
-  ...
-  Reply-To: Launchpad Buildd System <noreply@launchpad.net>
-  Sender: bounces@canonical.com
-  Errors-To: bounces@canonical.com
-  Return-Path: bounces@canonical.com
-  Precedence: bulk
-  X-Generated-By: Launchpad (canonical.com)
+  >>> notification_body = build_notification.get_payload()
+  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: alsa-utils
    * Version: 1.0.9a-4ubuntu1
    * Architecture: i386
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Needs building
    * Duration: not available
    * Build Log: not available
    * Builder: not available
    * Source: http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1
   <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
   i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
-  http://launchpad.dev/+builds/+build/11
+  http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
   <BLANKLINE>
-
-
 
 Notification for a BUILDING build record:
 
@@ -194,69 +193,69 @@ Notification for a BUILDING build record:
   u'sabdfl'
 
   >>> building_candidate.notify()
-  >>> transaction.commit()
 
 Check how many email the system have sent:
 
-  >>> len(stub.test_emails)
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
   3
-
-We need to sort the list of emails by the second element, the recipient:
-
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['celso.providelo@canonical.com']
+  >>> notifications.pop(0)['To']
+  'celso.providelo@canonical.com'
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['foo.bar@canonical.com']
+  >>> notifications.pop(0)['To']
+  'foo.bar@canonical.com'
 
 The maintainer is notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['mark@hbd.com']
+  >>> build_notification = notifications.pop(0)
+  >>> build_notification['To']
+  'mark@hbd.com'
+
+Checking subject and extra headers:
+
+  >>> build_notification['Subject']
+  '[Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE'
+
+  >>> build_notification['X-Launchpad-Build-State']
+  'BUILDING'
+
+  >>> build_notification['X-Creator-Recipient']
+  'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
 
 Check the notification content:
 
-  >>> print raw_msg
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  X-Creator-Recipient: mark@hbd.com
-  X-Launchpad-Build-State: BUILDING
-  To: mark@hbd.com
-  From: Launchpad Buildd System <noreply@launchpad.net>
-  Subject: [Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-  ...
-  Reply-To: Launchpad Buildd System <noreply@launchpad.net>
-  Sender: bounces@canonical.com
-  Errors-To: bounces@canonical.com
-  Return-Path: bounces@canonical.com
-  Precedence: bulk
-  X-Generated-By: Launchpad (canonical.com)
+  >>> notification_body = build_notification.get_payload()
+  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: mozilla-firefox
    * Version: 0.9
    * Architecture: i386
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Currently building
    * Duration: not finished
    * Build Log: see builder page
    * Builder: http://launchpad.dev/+builds/bob
    * Source: http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9
   <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
   i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-  http://launchpad.dev/+builds/+build/8
+  http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
   <BLANKLINE>
-
 
 Notification for a SUPERSEDED build record:
 
@@ -269,69 +268,69 @@ Notification for a SUPERSEDED build record:
   u'sabdfl'
 
   >>> superseded_candidate.notify()
-  >>> transaction.commit()
 
 Check how many email the system have sent:
 
-  >>> len(stub.test_emails)
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
   3
-
-We need to sort the list of emails by the second element, the recipient:
-
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['celso.providelo@canonical.com']
+  >>> notifications.pop(0)['To']
+  'celso.providelo@canonical.com'
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['foo.bar@canonical.com']
+  >>> notifications.pop(0)['To']
+  'foo.bar@canonical.com'
 
 The maintainer is notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['mark@hbd.com']
+  >>> build_notification = notifications.pop(0)
+  >>> build_notification['To']
+  'mark@hbd.com'
+
+Checking subject and extra headers:
+
+  >>> build_notification['Subject']
+  '[Build #15] i386 build of at 0.00 in ubuntu warty RELEASE'
+
+  >>> build_notification['X-Launchpad-Build-State']
+  'SUPERSEDED'
+
+  >>> build_notification['X-Creator-Recipient']
+  'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
 
 Check the notification content:
 
-  >>> print raw_msg
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  X-Creator-Recipient: mark@hbd.com
-  X-Launchpad-Build-State: SUPERSEDED
-  To: mark@hbd.com
-  From: Launchpad Buildd System <noreply@launchpad.net>
-  Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
-  ...
-  Reply-To: Launchpad Buildd System <noreply@launchpad.net>
-  Sender: bounces@canonical.com
-  Errors-To: bounces@canonical.com
-  Return-Path: bounces@canonical.com
-  Precedence: bulk
-  X-Generated-By: Launchpad (canonical.com)
+  >>> notification_body = build_notification.get_payload()
+  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: at
    * Version: 0.00
    * Architecture: i386
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Build for superseded Source
    * Duration: not available
    * Build Log: not available
    * Builder: not available
    * Source: http://launchpad.dev/ubuntu/+source/at/0.00
   <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
   i386 build of at 0.00 in ubuntu warty RELEASE
-  http://launchpad.dev/+builds/+build/15
+  http://launchpad.dev/ubuntu/+source/at/0.00/+build/15
   <BLANKLINE>
-
 
 Check if the 'build_notification' configuration option really suppress
 notification as promised:
@@ -340,12 +339,10 @@ notification as promised:
   >>> config.builddmaster.send_build_notification = False
   >>> superseeded_candidate = buildset.getByBuildID(15)
   >>> superseeded_candidate.notify()
-  >>> transaction.commit()
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  Traceback (most recent call last):
-  ...
-  IndexError: pop from empty list
 
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
+  0
 
 Check if 'notify_owner' config option really suppress email to
 the SPR owner, but still sending it to the default recipient:
@@ -355,29 +352,112 @@ the SPR owner, but still sending it to the default recipient:
   >>> superseded_candidate = buildset.getByBuildID(15)
 
   >>> superseded_candidate.notify()
-  >>> transaction.commit()
 
 Check how many email the system have sent:
 
-  >>> len(stub.test_emails)
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
   2
-
-We need to sort the list of emails by the second element, the recipient:
-
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
 
 Only the members of launchpad-buildd-admins are notified:
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['celso.providelo@canonical.com']
+  >>> notifications.pop(0)['To']
+  'celso.providelo@canonical.com'
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['foo.bar@canonical.com']
+  >>> notifications.pop(0)['To']
+  'foo.bar@canonical.com'
 
+Checking subject and extra headers:
+
+  >>> build_notification['Subject']
+  '[Build #15] i386 build of at 0.00 in ubuntu warty RELEASE'
+
+  >>> build_notification['X-Launchpad-Build-State']
+  'SUPERSEDED'
+
+  >>> build_notification['X-Creator-Recipient']
+  'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
 
 Just to keep the config sane, as it was before:
 
   >>> config.builddmaster.notify_owner = True
+
+
+== PPA build notifications ==
+
+As for the normal (main archive) build candidates we are also able
+send notification about current (changed) PPA build record status.
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> naked_failed_candidate = removeSecurityProxy(failed_candidate)
+  >>> naked_failed_candidate.archive = cprov.archive
+
+  >>> failed_candidate.notify()
+
+Check how many email the system have sent:
+
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
+  2
+
+Checking the first message contents:
+
+  >>> build_notification = notifications.pop(0)
+  >>> notification_body = build_notification.get_payload()
+  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+  <BLANKLINE>
+   * Source Package: pmount
+   * Version: 0.1-1
+   * Architecture: i386
+   * Archive: cprov PPA
+   * Component: main
+   * State: Failed to build
+   * Duration: three minutes
+   * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
+   * Builder: http://launchpad.dev/+builds/bob
+   * Source: not available
+  ...
+
+Checking if the second recipient:
+
+  >>> build_notification = notifications.pop(0)
+  >>> build_notification['To']
+  'mark@hbd.com'
+
+Checking subject and extra headers:
+
+  >>> build_notification['Subject']
+  '[Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest\n\tRELEASE (cprov PPA)'
+
+  >>> build_notification['X-Launchpad-Build-State']
+  'FAILEDTOBUILD'
+
+  >>> build_notification['X-Creator-Recipient']
+  'mark@hbd.com'
+
+  >>> build_notification['X-Launchpad-Build-Component']
+  'main'
+
+  >>> build_notification['X-Launchpad-Build-Arch']
+  'i386'
+
+PPA build notifications should be as much as possible similar to those
+in the main archive, the important differences are:
+
+ * We do not include 'buildd-admins' celebrity in its recipients,
+   instead we include the Archive owner;
+
+ * We try to be explicit in the subject and in the body of the message
+   that it is about a PPA build candidate;
+
+ * We don't have a 'source package' page for PPA sources.
 

@@ -1,37 +1,32 @@
-<tal:do-this-first tal:content="view/processForm" />
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Confirm OpenPGP key</h1>
-    </metal:heading>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
 
-    <div tal:condition="not: view/successfullyProcessed">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <metal:heading fill-slot="heading">
+        Confirm OpenPGP key
+      </metal:heading>
 
-        <p
-          tal:condition="view/errormessage"
-          tal:content="structure view/errormessage"
-          class="error message"
-        />
+      <p metal:fill-slot="extra_info">
+        Confirm the OpenPGP key
+        <code tal:content="context/fingerprint">12345</code> for
+        <tal:name replace="context/requester/displayname">Foo Bar</tal:name>
+      </p>
 
-        <p>
-          Confirm the OpenPGP key
-          <code tal:content="context/fingerprint">12345</code> for
-          <tal:name replace="context/requester/displayname">Foo Bar</tal:name>
-        </p>
-
-      <form name="validate" action="" method="POST">
-        <input type="submit" name="VALIDATE" value="Confirm" />
-      </form>
     </div>
 
-</div>
+  </div>
 
 
 </body>

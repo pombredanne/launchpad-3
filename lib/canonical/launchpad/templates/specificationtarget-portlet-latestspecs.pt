@@ -1,10 +1,14 @@
-<div
-  tal:define="specs view/getLatestSpecifications"
-  tal:condition="specs"
-  class="portlet"
->
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-  <h2>Latest proposed features</h2>
+<div class="portlet" id="portlet-blueprints"
+  tal:define="specs view/getLatestSpecifications" tal:condition="specs">
+  <h2>Latest blueprints</h2>
+  <div class="portletBody">
+
   <table>
     <tbody>
       <tr tal:repeat="spec specs"
@@ -12,4 +16,7 @@
       </tr>
     </tbody>
   </table>
+
+  </div>
 </div>
+</tal:root>

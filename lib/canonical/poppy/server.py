@@ -45,12 +45,12 @@ class Channel(FTPServerChannel):
         return self.uploadfilesystem
 
     def received(self, data):
-        # XXX This is a work-around for a bug in Zope 3's ServerChannelBase
+        # XXX Steve Alexander 2005-01-18 
+        #     This is a work-around for a bug in Zope 3's ServerChannelBase
         #     that it doesn't update self.last_activity.
         #     This method can be removed once Zope3 is fixed, and we're using
         #     that code.
         #     http://collector.zope.org/Zope3-dev/350
-        #     Steve Alexander, 2005-01-18
         self.record_activity()
         FTPServerChannel.received(self, data)
 

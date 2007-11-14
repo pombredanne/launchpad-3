@@ -1,0 +1,52 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-lifecycle" />
+</metal:portlets>
+
+<div metal:fill-slot="main">
+  <div>
+    <img alt="" src="/@@/faq" />
+    <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+  </div>
+  <div metal:use-macro="context/@@launchpad_form/form" />
+</div>
+
+<metal:help fill-slot="help">
+  <p>Project owners and answer contacts can modify the FAQ details.
+  </p>
+
+  <div class="warning message">Be aware that there is currently no undo or
+    versioning done on the content. So edit with care!
+  </div>
+
+  <p>The <b>title</b> should describe the problem explained in the document.
+    Using a question works usually well.
+  </p>
+
+  <p>The <b>keywords</b> can be used to make the FAQ easier to find in
+    searches. Note that it is not necessary to add words or variant of words
+    already in the title.
+  </p>
+
+  <p>The <b>content</b> should contain a complete answer to the problem. If
+    an external document already exists with the answer (like on a wiki),
+    just give a short description and enter the URL to the page.
+  </p>
+
+</metal:help>
+
+</body>
+</html>

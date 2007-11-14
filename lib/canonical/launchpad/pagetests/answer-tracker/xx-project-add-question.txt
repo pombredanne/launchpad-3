@@ -90,8 +90,7 @@ as he revises the summary after reading the similar questions.
 An error message in the page informs the user that the summary is
 missing:
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     You must enter a summary of your problem.
 
@@ -109,9 +108,10 @@ The user is again shown similar questions, this time for the product
 Thunderbird. Since there are no similar questions against Thunderbird,
 an appropriate message is displayed to inform him of this:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('p').renderContents()
-    There are no existing questions similar to the summary you entered.
+    There are no existing FAQs or questions similar to the summary you
+    entered.
 
 The user then elaborates upon his question by entering a description
 of the problem. He submits the form using the 'Add' button.
@@ -147,9 +147,7 @@ Japanese will be a supported language for Thunderbird Questions,
 which allows us to test the supported languages behaviour for
 non-English languages. Dafydd speaks Japanese, so we will use him.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> daf_browser = Browser()
-    >>> daf_browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> daf_browser.title
     "Dafydd Harries's preferred languages"
@@ -165,9 +163,9 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser.getControl('I want to be an answer contact for '
     ...                        'Mozilla Thunderbird').selected = True
     >>> daf_browser.getControl('Continue').click()
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(daf_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> content = find_main_content(daf_browser.contents)
+    >>> for message in content.findAll('div', 'informational message'):
+    ...      print message.renderContents()
     You have been added as an answer contact for Mozilla Thunderbird.
 
 And we add Japanese to No Privileges Person's preferred languages. We
@@ -183,7 +181,7 @@ behaviour.
     
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
     Added Japanese to your preferred languages.
 

@@ -1,12 +1,10 @@
 On the bug listings page there is a portlet which shows all tags that
 have been used for bugs in this context.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+bugs'
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
+    >>> tags_portlet = find_tag_by_id(anon_browser.contents, 'portlet-tags')
     >>> for td_tag in tags_portlet('td'):
     ...     print td_tag.renderContents()
     <a ...>crash</a>
@@ -27,7 +25,7 @@ If we click on a tag, only bugs with that tag are displayed:
     9 Thunderbird crashes
       thunderbird Medium Confirmed
     10 another test bug
-       linux-source-2.6.15 Medium Unconfirmed
+       linux-source-2.6.15 Medium New
 
 Clicking on a tags shows only bugs that have that specific tag, so if
 we click on another tag, the bugs that were shown previously won't be
@@ -38,15 +36,15 @@ shown.
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New
 
 The links don't work as a filter to the existing listing, it's a filter
-of the default listing. So if we would show only the rejected bugs, and
+of the default listing. So if we would show only the invalid bugs, and
 then press the tag link again, only open bugs will be shown
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl(name='field.status:list').value = ['Rejected']
+    >>> anon_browser.getControl(name='field.status:list').displayValue = ['Invalid']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
 
@@ -55,4 +53,4 @@ then press the tag link again, only open bugs will be shown
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New

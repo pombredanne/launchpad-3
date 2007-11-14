@@ -11,10 +11,10 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import ShippingRequestStatus
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import IShippingRequestSet
+from canonical.launchpad.interfaces import (
+    IShippingRequestSet, ShippingRequestStatus)
 
 
 class ShipitRequestMassProcessing(LaunchpadScript):

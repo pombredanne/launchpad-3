@@ -7,7 +7,7 @@ import sys
 import thread
 import threading
 import traceback
-import time
+from time import time
 import warnings
 
 from zope.component import getUtility
@@ -21,13 +21,14 @@ import psycopg
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
+    'DisconnectionError',
     'LaunchpadDatabaseAdapter',
     'SessionDatabaseAdapter',
     'RequestExpired',
@@ -61,7 +62,7 @@ def _wasDisconnected(msg):
     The message will either be a string, or a dictionary mapping
     cursors to string messages.
     """
-    # XXX: 20070514 James Henstridge
+    # XXX: James Henstridge 2007-05-14:
     # This function needs to check exception messages in order to do
     # its job.  Hopefully we can clean this up when switching to
     # psycopg2, since it exposes the Postgres error codes through its
@@ -91,7 +92,7 @@ class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
         psycopg.IntegrityError.__init__(self, *integrity_error.args)
 
 
-class DisconnectedConnectionError(Exception):
+class DisconnectionError(Exception):
     """Attempt was made to access the database after a disconnection."""
 
 
@@ -110,24 +111,22 @@ class ReconnectingConnection:
         """Ensure that we are connected to the database.
 
         If the connection is marked as dead, or if we can't reconnect,
-        then raise DisconnectedConnectionError.
+        then raise DisconnectionError.
 
         If we need to reconnect, the connection generation number is
         incremented.
         """
         if self._is_dead:
-            raise Retry((DisconnectedConnectionError,
-                         DisconnectedConnectionError('Already disconnected'),
-                         None))
+            raise DisconnectionError('Already disconnected')
         if self._connection is not None:
             return
         try:
             self._connection = self._connection_factory()
             self._generation += 1
-        except psycopg.OperationalError:
-            self._handleDisconnection()
+        except psycopg.OperationalError, exc:
+            self._handleDisconnection(exc)
 
-    def _handleDisconnection(self):
+    def _handleDisconnection(self, exc):
         """Note that we were disconnected from the database.
 
         This resets the internal _connection attribute, and marks the
@@ -138,7 +137,7 @@ class ReconnectingConnection:
         """
         self._is_dead = True
         self._connection = None
-        raise Retry(sys.exc_info())
+        raise DisconnectionError(str(exc))
 
     def _checkDisconnect(self, _function, *args, **kwargs):
         """Call a function, checking for database disconnections."""
@@ -158,11 +157,13 @@ class ReconnectingConnection:
             raise RetryPsycopgIntegrityError(sys.exc_info())
         except psycopg.Error, exc:
             if exc.args and _wasDisconnected(exc.args[0]):
-                self._handleDisconnection()
+                self._handleDisconnection(exc)
             else:
                 raise
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
         self._ensureConnected()
         return getattr(self._connection, name)
 
@@ -223,6 +224,8 @@ class ReconnectingCursor:
             self._generation = self.connection._generation
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
         self._ensureCursor()
         return getattr(self._cursor, name)
 
@@ -233,6 +236,17 @@ class ReconnectingCursor:
     fetchall = _handle_disconnections('fetchall')
 
 
+class ReconnectingPsycopgConnection(PsycopgConnection):
+    """A PsycopgConnection subclass that joins the Zope transaction
+    when cursor() is called.
+    """
+
+    def cursor(self):
+        """See IZopeConnection"""
+        self.registerForTxn()
+        return super(ReconnectingPsycopgConnection, self).cursor()
+
+
 class ReconnectingDatabaseAdapter(PsycopgAdapter):
     """A Postgres database adapter that can reconnect to the database."""
 
@@ -241,7 +255,7 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
     def connect(self):
         if not self.isConnected():
             try:
-                self._v_connection = PsycopgConnection(
+                self._v_connection = ReconnectingPsycopgConnection(
                     self.Connection(self._connection_factory), self)
             except psycopg.Error, error:
                 raise DatabaseException(str(error))
@@ -253,7 +267,7 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
     """A subclass of ReconnectionDatabaseAdapter that stores its
     connection information in the central launchpad configuration.
     """
-    
+
     def __init__(self, dsn=None):
         """Ignore dsn"""
         super(SessionDatabaseAdapter, self).__init__(
@@ -281,7 +295,7 @@ def set_request_started(starttime=None):
     thread.
 
     If the argument is given, it is used as the start time for the
-    request, as returned by time.time().  If it is not given, the
+    request, as returned by time().  If it is not given, the
     current time is used.
     """
     if getattr(_local, 'request_start_time', None) is not None:
@@ -289,9 +303,10 @@ def set_request_started(starttime=None):
                       'finished', stacklevel=1)
 
     if starttime is None:
-        starttime = time.time()
+        starttime = time()
     _local.request_start_time = starttime
     _local.request_statements = []
+    _local.current_statement_timeout = None
 
 
 def clear_request_started():
@@ -304,6 +319,16 @@ def clear_request_started():
     _local.request_start_time = None
     _local.request_statements = []
 
+def summarize_requests():
+    """Produce human-readable summary of requests issued so far."""
+    secs = get_request_duration()
+    statements = getattr(_local, 'request_statements', [])
+    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    return log
+
+def summarize_requests_to_stderr(*args):
+    """Output summarize_requests in a format suitable to stderr."""
+    sys.stderr.write(" v--- " + summarize_requests() + "\n")
 
 def get_request_statements():
     """Get the list of executed statements in the request.
@@ -315,15 +340,13 @@ def get_request_statements():
 
 
 def get_request_duration(now=None):
-    """Get the duration of the current request in seconds.
-
-    """
+    """Get the duration of the current request in seconds."""
     starttime = getattr(_local, 'request_start_time', None)
     if starttime is None:
         return -1
 
     if now is None:
-        now = time.time()
+        now = time()
     return now - starttime
 
 
@@ -336,10 +359,7 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((
-        starttime, endtime,
-        '/*%s*/ %s' % (id(connection_wrapper), statement)
-        ))
+    _local.request_statements.append((starttime, endtime, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -355,18 +375,48 @@ def _check_expired(timeout):
     if starttime is None:
         return False # no current request
 
-    requesttime = (time.time() - starttime) * 1000
+    requesttime = (time() - starttime) * 1000
     return requesttime > timeout
 
 
 def hard_timeout_expired():
     """Returns True if the hard request timeout been reached."""
-    return _check_expired(config.launchpad.db_statement_timeout)
+    return _check_expired(dbconfig.db_statement_timeout)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(config.launchpad.soft_request_timeout)
+    return _check_expired(dbconfig.soft_request_timeout)
+
+
+def reset_hard_timeout(execute_func):
+    """Reset the statement_timeout to remaining wallclock time."""
+    if dbconfig.db_statement_timeout is None:
+        return # No timeout - nothing to do
+
+    global _local
+
+    start_time = getattr(_local, 'request_start_time', None)
+    if start_time is None:
+        return # Not in a request - nothing to do
+
+    now = time()
+    remaining_ms = (
+            dbconfig.db_statement_timeout - int((now - start_time) * 1000))
+
+    if remaining_ms <= 0:
+        return # Already timed out - nothing to do
+
+    # Only reset the statement timeout once in this many milliseconds
+    # to avoid too many database round trips.
+    precision = config.launchpad.db_statement_timeout_precision
+
+    current_statement_timeout = getattr(
+            _local, 'current_statement_timeout', None)
+    if (current_statement_timeout is None
+            or current_statement_timeout - remaining_ms > precision):
+        execute_func("SET statement_timeout TO %d" % remaining_ms)
+        _local.current_statement_timeout = remaining_ms
 
 
 class RequestExpired(RuntimeError):
@@ -383,23 +433,23 @@ class LaunchpadConnection(ReconnectingConnection):
 
     Overrides the cursor() method to return LaunchpadCursor objects.
     """
-    
+
     def cursor(self):
         return LaunchpadCursor(self)
 
     def commit(self):
-        starttime = time.time()
+        starttime = time()
         try:
             super(LaunchpadConnection, self).commit()
         finally:
-            _log_statement(starttime, time.time(), self, 'COMMIT')
+            _log_statement(starttime, time(), self, 'COMMIT')
 
     def rollback(self):
-        starttime = time.time()
+        starttime = time()
         try:
             super(LaunchpadConnection, self).rollback()
         finally:
-            _log_statement(starttime, time.time(), self, 'ROLLBACK')
+            _log_statement(starttime, time(), self, 'ROLLBACK')
 
 
 class LaunchpadCursor(ReconnectingCursor):
@@ -427,22 +477,24 @@ class LaunchpadCursor(ReconnectingCursor):
                 pass
             OpStats.stats['timeouts'] += 1
             raise RequestExpired(statement)
+
+        reset_hard_timeout(super(LaunchpadCursor, self).execute)
+
         try:
-            starttime = time.time()
+            starttime = time()
             if os.environ.get("LP_DEBUG_SQL_EXTRA"):
-                sys.stderr.write("-" * 70 + "\n")
                 traceback.print_stack()
                 sys.stderr.write("." * 70 + "\n")
-            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
+            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
+                sys.stderr.write("-" * 70 + "\n")
             try:
                 return super(LaunchpadCursor, self).execute(
-                    '/*%s*/ %s' % (id(self.connection), statement),
-                    *args, **kwargs)
+                        statement, *args, **kwargs)
             finally:
                 _log_statement(
-                        starttime, time.time(),
+                        starttime, time(),
                         self.connection, statement
                         )
         except psycopg.ProgrammingError, error:
@@ -477,20 +529,14 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         """
         dbuser = getattr(self._local, 'dbuser', None)
         self.setDSN('dbi://%s@%s/%s' % (
-            dbuser or config.launchpad.dbuser,
-            config.dbhost or '',
-            config.dbname
+            dbuser or dbconfig.dbuser,
+            dbconfig.dbhost or '',
+            dbconfig.dbname
             ))
 
         flags = _get_dirty_commit_flags()
         connection = super(LaunchpadDatabaseAdapter,
                            self)._connection_factory()
-
-        if config.launchpad.db_statement_timeout is not None:
-            cursor = connection.cursor()
-            cursor.execute('SET statement_timeout TO %d' %
-                           config.launchpad.db_statement_timeout)
-            connection.commit()
 
         _reset_dirty_commit_flags(*flags)
         return connection
@@ -545,7 +591,7 @@ def break_main_thread_db_access(*ignored):
     class BrokenConnection:
         def __getattr__(self, key):
             raise SQLOSAccessFromMainThread()
-        
+
     sqlos.connection.connCache[key] = BrokenConnection()
 
     # And prove it
@@ -558,4 +604,5 @@ def break_main_thread_db_access(*ignored):
         pass
     else:
         raise AssertionError("Failed to kill main thread SQLOS connection")
+
 

@@ -1,13 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <script type="text/javascript">
   function toggleFormVisibility(row_id) {
     row = document.getElementById(row_id)
     edit_icon = document.getElementById(row_id + "-edit")
     if (row.style.display=="none") {
       row.style.display = "table-row";
-      edit_icon.setAttribute("src","/@@/treeExpanded")
     } else {
       row.style.display = "none";
-      edit_icon.setAttribute("src", "/@@/treeCollapsed")
     }
     return false;
   }
@@ -16,10 +18,11 @@
 <table tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'">
   <thead>
     <tr>
-      <th colspan="2">Affects</th>
+      <th>Affects</th>
       <th>Status</th>
       <th>Importance</th>
-      <th>Assigned To</th>
+      <th>Assigned to</th>
+      <th></th>
     </tr>
   </thead>
 
@@ -32,23 +35,25 @@
 </table>
 
 <div style="text-align: right; margin-bottom: 1em;"
+     tal:condition="view/displayAlsoAffectsLinks"
      tal:define="current_bugtask view/currentBugTask">
 
   Also affects:
   <span style="white-space: nowrap">
       <img src="/@@/add" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
-         title="Mark this bug as occurring upstream">
-        Upstream&hellip;
+         title="Record this bug as occurring in another project">
+        Project&hellip;
       </a>
   </span>
 
   <span style="white-space: nowrap">
       <img src="/@@/add" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
-         title="Mark this bug as occurring in a distro package">
-        Distribution&hellip;
+         title="Record this bug as occurring in another distribution and/or package">
+        Distribution/Package&hellip;
       </a>
   </span>
 
 </div>
+</tal:root>

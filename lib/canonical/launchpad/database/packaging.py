@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
@@ -10,11 +10,11 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import PackagingType
-
-from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
+from canonical.launchpad.interfaces import (
+        PackagingType, IPackaging, IPackagingUtil)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
 
 class Packaging(SQLBase):
     """A Packaging relating a SourcePackageName in DistroSeries and a Product.
@@ -31,10 +31,10 @@ class Packaging(SQLBase):
                                    dbName="sourcepackagename",
                                    notNull=True)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distrorelease',
+                               dbName='distroseries',
                                notNull=True)
     packaging = EnumCol(dbName='packaging', notNull=True,
-                        schema=PackagingType)
+                        enum=PackagingType)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 

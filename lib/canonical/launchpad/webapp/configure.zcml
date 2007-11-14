@@ -79,7 +79,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lp.dbschema.Item"
+        for="canonical.lazr.BaseItem"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -167,6 +167,15 @@
         name="image"
         />
 
+    <!-- TALES badges: namespace -->
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BadgeDisplayAPI"
+        name="badges"
+        />
+
     <!-- TALES fmt: namespace -->
 
     <!-- The next directive is registered for all dicts, but we really only
@@ -246,6 +255,27 @@
         for="canonical.launchpad.interfaces.IPerson"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBranch"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
         name="fmt"
         />
 
@@ -480,20 +510,10 @@
 
     <!-- the URI class -->
     <class class="canonical.launchpad.webapp.uri.URI">
-      <allow attributes="scheme userinfo host port path query fragment 
+      <allow attributes="scheme userinfo host port path query fragment
           authority hier_part
           __str__ __repr__ __eq__ __ne__ replace resolve append contains
           ensureSlash ensureNoSlash" />
-    </class>
-
-    <!-- enum classes Item and OrderedMapping -->
-    <class class="canonical.launchpad.webapp.enum.Item">
-        <allow attributes="name title value description schema
-                           schema_items schema_name sortkey __sqlrepr__" />
-    </class>
-
-    <class class="canonical.launchpad.webapp.enum.OrderedMapping">
-        <allow attributes="__getitem__ __iter__" />
     </class>
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

@@ -8,7 +8,9 @@ __all__ = [
     'Question',
     'QuestionTargetSearch',
     'QuestionPersonSearch',
-    'QuestionSet']
+    'QuestionSet',
+    'QuestionTargetMixin',
+    ]
 
 import operator
 from email.Utils import make_msgid
@@ -23,21 +25,20 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSourcePackage,
-    InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
-    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget,
-    ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
+    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
+    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
+    ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
+    IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
+    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
+    QuestionPriority, QuestionSort, QuestionStatus)
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    QuestionAction, QuestionSort, QuestionStatus,
-    QuestionParticipation, QuestionPriority)
-
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -47,10 +48,11 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
-    QuestionNotificationRecipientSet)
-from canonical.launchpad.webapp.enum import Item
+    NotificationRecipientSet)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:
@@ -62,7 +64,7 @@ class notify_question_modified:
 
     The list of edited_fields will be computed by comparing the snapshot
     with the modified question. The fields that are checked for
-    modifications are: status, messages, dateanswered, answerer, answer,
+    modifications are: status, messages, date_solved, answerer, answer,
     datelastquery and datelastresponse.
 
     The user triggering the event is taken from the returned message.
@@ -76,7 +78,7 @@ class notify_question_modified:
             msg = func(self, *args, **kwargs)
 
             edited_fields = ['messages']
-            for field in ['status', 'dateanswered', 'answerer', 'answer',
+            for field in ['status', 'date_solved', 'answerer', 'answer',
                           'datelastquery', 'datelastresponse', 'target']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
@@ -89,7 +91,7 @@ class notify_question_modified:
 
 
 class Question(SQLBase, BugLinkTargetMixin):
-    """See IQuestion."""
+    """See `IQuestion`."""
 
     implements(IQuestion, IBugLinkTarget)
 
@@ -117,7 +119,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
-    dateanswered = UtcDateTimeCol(notNull=False, default=None)
+    date_solved = UtcDateTimeCol(notNull=False, default=None)
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     distribution = ForeignKey(
@@ -127,6 +129,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
+
+    faq = ForeignKey(
+        dbName='faq', foreignKey='FAQ', notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('QuestionSubscription',
@@ -145,7 +150,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     # attributes
     def target(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if self.product:
             return self.product
         elif self.sourcepackagename:
@@ -155,14 +160,14 @@ class Question(SQLBase, BugLinkTargetMixin):
             return self.distribution
 
     def _settarget(self, question_target):
-        """See IQuestion.target."""
+        """See Question.target."""
         assert IQuestionTarget.providedBy(question_target), (
             "The target must be an IQuestionTarget")
         if IProduct.providedBy(question_target):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 #108240
+        # XXX sinzui 2007-04-20 bug=108240
         # We test for ISourcePackage because it is a valid QuestionTarget even
         # though it should not be. SourcePackages are never passed to this
         # mutator.
@@ -183,7 +188,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @property
     def followup_subject(self):
-        """See IMessageTarget."""
+        """See `IMessageTarget`."""
         if not self.messages:
             return 'Re: '+ self.title
         subject = self.messages[-1].title
@@ -192,7 +197,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        """See IQuestion."""
+        """See `IQuestion`."""
         return bool(
             QuestionSubscription.selectOneBy(question=self, person=person))
 
@@ -203,7 +208,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     # to update that document for any pertinent changes.
     @notify_question_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if new_status == self.status:
             raise InvalidQuestionStateError(
                 "New status is same as the old one.")
@@ -212,7 +217,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         # information as well.
         self.answerer = None
         self.answer = None
-        self.dateanswered = None
+        self.date_solved = None
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
@@ -220,7 +225,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.COMMENT, new_status=self.status,
@@ -228,14 +233,14 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @property
     def can_request_info(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         return self.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
             QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         assert user != self.owner, "Owner cannot use requestInfo()."
         if not self.can_request_info:
             raise InvalidQuestionStateError(
@@ -250,12 +255,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @property
     def can_give_info(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]
 
     @notify_question_modified()
     def giveInfo(self, reply, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if not self.can_give_info:
             raise InvalidQuestionStateError(
                 "Question status != OPEN or NEEDSINFO")
@@ -265,7 +270,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @property
     def can_give_answer(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         return self.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
             QuestionStatus.ANSWERED]
@@ -273,6 +278,11 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
         """See IQuestion."""
+        return self._giveAnswer(user, answer, datecreated)
+
+    def _giveAnswer(self, user, answer, datecreated):
+        """Implementation of _giveAnswer that doesn't trigger notifications.
+        """
         if not self.can_give_answer:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO or ANSWERED")
@@ -288,22 +298,34 @@ class Question(SQLBase, BugLinkTargetMixin):
             new_status=new_status)
 
         if self.owner == user:
-            self.dateanswered = msg.datecreated
+            self.date_solved = msg.datecreated
             self.answerer = user
-            self.answer = msg
-            self.owner.assignKarma(
-                'questionownersolved', product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
+
         return msg
+
+    @notify_question_modified()
+    def linkFAQ(self, user, faq, comment, datecreated=None):
+        """See `IQuestion`."""
+        if faq is not None:
+            assert IFAQ.providedBy(faq), (
+                "faq parameter must provide IFAQ or be None")
+        assert self.faq != faq, (
+            'cannot call linkFAQ() with already linked FAQ')
+        self.faq = faq
+        if self.can_give_answer:
+            return self._giveAnswer(user, comment, datecreated)
+        else:
+            # The question's status is Solved or Invalid.
+            return self.addComment(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if self.status not in [
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
-            QuestionStatus.NEEDSINFO]:
-
+            QuestionStatus.NEEDSINFO, QuestionStatus.SOLVED]:
+            return False
+        if self.answerer is not None and self.answerer is not self.owner:
             return False
 
         for message in self.messages:
@@ -313,7 +335,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @notify_question_modified()
     def confirmAnswer(self, comment, answer=None, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if not self.can_confirm_answer:
             raise InvalidQuestionStateError(
                 "There is no answer that can be confirmed")
@@ -327,7 +349,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.CONFIRM,
             new_status=QuestionStatus.SOLVED)
         if answer:
-            self.dateanswered = msg.datecreated
+            self.date_solved = msg.datecreated
             self.answerer = answer.owner
             self.answer = answer
 
@@ -342,7 +364,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return msg
 
     def canReject(self, user):
-        """See IQuestion."""
+        """See `IQuestion`."""
         for contact in self.target.answer_contacts:
             if user.inTeam(contact):
                 return True
@@ -354,7 +376,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @notify_question_modified()
     def reject(self, user, comment, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         assert self.canReject(user), (
             'User "%s" cannot reject the question.' % user.displayname)
         if self.status == QuestionStatus.INVALID:
@@ -363,13 +385,13 @@ class Question(SQLBase, BugLinkTargetMixin):
             user, comment, datecreated=datecreated,
             action=QuestionAction.REJECT, new_status=QuestionStatus.INVALID)
         self.answerer = user
-        self.dateanswered = msg.datecreated
+        self.date_solved = msg.datecreated
         self.answer = msg
         return msg
 
     @notify_question_modified()
     def expireQuestion(self, user, comment, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if self.status not in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]:
             raise InvalidQuestionStateError(
                 "Question status != OPEN or NEEDSINFO")
@@ -379,14 +401,14 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @property
     def can_reopen(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         return self.status in [
             QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
             QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
-        """See IQuestion."""
+        """See `IQuestion`."""
         if not self.can_reopen:
             raise InvalidQuestionStateError(
                 "Question status != ANSWERED, EXPIRED or SOLVED.")
@@ -395,12 +417,12 @@ class Question(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
         self.answer = None
         self.answerer = None
-        self.dateanswered = None
+        self.date_solved = None
         return msg
 
     # subscriptions
     def subscribe(self, person):
-        """See IQuestion."""
+        """See `IQuestion`."""
         # First see if a relevant subscription exists, and if so, update it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
@@ -409,7 +431,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return QuestionSubscription(question=self, person=person)
 
     def unsubscribe(self, person):
-        """See IQuestion."""
+        """See `IQuestion`."""
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
@@ -417,23 +439,22 @@ class Question(SQLBase, BugLinkTargetMixin):
                 return
 
     def getSubscribers(self):
-        """See IQuestion."""
+        """See `IQuestion`."""
         subscribers = self.getDirectSubscribers()
         subscribers.update(self.getIndirectSubscribers())
         return subscribers
 
     def getDirectSubscribers(self):
-        """See IQuestion."""
-        subscribers = QuestionNotificationRecipientSet()
+        """See `IQuestion`."""
+        subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
         return subscribers
 
     def getIndirectSubscribers(self):
-        """See IQuestion."""
-        subscribers = QuestionNotificationRecipientSet()
-        subscribers.addAnswerContacts(self.target)
+        """See `IQuestion`."""
+        subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
             reason = ('You received this question notification because you '
                       'are the assignee for this question.')
@@ -489,13 +510,13 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     # IBugLinkTarget implementation
     def linkBug(self, bug):
-        """See IBugLinkTarget."""
+        """See `IBugLinkTarget`."""
         # Subscribe the question's owner to the bug.
         bug.subscribe(self.owner)
         return BugLinkTargetMixin.linkBug(self, bug)
 
     def unlinkBug(self, bug):
-        """See IBugLinkTarget."""
+        """See `IBugLinkTarget`."""
         buglink = BugLinkTargetMixin.unlinkBug(self, bug)
         if buglink:
             # Additionnaly, unsubscribe the question's owner to the bug
@@ -516,34 +537,83 @@ class QuestionSet:
     implements(IQuestionSet)
 
     def __init__(self):
-        """See IQuestionSet."""
+        """See `IQuestionSet`."""
         self.title = 'Launchpad'
 
     def findExpiredQuestions(self, days_before_expiration):
-        """See IQuestionSet."""
-        return Question.select(
-            """status IN (%s, %s)
-                    AND (datelastresponse IS NULL
-                         OR datelastresponse < (
-                            current_timestamp -interval '%s days'))
-                    AND
-                    datelastquery  < (current_timestamp - interval '%s days')
-                    AND assignee IS NULL
+        """See `IQuestionSet`."""
+        # This query joins to bugtasks that are not BugTaskStatus.INVALID
+        # because there are many bugtasks to one question. A question is
+        # included when BugTask.status IS NULL.
+        return Question.select("""
+            id in (SELECT Question.id
+                FROM Question
+                    LEFT OUTER JOIN QuestionBug
+                        ON Question.id = QuestionBug.question
+                    LEFT OUTER JOIN BugTask
+                        ON QuestionBug.bug = BugTask.bug
+                            AND BugTask.status != %s
+                WHERE
+                    Question.status IN (%s, %s)
+                    AND (Question.datelastresponse IS NULL
+                         OR Question.datelastresponse < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days'))
+                    AND Question.datelastquery < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days')
+                    AND Question.assignee IS NULL
+                    AND BugTask.status IS NULL)
             """ % sqlvalues(
+                BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
     def searchQuestions(self, search_text=None, language=None,
                       status=QUESTION_STATUS_DEFAULT_SEARCH, sort=None):
-        """See IQuestionSet"""
+        """See `IQuestionSet`"""
         return QuestionSearch(
             search_text=search_text, status=status, language=language,
             sort=sort).getResults()
 
     def getQuestionLanguages(self):
-        """See IQuestionSet"""
+        """See `IQuestionSet`"""
         return set(Language.select('Language.id = Question.language',
             clauseTables=['Question'], distinct=True))
+
+    def getMostActiveProjects(self, limit=5):
+        """See `IQuestionSet`."""
+        cur = cursor()
+        cur.execute("""
+            SELECT product, distribution, count(*) AS "question_count"
+            FROM (
+                SELECT product, distribution
+                FROM Question
+                    LEFT OUTER JOIN Product ON (Question.product = Product.id)
+                    LEFT OUTER JOIN Distribution ON (
+                        Question.distribution = Distribution.id)
+                WHERE
+                    (Product.official_answers is True
+                    OR Distribution.official_answers is TRUE)
+                    AND Question.datecreated > (
+                        current_timestamp -interval '60 days')
+                LIMIT 5000
+            ) AS "RecentQuestions"
+            GROUP BY product, distribution
+            ORDER BY question_count DESC
+            LIMIT %s
+            """ % sqlvalues(limit))
+
+        projects = []
+        product_set = getUtility(IProductSet)
+        distribution_set = getUtility(IDistributionSet)
+        for product_id, distribution_id, ignored in cur.fetchall():
+            if product_id:
+                projects.append(product_set.get(product_id))
+            elif distribution_id:
+                projects.append(distribution_set.get(distribution_id))
+            else:
+                raise AssertionError(
+                    'product_id and distribution_id are NULL')
+        return projects
 
     @staticmethod
     def new(title=None, description=None, owner=None,
@@ -566,7 +636,7 @@ class QuestionSet:
         return question
 
     def get(self, question_id, default=None):
-        """See IQuestionSet."""
+        """See `IQuestionSet`."""
         try:
             return Question.get(question_id)
         except SQLObjectNotFound:
@@ -586,7 +656,7 @@ class QuestionSearch:
                  project=None):
         self.search_text = search_text
 
-        if zope_isinstance(status, Item):
+        if zope_isinstance(status, DBItem):
             self.status = [status]
         else:
             self.status = status
@@ -760,7 +830,7 @@ class QuestionSearch:
 
 
 class QuestionTargetSearch(QuestionSearch):
-    """Search questions in an IQuestionTarget context.
+    """Search questions in an `IQuestionTarget` context.
 
     Used to implement IQuestionTarget.searchQuestions().
     """
@@ -787,7 +857,11 @@ class QuestionTargetSearch(QuestionSearch):
         self.unsupported_target = unsupported_target
 
     def getConstraints(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`.
+
+        Return target and language constraints in addition to the base class
+        constraints.
+        """
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
@@ -801,7 +875,7 @@ class QuestionTargetSearch(QuestionSearch):
         return constraints
 
     def getPrejoins(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`."""
         prejoins = QuestionSearch.getPrejoins(self)
         if self.owner and 'owner' in prejoins:
             # Since it is constant, no need to prefetch it.
@@ -859,7 +933,10 @@ class QuestionPersonSearch(QuestionSearch):
             self.participation = participation
 
     def getTableJoins(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`.
+
+        Return the joins for persons in addition to the base class joins.
+        """
         joins = QuestionSearch.getTableJoins(self)
 
         if QuestionParticipation.SUBSCRIBER in self.participation:
@@ -884,7 +961,11 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`.
+
+        Return the base class constraints plus additional constraints upon
+        the Person's participation in Questions.
+        """
         constraints = QuestionSearch.getConstraints(self)
 
         participations_filter = []
@@ -897,3 +978,169 @@ class QuestionPersonSearch(QuestionSearch):
             constraints.append('(' + ' OR '.join(participations_filter) + ')')
 
         return constraints
+
+
+class QuestionTargetMixin:
+    """Mixin class for `IQuestionTarget`."""
+
+    def getTargetTypes(self):
+        """Return a Dict of QuestionTargets representing this object.
+
+        :Return: a Dict with product, distribution, and sourcepackagename
+                 as possible keys. Each value is a valid QuestionTarget
+                 or None.
+        """
+        return {}
+
+    def newQuestion(self, owner, title, description, language=None,
+                  datecreated=None):
+        """See `IQuestionTarget`."""
+        return QuestionSet.new(
+            title=title, description=description, owner=owner,
+            datecreated=datecreated, language=language,
+            **self.getTargetTypes())
+
+    def getQuestion(self, question_id):
+        """See `IQuestionTarget`."""
+        try:
+            question = Question.get(question_id)
+        except SQLObjectNotFound:
+            return None
+        # Verify that the question is actually for this target.
+        if not self.questionIsForTarget(question):
+            return None
+        return question
+
+    def questionIsForTarget(self, question):
+        """Verify that this question is actually for this target."""
+        if question.target is not self:
+            return False
+        return True
+
+    def findSimilarQuestions(self, title):
+        """See `IQuestionTarget`."""
+        return SimilarQuestionsSearch(
+            title, **self.getTargetTypes()).getResults()
+
+    def getQuestionLanguages(self):
+        """See `IQuestionTarget`."""
+        constraints = ['Language.id = Question.language']
+        targets = self.getTargetTypes()
+        for column, target in targets.items():
+            if target is None:
+                constraint = "Question." + column + " IS NULL"
+            else:
+                constraint = "Question." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+        return set(Language.select(
+            ' AND '.join(constraints),
+            clauseTables=['Question'], distinct=True))
+
+    @property
+    def answer_contacts(self):
+        """See `IQuestionTarget`."""
+        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))
+
+    @property
+    def direct_answer_contacts(self):
+        """See `IQuestionTarget`."""
+        return self.answer_contacts
+
+    def addAnswerContact(self, person):
+        """See `IQuestionTarget`."""
+        answer_contact = AnswerContact.selectOneBy(
+            person=person, **self.getTargetTypes())
+        if answer_contact is not None:
+            return False
+        # Person must speak a language to be an answer contact.
+        assert person.languages.count() > 0, (
+            "An Answer Contact must speak a language.")
+        params = dict(product=None, distribution=None, sourcepackagename=None)
+        params.update(self.getTargetTypes())
+        AnswerContact(person=person, **params)
+        return True
+
+    def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
+        """Return the Persons or Teams who are AnswerContacts."""
+        answer_contacts = AnswerContact.select(
+            " AND ".join(constraints), clauseTables=clause_tables,
+            distinct=True)
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))
+
+    def getAnswerContactsForLanguage(self, language):
+        """See `IQuestionTarget`."""
+        assert language is not None, (
+            "The language cannot be None when selecting answer contacts.")
+        constraints = []
+        targets = self.getTargetTypes()
+        for column, target in targets.items():
+            if target is None:
+                constraint = "AnswerContact." + column + " IS NULL"
+            else:
+                constraint = "AnswerContact." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+
+        constraints.append("""
+            AnswerContact.person = PersonLanguage.person AND
+            PersonLanguage.Language = Language.id""")
+        # XXX sinzui 2007-07-12 bug=125545:
+        # Using a LIKE constraint is suboptimal. We would not need this
+        # if-else clause if variant languages knew their parent language.
+        if language.code == 'en':
+            constraints.append("""
+                Language.code LIKE %s""" % sqlvalues('%s%%' % language.code))
+        else:
+            constraints.append("""
+                Language.id = %s""" % sqlvalues(language))
+        return set(self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage', 'Language']))
+
+    def getAnswerContactRecipients(self, language):
+        """See `IQuestionTarget`."""
+        if language is None:
+            contacts = self.answer_contacts
+        else:
+            contacts = self.getAnswerContactsForLanguage(language)
+        recipients = NotificationRecipientSet()
+        for person in contacts:
+            reason_start = (
+                "You received this question notification because you are ")
+            if person.isTeam():
+                reason = reason_start + (
+                    'a member of %s, which is an answer contact for %s.' % (
+                        person.displayname, self.displayname))
+                header = 'Answer Contact (%s) @%s' % (self.name, person.name)
+            else:
+                reason = reason_start + (
+                    'an answer contact for %s.' % self.displayname)
+                header = 'Answer Contact (%s)' % self.displayname
+            recipients.add(person, reason, header)
+        return recipients
+
+    def removeAnswerContact(self, person):
+        """See `IQuestionTarget`."""
+        if person not in self.answer_contacts:
+            return False
+        answer_contact = AnswerContact.selectOneBy(
+            person=person, **self.getTargetTypes())
+        if answer_contact is None:
+            return False
+        answer_contact.destroySelf()
+        return True
+
+    def getSupportedLanguages(self):
+        """See `IQuestionTarget`."""
+        languages = set()
+        for contact in self.answer_contacts:
+            languages |= set(contact.languages)
+        languages.add(getUtility(ILanguageSet)['en'])
+        languages = set(
+            lang for lang in languages if not is_english_variant(lang))
+        return languages

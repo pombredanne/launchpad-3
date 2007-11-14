@@ -1,31 +1,164 @@
+= Bugmail settings =
+
 Any logged in user can change their bugmail settings and the bugmail
 settings of teams to which they belong.
 
-  >>> http.resetCookies()
-  >>> print http(r"""
-  ... POST /ubuntu/+source/mozilla-firefox/+subscribe HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 207
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Host: bugs.launchpad.dev
-  ... Referer: http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe
-  ... 
-  ... make_me_a_bugcontact=on&bugmail_contact_team.subscribe=admins&bugmail_contact_team.visible=admins&bugmail_contact_team.visible=ubuntu-team&bugmail_contact_team.visible=testing-spanish-team&save=Save+these+changes""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: .../ubuntu/+source/mozilla-firefox/+bugs
-  ...
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
+    >>> browser.getLink('Subscribe to bug mail').click()
+    >>> subscribe_myself = browser.getControl(
+    ...    'I want to receive all bugmail for this source package')
+    >>> subscribe_myself.selected
+    False
+    >>> subscribe_myself.selected = True
+    >>> subscribe_team = browser.getControl('Landscape')
+    >>> subscribe_team.selected
+    False
+    >>> subscribe_team.selected = True
+    >>> browser.getControl('Save these changes').click()
 
-The bug contacts are now sabdfl and the Launchpad admin team.
+Sample Person and the Landscape team are now subscribed.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-  >>> logout()
-  >>> login(ANONYMOUS)
-  >>> ubuntu = getUtility(IDistributionSet).get(1)
-  >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-  >>> sorted([pkg_bug_contact.bugcontact.name for pkg_bug_contact in
-  ...         ubuntu_mozilla_firefox.bugcontacts])
-  [u'admins', u'name16', u'sabdfl']
-  >>> logout()
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> logout()
+
+    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
+    Bug contacts
+    For this package:
+    Foo Bar
+    Landscape Developers
+    Sample Person
+    For all Ubuntu packages:
+    Landscape Developers
+
+Sample Person can also unsubscribe himself and the Landscape team.
+
+    >>> subscribe_myself = browser.getControl(
+    ...    'I want to receive all bugmail for this source package')
+    >>> subscribe_myself.selected = False
+    >>> subscribe_team = browser.getControl('Landscape')
+    >>> subscribe_team.selected = False
+    >>> browser.getControl('Save these changes').click()
+    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
+    Bug contacts
+    For this package:
+    Foo Bar
+    For all Ubuntu packages:
+    Landscape Developers
+
+
+== Additional options for distribuion drivers ==
+
+A distribution driver can add and remove anybody to the bug contacts.
+
+Firstly, we appoint Sample Person as the driver for the distribution.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> ubuntu.driver = driver
+    >>> flush_database_updates()
+    >>> logout()
+
+The driver sees an extended form in the +subscribe view, which allows him
+to add any user to the bug contacts.
+
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
+    >>> subscribe_other = browser.getControl('Add other bug contact:')
+    >>> subscribe_other.value = 'no-priv'
+    >>> browser.getControl('Save these changes').click()
+
+No Privileges Person is now subscribed...
+
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print message.renderContents()
+    "No Privileges Person" was successfully subscribed to all bugmail in 
+    mozilla-firefox in ubuntu
+
+    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
+    Bug contacts
+    For this package:
+    Foo Bar
+    No Privileges Person
+    For all Ubuntu packages:
+    Landscape Developers
+
+...has an entry in the "Remove bug contacts" list...
+
+    >>> remove_other = browser.getControl('\xa0No Privileges Person')
+
+...and can be unsubscribed again.
+
+    >>> remove_other.selected = True
+    >>> browser.getControl('Save these changes').click()
+    >>> print find_tags_by_class(
+    ...    browser.contents, 'informational message')[0].contents[0]
+    "No Privileges Person" was successfully unsubscribed from all bugmail in 
+    mozilla-firefox in ubuntu
+    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
+    Bug contacts
+    For this package:
+    Foo Bar
+    For all Ubuntu packages:
+    Landscape Developers
+ 
+The checkbox to unsubscribe No Privileges Person is no longer present on
+the page.
+
+    >>> remove_other = browser.getControl('\xa0No Privileges Person')
+    Traceback (most recent call last):
+    ...
+    LookupError: label '\xa0No Privileges Person'
+
+Sample Person is no longer the distribution driver.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.driver = None
+    >>> flush_database_updates()
+    >>> logout()
+
+An attempt by Sample Person to remove Foo Bar from the subscription list
+and to add Sample Person is now silently ignored, because LaunchpadFormView
+purges the submitted form data from now unexpected values.
+
+    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
+    Bug contacts
+    For this package:
+    Foo Bar
+    For all Ubuntu packages:
+    Landscape Developers
+
+    >>> remove_other = browser.getControl('\xa0Foo Bar')
+    >>> remove_other.selected = True
+    >>> subscribe_other = browser.getControl('Add other bug contact')
+    >>> subscribe_other.value = 'nopriv'
+    >>> browser.getControl('Save these changes').click()
+    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
+    Bug contacts
+    For this package:
+    Foo Bar
+    For all Ubuntu packages:
+    Landscape Developers
+    
+When Sample Person now visits the bug subscription page, he sees no longer
+the UI elements for the subscription/unsubscription of arbitrary persons.
+
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
+    >>> browser.getControl('Add other bug contact:')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Add other bug contact:'
+
+    >>> print browser.getControl('\xa0Foo Bar')
+    Traceback (most recent call last):
+    ...
+    LookupError: label '\xa0Foo Bar'

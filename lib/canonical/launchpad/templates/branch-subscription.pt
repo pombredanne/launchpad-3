@@ -1,15 +1,20 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>
-        Subscribe to &ldquo;<tal:branch replace="context/displayname" />&rdquo;
-      </h1>
+      <tal:branch-link define="branch context">
+        <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+      </tal:branch-link>
+      <h1>Subscribe to branch</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -23,7 +28,7 @@
 
   <div metal:use-macro="context/@@launchpad_form/form" >
     <metal:extra fill-slot="extra_info">
-      <p class="documentDescription">
+      <p class="documentDescription" tal:condition="view/subscribing_self">
         If you subscribe to a branch it will show up on your
         personal pages.
       </p>
@@ -35,7 +40,7 @@
 <tal:subscribed condition="view/user_is_subscribed">
 
   <tal:comment condition="nothing">
-    This occurs if the user is hacking the URLs, 
+    This occurs if the user is hacking the URLs,
     and should never be linked to from a valid page.
 
     It could occur from a stale page as well if the user

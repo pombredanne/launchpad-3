@@ -145,14 +145,9 @@
         />
 
     <!-- virtual host: openid -->
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="+openid"
-        layer="canonical.launchpad.layers.OpenIdLayer"
-        />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
@@ -211,5 +206,6 @@
 
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
+    <include package="canonical.lazr" />
 
 </configure>

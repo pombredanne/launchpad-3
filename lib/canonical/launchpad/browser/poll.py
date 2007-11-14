@@ -2,16 +2,17 @@
 
 __metaclass__ = type
 
-__all__ = ['PollContextMenu',
-           'PollNavigation',
-           'BasePollView',
-           'PollView',
-           'PollVoteView',
-           'PollAddView',
-           'PollEditView',
-           'PollOptionAddView',
-           'PollOptionEditView',
-           ]
+__all__ = [
+    'BasePollView',
+    'PollAddView',
+    'PollContextMenu',
+    'PollEditView',
+    'PollNavigation',
+    'PollOptionAddView',
+    'PollOptionEditView',
+    'PollView',
+    'PollVoteView',
+    ]
 
 from zope.event import notify
 from zope.component import getUtility
@@ -24,10 +25,9 @@ from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, ContextMenu, GeneralFormView,
     Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
-    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll,
-    validate_date_interval)
+    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
+    PollSecrecy, validate_date_interval)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 
 
 class PollContextMenu(ContextMenu):
@@ -187,9 +187,10 @@ class PollView(BasePollView):
 
     def getPairwiseMatrixWithHeaders(self):
         """Return the pairwise matrix with headers being the option's names."""
-        # XXX: The list() call here is necessary because, lo and behold,
+        # XXX: kiko 2006-03-13:
+        # The list() call here is necessary because, lo and behold,
         # it gives us a non-security-proxied list object! Someone come
-        # in and fix this! -- kiko, 2006-03-13
+        # in and fix this!
         pairwise_matrix = list(self.context.getPairwiseMatrix())
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
@@ -279,7 +280,7 @@ class PollVoteView(BasePollView):
                     "or change your vote, if you want.")
 
     def processCondorcetVotingForm(self):
-        """Process the condorcet-voting form to change a user's vote or 
+        """Process the condorcet-voting form to change a user's vote or
         register a new one.
 
         This method must not be called if the poll is not open.
@@ -292,9 +293,10 @@ class PollVoteView(BasePollView):
             try:
                 preference = int(form.get('option_%d' % option.id))
             except ValueError:
-                # XXX: User tried to specify a value which we can't convert to
+                # XXX: Guilherme Salgado 2005-09-14:
+                # User tried to specify a value which we can't convert to
                 # an integer. Better thing to do would be to notify the user
-                # and ask him to fix it. -- Guilherme Salgado 2005-09-14
+                # and ask him to fix it.
                 preference = None
             newvotes[option] = preference
 
@@ -338,7 +340,7 @@ class PollAddView(GeneralFormView):
                 dateopens, datecloses):
         pollsubset = IPollSubset(self.context)
         poll = pollsubset.new(
-            name, title, proposition, dateopens, datecloses, 
+            name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt)
         self._nextURL = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))

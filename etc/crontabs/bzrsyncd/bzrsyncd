@@ -1,0 +1,7 @@
+MAILTO=launchpad-error-reports@lists.canonical.com
+
+# m h    dom mon dow    command
+
+*  *    *   *   *      env LANG=C LPCONFIG=production python /srv/bzrsyncd.ubuntu.com/launchpad/cronscripts/branch-scanner.py -q
+
+

@@ -14,12 +14,12 @@ team's administrators:
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-    
+
 And when the poll already started, administrators cannot change the options
 either:
 
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+poll/never-closes4')
     >>> browser.getLink('Show option details').click()
     >>> browser.url
@@ -55,7 +55,7 @@ been opened yet, he should be able to edit its options.
     'OptionX'
     >>> browser.getControl('Title').value
     'OptionX'
-    >>> browser.getControl('Name').value = 'OptionZ'
+    >>> browser.getControl('Name').value = 'option-z'
     >>> browser.getControl('Title').value = 'Option Z'
     >>> browser.getControl('Change').click()
 
@@ -65,6 +65,6 @@ been opened yet, he should be able to edit its options.
     <BLANKLINE>
     <h2>Voting options</h2>
     ...
-    ...OptionZ...
+    ...option-z...
     ...
 

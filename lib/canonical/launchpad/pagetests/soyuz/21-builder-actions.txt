@@ -4,8 +4,8 @@ Check if the buider actions are available.
 All of them require authorization, some lp.Edit, some lp.Admin, both
 are only granted to members of launchpad-buildd-admins team.
 
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic celso.providelo@canonical.com:cprov')
+  >>> browser = setupBrowser(
+  ...     auth='Basic celso.providelo@canonical.com:cprov')
 
 Edit:
 
@@ -73,34 +73,30 @@ actions can be succesfully performed.
 
 Check if the access to builder actions is forbidden to normal users:
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> no_priv_browser = Browser()
-  >>> no_priv_browser.addHeader(
-  ...     "Authorization", "Basic no-priv@canonical.com:test")
-
+  >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
   >>> no_priv_browser.open(
   ...     "http://localhost/+builds/bob/+edit")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
   >>> no_priv_browser.open(
   ...     "http://localhost/+builds/bob/+mode")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
   >>> no_priv_browser.open(
   ...     "http://localhost/+builds/bob/+cancel")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
   >>> no_priv_browser.open(
   ...     "http://localhost/+builds/bob/+admin")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
 and Unauthorized for anonymous access:
 

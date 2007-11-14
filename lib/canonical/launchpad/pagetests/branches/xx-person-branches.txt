@@ -5,45 +5,37 @@ There are several views of the branches related to a person.
 Branch lists for people also include branches that are owned by
 teams that the person is participating in.
 
+
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
 
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://code.launchpad.dev/~name12')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Sample Person...
-  ...Bazaar branches...
+  >>> print browser.title
+  Bazaar branches related to Sample Person
+
+The heading in the main content is the same as the page title text.
+
+  >>> main = find_main_content(browser.contents)
+  >>> print extract_text(main.h1)
+  Bazaar branches related to Sample Person
+
+
+== Default view for a person on code root site ==
+
+The default view for a person on the code root site is the normal branch
+listing view for that person.
 
 If a person does not have any related branches, we print an informative
 message.
 
   >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There may be branches related to Daniel Silverstone but none
-  of them match the current filter criteria for this page. Try
-  filtering on "Any Status".
-
-OK, lets follow the advice.
-
-  >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
-  >>> browser.getControl('Filter').click()
-  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
   There are no branches related to Daniel Silverstone in Launchpad today.
   You can use Launchpad as a registry for Bazaar branches, and encourage
   broader community participation in your project using
   distributed version control.
-
-== Default view for a person on code root site ==
-
-The default view for a person on the code root site is the 
-normal branch listing view for that person.
-
-  >>> browser.open('http://code.launchpad.dev/~kinnison')
-  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There may be branches related to Daniel Silverstone but none 
-  of them match the current filter criteria for this page. Try
-  filtering on "Any Status".
 
 
 == Authored Branches ==
@@ -54,15 +46,15 @@ the authored branches page.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show authored branches').click()
    >>> print browser.title
-   Authored branches for Sample Person
+   Bazaar branches authored by Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   main         60 New           firefox
-   klingon      30 Experimental  gnome-terminal
-   feature-x    60 New           landscape
-   trunk        60 New           landscape
-   junk.contrib 60 New
+   main         ... New           firefox
+   klingon      ... Experimental  gnome-terminal
+   feature-x    ... New           landscape
+   trunk        ... New           landscape
+   junk.contrib ... New
       2005-10-31 12:03:57 ... weeks ago
 
 
@@ -73,16 +65,16 @@ There is also a link which points to the registered branches page.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show registered branches').click()
    >>> print browser.title
-   Registered branches for Sample Person 
+   Bazaar branches registered by Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.6                   10 Mature       gnome-terminal
-   main                  20 Development  gnome-terminal
-   mirrored              60 New          gnome-terminal
-   pushed                60 New          gnome-terminal
-   scanned               60 New          gnome-terminal
-   junk.dev Ubuntu Team  30 Experimental  2005-10-31 12:03:57 ... weeks ago
+   2.6                   ... Mature       gnome-terminal
+   main                  ... Development  gnome-terminal
+   mirrored              ... New          gnome-terminal
+   pushed                ... New          gnome-terminal
+   scanned               ... New          gnome-terminal
+   junk.dev Ubuntu Team  ... Experimental  2005-10-31 12:03:57 ... weeks ago
 
 == Subscribed branches ==
 
@@ -92,10 +84,10 @@ branches.
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> browser.getLink('Show subscribed branches').click()
    >>> print browser.title
-   Subscribed branches for Sample Person
+   Bazaar branches subscribed to by Sample Person
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   launchpad   Launchpad Developers 60 New gnome-terminal
-   junk.dev    Ubuntu Team          30 Experimental
+   launchpad   Launchpad Developers ... New gnome-terminal
+   junk.dev    Ubuntu Team          ... Experimental
       2005-10-31 12:03:57 ... weeks ago

@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-filters">
   <h2>Filters</h2>
   <div class="portletBody portletContent">
  
@@ -21,9 +25,9 @@
     </tr>
     <tr>
       <td>
-        <a tal:attributes="href view/getUnconfirmedBugsURL">Unconfirmed</a>
+        <a tal:attributes="href view/getNewBugsURL">New</a>
       </td>
-      <td tal:content="context/unconfirmed_bugtasks/count">42</td>
+      <td tal:content="context/new_bugtasks/count">42</td>
     </tr>
     <tr>
       <td>

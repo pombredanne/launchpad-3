@@ -1,4 +1,10 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-series">
 
   <h2>Published in</h2>
 
@@ -18,3 +24,4 @@
     </p>
   </div>
 </div>
+</tal:root>

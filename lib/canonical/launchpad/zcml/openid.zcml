@@ -1,17 +1,67 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
+    <!-- OpenId virtual host root -->
+    <securedutility
+        class="canonical.launchpad.systemhomes.OpenIdApplication"
+        provides="canonical.launchpad.interfaces.IOpenIdApplication">
+        <allow interface="canonical.launchpad.interfaces.IOpenIdApplication" />
+    </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        path_expression="string:+openid"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <!-- Root navigation -->
+    <browser:navigation
+        module="canonical.launchpad.browser.openidserver"
+        classes="OpenIdApplicationNavigation"
+        />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="canonical.launchpad.layers.OpenIdLayer" />
+
+    <!-- Root document -->
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/openid-index.pt"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        name="+index"
+        />
+
+    <!-- OpenID Provider -->
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+openid"
         class="canonical.launchpad.browser.openidserver.OpenIdView"
         />
 
-    <browser:navigation
-        module="canonical.launchpad.browser.openidserver"
-        classes="OpenIdViewNavigation"
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+decide"
+        class="canonical.launchpad.browser.openidserver.LoginServiceAuthorizeView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+login-register"
+        class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">
@@ -40,11 +90,33 @@
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
 
+    <!-- XXX: StuartBishop 2007-06-13: May be dropped - in discussion.
+      http://openid.launchpad.dev/$Person.name identity URLs
+    -->
     <content
         class="canonical.launchpad.browser.openidserver.OpenIdIdentityView">
       <allow attributes="browserDefault __call__" />
     </content>
 
+    <!-- IOpenIDRPConfig -->
+    <content
+        class="canonical.launchpad.database.OpenIDRPConfig">
+      <allow interface="canonical.launchpad.interfaces.IOpenIDRPConfig" />
+      <require
+          permission="launchpad.Admin"
+          attributes="destroySelf"
+          set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
+    </content>
+
+    <!-- IOpenIDRPConfigSet -->
+
+    <securedutility
+        class="canonical.launchpad.database.OpenIDRPConfigSet"
+        provides="canonical.launchpad.interfaces.IOpenIDRPConfigSet">
+      <allow
+          interface="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+          />
+    </securedutility>
 
 </configure>
 

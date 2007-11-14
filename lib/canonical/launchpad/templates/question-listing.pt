@@ -1,13 +1,19 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
-  <div tal:replace="structure context/@@+portlet-details|nothing" />
   <div tal:condition="context/distribution|nothing"
        tal:replace="structure context/distribution/@@+portlet-answercontacts" />
 </metal:leftportlets>
@@ -25,13 +31,36 @@
 </metal:css>
 
 <metal:heading fill-slot="pageheading">
+  
+  <tal:block condition="view/context_is_project">
+    <tal:block condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message"> 
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or associate
+        an existing project with it.
+      </p>
+    </tal:block>
+  </tal:block>
+
   <h1 i18n:translate="" tal:content="view/pageheading">Questions</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
+  
+  <p tal:define="unspoken_languages view/unspoken_languages"
+    tal:condition="unspoken_languages">
+    <span tal:replace="context/displayname">Mozilla Firefox</span> has 
+    unanswered questions in the following languages:
+    <span tal:replace="structure unspoken_languages">
+     <a href="ubuntu/+unspoken?language=es">1 in Spanish</a>
+    </span>. Can you help?
+  </p>
 
-  <div id="question-search-form">
+  <div>
     <form method="get" id="question-search-form" action=""
           tal:attributes="action request/URL">
 
@@ -44,15 +73,37 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <span tal:condition="view/show_languages_radio">
-        <br /><tal:languages replace="structure view/widgets/languages" />
-        (<a href="/+editmylanguages">change your preferred languages</a>)
-      </span>
-      
-      <tal:status define="widget nocall:view/widgets/status|nothing"
-                  condition="nocall: widget">
-        <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
-      </tal:status>
+      <tal:language_control condition="view/show_language_control">
+        <input type="hidden" name="field.language" value="es" 
+               tal:attributes="value view/language/code"
+               tal:condition="not:view/widgets/language/visible"/>
+
+        <div class="field"
+             tal:condition="view/widgets/language/visible"
+             tal:define="widget nocall:view/widgets/language|nothing">
+          <label tal:content="widget/label">Label</label>
+          (<a href="/+editmylanguages">Change your preferred languages</a>)
+          <tal:languages replace="structure widget" />
+        </div>
+      </tal:language_control>
+
+      <div class="field"
+           tal:define="widget nocall:view/widgets/status|nothing"
+           tal:condition="nocall: widget">
+        <div tal:define="error python:view.widget_errors.get('status')"
+             tal:attributes="class python:error and 'error' or None">
+          <label tal:content="widget/label">Label</label>
+          <tal:status tal:replace="structure widget">
+            <input type="text" style="width:100%"/>
+          </tal:status>
+
+          <div class="message"
+               tal:condition="error"
+               tal:content="structure error">
+            An error message.
+          </div>
+        </div>
+      </div>
 
     </form>
   </div>
@@ -63,6 +114,19 @@
       No questions.
     </p>
   </tal:no-results>
+
+  <p i18n:translate=""
+     id="found-matching-faqs"
+     tal:condition="view/matching_faqs_count">
+    You can also consult the list of
+    <a href="#" tal:attributes="href view/matching_faqs_url"
+       ><tal:count i18n:name="count"
+                   replace="view/matching_faqs_count" /> FAQ(s)</a>
+    matching
+    &ldquo;<tal:keywords i18n:name="search_text"
+                          replace="view/search_text"
+                          >Keywords</tal:keywords>&rdquo;.
+  </p>
 
   <tal:block condition="questions/batch">
     <table class="listing" id="question-listing">
@@ -79,8 +143,12 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="question questions/batch"
-            tal:attributes="title question/description/fmt:shorten/300">
+        <tr xml:lang="en" lang="en" dir="ltr"
+            tal:repeat="question questions/batch"
+            tal:attributes="title question/description/fmt:shorten/300;
+                            xml:lang question/language/dashedcode;
+                            lang question/language/dashedcode;
+                            dir question/language/abbreviated_text_dir">
           <td class="icon right">
             <img alt="Open" title="Open" src="/@@/question"
                  tal:attributes="alt question/status/title;
@@ -133,7 +201,12 @@
     criteria in this context (project, person, sourcepackage).
   </p>
   <p>The search criteria for the current listing can be modified directly at
-    the top of the page.
+    the top of the page. You can enter text to see questions that have the
+    same terms. When the context has questions in more than one of your
+    <a href="/+editmylanguages">preferred languages</a>, you may select the
+    languages you wish to view. You can see a questions in all languages
+    by unselecting your languages. You must select one or more statuses
+    to match questions.
   </p>
   <p>If you hover the mouse over a question, the beginning of its
     description will pop-up after a few seconds.

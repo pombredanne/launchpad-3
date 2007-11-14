@@ -1,5 +1,13 @@
-<html metal:use-macro="view/macro:page/applicationhome"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
   <body>
     <h1 metal:fill-slot="heading">Software translations</h1>
     <div metal:fill-slot="main">
@@ -64,7 +72,7 @@
                         <div class="three column right">
                           <h2>Preferred languages</h2>
                           <ul class="language">
-                            <li tal:repeat="language view/languages">
+                            <li tal:repeat="language view/translatable_languages">
                               <a
                                 tal:attributes="href language/fmt:url"
                                 tal:content="language/englishname">

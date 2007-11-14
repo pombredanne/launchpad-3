@@ -73,24 +73,24 @@ Launchpad sample data, we have an upstream product called Ubuntu).
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> productset = getUtility(IProductSet)
-    >>> ubuntu_prod = productset.getByName('ubuntu-product')
-    >>> for offer in ubuntu_prod.mentoring_offers:
+    >>> tomcat = productset.getByName('tomcat')
+    >>> for offer in tomcat.mentoring_offers:
     ...     print offer.target.title
     Blackhole Trash folder
 
 Now, it gets more interesting.
 
-Let us add a REJECTED bugtask for Bug #2 on the Firefox product.
+Let us add a INVALID bugtask for Bug #2 on the Firefox product.
 So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=sabdfl,
-    ...     status=BugTaskStatus.REJECTED,
+    ...     status=BugTaskStatus.INVALID,
     ...     importance=BugTaskImportance.MEDIUM)
     >>> syncUpdate(ff_task)
     >>> ff_task.product == firefox
@@ -98,19 +98,18 @@ show up there.
     >>> for task in bug2.bugtasks:
     ...     if task.product == firefox:
     ...         print 'Found firefox task with status', task.status.name
-    Found firefox task with status REJECTED
+    Found firefox task with status INVALID
 
     >>> print firefox.mentoring_offers.count()
     0
 
 We also can get lists of offers of mentoring associated with groups of
-products (Project classes :-)). The ubuntu-product is part of the
-ubuntu-project project, so:
+products (Project classes :-)). Tomcat is part of the Apache project, so:
 
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> projectset = getUtility(IProjectSet)
-    >>> uproj = projectset.getByName('ubuntu-project')
-    >>> for offer in uproj.mentoring_offers:
+    >>> apache = projectset.getByName('apache')
+    >>> for offer in apache.mentoring_offers:
     ...     print offer.target.title
     Blackhole Trash folder
 
@@ -131,7 +130,8 @@ When a bug is marked private, it drops off the mentoring lists.
 
    >>> bug2.private
    False
-   >>> bug2.private = True
+   >>> bug2.setPrivate(True, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug2)
    >>> bug2.private
    True
@@ -145,7 +145,7 @@ mentorships offered by foo_bar:
 
 Let's make sure it is off all of the lists:
 
-   >>> for offertarget in [foo_bar, uproj, ubuntu_prod, debian, ubuntu, mm]:
+   >>> for offertarget in [foo_bar, apache, tomcat, debian, ubuntu, mm]:
    ...     for offer in offertarget.mentoring_offers:
    ...         if offer.target.title == 'Blackhole Trash folder':
    ...             print 'Failed! Private bug showed in listing.'
@@ -189,7 +189,8 @@ OK, let's mark the bug public again:
 
    >>> bug2.private
    True
-   >>> bug2.private = False
+   >>> bug2.setPrivate(False, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug2)
    >>> bug2.private
    False
@@ -199,14 +200,15 @@ OK, let's mark the bug public again:
 
 When a spec or a bug is completed, it drops off the mentoring lists.
 
-   >>> from canonical.lp.dbschema import BugTaskStatus
-   >>> from canonical.lp.dbschema import SpecificationDelivery
+   >>> from canonical.launchpad.interfaces import (
+   ...     BugTaskStatus, SpecificationImplementationStatus)
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> for task in bug2.bugtasks:
    ...   if task.conjoined_master is None:
-   ...     task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+   ...     task.transitionToStatus(
+   ...       BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
    >>> flush_database_updates()
    >>> bug2.is_complete
    True
@@ -222,7 +224,7 @@ And lets see if we can eliminate the spec by making that complete too.
 
    >>> spec1.is_complete
    False
-   >>> spec1.delivery = SpecificationDelivery.IMPLEMENTED
+   >>> spec1.implementation_status = SpecificationImplementationStatus.IMPLEMENTED
    >>> newstate = spec1.updateLifecycleStatus(foo_bar)
    >>> syncUpdate(spec1)
    >>> spec1.is_complete
@@ -235,9 +237,9 @@ earlier:
 
    >>> print lpteam.team_mentorships.count()
    0
-   >>> print uproj.mentoring_offers.count()
+   >>> print apache.mentoring_offers.count()
    0
-   >>> print ubuntu_prod.mentoring_offers.count()
+   >>> print tomcat.mentoring_offers.count()
    0
    >>> print debian.mentoring_offers.count()
    0

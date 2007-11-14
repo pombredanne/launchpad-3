@@ -15,15 +15,17 @@ IMilestoneSet can be accessed as a utility.
 
 To create a new Specification, use ISpecificationSet.new:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, SpecificationDefinitionStatus, 
+    ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
     >>> from canonical.launchpad.database import Person
-    >>> from canonical.lp.dbschema import SpecificationPriority
-    >>> from canonical.lp.dbschema import SpecificationStatus
-    >>> from canonical.lp.dbschema import SpecificationDelivery
     >>> sabdfl = Person.byName('sabdfl')
-    >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
+    >>> newspec = specset.new('mng', 'Support MNG Format',
+    ...     'http://www.silly.me/SpecName', 'we really need this',
+    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     product=upstream_firefox)
     >>> print newspec.name
     mng
 
@@ -58,7 +60,7 @@ We attach now a spec to a distribution.
     ...                       'Fix Specification Permissions',
     ...                       'http://www.ubuntu.com/FixBrokenSpecPerms',
     ...                       'we really need this',
-    ...                       SpecificationStatus.APPROVED,
+    ...                       SpecificationDefinitionStatus.APPROVED,
     ...                       sabdfl,
     ...                       distribution=ubuntu)
     >>> print ubuspec.name
@@ -104,7 +106,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.proposeGoal(ubuntu.getSeries('hoary'), jdub)
     >>> ubuspec.name = 'new-spec'
     >>> ubuspec.priority = SpecificationPriority.LOW
-    >>> ubuspec.status = SpecificationStatus.DRAFT
+    >>> ubuspec.definition_status = SpecificationDefinitionStatus.DRAFT
     >>> ubuspec.whiteboard = 'New whiteboard comments.'
     >>> ubuspec.approver = sabdfl
     >>> ubuspec.assignee = jdub
@@ -139,9 +141,9 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> print delta.priority['new'].title
     Low
 
-    >>> print delta.status['old'].title
+    >>> print delta.definition_status['old'].title
     Approved
-    >>> print delta.status['new'].title
+    >>> print delta.definition_status['new'].title
     Drafting
 
     >>> print delta.approver['old'] is None
@@ -245,8 +247,8 @@ discussion of the spec.
  >>> for subscriber in canvas.subscribers: print subscriber.name
 
  >>> from canonical.launchpad.interfaces import IPersonSet
- >>> sub = canvas.subscribe(
- ...          getUtility(IPersonSet).getByName('jdub'), essential=False)
+ >>> jdub = getUtility(IPersonSet).getByName('jdub')
+ >>> sub = canvas.subscribe(jdub, jdub, False)
  >>> print sub.essential
  False
 
@@ -333,9 +335,9 @@ We will use the "canvas" spec to show of this lifecycle tracking.
 
 First, lets show that canvas has not really progressed very far.
 
- >>> canvas.status.title
+ >>> canvas.definition_status.title
  'New'
- >>> canvas.delivery.title
+ >>> canvas.implementation_status.title
  'Unknown'
  >>> print canvas.starter
  None
@@ -345,7 +347,7 @@ First, lets show that canvas has not really progressed very far.
 Now, we want to show that setting the states can update the relevant
 metadata. First we will make the spec "started".
 
- >>> canvas.delivery = SpecificationDelivery.STARTED
+ >>> canvas.implementation_status = SpecificationImplementationStatus.STARTED
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  False
@@ -364,7 +366,7 @@ Now we are making slow progress. We want to show that, from a lifecycle
 point of view, nothing has changed, so we expect the lifecycle update to
 return None.
 
- >>> canvas.delivery = SpecificationDelivery.SLOW
+ >>> canvas.implementation_status = SpecificationImplementationStatus.SLOW
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  True
@@ -372,7 +374,7 @@ return None.
 Oops! Let's say that was a mistake, we instead want to DEFER the start
 of this work.
 
- >>> canvas.delivery = SpecificationDelivery.DEFERRED
+ >>> canvas.implementation_status = SpecificationImplementationStatus.DEFERRED
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  False
@@ -389,8 +391,8 @@ of this work.
 
 Now, let's say that we have actually completed this spec.
 
- >>> canvas.delivery = SpecificationDelivery.IMPLEMENTED
- >>> canvas.status = SpecificationStatus.APPROVED
+ >>> canvas.implementation_status = SpecificationImplementationStatus.IMPLEMENTED
+ >>> canvas.definition_status = SpecificationDefinitionStatus.APPROVED
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  False
@@ -408,8 +410,8 @@ Now, let's say that we have actually completed this spec.
 Hmm... now we want to roll back. We can roll back either to "started" or
 all the way to "not started".
 
- >>> canvas.delivery = SpecificationDelivery.NOTSTARTED
- >>> canvas.status = SpecificationStatus.APPROVED
+ >>> canvas.implementation_status = SpecificationImplementationStatus.NOTSTARTED
+ >>> canvas.definition_status = SpecificationDefinitionStatus.APPROVED
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  False
@@ -426,8 +428,8 @@ all the way to "not started".
 
 OK. Let's make it complete again.
 
- >>> canvas.delivery = SpecificationDelivery.IMPLEMENTED
- >>> canvas.status = SpecificationStatus.APPROVED
+ >>> canvas.implementation_status = SpecificationImplementationStatus.IMPLEMENTED
+ >>> canvas.definition_status = SpecificationDefinitionStatus.APPROVED
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  False
@@ -444,8 +446,8 @@ OK. Let's make it complete again.
 
 And finally show the rollback to "started".
 
- >>> canvas.delivery = SpecificationDelivery.STARTED
- >>> canvas.status = SpecificationStatus.APPROVED
+ >>> canvas.implementation_status = SpecificationImplementationStatus.STARTED
+ >>> canvas.definition_status = SpecificationDefinitionStatus.APPROVED
  >>> newstate = canvas.updateLifecycleStatus(jdub)
  >>> newstate is None
  False

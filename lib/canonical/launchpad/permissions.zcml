@@ -6,11 +6,12 @@
 
   <permission id="launchpad.Edit" title="Editing something" />
 
-  <!-- XXX: Needed to allow EditSeriesSourceByVCSImports to run, and enable
+  <!-- XXX: David Allouche 2006-07-19
+  Needed to allow EditSeriesSourceByVCSImports to run, and enable
   IProductSeriesSource, while the EditProductSeries adapter already owns
   'launchpad.Edit' on ProductSeries and only enables IProductSeries. There
   might be a cleaner way of fixing that issue, but it breaks my brain already
-  and I need this fix urgently. - David Allouche 2006-07-19 -->
+  and I need this fix urgently. -->
   <permission id="launchpad.EditSource" title="Edit source details" />
 
   <permission id="launchpad.Append" title="Adding something" />
@@ -19,16 +20,19 @@
 
   <permission id="launchpad.Admin" title="Administer something" />
 
-  <!-- There are some fields related with translations that need to be set
+  <!-- There are some translation-related fields that need to be set
   by Translation admins (aka Rosetta Admins) but we don't want to give
   them launchpad.Admin rights because they should not be able to change other
   details for those objects, for instance, IDistroSeries.name. -->
   <permission id="launchpad.TranslationsAdmin" title="Administer something
         related with translations." />
+  <permission id="launchpad.LanguagePacksAdmin" title="Administer Language
+        Packs." />
 
-  <!-- XXX: To be removed soon, this is only needed by the page to upload SSH
+  <!-- XXX: GuilhermeSalgado 2005-08-25
+  To be removed soon, this is only needed by the page to upload SSH
   keys, cause we decided to not allow admins to upload keys in behalf of other
-  users. GuilhermeSalgado 25/08/2005 -->
+  users. -->
   <permission id="launchpad.Special" title="Special permissions" />
 
   <!-- Experimental (sabdfl) Trying to use the permissions system to

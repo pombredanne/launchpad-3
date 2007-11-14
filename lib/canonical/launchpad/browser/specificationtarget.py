@@ -5,15 +5,10 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
+    'RegisterABlueprintButtonView',
     ]
 
-from canonical.lp.dbschema import (
-    SpecificationFilter,
-    SpecificationGoalStatus,
-    SpecificationSort,
-    SpecificationStatus,
-    SprintSpecificationStatus,
-    )
+from operator import itemgetter
 
 from canonical.launchpad.interfaces import (
     IDistribution,
@@ -24,13 +19,19 @@ from canonical.launchpad.interfaces import (
     IProductSeries,
     IProject,
     ISprint,
+    ISpecificationTarget,
+    SpecificationFilter,
+    SpecificationSort,
     )
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
-
+from canonical.launchpad.webapp import canonical_url
+from zope.component import queryMultiAdapter
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -67,6 +68,7 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
+    # XXX jsk 2007-07-12: This method is in need of simplication.
     def initialize(self):
         mapping = {'name': self.context.displayname}
         if self.is_person:
@@ -96,13 +98,14 @@ class HasSpecificationsView(LaunchpadView):
             raise AssertionError, 'Unknown blueprint listing site'
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
-
+        self.batchnav = BatchNavigator(
+            self.specs, self.request,
+            size=config.launchpad.default_batch_size)
 
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv
         from StringIO import StringIO
-        from canonical.launchpad.webapp import canonical_url
         output = StringIO()
         writer = csv.writer(output)
         headings = [
@@ -119,8 +122,7 @@ class HasSpecificationsView(LaunchpadView):
             'distroseries',
             'direction_approved',
             'man_days',
-            'delivery',
-            'informational'
+            'delivery'
             ]
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
@@ -138,7 +140,7 @@ class HasSpecificationsView(LaunchpadView):
             row.append(spec.title)
             row.append(canonical_url(spec))
             row.append(spec.specurl)
-            row.append(dbschema(spec.status))
+            row.append(dbschema(spec.definition_status))
             row.append(dbschema(spec.priority))
             row.append(fperson(spec.assignee))
             row.append(fperson(spec.drafter))
@@ -150,8 +152,7 @@ class HasSpecificationsView(LaunchpadView):
                 row.append(spec.distroseries.name)
             row.append(spec.direction_approved)
             row.append(spec.man_days)
-            row.append(dbschema(spec.delivery))
-            row.append(spec.informational)
+            row.append(dbschema(spec.implementation_status))
             writer.writerow([unicode(item).encode('utf8') for item in row])
         self.request.response.setHeader('Content-Type', 'text/plain')
         return output.getvalue()
@@ -245,11 +246,11 @@ class HasSpecificationsView(LaunchpadView):
     @cachedproperty
     def specs(self):
         filter = self.spec_filter
-        return shortlist(self.context.specifications(filter=filter))
+        return self.context.specifications(filter=filter)
 
     @cachedproperty
     def spec_count(self):
-        return len(self.specs)
+        return self.specs.count()
 
     @cachedproperty
     def documentation(self):
@@ -279,16 +280,16 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.status):
-                category = categories[spec.status]
+            if categories.has_key(spec.definition_status):
+                category = categories[spec.definition_status]
             else:
                 category = {}
-                category['status'] = spec.status
+                category['status'] = spec.definition_status
                 category['specs'] = []
-                categories[spec.status] = category
+                categories[spec.definition_status] = category
             category['specs'].append(spec)
         categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
+        return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
@@ -321,8 +322,8 @@ class HasSpecificationsView(LaunchpadView):
         specs currently in the queue for this target. Save the plan in
         self._plan, and put any dangling specs in self._dangling.
         """
-        # XXX sabdfl 2006-04-07 this is incomplete and will not build a
-        # proper comprehensive roadmap
+        # XXX sabdfl 2006-04-07: This is incomplete and will not build a
+        # proper comprehensive roadmap.
         plan = []
         filter = [
             SpecificationFilter.INCOMPLETE,
@@ -356,3 +357,23 @@ class HasSpecificationsView(LaunchpadView):
         self._dangling = dangling
 
 
+class RegisterABlueprintButtonView:
+    """View that renders a button to register a blueprint on its context."""
+
+    def __call__(self):
+        # Check if the context has an +addspec view available.
+        if queryMultiAdapter(
+            (self.context, self.request), name='+addspec'):
+            target = self.context
+        else:
+            # otherwise find an adapter to ISpecificationTarget which will.
+            target = ISpecificationTarget(self.context)
+
+        return """
+              <a href="%s/+addspec" id="addspec">
+                <img
+                  alt="Register a blueprint"
+                  src="/+icing/but-sml-registerablueprint.gif"
+                />
+              </a>
+        """ % canonical_url(target, rootsite='blueprints')

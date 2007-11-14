@@ -4,8 +4,9 @@
     i18n:domain="launchpad">
     <body>
         <div metal:fill-slot="main">
-            This is an OpenID server endpoint. For more information,
-            see http://openid.net/
+            This is the Launchpad login service.  This site allows you
+            to use your Launchpad account to log into other services
+            related to Canonical and Ubuntu.
         </div>
     </body>
 </html>

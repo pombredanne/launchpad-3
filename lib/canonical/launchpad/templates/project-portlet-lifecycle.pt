@@ -1,4 +1,10 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-lifecycle">
   <h2>Lifecycle</h2>
   <table class="portletBody">
     <tbody>
@@ -24,3 +30,4 @@
     </tbody>
   </table>
 </div>
+</tal:root>

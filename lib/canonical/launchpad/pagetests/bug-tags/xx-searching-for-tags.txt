@@ -10,7 +10,7 @@ On the advanced search page it's possible to search for a specific tag.
     9 Thunderbird crashes
       thunderbird Medium Confirmed
     10 another test bug
-       linux-source-2.6.15 Medium Unconfirmed
+       linux-source-2.6.15 Medium New
 
 If more than one tag is entered, bugs with any those tags will be
 shown.
@@ -23,9 +23,9 @@ shown.
     9 Thunderbird crashes
       thunderbird Medium Confirmed
     10 another test bug
-       linux-source-2.6.15 Medium Unconfirmed
+       linux-source-2.6.15 Medium New
     2 Blackhole Trash folder
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New
 
 If an invalid tag name is entered, an error message will be displayed.
 

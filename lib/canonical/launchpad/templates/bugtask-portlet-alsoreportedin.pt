@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-also-reported-in">
 
     <h2>Also reported in</h2>
 
@@ -18,11 +22,11 @@
           <li tal:repeat="task other_occurrences"><a href="#"
                  tal:condition="not: task/required:launchpad.Edit"
                  tal:attributes="href task/fmt:url"
-                 tal:content="task/targetname"
+                 tal:content="task/bugtargetname"
                  style="text-decoration: underline">Firefox</a><a href="#"
                  tal:condition="task/required:launchpad.Edit"
                  tal:attributes="href string:${task/fmt:url}/+editstatus"
-                 tal:content="task/targetname"
+                 tal:content="task/bugtargetname"
                  style="text-decoration: underline">Firefox</a>
                  <br />
                  [<span tal:replace="task/status/title">Pending</span>]
@@ -30,4 +34,5 @@
           </li>
         </ul>
     </div>
+  </div>
 </div>

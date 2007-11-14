@@ -1,4 +1,10 @@
-<div class="portlet" tal:condition="context/branch_links">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-branches" tal:condition="view/branch_links">
   <h2>Branches</h2>
   <div class="portletBody portletContent">
     <ul class="branch">
@@ -13,3 +19,4 @@
     </ul>
   </div>
 </div>
+</tal:root>

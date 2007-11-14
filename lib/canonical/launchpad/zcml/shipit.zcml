@@ -6,10 +6,10 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="ShipItNavigation ShippingRequestSetNavigation 
+        classes="ShipItNavigation ShippingRequestSetNavigation
                  StandardShipItRequestSetNavigation"
         />
- 
+
     <!-- This is only used on shipit. That's why it's here. -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -116,14 +116,14 @@
         class="canonical.launchpad.browser.ShipitFrontPageView"
         permission="zope.Public"
         name="+index"
-        template="../templates/shipit-index-new.pt" />
+        template="../templates/shipit-index.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItLoginView"
         permission="zope.Public"
         name="login"
-        template="../templates/shipit-index.pt"
+        template="../templates/shipit-login.pt"
         />
 
     <browser:page
@@ -142,10 +142,10 @@
         name="specialrequest">
     </browser:page>
 
-    <!-- XXX: This needs to be moved into a normal browser:page declaration,
-    like specialrequest/myrequest, to avoid having all these definitions of the
-    widgets' lengths. 
-    Guilherme Salgado, 2006-05-24
+    <!-- XXX: Guilherme Salgado 2006-05-24:
+         This needs to be moved into a normal browser:page declaration,
+         like specialrequest/myrequest, to avoid having all these
+         definitions of the widgets' lengths.
     -->
     <browser:generalform
         for="canonical.launchpad.interfaces.IShipItApplication"
@@ -154,14 +154,20 @@
         facet="overview"
         permission="launchpad.Admin"
         fields="recipientdisplayname addressline1 addressline2 city province
-                country postcode phone organization ubuntu_quantityx86
-                ubuntu_quantityamd64 kubuntu_quantityx86
-                kubuntu_quantityamd64 edubuntu_quantityx86 highpriority"
+                country postcode phone organization
+                ubuntu_quantityx86 ubuntu_quantityamd64
+                kubuntu_quantityx86 kubuntu_quantityamd64
+                edubuntu_quantityx86
+                server_quantityx86 server_quantityamd64
+                highpriority"
         keyword_arguments="
-                recipientdisplayname addressline1 addressline2 city province 
-                country postcode phone organization ubuntu_quantityx86
-                ubuntu_quantityamd64 kubuntu_quantityx86
-                kubuntu_quantityamd64 edubuntu_quantityx86 highpriority"
+                recipientdisplayname addressline1 addressline2 city province
+                country postcode phone organization
+                ubuntu_quantityx86 ubuntu_quantityamd64
+                kubuntu_quantityx86 kubuntu_quantityamd64
+                edubuntu_quantityx86
+                server_quantityx86 server_quantityamd64
+                highpriority"
         template="../templates/shipit-adminrequest.pt"
         name="adminrequest">
         <browser:widget
@@ -200,21 +206,21 @@
         name="exports"
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItExportsView"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/shipit-exports.pt" />
 
     <browser:page
         name="reports"
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItReportsView"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/shipit-reports.pt" />
 
 
     <!-- ShippingRequest -->
     <content class="canonical.launchpad.database.ShippingRequest">
         <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
-        <require 
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IShippingRequest" />
     </content>
@@ -235,13 +241,17 @@
         schema="canonical.launchpad.interfaces.IShippingRequestEdit"
         facet="overview"
         label="Approve or deny ShipIt Request"
-	fields="ubuntu_quantityx86approved ubuntu_quantityamd64approved
-		kubuntu_quantityx86approved kubuntu_quantityamd64approved
-		edubuntu_quantityx86approved highpriority"
+	    fields="ubuntu_quantityx86approved ubuntu_quantityamd64approved
+		        kubuntu_quantityx86approved kubuntu_quantityamd64approved
+                edubuntu_quantityx86approved
+                server_quantityx86approved server_quantityamd64approved
+                highpriority"
         keyword_arguments="
-		ubuntu_quantityx86approved ubuntu_quantityamd64approved
-		kubuntu_quantityx86approved kubuntu_quantityamd64approved
-		edubuntu_quantityx86approved highpriority"
+            ubuntu_quantityx86approved ubuntu_quantityamd64approved
+            kubuntu_quantityx86approved kubuntu_quantityamd64approved
+            edubuntu_quantityx86approved
+            server_quantityx86approved server_quantityamd64approved
+            highpriority"
         permission="launchpad.Admin"
         name="+edit"
         template="../templates/shipitrequest-edit.pt"
@@ -289,7 +299,7 @@
     <!-- StandardShipItRequest -->
     <content class="canonical.launchpad.database.StandardShipItRequest">
         <allow interface="canonical.launchpad.interfaces.IStandardShipItRequest" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IStandardShipItRequest" />
     </content>
@@ -310,7 +320,7 @@
         facet="overview"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
-        fields="flavour quantityx86 quantityamd64 isdefault"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
         label="Edit standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-edit.pt"
@@ -344,7 +354,7 @@
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         class="canonical.launchpad.browser.StandardShipItRequestsView"
         facet="overview"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/standardshipitrequests-index.pt"
         />
 
@@ -361,7 +371,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
-        fields="flavour quantityx86 quantityamd64 isdefault"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
         label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"
@@ -371,7 +381,7 @@
     <!-- RequestedCDs -->
     <content class="canonical.launchpad.database.RequestedCDs">
         <allow interface="canonical.launchpad.interfaces.IRequestedCDs" />
-        <require 
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IRequestedCDs" />
     </content>
@@ -392,7 +402,7 @@
     <!-- ShippingRun -->
     <content class="canonical.launchpad.database.ShippingRun">
         <allow interface="canonical.launchpad.interfaces.IShippingRun" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IShippingRun" />
     </content>
@@ -406,7 +416,7 @@
     <!-- ShipItReport -->
     <content class="canonical.launchpad.database.ShipItReport">
         <allow interface="canonical.launchpad.interfaces.IShipItReport" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IShipItReport" />
     </content>

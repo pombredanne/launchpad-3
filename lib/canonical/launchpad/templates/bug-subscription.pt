@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="malone">
+  i18n:domain="malone"
+>
 
 <body>
   <metal:heading fill-slot="pageheading">
@@ -21,7 +26,6 @@
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/bug/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
   </metal:rightportlets>
 

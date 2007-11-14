@@ -7,11 +7,14 @@ contacts as well as the distribution answer contacts.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag)
+    ...     IDistributionSet, ILanguageSet, ILaunchBag)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.addAnswerContact(getUtility(ILaunchBag).user)
+    >>> # Answer contacts must speak a language
+    >>> user = getUtility(ILaunchBag).user
+    >>> user.addLanguage(getUtility(ILanguageSet)['en'])
+    >>> ubuntu.addAnswerContact(user)
     True
     >>> flush_database_updates()
     >>> logout()
@@ -70,8 +73,9 @@ a message is displayed to confirm the changes:
 
     >>> browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print extract_text(message)
     You have been added as an answer contact for evolution in ubuntu.
+    English was added to Landscape Developers's preferred languages.
     Landscape Developers has been added as an answer contact for
     evolution in ubuntu.
 

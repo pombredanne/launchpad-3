@@ -39,12 +39,12 @@
   </browser:pages>
 
   <browser:page
-    name="+addspec"
+    name="+register-a-blueprint-button"
     for="canonical.launchpad.interfaces.ISpecificationTarget"
-    class="canonical.launchpad.browser.SpecificationNewView"
-    permission="launchpad.AnyPerson"
-    template="../templates/specification-add.pt"
+    class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+    permission="zope.Public"
     />
+
 
 </facet>
 

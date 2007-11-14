@@ -58,8 +58,14 @@ requested by the clients:
 It recursively creates directories:
 
     >>> ufs.mkdir("anything/something/whatever")
-    >>> os.path.exists(os.path.join(rootpath, "anything/something/whatever"))
+
+    >>> wanted_path = os.path.join(rootpath, "anything/something/whatever")
+
+    >>> os.path.exists(wanted_path)
     True
+
+    >>> oct(os.stat(wanted_path).st_mode)
+    '040775'
 
     >>> shutil.rmtree(os.path.join(rootpath, "anything"))
 
@@ -154,10 +160,21 @@ directory.
     >>> dir_exp["group_executable"] = True
     >>> expected.append(dir_exp)
 
+We need a helper function to turn the returned and expected data into reliably
+sorted orders for comparison.
+
+    >>> from operator import itemgetter
+    >>> def sorted_listings(ls_infos):
+    ...     # ls_infos will be a sequence of dictionaries.  They need to be
+    ...     # sorted for the sequences to compare equal, so do that on the
+    ...     # dictionary's 'name' key.  The equality test used here
+    ...     # doesn't care about the sort order of the dictionaries.
+    ...     return sorted(ls_infos, key=itemgetter('name'))
+
     >>> expected.sort()
     >>> returned = ufs.ls(".")
     >>> returned.sort()
-    >>> expected == returned
+    >>> sorted_listings(expected) == sorted_listings(returned)
     True
 
 If `filter` is not None, include only those names for which `filter`
@@ -178,7 +195,7 @@ returns a true value.
     ...         filtered_expected = [i];
     >>> returned = ufs.ls(".", always_true_filter)
     >>> returned.sort()
-    >>> expected == returned
+    >>> sorted_listings(expected) == sorted_listings(returned)
     True
     >>> returned = ufs.ls(".", always_false_filter)
     >>> returned.sort()
@@ -186,7 +203,7 @@ returns a true value.
     True
     >>> returned = ufs.ls(".", arbitrary_filter)
     >>> returned.sort()
-    >>> filtered_expected == returned
+    >>> sorted_listings(filtered_expected) == sorted_listings(returned)
     True
     >>> for i in [ "foo", "bar" ]:
     ...     ufs.remove(i)

@@ -1,0 +1,149 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
+<body>
+  <metal:translation-import-queue define-macro="translation-import-queue-content">
+
+      <!-- Filtering options. -->
+      <div>
+        <form method="get" action="" tal:attributes="action request/URL">
+          <label>Show:</label>
+          <tal:status
+            tal:condition="view/has_target_filter"
+            tal:replace="structure view/widgets/filter_target" />
+          <tal:status tal:replace="structure view/widgets/filter_status" />
+          <tal:status tal:replace="structure view/widgets/filter_extension" />
+          <input tal:replace="structure view/filter_action/render" />
+        </form>
+      </div>
+      <div>
+        <p class="error message"
+           tal:condition="view/errors"
+           tal:content="view/error_count" />
+
+        <p class="error message"
+           tal:repeat="form_wide_error view/form_wide_errors"
+           tal:content="structure form_wide_error">
+          Schema validation errors.
+        </p>
+      </div>
+
+      <!-- Queue entries -->
+      <div>
+        <tal:block condition="not:view/batchnav/currentBatch">
+          <p id="no-entries">
+            There are no entries that match this filtering.
+          </p>
+        </tal:block>
+        <tal:block condition="view/batchnav/currentBatch">
+          <form action=""
+                method="post"
+                enctype="multipart/form-data"
+                accept-charset="UTF-8">
+            <tal:status
+              tal:condition="view/has_target_filter"
+              tal:replace="structure view/widgets/filter_target/hidden" />
+            <tal:status
+                 tal:replace="structure view/widgets/filter_status/hidden" />
+            <tal:status
+                 tal:replace="structure view/widgets/filter_extension/hidden" />
+            <tal:navigation
+                 replace="structure view/batchnav/@@+navigation-links-upper" />
+
+            <table id="import-entries-list" class="listing" width="100%">
+              <tal:loop repeat="entry view/batchnav/currentBatch">
+                <tr>
+                  <tal:comment replace="nothing">
+                    XXX: CarlosPerelloMarin 2006-03-09:
+                    We are using here
+                    condition="entry/import_into/title|nothing" because,
+                    sometimes, entry/import_into evaluates as false because
+                    __len__ method returns 0. See bug #34213 for more
+                    information.
+                  </tal:comment>
+                  <td tal:condition="entry/import_into/title|nothing" rowspan="3">
+                    <img alt="" src="/@@/download" />
+                  </td>
+                  <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
+                    <img alt="" src="/@@/download" />
+                  </td>
+                  <td>
+                    <a tal:attributes="href entry/content/http_url"
+                       tal:content="entry/path">po/foo.pot</a> in
+                    <a tal:condition="entry/sourcepackage"
+                       tal:content="entry/sourcepackage/title"
+                       tal:attributes="href entry/sourcepackage/fmt:url"
+                       >evolution in Ubuntu Hoary</a>
+                    <a tal:condition="entry/productseries"
+                       tal:content="entry/productseries/title"
+                       tal:attributes="href entry/productseries/fmt:url"
+                       >Evolution Series: MAIN</a>
+                  </td>
+                  <td tal:condition="entry/required:launchpad.Edit">
+                    <tal:status define="name string:status_${entry/id}"
+                                replace="structure view/widgets/?name" />
+                  </td>
+                  <td tal:condition="not: entry/required:launchpad.Edit"
+                      tal:content="entry/status/title">Needs Review
+                  </td>
+                  <td>
+                    <tal:block condition="entry/required:launchpad.Admin">
+                      <a tal:attributes="href entry/fmt:url">
+                        <img src="/@@/edit" title="Change this entry" />
+                      </a>
+                    </tal:block>
+                  </td>
+                </tr>
+                <tr class="discreet secondary">
+                  <td colspan="3">
+                    Uploaded by 
+                    <a tal:content="entry/importer/browsername"
+                       tal:attributes="href entry/importer/fmt:url"
+                       >Mark Shuttleworth</a>
+                    on <span tal:content="entry/dateimported/fmt:datetime">date</span>
+                  </td>
+                </tr>
+                <tal:comment replace="nothing">
+                  XXX: CarlosPerelloMarin 2006-03-09:
+                  We are using here
+                  condition="entry/import_into/title|nothing" because,
+                  sometimes, entry/import_into evaluates as false because
+                  __len__ method returns 0. See bug #34213 for more
+                  information.
+                </tal:comment>
+                <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
+                  <td colspan="3">
+                    Will be imported into 
+                    <a tal:content="entry/import_into/title"
+                       tal:attributes="href entry/import_into/fmt:url"
+                       >Foo</a>
+                  </td>
+                </tr>
+              </tal:loop>
+            </table>
+            <tal:navigation
+                 replace="structure view/batchnav/@@+navigation-links-lower" />
+
+            <script type="text/javascript"
+                    tal:define="script view/focusedElementScript"
+                    tal:condition="script"
+                    tal:content="structure script" />
+            <tal:block define="user request/lp:person" condition="user">
+              <div class="actions">
+                <input
+                  tal:replace="structure view/change_status_action/render" />
+              </div>
+            </tal:block>
+          </form>
+        </tal:block>
+      </div>
+    </metal:translation-import-queue>
+</body>
+</html>

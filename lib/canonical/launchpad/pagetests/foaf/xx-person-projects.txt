@@ -1,0 +1,83 @@
+== List of owned or driven projects ==
+
+A Team home page displays a list of projects owned or driven by that
+team.
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> related_projects = find_tag_by_id(
+    ...     anon_browser.contents, 'portlet-related-projects')
+    >>> for tr in related_projects.findAll('tr'):
+    ...     print extract_text(tr)
+    Ubuntu Linux
+    Ubuntu Test
+    Tomcat
+
+The +projects page displays a table with links to open bugs,
+unimplemented specs and open questions.
+
+    >>> anon_browser.getLink('List related projects').click()
+
+    >>> print anon_browser.title
+    Projects Ubuntu Team is involved with
+
+    >>> related_projects = find_tag_by_id(
+    ...     anon_browser.contents, 'related-projects')
+    >>> print extract_text(related_projects)
+    Name            Bugs    Blueprints  Questions
+    Ubuntu Linux    4       1           8
+    Ubuntu Test     0       0           0
+    Tomcat          1       0           0
+
+    >>> print anon_browser.getLink('4').url
+    http://launchpad.dev/ubuntu/+bugs
+
+    >>> print anon_browser.getLink('1').url
+    http://launchpad.dev/ubuntu/+specs
+
+    >>> print anon_browser.getLink('8').url
+    http://launchpad.dev/ubuntu/+questions
+
+
+If the person owns/drives more than 5 projects, the overview page
+displays only the first five.
+
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> related_projects = find_tag_by_id(
+    ...     anon_browser.contents, 'portlet-related-projects')
+    >>> for tr in related_projects.findAll('tr'):
+    ...     print extract_text(tr)
+    Ubuntu Linux
+    Redhat Advanced Server
+    Debian GNU/Linux
+    The Gentoo Linux
+    Kubuntu - Free KDE-based Linux
+
+    >>> anon_browser.getLink(
+    ...     'See all projects Mark Shuttleworth is involved with').click()
+    >>> print anon_browser.url
+    http://launchpad.dev/%7Esabdfl/+projects
+
+    >>> print anon_browser.title
+    Projects Mark Shuttleworth is involved with
+
+In the case of a person that owns/drives more than
+config.launchpad.default_batch_size, a message is displayed and the 
+table contains only that many projects. This is done to handle the 
+Registry Admins case which owns lots of projects and the page would
+become a performance nightmare. In 99% of the cases, people won't reach
+the config.launchpad.default_batch_size threshold.
+
+    >>> for tag in find_tags_by_class(anon_browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    9 projects are related to Mark Shuttleworth. Displaying only the first 5:
+
+    >>> related_projects = find_tag_by_id(
+    ...     anon_browser.contents, 'related-projects')
+    >>> print extract_text(related_projects)
+    Name                            Bugs    Blueprints  Questions
+    Ubuntu Linux                    4       1           8
+    Redhat Advanced Server          0       0           0
+    Debian GNU/Linux                3       0           0
+    The Gentoo Linux                0       0           0
+    Kubuntu - Free KDE-based Linux  0       4           0
+

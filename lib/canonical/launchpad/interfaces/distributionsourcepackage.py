@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Source package in Distribution interfaces."""
 
@@ -8,9 +8,11 @@ __all__ = [
     'DuplicateBugContactError',
     'DeleteBugContactError',
     'IDistributionSourcePackage',
+    'IDistributionSourcePackageManageBugcontacts'
     ]
 
 from zope.interface import Attribute, Interface
+from zope.schema import Bool
 
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
@@ -32,13 +34,8 @@ class IDistributionSourcePackage(IBugTarget):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
-    # XXX sabdfl 16/10/2005
+    # XXX sabdfl 2005-10-16:
     distro = Attribute("The distribution.")
-
-    by_distroseries = Attribute(
-        "Return a list of DistroSeriesSourcePackage objects, each "
-        "representing this same source package in the serieses of this "
-        "distribution.")
 
     subscribers = Attribute("The subscribers to this package.")
 
@@ -81,6 +78,17 @@ class IDistributionSourcePackage(IBugTarget):
         version in this distribution.
         """
 
+    def get_distroseries_packages(active_only=True):
+        """Return a list of DistroSeriesSourcePackage objects, each 
+        representing this same source package in the serieses of this
+        distribution.
+
+        By default, this will return SourcePackage's in active
+        distroseries only. You can set only_active=False to return a
+        source package for EVERY series where this source package was
+        published.
+        """
+
     def bugtasks(quantity=None):
         """Bug tasks on this source package, sorted newest first.
 
@@ -119,4 +127,11 @@ class IDistributionSourcePackage(IBugTarget):
 
         :person: The person to subscribe. An IPerson.
         """
+
+class IDistributionSourcePackageManageBugcontacts(Interface):
+    """Schema for the manage bug contacts form."""
+    make_me_a_bugcontact = Bool(
+        title=u"I want to receive all bugmail for this source package",
+        required=False)
+
 

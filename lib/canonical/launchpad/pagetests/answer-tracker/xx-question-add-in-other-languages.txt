@@ -46,6 +46,7 @@ understood by any member of the support community.
     'Installation of Java Runtime Environment for Mozilla'
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'mailto: problem in webpage'
+    '\xd8\xb9\xd9\x83\xd8\xb3 ...'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -79,17 +80,24 @@ from asking a question in the language of his choice.
     >>> browser.title
     'Ubuntu question #...Abrir uma pagina que requer...'
 
+The page reports the question language both in the content and in the
+markup. Search engine robots and browsers will use the lang and dir
+attributes for indexing and rendering respectively. Users will find
+the language in the question details portlet.
+
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.html['lang']
+    pt-BR
+    >>> print soup.html['dir']
+    ltr
     >>> print soup.find('b', text='Language:').next.strip()
     Portuguese (Brazil)
 
 It's also possible that the user chose English in the first page but
 then changed his mind on the second page.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['en']
@@ -148,6 +156,6 @@ new question.
     '.../ubuntu/+question/...'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.find('b', text='Language:').next.strip()
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')
+    >>> print portlet.find('b', text='Language:').next.strip()
     Japanese

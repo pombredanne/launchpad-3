@@ -34,12 +34,10 @@ from canonical.archiveuploader.utils import (
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageNameSet)
+    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
+    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
+    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackageUploadCustomFormat,
-    PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 
 apt_pkg.InitSystem()
@@ -290,10 +288,18 @@ class PackageUploadFile(NascentUploadFile):
             # were forced to accept a package with a broken section
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
-            default_section = 'misc'
-            self.logger.warn("Unable to grok section %r, overriding it with %s"
-                      % (self.section_name, default_section))
-            self.section_name = default_section
+            if self.policy.archive.purpose == ArchivePurpose.PPA:
+                # PPA uploads should not override because it will probably
+                # make the section inconsistent with the one in the .dsc.
+                raise UploadError(
+                    "%s: Section %r is not valid" % (
+                    self.filename, self.section_name))
+            else:
+                default_section = 'misc'
+                self.logger.warn("Unable to grok section %r, "
+                                 "overriding it with %s"
+                          % (self.section_name, default_section))
+                self.section_name = default_section
 
         if self.component_name not in valid_components:
             raise UploadError(
@@ -466,8 +472,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
 
-        # XXX: we never use the Maintainer information in the control
-        # file for anything. Should we? -- kiko, 2007-02-15
+        # XXX kiko 2007-02-15: We never use the Maintainer information in
+        # the control file for anything. Should we? --
         self.control = {}
         for key in control_lines.keys():
             self.control[key] = control_lines.Find(key)
@@ -612,35 +618,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz" % (
                 self.filename, control_tar))
-        if data_tar == "data.tar.bz2":
-            # Packages using bzip2 must Pre-Depend on dpkg >= 1.10.24
-            control_pre_depends = self.control.get('Pre-Depends', '')
-            for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
-                # apt_pkg is weird and returns a list containing lists
-                # containing a single tuple.
-                assert len(parsed_dep) == 1, (
-                    "apt_pkg does not seem to like this dependency line: %r"
-                    % parsed_dep)
-                dep, version, constraint = parsed_dep[0]
-                if dep != "dpkg":
-                    continue
-                if ((constraint == ">=" and
-                     apt_pkg.VersionCompare(version, "1.10.24") < 0) or
-                    (constraint == ">>" and
-                     apt_pkg.VersionCompare(version, "1.10.23") < 0)):
-                    yield UploadError(
-                        "%s uses bzip2 compression but pre-depends "
-                        "on an old version of dpkg: %s"
-                        % (self.filename, version))
-                break
-            else:
-                yield UploadError(
-                    "%s uses bzip2 compression but doesn't Pre-Depend "
-                    "on dpkg (>= 1.10.24)" % self.filename)
-        elif data_tar == "data.tar.gz":
-            # No tests are needed for tarballs, yay
-            pass
-        else:
+        if data_tar not in ("data.tar.gz", "data.tar.bz2"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz or "
                 "data.tar.bz2" % (self.filename, data_tar))
@@ -738,10 +716,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             assert len(spphs) == 1, "Duplicated ancestry"
             sourcepackagerelease = spphs[0].sourcepackagerelease
         else:
-            # XXX cprov 20060809: Building from ACCEPTED is special
-            # condition, not really used in production. We should
-            # remove the support for this use case, see further
-            # info in bug #55774.
+            # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
+            # special condition, not really used in production. We should
+            # remove the support for this use case.
             self.logger.debug("No source published, checking the ACCEPTED queue")
 
             queue_candidates = distroseries.getQueueItems(
@@ -845,13 +822,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         summary = desclines[0]
         description = "\n".join(desclines[1:])
 
-        # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
-        # bug 3160
+        # XXX: dsilvers 2005-10-14 bug 3160: erm, need to work shlibdeps out.
         shlibdeps = ""
-        # XXX: dsilvers: 20051014: erm, source should have a copyright
-        # but not binaries. bug 3161
-        copyright = ""
-        licence = ""
 
         is_essential = encoded.get('Essential', '').lower() == 'yes'
         architecturespecific = not self.is_archindep
@@ -877,8 +849,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             provides=encoded.get('Provides', ''),
             essential=is_essential,
             installedsize=installedsize,
-            copyright=copyright,
-            licence=licence,
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,

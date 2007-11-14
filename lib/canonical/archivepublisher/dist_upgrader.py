@@ -13,7 +13,7 @@ import shutil
 
 from canonical.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from sourcerer.deb.version import (
+from canonical.archivepublisher.debversion import (
     BadUpstreamError, Version as make_version)
 
 
@@ -35,7 +35,7 @@ class DistUpgraderUpload(CustomUpload):
     """Dist Upgrader custom upload processor.
 
     Dist-Upgrader is a tarball containing files for performing automatic
-    distrorelease upgrades, driven by architecture.
+    distroseries upgrades, driven by architecture.
 
     The tarball should be name as:
 
@@ -50,7 +50,7 @@ class DistUpgraderUpload(CustomUpload):
     and should contain:
 
      * ReleaseAnnouncement text file;
-     * <distrorelease>.tar.gz file.
+     * <distroseries>.tar.gz file.
 
     Dist-Upgrader versions are published under:
 
@@ -58,14 +58,14 @@ class DistUpgraderUpload(CustomUpload):
 
     A 'current' symbolic link points to the most recent version.
     """
-    def __init__(self, archive_root, tarfile_path, distrorelease):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
+    def __init__(self, archive_root, tarfile_path, distroseries):
+        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
 
         tarfile_base = os.path.basename(tarfile_path)
         name, self.version, arch = tarfile_base.split('_')
         arch = arch.split('.')[0]
 
-        self.targetdir = os.path.join(archive_root, 'dists', distrorelease,
+        self.targetdir = os.path.join(archive_root, 'dists', distroseries,
                                       'main', 'dist-upgrader-%s' % arch)
 
         # Make sure the target version doesn't already exist. If it does, raise
@@ -95,12 +95,12 @@ class DistUpgraderUpload(CustomUpload):
         return version and not filename.startswith('current')
 
 
-def process_dist_upgrader(archive_root, tarfile_path, distrorelease):
+def process_dist_upgrader(archive_root, tarfile_path, distroseries):
     """Process a raw-dist-upgrader tarfile.
 
-    Unpacking it into the given archive for the given distrorelease.
+    Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DistUpgraderUpload(archive_root, tarfile_path, distrorelease)
+    upload = DistUpgraderUpload(archive_root, tarfile_path, distroseries)
     upload.process()

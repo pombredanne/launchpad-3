@@ -1,9 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="boardComment"
       i18n:domain="launchpad">
 
   <div class="boardCommentDetails">
     <tal:bestanswer condition="view/isBestAnswer">
-      <img src="/@@/favourite-yes" alt="Best"
+      <img src="/@@/favourite-yes" style="float:right;" alt="Best"
            title="Marked as best answer" />
     </tal:bestanswer>
     <tal:comment_has_owner>
@@ -17,8 +23,17 @@
   </div>
 
   <div class="boardCommentBody"
-       tal:attributes="class view/getBodyCSSClass"
-       tal:content="structure context/text_contents/fmt:text-to-html">
+    tal:attributes="class view/getBodyCSSClass"
+    tal:condition="view/user"
+    tal:content="structure context/text_contents/fmt:email-to-html">
+    Message text.
+  </div>
+
+  <div class="boardCommentBody"
+    tal:attributes="class view/getBodyCSSClass"
+    tal:condition="not:view/user"
+    tal:content="structure
+      context/text_contents/fmt:obfuscate-email/fmt:email-to-html">
     Message text.
   </div>
 
@@ -36,3 +51,4 @@
     </form>
   </div>
 </div>
+</tal:root>

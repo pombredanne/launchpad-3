@@ -18,15 +18,15 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
-    # XXX, Brad Bollenbach, 2006-08-02: This attribute name smells. See
-    # https://launchpad.net/bugs/54974.
-    bugtargetname = Attribute("A display name for this bug target")
+    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
+    bugtargetdisplayname = Attribute("A display name for this bug target")
+    bugtargetname = Attribute("The target as shown in mail notifications.")
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
-    unconfirmed_bugtasks = Attribute("A list of Unconfirmed BugTasks for this target.")
+    new_bugtasks = Attribute("A list of New BugTasks for this target.")
     unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
 

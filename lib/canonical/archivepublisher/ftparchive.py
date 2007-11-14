@@ -13,10 +13,9 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
+from canonical.launchpad.interfaces import (
+    PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
 
-from canonical.launchpad.interfaces import pocketsuffix
 
 def package_name(filename):
     """Extract a package name from a debian package filename."""
@@ -35,8 +34,8 @@ def safe_mkdir(path):
         os.makedirs(path, 0755)
 
 
-# XXX malcc: Move this somewhere useful. If generalised with timeout
-# handling and stderr passthrough, could be a single method used for
+# XXX malcc 2006-09-20 : Move this somewhere useful. If generalised with
+# timeout handling and stderr passthrough, could be a single method used for
 # this and the similar requirement in test_on_merge.py.
 def run_subprocess_with_logging(process_and_args, log, prefix):
     """Run a subprocess, gathering the output as it runs and logging it.
@@ -59,7 +58,7 @@ def run_subprocess_with_logging(process_and_args, log, prefix):
     buf = ""
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [])
-        
+
         for reader in rlist:
             chunk = os.read(reader.fileno(), 1024)
             if chunk == "":
@@ -72,11 +71,11 @@ def run_subprocess_with_logging(process_and_args, log, prefix):
                 for line in lines[0:-1]:
                     log.debug("%s%s" % (prefix, line))
                 buf = lines[-1]
-        
+
     ret = proc.wait()
     return ret
 
-    
+
 DEFAULT_COMPONENT = "main"
 
 CONFIG_HEADER = """
@@ -160,7 +159,7 @@ class FTPArchiveHandler:
         self.log.debug("Filepath: %s" % apt_config_filename)
         ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
                                            "generate", apt_config_filename],
-                                          self.log, "a-f: ")        
+                                          self.log, "a-f: ")
         if ret:
             raise AssertionError(
                 "Failure from apt-ftparchive. Return code %s" % ret)
@@ -176,10 +175,10 @@ class FTPArchiveHandler:
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        # XXX: suffix is completely unnecessary here. Just iterate over
-        # the pockets, and do the suffix check inside
+        # XXX: kiko 2006-08-24: suffix is completely unnecessary here. Just
+        # iterate over the pockets, and do the suffix check inside
         # createEmptyPocketRequest; that would also allow us to replace
-        # the == "" check we do there by a RELEASE match -- kiko
+        # the == "" check we do there by a RELEASE match
         for distroseries in self.distro:
             components = self._config.componentsForSeries(distroseries.name)
             for pocket, suffix in pocketsuffix.items():
@@ -192,6 +191,19 @@ class FTPArchiveHandler:
 
                 for comp in components:
                     self.createEmptyPocketRequest(distroseries, suffix, comp)
+
+    def requestReleaseFile(self, suite_name, component_name, arch_name):
+        """Request Release file generation for given context.
+
+        'suite_name', 'component_name' and 'arch_name' will be organised as
+        a dictionary (self.release_files_needed) keyed by 'suite_name' which
+        value will be another dictionary keyed by 'component_name' and
+        containing a set of 'arch_name's as value.
+        """
+        suite_special = self.release_files_needed.setdefault(
+            suite_name, {})
+        suite_component_special = suite_special.setdefault(component_name, set())
+        suite_component_special.add(arch_name)
 
     def createEmptyPocketRequest(self, distroseries, suffix, comp):
         """Creates empty files for a release pocket and distroseries"""
@@ -246,7 +258,7 @@ class FTPArchiveHandler:
         """Return SelectResults containing SourcePackagePublishingHistory."""
         return SourcePackagePublishingHistory.select(
             """
-            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.status = %s
@@ -261,9 +273,9 @@ class FTPArchiveHandler:
         """Return SelectResults containing BinaryPackagePublishingHistory."""
         return BinaryPackagePublishingHistory.select(
             """
-            BinaryPackagePublishingHistory.distroarchrelease =
-            DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries =
+            DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.status = %s
@@ -272,7 +284,7 @@ class FTPArchiveHandler:
                             pocket,
                             PackagePublishingStatus.PUBLISHED),
             prejoins=["binarypackagerelease.binarypackagename"],
-            orderBy="id", clauseTables=["DistroArchRelease"])
+            orderBy="id", clauseTables=["DistroArchSeries"])
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides generated, and generate them."""
@@ -345,11 +357,10 @@ class FTPArchiveHandler:
                 priority_displayed = priority.title.lower()
                 # We pick up debian-installer packages here
                 if section.endswith("debian-installer"):
-                    # XXX: this is actually redundant with what is done
-                    # in createEmptyPocketRequests. However, this
-                    # code does make it possible to unit test this
+                    # XXX: kiko 2006-08-24: This is actually redundant with
+                    # what is done in createEmptyPocketRequests. However,
+                    # this code does make it possible to unit test this
                     # method, so I'm sure if it should be removed.
-                    #   -- kiko, 2006-08-24
                     self._di_release_components.setdefault(
                         distroseriesname, set()).add(component)
                     suboverride['d-i'].add((packagename, priority_displayed,
@@ -421,10 +432,10 @@ class FTPArchiveHandler:
 
             f.write("\t".join((package, priority, section)))
             f.write("\n")
-            # XXX: # bug 3900: This needs to be made databaseish
-            # and be actually managed within Launchpad. (Or else
-            # we need to change the ubuntu as appropriate and look
-            # for bugs addresses etc in launchpad -- dsilvers
+            # XXX: dsilvers 2006-08-23 bug=3900:
+            # This needs to be made databaseish and be actually managed within
+            # Launchpad. (Or else we need to change the ubuntu as appropriate
+            # and look for bugs addresses etc in launchpad.
             ef.write(origin)
             ef.write("\n")
             ef.write(bugs)
@@ -432,7 +443,7 @@ class FTPArchiveHandler:
         f.close()
 
         if os.path.exists(extra_extra_overrides):
-            # XXX this is untested. -- kiko, 2006-08-24
+            # XXX kiko 2006-08-24: This is untested.
             eef = open(extra_extra_overrides, "r")
             extras = {}
             for line in eef:
@@ -448,8 +459,8 @@ class FTPArchiveHandler:
                 for header, values in headers.items():
                     ef.write("\t".join([pkg, header, ", ".join(values)]))
                     ef.write("\n")
-            # XXX: dsilvers: As above, this needs to be integrated into
-            # the database at some point: bug 3900
+            # XXX: dsilvers 2006-08-23 bug=3900: As above,
+            # this needs to be integrated into the database at some point.
         ef.close()
 
         def _outputSimpleOverrides(filename, overrides):
@@ -484,7 +495,7 @@ class FTPArchiveHandler:
                     archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
-                    distroreleasename = %s
+                    distroseriesname = %s
                     """ % sqlvalues(self.distro,
                                     self.distro.main_archive,
                                     PackagePublishingStatus.PUBLISHED,
@@ -498,7 +509,7 @@ class FTPArchiveHandler:
                     archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
-                    distroreleasename = %s
+                    distroseriesname = %s
                     """ % sqlvalues(self.distro,
                                     self.distro.main_archive,
                                     PackagePublishingStatus.PUBLISHED,
@@ -650,8 +661,8 @@ class FTPArchiveHandler:
         """Generates the config stanza for an individual pocket."""
         dr_pocketed = distroseries_name + pocketsuffix[pocket]
 
-        # XXX I have no idea what the code below is meant to do -- it
-        # appears to be a rehash of createEmptyPocketRequests. -- kiko
+        # XXX kiko 2006-08-24: I have no idea what the code below is meant
+        # to do -- it appears to be a rehash of createEmptyPocketRequests.
         archs = self._config.archTagsForSeries(distroseries_name)
         comps = self._config.componentsForSeries(distroseries_name)
         for comp in comps:
@@ -673,14 +684,14 @@ class FTPArchiveHandler:
 
         # Second up, pare archs down as appropriate
         for arch in archs:
-            # XXX: why is it comps[0] here? -- kiko
+            # XXX: kiko 2006-08-24: why is it comps[0] here?
             arch_path = os.path.join(self._config.overrideroot,
                 "_".join([dr_pocketed, comps[0], "binary-"+arch]))
             if not os.path.exists(arch_path):
                 # Create an empty file if we don't have one so that
                 # apt-ftparchive will dtrt.
                 f_touch(arch_path)
-        # XXX end uncomprehensible code -- kiko
+        # XXX kiko 2006-08-24: End uncomprehensible code.
 
         self.log.debug("Generating apt config for %s" % dr_pocketed)
         apt_config.write(STANZA_TEMPLATE % {
@@ -710,7 +721,7 @@ class FTPArchiveHandler:
                     "HIDEEXTRA": "// "
                     })
 
-        # XXX: Why do we do this directory creation here? -- kiko
+        # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
         for comp in comps:
             component_path = os.path.join(self._config.distsroot,
                                           dr_pocketed, comp)

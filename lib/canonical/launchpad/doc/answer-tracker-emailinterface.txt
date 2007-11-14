@@ -146,7 +146,7 @@ For example, from the Open state:
 
 And from the Needs information state:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_question_email(

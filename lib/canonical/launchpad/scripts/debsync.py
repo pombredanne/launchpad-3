@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces import (
     IBugSet, IMessageSet, ILaunchpadCelebrities, UnknownSender, IBugTaskSet,
     IBugWatchSet, ICveSet, InvalidEmailMessage, CreateBugParams)
 from canonical.launchpad.scripts import debbugs
-from canonical.lp.dbschema import BugTaskStatus
 
 
 def bug_filter(bug, previous_import_set, target_bugs, target_package_set,
@@ -142,8 +141,8 @@ def import_bug(debian_bug, logger):
             logger.error(sys.exc_value)
     if srcpkg is None:
         # none of the package names gave us a source package we can use
-        # XXX sabdfl maybe this should just be connected to the distro,
-        # and allowed to wait for re-assignment to a specific package?
+        # XXX sabdfl 2005-09-16: Maybe this should just be connected to the
+        # distro, and allowed to wait for re-assignment to a specific package?
         logger.error('Unable to find package details for %s' % (
             debian_bug.package))
         return False

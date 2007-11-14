@@ -1,0 +1,217 @@
+= Branch Merge Proposals =
+
+Branch merge proposals are where you show the intent of merging
+the code from one branch into another.
+
+Any logged in user can register a merge proposal.  Registering
+a merge proposal is done from the source branch, and the link
+is `Register merge proposal`.
+
+
+== Registering a merge proposal ==
+
+Users who are not logged on do not see the link to register.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> anon_browser.getLink('Register merge proposal')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Logged in users can.
+
+    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> nopriv_browser.getLink('Register merge proposal').click()
+    >>> nopriv_browser.getControl('Target Branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> nopriv_browser.getControl('Whiteboard').value = (
+    ...     'This is the whiteboard')
+    >>> nopriv_browser.getControl('Register').click()
+
+Registering the merge proposal takes the user back to the
+main page for the source branch.
+
+    >>> print nopriv_browser.url
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon
+
+Most of the time the merge proposal is looked at from the point
+of view of either the source branch or the target branch.
+
+
+== Landing Targets ==
+
+When looked at from the point of view of the source branch, the
+merge proposal is considered a "landing target" with an optional
+"dependent branch".
+
+    >>> def printMergeProposals(browser, id):
+    ...     tag = find_tag_by_id(browser.contents, id)
+    ...     if tag is None:
+    ...         print tag
+    ...     else:
+    ...         for mp in tag.findAll(attrs={'class': 'mergeproposal'}):
+    ...             print extract_text(mp)
+
+    >>> printMergeProposals(nopriv_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
+    This is the whiteboard
+    Merge proposed by No Privileges Person
+
+Since the user who registered the merge proposal is different
+to the owner of the source branch, they are shown explicitly.
+If the branch owner registers the merge proposal, they are not
+shown.
+
+    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> sample_browser.getLink('Register merge proposal').click()
+    >>> sample_browser.getControl('Target Branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> sample_browser.getControl('Whiteboard').value = (
+    ...     'This is the whiteboard')
+    >>> sample_browser.getControl('Register').click()
+
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
+    This is the whiteboard
+
+
+== Landing Candidates ==
+
+From the point of view of the target branch, the proposals are
+"landing candidates".  The most recently created merge proposals are
+shown first.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> printMergeProposals(browser, 'landing-candidates')
+    ~name12/gnome-terminal/scanned (New)
+      This is the whiteboard
+    ~name12/gnome-terminal/klingon (Experimental)
+      This is the whiteboard
+      Merge proposed by No Privileges Person
+
+== Editing a merge proposal ==
+
+The branch merge poposal can be edited by the owner of the source or
+target branches or the registrant of the merge proposal.
+
+There are currently three tasks that can be done when editing a merge proposal:
+  * change the whiteboard
+  * delete it
+  * mark as merged
+
+If the user is able to edit the merge proposal, then a pencil icon is shown
+that is linked to the edit page url.
+
+    >>> landing_targets = find_tag_by_id(
+    ...     sample_browser.contents, 'landing-targets')
+    >>> edit_link = landing_targets.fetch('a')[1]['href']
+    >>> print edit_link
+    /~name12/gnome-terminal/scanned/+merge/2
+    >>> sample_browser.getLink(url=edit_link).click()
+    >>> print sample_browser.title
+    Edit branch merge proposal
+    >>> sample_browser.getControl('Whiteboard').value = (
+    ...     "This is the updated whiteboard.\n"
+    ...     "Demo url: http://launchpad.dev/+foo")
+    >>> sample_browser.getControl('Update').click()
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
+    This is the updated whiteboard.
+    Demo url: http://launchpad.dev/+foo
+
+
+== Deleting merge proposals ==
+
+Merge proposals can be deleted, when either abandoned or created in error.
+When a merge proposal is deleted, the user is taken back to the main page
+for the source_branch.
+
+    >>> sample_browser.getLink(url=edit_link).click()
+    >>> sample_browser.getControl('Delete').click()
+    >>> print sample_browser.url
+    http://code.launchpad.dev/~name12/gnome-terminal/scanned
+
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    None
+
+
+== Dependent Branches ==
+
+When registering merge proposals, there is an optional dependent branch.
+This is used when the source branch has branched of a branch other than
+the target branch.
+
+    >>> sample_browser.getLink('Register merge proposal').click()
+    >>> sample_browser.getControl('Target Branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> sample_browser.getControl('Dependent Branch').value = (
+    ...     '~name12/gnome-terminal/klingon')
+    >>> sample_browser.getControl('Whiteboard').value = (
+    ...     'This is the whiteboard')
+    >>> sample_browser.getControl('Register').click()
+
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
+    This is the whiteboard
+    Dependent on ~name12/gnome-terminal/klingon
+
+This association is also shown on the branch that is depended upon.
+
+    >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
+    >>> printMergeProposals(sample_browser, 'dependent-branches')
+    ~name12/gnome-terminal/scanned
+    This is the whiteboard
+
+
+== Marking as merged ==
+
+When a branch has been merged into the target branch, the proposal should
+be marked as merged.
+
+Merged proposals are still listed on the source branch, but no longer shown
+on the target branch.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> landing_targets = find_tag_by_id(
+    ...     nopriv_browser.contents, 'landing-targets')
+
+The edit link is shown after the branch link.
+
+    >>> edit_link = landing_targets.fetch('a')[1]['href']
+    >>> nopriv_browser.getLink(url=edit_link).click()
+
+There is an action link here to mark as merged.
+
+    >>> nopriv_browser.getLink('Mark as merged').click()
+
+When marking a proposal as merged there is an optional revision number.
+If this is set then the when setting the merge proposal as merged the
+system looks for the revision in the history of the target branch,
+and if found uses the revision date as the merged date.  If it cannot
+find one, then the current time is used as the date merged.
+
+    >>> nopriv_browser.getControl('Merged Revision Number').value = '42'
+    >>> nopriv_browser.getControl('Mark as Merged').click()
+
+The user is then taken to the source branch details page.
+
+    >>> printMergeProposals(nopriv_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
+      This is the whiteboard
+      Merge proposed by No Privileges Person
+      Merged ... seconds ago as revision 42
+
+Gone from the target branch.
+
+    >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
+    >>> printMergeProposals(nopriv_browser, 'landing-candidates')
+    ~name12/gnome-terminal/scanned (New)
+      This is the whiteboard
+

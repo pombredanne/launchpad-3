@@ -34,10 +34,12 @@ for the member.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     TeamMembershipRenewalPolicy, TeamMembershipStatus)
     >>> personset = getUtility(IPersonSet)
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> sabdfl = personset.getByName('sabdfl')
+    >>> kamion = personset.getByName('kamion')
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
 
@@ -98,24 +100,16 @@ and team admins.
     The membership status of Robert Collins (lifeless) in the team Ubuntu
     Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
     Proposed to Declined.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
     >>> member_notification['To']
     'robertc@robertcollins.net'
     >>> member_notification['Subject']
     'Launchpad: Membership change: lifeless in ubuntu-team'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
+    Hello Robert Collins,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 
 The same goes for approving a proposed member.
@@ -144,17 +138,13 @@ The same goes for approving a proposed member.
     >>> admins_notification['Subject']
     'Launchpad: daf added to ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
+    Hello Dafydd Harries,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
     <BLANKLINE>
-    Comment:
-    This is a nice guy; I like him
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
+    Mark Shuttleworth said:
+     This is a nice guy; I like him
 
     >>> print member_notification['To']
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
@@ -168,13 +158,8 @@ The same goes for approving a proposed member.
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
     Approved.
     <BLANKLINE>
-    Comment:
-    This is a nice guy; I like him
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-
+    Mark Shuttleworth said:
+     This is a nice guy; I like him
 
 The same for deactivating a membership.
 
@@ -196,24 +181,16 @@ The same for deactivating a membership.
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
     Deactivated.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
     >>> member_notification['To']
     'daf@canonical.com'
     >>> member_notification['Subject']
     'Launchpad: Membership change: daf in ubuntu-team'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
+    Hello Dafydd Harries,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 
 == Adding new members ==
@@ -307,12 +284,8 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
-    Comment:
-    Of course I want to be part of ubuntu!
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
+    Mark Shuttleworth said:
+     Of course I want to be part of ubuntu!
 
     >>> print member_notification['To']
     mark@hbd.com,karl@canonical.com
@@ -323,13 +296,8 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
-    Comment:
-    Of course I want to be part of ubuntu!
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-
+    Mark Shuttleworth said:
+     Of course I want to be part of ubuntu!
 
 Similarly, a notification is sent if the invitation is declined.
 
@@ -358,12 +326,8 @@ Similarly, a notification is sent if the invitation is declined.
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
     <BLANKLINE>
-    Comment:
-    Landscape has nothing to do with ubuntu, unfortunately.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
+    Mark Shuttleworth said:
+     Landscape has nothing to do with ubuntu, unfortunately.
 
     >>> print member_notification['To']
     test@canonical.com,guilherme.salgado@canonical.com
@@ -373,12 +337,8 @@ Similarly, a notification is sent if the invitation is declined.
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
     <BLANKLINE>
-    Comment:
-    Landscape has nothing to do with ubuntu, unfortunately.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
+    Mark Shuttleworth said:
+     Landscape has nothing to do with ubuntu, unfortunately.
 
 It's also possible to forcibly add a team as a member of another one, by
 passing force_team_add=True to the addMember() method.
@@ -419,30 +379,44 @@ passing force_team_add=True to the addMember() method.
 
 When we get close to the expiration date of a given membership, an expiration
 warning is sent to the member, so that he can contact the team's
-administrators in case he wants to retain that membership. This is done by
-the flag-expired-memberships cronscript, which uses
+administrators (or renew it himself when he has necessary rights) in case
+he wants to retain that membership. This is done by the
+flag-expired-memberships cronscript, which uses
 ITeamMembership.sendExpirationWarningEmail to do its job.
 
-    >>> sabdfl_on_ubuntu_team = membershipset.getByPersonAndTeam(
-    ...     sabdfl, ubuntu_team)
-    >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> kamion_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     kamion, ubuntu_team)
+    >>> kamion_on_ubuntu_team.setExpirationDate(
+    ...     utc_now + timedelta(days=9), sabdfl)
+    >>> flush_database_updates()
+
+Kamion is an admin of the Ubuntu team, but team admins can't change the
+expiration date of their own memberships, so he still has to contact one of
+the other team admins.
+
+    >>> kamion_on_ubuntu_team.status.name
+    'ADMIN' 
+    >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'colin.watson@ubuntulinux.com'
     >>> notification['Subject']
     'Launchpad: ubuntu-team team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Mark Shuttleworth
+    Hi Colin Watson
     <BLANKLINE>
-    On 2050-03-03, ... weeks from now, your membership of the
-    Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
+    On ... your membership
+    of the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     To prevent this membership from expiring, you should get in touch
     with one of the team's administrators:
     Alexander Limi (limi) <http://launchpad.dev/~limi>
-    Colin Watson (kamion) <http://launchpad.dev/~kamion>
     Foo Bar (name16) <http://launchpad.dev/~name16>
     Jeff Waugh (jdub) <http://launchpad.dev/~jdub>
     Mark Shuttleworth (sabdfl) <http://launchpad.dev/~sabdfl>
@@ -453,30 +427,134 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     Thanks for using Launchpad!
     <BLANKLINE>
 
-    >>> guadamen = personset.getByName('guadamen')
-    >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
-    ...     ubuntu_team, guadamen)
-    >>> ubuntu_team_on_guadamen.sendExpirationWarningEmail()
+In the case of the beta-testers team, the email is sent only to the
+team's owner, which doesn't have the necessary rights to renew the
+membership of his team, so he's instructed to contact one of the
+ubuntu-team's admins.
+
+    >>> beta_testers = personset.getByName('launchpad-beta-testers')
+    >>> beta_testers_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     beta_testers, ubuntu_team)
+    >>> beta_testers_on_ubuntu_team.setExpirationDate(
+    ...     utc_now + timedelta(days=9), sabdfl)
+    >>> flush_database_updates()
+    >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['To']
-    'mark@hbd.com'
+    'beta-admin@launchpad.net'
     >>> notification['Subject']
-    'Launchpad: guadamen team membership about to expire'
+    'Launchpad: ubuntu-team team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hi,
     <BLANKLINE>
-    On 2049-02-03, ... weeks from now, the membership of
-    Ubuntu Team (ubuntu-team) (which you are the owner of) in the
-    GuadaMen (guadamen) Launchpad team is due to expire.
-    <http://launchpad.dev/~guadamen>
+    On ..., nine days from now, the membership
+    of Launchpad Beta Testers (launchpad-beta-testers) (which you are
+    the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     To prevent this membership from expiring, you should get in touch
     with one of the team's administrators:
+    Alexander Limi (limi) <http://launchpad.dev/~limi>
+    Colin Watson (kamion) <http://launchpad.dev/~kamion>
     Foo Bar (name16) <http://launchpad.dev/~name16>
-    Ubuntu Team (ubuntu-team) <http://launchpad.dev/~ubuntu-team>
+    Jeff Waugh (jdub) <http://launchpad.dev/~jdub>
+    Mark Shuttleworth (sabdfl) <http://launchpad.dev/~sabdfl>
     <BLANKLINE>
     If the membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+If the team's renewal policy is ONDEMAND, though, the member is invited to
+renew his own membership.
+
+    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> ubuntu_team.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+    >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'colin.watson@ubuntulinux.com'
+    >>> notification['Subject']
+    'Launchpad: ubuntu-team team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi Colin Watson
+    <BLANKLINE>
+    On ... from now, your membership
+    of the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    If you want, you can renew this membership at
+    <http://launchpad.dev/~kamion/+expiringmembership/ubuntu-team>
+    <BLANKLINE>
+    If your membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+    >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'beta-admin@launchpad.net'
+    >>> notification['Subject']
+    'Launchpad: ubuntu-team team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi,
+    <BLANKLINE>
+    On ..., nine days from now, the membership
+    of Launchpad Beta Testers (launchpad-beta-testers) (which you are
+    the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    If you want, you can renew this membership at
+    <http://.../~launchpad-beta-testers/+expiringmembership/...>
+    <BLANKLINE>
+    If the membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+If the team's renewal policy is NONE but the member has the necessary rights
+to change the expiration date of his own membership (i.e. by being the team's
+owner), the notification he gets will contain a link to his memberhip page,
+where he can extend it.
+
+    >>> landscape.renewal_policy = TeamMembershipRenewalPolicy.NONE
+    >>> landscape.teamowner.preferredemail.email
+    u'test@canonical.com'
+    >>> sampleperson_on_landscape = membershipset.getByPersonAndTeam(
+    ...     sampleperson, landscape)
+    >>> sampleperson_on_landscape.setExpirationDate(
+    ...     utc_now + timedelta(days=9), sampleperson)
+    >>> flush_database_updates()
+    >>> sampleperson_on_landscape.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'test@canonical.com'
+    >>> notification['Subject']
+    'Launchpad: landscape-developers team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi Sample Person
+    <BLANKLINE>
+    On ..., nine days from now, your membership
+    of the Landscape Developers (landscape-developers) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~landscape-developers>
+    <BLANKLINE>
+    To stay a member of this team you should extend your membership at
+    <http://launchpad.dev/~landscape-developers/+member/name12>
+    <BLANKLINE>
+    If your membership does expire, we'll send you one more message to let
     you know it's happened.
     <BLANKLINE>
     Thanks for using Launchpad!
@@ -485,41 +563,153 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
 
 == Membership expiration notification ==
 
-If a membership is not renewed before its expiration date it'll be flagged as expired and a notification is sent to the team admins and to the member whose membership expired.
+For teams with a renewal policy other than AUTOMATIC, if a membership is not
+renewed before its expiration date it'll be flagged as expired and a
+notification is sent to the team admins and to the member whose membership
+expired. If the renewal policy is AUTOMATIC, though, the memberships that
+should expire will retain their status and have their dateexpires update. A
+notification is also sent to the member and to team admins when a membership
+is automatically renewed.
 
-    >>> ubuntu_team_on_guadamen.setStatus(
-    ...     TeamMembershipStatus.EXPIRED, guadamen.teamowner)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> lp_admins = personset.getByName('admins')
+    >>> print lp_admins.renewal_policy.title
+    invite them to apply for renewal
+
+    >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
+
+    # Need to cheat here and set the expiry date manually because the expiry
+    # date given to setExpirationDate() must be in the future.
+    >>> removeSecurityProxy(sabdfl_on_admins).dateexpires = utc_now
+
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+    >>> ubuntu_team.defaultrenewalperiod = 365
+    >>> jdub = personset.getByName('jdub')
+    >>> jdub_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     jdub, ubuntu_team)
+    >>> removeSecurityProxy(jdub_on_ubuntu_team).dateexpires = utc_now
+    >>> flush_database_updates()
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> membershipset.handleMembershipsExpiringToday(
+    ...     reviewer=getUtility(ILaunchpadCelebrities).janitor)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    6
+
+The expiration/auto-renewal notifications are sent to each person
+individually rather than sending a single email to everybody, so we'll
+just show the recipients and the different messages we may send.
+
+    >>> def print_distinct_messages_and_recipients():
+    ...     """Pop all messages from stub.test_emails and print them with
+    ...      their recipients.
+    ...     
+    ...     Since the same message may be sent more than once (for different
+    ...     recipients), we print each distinct message only once and group
+    ...     all recipients of that message together.
+    ...     """
+    ...     distinct_messages = {}
+    ...     for message in pop_notifications():
+    ...         recipients = set(
+    ...             recipient.strip()
+    ...             for recipient in message['To'].split(','))
+    ...         body = message.get_payload()
+    ...         if body not in distinct_messages:
+    ...             distinct_messages[body] = recipients
+    ...         else:
+    ...             existing_recipients = distinct_messages[body]
+    ...             distinct_messages[body] = existing_recipients.union(
+    ...                 recipients)
+    ...     for message in sorted(distinct_messages):
+    ...         print 'To:', sorted(distinct_messages[message])
+    ...         print message #doctest: -NORMALIZE_WHITESPACE
+    ...         print "-"*40
+
+    >>> print_distinct_messages_and_recipients()
+    To: ['colin.watson@ubuntulinux.com', 'foo.bar@canonical.com', 'mark@hbd.com']
+    Hello,
+    <BLANKLINE>
+    The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
+    team has been automatically renewed until ...
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['foo.bar@canonical.com', 'guilherme.salgado@canonical.com']
+    Hello,
+    <BLANKLINE>
+    The membership of Mark Shuttleworth (sabdfl) in the Launchpad
+    Administrators (admins) team has expired.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['mark@hbd.com']
+    Hello,
+    <BLANKLINE>
+    Your membership in the Launchpad Administrators (admins) team has
+    expired.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['jeff.waugh@ubuntulinux.com']
+    Hello,
+    <BLANKLINE>
+    Your membership in the Ubuntu Team (ubuntu-team) team has been
+    automatically renewed until ...
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
+
+== Memberships renewed by the members themselves ==
+
+Another possible renewal policy for teams is ONDEMAND, which means that team
+members are invited to renew their membership once it gets close to their
+expiration date. When a member renew his own membership, a notification is
+sent to all team admins.
+
+    >>> karl = personset.getByName('karl')
+    >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
+    >>> karl_on_mirroradmins = membershipset.getByPersonAndTeam(
+    ...     karl, mirror_admins)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+    >>> print karl_on_mirroradmins.dateexpires
+    None
+
+    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> karl_on_mirroradmins.setExpirationDate(
+    ...     tomorrow, mirror_admins.teamowner)
+    >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> karl_on_mirroradmins.team.renewal_policy = ondemand
+    >>> mirror_admins.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+
+    >>> login(karl.preferredemail.email)
+    >>> karl.renewTeamMembership(mirror_admins)
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
-    >>> admins_notification, member_notification = pop_notifications()
+    1
 
-    >>> print member_notification['To']
-    support@ubuntu.com
-    >>> print member_notification['Subject']
-    Launchpad: ubuntu-team expired from guadamen
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    To: ['mark@hbd.com']
     Hello,
     <BLANKLINE>
-    The membership of Ubuntu Team (ubuntu-team) in the GuadaMen (guadamen)
-    team has expired.
+    Karl Tilbury (karl) renewed his/her own membership in the Mirror
+    Administrators (ubuntu-mirror-admins) team until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
-
-    >>> print admins_notification['To']
-    foo.bar@canonical.com
-    >>> print admins_notification['Subject']
-    Launchpad: ubuntu-team expired from guadamen
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
-    <BLANKLINE>
-    The membership of Ubuntu Team (ubuntu-team) in the GuadaMen (guadamen)
-    team has expired.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-
+    ----------------------------------------
 
 == Some special cases ==
 
@@ -541,6 +731,7 @@ notification.
 
     >>> cprov = personset.getByName('cprov')
     >>> cprov_membership = membershipset.getByPersonAndTeam(cprov, ubuntu_team)
+    >>> login('mark@hbd.com')
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=sabdfl)
     >>> len(stub.test_emails)
@@ -574,10 +765,6 @@ sent to the team administrators.
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
     (ubuntu-team) was changed by the user himself from Administrator to
     Approved.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 
 Deactivating the membership of a team also generates notifications for the
@@ -605,8 +792,4 @@ sense to the members of the team reading it.
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
     (sabdfl) from Approved to Deactivated.
-    <BLANKLINE>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 

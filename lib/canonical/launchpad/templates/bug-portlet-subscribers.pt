@@ -1,6 +1,9 @@
-<div class="portlet">
-  <h2>Subscribers to bug <span tal:replace="context/id">4</span></h2>
-
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-subscribers">
+  <h2>Subscribers</h2>
   <div class="portletBody"
        tal:define="from_dupes_subscribers context/getSubscribersFromDuplicates;
                    also_notified_subscribers context/getAlsoNotifiedSubscribers">
@@ -41,4 +44,5 @@
       </ul>
 
     </div>
+  </div>
 </div>

@@ -1,0 +1,7 @@
+<!-- This is a DTD file inside a subdirectory -->
+
+<!ENTITY foozilla.menu.title   "MENU">
+<!-- Special-cased *.accesskey and *.commandkey since they're really 
+     short strings in English -->
+<!ENTITY foozilla.menu.accesskey   "M">
+<!ENTITY foozilla.menu.commandkey   "m">

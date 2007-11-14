@@ -14,17 +14,19 @@
     </securedutility>
 
     <content class="canonical.launchpad.database.TeamMembership">
-        <require 
+        <require
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
                         reviewercomment statusname isExpired
-                        sendExpirationWarningEmail" />
-        <require 
+                        sendExpirationWarningEmail canBeRenewedByMember
+                        sendSelfRenewalNotification canChangeExpirationDate
+                        sendAutoRenewalNotification" />
+        <require
             permission="launchpad.Edit"
-            attributes="setStatus" />
-        <require 
+            attributes="setStatus setExpirationDate" />
+        <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.ITeamMembership" />
+            set_attributes="reviewer datejoined reviewercomment" />
     </content>
 
     <browser:url
@@ -62,7 +64,14 @@
         />
 
     <content class="canonical.launchpad.browser.person.TeamInvitationView">
-        <allow 
+        <allow
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
+    </content>
+
+    <content
+        class="canonical.launchpad.browser.person.TeamMembershipSelfRenewalView">
+        <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
         <allow attributes="__call__" />
     </content>

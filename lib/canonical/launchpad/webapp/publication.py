@@ -78,22 +78,15 @@ class LaunchpadBrowserPublication(
         self.db = db
 
     def annotateTransaction(self, txn, request, ob):
-        """Set some useful meta-information on the transaction. This
-        information is used by the undo framework, for example.
+        """See `zope.app.publication.zopepublication.ZopePublication`.
 
-        This method is not part of the `IPublication` interface, since
-        it's specific to this particular implementation.
+        We override the method to simply save the authenticated user id
+        in the transaction.
         """
         # It is possible that request.principal is None if the principal has
         # not been set yet.
-
         if request.principal is not None:
             txn.setUser(request.principal.id)
-
-        # Work around methods that are usually used for views
-        bare = removeSecurityProxy(ob)
-        if isinstance(bare, instancemethod):
-            ob = bare.im_self
 
         return txn
 
@@ -125,9 +118,9 @@ class LaunchpadBrowserPublication(
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
         #
-        # XXX: Move this to SQLOS, in a method that is subscribed to the
-        # transaction begin event rather than hacking it into traversal.
-        # -- Steve Alexander, Tue Dec 14 13:15:06 UTC 2004
+        # XXX Steve Alexander 2004-12-14: Move this to SQLOS, in a method
+        # that is subscribed to the transaction begin event rather than
+        # hacking it into traversal.
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
@@ -272,13 +265,12 @@ class LaunchpadBrowserPublication(
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
             return
-        # XXX: 20070426 jamesh
+        # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
         # referrer is included in the request.  We let it pass through
         # here for the benefits of the tests.  Web browsers send full
         # URLs so this does not open us up to extra XSRF attacks.
-        #     https://bugs.launchpad.net/zope3/+bug/98437
         if referrer in ['localhost', 'localhost:9000']:
             return
         # Extract the hostname from the referrer URI
@@ -305,6 +297,30 @@ class LaunchpadBrowserPublication(
             request.setInWSGIEnvironment('launchpad.pageid', pageid)
 
         return mapply(ob, request.getPositionalArguments(), request)
+
+    def afterCall(self, request, ob):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Our implementation aborts() the transaction on read-only requests.
+        Because of this we cannot chain to the superclass and implement
+        the whole behaviour here.
+        """
+
+        # Annotate the transaction with user data. That was done by
+        # zope.app.publication.zopepublication.ZopePublication.
+        txn = transaction.get()
+        self.annotateTransaction(txn, request, ob)
+
+        # Abort the transaction on a read-only request.
+        if request.method in ['GET', 'HEAD']:
+            txn.abort()
+        else:
+            txn.commit()
+
+        # Don't render any content for a HEAD.  This was done
+        # by zope.app.publication.browser.BrowserPublication
+        if request.method == 'HEAD':
+            request.response.setResult('')
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -345,6 +361,9 @@ class LaunchpadBrowserPublication(
         # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
+        # Retry the request if we get a database disconnection.
+        if retry_allowed and isinstance(exc_info[1], da.DisconnectionError):
+            raise Retry(exc_info)
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,
                                    retry_allowed)

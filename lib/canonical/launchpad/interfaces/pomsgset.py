@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Object, Datetime
@@ -41,14 +41,14 @@ class IPOMsgSet(Interface):
     publishedfuzzy = Attribute("""Whether this set was marked as fuzzy in
         the PO file it came from.""")
 
-    isfuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file 
+    isfuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file
         it came from.""")
 
     isupdated = Attribute("""Whether or not this set includes any
         translations that are newer than those published in the po
         file.""")
 
-    obsolete = Attribute("""Whether this set was marked as obsolete in the 
+    obsolete = Attribute("""Whether this set was marked as obsolete in the
         PO file it came from.""")
 
     commenttext = Attribute("Text of translator comment from the PO file.")
@@ -82,11 +82,47 @@ class IPOMsgSet(Interface):
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
+    latest_change_date = Attribute(
+        """Return the date of the latest change in the `IPOMsgSet`.""")
+
+    latest_change_person = Attribute(
+        """Return the person who did the latest change in the `IPOMsgSet`.""")
+
+    language = Attribute(
+        "The language this msgset is in, copied from `POFile`.")
+
     def isNewerThan(timestamp):
         """Whether the active translations are newer than the given timestamp.
 
-        :arg timestamp: A DateTime object with a timestamp.
+        :param timestamp: A DateTime object with a timestamp.
 
+        """
+
+    def initializeSubmissionsCaches(related_submissions=None):
+        """Initialize internal submission caches.
+
+        These caches are used to find submissions attached to self, as well as
+        specifically active or published submissions, or suggestions, and so
+        on, without querying the database unnecessarily.
+
+        The getter and setter methods for the Active Submissions and Published
+        Submissions work on a subset of this cache; the active/published
+        submissions caches can be populated separately to avoid the cost of
+        fetching the full data set for the submissions cache.  When doing work
+        on a POMsgSet that will require finding both the active/published
+        submissions information and other information about submissions or
+        suggestions, call initializeSubmissionsCaches first.  That will
+        populate the full submissions caches without duplication of the effort
+        to fetch the active/published submissions information.
+
+        Note that the actual caches are private to this object, which is
+        visible only in a single thread.  This is why no locking is needed.
+
+        :param related_submissions: list or iterator of all submissions
+            attached to this object, as well as all that should be presented
+            as suggestions for its translation.  If related_submissions is not
+            given, they will be fetched from the database.  Must yield
+            `POSubmissions` in newest-to-oldest order.
         """
 
     def setActiveSubmission(pluralform, submission):
@@ -118,13 +154,20 @@ class IPOMsgSet(Interface):
         represented and accessed differently through this API."""
 
     def getWikiSubmissions(pluralform):
-        """Return an iterator over all the submissions in any PO file for
-        this pluralform in this language, for the same msgid."""
+        """List of suggestions for given pluralform.
 
-    def getSuggestedSubmissions(pluralfom):
-        """Return an iterator over any submissions that have come in for
-        this pomsgset and pluralform that were sent in since the last active
-        one was submitted."""
+        A suggestion is a POSubmission for another POMsgSet in the same
+        language, whose potmsgset shares the same primemsgid as self's, but
+        which offers a translation that's not already selected for self.  In
+        less formal terms, a suggestion is an existing translation that is
+        likely to be a useful translation for self.
+        """
+
+    def getNewSubmissions(pluralfom):
+        """Submissions for self that are more recent than active one, if any.
+
+        Returns a list of POSubmissions, ordered from newest to oldest.
+        """
 
     def getCurrentSubmissions(pluralform):
         """Return a list of submissions currently published or active.
@@ -160,7 +203,7 @@ class IPOMsgSet(Interface):
         """
 
     def updateFlags():
-        """Update the complete and fuzzy flags for this IPOMsgSet.
+        """Update `iscomplete`, `isfuzzy`, and `isupdated` flags.
 
         The new values will reflect current status of this entry.
         """
@@ -168,25 +211,37 @@ class IPOMsgSet(Interface):
     def updateReviewerInfo(reviewer):
         """Update a couple of fields to note there was an update.
 
-        :arg reviewer: The person who just reviewed this IPOMsgSet.
+        :param reviewer: The person who just reviewed this IPOMsgSet.
 
         The updated fields are:
-            - self.pofile.last_touched_pomsgset: To cache which message was
+            - `self.pofile.last_touched_pomsgset`: To cache which message was
               the last one updated so we can know when was an IPOFile last
                updated.
-            - self.reviewer: To note who did last review for this message.
-            - self.date_reviewed: To note when was done last review.
+            - `self.reviewer`: To note who did last review for this message.
+            - `self.date_reviewed`: To note when was done last review.
+        """
+
+    def makeHTMLId(suffix=None):
+        """Unique name for this `POMsgSet` for use in HTML element ids.
+
+        The name is an underscore-separated sequence of:
+         * the string 'msgset'
+         * unpadded, numerical `POTMsgSet.id` (not our own `id`!)
+         * language code
+         * caller-supplied suffix.
+
+        :param suffix: an identifier to be appended.  Must be suitable for use
+        in HTML element ids.
         """
 
 
 class IPOMsgSetSuggestions(Interface):
-    """Holds data of a specific kind of POSubmission for a POMsgSet's
-    plural form.
+    """Suggested `POSubmission`s for a `POMsgSet` in a particular plural form.
 
-    When displaying POMsgSets in POMsgSetView we display different types
+    When displaying `POMsgSet`s in `POMsgSetView` we display different types
     of suggestions: non-reviewer translations, translations that occur in
     other contexts, and translations in alternate languages. See
-    POMsgSetView._buildSuggestions for details.
+    `POMsgSetView._buildSuggestions` for details.
     """
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")

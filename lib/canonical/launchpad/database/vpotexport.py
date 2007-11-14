@@ -10,7 +10,8 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
 
-from canonical.launchpad.database import POTemplate
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import IVPOTExportSet, IVPOTExport
 
 class VPOTExportSet:
@@ -23,11 +24,13 @@ class VPOTExportSet:
         'sequence',
         'header',
         'pluralform',
+        'context',
         'msgid',
         'commenttext',
         'sourcecomment',
         'filereferences',
         'flagscomment',
+        'potmsgset',
     ]
     columns = ', '.join(['POTExport.' + name for name in column_names])
 
@@ -81,11 +84,14 @@ class VPOTExport:
          self.sequence,
          self.header,
          self.pluralform,
+         self.context,
          self.msgid,
          self.commenttext,
          self.sourcecomment,
          self.filereferences,
-         self.flagscomment) = args
+         self.flagscomment,
+         potmsgset) = args
 
         self.potemplate = POTemplate.get(potemplate)
+        self.potmsgset = POTMsgSet.get(potmsgset)
 

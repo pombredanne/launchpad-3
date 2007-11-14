@@ -1,4 +1,13 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
   <body>
     <h1 metal:fill-slot="heading">Blueprint tracking</h1>
     <div metal:fill-slot="main">
@@ -13,7 +22,7 @@
           </a>
         </li>
         <li>
-          <a href="+new">
+          <a href="+new" id="addspec">
             <img
               alt="Register a blueprint"
               src="/+icing/but-lrg-registeraspec.gif"
@@ -70,13 +79,13 @@
         <p tal:condition="specs">
           <span tal:replace="view/spec_count" />
           blueprint(s) matching
-          &#8220;<tal:string replace="view/searchtext" />&#8221:
+          &#8220;<tal:string replace="view/searchtext" />&#8221;
         </p>
 
         <tal:nomatches condition="not: specs"
                        replace="structure context/@@+nomatches" />
 
-        <table>
+        <table id="specs-table">
           <tr tal:repeat="spec specs"
               tal:replace="structure spec/@@+listing-simple" />
         </table>

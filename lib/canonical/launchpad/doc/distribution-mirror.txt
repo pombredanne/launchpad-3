@@ -8,10 +8,8 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
     ...     IDistroArchSeriesSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet)
-    >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     PackagePublishingStatus, MirrorStatus)
+    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorStatus,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -22,8 +20,6 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
     ...     owner, speed, brazil, content, http_base_url=http_base_url)
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
 
 When a new mirror is created we'll generate a unique name for it, based on its
 host name and content.
@@ -133,7 +129,7 @@ distribution owner can see them and mark the ones that should be official.
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
@@ -279,14 +275,54 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'canonical-releases', u'releases-mirror', u'releases-mirror2',
      u'unreachable-mirror']
 
-    The getMirrorsToProbe() method also accepts a ignore_last_probe argument,
-    that, if True, will ignore previous probe records for all mirrors.
+The getMirrorsToProbe() method also accepts an ignore_last_probe argument,
+that, if True, will ignore previous probe records for all mirrors.
 
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
     >>> [mirror.name for mirror in mirrors]
     [u'canonical-archive', u'archive-404-mirror', u'archive-mirror',
      u'archive-mirror2']
+
+It's also possible to limit the number of mirrors we want to probe by passing
+an extra limit= argument to mirrorset.getMirrorsToProbe().  If any limit is
+given, the mirrors which have never been probed will be given precedence,
+followed by the ones which have been probed longest ago.  Note that although
+we have this precedence when a limit is given, the actual results are not
+ordered by the date the mirrors were last probed as we don't care about it
+anyway.
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
+    >>> import pytz
+    >>> utc = pytz.timezone('UTC')
+    >>> now = datetime.now(utc)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         if (now - last_probe.date_created).days < 1:
+    ...             last_probe_date = 'TODAY'
+    ...         else:
+    ...             last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror TODAY
+    archive-mirror2 2006-05-24...
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True, limit=3)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror2 2006-05-24...
+
 
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
@@ -392,22 +428,25 @@ pointed by the config.distributionmirrorprober.releases_file_list_url option)
 
     >>> from canonical.launchpad.scripts.distributionmirror_prober import (
     ...     get_expected_cdimage_paths)
-    >>> for (dummy, dummy, paths) in sorted(get_expected_cdimage_paths()):
+    >>> for (series, flavour, paths) in get_expected_cdimage_paths():
     ...     for path in paths:
-    ...         if '5.04' in path:
-    ...             print path
-    /kubuntu/hoary/kubuntu-5.04-install-amd64.iso
-    /kubuntu/hoary/kubuntu-5.04-install-i386.iso
-    /kubuntu/hoary/kubuntu-5.04-install-powerpc.iso
-    /kubuntu/hoary/kubuntu-5.04-live-amd64.iso
-    /kubuntu/hoary/kubuntu-5.04-live-i386.iso
-    /kubuntu/hoary/kubuntu-5.04-live-powerpc.iso
-    /hoary/ubuntu-5.04-install-amd64.iso
-    /hoary/ubuntu-5.04-install-i386.iso
-    /hoary/ubuntu-5.04-install-powerpc.iso
-    /hoary/ubuntu-5.04-live-amd64.iso
-    /hoary/ubuntu-5.04-live-i386.iso
-    /hoary/ubuntu-5.04-live-powerpc.iso
+    ...         print series.name, flavour, path
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-amd64.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-i386.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-powerpc.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-amd64.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-i386.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-powerpc.iso
+    hoary ubuntu /hoary/ubuntu-5.04-install-amd64.iso
+    hoary ubuntu /hoary/ubuntu-5.04-install-i386.iso
+    hoary ubuntu /hoary/ubuntu-5.04-install-powerpc.iso
+    hoary ubuntu /hoary/ubuntu-5.04-live-amd64.iso
+    hoary ubuntu /hoary/ubuntu-5.04-live-i386.iso
+    hoary ubuntu /hoary/ubuntu-5.04-live-powerpc.iso
+    warty ubuntu /warty/warty-release-install-amd64.iso
+    warty ubuntu /warty/warty-release-install-i386.iso
+    warty ubuntu /warty/warty-release-install-powerpc.iso
+    warty ubuntu /warty/warty-release-live-i386.iso
 
 
 === Checking how up-to-date the content is ===
@@ -427,8 +466,6 @@ On the warty release, component 'main' and pocket RELEASE , we had two uploads
 between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
 that mirror's last sync was in the last one or two days.
 
-    >>> import pytz
-    >>> utc = pytz.timezone('UTC')
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]
@@ -676,4 +713,76 @@ the case here.  Otherwise, their status is unknown.
 
     >>> cdimage_mirror.getOverallStatus().title
     'Up to date'
+
+
+== Mirror counts and bandwidth aggregates ==
+
+We include a count of the number of mirrors per country, and the total
+bandwidth (approximate) that they output. Here we test the aggregation
+functions that achieve that.
+
+First we import the classes required to test the view:
+
+  >>> from zope.component import getView
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistribution)
+  >>> from canonical.launchpad.browser.distribution import (
+  ...     DistributionMirrorsView)
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+Create a view to test:
+
+  >>> request = LaunchpadTestRequest()
+  >>> view = getView(ubuntu, '+archivemirrors', request)
+
+Verify that the view is a DistributionMirrorsView:
+
+  >>> isinstance(view, DistributionMirrorsView)
+  True
+
+We want to make sure that the view._sum_throughput method knows about all
+the possible mirror speeds.
+
+  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> class MockMirror:
+  ...     speed = None
+  >>> mirrors = []
+  >>> for speed in MirrorSpeed.items:
+  ...     a = MockMirror()
+  ...     a.speed = speed
+  ...     mirrors.append(a)
+  >>> print view._sum_throughput(mirrors)
+  37 Gbps
+
+== Deleting mirrors ==
+
+Mirrors are sometimes created by spammers hoping that we'll publicize
+whatever links they put there. Although we only publicize mirrors that
+have been approved by an admin, it's annoying to the admins to have these
+bogus mirrors on their list of unapproved mirrors, so we allow admins
+(and only them) to delete these mirrors.
+
+Only mirrors which have never been probed can be deleted this way.
+
+    >>> login(cdimage_mirror.owner.preferredemail.email)
+    >>> cdimage_mirror.destroySelf()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> login('karl@canonical.com')
+    >>> cdimage_mirror.last_probe_record is not None
+    True
+    >>> cdimage_mirror.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+
+    >>> invalid_mirror = mirrorset.getByName('invalid-mirror')
+    >>> invalid_mirror.last_probe_record is None
+    True
+    >>> invalid_mirror.destroySelf()
+
+    >>> mirrorset.getByName('invalid-mirror') is None
+    True
 

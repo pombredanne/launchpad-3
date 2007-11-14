@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
   <body>
 
@@ -24,7 +31,7 @@
           evolution 2.10 template
         </a>
       </div>
-      <tal:notloggedin condition="not:request/lp:person">
+      <tal:form-not-writeable condition="not:view/form_is_writeable">
         <h1>
           Browsing
           <tal:language replace="context/pofile/language/englishname">
@@ -32,15 +39,15 @@
           </tal:language>
           translation
         </h1>
-      </tal:notloggedin>
-      <tal:loggedin condition="request/lp:person">
+      </tal:form-not-writeable>
+      <tal:form-writeable condition="view/form_is_writeable">
         <h1>
           Translating into
           <tal:language replace="context/pofile/language/englishname">
             Spanish
           </tal:language>
         </h1>
-      </tal:loggedin>
+      </tal:form-writeable>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -64,7 +71,7 @@
         <form method="POST" action="">
           <!-- the hidden elements -->
           <input type="hidden" name="lock_timestamp" value=""
-                 tal:condition="request/lp:person"
+                 tal:condition="view/form_is_writeable"
                  tal:attributes="value view/lock_timestamp/isoformat" />
           <table class="listing" style="margin-top: 0.5em;">
             <thead>
@@ -79,7 +86,7 @@
               <div tal:replace="structure view/pomsgset_view" />
             </tbody>
             <tfoot>
-              <tr tal:condition="request/lp:person">
+              <tr tal:condition="view/form_is_writeable">
                 <th colspan="5">
                   <tal:review
                     condition="not: view/user_is_official_translator"

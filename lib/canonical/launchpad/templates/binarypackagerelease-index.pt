@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -12,9 +18,8 @@
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <!-- XXX: matsubara 20060213 
-       see bug https://launchpad.net/productslaunchpad/+bug/31342 
-       the main template is broken when there is no actions portlet -->
+  <!-- XXX: matsubara 2006-02-13 bug=31342
+       The main template is broken when there is no actions portlet -->
   <metal:rightportlets fill-slot="portlets_two">
     <div>&nbsp;</div>
   </metal:rightportlets>

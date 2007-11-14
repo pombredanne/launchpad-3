@@ -14,11 +14,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.lp import AUTOCOMMIT_ISOLATION
-from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, ILibraryFileAliasSet)
+    IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
@@ -26,7 +25,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
 
 class DistroMirrorProber(LaunchpadCronScript):
     usage = ('%prog --content-type=(archive|cdimage) [--force] '
-             '[--no-owner-notification]')
+             '[--no-owner-notification] [--max-mirrors=N]')
 
     def _sanity_check_mirror(self, mirror):
         """Check that the given mirror is official and has an http_base_url."""
@@ -60,6 +59,9 @@ class DistroMirrorProber(LaunchpadCronScript):
         self.parser.add_option('--no-remote-hosts',
             dest='no_remote_hosts', default=False, action='store_true',
             help='Do not try to connect to any host other than localhost.')
+        self.parser.add_option('--max-mirrors',
+            dest='max_mirrors', default=None, action='store', type="int",
+            help='Only probe N mirrors.')
 
     def main(self):
         if self.options.content_type == 'archive':
@@ -95,7 +97,8 @@ class DistroMirrorProber(LaunchpadCronScript):
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
-            content_type, ignore_last_probe=self.options.force)
+            content_type, ignore_last_probe=self.options.force,
+            limit=self.options.max_mirrors)
         mirror_ids = [mirror.id for mirror in results]
         unchecked_keys = []
         logfiles = {}
@@ -106,9 +109,9 @@ class DistroMirrorProber(LaunchpadCronScript):
             if not self._sanity_check_mirror(mirror):
                 continue
 
-            # XXX: Some people registered mirrors on distros other than Ubuntu
-            # back in the old times, so now we need to do this small hack here.
-            # Guilherme Salgado, 2006-05-26
+            # XXX: salgado 2006-05-26:
+            # Some people registered mirrors on distros other than Ubuntu back
+            # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
                 self.logger.info(
                     "Mirror '%s' of distribution '%s' can't be probed --we only "
@@ -155,11 +158,11 @@ class DistroMirrorProber(LaunchpadCronScript):
             self.logger.info(
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
-        # XXX: This should be done in LaunchpadScript.lock_and_run() when the
+        # XXX: salgado 2007-04-03:
+        # This should be done in LaunchpadScript.lock_and_run() when the
         # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
         # this with a flush_database_updates() doesn't have the same effect,
         # it seems.
-        # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
 
         self.logger.info('Done.')

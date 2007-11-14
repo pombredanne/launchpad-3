@@ -12,8 +12,8 @@ __all__ = [
 rejection_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Precedence: bulk
-Subject: %(CHANGES)s Rejected
+Subject: %(CHANGES)s rejected
+X-Katie: Launchpad actually
 
 Rejected:
 %(SUMMARY)s
@@ -33,8 +33,8 @@ signer of the above package.
 new_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Precedence: bulk
 Subject: %(CHANGES)s is NEW
+X-Katie: Launchpad actually
 
 %(SUMMARY)s
 
@@ -55,10 +55,10 @@ signer of the above package.
 accepted_template="""From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Precedence: bulk
-Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
+Subject: %(STATUS)s %(SOURCE)s %(VERSION)s (%(ARCH)s)
+X-Katie: Launchpad actually
 
-Accepted:
+%(STATUS)s:
 %(SUMMARY)s
 
 %(CHANGESFILE)s
@@ -81,6 +81,7 @@ announce_template="""From: %(MAINTAINERFROM)s
 To: %(ANNOUNCE)s
 Bcc: %(DEFAULT_RECIPIENT)s, %(SOURCE)s_derivatives@packages.qa.debian.org
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
+X-Katie: Launchpad actually
 
 Accepted:
 %(SUMMARY)s

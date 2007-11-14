@@ -1,4 +1,4 @@
--- Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 /* This is created as a function so the same definition can be used with
     many tables
@@ -9,7 +9,7 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^[a-z0-9][a-z0-9\+\.\-]*$"
+    pat = r"^[a-z0-9][a-z0-9\+\.\-]*\Z"
     if re.match(pat, name):
         return 1
     return 0
@@ -32,7 +32,7 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
     if re.match(pat, name):
         return 1
     return 0
@@ -248,18 +248,6 @@ $$;
 
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
-
-
-CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
-LANGUAGE plpythonu AS
-$$
-    import time
-    time.sleep(args[0])
-    return True
-$$;
-
-COMMENT ON FUNCTION sleep_for_testing(double precision) IS
-    'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
@@ -676,7 +664,8 @@ COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for s
 
 
 CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
-LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS
+LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
+EXTERNAL SECURITY DEFINER AS
 $$
     import re
     name = args[0].decode("UTF-8")
@@ -706,7 +695,7 @@ COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in t
 
 
 CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
-LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT AS
+LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
 $$
     SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
 $$;
@@ -732,4 +721,76 @@ $$
 $$;
 
 COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
+
+
+CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
+LANGUAGE plpythonu AS
+$$
+    # If someone is trying to explicitly set the openid_identifier, let them.
+    # This also causes openid_identifiers to be left alone if this is an
+    # UPDATE trigger.
+    if TD['new']['openid_identifier'] is not None:
+        return None
+
+    from random import choice
+
+    # Non display confusing characters
+    chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
+
+    # character length of tokens. Can be increased, decreased or even made
+    # random - Launchpad does not care. 7 means it takes 40 bytes to store
+    # a null-terminated Launchpad identity URL on the current domain name.
+    length=7
+
+    loop_count = 0
+    while loop_count < 20000:
+        # Generate a random openid_identifier
+        oid = ''.join(choice(chars) for count in range(length))
+
+        # Check if the oid is already in the db, although this is pretty
+        # unlikely
+        rv = plpy.execute("""
+            SELECT COUNT(*) AS num FROM Person WHERE openid_identifier = '%s'
+            """ % oid, 1)
+        if rv[0]['num'] == 0:
+            TD['new']['openid_identifier'] = oid
+            return "MODIFY"
+        loop_count += 1
+        if loop_count == 1:
+            plpy.warning(
+                'Clash generating unique openid_identifier. '
+                'Increase length if you see this warning too much.')
+    plpy.error(
+        "Unable to generate unique openid_identifier. "
+        "Need to increase length of tokens.")
+$$;
+
+
+CREATE OR REPLACE FUNCTION set_bug_date_last_message() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE Bug
+        SET date_last_message = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        WHERE Bug.id = NEW.bug;
+    ELSE
+        UPDATE Bug
+        SET date_last_message = max_datecreated
+        FROM (
+            SELECT BugMessage.bug, max(Message.datecreated) AS max_datecreated
+            FROM BugMessage, Message
+            WHERE BugMessage.id <> OLD.id
+                AND BugMessage.bug = OLD.bug
+                AND BugMessage.message = Message.id
+            GROUP BY BugMessage.bug
+            ) AS MessageSummary
+        WHERE Bug.id = MessageSummary.bug;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
+
 

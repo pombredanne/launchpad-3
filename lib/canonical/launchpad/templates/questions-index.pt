@@ -1,99 +1,117 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
   <body>
     <h1 metal:fill-slot="heading">Questions and answers</h1>
     <div metal:fill-slot="main">
 
-                        <ul class="rollover buttons">
-                          <li>
-                            <a href="/+tour">
-                              <img
-                                alt="Take a tour"
-                                src="/+icing/but-lrg-takeatour.gif"
-                              />
-                            </a>
-                          </li>
-                        </ul>
-                        <form class="central" action="" method="get"
-                              tal:attributes="action request/URL">
-                          <input
-                            id="field.languages.1"
-                            type="hidden"
-                            name="field.languages"
-                            value="Preferred"
-                          />
-                          <table>
-                            <tbody>
-                              <tr>
-                                <td style="text-align: right;">
-                                  <input
-                                    id="text"
-                                    type="text"
-                                    name="field.search_text"
-                                    size="50"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    tal:replace="structure view/search_action/render"
-                                    type="submit"
-                                    value="Find Answers"
-                                  />
-                                </td>
-                              </tr>
-                              <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
-                                <td tal:attributes="class view/scope_css_class"
-                                    style="text-align: right;">
+      <ul class="rollover buttons">
+        <li>
+          <a href="/+tour">
+            <img
+              alt="Take a tour"
+              src="/+icing/but-lrg-takeatour.gif"
+            />
+          </a>
+        </li>
+      </ul>
+      <form class="central" action="" method="get"
+            tal:attributes="action request/URL">
+        <table>
+          <tbody>
+            <tr>
+              <td style="text-align: right;">
+                <input
+                  id="text"
+                  type="text"
+                  name="field.search_text"
+                  size="50"
+                />
+              </td>
+              <td>
+                <input
+                  tal:replace="structure view/search_action/render"
+                  type="submit"
+                  value="Find Answers"
+                />
+              </td>
+            </tr>
+            <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
+              <td tal:attributes="class view/scope_css_class"
+                  style="text-align: right;">
 
-                                  <tal:scope
-                                    replace="structure view/widgets/scope/renderScopeOptions" />
+                <tal:scope
+                  replace="structure view/widgets/scope/renderScopeOptions" />
 
-                                    <tal:input replace="structure target_widget/inputField" />
+                  <tal:input replace="structure target_widget/inputField" />
 
-                                  <tal:sort
-                                    replace="structure view/widgets/sort/hidden" />
-                                  <tal:status
-                                    replace="structure view/widgets/status/hidden" />
-                                  <div class="message"
-                                    tal:condition="view/scope_error"
-                                    tal:content="structure view/scope_error">
-                                    Error message
-                                  </div>
-                                </td>
-                                <td tal:content="structure target_widget/chooseLink" />
-                              </tr>
-                            </tbody>
-                          </table>
-                          <div>
-                        </form>
-                        <p id="application-summary">
-                          Launchpad Answers helps you build a
-                          community support network and knowledge base for
-                          your project. Encourage new users to ask questions
-                          rather than file bugs!
-                          <a href="/+about">Learn more&#8230;</a>
-                        </p>
-                        <div id="latest-questions-asked" class="left">
+                <tal:sort
+                  replace="structure view/widgets/sort/hidden" />
+                <tal:status
+                  replace="structure view/widgets/status/hidden" />
+                <div class="message"
+                  tal:condition="view/scope_error"
+                  tal:content="structure view/scope_error">
+                  Error message
+                </div>
+              </td>
+              <td tal:content="structure target_widget/chooseLink" />
+            </tr>
+          </tbody>
+        </table>
+      </form>
+      <p id="application-summary">
+        Launchpad Answers helps you build a
+        community support network and knowledge base for
+        your project. Encourage new users to ask questions
+        rather than file bugs!
+        <a href="/+about">Learn more&#8230;</a>
+      </p>
 
-      <h2 i18n:translate="">Latest questions asked</h2>
-      <table>
-        <tal:question
-          repeat="question view/latest_questions_asked"
-          content="structure question/@@+listing-detailed"
-        />
-      </table>
+      <div class="columns">
+        <div id="most-active-projects" class="three column left">
+          <h2 i18n:translate="">Most active projects</h2>
 
-                        </div>
-                        <div id="latest-questions-solved" class="right">
+          <ul tal:define="projects view/most_active_projects"
+              tal:condition="projects"
+              style="list-style: none;">
+            <li tal:repeat="project projects">
+              <a href="#"
+                 tal:attributes="href project/fmt:url">
+                <img alt="" tal:replace="structure project/image:icon" />
+                <span tal:replace="project/displayname" />
+              </a>
+            </li>
+          </ul>
+        </div>
 
-      <h2 i18n:translate="">Latest questions solved</h2>
-      <table>
-        <tal:question
-          repeat="question view/latest_questions_solved"
-          content="structure question/@@+listing-detailed"
-        />
-      </table>
-
-                        </div>
+        <div id="latest-questions-asked" class="three column middle">
+          <h2 i18n:translate="">Latest questions asked</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_asked"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      
+        <div id="latest-questions-solved" class="three column right">
+          <h2 i18n:translate="">Latest questions solved</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_solved"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      </div>
                         <div id="application-footer" i18n:translate="">
                           <div>
                             <strong
@@ -130,6 +148,9 @@
     <p>To post a new question, navigate to the project
       you are having a problem with and use the <emph>Ask a Question</emph>
       button.
+    </p>
+    <p>You can enter a question id in the search text field to quickly
+      navigate to the question.
     </p>
     <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
         documention</a> for the Answer Tracker application is available in the

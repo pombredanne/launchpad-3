@@ -83,7 +83,7 @@ class DebianBuildManager(BuildManager):
             self.ogre = extra_args['ogrecomponent']
         else:
             self.ogre = False
-        if 'archives' in extra_args:
+        if 'archives' in extra_args and extra_args['archives']:
             self.sources_list = extra_args['archives']
         else:
             self.sources_list = None
@@ -104,7 +104,7 @@ class DebianBuildManager(BuildManager):
 
         Mainly used for PPA builds.
         """
-        # XXX cprov 20070517: It 'undo' ogre-component changes.
+        # XXX cprov 2007-05-17: It 'undo' ogre-component changes.
         # for PPAs it must be re-implemented on builddmaster side.
         args = ["override-sources-list", self._buildid]
         args.extend(self.sources_list)
@@ -153,7 +153,7 @@ class DebianBuildManager(BuildManager):
         The primary file we care about is the .changes file. We key from there.
         """
         changes = self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes"
-        # XXX: dsilvers: 20050317: This join thing needs to be split out
+        # XXX: dsilvers 2005-03-17: This join thing needs to be split out
         # into a method and unit tested.
         path = os.path.join(os.environ["HOME"], "build-"+self._buildid,
                             changes)

@@ -63,7 +63,7 @@ Check that this submission is the published one
 
 Test the origin enum column.
 
-    >>> from canonical.lp.dbschema import RosettaTranslationOrigin
+    >>> from canonical.launchpad.interfaces import RosettaTranslationOrigin
     >>> submission.origin == RosettaTranslationOrigin.SCM
     True
 
@@ -175,7 +175,7 @@ Testing NoneEditorTranslations
 Let's see if there are any suggestions for this pomsgset. We are not
 expecting any.
 
-    >>> list(pomsgset.getSuggestedSubmissions(0))
+    >>> pomsgset.getNewSubmissions(0)
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
@@ -203,23 +203,25 @@ This submission should come from the new non-editor person:
     >>> noneditor_submission.person == Pn
     True
 
-And latest touched pomsgset field for this POFile should not change, as this one is
-not from an editor:
+And latest touched pomsgset field for this POFile should not change, as this
+one is not from an editor:
 
     >>> pofile.last_touched_pomsgset == web_submission.pomsgset
     True
 
-And now we need to cheat, just a little bit. We need to
-pretend that the noneditor submission was made a few seconds AFTER the other
-one. Since both use the DEFAULT datecreated, which is NOW, and both are
-inside the same transaction, they APPEAR to have happened simultaneously.
-We need to nudge that, so we bump up the noneditor_submission.datecreated by
-a whole 2 seconds.
+And now we need to cheat, just a little bit.  We need to pretend that the
+noneditor submission was made a few seconds AFTER the other one. Since both
+use the DEFAULT datecreated, which is NOW, and both are inside the same
+transaction, they APPEAR to have happened simultaneously.  We need to change
+that, so we bump up the noneditor_submission.datecreated by a whole 2 seconds
+and re-initialize the pomsgset's in-memory caches.
 
     >>> import datetime
     >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(pomsgset)._invalidateSubmissionsCaches()
 
 Let's make sure:
 
@@ -239,6 +241,6 @@ And it should definitely not be published:
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> pomsgset.getSuggestedSubmissions(0).count()
+    >>> len(pomsgset.getNewSubmissions(0))
     1
 

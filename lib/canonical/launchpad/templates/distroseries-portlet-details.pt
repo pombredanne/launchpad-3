@@ -1,4 +1,8 @@
-<table class="summary">
+<table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="summary">
   <tbody>
     <tr>
       <th>Drivers:</th>
@@ -24,14 +28,14 @@
       <th>Binary packages:</th>
       <td tal:content="context/binarycount" />
     </tr>
-    <tr tal:condition="context/parentseries">
+    <tr tal:condition="context/parent_series">
       <th>Derives from:</th>
       <td>
-        <a tal:attributes="href context/parentseries/fmt:url">
+        <a tal:attributes="href context/parent_series/fmt:url">
           <tal:distro
-            replace="context/parentseries/distribution/displayname"
+            replace="context/parent_series/distribution/displayname"
           />
-          <tal:distroseries replace="context/parentseries/displayname" />
+          <tal:distroseries replace="context/parent_series/displayname" />
         </a>
       </td>
     </tr>

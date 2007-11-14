@@ -1,5 +1,4 @@
-ExternalBugTracker: DebBugs
-===========================
+= ExternalBugTracker: DebBugs =
 
 Differently from Bugzilla, debbugs watch syncing is done by reading from
 a local database, so we can use a real class for testing: we just need
@@ -18,32 +17,36 @@ You can specify the db_location explicitly:
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     DebBugs)
-    >>> external_debbugs = DebBugs(db_location=test_db_location)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
+    >>> external_debbugs = DebBugs(debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location
     True
 
 Or, if we create a DebBugs instance without specifying a db location, it
 will use the config value:
 
-    >>> external_debbugs = DebBugs()
+    >>> external_debbugs = DebBugs(debbugs)
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
-Retrieving bug status from the debbugs database
------------------------------------------------
+
+== Retrieving bug status from the debbugs database ==
 
 The retrieval of the remote status is done through the
-_getRemoteStatus() method. If we pass a bug number that doesn't exist in
+getRemoteStatus() method. If we pass a bug number that doesn't exist in
 the debbugs db, BugNotFound is raised.
 
-    >>> external_debbugs._getRemoteStatus('42')
+    >>> external_debbugs.getRemoteStatus('42')
     Traceback (most recent call last):
     ...
     BugNotFound: 42
 
 If we pass a non-integer bug id, InvalidBugId is raised.
 
-    >>> external_debbugs._getRemoteStatus('foo')
+    >>> external_debbugs.getRemoteStatus('foo')
     Traceback (most recent call last):
     ...
     InvalidBugId: Debbugs bug number not an integer: foo
@@ -53,16 +56,16 @@ contains current bugs, while the archive contains older bugs that have
 been moved there manually. The DebBugs wrapper fetches bugs from them
 transparently. Bug 237001 lives in db-h:
 
-    >>> external_debbugs._getRemoteStatus('237001')
+    >>> external_debbugs.getRemoteStatus('237001')
     'open normal'
 
 Bug 563 resides in the archive. It is also fetchable:
 
-    >>> external_debbugs._getRemoteStatus('563')
+    >>> external_debbugs.getRemoteStatus('563')
     'done normal'
 
-Checking debbugs bug watches
-----------------------------
+
+== Checking debbugs bug watches ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
@@ -72,7 +75,6 @@ Checking debbugs bug watches
 
 Log in and kick off the update:
 
-    >>> login('foo.bar@canonical.com')
     >>> external_debbugs.updateBugWatches(bug_watches)
     >>> for bug_watch in bug_watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -95,10 +97,10 @@ And the linked bugtasks got updated:
     >>> for bug_watch in bug_watches:
     ...     bugtasks += list(bug_watch.bugtasks)
     >>> for bugtask in sorted(bugtasks, key=operator.attrgetter('id')):
-    ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
+    ...     print bugtask.bug.id, bugtask.bugtargetname, bugtask.status.title,
     ...     print bugtask.importance.title
-    1 mozilla-firefox (Debian) Unconfirmed Unknown
-    3 mozilla-firefox (Debian Sarge) Unconfirmed Unknown
+    1 mozilla-firefox (Debian) New Unknown
+    3 mozilla-firefox (Debian Sarge) New Unknown
     7 evolution (Debian) Fix Released Unknown
 
 Sometimes the severity field is missing in the bug summary. That will
@@ -112,11 +114,11 @@ in debbugs.
     >>> 'Severity' not in summary
     True
 
-    >>> external_debbugs._getRemoteStatus('237001')
+    >>> external_debbugs.getRemoteStatus('237001')
     'open normal'
 
-Debbugs status conversions
---------------------------
+
+== Debbugs status conversions ==
 
 Let's take closer look at the status conversion. Debbugs has basically
 only two statuses, 'open' and 'done', so in order to get a more fine
@@ -128,23 +130,31 @@ uploaded, so it maps to 'Fix Released.
     >>> print external_debbugs.convertRemoteStatus('done normal').title
     Fix Released
 
-If the status is simply 'open', we map it to 'Unconfirmed', since
+If the status is simply 'open', we map it to 'New', since
 there's no way of knowing if the bug is confirmed or not.
 
     >>> print external_debbugs.convertRemoteStatus('open normal').title
-    Unconfirmed
+    New
 
-If the 'wontfix' tag is present we map it to 'Confirmed', since even
-though the bug won't be fixed, it's still a confirmed bug.
+If the 'wontfix' tag is present we map it to "Won't Fix". The 'wontfix'
+tag takes precedence over the confimed tags (help, confirmed, upstream,
+fixed-upstream) since 'wontfix' is the state after confirmed. The 'wontfix'
+tag also takes precedence over the fix-committed tags (pending, fixed,
+fixed-in-experimental) since the malone status will correctly change to
+fix-released when the debbugs status changes to 'done', so a nonsensical
+combination of 'fixed' & 'wontfix' tags will only affect the malone status
+temporarily.
 
-    >>> print external_debbugs.convertRemoteStatus('open normal wontfix').title
-    Confirmed
+    >>> print external_debbugs.convertRemoteStatus(
+    ...         'open normal pending fixed fixed-in-experimental'
+    ...         ' wontfix help confirmed upstream fixed-upstream').title
+    Won't Fix
 
 If the 'moreinfo' tag is present, we map the status to 'Needs Info'.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal moreinfo').title
-    Needs Info
+    Incomplete
 
 Of course, if the 'moreinfo' tag is present and the status is 'done',
 we still map to 'Fix Released'.
@@ -199,17 +209,17 @@ the fix has reached the unstable distribution.
     ...     'open normal fixed-in-experimental').title
     Fix Committed
 
-All other tags we map to 'Unconfirmed'.
+All other tags we map to 'New'.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal unreproducible lfs woody').title
-    Unconfirmed
+    New
 
 If we pass in a malformed status string, we map it to 'Unknown' and
 log an error.
 
     >>> print external_debbugs.convertRemoteStatus('open').title
-    ERROR:...:Malformed debbugs status: 'open'
+    ERROR:...:Malformed debbugs status: 'open'.
     Unknown
 
 UNKNOWN_REMOTE_STATUS maps to Unknown.
@@ -218,8 +228,233 @@ UNKNOWN_REMOTE_STATUS maps to Unknown.
     >>> print external_debbugs.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
     Unknown
 
-Wrapping up
------------
+
+== Importing bugs ==
+
+The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
+It pulls a bug from the Debbugs db, and create a bug in Launchpad with
+the same summary and description.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.official_malone
+    False
+
+The bug reporter doesn't have to have a Launchpad account. If a person
+doesn't exist in Launchpad, a new one will be created automatically.
+
+    >>> report = email.message_from_file(
+    ...     open(os.path.join(
+    ...         test_db_location, 'db-h', '35', '322535.report')))
+    >>> print report['From']
+    Moritz Muehlenhoff <jmm@inutil.org>
+
+    >>> from email.Utils import parseaddr
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> reporter_name, reporter_email = parseaddr(report['From'])
+    >>> print getUtility(IPersonSet).getByEmail(reporter_email)
+    None
+
+The importBug method reads the bug report from the debbugs db,
+and creates a Launchpad bug report, using the debbugs subject as the
+summary, and the description as the description.
+
+    >>> print report['Subject']
+    evolution: Multiple format string vulnerabilities in Evolution
+
+    >>> print report.get_payload(decode=True)
+    Package: evolution
+    Severity: grave
+    Tags: security
+    <BLANKLINE>
+    Multiple exploitable format string vulnerabilities have been found in
+    Evolution. Please see
+    http://www.securityfocus.com/archive/1/407789/30/0/threaded
+    for details. 2.3.7 fixes all these issues.
+    ...
+
+    >>> bug = external_debbugs.importBug(debian, '322535')
+    >>> print bug.title
+    evolution: Multiple format string vulnerabilities in Evolution
+    >>> print bug.description
+    Package: evolution
+    Severity: grave
+    Tags: security
+    <BLANKLINE>
+    Multiple exploitable format string vulnerabilities have been found in
+    Evolution. Please see
+    http://www.securityfocus.com/archive/1/407789/30/0/threaded
+    for details. 2.3.7 fixes all these issues.
+    ...
+
+The bug reporter got created automatically:
+
+    >>> getUtility(IPersonSet).getByEmail(reporter_email) is not None
+    True
+    >>> print bug.owner.displayname
+    Moritz Muehlenhoff
+
+Since he didn't have a Launchpad account before, he doesn't have a
+preferred e-mail address, and the one that is associated with his
+account is marked as NEW, since we don't know whether it's valid.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> reporter_email_adresses = getUtility(IEmailAddressSet).getByPerson(
+    ...     bug.owner)
+    >>> for email_address in reporter_email_adresses:
+    ...     print "%s: %s" % (email_address.email, email_address.status.name)
+    jmm@inutil.org: NEW
+    >>> print bug.owner.preferredemail
+    None
+
+    >>> bug.owner.creation_rationale.name
+    'BUGIMPORT'
+    >>> bug.owner.creation_comment
+    u'when importing debbugs bug #322535'
+
+No one got subscribed to the created bug, since the relevant people
+already get e-mail notifications via Debbugs.
+
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
+The bug got filed against the evolution package in Debian, and it has a
+bug watch pointing to the original Debian bug, so that the bug report is
+kept in sync.
+
+    >>> [debian_task] = bug.bugtasks
+    >>> debian_task.bugtargetname
+    u'evolution (Debian)'
+
+    >>> debian_task.bugwatch.bugtracker.name
+    u'debbugs-checkwatches-1'
+    >>> debian_task.bugwatch.remotebug
+    u'322535'
+
+
+=== Non-existent source package ===
+
+If a Debian package doesn't exist in Launchpad already, it will be
+filed on Debian itself, with no source package specified. The package is
+always included in the description of Debian bugs, so that information
+isn't lost. A warning is also logged, so that the one running the script
+gets notified about it.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestDebBugs, TestDebianBug)
+    >>> external_debbugs = TestDebBugs(
+    ...     debbugs, {'1234': TestDebianBug(package='no-such-package')})
+    >>> print debian.getSourcePackage('no-such-package')
+    None
+    >>> bug = external_debbugs.importBug(debian, '1234')
+    WARNING:root:Unknown Debian package (debbugs #1234): no-such-package
+
+    >>> [debian_task] = bug.bugtasks
+    >>> debian_task.distribution.name
+    u'debian'
+    >>> print debian_task.sourcepackagename
+    None
+
+
+=== Syncing status ===
+
+After the bug watch has been created for the imported bug, the status is
+synced immediately.
+
+    >>> external_debbugs = TestDebBugs(
+    ...     debbugs, {'1234': TestDebianBug(status='done')})
+    >>> expected_status = external_debbugs.convertRemoteStatus(
+    ...     external_debbugs.getRemoteStatus('1234'))
+    >>> expected_status.name
+    'FIXRELEASED'
+    >>> bug = external_debbugs.importBug(debian, '1234')
+    >>> [debian_task] = bug.bugtasks
+    >>> debian_task.status.name
+    'FIXRELEASED'
+
+
+=== Reporter already registered in Launchpad ===
+
+Even if the reporter of the bug has an account in Launchpad (and thus a
+valid e-mail address), he still won't be subscribed to the imported bug.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.preferredemail is not None
+    True
+    >>> no_priv_bug = TestDebianBug(
+    ...     reporter_email=no_priv.preferredemail.email)
+    >>> external_debbugs = TestDebBugs(debbugs, {'1234': no_priv_bug})
+    >>> bug = external_debbugs.importBug(debian, '1234')
+    >>> bug.owner.name
+    u'no-priv'
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
+=== Script for importing Debian bugs, linking them to Ubutu ===
+
+There's a script called `import-debian-bugs.py`, which accepts a list of
+bug numbers to be imported. It will link the bugs to the debbugs bug
+tracker.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.database.sqlbase import commit
+    >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
+    >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
+    []
+    >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
+    []
+    >>> commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'scripts/import-debian-bugs.py 237001 322535', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> process.returncode
+    0
+    >>> print err
+    INFO    Imported debbugs #237001 as Launchpad bug #...
+    INFO    Imported debbugs #322535 as Launchpad bug #...
+    INFO    Committing the transaction.
+
+    >>> commit()
+    >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
+    >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
+    [u'evolution mail crashes on opening an email with a TIFF attachment']
+    >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
+    [u'evolution: Multiple format string vulnerabilities in Evolution']
+
+In addition to simply importing the bugs and linking it to the debbugs
+bug, it will also create an Ubuntu task for the imported bugs. This will
+allow Ubuntu triagers to go through all the imported bugs and decide
+whether they affects Ubuntu.
+
+    >>> [imported_bug] = debbugs.getBugsWatching('237001')
+    >>> for bugtask in imported_bug.bugtasks:
+    ...     print "%s: %s" % (bugtask.bugtargetname, bugtask.status.name)
+    evolution (Ubuntu): NEW
+    evolution (Debian): NEW
+
+
+==== Importing bugs twice ====
+
+If a Debian bug already exists in Launchpad (i.e it has a bug watch), it
+won't be imported again. A warning is logged so that the person runnning
+the script gets notified about it.
+
+    >>> from canonical.launchpad.scripts.importdebianbugs import (
+    ...     import_debian_bugs)
+    >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
+    [1]
+    >>> import_debian_bugs(['304014'])
+    WARNING:root:Not importing debbugs #304014, since it's already
+                 linked from LP bug(s) #1.
+    >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
+    [1]
+
+
+== Wrapping up ==
 
 Restore the database path:
 

@@ -20,14 +20,15 @@ import _pythonpath
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
                                           SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 
@@ -231,12 +232,12 @@ def options_init():
     if not Options.reason:
         Options.reason = ""
 
-    # XXX: 'dak rm' used to check here whether or not we're removing
-    # from anything other than << unstable.  This never got ported
+    # XXX malcc 2006-08-03: 'dak rm' used to check here whether or not we're
+    # removing from anything other than << unstable.  This never got ported
     # to ubuntu anyway, but it might be nice someday.
 
     # Additional architecture checks
-    # XXX - parse_args
+    # XXX James Troup 2006-01-30: parse_args.
     if Options.architecture and 0:
         dak_utils.warn("'source' in -a/--argument makes no sense and is ignored.")
 
@@ -257,8 +258,7 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="jubany")
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     execute_zcml_for_scripts()
 
@@ -267,7 +267,7 @@ def init():
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.suite:
-        Options.suite = Options.distro.currentrelease.name
+        Options.suite = Options.distro.currentseries.name
 
     Options.architecture = dak_utils.split_args(Options.architecture)
     Options.component = dak_utils.split_args(Options.component)
@@ -326,41 +326,42 @@ def what_to_remove(packages):
 
     for removal in packages:
         for suite in Options.suite:
-            distrorelease = Options.distro.getRelease(suite)
+            distro_series = Options.distro.getSeries(suite)
 
             if Options.sourceonly:
                 bpp_list = []
             else:
                 if Options.binaryonly:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(removal)
+                    bpp_list = distro_series.getBinaryPackagePublishing(removal)
                 else:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(sourcename=removal)
+                    bpp_list = distro_series.getBinaryPackagePublishing(
+                        sourcename=removal)
 
             for bpp in bpp_list:
-                    package=bpp.binarypackagerelease.binarypackagename.name
-                    version=bpp.binarypackagerelease.version
-                    architecture=bpp.distroarchrelease.architecturetag
-                    if Options.architecture and \
-                           architecture not in Options.architecture:
-                        continue
-                    if Options.component and \
-                           bpp.component.name not in Options.component:
-                        continue
-                    d = dak_utils.Dict(type="binary",publishing=bpp,
-                                       package=package, version=version,
-                                       architecture=architecture)
-                    to_remove.append(d)
+                package=bpp.binarypackagerelease.binarypackagename.name
+                version=bpp.binarypackagerelease.version
+                architecture=bpp.distroarchseries.architecturetag
+                if (Options.architecture and
+                    architecture not in Options.architecture):
+                    continue
+                if (Options.component and
+                    bpp.component.name not in Options.component):
+                    continue
+                d = dak_utils.Dict(
+                    type="binary", publishing=bpp, package=package,
+                    version=version, architecture=architecture)
+                to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distrorelease.getPublishedReleases(removal):
-                    package=spp.sourcepackagerelease.sourcepackagename.name
-                    version=spp.sourcepackagerelease.version
-                    if Options.component and \
-                           spp.component.name not in Options.component:
+                for spp in distro_series.getPublishedReleases(removal):
+                    package = spp.sourcepackagerelease.sourcepackagename.name
+                    version = spp.sourcepackagerelease.version
+                    if (Options.component and
+                        spp.component.name not in Options.component):
                         continue
-                    d = dak_utils.Dict(type="source",publishing=spp,
-                                       package=package, version=version,
-                                       architecture="source")
+                    d = dak_utils.Dict(
+                        type="source",publishing=spp, package=package,
+                        version=version, architecture="source")
                     to_remove.append(d)
 
     return to_remove
@@ -429,7 +430,7 @@ def main ():
     suites_list = dak_utils.join_with_commas_and(Options.suite);
 
     # Log first; if it all falls apart I want a record that we at least tried.
-    # XXX de-hardcode me harder
+    # XXX malcc 2006-08-03: de-hardcode me harder
     logfile = open("/srv/launchpad.net/dak/removals.txt", 'a')
     logfile.write("==================================="
                   "======================================\n")

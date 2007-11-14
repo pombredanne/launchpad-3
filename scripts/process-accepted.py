@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IArchiveSet)
+    IDistributionSet, PackageUploadStatus)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.processaccepted import close_bugs
@@ -23,7 +23,6 @@ from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import PackageUploadStatus
 
 def main():
     # Parse command-line arguments
@@ -64,22 +63,23 @@ def main():
         log.debug("Finding distribution %s." % distro_name)
         distribution = getUtility(IDistributionSet).getByName(distro_name)
 
+        # target_archives is a tuple of (archive, description).
         if options.ppa:
-            target_archives = getUtility(
-                IArchiveSet).getPendingAcceptancePPAs()
+            target_archives = [
+                (archive, archive.archive_url)
+                for archive in distribution.getPendingAcceptancePPAs()]
         else:
-            target_archives = [distribution.main_archive]
+            target_archives = [
+                (archive, archive.purpose.title)
+                for archive in distribution.all_distro_archives]
 
-        for archive in target_archives:
-            for distrorelease in distribution.serieses:
+        for archive, description in target_archives:
+            for distroseries in distribution.serieses:
 
-                if archive == distrorelease.main_archive:
-                    log.debug("Processing queue for %s" % distrorelease.name)
-                else:
-                    log.debug("Processing queue for %s (%s)" % (
-                        distrorelease.name, archive.archive_url))
+                log.debug("Processing queue for %s %s" % (
+                        distroseries.name, description))
 
-                queue_items = distrorelease.getQueueItems(
+                queue_items = distroseries.getQueueItems(
                     PackageUploadStatus.ACCEPTED, archive=archive)
                 for queue_item in queue_items:
                     try:

@@ -1,8 +1,13 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-depends">
 
   <h2>Depends on</h2>
 
   <div class="portletBody portletContent"
+       id="depends"
        tal:define="relationships view/depends">
 
      <tal:has_dep condition="relationships/has_items">

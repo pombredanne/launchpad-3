@@ -30,7 +30,7 @@ class IWikiNameSet(Interface):
 
     def getByWikiAndName(wiki, wikiname):
         """Return the WikiName with the given wiki and wikiname.
-        
+
         Return None if it doesn't exists.
         """
 
@@ -46,7 +46,7 @@ class IWikiNameSet(Interface):
 
     def get(id, default=None):
         """Return the WikiName with the given id.
-        
+
         Return the default value if nof found.
         """
 

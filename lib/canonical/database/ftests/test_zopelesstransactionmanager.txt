@@ -38,7 +38,7 @@ And different in different threads:
 True
 
  
-XXX: This bit is overly dependent on the db...
+XXX: ddaa 2005-05-10: This bit is overly dependent on the db...
 Show that concurrent transactions in different threads work correctly
 
 >>> from sqlobject import StringCol
@@ -90,9 +90,98 @@ UPDATE Person SET name = 'sabdfl' WHERE id = 7
 >>> ztm.begin()
 >>> ztm.abort()
 
+By default, our connection is reset at the end of every transaction.  That
+means that any session state, such as temporary tables, is lost when we
+commit.
+
+Say we create a temporary table called "anothertesttable," which did not exist
+before.
+
+>>> from canonical.database.sqlbase import cursor
+>>> test_table = "anothertesttable"
+>>> cursor().execute("SELECT count(*) FROM %s" % test_table)
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR: relation "..." does not exist
+...
+
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
+If we commit, the temporary table will be destroyed as our connection is
+reset.  By default a temporary table will survive a commit, but not the end
+of a connection.
+
+>>> ztm.commit()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR: relation "..." does not exist
+...
+
+The exact same thing happens when a transaction is aborted: temporary tables
+are destroyed.
+
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR: relation "..." does not exist
+...
+
+The automatic resetting of connections is controlled by a Boolean field called
+reset_after_transaction.
+
+>>> ztm.reset_after_transaction
+True
+
+When we disable the automatic resetting of connections, the connection remains
+active across transactions.  We don't normally do this because resetting the
+transaction doesn't cost much and guards us against leaks and such.  It may be
+necessary, however, in cases where temporary tables must live across
+transactions such as while copying large amounts of data.
+
+>>> ztm.reset_after_transaction = False
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+>>> ztm.commit()
+>>> ztm.begin()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
+>>> ztm.begin()
+>>> ztm.abort()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
 Cleanup -- make sure this doctest leaves things in the same state it found
 them.
 
+>>> ztm.reset_after_transaction = False
 >>> ztm.uninstall()
 >>> from canonical.testing import DatabaseLayer
 >>> DatabaseLayer.force_dirty_database()

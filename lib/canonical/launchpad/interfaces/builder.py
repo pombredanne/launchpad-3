@@ -5,8 +5,14 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildDaemonError',
+    'BuildJobMismatch',
+    'BuildSlaveFailure',
+    'CannotBuild',
+    'CannotResetHost',
     'IBuilder',
     'IBuilderSet',
+    'ProtocolVersionMismatch',
     ]
 
 from zope.interface import Interface, Attribute
@@ -17,6 +23,32 @@ from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
+
+
+class BuildDaemonError(Exception):
+    """The class of errors raised by the buildd classes"""
+
+
+class ProtocolVersionMismatch(BuildDaemonError):
+    """The build slave had a protocol version. This is a serious error."""
+
+
+class BuildJobMismatch(BuildDaemonError):
+    """The build slave is working with mismatched information, needs rescue."""
+
+
+class CannotResetHost(BuildDaemonError):
+    """The build slave is hosted on a machine that cannot be remotely reset."""
+
+
+# CannotBuild is intended to be the base class for a family of more specific
+# errors.
+class CannotBuild(BuildDaemonError):
+    """The requested build cannot be done."""
+
+
+class BuildSlaveFailure(BuildDaemonError):
+    """The build slave has suffered an error and cannot be used."""
 
 
 class IBuilder(IHasOwner):
@@ -90,9 +122,114 @@ class IBuilder(IHasOwner):
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
+    pocket_dependencies = Attribute("""
+        A dictionary of pocket to a tuple of pocket dependencies.
+
+        A dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+        """)
+
+    def cacheFileOnSlave(logger, libraryfilealias):
+        """Ask the slave to cache a librarian file to its local disk.
+
+        This is used in preparation for a build.
+
+        :param logger: A logger used for providing debug information.
+        :param libraryfilealias: A library file alias representing the needed
+            file.
+        """
+
+    def checkCanBuildForDistroArchSeries(distro_arch_series):
+        """Check that the slave can compile for the given distro_arch_release.
+
+        This will query the builder to determine its actual architecture (as
+        opposed to what we expect it to be).
+
+        :param distro_arch_release: The distro_arch_release to check against.
+        :raises BuildDaemonError: When the builder is down or of the wrong
+            architecture.
+        :raises ProtocolVersionMismatch: When the builder returns an
+            unsupported protocol version.
+        """
+
+    def checkSlaveAlive():
+        """Check that the buildd slave is alive.
+
+        This pings the slave over the network via the echo method and looks
+        for the sent message as the reply.
+
+        :raises BuildDaemonError: When the slave is down.
+        """
+
+    def cleanSlave():
+        """Clean any temporary files from the slave."""
 
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
+
+    def requestAbort():
+        """Ask that a build be aborted.
+
+        This takes place asynchronously: Actually killing everything running
+        can take some time so the slave status should be queried again to
+        detect when the abort has taken effect. (Look for status ABORTED).
+        """
+
+    def resetSlaveHost(logger):
+        """Reset the slave host to a known good condition.
+
+        :param logger: A logger used for providing debug information.
+        :raises CannotResetHost: Currently only virtual machine based builders
+            (those that are used to build untrusted source (not self.trusted)
+            can be reset.
+        """
+
+    def setSlaveForTesting(new_slave):
+        """Set a new slave object. This is for testing only."""
+
+    def slaveStatus():
+        """Get the slave status for this builder.
+
+        * builder_status => string
+        * build_id => string
+        * build_status => string or None
+        * logtail => string or None
+        * filename => dictionary or None
+        * dependencies => string or None
+
+        :return: a tuple containing (
+            builder_status, build_id, build_status, logtail, filemap,
+            dependencies)
+        """
+
+    def slaveStatusSentence():
+        """Get the slave status sentence for this builder.
+
+        :return: A tuple with the first element containing the slave status,
+            build_id-queue-id and then optionally more elements depending on
+            the status.
+        """
+
+    def startBuild(build_queue_item, logger):
+        """Start a build on this builder.
+
+        :param build_queue_item: A BuildQueueItem to build.
+        :param logger: A logger to be used to log diagnostic information.
+        :raises BuildSlaveFailure: When the build slave fails.
+        :raises CannotBuild: When a build cannot be started for some reason
+            other than the build slave failing.
+        """
+
+    def transferSlaveFileToLibrarian(file_sha1, filename):
+        """Transfer a file from the slave to the librarian.
+
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian file
+            alias.
+        :return: A librarian file alias.
+        """
 
 
 class IBuilderSet(Interface):

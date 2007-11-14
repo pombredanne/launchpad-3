@@ -1,4 +1,11 @@
-<div class="portlet" tal:condition="context/myactivememberships">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-team-assigned-bugs"
+     tal:condition="context/myactivememberships">
 
   <h2><span tal:replace="context/title" />'s teams</h2>
 
@@ -17,3 +24,4 @@
   </div>
 
 </div>
+</tal:root>

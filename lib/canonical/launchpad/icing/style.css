@@ -63,11 +63,11 @@ thead th, tr.thead th {text-align: center;}
 /* === Overall presentation === */
 
 html {
-  position: relative;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
-  font-size: 8.5pt;
-  color: #505050;
-  background-color: #FFFFFF;
+  position: static;
+  font-family: sans-serif;
+  font-size: 10pt;
+  color: #333;
+  background-color: #fff;
 }
 body {margin: 0; padding: 0;}
 
@@ -77,16 +77,16 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 2.8em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.55em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.15em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
+h1 {font-size: 2.2em;  margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.5em;  margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.1em;  margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
-h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: smaller;}
+.discreet, .lesser {font-size: 80%;}
+.offline {text-align: center; max-width: 30em; margin: 2em auto;}
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -137,18 +137,28 @@ td.error {
 /* --- Form controls --- */
 
 form {border: 0; margin: 0; padding: 0;}
-input, select, textarea {
+input[type="text"], input[type="password"], textarea {
   background-color: #fff;
   color: #656565;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+  font-family: sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="submit"], input[type="reset"], textarea {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
+button, input[type="button"], input[type="file"], input[type="password"],
+input[type="submit"], input[type="text"], select, textarea {
+  margin-right: 0.5em;
+}
 input.urlTextType {width: 100%;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-bottom: 1em;}
+/* Hack to add breathing room to bug status forms: */
+table.listing div.field>table {margin-top: 0.5em;}
+table.listing div.field>label, table.listing div.field>div>label,
+table.listing div.actions {
+  display: block; margin-top: 1em;
+}
 textarea {width: 100%;}
 table.form {width: 100%;}
 
@@ -166,7 +176,7 @@ img {
   border: none;
 }
 
-/* see launchpad.js:activateCollapsables() */
+/* see launchpad.js:activateCollapsibles() */
 .collapsible legend a, .collapsible legend a:visited {
   text-decoration: none;
   color: #000088;
@@ -175,6 +185,8 @@ img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {padding: 0; margin: 0;}
 .collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -186,7 +198,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
@@ -230,7 +242,7 @@ hr {
   display: none;
 }
 
-/* === Page layout === */
+/* === Universal page layout === */
 
 /* All pages begin with a global header or a topline. */
 #globalheader {
@@ -290,16 +302,13 @@ hr {
   font-weight: bold;
   color: #FFF;
 }
-/* padding-left adjusts the space between the home icon and the word
- * "Home".
- */
 ul#menuroot a#homebreadcrumb span {
   background: url(home-low-high.gif) left top no-repeat;
-  padding-left: 16px;
+  padding-left: 16px; /* space between home icon and the word "Home" */
 }
 ul#menuroot li a#homebreadcrumb:hover span,
 ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) -1014px top no-repeat;
+  background: url(home-low-high.gif) left -20px no-repeat;
   padding-left: 16px;
 }
 /* The location bar contains menus. */
@@ -364,7 +373,6 @@ ul#menuroot a.breadcrumb em { /* should be changed to not need em */
   background-repeat: no-repeat;
   background-position: right top;
   padding: 6px 26px 6px 20px;
-  cursor: hand;
   cursor: pointer;
 }
 * html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
@@ -562,18 +570,46 @@ So it's hidden initially, and then revealed if JavaScript is available.
 
 /* The rest of the page keeps clear of the collapsed help panel. */
 /* test: http://launchpad.dev/+logout */
-#nonhelp {margin: 10px 20px 0 38px;}
- 
-/*- App home pages and pillar indexes both have a heading and app buttons, -*/
+#nonhelp {
+  margin: 0 20px 0 38px;
+  min-width: 752px; /* prevents search field from sliding under tabs */
+  padding-top: 10px;
+}
+
+/* The last element on every page is a standard footer. */
+#globalfooter {clear: both; margin-left: -20px;}
+/* It has a top border if the page doesn't already have a rounded border. */
+body.freeform #globalfooter {
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 0.5em;
+}
+#colophon            {float: left;                     width: 49%;}
+#applications-footer {float: right; text-align: right; width: 49%;}
+#copyright           {float: right; text-align: right; width: 45%;}
+
+/* === Specific page layouts === */
+
+/*- App home pages and pillar indexes both have a heading and app buttons. -*/
 table#applications {margin-bottom: -0.5em;}
-table#applications th, table#applications td {vertical-align: baseline;}
+table#applications th, table#applications td {vertical-align: bottom;}
 table#applications th {padding-left: 60px; text-align: left;}
+table#applications th h1 {margin: 0; padding: 0;}
 table#applications td {text-align: right;}
-/* though the pillar indexes have no watermark, so no heading indenting. */
+body.tab-branches #applications,
+body.tab-bugs #applications,
+body.tab-specifications #applications,
+body.tab-answers #applications,
+body.tab-translations #applications {
+  background-position: left bottom !important;
+}
+/* But the pillar indexes have no watermark, so no heading indenting. */
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 5px; width: 220px;}
+#globalsearch {
+  float: right;
+  margin-top: 15px;
+}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -581,39 +617,106 @@ body.pillarindex table#applications th {padding-left: 0;}
   border: 0;
   width: 20px;
   height: 20px;
-  cursor: hand;
   cursor: pointer;
 }
 #globalsearchscope {padding: 4px 0 0;}
 #globalsearchscope label {display: block; padding: 0 0 2px;}
 
-/* The last element is a standard footer. */
-#globalfooter {clear: both;}
-/* It has a top border if the page doesn't already have a rounded border. */
-body.freeform #globalfooter {
-  border-top: 1px solid #ccc;
-  padding-top: 0.5em;
-}
-
-#colophon {
-  float: left;
-  width: 49%;
-}
-#applications-footer {
-  float: right;
-  text-align: right;
-  width: 49%;
-}
-#copyright {
-  float: right;
-  text-align: right;
-  width: 45%;
-}
 .clear {
   clear: both;
   height: 0px;
   overflow: hidden;
 }
+
+/* Either that application/pillar heading, or a structural heading,
+partly (but not visibly) overlaps the rounded border of the main area. */
+#structuralobject, #applications {
+  position: relative;
+  z-index: 1;
+}
+#structuralobjectheading {
+  background: none;
+  color: black;
+  float: left;
+  width: 70%;
+}
+/* Structural headings contain an icon, maybe an intro, and a main heading. */
+#structuralobjectheading img {
+  float: left;
+  margin: 0 0 0 3px;
+}
+#structuralobjectheading .intro {
+  margin: 2px 0 0 70px;
+  font-size: 12px;
+}
+#structuralobjectheading .main {
+  font-weight: bold;
+  margin: 1px 0 0 70px;
+  font-size: 24px;
+}
+
+/* mainarea and five other divs supply the bottom (mainarea), bottom left
+(v), bottom right (w), top (x), top left (y), and top right (z) of the rounded
+border. */
+#mainarea {
+  clear: both;
+  min-width: 712px;
+  background-image: url(mainarea_bottom.gif);
+  background-repeat: repeat-x;
+  background-position: bottom left;
+  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
+  position: relative;
+}
+body.freeform #mainarea {top: 0;}
+* html #mainarea {top: 0;}
+body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
+#mainarea div.v {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_bottomleft.gif) bottom left no-repeat;
+}
+#mainarea div.w {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_bottomright.gif) bottom right no-repeat;
+}
+#mainarea div.x {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_top.gif) top left repeat-x;
+}
+#mainarea div.y {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_topleft.gif) top left no-repeat;
+}
+#mainarea div.z {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_topright.gif) 100% top no-repeat;
+}
+
+body {min-width: 480px;}
+
+/* Inside those is a container for the main content, and the portlets if any. */
+#container {
+  margin-top: 30px;
+  padding: 48px 20px 40px 240px;
+  position: relative;
+}
+* html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
+body.applicationhome #container {padding-left: 20px;}
+#maincontent {
+  width: 100%;
+  padding: 0 0 20px 0;
+  display: inline;
+  float: left;
+  position: relative;
+}
+#portlets .portlet {
+  width: 200px;
+}
+
 ul#applicationchooser {
   position: absolute;
   right: 0;
@@ -628,10 +731,8 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
-div#noapplicationchooser {
-  clear: both;
-  margin-bottom: 18px;
-}
+/* If there are no tabs, a substitute div maintains the same spacing. */
+div#noapplicationchooser {clear: both; margin-bottom: -28px;}
 ul#applicationchooser li {
   float: left;
   display: block;
@@ -693,20 +794,22 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 
 /* --- Portlets --- */
-
 #portlets {
+  position: relative;
+  display: inline;
   float: left;
   width: 200px;
   overflow: hidden;
-  margin: 0px 16px 0px 16px;
-  padding: 0;
+  margin: 0 0 20px -100%;
+  padding: 0 20px;
   list-style: none;
-  font-size: 11px;
+  right: 240px;
 }
-#portlets .portlet {
-  clear: both;
-  float: left;
-}
+/* IE6 and  lower ignore the left padding, so we add extra positioning. */
+* html #portlets {left: 20px;}
+/* IE7 gets the padding right but overcalculates the left margin, so we use
+a conditional comment in main-template.pt to work around the above rule. */
+#portlets .portlet {clear: both; float: left;}
 #portlets .portlet h2 {
   display: block;
   width: 180px;
@@ -720,6 +823,14 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 0px 0px 1px 0px;
   color: #FFFFFF;
   font-weight: bold;
+}
+#portlets .portlet h2 a, #portlets .portlet h2 a:hover {
+  display: block;
+  color: inherit;
+  text-decoration: inherit;
+}
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
 }
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
@@ -750,32 +861,13 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 #portlets .portlet h2 {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-#portlets .portlet h2 a {
-  float: left;
-  display: block;
-  width: 180px;
-  height: 18px;
-  background-color: #8F8F8F;
-  background-image: url(leftnav_bg.gif);
-  background-repeat: no-repeat;
-  background-position: left top;
-  overflow: hidden;
-  padding: 2px 10px 0px 10px;
-  margin: 0px 0px 1px 0px;
-  color: #FFFFFF;
-  font-weight: bold;
-}
-#portlets .portlet h2 a:hover {
-  background-color: #A3A3A3;
-  text-decoration: none;
 }
 #portlets .portlet ul li a:hover {
   background-color: #fff;
@@ -803,10 +895,10 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 0; /* neutralizes UA list item indenting */
   padding: 1px 0; /* works around a bug that makes items taller in WinIE */
 }
-#actions a {
+#actions a, #actions strong {
   background: url(action.png) 4px center no-repeat;
   display: block; /* makes the clickable area equal to the highlighted area */
-  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */ 
+  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */
 }
 #actions a:hover {background-color: #fff; text-decoration: underline;}
 .check,
@@ -815,101 +907,37 @@ ul#applicationchooser li#applicationchooser_selected {
   width: auto !important;
   border: 0 !important;
 }
-#structuralobject, #applications {
-  position: relative;
-  z-index: 1;
-}
-#structuralobjectheading {
-  background: none;
-  color: black;
-  float: left;
-  width: 70%;
-}
-#structuralobjectheading img {
-  float: left;
-  margin: 0 0 0 3px;
-}
-#structuralobjectheading .main {
-  font-weight: bold;
-  margin: 1px 0 0 70px;
-  font-size: 2.3em;
-}
-#structuralobjectheading .intro {
-  margin: 2px 0 0 70px;
-  font-size: 1em;
-}
 #structural-children {
   clear: both;
   font-size: 0.75em;
   margin-top: 2em;
   padding: 2em 0 0;
-  border-top: 1px dotted #ccc;
+  border-top: 1px dotted #cbcbcb; /* matches color of mainarea_* images */
 }
 #applicationchooser {
   clear: both;
   position: relative; /* needed to make z-index work */
   z-index: 1; /* ensures tabs appear above structural object heading */
 }
-#mainarea {
-  clear: both;
-  min-width: 712px;
-  background-image: url(mainarea_bottom.gif);
-  background-repeat: repeat-x;
-  background-position: bottom left;
-  position: relative;
-  top: -15px; /*- reduces logo~tab gap -*/
+
+/* Some pages end with links to related items. */
+/* Examples: branch page, bug page. */
+.related {
+  margin-top: 4em;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 1em;
 }
-body.freeform #mainarea {top: 0;}
-* html #mainarea {top: 0;}
-body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
-#mainarea div.t {
-  width: 100%;
-  background-image: url(mainarea_left.gif);
-  background-repeat: repeat-y;
-  background-position: top left;
+.related ul {
+  list-style: none;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0.5em;
 }
-#mainarea div.u {
-  width: 100%;
-  background-image: url(mainarea_right.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
-#mainarea div.v {
-  width: 100%;
-  background-image: url(mainarea_bottomleft.gif);
-  background-repeat: no-repeat;
-  background-position: bottom left;
-}
-#mainarea div.w {
-  width: 100%;
-  background-image: url(mainarea_bottomright.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
-}
-#mainarea div.x {
-  width: 100%;
-  background-image: url(mainarea_top.gif);
-  background-repeat: repeat-x;
-  background-position: top left;
-}
-#mainarea div.y {
-  width: 100%;
-  background-image: url(mainarea_topleft.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-}
-#mainarea div.z {
-  width: 100%;
-  background-image: url(mainarea_topright.gif);
-  background-repeat: no-repeat;
-  background-position: 100% top;
-}
-#singlecolumn div.z {
-  padding: 0 0 20px; /* XXX Makes the top right corner disappear */
-}
+.related ul li:before {content: "\00BB \0020";}
+
 /* --- Various custom list formats --- */
 
-#maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
+#maincontent ol, #maincontent ul {
   margin-left: 24px;
   padding-left: 0;
 }
@@ -925,9 +953,9 @@ ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
+ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
-ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
@@ -948,7 +976,8 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 #application-footer strong {font-weight: normal;}
 
-.report, .boardComment {font-size: 1.125em;} /* bug descriptions/comments */
+.description {font-size: 1.125em;}
+/* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
@@ -966,8 +995,7 @@ body.tab-overview #mainarea div.x {
 body.tab-overview #mainarea div.y {
   background-image: url(mainarea_topleft.gif);
 }
-body.tab-overview #mainarea div.z,
-body.tab-overview #mainarea ul#applicationchooser {
+body.tab-overview #mainarea div.z {
   background-image: url(mainarea_topright.gif);
 }
 body.tab-overview #mainarea ul#applicationchooser li {
@@ -1068,6 +1096,11 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.mergeproposal p {margin: 0.5em 0 }
+
+.vcsimportSUCCESS {} /* inherited text color */
+.vcsimportFAILURE {color: Red;}
+
 /* --- Bugs --- */
 
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
@@ -1118,20 +1151,24 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
+.statusNEW,           .statusNEW a           {color: #930;}
+.statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
+.statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
+.statusTRIAGED,       .statusTRIAGED a       {color: black;}
+.statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
+.statusFIXRELEASED,   .statusFIXRELEASED a   {color: black;}
+.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: black;}
+.statusINVALID,       .statusINVALID a       {color: gray;}
+.statusWONTFIX,       .statusWONTFIX a       {color: gray;}
+.importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
+.importanceHIGH,      .importanceHIGH a      {color: #f60;}
+.importanceMEDIUM,    .importanceMEDIUM a    {color: green;}
+.importanceLOW,       .importanceLOW a       {color: black;}
+.importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
+.importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
+.status :link, .importance :link {text-decoration: none;}
 
-.statusUNCONFIRMED  { color: #993300; }
-.statusNEEDSINFO    { color: Red; }
-.statusCONFIRMED    { color: Red; }
-.statusINPROGRESS   { color: Black; }
-.statusFIXRELEASED  { color: Black; }
-.statusFIXCOMMITTED { color: Black; }
-.statusREJECTED     { color: Gray; }
-.importanceCRITICAL  { color: Red; }
-.importanceHIGH      { color: #ff6600; }
-.importanceMEDIUM    { color: Green; }
-.importanceLOW       { color: Black; }
-.importanceWISHLIST  { color: Blue; }
-.importanceUNDECIDED { color: #999; }
+#bug-description {font-family: monospace;}
 
 /* --- Blueprints --- */
 
@@ -1209,6 +1246,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryNEEDSREVIEW        {color: purple;}
 .specdeliveryAWAITINGDEPLOYMENT {color: red;}
 .specdeliveryIMPLEMENTED        {color: green;}
+.specdeliveryINFORMATIONAL      {color: green;}
 
 /* --- Translations --- */
 
@@ -1321,12 +1359,12 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.questionstatusOPEN      {color: black;}
-.questionstatusNEEDSINFO {color: black;}
-.questionstatusANSWERED  {color: green;}
-.questionstatusSOLVED    {color: green;}
-.questionstatusEXPIRED   {color: red;}
-.questionstatusINVALID   {color: red;}
+.questionstatusOPEN      {color: #000;} /* black */
+.questionstatusNEEDSINFO {color: #930;} /* brown */
+.questionstatusANSWERED  {color: #363;} /* grey-green */
+.questionstatusSOLVED    {color: #090;} /* green */
+.questionstatusEXPIRED   {color: #666;} /* dark grey */
+.questionstatusINVALID   {color: #c00;} /* red */
 
 
 /* --- Other --- */
@@ -1334,38 +1372,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 ul#applicationchooser a, ul#applicationchooser a:hover {
   color: #000;
 }
-/* Matthew's code for laying out the columns: */
-body {
-  min-width: 480px;
-}
-#container {padding: 0 20px 0 240px; margin-top: 40px;}
-body.applicationhome #container {padding-left: 20px;}
-#singlecolumn #container {
-  padding-left: 20px;
-  padding-top: 50px;
-}
-#maincontent, #portlets {
-  display: inline;
-  float: left;
-  position: relative;
-}
-#maincontent {
-  width: 100%;
-  padding: 0 0 20px 0;
-}
-#portlets {
-  width: 200px;
-  margin: 0 0 20px -100%;
-  padding: 0 20px;
-  right: 240px;
-}
-/* IE6 and lower ignore the left padding, so we add extra positioning. */
-* html #portlets {left: 20px;}
-/* IE7 gets the padding right but overcalculates the left margin, so we use
-a conditional comment in main-template.pt to work around the above rule. */
-#portlets .portlet {width: 200px;}
-#singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
-#mainarea #singlecolumn {margin-right: 0;}
 
 /* ====== Content area styles ====== */
 
@@ -1382,12 +1388,11 @@ div#applications {padding: 1em 0; text-align: center;}
 }
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.5em;
+  font-size: 1.125em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
-.tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
 }
@@ -1396,7 +1401,7 @@ div#applications {padding: 1em 0; text-align: center;}
   font-size: 1.2em;
 }
 #application-summary, #application-footer {
-  font-size: 1.4em;
+  font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;
 }
@@ -1431,7 +1436,7 @@ div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
-  border: dotted #ccc;
+  border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
@@ -1459,9 +1464,6 @@ ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
 ul.buttons li {display: inline; margin-right: 1em;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
-#singlecolumn ul.buttons {float: right; margin: 0;}
-#singlecolumn ul.buttons li {margin: 0;}
-#singlecolumn ul.buttons li {display: block;}
 ul.cross-reference {font-size: 1.25em;}
 /*
 li {
@@ -1469,7 +1471,7 @@ li {
 }
 */
 
-.bug-summary {
+.bug-summary, .summary {
   font-weight: bold;
 }
 
@@ -1486,7 +1488,7 @@ table.summary {float: right; margin: 0 0 1em 1em;}
 table.listing table.summary {margin-top: 0.5em;}
 table.summary caption {font-style: italic; margin-left: 1em;}
 div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
 table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
   list-style-position: inside;
@@ -1509,7 +1511,7 @@ table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 0; width: 100%;}
+table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
@@ -1521,6 +1523,8 @@ tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
 tr.amount, td.amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
+/* We don't want extra padding on nested tables, such as batch navigation. */
+table.listing table th, table.listing table td {padding: 0;}
 table.listing th {font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
@@ -1558,7 +1562,7 @@ th.descending {
 .sortkey, .revsortkey {display: none;}
 
 /* Clouds of links. */
-.cloud-size-small { 
+.cloud-size-small {
   font-size: 1em;
 }
 .cloud-size-medium {
@@ -1567,15 +1571,25 @@ th.descending {
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark { 
+.cloud-shade-dark {
   color: #00f;
 }
-.cloud-shade-medium { 
+.cloud-shade-medium {
   color: #7878ff;
 }
 .cloud-shade-light {
   color: #b8b8ff;
 }
+.cloud-highlight-dark {
+  color: #00c500;
+}
+.cloud-highlight-medium {
+  color: #90e090;
+}
+.cloud-highlight-light {
+  color: #b8ffb8;
+}
 
-.vcsimportSUCCESS {} /* inherited text color */
-.vcsimportFAILURE {color: Red;}
+.lowerCaseText {
+  text-transform: lowercase
+}

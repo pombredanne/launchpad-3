@@ -11,10 +11,10 @@ The input boxes on the Rosetta translation form provide this information
 through the "lang" and "dir" HTML attributes.  Note that HTML uses a dash as
 the separator in language codes rather than an underscore.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate')
-  >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate'
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/en_AU/+translate')
   >>> control = browser.getControl(name="msgset_130_en_AU_translation_0_new")
   >>> control.mech_control.attrs.get('dir')
   'ltr'
@@ -24,9 +24,9 @@ the separator in language codes rather than an underscore.
 
 When entering Hebrew translations, the form controls are set to right to left:
 
-  >>> browser.open('http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate')
-  >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate'
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/he/+translate')
   >>> control = browser.getControl(name="msgset_130_he_translation_0_new")
   >>> control.mech_control.attrs.get('dir')
   'rtl'
@@ -36,7 +36,9 @@ When entering Hebrew translations, the form controls are set to right to left:
 
 If we post the form with suggestions, the form controls are still set to rtl:
 
-  >>> browser.open('http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?field.alternative_language=es')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/he/+translate?field.alternative_language=es')
   >>> control = browser.getControl(name="msgset_130_he_translation_0_new")
   >>> control.mech_control.attrs.get('dir')
   'rtl'

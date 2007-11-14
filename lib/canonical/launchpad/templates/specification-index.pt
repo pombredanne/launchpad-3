@@ -1,5 +1,11 @@
 <html
-  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
@@ -8,7 +14,6 @@
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
 
-  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 
   <div tal:replace="structure context/@@+portlet-bugs" />
@@ -20,11 +25,14 @@
 <div metal:fill-slot="main">
 
   <div style="float: right;">
-    <img src="/@@/mentoring-large" title="Mentoring available"
+    <img id="mentoring-available-icon"
+	 src="/@@/mentoring-large" title="Mentoring available"
          tal:condition="context/mentoring_offers/count" />
-    <img src="/@@/branch-large" title="Branch available"
+    <img id="branch-available-icon"
+	 src="/@@/branch-large" title="Branch available"
          tal:condition="context/branch_links/count" />
-    <img src="/@@/info-large"
+    <img id="informational-icon"
+	 src="/@@/info-large"
          title="Informational blueprint, no implementation necessary"
          tal:condition="context/informational" />
   </div>
@@ -52,7 +60,7 @@
         <tr>
           <th>Definition:</th>
           <td>
-            <tal:definition replace="context/status/title" />
+            <tal:definition replace="context/definition_status/title" />
             <tal:guidance condition="not: context/direction_approved"
             >(Needs guidance)</tal:guidance>
           </td>
@@ -64,7 +72,7 @@
                  src="/@@/info" alt="Informational"
                  title="Informational blueprint, no implementation necessary"
                  />
-            <tal:impl content="context/delivery/title">Unknown</tal:impl>
+            <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
           </td>
         </tr>
         <tr tal:condition="context/goal">
@@ -190,13 +198,19 @@
 
   </tal:deptree>
 
-      <ul class="nearby menu" tal:condition="context/goal">
+      <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+      <div tal:condition="context/goal" class="related">
+        <h2>Nearby</h2>
+        <ul>
+
         <li>
           <a tal:attributes="href context/goal/fmt:url">
             Other <tal:goal replace="context/goal/displayname" /> blueprints
           </a>
         </li>
       </ul>
+
+      </div>
     </div>
   </body>
 </html>

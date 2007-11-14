@@ -1,4 +1,10 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-details">
 
   <h2><span tal:replace="context/target/displayname">Ubuntu</span> question
       #<span tal:replace="context/id">234</span></h2>
@@ -62,13 +68,14 @@
         tal:content="context/datelastresponse/fmt:approximatedate" /><br />
     </tal:block>
 
-    <tal:block condition="context/dateanswered">
+    <tal:block condition="context/date_solved">
       <b>Solved:</b>
       <span
-        tal:attributes="title context/dateanswered/fmt:datetime"
-        tal:content="context/dateanswered/fmt:approximatedate" /><br />
+        tal:attributes="title context/date_solved/fmt:datetime"
+        tal:content="context/date_solved/fmt:approximatedate" /><br />
     </tal:block>
 
   </div>
 
 </div>
+</tal:root>

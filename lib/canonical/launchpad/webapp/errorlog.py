@@ -19,6 +19,7 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
+from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.adapter import (
     RequestExpired, get_request_statements, get_request_duration,
     soft_timeout_expired)
@@ -91,8 +92,10 @@ def _is_sensitive(request, name):
     if name == 'HTTP_COOKIE':
         return True
 
-    # Allow remaining UPPERCASE names and remaining form variables
-    if name == upper_name or name in request.form:
+    # Allow remaining UPPERCASE names and remaining form variables.  Note that
+    # XMLRPC requests won't have a form attribute.
+    form = getattr(request, 'form', [])
+    if name == upper_name or name in form:
         return False
 
     # Block everything else
@@ -102,18 +105,21 @@ def _is_sensitive(request, name):
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, id, type, value, time, tb_text, username,
+    def __init__(self, id, type, value, time, pageid, tb_text, username,
                  url, duration, req_vars, db_statements):
         self.id = id
         self.type = type
         self.value = value
         self.time = time
+        self.pageid = pageid
         self.tb_text = tb_text
         self.username = username
         self.url = url
         self.duration = duration
         self.req_vars = req_vars
         self.db_statements = db_statements
+        self.branch_nick = versioninfo.branch_nick
+        self.revno  = versioninfo.revno
 
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
@@ -123,6 +129,9 @@ class ErrorReport:
         fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
         fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
         fp.write('Date: %s\n' % self.time.isoformat())
+        fp.write('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
+        fp.write('Branch: %s\n' % self.branch_nick)
+        fp.write('Revision: %s\n' % self.revno)
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
         fp.write('URL: %s\n' % _normalise_whitespace(self.url))
         fp.write('Duration: %s\n' % self.duration)
@@ -145,6 +154,7 @@ class ErrorReport:
         exc_type = msg.getheader('exception-type')
         exc_value = msg.getheader('exception-value')
         date = msg.getheader('date')
+        pageid = msg.getheader('page-id')
         username = msg.getheader('user')
         url = msg.getheader('url')
         duration = int(msg.getheader('duration', '-1'))
@@ -170,14 +180,14 @@ class ErrorReport:
 
         tb_text = ''.join(lines[linenum+1:])
 
-        return cls(id, exc_type, exc_value, date, tb_text,
+        return cls(id, exc_type, exc_value, date, pageid, tb_text,
                    username, url, duration, req_vars, statements)
 
 
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['Unauthorized'])
+    _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
     copy_to_zlog = False
 
     lasterrordate = None
@@ -291,14 +301,16 @@ class ErrorReportingUtility:
             url = None
             username = None
             req_vars = []
+            pageid = ''
 
             if request:
-                # XXX: Temporary fix, which Steve should undo. URL is
-                #      just too HTTPRequest-specific.
+                # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+                #      undo. URL is just too HTTPRequest-specific.
                 if hasattr(request, 'URL'):
                     url = request.URL
                 try:
-                    # XXX: UnauthenticatedPrincipal does not have getLogin()
+                    # XXX jamesh 2005-11-22: UnauthenticatedPrincipal
+                    # does not have getLogin()
                     if hasattr(request.principal, 'getLogin'):
                         login = request.principal.getLogin()
                     else:
@@ -309,16 +321,20 @@ class ErrorReportingUtility:
                                                 request.principal.title,
                                                 request.principal.description
                                                 ))))
+                # XXX jamesh 2005-11-22:
                 # When there's an unauthorized access, request.principal is
-                # not set, so we get an AttributeError
-                # XXX is this right? Surely request.principal should be set!
-                # XXX Answer: Catching AttributeError is correct for the
-                #             simple reason that UnauthenticatedUser (which
-                #             I always use during coding), has no 'getLogin()'
-                #             method. However, for some reason this except
-                #             does **NOT** catch these errors.
+                # not set, so we get an AttributeError.
+                # Is this right? Surely request.principal should be set!
+                # Answer: Catching AttributeError is correct for the
+                #         simple reason that UnauthenticatedUser (which
+                #         I always use during coding), has no 'getLogin()'
+                #         method. However, for some reason this except
+                #         does **NOT** catch these errors.
                 except AttributeError:
                     pass
+
+                if getattr(request, '_orig_env', None):
+                    pageid = request._orig_env.get('launchpad.pageid', '')
 
                 req_vars = []
                 for key, value in request.items():
@@ -339,7 +355,7 @@ class ErrorReportingUtility:
 
             oopsid, filename = self.newOopsId(now)
 
-            entry = ErrorReport(oopsid, strtype, strv, now, tb_text,
+            entry = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
                                 username, strurl, duration,
                                 req_vars, statements)
             entry.write(open(filename, 'wb'))

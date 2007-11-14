@@ -24,18 +24,19 @@ First, let's check that the maintenance message is not normally displayed.
     True
 
 Now, we can put a time in that file.  We use os.system to call the 'date'
-command, because that's the easiest way to make it work in practice.
-
-The time difference used is 10m30s to give this test some slack in its timing.
+command, because that's the easiest way to make it work in practice. We
+ellipsize the number of minutes in the test output to avoid the risk of
+this timebombing.
 
     >>> os.system(
     ... 'date --iso-8601=minutes -u -d +10mins30secs > +maintenancetime.txt')
     0
-    >>> content = front_page_content()
-    >>> maintenance_text in content
-    True
-    >>> 'ten minutes' in content
-    True
+    >>> print front_page_content()
+    HTTP/1.1 200 Ok
+    ...
+      Launchpad will be going offline for maintenance
+      in ... minutes.
+    ...
 
 Shipit has its own variation on the message.
 

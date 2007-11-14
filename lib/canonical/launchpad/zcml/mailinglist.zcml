@@ -1,0 +1,33 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.MailingList">
+        <allow interface="canonical.launchpad.interfaces.IMailingList"/>
+        <require permission="zope.Public"
+                 set_attributes="welcome_message"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.MailingListSet"
+        provides="canonical.launchpad.interfaces.IMailingListSet">
+        <allow interface="canonical.launchpad.interfaces.IMailingListSet"/>
+    </securedutility>
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.MailingListApplication"
+        provides="canonical.launchpad.interfaces.IMailingListApplication">
+        <allow
+         interface="canonical.launchpad.interfaces.IMailingListApplication"/>
+    </securedutility>
+
+    <xmlrpc:view
+        for="canonical.launchpad.interfaces.IMailingListApplication"
+        interface="canonical.launchpad.interfaces.IMailingListAPIView"
+        class="canonical.launchpad.xmlrpc.MailingListAPIView"
+        permission="zope.Public"
+        />
+
+</configure>

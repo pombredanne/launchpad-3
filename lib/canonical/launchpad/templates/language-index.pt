@@ -1,11 +1,38 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
   <body>
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
+
+  <div metal:fill-slot="help">
+    <p>
+      Here you see the information we have available about this language.
+    </p>
+
+    <p>
+      If you see anything wrong with this information, please see whether it's
+      already been brought up in the 
+      <a href="https://answers.launchpad.net/rosetta/">Answers</a> application.
+       If not, please file a question there.
+    </p>
+
+    <ul class="info">
+      <li>
+        <a href="https://help.launchpad.net/RosettaFAQ"
+        >Frequently asked questions</a>
+        </li>
+      </ul>
+  </div>
 
   <div metal:fill-slot="main">
     <h1>Overview of

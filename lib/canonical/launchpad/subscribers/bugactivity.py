@@ -9,8 +9,9 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IPerson, IBug, ISourcePackageRelease, IProductRelease, IBugActivitySet)
-from canonical.launchpad.webapp.enum import Item
+    IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
+    ISourcePackageRelease)
+from canonical.lazr import BaseItem
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -30,12 +31,14 @@ def get_string_representation(obj):
         return "%s %s" % (obj.sourcepackagename.name, obj.version)
     elif IProductRelease.providedBy(obj):
         return "%s %s" % (obj.product.name, obj.version)
-    elif isinstance(obj, Item):
+    elif IMilestone.providedBy(obj):
+        return obj.name
+    elif isinstance(obj, BaseItem):
         return obj.title
     elif isinstance(obj, basestring):
         return obj
-
-    return None
+    else:
+        return None
 
 
 def what_changed(sqlobject_modified_event):
@@ -47,7 +50,7 @@ def what_changed(sqlobject_modified_event):
         val_before = getattr(before, fieldname, None)
         val_after = getattr(after, fieldname, None)
 
-        #XXX: This shouldn't be necessary -- Bjorn Tillenius, 2005-06-09
+        #XXX Bjorn Tillenius 2005-06-09: This shouldn't be necessary.
         # peel off the zope stuff
         if isProxy(val_before):
             val_before = removeSecurityProxy(val_before)
@@ -100,7 +103,7 @@ def record_bug_task_added(bug_task, object_created_event):
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message='assigned to ' + bug_task.targetname)
+        message='assigned to ' + bug_task.bugtargetname)
 
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""

@@ -5,6 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'NewSpecificationFromDistributionView',
+    'NewSpecificationFromDistroSeriesView',
+    'NewSpecificationFromProductView',
+    'NewSpecificationFromProductSeriesView',
+    'NewSpecificationFromProjectView',
+    'NewSpecificationFromRootView',
+    'NewSpecificationFromSprintView',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -12,7 +19,6 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
-    'SpecificationNewView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -27,9 +33,12 @@ import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope.formlib import form
+from zope.formlib.form import Fields
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -37,13 +46,18 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution,
     ILaunchBag,
+    INewSpecification,
+    INewSpecificationSeriesGoal,
+    INewSpecificationSprint,
+    INewSpecificationTarget,
+    INewSpecificationProjectTarget,
     IPersonSet,
     IProduct,
-    IProject,
     ISpecification,
     ISpecificationBranch,
     ISpecificationSet,
     NotFoundError,
+    SpecificationDefinitionStatus,
     )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -54,14 +68,176 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
-    safe_action, stepthrough, stepto)
+    safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.widgets.project import ProjectScopeWidget
 
-from canonical.lp.dbschema import SpecificationStatus
+
+class NewSpecificationView(LaunchpadFormView):
+    """An abstract view for creating a new specification."""
+
+    label = "Register a new blueprint"
+
+    @action(_('Register Blueprint'), name='register')
+    def register(self, action, data):
+        """Registers a new specification."""
+        self.transform(data)
+        spec = getUtility(ISpecificationSet).new(
+            owner = self.user,
+            name = data.get('name'),
+            title = data.get('title'),
+            specurl = data.get('specurl'),
+            summary = data.get('summary'),
+            product = data.get('product'),
+            drafter = data.get('drafter'),
+            assignee = data.get('assignee'),
+            approver = data.get('approver'),
+            distribution = data.get('distribution'),
+            definition_status = data.get('definition_status'))
+        # Propose the specification as a series goal, if specified.
+        series = data.get('series')
+        if series is not None:
+            propose_goal_with_automatic_approval(spec, series, self.user)
+        # Propose the specification as a sprint topic, if specified.
+        sprint = data.get('sprint')
+        if sprint is not None:
+            spec.linkSprint(sprint, self.user)
+        # Set the default value for the next URL.
+        self._next_url = canonical_url(spec)
+
+    def transform(self, data):
+        """Transforms the given form data.
+
+        Called after the new specification form is submitted, but before the
+        new specification is created.
+
+        Ensures that the given data dictionary contains valid entries for each
+        of the arguments in ISpecificationSet.new(), to be used when creating
+        the new specification.
+
+        Optionally provides values for the following additional keys:
+
+        series: causes the new specification to be proposed as a series goal.
+        sprint: causes the new specification to be proposed as a sprint topic.
+        """
+        raise NotImplementedError
+
+    @property
+    def next_url(self):
+        """The next URL to redirect to after creating a new specification.
+
+        The default implementation returns a URL for the new specification
+        itself. Subclasses can override this behaviour by returning an
+        alternative URL.
+        """
+        return self._next_url
+
+
+class NewSpecificationFromTargetView(NewSpecificationView):
+    """An abstract view for creating a specification from a target context.
+
+    The context must correspond to a unique specification target.
+    """
+    schema = Fields(INewSpecification,
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
+    """A view for creating a specification from a distribution."""
+
+    def transform(self, data):
+        data['distribution'] = self.context
+
+
+class NewSpecificationFromProductView(NewSpecificationFromTargetView):
+    """A view for creating a specification from a product."""
+
+    def transform(self, data):
+        data['product'] = self.context
+
+
+class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
+    """An abstract view for creating a specification from a series."""
+
+    schema = Fields(INewSpecification,
+                    INewSpecificationSprint,
+                    INewSpecificationSeriesGoal)
+
+    def transform(self, data):
+        if data['goal']:
+            data['series'] = self.context
+
+
+class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
+    """A view for creating a specification from a distro series."""
+
+    def transform(self, data):
+        super(NewSpecificationFromDistroSeriesView, self).transform(data)
+        data['distribution'] = self.context.distribution
+
+
+class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
+    """A view for creating a specification from a product series."""
+
+    def transform(self, data):
+        super(NewSpecificationFromProductSeriesView, self).transform(data)
+        data['product'] = self.context.product
+
+
+class NewSpecificationFromNonTargetView(NewSpecificationView):
+    """An abstract view for creating a specification outside a target context.
+
+    The context may not correspond to a unique specification target. Hence
+    sub-classes must define a schema requiring the user to specify a target.
+    """
+    def transform(self, data):
+        data['distribution'] = IDistribution(data['target'], None)
+        data['product'] = IProduct(data['target'], None)
+
+    def validate(self, data):
+        """Ensures that the name for the new specification is unique.
+
+        The name must be unique within the context of the chosen target.
+        """
+        name = data.get('name')
+        target = data.get('target')
+        if name is not None and target is not None:
+            if target.getSpecification(name):
+                errormessage = INewSpecification['name'].errormessage
+                self.setFieldError('name', errormessage % name)
+
+
+class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from a project."""
+
+    schema = Fields(INewSpecificationProjectTarget,
+                    INewSpecification,
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from the root of Launchpad."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification,
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from a sprint."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification)
+
+    def transform(self, data):
+        super(NewSpecificationFromSprintView, self).transform(data)
+        data['sprint'] = self.context
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class SpecificationNavigation(Navigation):
@@ -191,7 +367,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+supersede', text, icon='edit')
 
     def linkbug(self):
-        text = 'Link to bug'
+        text = 'Link to bug report'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
@@ -253,10 +429,10 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
         essential = request.form.get('essential', False)
         if self.user and request.method == 'POST':
             if sub is not None:
-                self.context.subscribe(self.user, essential)
+                self.context.subscribe(self.user, self.user, essential)
                 self.notices.append("You have subscribed to this spec.")
             elif upd is not None:
-                self.context.subscribe(self.user, essential)
+                self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
@@ -280,6 +456,11 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
     @cachedproperty
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
+
+    @cachedproperty
+    def branch_links(self):
+        return [branch_link for branch_link in self.context.branch_links
+                if check_permission('launchpad.View', branch_link.branch)]
 
 
 class SpecificationEditView(SQLObjectEditView):
@@ -318,13 +499,19 @@ class SpecificationGoalProposeView(GeneralFormView):
         if distroseries is not None:
             goal = distroseries
         self.context.whiteboard = whiteboard
-        self.context.proposeGoal(goal, self.user)
-        # Now we want to auto-approve the goal if the person making
-        # the proposal has permission to do this anyway
-        if goal is not None and check_permission('launchpad.Driver', goal):
-            self.context.acceptBy(self.user)
+        propose_goal_with_automatic_approval(self.context, goal, self.user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
+
+
+def propose_goal_with_automatic_approval(specification, series, user):
+    """Proposes the given specification as a goal for the given series. If
+    the given user has permission, the proposal is approved automatically.
+    """
+    specification.proposeGoal(series, user)
+    # If the proposer has permission, approve the goal automatically.
+    if series is not None and check_permission('launchpad.Driver', series):
+        specification.acceptBy(user)
 
 
 class SpecificationGoalDecideView(LaunchpadView):
@@ -354,18 +541,29 @@ class SpecificationRetargetingView(LaunchpadFormView):
 
     schema = ISpecification
     field_names = ['target']
-    label =_('Move this blueprint to a different project')
+    label = _('Move this blueprint to a different project')
 
     def validate(self, data):
-        """Ensure there is not already a blueprint with the same name as
-        this one for the given target.
+        """Ensure that the target is valid and that there is not
+        already a blueprint with the same name as this one for the
+        given target.
         """
+
         target = data.get('target')
+
+        if target is None:
+            self.setFieldError('target',
+                "There is no project with the name '%s'. "
+                "Please check that name and try again." %
+                cgi.escape(self.request.form.get("field.target")))
+            return
+
         if target.getSpecification(self.context.name) is not None:
             self.setFieldError('target',
                 'There is already a blueprint with this name for %s. '
                 'Please change the name of this blueprint and try again.' %
-                target.displayname)
+                cgi.escape(target.displayname))
+            return
 
     @action(_('Retarget Blueprint'), name='retarget')
     def register_action(self, action, data):
@@ -390,33 +588,6 @@ class SpecificationRetargetingView(LaunchpadFormView):
         return self._nextURL
 
 
-class SpecificationSupersedingView(GeneralFormView):
-
-    @property
-    def initial_values(self):
-        return {
-            'superseded_by': self.context.superseded_by,
-            }
-
-    def process(self, superseded_by=None):
-        self.context.superseded_by = superseded_by
-        if superseded_by is not None:
-            # set the state to superseded
-            self.context.status = SpecificationStatus.SUPERSEDED
-        else:
-            # if the current state is SUPERSEDED and we are now removing the
-            # superseded-by then we should move this spec back into the
-            # drafting pipeline by resetting its status to NEW
-            if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.NEW
-        newstate = self.context.updateLifecycleStatus(self.user)
-        if newstate is not None:
-            self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
-        self.request.response.redirect(canonical_url(self.context))
-        return 'Done.'
-
-
 class SupersededByWidget(DropdownWidget):
     """Custom select widget for specification superseding.
 
@@ -428,6 +599,60 @@ class SupersededByWidget(DropdownWidget):
     -- StuartBishop 20060704
     """
     _messageNoValue = _("(Not Superseded)")
+
+
+class SpecificationSupersedingView(LaunchpadFormView):
+    schema = ISpecification
+    field_names = ['superseded_by']
+    label = _('Mark specification superseded')
+    custom_widget('superseded_by', SupersededByWidget)
+
+    @property
+    def initial_values(self):
+        return {
+            'superseded_by': self.context.superseded_by,
+            }
+
+    def setUpFields(self):
+        """Override the setup to define own fields."""
+        if self.context.target is None:
+            raise AssertionError("No target found for this spec.")
+        specs = sorted(self.context.target.specifications(),
+                       key=attrgetter('name'))
+        terms = [SimpleTerm(spec, spec.name, spec.title)
+                 for spec in specs if spec != self.context]
+
+        self.form_fields = form.Fields(
+            Choice(
+                __name__='superseded_by',
+                title=_("Superseded by"),
+                vocabulary=SimpleVocabulary(terms),
+                required=False,
+                description=_(
+                    "The specification which supersedes this one. Note "
+                    "that selecting a specification here and pressing "
+                    "Continue will change the specification status "
+                    "to Superseded.")),
+            render_context=self.render_context,
+            custom_widget=self.custom_widgets['superseded_by'])
+
+    @action(_('Continue'), name='supersede')
+    def supersede_action(self, action, data):
+        self.context.superseded_by = data['superseded_by']
+        if data['superseded_by'] is not None:
+            # set the state to superseded
+            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+        else:
+            # if the current state is SUPERSEDED and we are now removing the
+            # superseded-by then we should move this spec back into the
+            # drafting pipeline by resetting its status to NEW
+            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
+                self.context.definition_status = SpecificationDefinitionStatus.NEW
+        newstate = self.context.updateLifecycleStatus(self.user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
+        self.next_url = canonical_url(self.context)
 
 
 class SpecGraph:
@@ -610,8 +835,6 @@ class SpecificationSprintAddView(SQLObjectAddView):
     def create(self, sprint):
         user = getUtility(ILaunchBag).user
         sprint_link = self.context.linkSprint(sprint, user)
-        if check_permission('launchpad.Driver', sprint):
-            sprint_link.acceptBy(user)
         return sprint_link
 
     def add(self, content):
@@ -802,93 +1025,6 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class SpecificationNewView(LaunchpadFormView):
-    """A form used to add a specification from the Blueprints home page,
-    where we need to choose a context for the specification as well as
-    asking for the spec details."""
-
-    schema = ISpecification
-    label = "Register a new Blueprint"
-
-    @property
-    def field_names(self):
-        """This form is used sometimes on an IProject, IProduct or
-        IDistribution to get a new spec for them, and also on
-        ISpecificationSet as a system-wide "new spec" form. We need slightly
-        different field names in each case, so we make field_names a
-        property.
-        """
-        field_names = ['name', 'title', 'specurl', 'summary', 'status',
-                       'assignee', 'drafter', 'approver']
-        if ISpecificationSet.providedBy(self.context):
-            field_names.insert(0, 'target')
-        elif IProject.providedBy(self.context):
-            field_names.insert(0, 'projecttarget')
-        return field_names
-
-    def validate(self, data):
-        """Validate the contents of the form. In general we can trust the
-        field validation but for the name of the spec we need to check that
-        there is not already a spec with that name for the given target.
-        """
-        if not ISpecificationSet.providedBy(self.context):
-            return
-        name = data.get('name')
-        if name is None:
-            self.setFieldError('name',
-                'Please provide a name for this blueprint')
-        target = data.get('target')
-        projecttarget = data.get('projecttarget')
-        if projecttarget is not None:
-            target = projecttarget
-        if target is None:
-            self.setFieldError('target',
-                'Please select a valid project.')
-        else:
-            name = name.strip().lower()
-            if target.getSpecification(name) is not None:
-                self.setFieldError('name',
-                    'There is already a blueprint with this name for %s. '
-                    'Please try another name.' % target.displayname)
-
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        owner = self.user
-        # clean up name
-        name = data['name'].strip().lower()
-        # determine product or distribution as target
-        product = distribution = None
-        target = data.get('target', None)
-        projecttarget = data.get('projecttarget', None)
-        if projecttarget is not None:
-            target = projecttarget
-        if target is None:
-            target = self.context
-        if IProduct.providedBy(target):
-            product = target
-        elif IDistribution.providedBy(target):
-            distribution = target
-        else:
-            raise AssertionError, 'Unknown kind of blueprint target'
-        spec = getUtility(ISpecificationSet).new(
-            name,
-            data['title'],
-            data['specurl'],
-            data['summary'],
-            data['status'],
-            owner,
-            product=product,
-            distribution=distribution,
-            assignee=data.get('assignee', None),
-            drafter=data.get('drafter', None),
-            approver=data.get('approver', None))
-        self._nextURL = canonical_url(spec)
-
-    @property
-    def next_url(self):
-        return self._nextURL
-
-
 class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""
 
@@ -921,12 +1057,18 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        search_text = data['search_text']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
+            # Use 'All projects' scope.
             url = '/'
         else:
-            url = canonical_url(scope)
+            url = canonical_url(
+                self.widgets['scope'].getInputValue())
+        search_text = data['search_text']
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url

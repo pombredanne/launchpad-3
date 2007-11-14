@@ -1,5 +1,4 @@
-Sprints / Meetings
-==================
+= Sprints / Meetings =
 
 Sprints or meetings can be coordinated using Launchpad.
 
@@ -70,10 +69,10 @@ approved, not ones where the only specs are proposed.  So, we'll change
 the specs related to the Ubuntu "futurista" sprint to "proposed", and
 then check the coming sprints and all sprints.
 
-    >>> from canonical.lp.dbschema import SprintSpecificationStatus
+    >>> from canonical.launchpad.interfaces import SprintSpecificationStatus
 
 We're directly using the database classes here, bypassing the security
-proxies becuase this is just set-up for the next step, it's not the exact
+proxies because this is just set-up for the next step, it's not the exact
 functionality we're testing.
 
     >>> from canonical.launchpad.database import SprintSet
@@ -95,9 +94,7 @@ See, there are no ubuntu sprints.
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
 
 
-
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a sprint.
@@ -107,7 +104,7 @@ informational.
 
  >>> ubz = sprintset["ubz"]
 
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 
 First, there should be no informational specs for ubz:
@@ -169,3 +166,36 @@ Reset firefox so we don't mess up later tests.
  >>> firefox.active = True
  >>> flush_database_updates()
 
+
+== Sprint Driver ==
+
+Each sprint had a driver - the person (or team) that can decide on the
+list of blueprints for discussion. The driver is stored in the `driver`
+attribute.
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> paris = sprintset["paris"]
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> nopriv_person = person_set.getByEmail('no-priv@canonical.com')
+    >>> admin_person = person_set.getByEmail('foo.bar@canonical.com')
+
+We can use the `isDriver` method on sprint objects to determine whether
+a user is considered a driver for a sprint.
+
+    >>> paris.isDriver(nopriv_person)
+    False
+
+sample_person is the driver for the paris sprint.
+
+    >>> paris.driver == sample_person
+    True
+
+Obviously, we'd expect isDriver to return true for her.
+
+    >>> paris.isDriver(sample_person)
+    True
+
+Administrators are always considered drivers for any sprint.
+
+    >>> paris.isDriver(admin_person)
+    True

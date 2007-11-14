@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -48,16 +55,16 @@
                  tal:condition="spec/informational" />
         </td>
         <td>
-          <span class="sortkey" tal:content="spec/status/sortkey" />
-          <span tal:content="spec/status/title"
+          <span class="sortkey" tal:content="spec/definition_status/sortkey" />
+          <span tal:content="spec/definition_status/title"
                 tal:attributes="
-                class string:specstatus${spec/status/name}">Approved</span>
+                class string:specstatus${spec/definition_status/name}">Approved</span>
         </td>
         <td>
-          <span class="sortkey" tal:content="spec/delivery/sortkey" />
-          <span tal:content="spec/delivery/title"
+          <span class="sortkey" tal:content="spec/implementation_status/sortkey" />
+          <span tal:content="spec/implementation_status/title"
                 tal:attributes="
-                class string:specdelivery${spec/delivery/name}">Slow
+                class string:specdelivery${spec/implementation_status/name}">Slow
           </span>
         </td>
         <td><a tal:condition="spec/assignee"

@@ -38,7 +38,7 @@
         <browser:page
             template="../templates/builders-index.pt"
             name="+index"
-            facet="overview"        
+            facet="overview"
             />
     </browser:pages>
 
@@ -54,8 +54,8 @@
         template="../templates/launchpad-addform.pt"
         facet="overview"
         >
-        <browser:widget 
-            field="owner" 
+        <browser:widget
+            field="owner"
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
@@ -164,8 +164,8 @@
     <!-- BuildQueue -->
     <content class="canonical.launchpad.database.BuildQueue">
        <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
-       <!-- XXX cprov 20051020: we need a autobuild celebrity, bug #3580 -->
-       <!-- Grant permissions to write on BuildQueue and Build. --> 
+       <!-- XXX cprov 2005-10-20 bug=3580: We need a autobuild celebrity. -->
+       <!-- Grant permissions to write on BuildQueue and Build. -->
        <require
             permission="zope.Public"
             set_attributes="lastscore builder buildstart logtail"/>

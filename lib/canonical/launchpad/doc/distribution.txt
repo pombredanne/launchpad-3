@@ -15,12 +15,10 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IDistributionSet)
-    >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     MirrorPulseType)
+    ...     IDistribution, IDistributionSet, IHasTranslationImports,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -38,6 +36,10 @@ Let's make sure a distribution object properly implements its interfaces.
     >>> IDistribution.providedBy(gentoo)
     True
     >>> verifyObject(IDistribution, gentoo)
+    True
+    >>> IHasTranslationImports.providedBy(gentoo)
+    True
+    >>> verifyObject(IHasTranslationImports, gentoo)
     True
 
 Once you've got a distribution, you can retrieve a source package if you
@@ -128,6 +130,24 @@ Raises NotFoundError for following conditions:
     Traceback (most recent call last):
     ...
     NotFoundError: 'Unknown package: 1234'
+
+Packages only published in PPAs will not be found in the Ubuntu archive.
+Here, 'at' is published in sabdfl's PPA only:
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> ubuntutest = distroset.getByName("ubuntutest")
+    >>> publishToPPA(
+    ...     person_name='cprov',
+    ...     sourcepackage_name='at', sourcepackage_version='0.00',
+    ...     binarypackage_version='3.14156',
+    ...     distribution_name='ubuntutest',
+    ...     distroseries_name='hoary-test',
+    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
+    >>> name_tuple = ubuntutest.guessPackageNames('at')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package at not published in ubuntutest'
 
 It also raises NotFoundError on distributions with no series:
 
@@ -355,7 +375,7 @@ informational.
 
  >>> kubuntu = distroset.getByName("kubuntu")
 
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
@@ -419,14 +439,14 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
  ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.status = SpecificationStatus.OBSOLETE
+ ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
  ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:
@@ -465,4 +485,245 @@ To get all milestones of a given distro we have the .all_milestones property.
 
     >>> [milestone.name for milestone in debian.all_milestones]
     [u'woody-rc1', u'3.1-rc1', u'3.1']
+
+
+== Handling Personal Package Archives ==
+
+`IDistribution` provides a series of methods to lookup PPAs:
+
+ * getAllPPAs
+ * searchPPAs
+ * getPendingAcceptancePPAs
+ * getPendingPublicationPPAs
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+
+=== Iteration over all PPAs  ===
+
+getAllPPAs method provides all returns, as the suggests, all PPAs for
+the distribution in question:
+
+    >>> [archive.owner.name for archive in ubuntu.getAllPPAs()]
+    [u'cprov', u'sabdfl', u'no-priv']
+
+    >>> [archive.owner.name for archive in debian.getAllPPAs()]
+    []
+
+=== Searching PPAs ===
+
+Via searchPPAs, the callsites are able to look for PPA given a string
+matching Person.fti or PPA.description and also restrict the result to
+active/inactive (whether the PPA contains or not valid publications):
+
+There is only one 'active' PPA:
+
+    >>> cprov.archive.getPublishedSources().count()
+    4
+    >>> sabdfl.archive.getPublishedSources().count()
+    1
+    >>> no_priv.archive.getPublishedSources().count()
+    0
+
+    >>> result = ubuntu.searchPPAs()
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'sabdfl']
+
+PPAs can be reached passing a filter matching (substring) its
+description or the person string indexes:
+
+    >>> print cprov.archive.description
+    packages to help my friends.
+
+    >>> result = ubuntu.searchPPAs(text='friend')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov']
+
+    >>> result = ubuntu.searchPPAs(text='celso')
+    >>> [archive.owner.name for archive in result]
+    [u'cprov']
+
+    >>> result = ubuntu.searchPPAs(text='oink')
+    >>> [archive.owner.name for archive in result]
+    []
+
+Incluing 'inactive' PPAs:
+
+    >>> result = ubuntu.searchPPAs(show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'cprov', u'no-priv', u'sabdfl']
+
+    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'no-priv']
+
+    >>> print sabdfl.archive.description
+    packages to help the humanity (you know, ubuntu)
+
+    >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
+    >>> [archive.owner.name for archive in result]
+    [u'sabdfl']
+
+
+== Retrieving only pending-acceptance PPAs ==
+
+'getPendingAcceptancePPAs' lookup will only return PPA which have
+Package Upload (queue) records in ACCEPTED state, it it used in
+'process-accepted' in '--ppa' mode to avoid quering all PPAs:
+
+Nothing is pending-acceptance in sampledata:
+
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+Create a NEW PackageUpload record for cprov PPA:
+
+      >>> hoary = ubuntu['hoary']
+
+      >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+      >>> queue = hoary.createQueueEntry(
+      ...      pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+      ...      changesfilename='foo', changesfilecontent='bar')
+      >>> queue.status.name
+      'NEW'
+
+Records in NEW do not make cprov PPA pending-acceptance:
+
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+Neither in UNAPPROVED:
+
+      >>> queue.setUnapproved()
+      >>> from canonical.launchpad.ftests import syncUpdate
+      >>> syncUpdate(queue)
+      >>> queue.status.name
+      'UNAPPROVED'
+
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+Only records in ACCEPTED does:
+
+      >>> queue.setAccepted()
+      >>> syncUpdate(queue)
+      >>> queue.status.name
+      'ACCEPTED'
+
+      >>> pending_ppas = ubuntu.getPendingAcceptancePPAs()
+      >>> [pending_ppa] = pending_ppas
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Records in DONE also do not trigger pending-acceptance state in PPAs:
+
+      >>> queue.setDone()
+      >>> syncUpdate(queue)
+      >>> queue.status.name
+      'DONE'
+      
+      >>> ubuntu.getPendingAcceptancePPAs().count()
+      0
+
+
+== Retrieving only pending-acceptance PPAs ==
+
+
+'getPendingPublicationPPAs'lookup will only return PPA which have
+PENDING publishing records, it's used in 'publish-distro' in '--ppa'
+mode to avoiding querying all PPAs.
+
+Nothing is pending-publication in sampledata:
+
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+Making cprov PPA pending publication by creating a new source
+publishing record: 
+
+      >>> from canonical.database.constants import UTC_NOW
+      >>> from canonical.launchpad.database.publishing import (
+      ...     SecureSourcePackagePublishingHistory, 
+      ...     SecureBinaryPackagePublishingHistory) 
+      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+
+      >>> pmount = hoary.getSourcePackage('pmount')
+      >>> pmount_spr = pmount.currentrelease.sourcepackagerelease
+
+      >>> src_pub = SecureSourcePackagePublishingHistory(
+      ...     distroseries=hoary, sourcepackagerelease=pmount_spr,
+      ...     component=pmount_spr.component, section=pmount_spr.section,
+      ...     embargo=False, datecreated=UTC_NOW,
+      ...     status=PackagePublishingStatus.PENDING,
+      ...     pocket=PackagePublishingPocket.RELEASE,
+      ...     archive=cprov.archive)
+
+      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
+      >>> [pending_ppa] = pending_ppas
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Publishing the record removing cprov PPA from pending-publication
+state: 
+
+      >>> src_pub.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(src_pub)
+
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+Binary pending publications also moves PPA to the pending-publication
+state: 
+
+      >>> hoary_i386 = hoary['i386']
+      >>> pmount_bin = hoary_i386.getBinaryPackage('pmount')
+      >>> pmount_bpr = pmount_bin.currentrelease.binarypackagerelease
+
+      >>> bin_pub = SecureBinaryPackagePublishingHistory(
+      ...     binarypackagerelease=pmount_bpr,
+      ...     distroarchseries=hoary_i386, priority=pmount_bpr.priority,
+      ...     component=pmount_bpr.component, section=pmount_bpr.section,
+      ...     datecreated=UTC_NOW, embargo=False, archive=cprov.archive,
+      ...     status=PackagePublishingStatus.PENDING,
+      ...     pocket=PackagePublishingPocket.RELEASE)
+
+      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
+      >>> [pending_ppa] = pending_ppas
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Similarly to sources, binary publishing the record removes the PPA
+from pending-publication state:
+
+      >>> bin_pub.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(bin_pub)
+
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+
+== Distribution Archives ==
+
+`IDistribution.all_distro_archives` returns all archives associated with
+the distribution.  This list does not, therefore, include PPAs.
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> for archive in ubuntutest.all_distro_archives:
+  ...     print archive.purpose.title
+  Primary Archive
+  Partner Archive
+
+`IDistribution.getArchiveByComponent` retrieves an IArchive given a component
+name.  If the component is unknown, None is returned.
+
+  >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
+  >>> partner_archive.description
+  u'Partner archive'
+
+  >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
+  >>> print other_archive
+  None
 

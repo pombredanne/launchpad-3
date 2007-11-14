@@ -5,9 +5,51 @@
 __metaclass__ = type
 
 import os
+import re
 
-from canonical.launchpad.components.externalbugtracker import Bugzilla
+from zope.component import getUtility
 
+from canonical.config import config
+from canonical.database.sqlbase import commit, ZopelessTransactionManager
+from canonical.launchpad.components.externalbugtracker import (
+    Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
+    DebBugs, Mantis, Trac, Roundup, SourceForge)
+from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.database import BugTracker
+from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
+from canonical.testing.layers import LaunchpadZopelessLayer
+
+
+def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
+    """Create a new bug tracker using the 'launchpad db user.
+
+    Before calling this function, the current transaction should be
+    commited, since the current connection to the database will be
+    closed. After returning from this function, a new connection using
+    the checkwatches db user is created.
+    """
+    assert ZopelessTransactionManager._installed is not None, (
+        "This function can only be used for Zopeless tests.")
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    bugtracker_set = getUtility(IBugTrackerSet)
+    index = 1
+    name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
+    while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
+        index += 1
+    name += '-%d' % index
+    bugtracker = BugTracker(
+        name=name,
+        title='%s *TESTING*' % (bugtracker_type.title,),
+        bugtrackertype=bugtracker_type,
+        baseurl=base_url,
+        summary='-', contactdetails='-',
+        owner=owner)
+    commit()
+    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    return getUtility(IBugTrackerSet).getByName(name)
 
 def read_test_file(name):
     """Return the contents of the test file named :name:
@@ -20,13 +62,112 @@ def read_test_file(name):
     return test_file.read()
 
 
+def print_bugwatches(bug_watches, convert_remote_status=None):
+    """Print the bug watches for a BugTracker, ordered by remote bug id.
+
+    :bug_watches: A set of BugWatches to print.
+
+    :convert_remote_status: A convertRemoteStatus method from an
+        ExternalBugTracker instance, which will convert a bug's remote
+        status into a Launchpad BugTaskStatus. See
+        `ExternalBugTracker.convertRemoteStatus()`.
+
+    Bug watches will be printed in the form: Remote bug <id>:
+    <remote_status>. If convert_remote_status is callable it will be
+    used to convert the watches' remote statuses to Launchpad
+    BugTaskStatuses and these will be output instead.
+    """
+    watches = dict((int(bug_watch.remotebug), bug_watch)
+        for bug_watch in bug_watches)
+
+    for remote_bug_id in sorted(watches.keys()):
+        status = watches[remote_bug_id].remotestatus
+        if callable(convert_remote_status):
+            status = convert_remote_status(status)
+
+        print 'Remote bug %d: %s' % (remote_bug_id, status)
+
+def convert_python_status(status, resolution):
+    """Convert a human readable status and resolution into a Python
+    bugtracker status and resolution string.
+    """
+    status_map = {'open': 1, 'closed': 2, 'pending': 3}
+    resolution_map = {
+        'None': 'None',
+        'accepted': 1,
+        'duplicate': 2,
+        'fixed': 3,
+        'invalid': 4,
+        'later': 5,
+        'out-of-date': 6,
+        'postponed': 7,
+        'rejected': 8,
+        'remind': 9,
+        'wontfix': 10,
+        'worksforme': 11
+    }
+
+    return "%s:%s" % (status_map[status], resolution_map[resolution])
+
+def set_bugwatch_error_type(bug_watch, error_type):
+    """Set the last_error_type field of a bug watch to a given error type."""
+    login('test@canonical.com')
+    bug_watch.remotestatus = None
+    bug_watch.last_error_type = error_type
+    bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    logout()
+
+class TestBrokenExternalBugTracker(ExternalBugTracker):
+    """A test version of ExternalBugTracker, designed to break."""
+
+    def __init__(self, baseurl):
+        self.baseurl = baseurl
+        self.initialize_remote_bugdb_error = None
+        self.get_remote_status_error = None
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """Raise the error specified in initialize_remote_bugdb_error.
+
+        If initialize_remote_bugdb_error is None, None will be returned.
+        See `ExternalBugTracker`.
+        """
+        if self.initialize_remote_bugdb_error:
+            # We have to special case BugTrackerConnectError as it takes
+            # two non-optional arguments.
+            if self.initialize_remote_bugdb_error is BugTrackerConnectError:
+                raise self.initialize_remote_bugdb_error(
+                    "http://example.com", "Testing")
+            else:
+                raise self.initialize_remote_bugdb_error("Testing")
+
+    def getRemoteStatus(self, bug_id):
+        """Raise the error specified in get_remote_status_error.
+
+        If get_remote_status_error is None, None will be returned.
+        See `ExternalBugTracker`.
+        """
+        if self.get_remote_status_error:
+            raise self.get_remote_status_error("Testing")
+
+    def convertRemoteStatus(self, status):
+        """Return UNKNOWN_REMOTE_STATUS.
+
+        This method exists to avoid tests from failing with
+        AttributeErrors.
+        """
+        return UNKNOWN_REMOTE_STATUS
+
+
 class TestBugzilla(Bugzilla):
     """Bugzilla ExternalSystem for use in tests.
 
     It overrides _getPage and _postPage, so that access to a real Bugzilla
     instance isn't needed.
     """
-
+    # We set the batch_query_threshold to zero so that only
+    # getRemoteBugBatch() is used to retrieve bugs, since getRemoteBug()
+    # calls getRemoteBugBatch() anyway.
+    batch_query_threshold = 0
     trace_calls = False
 
     version_file = 'gnome_bugzilla_version.xml'
@@ -150,3 +291,140 @@ class TestOldBugzilla(TestBugzilla):
         return {42: ('RESOLVED', 'FIXED'),
                 123543: ('ASSIGNED', '')}
 
+
+class TestMantis(Mantis):
+    """Mantis ExternalSystem for use in tests.
+
+    It overrides _getPage and _postPage, so that access to a real
+    Mantis instance isn't needed.
+    """
+
+    trace_calls = False
+
+    def _getPage(self, page):
+        if self.trace_calls:
+            print "CALLED _getPage(%r)" % (page,)
+        if page == "csv_export.php":
+            return read_test_file('mantis_example_bug_export.csv')
+        elif page.startswith('view.php?id='):
+            bug_id = page.split('id=')[-1]
+            return read_test_file('mantis--demo--bug-%s.html' % bug_id)
+        else:
+            return ''
+
+    def _postPage(self, page, form):
+        if self.trace_calls:
+            print "CALLED _postPage(%r, ...)" % (page,)
+        return ''
+
+    def cleanCache(self):
+        """Clean the csv_data cache."""
+        # Remove the self._csv_data_cached_value if it exists.
+        try:
+            del self._csv_data_cached_value
+        except AttributeError:
+            pass
+
+class TestTrac(Trac):
+    """Trac ExternalBugTracker for testing purposes.
+
+    It overrides urlopen, so that access to a real Trac instance isn't needed,
+    and supportsSingleExports so that the tests don't fail due to the lack of
+    a network connection. Also, it overrides the default batch_query_threshold
+    for the sake of making test data sane.
+    """
+
+    batch_query_threshold = 10
+    supports_single_exports = True
+    trace_calls = False
+
+    def supportsSingleExports(self, bug_ids):
+        """See `Trac`."""
+        return self.supports_single_exports
+
+    def urlopen(self, url):
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % (url,)
+
+        return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+
+
+class TestRoundup(Roundup):
+    """Roundup ExternalBugTracker for testing purposes.
+
+    It overrides urlopen, so that access to a real Roundup instance isn't
+    needed.
+    """
+
+    trace_calls = False
+
+    def urlopen(self, url):
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % (url,)
+
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+
+        if self.isPython():
+            return open(
+                file_path + '/' + 'python_example_ticket_export.csv', 'r')
+        else:
+            return open(
+                file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+
+
+class TestSourceForge(SourceForge):
+    """Test-oriented SourceForge ExternalBugTracker.
+
+    Overrides _getPage() so that access to SourceForge itself is not
+    required.
+    """
+
+    trace_calls = False
+
+    def _getPage(self, page):
+        if self.trace_calls:
+            print "CALLED _getPage(%r)" % (page,)
+
+        page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
+        bug_id = page_re.match(page).groups()[0]
+
+        file_path = os.path.join(
+            os.path.dirname(__file__), 'testfiles',
+            'sourceforge-sample-bug-%s.html' % bug_id)
+        return open(file_path, 'r')
+
+
+class TestDebianBug:
+    """A debbugs bug that doesn't require the debbugs db."""
+
+    def __init__(self, reporter_email='foo@example.com', package='evolution',
+                 summary='Test Summary', description='Test description.',
+                 status='open', severity=None, tags =None):
+        if tags is None:
+            tags = []
+        self.originator = reporter_email
+        self.package = package
+        self.subject = summary
+        self.description = description
+        self.status = status
+        self.severity = severity
+        self.tags = tags
+
+
+class TestDebBugs(DebBugs):
+    """A Test-oriented Debbugs ExternalBugTracker.
+
+    It allows you to pass in bugs to be used, instead of relying on an
+    existing debbugs db.
+    """
+
+    def __init__(self, bugtracker, bugs):
+        DebBugs.__init__(self, bugtracker)
+        self.bugs = bugs
+
+    def _findBug(self, bug_id):
+        if bug_id not in self.bugs:
+            raise BugNotFound(bug_id)
+        return self.bugs[bug_id]

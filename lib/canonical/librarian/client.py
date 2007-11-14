@@ -20,6 +20,7 @@ from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 __all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 
+
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
@@ -31,7 +32,7 @@ class FileUploadClient:
 
     def _connect(self):
         """Connect this client.
-        
+
         The host and port default to what is specified in the configuration
         """
         host = config.librarian.upload_host
@@ -53,7 +54,7 @@ class FileUploadClient:
         if select([self.state.s], [], [], 0)[0]:
             response = self.state.f.readline().strip()
             raise UploadFailed, 'Server said: ' + response
-            
+
     def _sendLine(self, line):
         self.state.f.write(line + '\r\n')
         self._checkError()
@@ -75,7 +76,7 @@ class FileUploadClient:
             on the server, which will be marked with the value given.
 
         :returns: aliasID as an integer
-        
+
         :raises UploadFailed: If the server rejects the upload for some reason,
             or the size is 0.
         """
@@ -98,7 +99,7 @@ class FileUploadClient:
             # server.
             cur = cursor()
             databaseName = self._getDatabaseName(cur)
-            
+
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
             cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
@@ -119,7 +120,7 @@ class FileUploadClient:
 
             # Send blank line
             self._sendLine('')
-            
+
             # Prepare to the upload the file
             shaDigester = sha.sha()
             md5Digester = md5.md5()
@@ -133,9 +134,9 @@ class FileUploadClient:
                 bytesWritten += len(chunk)
                 shaDigester.update(chunk)
                 md5Digester.update(chunk)
-            
+
             assert bytesWritten == size, (
-                'size is %d, but %d were read from the file' 
+                'size is %d, but %d were read from the file'
                 % (size, bytesWritten))
             self.state.f.flush()
 
@@ -184,7 +185,7 @@ class FileUploadClient:
 
             # Send blank line
             self._sendLine('')
-            
+
             # Prepare to the upload the file
             bytesWritten = 0
 
@@ -194,9 +195,9 @@ class FileUploadClient:
             for chunk in iter(lambda: file.read(1024*64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
-            
+
             assert bytesWritten == size, (
-                'size is %d, but %d were read from the file' 
+                'size is %d, but %d were read from the file'
                 % (size, bytesWritten))
             self.state.f.flush()
 
@@ -216,7 +217,8 @@ class FileUploadClient:
 
 
 def quote(s):
-    # TODO: Perhaps filenames with / in them should be disallowed?
+    # XXX: Robert Collins 2004-09-21: Perhaps filenames with / in them
+    # should be disallowed?
     return urllib.quote(s).replace('/', '%2F')
 
 

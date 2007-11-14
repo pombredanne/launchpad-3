@@ -1,6 +1,11 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en" lang="en"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="malone"
 >
@@ -9,6 +14,8 @@
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
   <metal:portlets fill-slot="portlets">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:block content="structure context/@@+portlet-bugtags" />
     <tal:releasecriticalbugs
       tal:condition="view/shouldShowReleaseCriticalPortlet"
       tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
@@ -36,9 +43,6 @@
               </li>
             </ul>
             </noscript>
-          </div>
-          <div>
-            &raquo; <a href="+bugs">Show all open bugs</a>
           </div>
         </div>
         <div class="two column right">
@@ -86,14 +90,29 @@
             <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
-                bugs fixed elsewhere
+                <tal:label
+                  tal:replace="fixed_elsewhere/label">bugs</tal:label>
+                fixed elsewhere
               </a>
             </li>
             <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
               <a tal:attributes="href cve_bugs/url">
                 <strong tal:content="cve_bugs/count"></strong>
-                open CVE bugs
+                open CVE
+                <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
               </a>
+            </li>
+            <li tal:define="pending_bugwatches view/getPendingBugWatches"
+                tal:condition="view/isUpstreamProduct">
+              <a tal:attributes="href pending_bugwatches/url">
+                <strong tal:content="pending_bugwatches/count"></strong>
+                <tal:label
+                  tal:replace="pending_bugwatches/label">bugs</tal:label>
+                need forwarding upstream
+              </a>
+            </li>
+            <li style="font-weight: bold;">
+              <a href="+bugs">List all open bugs</a>
             </li>
           </ul>
           <ul class="rollover buttons">
