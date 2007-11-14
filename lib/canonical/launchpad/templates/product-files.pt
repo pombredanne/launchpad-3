@@ -1,8 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -60,7 +66,7 @@
                   <input type="checkbox"
                          tal:define="cbnum string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}"
                          tal:attributes="value file/libraryfile/id;
-                         name string:checkbox_${cbnum}">
+                         name string:checkbox_${cbnum}" />
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />

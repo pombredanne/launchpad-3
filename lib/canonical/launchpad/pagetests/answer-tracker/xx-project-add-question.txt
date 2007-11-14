@@ -90,8 +90,7 @@ as he revises the summary after reading the similar questions.
 An error message in the page informs the user that the summary is
 missing:
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     You must enter a summary of your problem.
 
@@ -109,7 +108,7 @@ The user is again shown similar questions, this time for the product
 Thunderbird. Since there are no similar questions against Thunderbird,
 an appropriate message is displayed to inform him of this:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('p').renderContents()
     There are no existing FAQs or questions similar to the summary you
     entered.
@@ -182,7 +181,7 @@ behaviour.
     
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
     Added Japanese to your preferred languages.
 

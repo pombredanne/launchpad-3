@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import cgi
+
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
 from zope.app.form.browser.interfaces import ISimpleInputWidget
@@ -98,7 +100,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
     def inputField(self):
         d = {
-            'formToken' : self.formToken,
+            'formToken' : cgi.escape(self.formToken, quote=True),
             'name': self.name,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,

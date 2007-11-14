@@ -152,6 +152,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         description=_(
             "Private bug reports are visible only to their subscribers."),
         default=False)
+    date_made_private = Datetime(
+        title=_('Date Made Private'), required=False)
+    who_made_private = Choice(
+        title=_('Who Made Private'), required=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person who set this bug private."))
     security_related = Bool(
         title=_("This bug is a security vulnerability"), required=False,
         default=False)
@@ -404,6 +410,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         return the edited bugtask.
 
         Return None if no bugtask was edited.
+        """
+
+    def setPrivate(private, who):
+        """Set bug privacy.
+
+            :private: True/False.
+            :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
         """
 
     def getBugTask(target):

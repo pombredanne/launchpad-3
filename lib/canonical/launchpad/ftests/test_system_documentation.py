@@ -5,33 +5,35 @@ lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
 
-import unittest
+from datetime import datetime, timedelta
 import logging
 import os
-
+from pytz import UTC
 import transaction
+import unittest
 
 from zope.component import getUtility, getView
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
-    flush_database_updates, READ_COMMITTED_ISOLATION)
+    commit, flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
-    ILaunchBag, IPersonSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
+    ILanguageSet, ILaunchBag, IPersonSet, IProductSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-        FunctionalLayer)
+    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
+    FunctionalLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -208,6 +210,71 @@ def bugLinkedToQuestionSetUp(test):
     # Log in here, since we don't want to set up an non-anonymous
     # interaction in the test.
     login('no-priv@canonical.com')
+
+
+def _create_old_bug(
+    title, days_old, target, status=BugTaskStatus.INCOMPLETE,
+    with_message=True):
+    """Create an aged bug.
+    
+    :title: A string. The bug title for testing.
+    :days_old: An int. The bug's age in days.
+    :target: A BugTarkget. The bug's target.
+    :status: A BugTaskStatus. The status of the bug's single bugtask.
+    :with_message: A Bool. Whether to create a reply message.
+    """
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title=title, comment='Something is broken.')
+    bug = target.createBug(params)
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    if with_message is True:
+        bug.newMessage(
+            owner=sample_person, subject='Something is broken.',
+            content='Can you provide more information?')
+    bugtask = bug.bugtasks[0]
+    bugtask.transitionToStatus(
+        status, sample_person)
+    date = datetime.now(UTC) - timedelta(days=days_old)
+    removeSecurityProxy(bug).date_last_updated = date
+    return bugtask
+
+
+def _summarize_bugtasks(bugtasks):
+    """Summarize a sequence of bugtasks."""
+    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    for bugtask in bugtasks:
+        if len(bugtask.bug.bugtasks) == 1:
+            title = bugtask.bug.title
+        else:
+            title = bugtask.target.name
+        print '%s  %s  %s  %s  %s  %s  %s  %s' % (
+            title,
+            bugtask.target_uses_malone,
+            (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
+            bugtask.status.title,
+            bugtask.assignee is not None,
+            bugtask.bug.duplicateof is not None,
+            bugtask.milestone is not None,
+            bugtask.bug.messages.count() == 1)
+
+
+def bugtaskExpirationSetUp(test):
+    """Setup globs for bug expiration."""
+    setUp(test)
+    test.globs['create_old_bug'] = _create_old_bug
+    test.globs['summarize_bugtasks'] = _summarize_bugtasks
+    test.globs['ubuntu'] = getUtility(IDistributionSet).getByName('ubuntu')
+    test.globs['jokosher'] = getUtility(
+        IProductSet).getByName('jokosher')
+    test.globs['thunderbird'] = getUtility(
+        IProductSet).getByName('thunderbird')
+    test.globs['sync'] = sync
+    test.globs['commit'] = commit
+    test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
+        'test@canonical.com')
+    login('test@canonical.com')
+
 
 def uploaderBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -473,8 +540,8 @@ special = {
             ),
     'bugtask-expiration.txt': LayeredDocFileSuite(
             '../doc/bugtask-expiration.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
+            setUp=bugtaskExpirationSetUp,
+            tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'bugmessage.txt': LayeredDocFileSuite(
