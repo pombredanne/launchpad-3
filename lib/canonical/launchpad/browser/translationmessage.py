@@ -962,9 +962,9 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.form_is_writeable = form_is_writeable
         if self.context.is_imported:
             # The imported translation matches the current one.
-            self.imported_translation_message = None
+            self.imported_translationmessage = self.context
         else:
-            self.imported_translation_message = (
+            self.imported_translationmessage = (
                 self.context.potmsgset.getImportedTranslationMessage(
                     self.context.pofile.language))
 
@@ -1039,6 +1039,11 @@ class CurrentTranslationMessageView(LaunchpadView):
                              count_lines(self.plural_text) > 1)
             is_same_translator = self.context.submitter == self.context.reviewer
             is_same_date = self.context.date_created == self.context.date_reviewed
+            if self.context.is_imported:
+                # Imported one matches the current one.
+                imported_translationmessage = None
+            else:
+                imported_translationmessage = self.imported_translationmessage
             translation_entry = {
                 'plural_index': index,
                 'current_translation': text_to_html(
@@ -1046,8 +1051,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'submitted_translation': submitted_translation,
                 'imported_translation': text_to_html(
                     imported_translation, self.context.potmsgset.flags()),
-                'imported_translation_message': (
-                    self.imported_translation_message),
+                'imported_translation_message': imported_translationmessage,
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
@@ -1058,9 +1062,10 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLID('translation_%d' % index),
                 }
 
-            if self.imported_translation_message is not None:
+            if (not self.context.is_imported and
+                self.imported_translationmessage is not None):
                 translation_entry['html_id_imported_suggestion'] = (
-                    self.imported_translation_message.makeHTMLID(
+                    self.imported_translationmessage.makeHTMLID(
                         'suggestion'))
 
             if self.message_must_be_hidden:
@@ -1192,11 +1197,10 @@ class CurrentTranslationMessageView(LaunchpadView):
                 index, self.context.pofile.language.displayname))
 
         if is_imported:
-            if self.imported_translation_message is None:
+            if self.imported_translationmessage is None:
                 return None
 
-            translation = self.imported_translation_message.translations[
-                index]
+            translation = self.imported_translationmessage.translations[index]
         else:
             translation = self.context.translations[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the

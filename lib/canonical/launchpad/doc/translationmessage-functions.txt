@@ -1,7 +1,7 @@
-= POMsgSet translation functions =
+= Translation message helper functions =
 
-For rendering translations in the POMsgSetView a number of helper
-functions exist. The following sections cover them in detail.
+For rendering translations in the TranslationMessageView a number of
+helper functions exist. The following sections cover them in detail.
 
 == contract_rosetta_escapes ==
 
