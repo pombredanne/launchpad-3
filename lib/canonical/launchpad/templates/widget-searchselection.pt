@@ -7,7 +7,8 @@
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="rosetta">
+  i18n:domain="launchpad"
+>
 
 <body metal:fill-slot="main">
 
@@ -34,8 +35,7 @@
 
     <tal:noselection condition="not: selection">
         <form action=""
-              style="float: right;"
-              xtal:attributes="action where-to-get-search-results">
+              style="float: right;">
 
             <dl>
                 <dt>
@@ -74,8 +74,7 @@
         
     </tal:selection>
     
-<form action=""
-      xtal:attributes="action selecting-an-item">
+<form action="">
     <fieldset tal:condition="not: selection">
     
         <legend>Search Results</legend>
@@ -116,7 +115,7 @@
         </div>
 
     </fieldset>
-
+  </form>
 </tal:testvalues>
 
 </body>

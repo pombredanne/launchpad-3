@@ -270,7 +270,7 @@ class BuildQueueSet(object):
         arch_ids = [d.id for d in archserieses]
 
         candidates = BuildQueue.select("""
-        build.distroarchrelease IN %s AND
+        build.distroarchseries IN %s AND
         build.buildstate = %s AND
         buildqueue.build = build.id AND
         buildqueue.builder IS NULL

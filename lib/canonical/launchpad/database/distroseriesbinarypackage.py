@@ -53,7 +53,7 @@ class DistroSeriesBinaryPackage:
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
         return DistroSeriesPackageCache.selectOne("""
-            distrorelease = %s AND
+            distroseries = %s AND
             binarypackagename = %s
             """ % sqlvalues(self.distroseries.id, self.binarypackagename.id))
 
@@ -77,9 +77,9 @@ class DistroSeriesBinaryPackage:
     def current_publishings(self):
         """See IDistroSeriesBinaryPackage."""
         ret = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease =
-                DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -90,7 +90,7 @@ class DistroSeriesBinaryPackage:
                     self.distroseries.distribution.all_distro_archive_ids,
                     self.binarypackagename),
             orderBy=['-datecreated'],
-            clauseTables=['DistroArchRelease', 'BinaryPackageRelease'])
+            clauseTables=['DistroArchSeries', 'BinaryPackageRelease'])
         return sorted(ret, key=lambda a: (
             a.distroarchseries.architecturetag,
             a.datecreated))

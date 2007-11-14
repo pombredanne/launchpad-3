@@ -25,7 +25,7 @@ __metaclass__ = type
 import _pythonpath
 import logging
 
-from canonical.launchpad.scripts import supermirror_rewritemap
+from canonical.codehosting import rewritemap
 from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.config import config
@@ -40,7 +40,7 @@ class SupermirrorRewriteMap(LaunchpadCronScript):
         filename = self.args[0]
         self.txn.begin()
         outfile = open(filename, 'wb')
-        supermirror_rewritemap.write_map(outfile)
+        rewritemap.write_map(outfile)
         outfile.close()
         self.txn.abort()
 

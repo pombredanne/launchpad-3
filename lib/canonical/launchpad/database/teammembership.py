@@ -307,12 +307,14 @@ class TeamMembership(SQLBase):
             reviewer_name = 'the user himself'
 
         if self.reviewercomment:
-            comment = ("Comment:\n%s\n\n" % self.reviewercomment.strip())
+            comment = ("\n%s said:\n %s\n" %
+                       (reviewer.displayname, self.reviewercomment.strip()))
         else:
             comment = ""
 
         replacements = {
             'member_name': member.unique_displayname,
+            'member_greeting_name': member.displayname,
             'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,

@@ -296,7 +296,7 @@ class IPOTemplate(IRosettaStats):
         """Return an iterator over current `IPOTMsgSet` in this template."""
 
     def getHeader():
-        """Return an `ITranslationHeader` representing its header."""
+        """Return an `ITranslationHeaderData` representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
         """Return the `IPOTMesgSet` indexed by msgidtext from this template.

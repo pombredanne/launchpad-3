@@ -39,7 +39,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
             SourcePackageName
             JOIN POTemplate ON
                 POTemplate.sourcepackagename = SourcePackageName.id AND
-                POTemplate.distrorelease = %s AND
+                POTemplate.distroseries = %s AND
                 POTemplate.languagepack = TRUE
             JOIN POTemplateName ON
                 POTemplate.potemplatename = POTemplateName.id

@@ -144,7 +144,7 @@ class IPPAActivateForm(Interface):
     description = Text(
         title=_("PPA contents description"), required=False,
         description=_(
-        "A short description of this PPA. This text URLs are allowed and will "
+        "A short description of this PPA. URLs are allowed and will "
         "be rendered as links."))
 
     accepted = Bool(

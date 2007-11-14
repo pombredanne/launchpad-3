@@ -8,7 +8,7 @@ __all__ = [
     'POTemplate',
     'POTemplateSet',
     'POTemplateSubset',
-    'POTemplateToTranslationFileAdapter',
+    'POTemplateToTranslationFileDataAdapter',
     ]
 
 import datetime
@@ -37,13 +37,13 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    ITranslationExporter, ITranslationFile, ITranslationImporter,
+    ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationConstants, TranslationFileFormat,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -96,7 +96,7 @@ class POTemplate(SQLBase, RosettaStats):
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease', notNull=False, default=None)
+        dbName='distroseries', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
@@ -237,7 +237,7 @@ class POTemplate(SQLBase, RosettaStats):
         elif self.distroseries and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
-                distrorelease = %s AND
+                distroseries = %s AND
                 sourcepackagename = %s AND
                 iscurrent = TRUE
                 ''' % sqlvalues(self.id,
@@ -453,7 +453,7 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        template_file = ITranslationFile(self)
+        template_file = ITranslationFileData(self)
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
 
@@ -472,10 +472,10 @@ class POTemplate(SQLBase, RosettaStats):
                 self.source_file_format))
 
         translation_files = [
-            ITranslationFile(pofile)
+            ITranslationFileData(pofile)
             for pofile in self.pofiles
             ]
-        translation_files.append(ITranslationFile(self))
+        translation_files.append(ITranslationFileData(self))
         return translation_format_exporter.exportTranslationFiles(
             translation_files)
 
@@ -736,20 +736,20 @@ class POTemplateSubset:
                 sqlvalues(productseries.id))
         elif distroseries is not None and from_sourcepackagename is not None:
             self.query = ('POTemplate.from_sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(from_sourcepackagename.id,
                                       distroseries.id))
             self.sourcepackagename = from_sourcepackagename
         elif distroseries is not None and sourcepackagename is not None:
             self.query = ('POTemplate.sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(sourcepackagename.id, distroseries.id))
         else:
             self.query = (
-                'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %s' % sqlvalues(distroseries.id))
-            self.orderby.append('DistroRelease.name')
-            self.clausetables.append('DistroRelease')
+                'POTemplate.distroseries = DistroSeries.id AND'
+                ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
+            self.orderby.append('DistroSeries.name')
+            self.clausetables.append('DistroSeries')
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -834,7 +834,7 @@ class POTemplateSubset:
         if self.productseries is not None:
             query.append('productseries = %s' % sqlvalues(self.productseries))
         if self.distroseries is not None:
-            query.append('distrorelease = %s' % sqlvalues(self.distroseries))
+            query.append('distroseries = %s' % sqlvalues(self.distroseries))
         if self.sourcepackagename is not None:
             query.append('sourcepackagename = %s' % sqlvalues(
                 self.sourcepackagename))
@@ -932,7 +932,7 @@ class POTemplateSet:
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
             potemplate = POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         distroseries.id,
@@ -946,7 +946,7 @@ class POTemplateSet:
                 return potemplate
 
             return POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         distroseries.id,
@@ -959,9 +959,9 @@ class POTemplateSet:
                 ' not None.')
 
 
-class POTemplateToTranslationFileAdapter:
-    """Adapter from `IPOTemplate` to `ITranslationFile`."""
-    implements(ITranslationFile)
+class POTemplateToTranslationFileDataAdapter:
+    """Adapter from `IPOTemplate` to `ITranslationFileData`."""
+    implements(ITranslationFileData)
 
     def __init__(self, potemplate):
         self._potemplate = potemplate
@@ -969,17 +969,17 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def path(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.path
 
     @cachedproperty
     def translation_domain(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.potemplatename.translationdomain
 
     @property
     def is_template(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return True
 
     @property
@@ -989,11 +989,11 @@ class POTemplateToTranslationFileAdapter:
 
     @cachedproperty
     def header(self):
-        """See `ITranslationFile`."""
+        """See `ITranslationFileData`."""
         return self._potemplate.getHeader()
 
     def _getMessages(self):
-        """Return a list of `ITranslationMessage`."""
+        """Return a list of `ITranslationMessageData`."""
         potemplate = self._potemplate
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
@@ -1033,7 +1033,7 @@ class POTemplateToTranslationFileAdapter:
                     messages.append(msgset)
 
                 # Create new message set
-                msgset = TranslationMessage()
+                msgset = TranslationMessageData()
                 msgset.sequence = row.sequence
                 msgset.obsolete = False
 

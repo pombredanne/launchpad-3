@@ -32,6 +32,7 @@ elif [ "$1" == "-vv" ]; then
     rcfile="--rcfile=utilities/lp-very-verbose.pylintrc"
 fi
 
+
 if [ -z "$1" ]; then
     rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
     files=`bzr st --short -r $rev | sed '/^.[MN]/!d; s/.* //'`

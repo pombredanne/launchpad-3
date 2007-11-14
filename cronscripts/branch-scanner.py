@@ -12,7 +12,7 @@ import logging
 
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.branch_scanner import BranchScanner
+from canonical.codehosting.scanner.branch_scanner import BranchScanner
 
 
 class UpdateBranches(LaunchpadCronScript):

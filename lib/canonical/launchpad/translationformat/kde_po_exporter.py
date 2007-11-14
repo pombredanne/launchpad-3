@@ -37,7 +37,7 @@ class KdePOExporter(GettextPOExporter):
         # it as one of the supported formats for this exporter.
         self.supported_source_formats = [TranslationFileFormat.KDEPO]
 
-    def exportTranslationMessage(self, translation_message):
+    def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         # Special handling of context and plural forms.
         if translation_message.context is not None:
@@ -54,5 +54,5 @@ class KdePOExporter(GettextPOExporter):
                 translation_message.msgid, translation_message.msgid_plural)
             translation_message.msgid_plural = None
 
-        return GettextPOExporter.exportTranslationMessage(
+        return GettextPOExporter.exportTranslationMessageData(
             self, translation_message)

@@ -10,9 +10,9 @@ from zope.schema import Bool, Datetime, Int, List, Object, Set, Text, TextLine
 __metaclass__ = type
 
 __all__ = [
-    'ITranslationFile',
-    'ITranslationHeader',
-    'ITranslationMessage',
+    'ITranslationFileData',
+    'ITranslationHeaderData',
+    'ITranslationMessageData',
     'TranslationImportExportBaseException',
     ]
 
@@ -21,7 +21,7 @@ class TranslationImportExportBaseException(Exception):
     """Base exception for all import/export exceptions."""
 
 
-class ITranslationHeader(Interface):
+class ITranslationHeaderData(Interface):
     """Translation header interface."""
 
     is_fuzzy = Bool(
@@ -71,7 +71,8 @@ class ITranslationHeader(Interface):
     def updateFromTemplateHeader(template_header):
         """Update header with some content from the given template header.
 
-        :param template_header: An ITranslationHeader for an IPOTemplate.
+        :param template_header: An `ITranslationHeaderData` for an
+            `IPOTemplate`.
 
         The fields copied depend on the file format.
         """
@@ -90,7 +91,7 @@ class ITranslationHeader(Interface):
         """
 
 
-class ITranslationMessage(Interface):
+class ITranslationMessageData(Interface):
     """Translation message interface."""
 
     context = Text(
@@ -130,15 +131,15 @@ class ITranslationMessage(Interface):
         required=True, readonly=True)
 
 
-class ITranslationFile(Interface):
+class ITranslationFileData(Interface):
     """Parsed translation template file interface."""
 
     header = Object(
-        title=u'An `ITranslationHeader` for the parsed file.',
-        required=True, schema=ITranslationHeader)
+        title=u'An `ITranslationHeaderData` for the parsed file.',
+        required=True, schema=ITranslationHeaderData)
 
     messages = List(
-        title=u'ITranslationMessage objects included in the parsed file.',
+        title=u'ITranslationMessageData objects included in the parsed file.',
         required=True, readonly=True)
 
     path = TextLine(

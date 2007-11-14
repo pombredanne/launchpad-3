@@ -108,7 +108,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True)
 
-    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
                                   notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -171,7 +171,7 @@ class BinaryPackageFilePublishing(FilePublishingBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
 
-    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
                                   notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -216,7 +216,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distrorelease')
+                               dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -264,7 +264,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchrelease')
+                                   dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -380,7 +380,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease')
+        dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -405,13 +405,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchrelease=
-                DistroArchRelease.id AND
+            BinaryPackagePublishingHistory.distroarchseries=
+                DistroArchSeries.id AND
             BinaryPackageRelease.build=Build.id AND
             BinaryPackageRelease.binarypackagename=
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
-            DistroArchRelease.distrorelease=%s AND
+            DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(
@@ -421,10 +421,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
-                   'DistroArchRelease.architecturetag']
+                   'DistroArchSeries.architecturetag']
 
         clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
-                        'DistroArchRelease']
+                        'DistroArchSeries']
 
         return BinaryPackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
@@ -570,7 +570,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchrelease')
+                                   dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -642,8 +642,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION L1>
         #  ...
         #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
+            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture

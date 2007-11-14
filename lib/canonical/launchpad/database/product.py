@@ -582,10 +582,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
             "ProductSeries.product = %s AND "
-            "Packaging.distrorelease = DistroRelease.id AND "
-            "DistroRelease.distribution = Distribution.id"
+            "Packaging.distroseries = DistroSeries.id AND "
+            "DistroSeries.distribution = Distribution.id"
             "" % sqlvalues(self.id),
-            clauseTables=['Packaging', 'ProductSeries', 'DistroRelease'],
+            clauseTables=['Packaging', 'ProductSeries', 'DistroSeries'],
             orderBy='name',
             distinct=True
             )

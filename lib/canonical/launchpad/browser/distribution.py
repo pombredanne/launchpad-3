@@ -44,7 +44,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
     IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
-    MirrorContent, NotFoundError)
+    MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -613,17 +613,72 @@ class DistributionMirrorsView(LaunchpadView):
 
     show_status = True
 
-    def _groupMirrorsByCountry(self, mirrors):
+    @cachedproperty
+    def mirror_count(self):
+        return self.mirrors.count()
+
+    def _sum_throughput(self, mirrors):
+        """Given a list of mirrors, calculate the total bandwidth
+        available.
+        """
+        throughput = 0
+        # this would be a wonderful place to have abused DBItem.sort_key ;-)
+        for mirror in mirrors:
+            if mirror.speed == MirrorSpeed.S128K:
+                throughput += 128
+            elif mirror.speed == MirrorSpeed.S256K:
+                throughput += 256
+            elif mirror.speed == MirrorSpeed.S512K:
+                throughput += 512
+            elif mirror.speed == MirrorSpeed.S1M:
+                throughput += 1000
+            elif mirror.speed == MirrorSpeed.S2M:
+                throughput += 2000
+            elif mirror.speed == MirrorSpeed.S10M:
+                throughput += 10000
+            elif mirror.speed == MirrorSpeed.S45M:
+                throughput += 45000
+            elif mirror.speed == MirrorSpeed.S100M:
+                throughput += 100000
+            elif mirror.speed == MirrorSpeed.S1G:
+                throughput += 1000000
+            elif mirror.speed == MirrorSpeed.S2G:
+                throughput += 2000000
+            elif mirror.speed == MirrorSpeed.S4G:
+                throughput += 4000000
+            elif mirror.speed == MirrorSpeed.S10G:
+                throughput += 10000000
+            elif mirror.speed == MirrorSpeed.S20G:
+                throughput += 20000000
+            else:
+                # need to be made aware of new values in
+                # interfaces/distributionmirror.py MirrorSpeed
+                return 'Indeterminate'
+        if throughput < 1000:
+            return str(throughput) + ' Kbps'
+        elif throughput < 1000000:
+            return str(throughput/1000) + ' Mbps'
+        else:
+            return str(throughput/1000000) + ' Gbps'
+
+    @cachedproperty
+    def total_throughput(self):
+        return self._sum_throughput(self.mirrors)
+
+    def getMirrorsGroupedByCountry(self):
         """Given a list of mirrors, create and return list of dictionaries
         containing the country names and the list of mirrors on that country.
 
         This list is ordered by country name.
         """
         mirrors_by_country = {}
-        for mirror in mirrors:
+        for mirror in self.mirrors:
             mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
             mirrors.append(mirror)
-        return [dict(country=country, mirrors=mirrors)
+        return [dict(country=country,
+                     mirrors=mirrors,
+                     number=len(mirrors),
+                     throughput=self._sum_throughput(mirrors))
                 for country, mirrors in sorted(mirrors_by_country.items())]
 
 
@@ -631,8 +686,9 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.archive_mirrors
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -640,8 +696,9 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     heading = 'Official CD Mirrors'
     show_status = False
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.cdimage_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.cdimage_mirrors
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
@@ -662,7 +719,7 @@ class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     heading = 'Archive Mirrors'
 
-    @property
+    @cachedproperty
     def mirrors(self):
         return self.context.archive_mirrors
 
@@ -672,7 +729,7 @@ class DistributionSeriesMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     heading = 'CD Mirrors'
 
-    @property
+    @cachedproperty
     def mirrors(self):
         return self.context.cdimage_mirrors
 
@@ -696,16 +753,18 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.unofficial_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.disabled_mirrors
 
 
 class DistributionDynMenu(

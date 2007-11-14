@@ -41,7 +41,7 @@ class LibraryFileAlias(SQLBase):
     implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'
-
+    date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
             foreignKey='LibraryFileContent', dbName='content', notNull=True,
             )

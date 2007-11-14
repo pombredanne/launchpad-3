@@ -999,8 +999,8 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
         distribution = getUtility(ILaunchBag).distribution
         if distribution:
             query = """
-                DistroRelease.id = DistroArchRelease.distrorelease AND
-                DistroRelease.distribution = %s
+                DistroSeries.id = DistroArchSeries.distroseries AND
+                DistroSeries.distribution = %s
                 """ % sqlvalues(distribution.id)
             results = self._table.select(
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1322,7 +1322,7 @@ class DistributionUsingMaloneVocabulary:
 class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
     _table = DistroSeries
-    _orderBy = ["Distribution.displayname", "-DistroRelease.date_created"]
+    _orderBy = ["Distribution.displayname", "-DistroSeries.date_created"]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
@@ -1346,9 +1346,9 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
             raise LookupError(token)
 
         obj = DistroSeries.selectOne('''
-                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.id = DistroSeries.distribution AND
                     Distribution.name = %s AND
-                    DistroRelease.name = %s
+                    DistroSeries.name = %s
                     ''' % sqlvalues(distroname, distroseriesname),
                     clauseTables=['Distribution'])
         if obj is None:

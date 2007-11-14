@@ -110,10 +110,10 @@ class POSubmissionSet:
                     POTemplate.productseries = ProductSeries.id
                 LEFT JOIN Product ON
                     ProductSeries.product = Product.id
-                LEFT JOIN DistroRelease ON
-                    POTemplate.distrorelease = DistroRelease.id
+                LEFT JOIN DistroSeries ON
+                    POTemplate.distroseries = DistroSeries.id
                 LEFT JOIN Distribution ON
-                    DistroRelease.distribution = Distribution.id
+                    DistroSeries.distribution = Distribution.id
                 WHERE
                     %(one_of_ours)s AND
                     (Product.official_rosetta OR
@@ -157,10 +157,10 @@ class POSubmissionSet:
                 POTemplate.productseries = ProductSeries.id
             LEFT JOIN Product ON
                 ProductSeries.product = Product.id
-            LEFT JOIN DistroRelease ON
-                POTemplate.distrorelease = DistroRelease.id
+            LEFT JOIN DistroSeries ON
+                POTemplate.distroseries = DistroSeries.id
             LEFT JOIN Distribution ON
-                DistroRelease.distribution = Distribution.id
+                DistroSeries.distribution = Distribution.id
             WHERE
                 POFile.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND

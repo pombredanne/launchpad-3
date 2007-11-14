@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
+
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
@@ -102,7 +103,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return True
 
     def getMembershipInformation(self, teams):
-        """See `IMailingListAPIView.`."""
+        """See `IMailingListAPIView`."""
         listset = getUtility(IMailingListSet)
         emailset = getUtility(IEmailAddressSet)
         response = {}

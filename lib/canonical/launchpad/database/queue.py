@@ -76,7 +76,7 @@ class PackageUpload(SQLBase):
                      default=PackageUploadStatus.NEW,
                      schema=PackageUploadStatus)
 
-    distroseries = ForeignKey(dbName="distrorelease",
+    distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
@@ -1065,7 +1065,7 @@ class PackageUploadSet:
             clauses.append("status=%s" % sqlvalues(status))
 
         if distroseries:
-            clauses.append("distrorelease=%s" % sqlvalues(distroseries))
+            clauses.append("distroseries=%s" % sqlvalues(distroseries))
 
         if pocket:
             clauses.append("pocket=%s" % sqlvalues(pocket))

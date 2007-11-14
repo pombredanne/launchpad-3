@@ -32,7 +32,7 @@ class Packaging(SQLBase):
                                    dbName="sourcepackagename",
                                    notNull=True)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distrorelease',
+                               dbName='distroseries',
                                notNull=True)
     packaging = EnumCol(dbName='packaging', notNull=True,
                         enum=PackagingType)
