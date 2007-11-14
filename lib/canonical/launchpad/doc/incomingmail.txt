@@ -163,7 +163,7 @@ If something goes wrongs in the handler, a DB exception can be raised,
 leaving the database in a bad state. If that happens a traceback should
 be printed, and the mail should be deleted from the queue.
 
-Let's create and register a handler which violates a DB constraint:
+Let's create and register a handler which raises a SQL error:
 
     >>> from canonical.database.sqlbase import cursor
     >>> class DBExceptionRaiser:

@@ -1188,6 +1188,7 @@ bugs directly to series.
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.testing import LaunchpadZopelessLayer
 
+    # The script's default user doesn't have permission to change the driver.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
