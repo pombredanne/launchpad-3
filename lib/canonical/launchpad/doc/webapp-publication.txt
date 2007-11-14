@@ -182,9 +182,10 @@ the configured request and publication factories.
     >>> publicationfactory
     <class 'canonical.launchpad.webapp.publication.LaunchpadBrowserPublication'>
 
-Actually, the request factory is wrapped into an
-ApplicationServerSettingRequestFactory that will on instantiation set
-the base URL of the request to the virtual host configured settings.
+If the request comes in on one of the virtual hosts, the request
+factory is wrapped in an ApplicationServerSettingRequestFactory that
+will on instantiation set the base URL of the request to the virtual
+host configured settings.
 
     >>> type(requestfactory)
     <class 'canonical.launchpad.webapp.servers.ApplicationServerSettingRequestFactory'>
@@ -193,6 +194,25 @@ the base URL of the request to the virtual host configured settings.
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
     >>> request.getApplicationURL()
     'http://launchpad.dev'
+
+But if the request comes in to the local or default host, the request
+factory is not wrapped:
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'localhost:9000'}
+    >>> default_handling_factory.canHandle(environment)
+    True
+    >>> requestfactory, publicationfactory = default_handling_factory()
+    >>> requestfactory
+    <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': ''}
+    >>> default_handling_factory.canHandle(environment)
+    True
+    >>> requestfactory, publicationfactory = default_handling_factory()
+    >>> requestfactory
+    <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
 
 A request publication factory will not handle requests unless they're
 directed to one of its registered host names.

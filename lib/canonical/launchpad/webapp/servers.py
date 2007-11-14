@@ -228,6 +228,7 @@ class VirtualHostRequestPublicationFactory:
                 return False
 
         self._thread_local.environment = environment
+        self._thread_local.host = host
         return True
 
     def __call__(self):
@@ -250,11 +251,22 @@ class VirtualHostRequestPublicationFactory:
             real_request_factory = self.request_factory
             publication_factory = self.publication_factory
 
-        request_factory = ApplicationServerSettingRequestFactory(
-            real_request_factory,
-            root_url.host,
-            root_url.scheme,
-            root_url.port)
+
+        host = environment.get('HTTP_HOST').split(':')[0]
+        if host in ['', 'localhost']:
+            # Sometimes requests come in to the default or local host.
+            # If we set the application server for these requests,
+            # they'll be handled as launchpad.net requests, and
+            # responses will go out containing launchpad.net URLs.
+            # That's a little unelegant, so we don't set the application
+            # server for these requests.
+            request_factory = real_request_factory
+        else:
+            request_factory = ApplicationServerSettingRequestFactory(
+                real_request_factory,
+                root_url.host,
+                root_url.scheme,
+                root_url.port)
 
         self._thread_local.environment = None
         return (request_factory, publication_factory)
