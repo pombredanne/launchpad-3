@@ -109,9 +109,9 @@ It accepts the 'Accept'/'Reject' and 'QUEUE_ID' arguments via POST.
 
 Add fake librarian files so that email notifications work:
 
-  >>> from canonical.archiveuploader.tests import insertFakeChangesFile
-  >>> insertFakeChangesFile(52)
-  >>> insertFakeChangesFile(1)
+  >>> from canonical.archiveuploader.tests import (
+  ...     insertFakeChangesFileForAllPackageUploads)
+  >>> insertFakeChangesFileForAllPackageUploads()
 
   >>> queue_view.performQueueAction()
   u'Accepting Results:<br><br>OK: mozilla-firefox, OK: netapplet'

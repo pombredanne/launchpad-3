@@ -2,14 +2,16 @@
 
 __metaclass__ = type
 
-__all__ = ['datadir', 'getPolicy', 'mock_options', 'mock_logger',
-           'mock_logger_quiet']
+__all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
+           'insertFakeChangesFileForAllPackageUploads', 'mock_options',
+           'mock_logger', 'mock_logger_quiet']
 
 import os
 import sys
 import traceback
 
 from canonical.archiveuploader.uploadpolicy import findPolicyByName
+from canonical.launchpad.database.queue import PackageUploadSet
 from canonical.librarian.ftests.harness import fillLibrarianFile
 
 
@@ -35,6 +37,11 @@ def insertFakeChangesFile(fileID, path=None):
     test_changes_file = changes_file_obj.read()
     changes_file_obj.close()
     fillLibrarianFile(fileID, content=test_changes_file)
+
+def insertFakeChangesFileForAllPackageUploads():
+    """Ensure all the PackageUpload records point to a valid changes file."""
+    for id in set(pu.changesfile.id for pu in PackageUploadSet()):
+        insertFakeChangesFile(id)
 
 
 class MockUploadOptions:

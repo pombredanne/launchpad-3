@@ -3,9 +3,10 @@ control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroSeriess.
 Setup a browser as the upload manager:
 
+  >>> admin_browser.open("http://launchpad.dev/ubuntu")
+
 Change ubuntu's upload manager to be carlos:
 
-  >>> admin_browser.open("http://launchpad.dev/ubuntu")
   >>> admin_browser.getLink("Change upload manager").click()
   >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
   >>> admin_browser.getControl("Change").click()
@@ -163,9 +164,9 @@ Inspect the ACCEPTED queue:
 Now we act on the queue, which requires admin or upload_manager permission.
 First, we need to add fake librarian files so that email notifications work:
 
-  >>> from canonical.archiveuploader.tests import insertFakeChangesFile
-  >>> insertFakeChangesFile(52)
-  >>> insertFakeChangesFile(1)
+  >>> from canonical.archiveuploader.tests import (
+  ...     insertFakeChangesFileForAllPackageUploads)
+  >>> insertFakeChangesFileForAllPackageUploads()
 
 Go back to the "new" queue and accept an item:
 
@@ -273,6 +274,7 @@ An UnexpectedFormData error is raised for unknown queue_state values
   UnexpectedFormData: No suitable status found for value "8"
 
 Clean up:
+
   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()
 

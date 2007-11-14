@@ -12,7 +12,8 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import insertFakeChangesFile
+from canonical.archiveuploader.tests import (
+    insertFakeChangesFileForAllPackageUploads)
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
@@ -82,7 +83,7 @@ class TestQueueTool(TestQueueBase):
         # the /wrong/ changes file for the package in the upload queue,
         # but that doesn't matter as only email addresses are parsed out
         # of it.
-        insertFakeChangesFile(1)
+        insertFakeChangesFileForAllPackageUploads()
         TestQueueBase.setUp(self)
 
     def tearDown(self):
@@ -492,9 +493,6 @@ class TestQueueTool(TestQueueBase):
         We can specify multiple items to reject, even mixing IDs and names.
         e.g. queue reject alsa-utils 1 3
         """
-        # An additional librarian file is needed for queue item with ID 1
-        # because in the sample data it points to library file alias 52.
-        insertFakeChangesFile(52)
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
