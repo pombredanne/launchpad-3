@@ -23,7 +23,7 @@ cleanup () {
 
 trap cleanup EXIT
 
-LAUNCHPADROOT=/srv/launchpad/codelines/current
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
 
 echo -n "Running germinate... "
