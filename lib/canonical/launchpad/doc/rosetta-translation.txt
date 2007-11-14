@@ -255,5 +255,5 @@ And it should definitely not be published:
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> potmsgset.getLocalTranslationMessages(spanish).count()
+    >>> len(potmsgset.getLocalTranslationMessages(spanish))
     1
