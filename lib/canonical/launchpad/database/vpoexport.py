@@ -12,10 +12,10 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.launchpad.database import Language
-from canonical.launchpad.database import POFile
-from canonical.launchpad.database import POTemplate
-from canonical.launchpad.database import POTMsgSet
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
 class VPOExportSet:

@@ -522,10 +522,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(productseries=self)
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.name))
+        result = POTemplate.selectBy(productseries=self,
+                                     orderBy=['-priority','name'])
+        return shortlist(result, 300)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -536,10 +535,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ProductSeries.product = Product.id AND
             Product.official_rosetta IS TRUE
             ''' % sqlvalues(self),
+            orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.name))
+        return shortlist(result, 300)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -549,10 +547,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ProductSeries.product = Product.id AND
             (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
+            orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.name))
+        return shortlist(result, 300)
 
 
 class ProductSeriesSet:
