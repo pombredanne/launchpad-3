@@ -295,14 +295,6 @@ And should be accepted by our validator.
     >>> published.validation_status == TranslationValidationStatus.OK
     True
 
-And here's a non-current message set. It shouldn't be fuzzy either.
-
-    >>> messageSets = list(pofile.getPOMsgSetsNotInTemplate())
-    >>> messageSets[0].potmsgset.msgid_singular.msgid
-    u'balloon'
-    >>> messageSets[0].was_fuzzy_in_last_import
-    False
-
 This message set should be fuzzy, however.
 
     >>> message = pofile[u'bar']
@@ -315,28 +307,36 @@ be the same for the active translation.
     >>> message.is_fuzzy
     True
 
-And this one should have the validation status with an error.
+We can also get the ones that have validation errors.
 
-    >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
-    >>> published = messageSet.getPublishedSubmission(0)
-    >>> (published.validation_status ==
-    ...     TranslationValidationStatus.UNKNOWNERROR)
-    True
+    >>> potmsgsets = pofile.getPOTMsgSetWithErrors()
+    >>> potmsgsets.count()
+    1
+    >>> for potmsgset in potmsgsets:
+    ...     translationmessages = potmsgset.getLocalTranslationMessages(
+    ...         pofile.language)
+    ...     for translationmessage in translationmessages:
+    ...         assert (
+    ...             translationmessage.validation_status ==
+    ...             TranslationValidationStatus.UNKNOWNERROR), (
+    ...             "Doesn't have a validation error")
 
 Check that the plural form was imported correctly.
 
-    >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
-    >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validation_status == TranslationValidationStatus.OK
-    True
-    >>> messageSet.published_texts
+    >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'Singular %d')
+    >>> imported_translationmessage = potmsgset.getImportedTranslationMessage(
+    ...     pofile.language)
+    >>> print imported_translationmessage.validation_status.name
+    OK
+    >>> imported_translationmessage.translations
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
 The owner for those translations should be Carlos, instead of the person
 that did the upload, because the imported file states that Carlos is the
 translator.
 
-    >>> published.person.displayname
+    >>> imported_translationmessage.submitter.displayname
     u'Carlos Perell\xf3 Mar\xedn'
 
 Now, is time to check the notification email.
@@ -360,8 +360,7 @@ Now, is time to check the notification email.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
-    4.  [msg 4]
-    "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
+    4. "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
     <BLANKLINE>
     #, c-format
     msgid "Foo %s"
@@ -407,6 +406,17 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> syncUpdate(entry)
 
+At this point, the statistics note that we have 3 translations coming from
+imported files (currentCount), and none updated or added in Launchpad
+Translations.
+
+    >>> pofile.currentCount()
+    3
+    >>> pofile.updatesCount()
+    0
+    >>> pofile.rosettaCount()
+    0
+
 We do the import.
 
     >>> pofile.importFromQueue(FakeLogger())
@@ -416,14 +426,18 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
-And the statistics reflect it.
+Now, the statistics note that we have only 1 translation coming from
+imported files (currentCount), which is the translation we just
+imported, and the other two translation that was coming from imported
+files are now counted as coming from Launchpad translations
+(rosettaCount) because latest imported file doesn't have them anymore.
 
     >>> pofile.currentCount()
     1
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    1
+    2
 
 Check the notification email about the success of this import without errors.
 
@@ -485,8 +499,7 @@ Now, is time to check the notification email.
     Hello Rosetta Administrators,
     <BLANKLINE>
     ...
-    5.  [msg 0]
-    "The msgid_plural field has changed since the last time this file was
+    5. "The msgid_plural field has changed since the last time this file was
     generated, please report this error to ...
     <BLANKLINE>
     #, c-format

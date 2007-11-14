@@ -759,9 +759,9 @@ class POFile(SQLBase, POFileMixIn):
 
         return results
 
-    def getPOTMsgSetWithErrors(self, slice=None):
+    def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
-        results = POTMsgSet.select('''
+        return POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
             TranslationMessage.potmsgset = POTMsgSet.id AND
@@ -772,11 +772,6 @@ class POFile(SQLBase, POFileMixIn):
                             TranslationValidationStatus.OK),
             clauseTables=['TranslationMessage'],
             orderBy='POTmsgSet.sequence')
-
-        if slice is not None:
-            results = results[slice]
-
-        return results
 
     def hasMessageID(self, messageID):
         """See `IPOFile`."""
@@ -998,7 +993,7 @@ class POFile(SQLBase, POFileMixIn):
                 potmsgset = error['potmsgset']
                 pomessage = error['pomessage']
                 error_message = error['error-message']
-                errorsdetails = '%s%d.  [msg ??]\n"%s":\n\n%s\n\n' % (
+                errorsdetails = '%s%d. "%s":\n\n%s\n\n' % (
                     errorsdetails,
                     potmsgset.sequence,
                     error_message,
@@ -1269,17 +1264,17 @@ class DummyPOFile(POFileMixIn):
     def emptySelectResults(self):
         return POFile.select("1=2")
 
-    def getPOTMsgSetTranslated(self, slice=None):
+    def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-    def getPOTMsgSetFuzzy(self, slice=None):
+    def getPOTMsgSetFuzzy(self):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-    def getPOTMsgSetUntranslated(self, slice=None):
+    def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
-        return self.potemplate.getPOTMsgSets(slice)
+        return self.potemplate.getPOTMsgSets()
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
@@ -1289,7 +1284,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-    def getPOTMsgSetWithErrors(self, slice=None):
+    def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
         return self.emptySelectResults()
 

@@ -47,7 +47,7 @@ except for untranslated messages.
     >>> dummy_pofile.getPOTMsgSetWithErrors().count()
     0
     >>> dummy_pofile.getPOTMsgSetUntranslated().count()
-    23
+    22
 
 Get the set of POTMsgSets that are untranslated.
 
