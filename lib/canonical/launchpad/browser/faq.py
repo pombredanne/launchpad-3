@@ -8,7 +8,6 @@ __all__ = [
     'FAQContextMenu',
     'FAQEditView',
     'FAQStructuralObjectPresentation',
-    'FAQView',
     ]
 
 from canonical.launchpad import _
@@ -17,7 +16,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
-    LaunchpadView, Link)
+    Link)
 
 
 class FAQContextMenu(FAQCollectionMenu):
