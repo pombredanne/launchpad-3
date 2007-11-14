@@ -719,9 +719,9 @@ We update these statistics first, since we have not gone through the regular
 UI for updating translations.
 
     >>> pofile_es_hoary.updateStatistics()
-    (...)
+    (7, 2, 4, 1)
     >>> pofile_es_humpy.updateStatistics()
-    (...)
+    (7, 2, 3, 0)
 
 The statistics for messages translated in Launchpad reflect the fact that we
 translated one previously untranslated string in Hoary.  The number for this

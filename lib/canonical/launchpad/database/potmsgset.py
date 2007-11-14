@@ -112,12 +112,9 @@ class POTMsgSet(SQLBase):
             else:
                 comparing_date = current.date_reviewed
             query += " AND date_created > %s" % sqlvalues(comparing_date)
+
         result = TranslationMessage.select(query, clauseTables=['POFile'])
         return shortlist(result, longest_expected=20, hardlimit=100)
-
-    def getTranslationMessages(self, language):
-        # XXX: do we really need this one?
-        pass
 
     def flags(self):
         if self.flagscomment is None:
@@ -130,11 +127,8 @@ class POTMsgSet(SQLBase):
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""
         imported_translation = self.getImportedTranslationMessage(language)
-        if (imported_translation is not None and
-            not imported_translation.is_current):
-            return True
-        else:
-            return False
+        return (imported_translation is not None and
+                not imported_translation.is_current)
 
     def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""

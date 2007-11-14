@@ -86,6 +86,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_complete = False
         self.is_fuzzy = False
         self.is_imported = False
+        self.is_empty = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         self.was_fuzzy_in_last_import = False
