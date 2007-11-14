@@ -16,6 +16,7 @@ from bzrlib.builtins import cmd_push
 from bzrlib.errors import (
     BzrCommandError, NotBranchError, TransportNotPossible)
 
+# bzr 0.91 uses ReadOnlyError, bzr 0.92 uses LockFailed
 try:
     from bzrlib.errors import LockFailed as ReadOnlyFailureException
 except ImportError:
