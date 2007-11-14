@@ -108,7 +108,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IQuestion"
-    class="canonical.launchpad.browser.QuestionView"
+    class="canonical.launchpad.webapp.LaunchpadView"
     permission="zope.Public"
     >
     <browser:page

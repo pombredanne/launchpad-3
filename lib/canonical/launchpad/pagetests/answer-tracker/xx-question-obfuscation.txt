@@ -20,8 +20,8 @@ front page.
     u'I am not able to ... if i click on a mailto:user@domain.com link ...'
 
 He can also see the email address in the tooltip for the question in the
-projects questions. When he views the question, he can see the address
-in the questions description.
+project's questions. When he views the question, he can see the address
+in the question's description.
 
     >>> user_browser.getControl(name='field.search_text').value = 'mailto'
     >>> user_browser.getControl('Find Answers').click()
@@ -63,7 +63,7 @@ Related question's portlet.
 
 No Privileges Person creates a question with an email address in the
 description. He can then see the email address in the tooltip in the
-Latest questions asked portlet for Answers front page.
+'Latest questions asked' portlet for Answers front page.
 
     >>> user_browser.getLink('#9 mailto: problem in webpage').click()
     >>> user_browser.getLink('ask your own question separately').click()

@@ -16,8 +16,8 @@ from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, LaunchpadView,
-    LaunchpadEditFormView, Link)
+    action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
+    LaunchpadView, Link)
 
 
 class FAQContextMenu(FAQCollectionMenu):
@@ -31,10 +31,6 @@ class FAQContextMenu(FAQCollectionMenu):
     def edit(self):
         """Return a Link to the edit view."""
         return Link('+edit', _('Edit FAQ'))
-
-
-class FAQView(LaunchpadView):
-    """A simple View of a FAQ that provides access to the user."""
 
 
 class FAQEditView(LaunchpadEditFormView):

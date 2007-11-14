@@ -163,10 +163,6 @@ class QuestionSetView(LaunchpadFormView):
         return self.context.getMostActiveProjects(limit=5)
 
 
-class QuestionView(LaunchpadView):
-    """A simple view for a question that provides access to the user."""
-
-
 class QuestionSubscriptionView(LaunchpadView):
     """View for subscribing and unsubscribing from a question."""
 
