@@ -450,7 +450,9 @@ class POTMsgSet(SQLBase):
                 if not is_fuzzy:
                     matching_message.is_fuzzy = is_fuzzy
 
-        matching_message.is_imported = is_imported
+        if is_imported:
+            # Note that the message is imported.
+            matching_message.is_imported = is_imported
 
         return matching_message
 
