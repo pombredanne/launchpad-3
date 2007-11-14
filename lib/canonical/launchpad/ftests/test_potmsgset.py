@@ -1,8 +1,8 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Test harness for running the pomsgset-update-translation-set test.
+"""Test harness for running the potmsgset-update-translations test.
 
-Corner case tests for IPOMsgSet.updateTranslationSet.
+Corner case tests for IPOTMsgSet.updateTranslation.
 """
 
 __metaclass__ = type
@@ -19,6 +19,6 @@ from canonical.launchpad.ftests.test_system_documentation import (
 
 def test_suite():
     return FunctionalDocFileSuite(
-        'pomsgset-update-translation-set.txt', setUp=setUp, tearDown=tearDown,
+        'potmsgset-update-translation.txt', setUp=setUp, tearDown=tearDown,
         optionflags=default_optionflags, package=__name__,
         layer=LaunchpadFunctionalLayer)

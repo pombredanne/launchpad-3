@@ -364,7 +364,7 @@ class POTMsgSet(SQLBase):
         # Our current submission is newer than 'lock_timestamp'
         # and we try to change it, so just add a suggestion.
         if (not just_a_suggestion and not is_imported and not is_fuzzy and
-            self.isTranslationNewerThan(pofile.language, lock_timestamp)):
+            self.isTranslationNewerThan(pofile, lock_timestamp)):
             just_a_suggestion = True
             warn_about_lock_timestamp = True
 
@@ -449,6 +449,8 @@ class POTMsgSet(SQLBase):
 
                 if not is_fuzzy:
                     matching_message.is_fuzzy = is_fuzzy
+
+        matching_message.is_imported = is_imported
 
         return matching_message
 
