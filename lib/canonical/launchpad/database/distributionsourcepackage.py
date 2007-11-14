@@ -80,9 +80,9 @@ class DistributionSourcePackage(BugTargetBase,
     def getVersion(self, version):
         """See IDistributionSourcePackage."""
         spph = SourcePackagePublishingHistory.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -94,7 +94,7 @@ class DistributionSourcePackage(BugTargetBase,
                             version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
-            clauseTables=['DistroRelease', 'SourcePackageRelease'])
+            clauseTables=['DistroSeries', 'SourcePackageRelease'])
         if spph.count() == 0:
             return None
         return DistributionSourcePackageRelease(
@@ -110,15 +110,15 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self.sourcepackagename,
                             self.distribution,
                             self.distribution.all_distro_archive_ids),
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             orderBy=[SQLConstant(order_const),
                      "-SourcePackagePublishingHistory.datepublished"])
 
@@ -228,10 +228,10 @@ class DistributionSourcePackage(BugTargetBase,
 
     def _getPublishingHistoryQuery(self, status=None):
         query = """
-            DistroRelease.distribution = %s AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
@@ -244,7 +244,7 @@ class DistributionSourcePackage(BugTargetBase,
                       % sqlvalues(status))
 
         return SourcePackagePublishingHistory.select(query,
-            clauseTables=['DistroRelease', 'SourcePackageRelease'],
+            clauseTables=['DistroSeries', 'SourcePackageRelease'],
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
@@ -253,8 +253,8 @@ class DistributionSourcePackage(BugTargetBase,
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            sourcepackagepublishinghistory.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             sourcepackagepublishinghistory.archive IN %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
@@ -263,7 +263,7 @@ class DistributionSourcePackage(BugTargetBase,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagename),
             orderBy='-datecreated',
-            clauseTables=['distrorelease', 'sourcepackagerelease'])
+            clauseTables=['distroseries', 'sourcepackagerelease'])
         result = []
         versions = set()
         for spp in ret:

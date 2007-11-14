@@ -95,7 +95,7 @@ class POTemplate(SQLBase, RosettaStats):
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease', notNull=False, default=None)
+        dbName='distroseries', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
@@ -236,7 +236,7 @@ class POTemplate(SQLBase, RosettaStats):
         elif self.distroseries and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
-                distrorelease = %s AND
+                distroseries = %s AND
                 sourcepackagename = %s AND
                 iscurrent = TRUE
                 ''' % sqlvalues(self.id,
@@ -735,20 +735,20 @@ class POTemplateSubset:
                 sqlvalues(productseries.id))
         elif distroseries is not None and from_sourcepackagename is not None:
             self.query = ('POTemplate.from_sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(from_sourcepackagename.id,
                                       distroseries.id))
             self.sourcepackagename = from_sourcepackagename
         elif distroseries is not None and sourcepackagename is not None:
             self.query = ('POTemplate.sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(sourcepackagename.id, distroseries.id))
         else:
             self.query = (
-                'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %s' % sqlvalues(distroseries.id))
-            self.orderby.append('DistroRelease.name')
-            self.clausetables.append('DistroRelease')
+                'POTemplate.distroseries = DistroSeries.id AND'
+                ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
+            self.orderby.append('DistroSeries.name')
+            self.clausetables.append('DistroSeries')
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -833,7 +833,7 @@ class POTemplateSubset:
         if self.productseries is not None:
             query.append('productseries = %s' % sqlvalues(self.productseries))
         if self.distroseries is not None:
-            query.append('distrorelease = %s' % sqlvalues(self.distroseries))
+            query.append('distroseries = %s' % sqlvalues(self.distroseries))
         if self.sourcepackagename is not None:
             query.append('sourcepackagename = %s' % sqlvalues(
                 self.sourcepackagename))
@@ -931,7 +931,7 @@ class POTemplateSet:
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
             potemplate = POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         distroseries.id,
@@ -945,7 +945,7 @@ class POTemplateSet:
                 return potemplate
 
             return POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         distroseries.id,
