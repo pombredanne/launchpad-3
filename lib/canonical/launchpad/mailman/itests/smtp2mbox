@@ -1,0 +1,62 @@
+#! /usr/bin/env python2.4
+
+"""Throw email messages into an mbox file.
+
+This starts an SMTP server listening on a port that the Mailman integration
+tests will send their messages to.  It is started in tests that need to check
+end-to-end message delivery, using fork/exec.
+
+Because we must use Python 2.4, we can't use the wizzy new mailbox module, so
+just write messages to the file.
+"""
+
+import os
+import sys
+import smtpd
+import signal
+import asyncore
+
+import itest_helper
+from email import message_from_string
+
+sys.path.insert(0, itest_helper.TOP)
+
+from canonical.config import config
+
+
+class Server(smtpd.SMTPServer):
+    def __init__(self):
+        smtpd.SMTPServer.__init__(self, config.mailman.smtp, None)
+        self._mbox = open(sys.argv[1], 'w')
+
+    def process_message(self, peer, mailfrom, rcpttos, data):
+        """Shove the message into the mbox file."""
+        msg = message_from_string(data)
+        print >> self._mbox, msg
+        print >> self._mbox
+        self._mbox.flush()
+
+    def close(self):
+        """Close the mbox file."""
+        self._mbox.close()
+
+
+def handle_signal(*ignore):
+    """Handle signal sent by parent to kill the process."""
+    # Why is killing an asyncore loop so painful?  There appears to be no way
+    # to do this cleanly without either reimplementing asyncore.loop() as Zope
+    # does, or getting an "uncaptured python exception" deep inside asyncore.
+    # For simplicity's sake I can live with that annoying non-fatal error.
+    asyncore.socket_map.clear()
+
+
+# Catch the parent's exit signal, and also C-c.
+signal.signal(signal.SIGTERM, handle_signal)
+signal.signal(signal.SIGINT, handle_signal)
+
+
+# Run the main loop.
+server = Server()
+asyncore.loop()
+asyncore.close_all()
+server.close()

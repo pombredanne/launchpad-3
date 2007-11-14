@@ -43,13 +43,13 @@ class DdtpTarballUpload(CustomUpload):
 
     Old contents will be preserved.
     """
-    def __init__(self, archive_root, tarfile_path, distrorelease):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
+    def __init__(self, archive_root, tarfile_path, distroseries):
+        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
 
         tarfile_base = os.path.basename(tarfile_path)
         name, component, self.version = tarfile_base.split('_')
         self.targetdir = os.path.join(archive_root, 'dists',
-                                      distrorelease, component)
+                                      distroseries, component)
 
     def shouldInstall(self, filename):
         # Ignore files outside of the i18n subdirectory
@@ -60,13 +60,13 @@ class DdtpTarballUpload(CustomUpload):
         pass
 
 
-def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
+def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
     """Process a raw-ddtp-tarball tarfile.
 
-    Unpacking it into the given archive for the given distrorelease.
+    Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if
     anything goes wrong.
     """
-    upload = DdtpTarballUpload(archive_root, tarfile_path, distrorelease)
+    upload = DdtpTarballUpload(archive_root, tarfile_path, distroseries)
     upload.process()
 

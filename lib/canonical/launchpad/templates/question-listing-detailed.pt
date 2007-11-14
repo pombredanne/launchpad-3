@@ -1,4 +1,4 @@
-<tal:row
+<tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
@@ -10,7 +10,6 @@
     <tal:description
       define="global description context/description/fmt:obfuscate-email/fmt:shorten/320" />
   </tal:not-user>
-
 <tr class="noted"
     tal:attributes="title description">
   <td class="icon left">
@@ -46,4 +45,5 @@
     </div>
   </td>
 </tr>
-</tal:row>
+</tal:root>
+

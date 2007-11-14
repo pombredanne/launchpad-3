@@ -29,7 +29,7 @@
                            date_confirmed date_incomplete date_inprogress
                            date_closed bug_subscribers is_complete
                            canTransitionToStatus isMentor canMentor
-                           isSubscribed" />
+                           isSubscribed getPackageComponent" />
         <require
             permission="launchpad.View"
             attributes="bugtargetname bugtargetdisplayname
@@ -148,6 +148,14 @@
         class="canonical.launchpad.browser.BugMarkAsDuplicateView"
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+text"
+        class="canonical.launchpad.browser.BugTaskTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
 
     <!-- NullBugTask -->
     <content class="canonical.launchpad.database.bugtask.NullBugTask">

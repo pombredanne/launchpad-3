@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationFormatExporter, TranslationConstants, TranslationFileFormat)
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.translationformat.translation_export import (
     ExportedTranslationFile, LaunchpadWriteTarFile)
 
@@ -26,10 +26,10 @@ from canonical.launchpad.translationformat.translation_export import (
 def comments_text_representation(translation_message):
     r'''Return text representation of the comments.
 
-    :param translation_message: An ITranslationMessage that will get comments
-        exported.
+    :param translation_message: An ITranslationMessageData that will get
+        comments exported.
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
@@ -37,7 +37,7 @@ def comments_text_representation(translation_message):
     >>> comments_text_representation(translation_message)
     u'#, fuzzy'
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'a'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'b')
@@ -45,7 +45,7 @@ def comments_text_representation(translation_message):
     >>> comments_text_representation(translation_message)
     u'# blah'
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'%d foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'%d bar')
@@ -99,28 +99,28 @@ def wrap_text(text, prefix, wrap_width):
         it.
     :param wrap_width: The width where the text should be wrapped.
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'abcdefghijkl'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid "abcdefghijkl"\nmsgstr "z"'
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'abcdefghijklmnopqr'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdefghijklmnopqr"\nmsgstr "z"'
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'abcdef hijklm'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdef hijklm"\nmsgstr "z"'
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'abcdefghijklmnopqr st'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
@@ -128,7 +128,7 @@ def wrap_text(text, prefix, wrap_width):
     u'msgid ""\n"abcdefghijklmnopqr "\n"st"\nmsgstr "z"'
 
     newlines in the text interfere with wrapping.
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'abc\ndef'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
@@ -136,7 +136,7 @@ def wrap_text(text, prefix, wrap_width):
     u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
     but not when it's just a line that ends with a newline char
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'abc\n'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'def\n')
@@ -144,7 +144,7 @@ def wrap_text(text, prefix, wrap_width):
     u'msgid "abc\\n"\nmsgstr "def\\n"'
 
     It's time to test the wrapping with the '-' char:
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"WARNING: unsafe enclosing directory permissions on homedir"
     ...     u" `%s'\n")
@@ -159,7 +159,7 @@ def wrap_text(text, prefix, wrap_width):
     "Verzeichnisses `%s'\n"
 
     When we changed the wrapping code, we got a bug with this string.
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"The location and hierarchy of the Evolution contact folders has"
     ...         u" changed since Evolution 1.x.\n\n")
@@ -173,7 +173,7 @@ def wrap_text(text, prefix, wrap_width):
     When the wrapping size was exactly gotten past by in the middle of
     escape sequence like \" or \\, it got cut off in there, thus
     creating a broken PO message.  This is the test for bug #46156.
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"1234567890abcde word\"1234567890abcdefghij")
     >>> print export_translation_message(translation_message, wrap_width=20)
@@ -186,7 +186,7 @@ def wrap_text(text, prefix, wrap_width):
     Lets also make sure that the unconditional break is not occurring
     inside a single long word in the middle of the escape sequence
     like \" or \\:
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"1234567890abcdefghij\\klmno")
     >>> print export_translation_message(translation_message, wrap_width=20)
@@ -195,7 +195,7 @@ def wrap_text(text, prefix, wrap_width):
     "\\klmno"
     msgstr ""
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"1234567890abcdefgh\\ijklmno")
     >>> print export_translation_message(translation_message, wrap_width=20)
@@ -204,7 +204,7 @@ def wrap_text(text, prefix, wrap_width):
     "ijklmno"
     msgstr ""
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"1234567890abcdefg\\\\hijklmno")
     >>> print export_translation_message(translation_message, wrap_width=20)
@@ -215,7 +215,7 @@ def wrap_text(text, prefix, wrap_width):
 
     For compatibility with msgcat -w, it also wraps on \\ properly.
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = (
     ...     u"\\\\\\\\\\")
     >>> print export_translation_message(translation_message, wrap_width=5)
@@ -318,7 +318,7 @@ def wrap_text(text, prefix, wrap_width):
 def msgid_text_representation(translation_message, wrap_width):
     """Return text representation of the msgids.
 
-    :param translation_message: An `ITranslationMessage` that will get its
+    :param translation_message: An `ITranslationMessageData` that will get its
         msgids exported.
     :param wrap_width: The width where the text should be wrapped.
     """
@@ -341,7 +341,7 @@ def msgid_text_representation(translation_message, wrap_width):
 def translation_text_representation(translation_message, wrap_width):
     """Return text representation of the translations.
 
-    :param translation_message: An `ITranslationMessage` that will get its
+    :param translation_message: An `ITranslationMessageData` that will get its
         translations exported.
     :param wrap_width: The width where the text should be wrapped.
     """
@@ -371,7 +371,7 @@ def translation_text_representation(translation_message, wrap_width):
 def export_translation_message(translation_message, wrap_width=77):
     r'''Return a text representing translation_message.
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
@@ -389,7 +389,7 @@ def export_translation_message(translation_message, wrap_width=77):
     u'#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"'
 
     plural forms have its own way to represent translations.
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'foo'
     >>> translation_message.msgid_plural = u'foos'
     >>> translation_message.addTranslation(
@@ -401,7 +401,7 @@ def export_translation_message(translation_message, wrap_width=77):
     u'msgid "foo"\nmsgid_plural "foos"\nmsgstr[0] "bar"\nmsgstr[1] "bars"'
 
     backslashes are escaped (doubled) and quotes are backslashed.
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'foo"bar\\baz'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
@@ -409,14 +409,14 @@ def export_translation_message(translation_message, wrap_width=77):
     u'msgid "foo\\"bar\\\\baz"\nmsgstr "z"'
 
     tabs are backslashed too, with standard C syntax.
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid = u'\tServer name: %s'
     >>> export_translation_message(translation_message)
     u'msgid "\\tServer name: %s"\nmsgstr ""'
 
     You can have context on messages.
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.context = u'bla'
     >>> translation_message.msgid = u'foo'
     >>> translation_message.addTranslation(
@@ -445,8 +445,8 @@ class GettextPOExporter:
             TranslationFileFormat.XPI]
 
     def _getHeaderAsMessage(self, translation_file):
-        """Return an `ITranslationMessage` with the header content."""
-        header_translation_message = TranslationMessage()
+        """Return an `ITranslationMessageData` with the header content."""
+        header_translation_message = TranslationMessageData()
         header_translation_message.addTranslation(
             TranslationConstants.SINGULAR_FORM,
             translation_file.header.getRawContent())
@@ -456,7 +456,7 @@ class GettextPOExporter:
             header_translation_message.flags.update(['fuzzy'])
         return header_translation_message
 
-    def exportTranslationMessage(self, translation_message):
+    def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
 
@@ -492,14 +492,14 @@ class GettextPOExporter:
                 translation_file.header.charset = 'UTF-8'
             header_translation_message = self._getHeaderAsMessage(
                 translation_file)
-            exported_header = self.exportTranslationMessage(
+            exported_header = self.exportTranslationMessageData(
                 header_translation_message)
             chunks = [exported_header.encode(translation_file.header.charset)]
             for message in translation_file.messages:
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
                     continue
-                exported_message = self.exportTranslationMessage(message)
+                exported_message = self.exportTranslationMessageData(message)
                 try:
                     encoded_text = exported_message.encode(
                         translation_file.header.charset)
@@ -516,7 +516,7 @@ class GettextPOExporter:
                     # We need to update the header too.
                     header_translation_message = self._getHeaderAsMessage(
                         translation_file)
-                    exported_header = self.exportTranslationMessage(
+                    exported_header = self.exportTranslationMessageData(
                         header_translation_message)
                     chunks[0] = exported_header.encode(old_charset)
                     # Update already exported entries.

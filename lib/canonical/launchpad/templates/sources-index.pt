@@ -1,4 +1,19 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="bazaar">
 
 <body>
 
@@ -13,7 +28,7 @@
 
         <div class="formControls">
             <input type="text" name="text"
-                   tal:attributes="value view/text" size="25">
+                   tal:attributes="value view/text" size="25" />
             <span tal:replace="structure view/sourcestateselector">
                 StateSelector
             </span>
@@ -87,3 +102,4 @@
 
 </body>
 </html>
+</tal:root>

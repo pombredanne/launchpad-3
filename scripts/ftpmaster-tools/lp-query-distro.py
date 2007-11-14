@@ -5,8 +5,8 @@
    It should provide an easy way to retrieve current information from Launchpad
    System when using plain shell scripts, for example:
 
-   * CURRENT distrorelease name: `./ubuntu-helper.py -d ubuntu current`
-   * DEVEVELOPMENT distrorelease name: `./ubuntu-helper.py -d ubuntu development`
+   * CURRENT distroseries name: `./ubuntu-helper.py -d ubuntu current`
+   * DEVEVELOPMENT distroseries name: `./ubuntu-helper.py -d ubuntu development`
    * Distorelease architectures:
        `./lp-query-distro.py -d ubuntu -s feisty archs`
    * Distorelease official architectures:

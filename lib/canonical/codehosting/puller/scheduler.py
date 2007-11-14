@@ -15,6 +15,8 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.puller.worker import (
+    get_canonical_url_for_branch_name)
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
@@ -218,7 +220,11 @@ class PullerMaster:
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
             self.branch_type.name]
-        reactor.spawnProcess(protocol, sys.executable, command)
+        # Passing env=None means that the subprocess will inherit our
+        # environment, and thus our configuration settings. This is necessary
+        # to ensure that branches are mirrored to the right place, that
+        # OOPSes are reported correctly etc.
+        reactor.spawnProcess(protocol, sys.executable, command, env=None)
         return deferred
 
     def run(self):
@@ -242,15 +248,16 @@ class PullerMaster:
         return self.branch_status_client.mirrorComplete(
             self.branch_id, revision_id)
 
-    def unexpectedError(self, failure):
+    def unexpectedError(self, failure, now=None):
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),
             ('source', self.source_url),
             ('dest', self.destination_url),
             ('error-explanation', failure.getErrorMessage())])
-        request.URL = get_canonical_url(self.unique_name)
+        request.URL = get_canonical_url_for_branch_name(self.unique_name)
         errorlog.globalErrorUtility.raising(
-            (failure.value, failure.type, failure.getTraceback()), request)
+            (failure.type, failure.value, failure.getTraceback()), request,
+            now)
         self.logger.info('Recorded %s', request.oopsid)
 
 
