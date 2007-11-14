@@ -437,7 +437,7 @@ files are now counted as coming from Launchpad translations
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    2
+    1
 
 Check the notification email about the success of this import without errors.
 

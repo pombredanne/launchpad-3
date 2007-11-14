@@ -442,7 +442,7 @@ We can guess the pluralforms for this language through ILanguage.pluralforms:
   [None, None, None]
 
 
-== isNewerThan ==
+== isTranslationNewerThan ==
 
 This method tells us whether the active translation was reviewed after
 the given timestamp.
@@ -451,12 +451,14 @@ the given timestamp.
   >>> from pytz import UTC
   >>> from canonical.launchpad.interfaces import TranslationConstants
   >>> translationmessage = TranslationMessage.get(2)
+  >>> potmsgset = translationmessage.potmsgset
+  >>> pofile = translationmessage.pofile
   >>> translationmessage.date_reviewed.isoformat()
   '2005-04-07T13:19:17.601068+00:00'
-  >>> translationmessage.date_reviewed > (
+  >>> potmsgset.isTranslationNewerThan(pofile,
   ...     datetime(2004, 11, 30, 7, 0, 0, tzinfo=UTC))
   True
-  >>> translationmessage.date_reviewed > (
+  >>> potmsgset.isTranslationNewerThan(pofile,
   ...     datetime(2006, 11, 30, 7, 0, 0, tzinfo=UTC))
   False
 

@@ -247,20 +247,23 @@ class POTMsgSet(SQLBase):
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
-            # or if the current message came from import (and is not a
-            # non-fuzzy message being replaced by a fuzzy one)
-            # or if current message is empty (deactivated translation)
-            # fuzzy/empty imported translations should not replace
-            # non-fuzzy/non-empty imported translations
+            # or if the current message came from import
+            # or if current message is empty (deactivated translation).
+            # Fuzzy/empty imported translations should not replace
+            # non-fuzzy/non-empty imported translations.
             if (current_message is None or
                 (current_message.is_imported and
                  (current_message.is_fuzzy or not new_message.is_fuzzy) and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty):
                 new_message.is_current = True
-
-                pofile.lasttranslator = submitter
-                pofile.date_changed = UTC_NOW
+                # Don't update the submitter and date changed
+                # if there was no current message and an empty
+                # message is submitted.
+                if (not (current_message is None and
+                         new_message.is_empty)):
+                    pofile.lasttranslator = submitter
+                    pofile.date_changed = UTC_NOW
         else:
             # Non-imported translations.
             new_message.is_current = True
