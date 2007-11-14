@@ -179,12 +179,6 @@ class ITranslationMessage(Interface):
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
 
-    def destroySelf():
-        """Remove this object.
-
-        It must not be referenced by any other object.
-        """
-
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description, for_potmsgset=None):
         """Unique identifier for self, suitable for use in HTML element ids.
