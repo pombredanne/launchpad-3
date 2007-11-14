@@ -14,7 +14,13 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_push
 from bzrlib.errors import (
-    BzrCommandError, NotBranchError, ReadOnlyError, TransportNotPossible)
+    BzrCommandError, NotBranchError, TransportNotPossible)
+
+try:
+    from bzrlib.errors import LockFailed as ReadOnlyFailureException
+except ImportError:
+    from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
+
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
@@ -470,7 +476,7 @@ class SmartserverTests(SSHTestCase):
 
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
-        self.assertRaises(ReadOnlyError, self.push, remote_url)
+        self.assertRaises(ReadOnlyFailureException, self.push, remote_url)
 
     @deferToThread
     def test_can_read_mirrored_branch(self):
