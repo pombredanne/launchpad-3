@@ -82,7 +82,7 @@ class DistroArchSeriesBinaryPackageRelease:
 # content classes in order to be better maintained. In this specific case
 # the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
-        query = ("binarypackagerelease = %s AND distroarchrelease = %s "
+        query = ("binarypackagerelease = %s AND distroarchseries = %s "
                  "AND archive IN %s"
                  % sqlvalues(
                     self.binarypackagerelease,
@@ -98,7 +98,7 @@ class DistroArchSeriesBinaryPackageRelease:
     def publishing_history(self):
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
-            distroarchrelease = %s AND
+            distroarchseries = %s AND
             archive IN %s AND
             binarypackagerelease = %s
             """ % sqlvalues(

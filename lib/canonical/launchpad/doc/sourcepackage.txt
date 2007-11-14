@@ -353,7 +353,7 @@ Lastly, note that sourcepackages know how to compare to each other:
 
 SourcePackageName implements IHasTranslationImports interface:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)

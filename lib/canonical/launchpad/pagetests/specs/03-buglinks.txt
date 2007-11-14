@@ -1,6 +1,4 @@
-
-Linking Specs and Bugs
-======================
+= Linking Specs and Bugs =
 
 Specifications can be linked to bugs. Bug reports exposing problems that
 will be solved by the specification are likely candidates for such
@@ -13,16 +11,15 @@ the 'Related Bugs' portlet.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> soup.first('li', 'bug')
+    >>> portlet = find_portlet(anon_browser.contents, 'Related bugs')
+    >>> portlet.first('li', 'bug')
     <li class="bug">
     <a href=".../bugs/1">#1:
         Firefox does not support SVG</a>
     </li>
 
-Adding Links
-------------
+
+== Adding Links ==
 
 Linking a bug report to a specification is done by using the
 'Link to bug' link.
@@ -47,13 +44,13 @@ button.
 A notification message is displayed telling the user about the added
 link.
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Added link to bug #4:
     ...Reflow problems with complex page layouts...</div>
 
-Removing Links
---------------
+
+== Removing Links ==
 
 Oops, that was actually the wrong bug. So lets remove the link. This is
 done by using the 'Remove bug link' link.
@@ -68,6 +65,6 @@ and click the 'Remove' button.
 
 A confirmation is displayed to the user.
 
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #4.</div>

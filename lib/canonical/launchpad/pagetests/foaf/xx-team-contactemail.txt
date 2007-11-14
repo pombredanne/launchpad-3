@@ -34,7 +34,7 @@ user to go through the email address confirmation process.
     >>> browser.getControl('Change').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     A confirmation message has been sent to...
 
@@ -62,7 +62,7 @@ Follow the token link, to confirm the new email address.
 
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Email address successfully confirmed.
 
@@ -84,7 +84,7 @@ to request that the mailing list be activated.
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Mailing list requested and queued for approval.
 
@@ -107,6 +107,7 @@ not shown anymore.
 If the application is declined, the button won't be shown either. Instead,
 we'll ask the user to contact a Launchpad admin.
 
+
     # We don't use getUtility(IMailingListSet) here because we want
     # non-security-proxied objects so that we can call syncUpdate on them
     # and change their status at our discretion.
@@ -114,6 +115,7 @@ we'll ask the user to contact a Launchpad admin.
     >>> list_set = MailingListSet()
     >>> mailing_list = list_set.get('landscape-developers')
 
+    >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     MailingListStatus, ILaunchpadCelebrities)
@@ -131,7 +133,7 @@ we'll ask the user to contact a Launchpad admin.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print extract_text(msg)
     The application for this team's mailing list has been declined. Please
     contact a Launchpad administrator for further assistance.
@@ -148,7 +150,7 @@ cancelled (and then re-requested afterwards).
     >>> browser.getControl('Cancel Application').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Mailing list application cancelled.
     >>> print list_set.get('landscape-developers')
@@ -189,7 +191,7 @@ list as last time -- it was rejected and we requested a new one.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This team's mailing list will be available shortly.
 
@@ -201,7 +203,7 @@ list as last time -- it was rejected and we requested a new one.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This team's mailing list will be available shortly.
 
@@ -330,7 +332,7 @@ Changes to the welcome message take effect in the database immediately.
 But they takes a while to be propagated to Mailman. The user is informed
 of this.
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     An update to this team's mailing list is pending and has not yet
     taken effect.
@@ -350,7 +352,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
         {'welcome_message': u'Welcome to the test team mailing list.'}
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     A change to this team's mailing list is currently being applied.
 
@@ -363,7 +365,7 @@ address view.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> get_feedback_messages(browser)
+    >>> get_feedback_messages(browser.contents)
     []
     >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
@@ -383,7 +385,7 @@ What if the change fails to propagate? The user will know of this too.
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     A change to this team's mailing list is currently being applied.
 
@@ -391,7 +393,7 @@ What if the change fails to propagate? The user will know of this too.
     True
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This team's mailing list is in an inconsistent state because a
     change to its configuration was not applied. Please contact a
@@ -406,7 +408,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> no_security_list.status = MailingListStatus.ACTIVE
     >>> no_security_list.syncUpdate()
     >>> browser.reload()
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     []
 
 
@@ -422,7 +424,7 @@ to 'each user individually'.
     ['\xa0Each member individually']
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This team's mailing list is being deactivated.
 
@@ -433,19 +435,19 @@ to 'each user individually'.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This team's mailing list has been deactivated.
 
 An inactive mailing list can be reactivated.
 
     >>> browser.getControl('Reactivate this Mailing List').click()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     The mailing list will be reactivated shortly.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This team's mailing list will be available shortly.
 
@@ -457,7 +459,7 @@ An inactive mailing list can be reactivated.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
 
 This does not restore the mailing list as the team's contact method:
