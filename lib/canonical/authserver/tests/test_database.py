@@ -9,6 +9,9 @@ import datetime
 
 import pytz
 import transaction
+
+from twisted.web.xmlrpc import Fault
+
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
@@ -18,6 +21,7 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.database import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from canonical.launchpad.interfaces import (
     BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
     IProductSet, IWikiNameSet)
@@ -28,8 +32,9 @@ from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
     IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 from canonical.authserver.database import (
-    DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
-    DatabaseBranchDetailsStorage)
+    DatabaseBranchDetailsStorage, DatabaseUserDetailsStorage,
+    DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -349,7 +354,26 @@ class UserDetailsStorageTest(DatabaseTest):
         self.assertEqual(expected_keytext, keytext)
 
 
-class HostedBranchStorageTest(DatabaseTest):
+class XMLRPCTestHelper:
+    """A mixin that defines a useful method for testing a XML-RPC interface.
+    """
+
+    def assertRaisesFault(self, code, string, callable, *args, **kw):
+        """Assert that calling callable(*args, **kw) raises an xmlrpc Fault.
+
+        The faultCode and faultString of the Fault are compared
+        against 'code' and 'string'.
+        """
+        try:
+            callable(*args, **kw)
+        except Fault, e:
+            self.assertEquals(e.faultCode, code)
+            self.assertEquals(e.faultString, string)
+        else:
+            self.fail("Did not raise!")
+
+
+class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     """Tests for the implementation of `IHostedBranchStorage`."""
 
     def test_verifyInterface(self):
@@ -395,16 +419,47 @@ class HostedBranchStorageTest(DatabaseTest):
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(
+        message = "Product 'no-such-product' does not exist."
+        self.assertRaisesFault(
+            NOT_FOUND_FAULT_CODE, message,
+            storage._createBranchInteraction,
             1, 'sabdfl', 'no-such-product', 'foo')
-        self.assertEqual(branchID, '')
 
     def test_createBranch_other_user(self):
         # Test that creating a branch under another user's directory fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(
+        message = ("Mark Shuttleworth cannot create branches owned by "
+                   "No Privileges Person")
+        self.assertRaisesFault(
+            PERMISSION_DENIED_FAULT_CODE, message,
+            storage._createBranchInteraction,
             1, 'no-priv', 'firefox', 'foo')
-        self.assertEqual(branchID, '')
+
+    def test_createBranch_bad_name(self):
+        # Test that creating a branch with an invalid name fails.
+        storage = DatabaseUserDetailsStorageV2(None)
+        self.assertRaisesFault(
+            PERMISSION_DENIED_FAULT_CODE,
+            BRANCH_NAME_VALIDATION_ERROR_MESSAGE,
+            storage._createBranchInteraction,
+            12, 'name12', 'firefox', 'invalid name!')
+
+    def test_createBranch_bad_user(self):
+        # Test that creating a branch under a non-existent user fails.
+        storage = DatabaseUserDetailsStorageV2(None)
+        message = "User/team 'no-one' does not exist."
+        self.assertRaisesFault(
+            NOT_FOUND_FAULT_CODE, message,
+            storage._createBranchInteraction,
+            12, 'no-one', 'firefox', 'branch')
+        # If both the user and the product are not found, then the missing
+        # user "wins" the error reporting race (as the url reads
+        # ~user/product/branch).
+        self.assertRaisesFault(
+            NOT_FOUND_FAULT_CODE, message,
+            storage._createBranchInteraction,
+            12, 'no-one', 'no-such-product', 'branch')
+
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)

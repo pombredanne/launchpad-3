@@ -3,6 +3,13 @@
   table.
 */
 
+-- Announcement
+
+COMMENT ON TABLE Announcement IS 'A project announcement. This is a single item of news or information that the project is communicating. Announcements can be attached to a Project, a Product or a Distribution.';
+COMMENT ON COLUMN Announcement.date_announced IS 'The date at which an announcement will become public, if it is active. If this is not set then the announcement will not become public until someone consciously publishes it (which sets this date).';
+COMMENT ON COLUMN Announcement.url IS 'A web location for the announcement itself.';
+COMMENT ON COLUMN Announcement.active IS 'Whether or not the announcement is public. This is TRUE by default, but can be set to FALSE if the project "retracts" the announcement.';
+
 -- AnswerContact
 
 COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';

@@ -109,7 +109,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' .',
              u' .',
              u' .',
-             u'  %s' % ('x' * 100)
+             u' %s' % ('x' * 100)
              ],
             pub_binary.getIndexStanza().splitlines())
 
