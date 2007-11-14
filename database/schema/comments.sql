@@ -1662,9 +1662,6 @@ COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
 COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
 
-COMMENT ON TABLE HWBus IS 'A list of bus names, e.g., PCI or USB';
-COMMENT ON COLUMN HWBus.name IS 'The name of a bus.';
-
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
 
@@ -1711,7 +1708,7 @@ COMMENT ON COLUMN HWTestAnswer.unit IS 'The physical unit of a test with a numer
 
 COMMENT ON TABLE HWTestAnswerCount IS 'Accumulated results of tests. Either the column choice or the columns average and sum_square must be non-null.';
 COMMENT ON COLUMN HWTestAnswerCount.test IS 'The test.';
-COMMENT ON COLUMN HWTestAnswerCount.distroarchrelease IS 'The distroarchrelease for which results are accumulated,';
+COMMENT ON COLUMN HWTestAnswerCount.distroarchseries IS 'The distroarchseries for which results are accumulated,';
 COMMENT ON COLUMN HWTestAnswerCount.choice IS 'The choice value of a multiple choice test.';
 COMMENT ON COLUMN HWTestAnswerCount.average IS 'The average value of the result of a numerical test.';
 COMMENT ON COLUMN HWTestAnswerCount.sum_square IS 'The sum of the squares of the results of a numerical test.';
