@@ -24,7 +24,7 @@ Only the product registrant and the admins have access to this page.
     >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
       ...
-    LinkNotFound...    
+    LinkNotFound...
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+edit')
     Traceback (most recent call last):
       ...
@@ -61,7 +61,7 @@ doesn't use any bug tracker at all.
 
 On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
-  
+
     >>> content = find_main_content(registrant_browser.contents)
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
@@ -96,7 +96,7 @@ Now let's go back and choose to use a specific bug tracker.
     >>> label_cell = content.find('th', text='Bug tracker:')
     >>> print extract_text(label_cell.findNext())
     GnomeGBug GTracker
-  
+
 Let's reset it to the way it was before.
 
     >>> registrant_browser.getLink('Change details').click()
@@ -106,6 +106,9 @@ Let's reset it to the way it was before.
     >>> # The page JavaScript selects the bug expiration checkbox when
     >>> # Launchpad bugs is selected. The registrant would uncheck the
     >>> # bug expiration checkbox to complete the restoration of firefox
+    >>> registrant_browser.getControl(
+    ...     'Expire Incomplete bug reports when they '
+    ...     'become inactive').selected = False
     >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
     >>> status_label = content.find('th', text='Status:')
@@ -114,3 +117,56 @@ Let's reset it to the way it was before.
     Uses Bugs
     Doesn&rsquo;t use Translations
     Uses Answers
+
+
+== enable_bug_expiration and JavaScript ==
+
+JavaScript is used to constrain enable_bug_expiration to projects that
+use Launchpad to track bugs. If the form is submitted before the page
+has loaded, the enable_bug_expiration will not be disabled by the
+JavaScript function. The constraint is enforced by the view class--the
+data is corrected instead of returning a error to the user.
+
+Jokosher uses Launchpad to track bugs and it has bug expiration enabled.
+Dafydd, the project registrant, switches the bug tracker to 'Somewhere
+else' before the page can complete loading. (TestBrowser does not
+support JavaScript so this behaviour is easy to simulate.)
+
+    >>> registrant_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> registrant_browser.open('http://launchpad.dev/jokosher')
+    >>> registrant_browser.title
+    'Jokosher Audio Editor in Launchpad'
+
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getControl('In Launchpad').selected
+    True
+
+    >>> registrant_browser.getControl(
+    ...     'Expire Incomplete bug reports when they '
+    ...     'become inactive').selected
+    True
+
+    >>> registrant_browser.getControl('Somewhere else').selected = True
+    >>> registrant_browser.getControl('Change').click()
+
+The Status of Launchpad uses shows the bug tracker was changed.
+
+    >>> content = find_main_content(registrant_browser.contents)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
+    Active
+    Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Translations
+    Doesn&rsquo;t use Answers
+
+Reviewing the edit page again, Dafydd, can see that bug expiration was
+also disabled by the switch from Launchpad Bugs.
+
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getControl('In Launchpad').selected
+    False
+
+    >>> registrant_browser.getControl(
+    ...     'Expire Incomplete bug reports when they '
+    ...     'become inactive').selected
+    False

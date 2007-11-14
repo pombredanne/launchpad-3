@@ -536,6 +536,9 @@ class DistributionEditView(LaunchpadEditFormView):
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when official_malone
+        # is set False. The contraint is enforced here in case the JavaScript
+        # fails load or activate.
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False

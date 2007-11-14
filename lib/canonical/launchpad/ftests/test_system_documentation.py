@@ -25,8 +25,8 @@ from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
-    ILanguageSet, ILaunchBag, IPersonSet, IProductSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, ILanguageSet, ILaunchBag,
+    IPersonSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -184,7 +184,6 @@ def _createUbuntuBugTaskLinkedToQuestion():
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     ubuntu.addAnswerContact(ubuntu_team)
     ubuntu_question = ubuntu.newQuestion(
         sample_person, "Can't install Ubuntu",
@@ -263,15 +262,8 @@ def bugtaskExpirationSetUp(test):
     setUp(test)
     test.globs['create_old_bug'] = _create_old_bug
     test.globs['summarize_bugtasks'] = _summarize_bugtasks
-    test.globs['ubuntu'] = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['jokosher'] = getUtility(IProductSet).getByName('jokosher')
-    test.globs['thunderbird'] = getUtility(
-        IProductSet).getByName('thunderbird')
-    test.globs['firefox'] = getUtility(IProductSet).getByName('firefox')
     test.globs['sync'] = sync
     test.globs['commit'] = commit
-    test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
-        'test@canonical.com')
     login('test@canonical.com')
 
 

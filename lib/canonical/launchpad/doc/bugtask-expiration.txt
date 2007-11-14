@@ -56,8 +56,14 @@ bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
 
 The test harness provides create_old_bug() and summarize_bugtask()
-for creating old bugs and printing a summary of their state. It
-also provides ubuntu, hoary, jokosher, and thunderbird for our test.
+for creating old bugs and printing a summary of their state.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet, IProductSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> jokosher = getUtility(IProductSet).getByName('jokosher')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
 
     # A expirable bugtask. It will be expired because its conjoined
     # master can be expired.
@@ -78,6 +84,7 @@ Let's also make some bugs that almost qualify for expiration.
 
     # A bugtask whose status is not Incomplete is not expirable,
     # This one's status is New.
+    >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> new_bugtask = bugtaskset.createTask(
     ...     bug=ubuntu_bugtask.bug, owner=sample_person,
     ...     product=thunderbird)
@@ -114,7 +121,12 @@ Let's also make some bugs that almost qualify for expiration.
 
     # A bugtask that is not expirable; while the product uses Launchpad to
     # track bugs, enable_bug_expiration is set to False
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_expiration_bugtask = create_old_bug('no_expire', 61, firefox)
+    >>> no_expiration_bugtask.pillar.official_malone
+    True
+    >>> no_expiration_bugtask.pillar.enable_bug_expiration
+    False
 
 The ubuntu, hoary, and jokosher bugs are the only ones that can be
 expired. The other bugs do not meet one of the preconditions.
@@ -335,13 +347,8 @@ status changes.
 
 The bugtask no_expiration_bugtask has not been expired because it does
 not participate in bug expiration. When uses_bug_expiration is set to
-True for a project old bugs will be expired the next time the bugs are
+True for a project, old bugs will be expired the next time the bugs are
 expired.
-
-    >>> no_expiration_bugtask.pillar.official_malone
-    True
-    >>> no_expiration_bugtask.pillar.enable_bug_expiration
-    False
 
     >>> no_expiration_bugtask.pillar.enable_bug_expiration = True
     >>> sync(no_expiration_bugtask.pillar)
