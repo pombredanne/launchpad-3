@@ -112,6 +112,7 @@ class POTMsgSet(SQLBase):
             else:
                 comparing_date = current.date_reviewed
             query += " AND date_created > %s" % sqlvalues(comparing_date)
+
         result = TranslationMessage.select(query, clauseTables=['POFile'])
         return shortlist(result, longest_expected=20, hardlimit=100)
 
