@@ -17,7 +17,7 @@ CREATE TABLE BranchMergeRobot
   whiteboard TEXT,
   date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
     DEFAULT timezone('UTC'::text, now()),
-  UNIQUE(owner, name)
+  UNIQUE(name)
 );
 
 /*
@@ -142,4 +142,4 @@ CREATE INDEX branchmergeproposal__merger__idx
   ON BranchMergeProposal(merger);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 91, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 19, 0);
