@@ -890,11 +890,9 @@ class DateTimeFormatterAPI:
         else:
             amount = seconds
             unit = 'second'
-        if amount > 1:
-            s = 's'
-        else:
-            s = ''
-        result += '%s %s%s' % (amount, unit, s)
+        if amount != 1:
+            unit += 's'
+        result += '%s %s' % (amount, unit)
         if not future:
             result += ' ago'
         return result
