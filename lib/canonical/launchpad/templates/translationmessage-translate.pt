@@ -62,8 +62,10 @@
               translating into the first.
             </tal:comment>
             <label>Make suggestions from:</label>
-            <tal:language-widget content="structure view/alternative_language_widget" />
-            <input type="submit" name="select_alternate_language" value="Change" />
+            <tal:language-widget
+              content="structure view/alternative_language_widget" />
+            <input
+              type="submit" name="select_alternate_language" value="Change" />
           </form>
         </div>
 

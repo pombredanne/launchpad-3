@@ -9,8 +9,6 @@ __metaclass__ = type
 
 __all__ = []
 
-import unittest
-
 from canonical.functional import FunctionalDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests.test_system_documentation import (

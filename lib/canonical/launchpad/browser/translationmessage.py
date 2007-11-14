@@ -2,6 +2,19 @@
 
 """View classes for ITranslationMessage interface."""
 
+__metaclass__ = type
+
+__all__ = [
+    'BaseTranslationView',
+    'CurrentTranslationMessageAppMenus',
+    'CurrentTranslationMessageFacets',
+    'CurrentTranslationMessageIndexView',
+    'CurrentTranslationMessagePageView',
+    'CurrentTranslationMessageView',
+    'CurrentTranslationMessageZoomedView',
+    'POMsgSetSuggestions',
+    ]
+
 import cgi
 import datetime
 import gettextpo
@@ -26,27 +39,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
-    UnexpectedFormData, ITranslationMessage, TranslationConstants,
-    NotFoundError, ILaunchBag, IPOFileAlternativeLanguage,
-    ITranslationMessageSuggestions,
-    TranslationConflict)
+    ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
+    ITranslationMessageSuggestions, NotFoundError, TranslationConflict,
+    TranslationConstants, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, Link, LaunchpadView, canonical_url)
-from canonical.launchpad.webapp import urlparse
+    ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
-
-__metaclass__ = type
-
-__all__ = [
-    'BaseTranslationView',
-    'CurrentTranslationMessageAppMenus',
-    'CurrentTranslationMessageFacets',
-    'CurrentTranslationMessageIndexView',
-    'CurrentTranslationMessagePageView',
-    'CurrentTranslationMessageView',
-    'CurrentTranslationMessageZoomedView',
-    'POMsgSetSuggestions',
-    ]
 
 #
 # Translation-related formatting functions
@@ -349,7 +347,8 @@ def _getSuggestionFromFormId(form_id):
     # Extract the suggestion ID.
     suggestion_id = int(expr_match.group(3))
 
-    # XXX Enable this again once browser code is migrated.
+    # XXX CarlosPerelloMarin 2007-11-14: Enable this again once browser code
+    # is migrated.
     #posubmissionset = getUtility(IPOSubmissionSet)
     #suggestion = posubmissionset.getPOSubmissionByID(suggestion_id)
 
@@ -412,7 +411,8 @@ class BaseTranslationView(LaunchpadView):
             Questions list</a>.
             </p>
             <p>
-            This only needs to be done once per language. Thanks for helping Launchpad Translations.
+            This only needs to be done once per language. Thanks for helping
+            Launchpad Translations.
             </p>
             """ % self.pofile.language.englishname)
             return
@@ -494,8 +494,8 @@ class BaseTranslationView(LaunchpadView):
         raise NotImplementedError
 
     #
-    # Helper methods that should be used for TranslationMessageView.__init__() and
-    # _submitTranslations().
+    # Helper methods that should be used for TranslationMessageView.__init__()
+    # and _submitTranslations().
     #
 
     def _storeTranslations(self, potmsgset):
@@ -504,7 +504,7 @@ class BaseTranslationView(LaunchpadView):
         Return a string with an error if one occurs, otherwise None.
         """
         self._extractFormPostedTranslations(potmsgset)
-        translations = self.form_posted_translations.get(potmsgset, None)
+        translations = self.form_posted_translations.get(potmsgset, {})
         if not translations:
             # A post with no content -- not an error, but nothing to be
             # done.
@@ -680,7 +680,8 @@ class BaseTranslationView(LaunchpadView):
         """Look for translations for this `POTMsgSet` in the form submitted.
 
         Store the new translations at self.form_posted_translations and its
-        fuzzy status at self.form_posted_needsreview, keyed on the `POTMsgSet`.
+        fuzzy status at self.form_posted_needsreview, keyed on the
+        `POTMsgSet`.
 
         In this method, we look for various keys in the form, and use them as
         follows:
@@ -796,8 +797,8 @@ class BaseTranslationView(LaunchpadView):
                 potmsgset):
                 self.form_posted_translations_has_store_flag[potmsgset] = []
             if store:
-                self.form_posted_translations_has_store_flag[potmsgset].append(
-                    pluralform)
+                self.form_posted_translations_has_store_flag[
+                    potmsgset].append(pluralform)
         else:
             raise AssertionError('More than %d plural forms were submitted!'
                                  % self.MAX_PLURAL_FORMS)
@@ -1005,16 +1006,18 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.suggestion_blocks = {}
         self.suggestions_count = {}
         self.pluralform_indices = range(self.context.plural_forms)
-        if False:
-            # XXX Disabled to get everything else working.
-            for index in self.pluralform_indices:
-                non_editor, elsewhere, wiki, alt_lang_suggestions = \
-                    self._buildAllSuggestions(index)
-                self.suggestion_blocks[index] = \
-                    [non_editor, elsewhere, wiki, alt_lang_suggestions]
-                self.suggestions_count[index] = (
-                    len(non_editor.submissions) + len(elsewhere.submissions) +
-                    len(wiki.submissions) + len(alt_lang_suggestions.submissions))
+        # XXX CarlosPerelloMarin 2007-11-14: Disabled to get everything else
+        # working.
+        #
+        #for index in self.pluralform_indices:
+        #    non_editor, elsewhere, wiki, alt_lang_suggestions = \
+        #        self._buildAllSuggestions(index)
+        #    self.suggestion_blocks[index] = \
+        #        [non_editor, elsewhere, wiki, alt_lang_suggestions]
+        #    self.suggestions_count[index] = (
+        #        len(non_editor.submissions) + len(elsewhere.submissions) +
+        #        len(wiki.submissions) +
+        #        len(alt_lang_suggestions.submissions))
 
         for index in self.pluralform_indices:
             self.suggestion_blocks[index] = []
@@ -1037,8 +1040,10 @@ class CurrentTranslationMessageView(LaunchpadView):
                              count_lines(submitted_translation) > 1 or
                              count_lines(self.singular_text) > 1 or
                              count_lines(self.plural_text) > 1)
-            is_same_translator = self.context.submitter == self.context.reviewer
-            is_same_date = self.context.date_created == self.context.date_reviewed
+            is_same_translator = (
+                self.context.submitter == self.context.reviewer)
+            is_same_date = (
+                self.context.date_created == self.context.date_reviewed)
             if self.context.is_imported:
                 # Imported one matches the current one.
                 imported_translationmessage = None
@@ -1191,7 +1196,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             self.user_is_official_translator, self.form_is_writeable)
 
     def getOfficialTranslation(self, index, is_imported=False):
-        """Return active or published translation for plural form 'index'."""
+        """Return current or imported translation for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.context.pofile.language.displayname))
@@ -1212,11 +1217,11 @@ class CurrentTranslationMessageView(LaunchpadView):
             return None
 
     def getCurrentTranslation(self, index):
-        """Return the active translation for the pluralform 'index'."""
+        """Return the current translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index)
 
     def getImportedTranslation(self, index):
-        """Return the published translation for the pluralform 'index'."""
+        """Return the imported translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index, is_imported=True)
 
     def getSubmittedTranslation(self, index):

@@ -23,9 +23,9 @@
               2004-05-22
             </span><br />
             <b>Domain:</b>
-            <span tal:replace="context/translation_domain">
+            <tal:translation_domain replace="context/translation_domain">
               foobar
-            </span><br />
+            </tal:translation_domain><br />
             <b>Priority:</b>
             <span tal:replace="context/priority">34</span><br />
             <b>Translation Group(s):</b><br />

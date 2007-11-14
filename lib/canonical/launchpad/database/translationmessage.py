@@ -36,11 +36,11 @@ class TranslationMessageMixIn:
             # This message is a singular message.
             return 1
         elif self.pofile.language.pluralforms is None:
-            # It's a plural form but we don't know plural forms for this
+            # It's a plural form, but we don't know plural forms for this
             # message. Fallback to '2'.
             return 2
         else:
-            # It's a plural form and we know it's number of entries for this
+            # It's a plural form, and we know it's number of entries for this
             # language.
             return self.pofile.language.pluralforms
 
@@ -55,8 +55,9 @@ class TranslationMessageMixIn:
 class DummyTranslationMessage(TranslationMessageMixIn):
     """Represents an `ITranslationMessage` where we don't yet HAVE it.
 
-    It's useful so we don't need to create them in our database to be able to
-    render that translation message without any non default information.
+    We do not put TranslationMessages in the database when we only have
+    default information. We can represent them from the existing data and
+    logic.
     """
     implements(ITranslationMessage)
 
@@ -65,7 +66,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         # which case, the dummy one must not be used.
         assert potmsgset.getCurrentTranslationMessage(
             pofile.language) is None, (
-                'This translation message already exists in the database')
+                'This translation message already exists in the database.')
 
         self.id = None
         self.pofile = pofile
@@ -141,7 +142,15 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='was_fuzzy_in_last_import', notNull=True, default=False)
 
     def _set_is_current(self, value):
-        """Unset current message before setting this as current."""
+        """Unset current message before setting this as current.
+
+        :param value: Whether we want this translation message as the new
+            current one.
+
+        If there is already another current message, we unset it first.
+        """
+        assert value is not None, 'is_current field cannot be None.'
+
         if value and not self.is_current:
             # We are setting this message as the current one. We need to
             # change current one to non current before.
@@ -159,7 +168,15 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         self._SO_set_is_current(value)
 
     def _set_is_imported(self, value):
-        """Unset current imported message before setting this as imported."""
+        """Unset current imported message before setting this as imported.
+
+        :param value: Whether we want this translation message as the new
+            imported one.
+
+        If there is already another imported message, we unset it first.
+        """
+        assert value is not None, 'is_imported field cannot be None.'
+
         if value and not self.is_imported:
             # We are setting this message as the current one. We need to
             # change current one to non current before.
@@ -174,8 +191,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 # to TRUE.
                 imported_translation_message.syncUpdate()
 
-
-
         self._SO_set_is_imported(value)
 
     def _get_was_obsolete_in_last_import(self):
@@ -183,7 +198,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         When the message is not imported makes no sense to use this flag.
         """
-        assert self.is_imported, ('The message is not imported')
+        assert self.is_imported, 'The message is not imported.'
 
         return self._SO_get_was_obsolete_in_last_import()
 
@@ -192,7 +207,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         When the message is not imported makes no sense to use this flag.
         """
-        assert self.is_imported, ('The message is not imported')
+        assert self.is_imported, 'The message is not imported.'
 
         return self._SO_get_was_fuzzy_in_last_import()
 
