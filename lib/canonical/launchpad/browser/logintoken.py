@@ -21,14 +21,15 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
-from zope.interface import directlyProvides, Interface
+from zope.interface import alsoProvides, directlyProvides, Interface
 
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import (
+    IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
@@ -223,6 +224,7 @@ class ClaimTeamView(
     def setUpWidgets(self, context=None):
         self.form_fields['teamowner'].for_display = True
         super(ClaimTeamView, self).setUpWidgets(context=self.claimed_profile)
+        alsoProvides(self.widgets['teamowner'], IAlwaysSubmittedWidget)
 
     @property
     def initial_values(self):
