@@ -278,7 +278,8 @@ in the specific package.
 Only bugs that the supplied user has access to will be counted:
 
     >>> bug_nine = getUtility(IBugSet).get(9)
-    >>> bug_nine.private = True
+    >>> bug_nine.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> flush_database_updates()
 
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)

@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
   <tal:block replace="nothing">
     You can include this listing in any page with code that looks like this:
       <div tal:replace="structure context/path/to/team/@@+teamlist" />
@@ -41,3 +47,4 @@
       </tr>
     </tbody>
   </table>
+</tal:root>

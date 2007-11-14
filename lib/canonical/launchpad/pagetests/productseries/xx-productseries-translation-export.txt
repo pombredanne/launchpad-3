@@ -55,7 +55,7 @@ The request must specify a file format.
     >>> user_browser.getControl('Format:').clear() 
     >>> user_browser.getControl('Request Download').click()
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     Please select a valid format for download.
 
@@ -67,7 +67,7 @@ The most usual and most well-supported format is PO.
     >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     Your request has been received. Expect to receive an email shortly.
 
@@ -79,7 +79,7 @@ An alternative is MO.
     >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     Your request has been received. Expect to receive an email shortly.
 
@@ -90,7 +90,7 @@ Where there are no translation files to be exported, the user is not offered
 the option to download any.
 
     >>> user_browser.open('http://translations.launchpad.dev/bzr/trunk/+export')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     This product series does not have any translation files available for
     download.

@@ -64,8 +64,7 @@
   This new wiki is added in 'Other wiki names' section.
 
   >>> import re
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> other_wiki_names_row = soup.first(
   ...     'h2', text='Other wiki names').findParent('tr')
   >>> wiki_input = other_wiki_names_row.findNext(
@@ -102,7 +101,7 @@
   >>> browser.url
   'http://localhost/~name16/+editwikinames'
 
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> print soup.first('input', attrs=dict(name=wiki_input_id))['value']
   http://foo.bar.com/wiki/
   >>> print soup.first('input', attrs=dict(name=wikiname_input_id))['value']

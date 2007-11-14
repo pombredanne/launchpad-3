@@ -10,6 +10,7 @@ import os
 import sys
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
@@ -20,26 +21,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingPriority)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
-    ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
-    ArchiveCruftCheckerError)
-
-# XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
-# moved to the publisher test domain as soon as we have it.
-def createTestArchive():
-    """Creates a fresh test archive based on sampledata."""
-    script = os.path.join(config.root, "scripts", "publish-distro.py")
-    process = subprocess.Popen([sys.executable, script, "-C", "-q",
-                                "-d", 'ubuntutest'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    garbage = process.stderr.read()
-    garbage = process.stdout.read()
-    return process.wait()
-
-def removeTestArchive():
-    """Remove the entire test archive directory from the filesystem."""
-    shutil.rmtree("/var/tmp/archive/")
-
+    ArchiveOverrider, ArchiveOverriderError)
 
 class LocalLogger(FakeLogger):
     """Local log facility """
@@ -67,17 +49,16 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         self.log = LocalLogger()
 
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.warty = self.ubuntu['warty']
         self.hoary = self.ubuntu['hoary']
         self.component_main = getUtility(IComponentSet)['main']
         self.section_base = getUtility(ISectionSet)['base']
 
         # Allow partner in warty and hoary.
         partner_component = getUtility(IComponentSet)['partner']
-        self.ubuntu_warty = self.ubuntu['warty']
-        self.ubuntu_hoary = self.ubuntu['hoary']
-        ComponentSelection(distroseries=self.ubuntu_warty,
+        ComponentSelection(distroseries=self.warty,
                            component=partner_component)
-        ComponentSelection(distroseries=self.ubuntu_hoary,
+        ComponentSelection(distroseries=self.hoary,
                            component=partner_component)
 
     def test_initialize_success(self):
@@ -224,6 +205,44 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             ArchiveOverriderError, changer.initialize)
         self.log.read()
 
+    def assertBinaryPublished(self, distroarchseries, name, version,
+                              component_name, section_name, priority_name):
+        """Assert if the current binary publication matches the given data."""
+        dasbpr = distroarchseries.getBinaryPackage(name)[version]
+        pub = dasbpr.current_publishing_record
+        self.assertEqual(pub.status.name, 'PUBLISHED')
+        self.assertEqual(pub.component.name, component_name)
+        self.assertEqual(pub.section.name, section_name)
+        self.assertEqual(pub.priority.name, priority_name)
+
+    def assertSourcePublished(self, distroseries, name, version,
+                              component_name, section_name):
+        """Assert if the current source publication matches the given data."""
+        dsspr = distroseries.getSourcePackage(name)[version]
+        pub = dsspr.current_published
+        self.assertEqual(pub.status.name, 'PUBLISHED')
+        self.assertEqual(pub.component.name, component_name)
+        self.assertEqual(pub.section.name, section_name)
+
+    def assertBinaryPending(self, distroarchseries, name, version,
+                            component_name, section_name, priority_name):
+        """Assert if the pending binary publication matches the given data."""
+        dasbpr = distroarchseries.getBinaryPackage(name)[version]
+        pub = dasbpr.publishing_history[0]
+        self.assertEqual(pub.status.name, 'PENDING')
+        self.assertEqual(pub.component.name, component_name)
+        self.assertEqual(pub.section.name, section_name)
+        self.assertEqual(pub.priority.name, priority_name)
+
+    def assertSourcePending(self, distroseries, name, version,
+                            component_name, section_name):
+        """Assert if the pending binary publication matches the given data."""
+        dsspr = distroseries.getSourcePackage(name)[version]
+        pub = dsspr.publishing_history[0]
+        self.assertEqual(pub.status.name, 'PENDING')
+        self.assertEqual(pub.component.name, component_name)
+        self.assertEqual(pub.section.name, section_name)
+
     def test_processSourceChange_success(self):
         """Check processSourceChange method call.
 
@@ -231,6 +250,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         already tested in place. Inspect the log to verify if the correct
         source was picked and correct arguments was passed.
         """
+        self.assertSourcePublished(
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
+
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base', priority_name='extra')
@@ -241,7 +263,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox/main/base' source overridden")
+            "INFO 'mozilla-firefox - 0.9/main/base' source overridden")
+
+        self.assertSourcePending(
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'base')
 
     def test_processSourceChange_with_changed_archive(self):
         """Check processSourceChange method call with an archive change.
@@ -249,7 +274,6 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Changing the component to 'partner' will result in the archive
         changing on the publishing record.  This is disallowed.
         """
-        # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='partner', section_name='base',
@@ -276,6 +300,33 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO Override Priority to: 'EXTRA'\n"
             "ERROR 'mozilla-firefox' source isn't published in hoary")
 
+    def test_processSourceChange_no_change(self):
+        """Source override when the source is already in the desired state.
+
+        Nothing is done and the situation is logged.
+        """
+        self.assertSourcePublished(
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
+
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='warty',
+            component_name='main', section_name='web',
+            priority_name='extra')
+        changer.initialize()
+        changer.processSourceChange('mozilla-firefox')
+        self.assertEqual(
+            self.log.read(),
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'web'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'mozilla-firefox - 0.9/main/editors' remained the same")
+
+        # Note that there is already another PENDING publishing record
+        # for mozilla-firefox in warty and it is targeted to section 'base'
+        # XXX cprov 20071020: we don't treat this case very well.
+        self.assertSourcePending(
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.
 
@@ -283,19 +334,77 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         is already tested in place. Inspect the log messages, check if the
         correct binary was picked and correct argument was passed.
         """
+        hoary_i386 = self.hoary['i386']
+        self.assertBinaryPublished(
+            hoary_i386, 'pmount', '0.1-1', 'universe', 'editors', 'IMPORTANT')
+
+        hoary_hppa = self.hoary['hppa']
+        self.assertBinaryPublished(
+            hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
+
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
-            component_name='main', section_name='base', priority_name='extra')
+            component_name='main', section_name='devel', priority_name='extra')
         changer.initialize()
         changer.processBinaryChange('pmount')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'base'\n"
+            "INFO Override Section to: 'devel'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
-            "INFO 'pmount/universe/editors/IMPORTANT' binary "
-                "overridden in hoary/i386")
+            "INFO 'pmount-2:1.9-1/main/base/EXTRA' binary "
+                "overridden in hoary hppa\n"
+            "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
+                "overridden in hoary i386")
+
+        self.assertBinaryPending(
+            hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
+        self.assertBinaryPending(
+            hoary_hppa, 'pmount', '2:1.9-1', 'main', 'devel', 'EXTRA')
+
+    def test_processBinaryChangeWithBuildInParentRelease(self):
+        """Check if inherited binaries get overriden correctly.
+
+        Modify the build records in question to emulate the situation where
+        the binaries were built in the parent_series.
+        """
+        hoary_i386 = self.hoary['i386']
+        self.assertBinaryPublished(
+            hoary_i386, 'pmount', '0.1-1', 'universe', 'editors', 'IMPORTANT')
+
+        hoary_hppa = self.hoary['hppa']
+        self.assertBinaryPublished(
+            hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
+
+        pmount_i386 = hoary_i386.getBinaryPackage('pmount')['0.1-1']
+        i386_build = removeSecurityProxy(
+            pmount_i386.binarypackagerelease.build)
+        i386_build.distroarchseries = self.warty['i386']
+
+        pmount_hppa = hoary_hppa.getBinaryPackage('pmount')['2:1.9-1']
+        hppa_build = removeSecurityProxy(
+            pmount_hppa.binarypackagerelease.build)
+        hppa_build.distroarchseries = self.warty['hppa']
+
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='main', section_name='devel', priority_name='extra')
+        changer.initialize()
+        changer.processBinaryChange('pmount')
+        self.assertEqual(
+            self.log.read(),
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'devel'\n"
+            "INFO Override Priority to: 'EXTRA'\n"
+            "INFO 'pmount-2:1.9-1/main/base/EXTRA' binary "
+                "overridden in hoary hppa\n"
+            "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
+                "overridden in hoary i386")
+
+        self.assertBinaryPending(
+            hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
+        self.assertBinaryPending(
+            hoary_hppa, 'pmount', '2:1.9-1', 'main', 'devel', 'EXTRA')
 
     def test_processBinaryChange_with_changed_archive(self):
         """Check processBinaryChange method call with an archive change.
@@ -303,7 +412,6 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Changing the component to 'partner' will result in the archive
         changing.  This is disallowed.
         """
-        # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='partner', section_name='base',
@@ -337,25 +445,46 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Inspect the log and to ensure we are passing correct arguments and
         picking the correct source.
         """
+        warty_i386 = self.warty['i386']
+        self.assertBinaryPublished(
+            warty_i386, 'mozilla-firefox', '1.0', 'main', 'base', 'IMPORTANT')
+        self.assertBinaryPublished(
+            warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'base', 'EXTRA')
+
+        warty_hppa = self.warty['hppa']
+        self.assertBinaryPublished(
+            warty_hppa, 'mozilla-firefox', '0.9', 'main', 'base', 'EXTRA')
+        self.assertBinaryPublished(
+            warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'base', 'EXTRA')
+
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='main', section_name='base',
+            component_name='main', section_name='web',
             priority_name='extra')
         changer.initialize()
         changer.processChildrenChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'base'\n"
+            "INFO Override Section to: 'web'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox/main/base/IMPORTANT' "
-                "binary overridden in warty/i386\n"
-            "INFO 'mozilla-firefox/main/base/EXTRA' "
-                "binary overridden in warty/hppa\n"
-            "INFO 'mozilla-firefox-data/main/base/EXTRA' "
-                "binary overridden in warty/hppa\n"
-            "INFO 'mozilla-firefox-data/main/base/EXTRA' "
-                "binary overridden in warty/i386")
+            "INFO 'mozilla-firefox-1.0/main/base/IMPORTANT' "
+                "binary overridden in warty i386\n"
+            "INFO 'mozilla-firefox-0.9/main/base/EXTRA' "
+                "binary overridden in warty hppa\n"
+            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
+                "binary overridden in warty hppa\n"
+            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
+                "binary overridden in warty i386")
+
+        self.assertBinaryPending(
+            warty_i386, 'mozilla-firefox', '1.0', 'main', 'web', 'EXTRA')
+        self.assertBinaryPending(
+            warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'web', 'EXTRA')
+        self.assertBinaryPending(
+            warty_hppa, 'mozilla-firefox', '0.9', 'main', 'web', 'EXTRA')
+        self.assertBinaryPending(
+            warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'web', 'EXTRA')
 
     def test_processChildrenChange_error(self):
         """processChildrenChange warns the user about an unpublished source.
@@ -387,77 +516,6 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'EXTRA'\n"
             "WARNING 'pmount' has no binaries published in hoary")
-
-
-class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
-    layer = LaunchpadZopelessLayer
-    dbuser = config.archivepublisher.dbuser
-
-    def setUp(self):
-        """Setup the test environment.
-
-        Retrieve useful instances and create a test archive.
-        """
-        LaunchpadZopelessTestCase.setUp(self)
-        self.log = LocalLogger()
-
-        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-        self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        self.archive_path = "/var/tmp/archive"
-        createTestArchive()
-
-    def tearDown(self):
-        """Clean up test environment and remove the test archive."""
-        LaunchpadZopelessTestCase.tearDown(self)
-        removeTestArchive()
-
-    def test_initialize_success(self):
-        """Test ArchiveCruftChecker initialization process.
-
-        Check if the correct attributes are built after initialization.
-        """
-        checker = ArchiveCruftChecker(
-            self.log, distribution_name='ubuntutest', suite='breezy-autotest',
-            archive_path=self.archive_path)
-        checker.initialize()
-        self.assertEqual(self.ubuntutest, checker.distro)
-        self.assertEqual(self.breezy_autotest, checker.distroseries)
-        self.assertEqual(PackagePublishingPocket.RELEASE, checker.pocket)
-        self.assertEqual(0, len(checker.nbs_to_remove))
-        self.assertEqual(0, len(checker.real_nbs))
-        self.assertEqual(0, len(checker.dubious_nbs))
-        self.assertEqual(0, len(checker.bin_pkgs))
-        self.assertEqual(0, len(checker.arch_any))
-        self.assertEqual(0, len(checker.source_versions))
-        self.assertEqual(0, len(checker.source_binaries))
-        self.log.read()
-
-    def test_initialize_unknown_suite(self):
-        """ArchiveCruftChecker should raise on an unknown suite."""
-        checker = ArchiveCruftChecker(
-            self.log, distribution_name='ubuntu', suite='misarable',
-            archive_path=self.archive_path)
-        self.assertRaises(
-            ArchiveCruftCheckerError, checker.initialize)
-        self.log.read()
-
-    def test_initialize_unknown_distribution(self):
-        """ArchiveCruftChecker should raise on an unknown distribution."""
-        checker = ArchiveCruftChecker(
-            self.log, distribution_name='foobuntu', suite='breezy-autotest',
-            archive_path=self.archive_path)
-        self.assertRaises(
-            ArchiveCruftCheckerError, checker.initialize)
-        self.log.read()
-
-    def test_initialize_no_distro_in_archive(self):
-        """ArchiveCruftChecker should raise on the absence of distribution."""
-        checker = ArchiveCruftChecker(
-            self.log, distribution_name='ubuntu', suite='breezy-autotest',
-            archive_path=self.archive_path)
-        self.assertRaises(
-            ArchiveCruftCheckerError, checker.initialize)
-        self.log.read()
 
 
 def test_suite():

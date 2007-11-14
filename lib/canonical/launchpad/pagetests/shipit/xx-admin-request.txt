@@ -121,7 +121,8 @@ the requests made by other users using the same address.
 == Making new requests ==
 
 One other thing that shipit admins can do is to make new requests on behalf
-of other people, containing any number of CDs they want.
+of other people, containing any number of CDs they want, and even including
+CDs of the Server edition.
 
   >>> browser.open('http://shipit.ubuntu.dev/adminrequest')
   >>> browser.url
@@ -131,6 +132,8 @@ of other people, containing any number of CDs they want.
   >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '5'
   >>> browser.getControl(name='field.kubuntu_quantityx86').value = '10'
   >>> browser.getControl(name='field.kubuntu_quantityamd64').value = '2'
+  >>> browser.getControl(name='field.server_quantityx86').value = '1'
+  >>> browser.getControl(name='field.server_quantityamd64').value = '1'
 
   >>> browser.getControl('Name:').value = 'Guilherme Salgado'
   >>> browser.getControl('Address:').value = 'Rua Clovis Bevilacqua, 145'
@@ -156,4 +159,7 @@ approved.
   '10'
   >>> browser.getControl(name='field.kubuntu_quantityamd64approved').value
   '2'
-
+  >>> browser.getControl(name='field.server_quantityx86approved').value
+  '1'
+  >>> browser.getControl(name='field.server_quantityamd64approved').value
+  '1'

@@ -101,7 +101,7 @@ deb-src <a tal:attributes="href context/archive_url"
            condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing sortable" id="packages_list" tal:condition="batch">
+      <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
             <th colspan="2">Source</th>

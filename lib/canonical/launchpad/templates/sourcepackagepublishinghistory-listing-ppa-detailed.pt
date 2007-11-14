@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
   <tr class="ppa_package_row">
      <td style="white-space: nowrap"><a href="#"
             tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img 
@@ -30,9 +36,10 @@
          style="padding-left: 1em">No files published for this package.</span>
       <ul tal:repeat="file published_source_and_binary_files"
           style="margin-top: 0; margin-bottom: 0">
-        <li><a tal:attributes ="href file/archive_url"
+        <li><a tal:attributes ="href file/url"
                tal:content="string:${file/filename}"></a>
                 (<span tal:content="file/filesize/fmt:bytes" />)</li>
       </ul>
     </td>
   </tr>
+</tal:root>
