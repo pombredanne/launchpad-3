@@ -96,38 +96,6 @@ class POTMsgSet(SQLBase):
             AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
 
-    def getNewSuggestions(self, language):
-        """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(language)
-        if current is not None:
-            query = """
-                TranslationMessage.potmsgset = %s AND
-                POFile.id = TranslationMessage.pofile AND
-                POFile.language = %s AND
-                TranslationMessage.date_created > %s
-                """ % sqlvalues(self, language, current.date_created)
-        else:
-            query = """
-                TranslationMessage.potmsgset = %s AND
-                POFile.id = TranslationMessage.pofile AND
-                POFile.language = %s
-                """ % sqlvalues(self, language)
-        result = TranslationMessage.select(query, clauseTables=['POFile'])
-        return shortlist(result, longest_expected=20, hardlimit=100)
-
-    def flags(self):
-        if self.flagscomment is None:
-            return []
-        else:
-            return [flag
-                    for flag in self.flagscomment.replace(' ', '').split(',')
-                    if flag != '']
-
-
-    def getTranslationMessages(self, language):
-        # XXX: do we really need this one?
-        pass
-
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
         query = """
@@ -144,7 +112,20 @@ class POTMsgSet(SQLBase):
             else:
                 comparing_date = current.date_reviewed
             query += " AND date_created > %s" % sqlvalues(comparing_date)
-        return TranslationMessage.select(query, clauseTables=['POFile'])
+        result = TranslationMessage.select(query, clauseTables=['POFile'])
+        return shortlist(result, longest_expected=20, hardlimit=100)
+
+    def getTranslationMessages(self, language):
+        # XXX: do we really need this one?
+        pass
+
+    def flags(self):
+        if self.flagscomment is None:
+            return []
+        else:
+            return [flag
+                    for flag in self.flagscomment.replace(' ', '').split(',')
+                    if flag != '']
 
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""
@@ -265,28 +246,27 @@ class POTMsgSet(SQLBase):
                     sqlvalues(pluralform, potranslations[pluralform]))
         return TranslationMessage.selectOne(query, clauseTables=['POFile'])
 
-    def _makeTranslationMessageCurrent(self, pofile, new_message,
-                                       current_message, is_imported,
-                                       submitter, is_fuzzy):
+    def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
+                                       submitter):
+        current_message = self.getCurrentTranslationMessage(
+            pofile.language)
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
             # or if the current message came from import (and is not a
             # non-fuzzy message being replaced by a fuzzy one)
             # or if current message is empty (deactivated translation)
+            # fuzzy/empty imported translations should not replace
+            # non-fuzzy/non-empty imported translations
             if (current_message is None or
                 (current_message.is_imported and
-                 (current_message.is_fuzzy or not is_fuzzy)) or
+                 (current_message.is_fuzzy or not new_message.is_fuzzy) and
+                 (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty):
                 new_message.is_current = True
-                # Don't update the submitter and date changed
-                # if there was no current message and an empty
-                # message is submitted
-                if (not (current_message is None and
-                         new_message.is_empty)):
-                    pofile.lasttranslator = submitter
-                    pofile.date_changed = UTC_NOW
-            new_message.is_imported = True
+
+                pofile.lasttranslator = submitter
+                pofile.date_changed = UTC_NOW
         else:
             # Non-imported translations.
             new_message.is_current = True
@@ -415,13 +395,10 @@ class POTMsgSet(SQLBase):
                 # Set the new current message if it validates ok.
                 if (new_message.validation_status ==
                     TranslationValidationStatus.OK):
-                    current_message = self.getCurrentTranslationMessage(
-                        pofile.language)
                     # Makes the new_message current if needed and also
                     # assignes karma for translation approval
                     self._makeTranslationMessageCurrent(
-                        pofile, new_message, current_message, is_imported,
-                        submitter, is_fuzzy)
+                        pofile, new_message, is_imported, submitter)
 
             matching_message = new_message
         else:
@@ -436,16 +413,13 @@ class POTMsgSet(SQLBase):
                         'avoid possible conflicts. Please review them.')
 
             else:
-                current_message = self.getCurrentTranslationMessage(
-                    pofile.language)
                 # Set the new current message if it validates ok.
                 if (matching_message.validation_status ==
                     TranslationValidationStatus.OK):
                     # Makes the new_message current if needed and also
                     # assignes karma for translation approval
                     self._makeTranslationMessageCurrent(
-                        pofile, matching_message, current_message, is_imported,
-                        submitter, is_fuzzy)
+                        pofile, matching_message, is_imported, submitter)
 
                 if not is_fuzzy:
                     matching_message.is_fuzzy = is_fuzzy
