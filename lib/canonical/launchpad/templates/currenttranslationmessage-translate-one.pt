@@ -494,7 +494,7 @@
               id string:${translation_dictionary/html_id_translation}_new;
               lang context/pofile/language/dashedcode;
               dir context/pofile/language/abbreviated_text_dir;
-              value translation_dictionary/translation;
+              value translation_dictionary/submitted_translation;
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               " />
@@ -507,7 +507,7 @@
             />
           <tal:multi-line condition="translation_dictionary/is_multi_line">
             <tal:with-content
-              condition="translation_dictionary/translation">
+              condition="translation_dictionary/submitted_translation">
               <tal:comment tal:replace="nothing">
                 We don't use textarea's tal:content tag because tal is not
                 generating the right html tags for translations (new lines
@@ -528,10 +528,10 @@
                   onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                   onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                 ">
-<tal:content replace="translation_dictionary/translation" /></textarea>
+<tal:content replace="translation_dictionary/submitted_translation" /></textarea>
             </tal:with-content>
             <tal:without-content
-              condition="not: translation_dictionary/translation">
+              condition="not: translation_dictionary/submitted_translation">
               <tal:comment tal:replace="nothing">
                 We are using an special case if we don't have any content for this
                 textarea because tal expressions leave empty lines behind so we

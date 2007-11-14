@@ -116,7 +116,7 @@ the system tells him that he's not allowed to see those pages.
 Although, an administrator can see the same page.
 
     >>> admin_browser.open(
-    ...     u'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
 
 Non existing languages are not viewable. English is a special case
 in that we store the translatable messages as English, so it cannot

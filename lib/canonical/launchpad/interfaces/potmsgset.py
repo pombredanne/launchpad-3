@@ -1,7 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Attribute, Interface
-from zope.schema import Field, Int, Object, Text
+from zope.interface import Interface, Attribute
+from zope.schema import Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pomsgid import IPOMsgID
@@ -13,20 +13,17 @@ __all__ = [
     'BrokenTextError',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Object, Text
-
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.pomsgid import IPOMsgID
-
 
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
 
+
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
-    id = Attribute("""An identifier for this POTMsgSet""")
+    id = Int(
+        title=_("The identifier of this POTMsgSet."),
+        readonly=True, required=True)
 
     context = Text(
         title=u"String used to disambiguate messages with identical msgids.")
@@ -102,10 +99,11 @@ class IPOTMsgSet(Interface):
         not a 'changed' translation, just a 'new' translation in Launchpad.
         """
 
-    def isTranslationNewerThan(language, timestamp):
+    def isTranslationNewerThan(pofile, timestamp):
         """Whether a current translation is newer than the `timestamp`.
 
-        :param language: language for which translations we are asking about.
+        :param pofile: translation file for which translations we are asking
+            about.
         :param timestamp: a timestamp we are comparing to.
 
         Returns True if there is a current and newer translation, and False

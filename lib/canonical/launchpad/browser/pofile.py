@@ -46,7 +46,6 @@ class POFileNavigation(Navigation):
 
     def traverse(self, name):
         """Return the IPOMsgSet associated with the given name."""
-
         assert self.request.method in ['GET', 'HEAD', 'POST'], (
             'We only know about GET, HEAD, and POST')
 
@@ -70,26 +69,18 @@ class POFileNavigation(Navigation):
 
         # Need to check in our database whether we have already the requested
         # TranslationMessage.
-        translation = potmsgset.getCurrentTranslationMessage(
+        translationmessage = potmsgset.getCurrentTranslationMessage(
             self.context.language)
 
-        if translation is not None:
+        if translationmessage is not None:
             # Already have a valid POMsgSet entry, just return it.
-            return translation
-        elif self.request.method in ['GET', 'HEAD']:
-            # It's just a query, get a fake one so we don't create new
-            # POMsgSet just because someone is browsing the web.
+            return translationmessage
+        else:
+            # Get a fake one so we don't create new TranslationMessage just
+            # because someone is browsing the web.
             return potmsgset.getCurrentDummyTranslationMessage(
                 self.context.language)
-        else:
-            # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
-            # We should check the kind of POST we got,
-            # a Log out action will be also a POST and we
-            # should not create a POMsgSet in that case.
-            # XXX This should not be needed anymore....
-            #return self.context.createTranslationMessageMessageSetFromMessageSet(potmsgset)
-            pass
+
 
 class POFileFacets(POTemplateFacets):
     usedfor = IPOFile

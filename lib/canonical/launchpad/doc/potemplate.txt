@@ -192,7 +192,7 @@ Or any fuzzy (need-review) entries:
 == relatives_by_name ==
 
 This property gives us an iterator of IPOTemplate objects that have the
-same IPOTemplateName and are 'current'.
+same name and are 'current'.
 
 This is the template we are working with:
 
@@ -200,7 +200,7 @@ This is the template we are working with:
   u'Template "evolution-2.2" in Evolution trunk'
 
 And this is the list of templates related with this one based on its
-IPOTemplateName:
+name:
 
   >>> for relative_potemplate in potemplate.relatives_by_name:
   ...     assert relative_potemplate.iscurrent

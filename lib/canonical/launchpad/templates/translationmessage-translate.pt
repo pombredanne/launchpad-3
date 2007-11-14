@@ -78,12 +78,14 @@
               <tr class="results">
                 <td colspan="5">
                   <!-- Paging doodads. -->
-                  <!--<tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />-->
+                  <tal:navigation
+                    replace="structure view/batchnav/@@+navigation-links-upper"
+                    />
                 </td>
               </tr>
             </thead>
             <tbody id="messages_to_translate">
-              <div tal:replace="structure view/pomsgset_view" />
+              <div tal:replace="structure view/translationmessage_view" />
             </tbody>
             <tfoot>
               <tr tal:condition="view/form_is_writeable">
@@ -105,7 +107,8 @@
 
         </form>
         <!-- Paging doodads. -->
-        <!--<tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />-->
+        <tal:navigation
+          replace="structure view/batchnav/@@+navigation-links-lower" />
       </tal:havepluralforms>
     </div>
 

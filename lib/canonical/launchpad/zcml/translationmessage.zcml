@@ -47,7 +47,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ITranslationMessage"
-        class="canonical.launchpad.browser.POMsgSetIndexView"
+        class="canonical.launchpad.browser.CurrentTranslationMessageIndexView"
         permission="zope.Public"
         name="+index"
         attribute="__call__"
@@ -65,8 +65,8 @@
         name="+translate"
         for="canonical.launchpad.interfaces.ITranslationMessage"
         permission="zope.Public"
-        template="../templates/translationmessage.pt"
-        class="canonical.launchpad.browser.CurrentTranslationMessageView"
+        template="../templates/translationmessage-translate.pt"
+        class="canonical.launchpad.browser.CurrentTranslationMessagePageView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 

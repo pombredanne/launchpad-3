@@ -38,7 +38,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
             SourcePackageName
             JOIN POTemplate ON
                 POTemplate.sourcepackagename = SourcePackageName.id AND
-                POTemplate.distrorelease = %s AND
+                POTemplate.distroseries = %s AND
                 POTemplate.languagepack = TRUE
         ORDER BY SourcePackageName.name, POTemplate.translation_domain
         """ % sqlvalues(series))

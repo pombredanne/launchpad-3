@@ -258,7 +258,7 @@ class FTPArchiveHandler:
         """Return SelectResults containing SourcePackagePublishingHistory."""
         return SourcePackagePublishingHistory.select(
             """
-            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.status = %s
@@ -273,9 +273,9 @@ class FTPArchiveHandler:
         """Return SelectResults containing BinaryPackagePublishingHistory."""
         return BinaryPackagePublishingHistory.select(
             """
-            BinaryPackagePublishingHistory.distroarchrelease =
-            DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries =
+            DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.status = %s
@@ -284,7 +284,7 @@ class FTPArchiveHandler:
                             pocket,
                             PackagePublishingStatus.PUBLISHED),
             prejoins=["binarypackagerelease.binarypackagename"],
-            orderBy="id", clauseTables=["DistroArchRelease"])
+            orderBy="id", clauseTables=["DistroArchSeries"])
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides generated, and generate them."""
@@ -495,7 +495,7 @@ class FTPArchiveHandler:
                     archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
-                    distroreleasename = %s
+                    distroseriesname = %s
                     """ % sqlvalues(self.distro,
                                     self.distro.main_archive,
                                     PackagePublishingStatus.PUBLISHED,
@@ -509,7 +509,7 @@ class FTPArchiveHandler:
                     archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
-                    distroreleasename = %s
+                    distroseriesname = %s
                     """ % sqlvalues(self.distro,
                                     self.distro.main_archive,
                                     PackagePublishingStatus.PUBLISHED,

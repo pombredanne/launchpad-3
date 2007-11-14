@@ -155,19 +155,16 @@ class POTMsgSet(SQLBase):
         else:
             return False
 
-    def isTranslationNewerThan(self, language, timestamp):
+    def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(language)
+        current = self.getCurrentTranslationMessage(pofile.language)
         if current is None:
             return False
         date_updated = current.date_created
         if (current.date_reviewed is not None and
             current.date_reviewed > date_updated):
             date_updated = current.date_reviewed
-        if date_updated is not None and date_updated > timestamp:
-            return True
-        else:
-            return False
+        return (date_updated is not None and date_updated > timestamp)
 
     def _list_of_msgids(self):
         """Return a list of [singular_text, plural_text] if the message
@@ -274,7 +271,8 @@ class POTMsgSet(SQLBase):
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
-            # or if the current message came from import
+            # or if the current message came from import (and is not a
+            # non-fuzzy message being replaced by a fuzzy one)
             # or if current message is empty (deactivated translation)
             if (current_message is None or
                 (current_message.is_imported and
@@ -365,8 +363,8 @@ class POTMsgSet(SQLBase):
 
         # Our current submission is newer than 'lock_timestamp'
         # and we try to change it, so just add a suggestion.
-        if (not is_imported and not is_fuzzy and
-            self.isTranslationNewerThan(pofile.language, lock_timestamp)):
+        if (not just_a_suggestion and not is_imported and not is_fuzzy and
+            self.isTranslationNewerThan(pofile, lock_timestamp)):
             just_a_suggestion = True
             warn_about_lock_timestamp = True
 
@@ -452,6 +450,21 @@ class POTMsgSet(SQLBase):
                 if not is_fuzzy:
                     matching_message.is_fuzzy = is_fuzzy
 
+        if is_imported:
+            # Note that the message is imported.
+            matching_message.is_imported = is_imported
+
+        # We need this sync so we don't set self.isfuzzy to the wrong
+        # value because cache problems. See bug #102382 as an example of what
+        # happened without having this flag + broken code. Our tests were not
+        # able to find the problem.
+        # XXX CarlosPerelloMarin 2007-11-14 Is there any way to avoid the
+        # sync() call and leave it as syncUpdate? Without it we have cache
+        # problems with workflows like the ones in
+        # xx-pofile-translate-gettext-error-middle-page.txt so we don't see
+        # the successful submissions when there are other errors in the same
+        # page.
+        matching_message.sync()
         return matching_message
 
     def applySanityFixes(self, text):

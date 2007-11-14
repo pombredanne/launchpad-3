@@ -354,7 +354,7 @@ class TranslationImporter:
                     self.pofile,
                     is_imported=translation_import_queue_entry.is_published)
         errors = []
-        use_pofile = None
+        use_pofile = self.pofile
         for message in translation_file.messages:
             if not message.msgid_singular:
                 # The message has no msgid, we ignore it and jump to next
@@ -425,7 +425,6 @@ class TranslationImporter:
                 flags_comment = u""
             flags_comment += u", ".join(message.flags)
 
-            use_pofile = self.pofile
 
             if self.pofile is None:
                 # The import is a translation template file
@@ -520,7 +519,7 @@ class TranslationImporter:
                 errors.append(error)
 
             translation_message.flags_comment = flags_comment
-            translation_message.comment_text = message.comment
+            translation_message.comment = message.comment
             if translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
@@ -534,10 +533,9 @@ class TranslationImporter:
                 (msgid, context) = unseen_message
                 potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
                     msgid, context=context)
-                translation_message = potmsgset.getCurrentTranslationMessage(
+                translationmessage = potmsgset.getImportedTranslationMessage(
                     use_pofile.language)
-                if translation_message is not None:
-                    translation_message.was_obsolete_in_last_import = True
-                    translation_message.is_current = False
+                if translationmessage is not None:
+                    translationmessage.is_imported = False
 
         return errors

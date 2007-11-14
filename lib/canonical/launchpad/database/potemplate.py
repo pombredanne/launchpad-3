@@ -33,7 +33,6 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
@@ -95,7 +94,7 @@ class POTemplate(SQLBase, RosettaStats):
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease', notNull=False, default=None)
+        dbName='distroseries', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
@@ -225,7 +224,7 @@ class POTemplate(SQLBase, RosettaStats):
               self.sourcepackagename is not None):
             return POTemplate.select('''
                 id <> %s AND
-                distrorelease = %s AND
+                distroseries = %s AND
                 sourcepackagename = %s AND
                 iscurrent
                 ''' % sqlvalues(
@@ -376,134 +375,6 @@ class POTemplate(SQLBase, RosettaStats):
             clauseTables=['Language'])
 
         return self._cached_pofiles_by_language[language_spec]
-
-    def getExternalSuggestions(self, potmsgsets, language):
-        """See `IPOTemplate`."""
-        assert language is not None, "We must know the language to use."
-
-        if not potmsgsets:
-            return
-        for potmsgset in potmsgsets:
-            assert potmsgset.potemplate == self, (
-                "Requesting external suggestions in wrong template.")
-
-        parameters = {}
-        parameters['this_template'] = quote(self)
-        parameters['language'] = quote(language)
-        parameters['wanted_msgids'] = ', '.join([
-            quote(msgid) for msgid in takers_for_msgid.keys()])
-
-        cur = cursor()
-
-        # Retrieve (the ids of) external suggestions, and for each, the
-        # message identifier (original English message, in the singular) it
-        # translates.
-        # The msgids come from the suggestions' potmsgsets, not from the
-        # potmsgsets we got in our parameter.  We need to know those msgids,
-        # but we avoid retrieving the potmsgsets from the database.
-        cur.execute("""
-            SELECT DISTINCT id, msgid_singular FROM (
-                SELECT
-                    DISTINCT ON (
-                        msgid_singular,
-                        msgstr0,
-                        msgstr1,
-                        msgstr2,
-                        msgstr3)
-                    Suggestion.id,
-                    Suggestion.msgstr0,
-                    Suggestion.msgstr1,
-                    Suggestion.msgstr2,
-                    Suggestion.msgstr3,
-                    POTMsgSet.msgid_singular
-                FROM TranslationMessage Suggestion
-                JOIN POTMsgSet ON Suggestion.potmsgset = POTMsgSet.id
-                JOIN POFile ON Suggestion.pofile = POFile.id
-                -- If this is slow, we can try joining POTemplate in through
-                -- POTMsgSet instead.
-                JOIN POTemplate ON POFile.potemplate = POTemplate.id
-                LEFT JOIN ProductSeries ON
-                    POTemplate.productseries = ProductSeries.id
-                LEFT JOIN Product ON ProductSeries.product = Product.id
-                LEFT JOIN DistroRelease ON
-                    POTemplate.distrorelease = DistroRelease.id
-                LEFT JOIN Distribution ON
-                    DistroRelease.distribution = Distribution.id
-                -- If there's a more recent translation message offering the
-                -- exact same translations, never mind the current one.
-                LEFT JOIN TranslationMessage AS Better ON
-                    Better.potmsgset = Suggestion.potmsgset AND
-                    COALESCE(Better.msgstr0, -1) =
-                        COALESCE(Suggestion.msgstr0, -1) AND
-                    COALESCE(Better.msgstr1, -1) =
-                        COALESCE(Suggestion.msgstr1, -1) AND
-                    COALESCE(Better.msgstr2, -1) =
-                        COALESCE(Suggestion.msgstr2, -1) AND
-                    COALESCE(Better.msgstr3, -1) =
-                        COALESCE(Suggestion.msgstr3, -1))
-                WHERE
-                    POTMsgSet.msgid_singular IN (%(wanted_msgids)s) AND
-                    POTemplate.id <> %(this_template)s AND
-                    POTemplate.iscurrent AND
-                    Suggestion.is_current AND
-                    POFile.language = %(language)s AND
-                    NOT Suggestion.is_fuzzy AND
-                    COALESCE(msgstr0, msgstr1, msgstr2, msgstr3)
-                        IS NOT NULL AND
-                    (Product.official_rosetta OR
-                     Distribution.official_rosetta) AND
-                    Better.id IS NULL
-                    )
-                ORDER BY
-                    msgid_singular,
-                    msgstr0,
-                    msgstr1,
-                    msgstr2,
-                    msgstr3,
-                    Suggestion.id DESC
-                ) AS Suggestions
-            """ % parameters)
-
-        external_suggestions = cur.fetchall()
-
-        if external_translations:
-            # Retrieve the actual suggestions.  Keep these in
-            # newest-to-oldest order, because that's the way the view
-            # class likes them.
-            messages_query = TranslationMessage.select(
-                "id IN (%s)" % ", ".join(
-                    [quote(id) for id in external_translations]),
-                orderBy="-datecreated")
-            messages = shortlist(
-                messages_query, longest_expected=100, hardlimit=200)
-        else:
-            messages = []
-
-        suggestions_by_id = dict(
-            (message.id, message) for message in messages)
-
-        # For each of the message identifiers belonging to potmsgsets,
-        # exactly which potmsgsets could benefit from a suggestion for
-        # that message identifier?  There could be multiple because the
-        # same message identifier may occur in different contexts.
-        takers_for_msgid = dict(
-            (potmsgset.msgid_singular, []) for potmsgset in potmsgsets)
-        for potmsgset in potmsgsets:
-            takers_for_msgid[potmsgset.msgid_singular].append(potmsgset)
-
-        # Figure out which of potmsgsets each suggestion is relevant to,
-        # and return our mapping from potmsgsets to various subsets of
-        # load_submissions.  The subsets may overlap because two
-        # potmsgsets could have the same msgid (i.e. translate the same
-        # string) but in different contexts.  The same suggestions would
-        # apply to both.
-        # Suggestions are still kept in new-to-old order.
-        result = dict((potmsgset, []) for potmsgset in potmsgsets)
-        for translationmessage_id, msgid in external_suggestions:
-            suggestion = suggestions_by_id[translationmessage_id]
-            result[takers_for_msgid[msgid]].append(suggestion)
-
-        return result
 
     def messageCount(self):
         """See `IRosettaStats`."""
@@ -849,20 +720,20 @@ class POTemplateSubset:
                 sqlvalues(productseries.id))
         elif distroseries is not None and from_sourcepackagename is not None:
             self.query = ('POTemplate.from_sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(from_sourcepackagename.id,
                                       distroseries.id))
             self.sourcepackagename = from_sourcepackagename
         elif distroseries is not None and sourcepackagename is not None:
             self.query = ('POTemplate.sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(sourcepackagename.id, distroseries.id))
         else:
             self.query = (
-                'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %s' % sqlvalues(distroseries.id))
-            self.orderby.append('DistroRelease.name')
-            self.clausetables.append('DistroRelease')
+                'POTemplate.distroseries = DistroSeries.id AND'
+                ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
+            self.orderby.append('DistroSeries.name')
+            self.clausetables.append('DistroSeries')
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -943,7 +814,7 @@ class POTemplateSubset:
         if self.productseries is not None:
             query.append('productseries = %s' % sqlvalues(self.productseries))
         if self.distroseries is not None:
-            query.append('distrorelease = %s' % sqlvalues(self.distroseries))
+            query.append('distroseries = %s' % sqlvalues(self.distroseries))
         if self.sourcepackagename is not None:
             query.append('sourcepackagename = %s' % sqlvalues(
                 self.sourcepackagename))
@@ -1036,7 +907,7 @@ class POTemplateSet:
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
             potemplate = POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         distroseries.id,
@@ -1050,7 +921,7 @@ class POTemplateSet:
                 return potemplate
 
             return POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         distroseries.id,

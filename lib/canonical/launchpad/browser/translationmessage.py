@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""View classes for POMsgSet classes."""
+"""View classes for ITranslationMessage interface."""
 
 import cgi
 import datetime
@@ -40,12 +40,12 @@ __metaclass__ = type
 __all__ = [
     'BaseTranslationView',
     'CurrentTranslationMessageAppMenus',
-    'CurrentTranslationMessageView',
     'CurrentTranslationMessageFacets',
-    'POMsgSetIndexView',
-    'POMsgSetPageView',
+    'CurrentTranslationMessageIndexView',
+    'CurrentTranslationMessagePageView',
+    'CurrentTranslationMessageView',
+    'CurrentTranslationMessageZoomedView',
     'POMsgSetSuggestions',
-    'POMsgSetZoomedView',
     ]
 
 #
@@ -261,7 +261,7 @@ class POTMsgSetBatchNavigator(BatchNavigator):
         BatchNavigator.__init__(self, results, request, start_value, size)
 
     def generateBatchURL(self, batch):
-        """Return a custom batch URL for IPOMsgSet's views."""
+        """Return a custom batch URL for `ITranslationMessage`'s views."""
         url = ""
         if batch is None:
             return url
@@ -322,9 +322,7 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
 #
 # Views
 #
-
-
-class POMsgSetIndexView:
+class CurrentTranslationMessageIndexView:
     """A view to forward to the translation form."""
 
     def __init__(self, context, request):
@@ -487,7 +485,7 @@ class BaseTranslationView(LaunchpadView):
         occurred.
 
         Implementing this method is complicated. It needs to find out
-        what POMsgSets were updated in the form post, call
+        what TranslationMessage were updated in the form post, call
         _storeTranslations() for each of those, check for errors that
         may have occurred during that (displaying them using
         addErrorNotification), and otherwise call _redirectToNextPage if
@@ -496,7 +494,7 @@ class BaseTranslationView(LaunchpadView):
         raise NotImplementedError
 
     #
-    # Helper methods that should be used for POMsgSetView.__init__() and
+    # Helper methods that should be used for TranslationMessageView.__init__() and
     # _submitTranslations().
     #
 
@@ -522,8 +520,12 @@ class BaseTranslationView(LaunchpadView):
         # to its current active translation.
         for index in translations:
             if index not in plural_indices_to_store:
-                if self.context.translations[index] is not None:
-                    translations[index] = self.context.translations[index]
+                translationmessage = potmsgset.getCurrentTranslationMessage(
+                    self.pofile.language)
+                if (translationmessage is not None and
+                    translationmessage.translations[index] is not None):
+                    translations[index] = (
+                        translationmessage.translations[index])
                 else:
                     translations[index] = u''
 
@@ -547,19 +549,19 @@ class BaseTranslationView(LaunchpadView):
             return None
 
     def _prepareView(self, view_class, current_translation_message, error):
-        """Collect data and build a POMsgSetView for display."""
+        """Collect data and build a TranslationMessageView for display."""
         # XXX: kiko 2006-09-27:
         # It would be nice if we could easily check if this is being
         # called in the right order, after _storeTranslations().
         translations = {}
         # Get translations that the user typed in the form.
         posted = self.form_posted_translations.get(
-            current_translation_message, None)
+            current_translation_message.potmsgset, None)
         # Get the flags set by the user to note whether 'New suggestion'
         # should be taken in consideration.
         plural_indices_to_store = (
             self.form_posted_translations_has_store_flag.get(
-                current_translation_message, []))
+                current_translation_message.potmsgset, []))
         # We are going to prepare the content of the translation form.
         for plural_index in range(current_translation_message.plural_forms):
             if posted is not None and posted[plural_index] is not None:
@@ -572,9 +574,10 @@ class BaseTranslationView(LaunchpadView):
 
         # Check the values we got with the submit for the 'Needs review' flag
         # so we prepare the new render with the same values.
-        if self.form_posted_needsreview.has_key(current_translation_message):
+        if self.form_posted_needsreview.has_key(
+            current_translation_message.potmsgset):
             is_fuzzy = self.form_posted_needsreview[
-                current_translation_message]
+                current_translation_message.potmsgset]
         else:
             is_fuzzy = current_translation_message.is_fuzzy
 
@@ -864,7 +867,7 @@ class BaseTranslationView(LaunchpadView):
         self._redirect(next_url)
 
 
-class POMsgSetPageView(BaseTranslationView):
+class CurrentTranslationMessagePageView(BaseTranslationView):
     """A view for the page that renders a single translation.
 
     See `BaseTranslationView` for details on how this works.
@@ -874,11 +877,11 @@ class POMsgSetPageView(BaseTranslationView):
         self.pofile = self.context.pofile
 
         # Since we are only displaying a single message, we only hold on to
-        # one error for it. The variable is set to the failing POMsgSet (a
-        # device of BaseTranslationView._storeTranslations) via
-        # _submitTranslations.
+        # one error for it. The variable is set to the failing
+        # TranslationMessage (a device of
+        # BaseTranslationView._storeTranslations) via _submitTranslations.
         self.error = None
-        self.pomsgset_view = None
+        self.translationmessage_view = None
 
         BaseTranslationView.initialize(self)
 
@@ -893,12 +896,12 @@ class POMsgSetPageView(BaseTranslationView):
 
     def _initializeTranslationMessageViews(self):
         """See `BaseTranslationView._initializeTranslationMessageViews`."""
-        self.pomsgset_view = self._prepareView(POMsgSetZoomedView,
-                                               self.context, self.error)
+        self.translationmessage_view = self._prepareView(
+            CurrentTranslationMessageZoomedView, self.context, self.error)
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
-        self.error = self._storeTranslations(self.context)
+        self.error = self._storeTranslations(self.context.potmsgset)
         if self.error:
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided. "
@@ -993,7 +996,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         # order of 30.
 
         # This code is where we hit the database collecting suggestions for
-        # this IPOMsgSet.
+        # this ITranslationMessage.
 
         # We store lists of TranslationMessageSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
@@ -1040,7 +1043,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'plural_index': index,
                 'current_translation': text_to_html(
                     current_translation, self.context.potmsgset.flags()),
-                'translation': submitted_translation,
+                'submitted_translation': submitted_translation,
                 'imported_translation': text_to_html(
                     imported_translation, self.context.potmsgset.flags()),
                 'imported_translation_message': (
@@ -1309,17 +1312,17 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     @property
     def source_comment(self):
-        """Return the source code comments for this IPOMsgSet."""
+        """Return the source code comments for this ITranslationMessage."""
         return self.context.potmsgset.sourcecomment
 
     @property
     def comment(self):
-        """Return the translator comments for this IPOMsgSet."""
-        return self.context.comment_text
+        """Return the translator comments for this ITranslationMessage."""
+        return self.context.comment
 
     @property
     def file_references(self):
-        """Return the file references for this IPOMsgSet."""
+        """Return the file references for this ITranslationMessage."""
         return self.context.potmsgset.filereferences
 
     @property
@@ -1346,15 +1349,15 @@ class CurrentTranslationMessageView(LaunchpadView):
         return 3
 
 
-class POMsgSetZoomedView(CurrentTranslationMessageView):
-    """A view that displays a `POMsgSet`, but zoomed in.
+class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
+    """A view that displays a `TranslationMessage`, but zoomed in.
 
-    See `POMsgSetPageView`.
+    See `TranslationMessagePageView`.
     """
     @property
     def zoom_url(self):
-        # We are viewing this class directly from an IPOMsgSet, we should
-        # point to the parent batch of messages.
+        # We are viewing this class directly from an ITranslationMessage, we
+        # should point to the parent batch of messages.
         # XXX: kiko 2006-09-27: Preserve second_lang_code and other form
         # parameters?
         batch_url = '/+translate?start=%d' % (self.sequence - 1)

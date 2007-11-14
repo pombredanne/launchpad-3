@@ -105,7 +105,7 @@
   </tal:comment>
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
   <tal:block define="spr sourcepackagerelease;
-                     distroseries spr/uploaddistroseries">
+                     distroseries spr/upload_distroseries">
     <td>
       <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
          class="distrosrcpackage"
@@ -164,7 +164,7 @@
   </tal:comment>
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
   <tal:block define="spr sourcepackagerelease;
-                     distroseries spr/uploaddistroseries;
+                     distroseries spr/upload_distroseries;
                      ppa spr/upload_archive">
     <td tal:content="spr/sourcepackagename/name">
       iceweasel

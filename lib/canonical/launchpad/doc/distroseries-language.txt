@@ -155,6 +155,8 @@ priority.
     >>> man2.priority = 7
     >>> mozconf.priority = 8
     >>> pm.priority = 9
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 And now we can confirm that priority does in fact dominate
 

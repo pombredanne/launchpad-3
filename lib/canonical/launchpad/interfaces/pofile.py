@@ -218,12 +218,8 @@ class IPOFile(IRosettaStats):
         initially imported, but then got overridden in Launchpad.
         """
 
-    def getPOTMsgSetWithErrors(slice=None):
-        """Get pot message sets that have translations published with errors.
-
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
+    def getPOTMsgSetWithErrors():
+        """Get message sets that have translations imported with errors."""
 
     def updateExportCache(contents):
         """Update this PO file's export cache with a string."""
