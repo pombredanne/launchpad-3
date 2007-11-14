@@ -1,15 +1,15 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""NewsItem views."""
+"""Announcement views."""
 
 __metaclass__ = type
 
 __all__ = [
-    'HasNewsItemsView',
-    'NewsItemAddView',
-    'NewsItemContextMenu',
-    'NewsItemEditView',
-    'NewsItemSHP',
+    'HasAnnouncementsView',
+    'AnnouncementAddView',
+    'AnnouncementContextMenu',
+    'AnnouncementEditView',
+    'AnnouncementSHP',
     ]
 
 import cgi
@@ -27,10 +27,10 @@ from canonical.config import config
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    AddNewsItemForm,
+    AddAnnouncementForm,
     IDistribution,
     ILaunchBag,
-    INewsItem,
+    IAnnouncement,
     IProduct,
     NotFoundError,
     )
@@ -49,18 +49,18 @@ from canonical.widgets import AnnouncementDateWidget
 from zope.app.form.browser import TextWidget
 
 
-class NewsItemAddView(LaunchpadFormView):
-    """An abstract view for creating a new NewsItem."""
+class AnnouncementAddView(LaunchpadFormView):
+    """An abstract view for creating a new Announcement."""
 
-    schema = AddNewsItemForm
+    schema = AddAnnouncementForm
     label = "Make an announcement"
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
     @action(_('Make announcement'), name='announce')
     def announce_action(self, action, data):
-        """Registers a new newsitem."""
-        newsitem = self.context.announce(
+        """Registers a new announcement."""
+        announcement = self.context.announce(
             user = self.user,
             title = data.get('title'),
             summary = data.get('summary'),
@@ -84,9 +84,9 @@ class NewsItemAddView(LaunchpadFormView):
         return self._next_url
 
 
-class NewsItemContextMenu(ContextMenu):
+class AnnouncementContextMenu(ContextMenu):
 
-    usedfor = INewsItem
+    usedfor = IAnnouncement
     links = ['edit', 'retarget']
 
     @enabled_with_permission('launchpad.Edit')
@@ -101,9 +101,9 @@ class NewsItemContextMenu(ContextMenu):
 
 
 
-class NewsItemEditView(LaunchpadFormView):
+class AnnouncementEditView(LaunchpadFormView):
 
-    schema = AddNewsItemForm
+    schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
     label = _('Modify this announcement')
 
@@ -129,9 +129,9 @@ class NewsItemEditView(LaunchpadFormView):
 
 
 
-class NewsItemRetargetingView(LaunchpadFormView):
+class AnnouncementRetargetingView(LaunchpadFormView):
 
-    schema = INewsItem
+    schema = IAnnouncement
     field_names = ['target']
     label = _('Move this announcement to a different project')
 
@@ -173,7 +173,7 @@ class NewsItemRetargetingView(LaunchpadFormView):
         return self._nextURL
 
 
-class NewsItemSHP(StructuralHeaderPresentation):
+class AnnouncementSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
         return "News for %s" % cgi.escape(self.context.target.title)
@@ -182,8 +182,8 @@ class NewsItemSHP(StructuralHeaderPresentation):
         return self.context.title
 
 
-class HasNewsItemsView(LaunchpadView):
-    """A view class for pillars which have news items."""
+class HasAnnouncementsView(LaunchpadView):
+    """A view class for pillars which have announcements."""
 
     @property
     def announcements(self):

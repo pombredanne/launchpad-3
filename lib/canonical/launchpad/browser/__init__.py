@@ -6,6 +6,7 @@ This is the module to import for Launchpad View Classes. The classes are not
 located in this specific module, but are in turn imported from each of the
 files in this directory."""
 
+from canonical.launchpad.browser.announcement import *
 from canonical.launchpad.browser.archive import *
 from canonical.launchpad.browser.bazaar import *
 from canonical.launchpad.browser.binarypackagerelease import *
@@ -64,7 +65,6 @@ from canonical.launchpad.browser.mentoringoffer import *
 from canonical.launchpad.browser.marketing import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
-from canonical.launchpad.browser.newsitem import *
 from canonical.launchpad.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.packaging import *

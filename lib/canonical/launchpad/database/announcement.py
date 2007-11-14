@@ -1,9 +1,9 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Database class for NewsItem."""
+"""Database class for Announcement."""
 
 __metaclass__ = type
-__all__ = ['NewsItem', ]
+__all__ = ['Announcement', ]
 
 import operator
 import time, pytz, datetime
@@ -20,16 +20,16 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.interfaces import INewsItem
+from canonical.launchpad.interfaces import IAnnouncement
 
 from canonical.launchpad.webapp.authorization import check_permission
 
 
-class NewsItem(SQLBase):
+class Announcement(SQLBase):
     """A news item. These allow us to generate lists of recent news for
     projects, products and distributions.
     """
-    implements(INewsItem)
+    implements(IAnnouncement)
 
     _defaultOrder = ['-date_announced', '-date_created']
 
@@ -64,12 +64,12 @@ class NewsItem(SQLBase):
                self.date_announced.utcnow()
 
 
-class HasNewsItems:
+class HasAnnouncements:
     """A mixin class for pillars that can have announcements."""
 
     def announce(self, user, title, summary=None, url=None,
                  publication_date=None):
-        """See IHasNewsItems."""
+        """See IHasAnnouncements."""
 
         # establish the appropriate target
         project = product = distribution = None
@@ -92,7 +92,7 @@ class HasNewsItems:
             date_announced = publication_date
 
         # create the news item
-        return NewsItem(
+        return Announcement(
             registrant = user,
             title = title,
             summary = summary,
@@ -108,10 +108,10 @@ class HasNewsItems:
             announcement_id = int(name)
         except ValueError:
             return None
-        return NewsItem.get(announcement_id)
+        return Announcement.get(announcement_id)
 
     def announcements(self, limit=5):
-        """See IHasNewsItems."""
+        """See IHasAnnouncements."""
 
         # establish whether the user can see all news items, or only the
         # published ones that are past their announcement date
@@ -123,27 +123,27 @@ class HasNewsItems:
         # filter for published news items if necessary
         if not privileged_user:
             query += """ AND
-                NewsItem.date_announced <= timezone('UTC'::text, now()) AND
-                NewsItem.active IS TRUE
+                Announcement.date_announced <= timezone('UTC'::text, now()) AND
+                Announcement.active IS TRUE
                 """
         if IProduct.providedBy(self):
             if self.project is None:
                 query += """ AND
-                    NewsItem.product = %s""" % sqlvalues(self.id)
+                    Announcement.product = %s""" % sqlvalues(self.id)
             else:
                 query += """ AND
-                    (NewsItem.product = %s OR NewsItem.project = %s)
+                    (Announcement.product = %s OR Announcement.project = %s)
                     """ % sqlvalues(self.id, self.project)
         elif IProject.providedBy(self):
             query += """ AND
-                (NewsItem.project = %s OR NewsItem.product IN
+                (Announcement.project = %s OR Announcement.product IN
                     (SELECT id FROM Product WHERE project = %s))
                     """ % sqlvalues (self.id, self.id)
         elif IDistribution.providedBy(self):
-            query = 'NewsItem.distribution = %s' % sqlvalues(self.id)
+            query = 'Announcement.distribution = %s' % sqlvalues(self.id)
         else:
             raise AssertionError, 'Unsupported announcement target'
-        return NewsItem.select(query, limit=limit)
+        return Announcement.select(query, limit=limit)
 
 
 

@@ -9,7 +9,7 @@
    = Projects aggregate all product news
    = Products also include project news
  = Display up to 5 news items on project/product/distro home page
- * Editors can click to edit news items
+ = Editors can click to edit news items
  * Make sure publishing / retraction workflow is smooth
    * Consider using "published" or "visible" instead of "active"
  * Ability to retarget announcements

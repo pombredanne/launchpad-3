@@ -4,55 +4,55 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- NewsItem -->
-    <content class="canonical.launchpad.database.NewsItem">
-        <allow interface="canonical.launchpad.interfaces.INewsItem" />
+    <!-- Announcement -->
+    <content class="canonical.launchpad.database.Announcement">
+        <allow interface="canonical.launchpad.interfaces.IAnnouncement" />
         <require
             permission="launchpad.Edit"
             set_attributes="title summary url date_announced active" />
     </content>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.INewsItem"
+        for="canonical.launchpad.interfaces.IAnnouncement"
         name="+edit" />
 
     <browser:url
-        for="canonical.launchpad.interfaces.INewsItem"
+        for="canonical.launchpad.interfaces.IAnnouncement"
         path_expression="string:+announcement/${id}"
         attribute_to_parent="target"
         />
 
     <browser:pages
-      for="canonical.launchpad.interfaces.INewsItem"
-      class="canonical.launchpad.browser.newsitem.NewsItemEditView"
+      for="canonical.launchpad.interfaces.IAnnouncement"
+      class="canonical.launchpad.browser.announcement.AnnouncementEditView"
       facet="overview"
       permission="launchpad.Edit">
       <browser:page
         name="+edit"
-        template="../templates/newsitem-edit.pt" />
+        template="../templates/announcement-edit.pt" />
     </browser:pages>
 
     <browser:pages
-      for="canonical.launchpad.interfaces.IHasNewsItems"
-      class="canonical.launchpad.browser.newsitem.HasNewsItemsView"
+      for="canonical.launchpad.interfaces.IHasAnnouncements"
+      class="canonical.launchpad.browser.announcement.HasAnnouncementsView"
       facet="overview"
       permission="zope.Public">
       <browser:page
         name="+announcements"
-        template="../templates/hasnewsitems-announcements.pt" />
+        template="../templates/hasannouncements-index.pt" />
       <browser:page
         name="+portlet-latestannouncements"
-        template="../templates/hasnewsitems-portlet-latestannouncements.pt" />
+        template="../templates/hasannouncements-portlet-latest.pt" />
     </browser:pages>
 
     <browser:pages
-      for="canonical.launchpad.interfaces.IHasNewsItems"
-      class="canonical.launchpad.browser.newsitem.NewsItemAddView"
+      for="canonical.launchpad.interfaces.IHasAnnouncements"
+      class="canonical.launchpad.browser.announcement.AnnouncementAddView"
       facet="overview"
       permission="launchpad.Edit">
       <browser:page
         name="+announce"
-        template="../templates/newsitem-add.pt" />
+        template="../templates/announcement-add.pt" />
     </browser:pages>
 
 </configure>

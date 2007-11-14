@@ -16,6 +16,7 @@ from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
+from canonical.launchpad.database.announcement import *
 from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
@@ -125,5 +126,4 @@ from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
-from canonical.launchpad.database.newsitem import *
 from canonical.launchpad.database.hwdb import *

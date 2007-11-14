@@ -5,10 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'AddNewsItemForm',
-    'NewsItemRetargetForm',
-    'INewsItem',
-    'IHasNewsItems',
+    'AddAnnouncementForm',
+    'AnnouncementRetargetForm',
+    'IAnnouncement',
+    'IHasAnnouncements',
     ]
 
 from zope.interface import Interface, Attribute
@@ -22,8 +22,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import valid_webref
 
 
-class NewsItemRetargetForm(Interface):
-    """A mixin schema for a newsitem.
+class AnnouncementRetargetForm(Interface):
+    """A mixin schema for an announcement.
 
     Requires the user to specify a project, product or distro as a target.
     """
@@ -33,12 +33,12 @@ class NewsItemRetargetForm(Interface):
         required=True, vocabulary='DistributionOrProductOrProject')
 
 
-class IHasNewsItems(Interface):
+class IHasAnnouncements(Interface):
     """A mixin class for pillars that have announcements."""
 
     def announce(user, title, summary=None, url=None,
                  publication_date=None):
-        """Create a NewsItem for this project.
+        """Create a Announcement for this project.
 
         The user is the person making the announcement. The publication date
         is either 'NOW', or None (a future date), or a specified datetime.
@@ -51,11 +51,11 @@ class IHasNewsItems(Interface):
         """Return a list of announcements visible to this user.
 
         If limit is provided, then the list is limited to that number of the
-        most recent NewsItems.
+        most recent Announcements.
         """
 
 
-class AddNewsItemForm(Interface):
+class AddAnnouncementForm(Interface):
 
     title = Title(
         title=_('Headline'), required=True)
@@ -69,7 +69,7 @@ class AddNewsItemForm(Interface):
     publication_date = AnnouncementDate(title=_('Date'), required=True)
 
 
-class INewsItem(Interface):
+class IAnnouncement(Interface):
     """A News Item."""
 
     # lifecycle
@@ -86,7 +86,7 @@ class INewsItem(Interface):
     project = Attribute("The project for this announcement.")
     distribution = Attribute("The distribution for this announcement.")
 
-    target = Attribute("The pillar to which this news item belongs.")
+    target = Attribute("The pillar to which this announcement belongs.")
 
     # announcement details
     title = Attribute("The headline of your announcement.")
@@ -98,7 +98,7 @@ class INewsItem(Interface):
     future = Attribute("Whether or not this announcement is yet public.")
 
     def retarget(product=None, distribution=None, project=None):
-        """Retarget the news item to a new project. One and only one of the
+        """Retarget the announcement to a new project. One and only one of the
         arguments must not be None.
         """
 

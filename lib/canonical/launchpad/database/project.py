@@ -18,7 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IHasNewsItems,
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IHasAnnouncements,
     IProduct, IProject, IProjectSet, ISearchableByQuestionOwner,
     ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationFilter, SpecificationImplementationStatus,
@@ -35,7 +35,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
-from canonical.launchpad.database.newsitem import HasNewsItems
+from canonical.launchpad.database.announcement import HasAnnouncements
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -46,12 +46,12 @@ from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasNewsItems, HasSprintsMixin, KarmaContextMixin,
+              HasAnnouncements, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, IHasNewsItems, ISearchableByQuestionOwner)
+               IHasMugshot, IHasAnnouncements, ISearchableByQuestionOwner)
 
     _table = "Project"
 

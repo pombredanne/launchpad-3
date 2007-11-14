@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
     IFAQ, IFAQTarget, IHasBug, IHasDrivers, IHasOwner, IHWSubmission,
     ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
-    IMilestone, INewsItem, IPackageUpload, IPackageUploadQueue, IPerson,
+    IMilestone, IAnnouncement, IPackageUpload, IPackageUploadQueue, IPerson,
     IPOFile, IPoll, IPollSubset, IPollOption, IPOTemplate, IPOTemplateName,
     IPOTemplateNameSet, IPOTemplateSubset, IProduct, IProductRelease,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
@@ -663,7 +663,7 @@ class EditBugAttachment(
 
 class EditAnnouncement(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = INewsItem
+    usedfor = IAnnouncement
 
     def checkAuthenticated(self, user):
         """Allow the project owner and drivers to edit any project news."""
