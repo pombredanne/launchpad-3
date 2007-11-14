@@ -1128,7 +1128,7 @@ task will be created:
     >>> print evolution_task.sourcepackagename.name
     evolution
 
-It's also possible to add tasks for specific distribution serieses as
+It's also possible to add tasks for specific distribution series as
 well.
 
     >>> bug = new_firefox_bug()
@@ -1182,7 +1182,7 @@ Targeting an existing nomination won't create another nomination.
     Ubuntu Warty
 
 If Sample Person would be the Ubuntu driver, he'll be able to target
-bugs directly to serieses.
+bugs directly to series.
 
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import IDistributionSet
@@ -1266,7 +1266,7 @@ driver of the series, only a nomination will be created.
     ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
-Nominating product series work the same way as for distro serieses.
+Nominating product series work the same way as for distro series.
 Sample person is a driver for the Firefox trunk series, so the
 nomination is automatically approved.
 
