@@ -96,38 +96,6 @@ class POTMsgSet(SQLBase):
             AND POFile.variant IS NULL AND pofile = POFile.id
             """ % sqlvalues(self, language), clauseTables=['POFile'])
 
-    def getNewSuggestions(self, language):
-        """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(language)
-        if current is not None:
-            query = """
-                TranslationMessage.potmsgset = %s AND
-                POFile.id = TranslationMessage.pofile AND
-                POFile.language = %s AND
-                TranslationMessage.date_created > %s
-                """ % sqlvalues(self, language, current.date_created)
-        else:
-            query = """
-                TranslationMessage.potmsgset = %s AND
-                POFile.id = TranslationMessage.pofile AND
-                POFile.language = %s
-                """ % sqlvalues(self, language)
-        result = TranslationMessage.select(query, clauseTables=['POFile'])
-        return shortlist(result, longest_expected=20, hardlimit=100)
-
-    def flags(self):
-        if self.flagscomment is None:
-            return []
-        else:
-            return [flag
-                    for flag in self.flagscomment.replace(' ', '').split(',')
-                    if flag != '']
-
-
-    def getTranslationMessages(self, language):
-        # XXX: do we really need this one?
-        pass
-
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
         query = """
@@ -144,7 +112,20 @@ class POTMsgSet(SQLBase):
             else:
                 comparing_date = current.date_reviewed
             query += " AND date_created > %s" % sqlvalues(comparing_date)
-        return TranslationMessage.select(query, clauseTables=['POFile'])
+        result = TranslationMessage.select(query, clauseTables=['POFile'])
+        return shortlist(result, longest_expected=20, hardlimit=100)
+
+    def getTranslationMessages(self, language):
+        # XXX: do we really need this one?
+        pass
+
+    def flags(self):
+        if self.flagscomment is None:
+            return []
+        else:
+            return [flag
+                    for flag in self.flagscomment.replace(' ', '').split(',')
+                    if flag != '']
 
     def hasTranslationChangedInLaunchpad(self, language):
         """See `IPOTMsgSet`."""

@@ -356,56 +356,6 @@ translations in Spanish:
     Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  caratas (Launchpad)
     Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
 
-    >>> suggestions = evo_distro_message.getCurrentSubmissions(
-    ...     TranslationConstants.SINGULAR_FORM)
-    >>> print_suggestions(suggestions)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
-    Spanish (es) translation of evolution-2.2 in Evolution trunk:  tarjetas (Launchpad & Upstream)
-
-We need to be logged in as an admin to do some special attribute
-changes:
-
-    >>> login('carlos@canonical.com')
-
-When a translation template is set as not current, those translations
-are not available as suggestions anymore:
-
-    >>> evo_distro_template.iscurrent = False
-    >>> flush_database_updates()
-    >>> suggestions = evo_product_message.getCurrentSubmissions(
-    ...     TranslationConstants.SINGULAR_FORM)
-    >>> len(suggestions)
-    0
-
-The same happens if the distribution is not officially using
-translations.
-
-    >>> ubuntu.official_rosetta = False
-
-    # We set the template as current again so we are sure that we don't show
-    # suggestions just due to the change to the official_rosetta flag.
-    >>> evo_distro_template.iscurrent = True
-    >>> flush_database_updates()
-    >>> suggestions = evo_product_message.getCurrentSubmissions(
-    ...     TranslationConstants.SINGULAR_FORM)
-    >>> len(suggestions)
-    0
-
-And products not using translations officially have the same behaviour.
-
-    >>> evolution_product.official_rosetta = False
-    >>> flush_database_updates()
-    >>> suggestions = evo_distro_message.getCurrentSubmissions(
-    ...     TranslationConstants.SINGULAR_FORM)
-    >>> len(suggestions)
-    0
-
-Let's restore the flags for next section.
-
-    >>> ubuntu.official_rosetta = True
-    >>> evolution_product.official_rosetta = True
-    >>> flush_database_updates()
-
 
 == getWikiSubmissions ==
 
