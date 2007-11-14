@@ -39,7 +39,6 @@ The valid translation is stored:
   >>> print find_tag_by_id(
   ...     browser.contents, 'msgset_140_es_translation_0').renderContents()
   Foo
-  >>> print find_main_content(browser.contents)
 
 And the error is noted in the page.
 

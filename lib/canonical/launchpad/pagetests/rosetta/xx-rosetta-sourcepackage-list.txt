@@ -35,5 +35,5 @@ indicate that these languages have never been edited my anyone.
     Language        Status Untranslated Need review Changed Last    Edited By
     Afrikaans       100.00 22 22        0 ...       0 ...   &mdash; &mdash;
     Sotho, Southern 100.00 22 22        0 ...       0 ...   &mdash; &mdash;
-    Xhosa           100.00 22 22        0 ...       0 ...   2007-11-05 &mdash;
+    Xhosa           100.00 22 22        0 ...       0 ...   2005-06-15 &mdash;
     Zulu            100.00 22 22        0 ...       0 ...   &mdash; &mdash;

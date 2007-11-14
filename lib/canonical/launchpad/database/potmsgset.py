@@ -454,6 +454,17 @@ class POTMsgSet(SQLBase):
             # Note that the message is imported.
             matching_message.is_imported = is_imported
 
+        # We need this sync so we don't set self.isfuzzy to the wrong
+        # value because cache problems. See bug #102382 as an example of what
+        # happened without having this flag + broken code. Our tests were not
+        # able to find the problem.
+        # XXX CarlosPerelloMarin 2007-11-14 Is there any way to avoid the
+        # sync() call and leave it as syncUpdate? Without it we have cache
+        # problems with workflows like the ones in
+        # xx-pofile-translate-gettext-error-middle-page.txt so we don't see
+        # the successful submissions when there are other errors in the same
+        # page.
+        matching_message.sync()
         return matching_message
 
     def applySanityFixes(self, text):
