@@ -4113,7 +4113,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 12, NULL, 0, 0, 3, NULL, 12, NULL, '/man-es.po', NULL, NULL, '2007-01-19 13:00:41.049464', NULL, 0, '2007-01-24 19:16:06.386519');
+', true, 12, NULL, 0, 0, 1, NULL, 12, NULL, '/man-es.po', NULL, NULL, '2007-01-19 13:00:41.049464', NULL, 0, '2007-01-24 19:16:06.386519');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (33, 10, 387, NULL, ' Spanish translation for alsa-utils
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the alsa-utils package.
