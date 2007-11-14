@@ -313,7 +313,7 @@
     for="canonical.launchpad.interfaces.IDistribution"
     schema="canonical.launchpad.interfaces.IDistroSeries"
     label="Register a new series"
-    fields="name displayname title summary description version parentseries"
+    fields="name displayname title summary description version parent_series"
     content_factory="canonical.launchpad.database.DistroSeries"
     class="canonical.launchpad.browser.DistroSeriesAddView"
     facet="overview"

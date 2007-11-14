@@ -140,17 +140,10 @@ We must use setPrivate:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
-    ...     SQLObjectCreatedEvent)
+    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-
-    >>> new_values = {"private" : True}
-    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
-    ...     firefox_crashes, new_values)
-
-    >>> notify(bug_will_be_set_private)
 
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.setPrivate(True, current_user())
@@ -226,12 +219,6 @@ and set it private (as Foo Bar again who, of course, is an admin.)
     >>> blackhole_trash_folder = bugset.get(2)
 
 And again, let's fake setting the bug private:
-
-    >>> new_values = {"private" : True}
-    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
-    ...     blackhole_trash_folder, new_values)
-
-    >>> notify(bug_will_be_set_private)
 
     >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
     >>> blackhole_trash_folder.setPrivate(True, current_user())

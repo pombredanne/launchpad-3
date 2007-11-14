@@ -3005,10 +3005,9 @@ class PersonBranchesView(BranchListingView):
     extra_columns = ('author', 'product', 'role')
     heading_template = 'Bazaar branches related to %(displayname)s'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3034,10 +3033,9 @@ class PersonAuthoredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches authored by %(displayname)s'
     no_sort_by = (BranchListingSort.AUTHOR,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3047,10 +3045,9 @@ class PersonRegisteredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3059,10 +3056,9 @@ class PersonSubscribedBranchesView(BranchListingView):
     extra_columns = ('author', 'product')
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -3072,4 +3068,3 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0 and team != self.context]
-

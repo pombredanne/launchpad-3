@@ -760,7 +760,8 @@ class ShippingRequestAdminMixinView:
     # This is the order in which we display the distribution flavours
     # in the UI
     ordered_flavours = (
-        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU)
+        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU,
+        ShipItFlavour.SERVER)
 
     # This is the order in which we display the quantity widgets for each
     # flavour in the UI
@@ -827,7 +828,10 @@ class ShippingRequestApproveOrDenyView(
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: None}
+             ShipItArchitecture.AMD64: None},
+        ShipItFlavour.SERVER:
+            {ShipItArchitecture.X86: 'server_quantityx86approved',
+             ShipItArchitecture.AMD64: 'server_quantityamd64approved'}
         }
 
     def process(self, *args, **kw):
@@ -972,7 +976,10 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
-             ShipItArchitecture.AMD64: None}
+             ShipItArchitecture.AMD64: None},
+        ShipItFlavour.SERVER:
+            {ShipItArchitecture.X86: 'server_quantityx86',
+             ShipItArchitecture.AMD64: 'server_quantityamd64'}
         }
 
     series = ShipItConstants.current_distroseries

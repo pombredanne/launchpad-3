@@ -60,7 +60,7 @@ class Archive(SQLBase):
     def series_with_sources(self):
         """See `IArchive`."""
         cur = cursor()
-        q = """SELECT DISTINCT distrorelease FROM
+        q = """SELECT DISTINCT distroseries FROM
                       SourcePackagePublishingHistory WHERE
                       SourcePackagePublishingHistory.archive = %s"""
         cur.execute(q % self.id)
@@ -176,7 +176,7 @@ class Archive(SQLBase):
 
         if distroseries is not None:
             clauses.append("""
-                SourcePackagePublishingHistory.distrorelease = %s
+                SourcePackagePublishingHistory.distroseries = %s
             """ % sqlvalues(distroseries))
 
         sources = SourcePackagePublishingHistory.select(
@@ -261,7 +261,7 @@ class Archive(SQLBase):
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join([str(d.id) for d in distroarchseries])
             clauses.append("""
-                BinaryPackagePublishingHistory.distroarchrelease IN %s
+                BinaryPackagePublishingHistory.distroarchseries IN %s
             """ % das_ids)
 
         return clauses, clauseTables, orderBy
@@ -286,19 +286,19 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         clauses.append("""
-            BinaryPackagePublishingHistory.distroarchrelease =
-                DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id
         """)
-        clauseTables.extend(['DistroRelease', 'DistroArchRelease'])
+        clauseTables.extend(['DistroSeries', 'DistroArchSeries'])
 
         # Retrieve only the binaries published for the 'nominated architecture
         # independent' (usually i386) in the distroseries in question.
         # It includes all architecture-independent binaries only once and the
         # architecture-specific built for 'nominatedarchindep'.
         nominated_arch_independent_clause = ["""
-            DistroRelease.nominatedarchindep =
-                BinaryPackagePublishingHistory.distroarchrelease
+            DistroSeries.nominatedarchindep =
+                BinaryPackagePublishingHistory.distroarchseries
         """]
         nominated_arch_independent_query = ' AND '.join(
             clauses + nominated_arch_independent_clause)
@@ -308,8 +308,8 @@ class Archive(SQLBase):
         # Retrieve all architecture-specific binary publications except
         # 'nominatedarchindep' (already included in the previous query).
         no_nominated_arch_independent_clause = ["""
-            DistroRelease.nominatedarchindep !=
-                BinaryPackagePublishingHistory.distroarchrelease AND
+            DistroSeries.nominatedarchindep !=
+                BinaryPackagePublishingHistory.distroarchseries AND
             BinaryPackageRelease.architecturespecific = true
         """]
         no_nominated_arch_independent_query = ' AND '.join(

@@ -178,7 +178,7 @@ The other argurments are strings:
 
 Having proper arguments in hand we can create a new
 ISourcePackageRelease, it will automatically set the
-'uploaddistroseries' to the API entry point, in this case Hoary.
+'upload_distroseries' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
@@ -187,7 +187,7 @@ ISourcePackageRelease, it will automatically set the
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright)
 
-  >>> new_spr.uploaddistroseries.name
+  >>> new_spr.upload_distroseries.name
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
@@ -344,7 +344,7 @@ was inherited in the initialization.
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> breezy_autotest_i386 = breezy_autotest['i386']
 
-    >>> print breezy_autotest.parentseries.title
+    >>> print breezy_autotest.parent_series.title
     The Hoary Hedgehog Release
 
     >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
