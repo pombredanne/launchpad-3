@@ -10,11 +10,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import Choice, Int, Object
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary
-from canonical.launchpad.interfaces import IHasDateCreated
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.person import IPerson
 
 
 class ISpecificationBranch(IHasDateCreated):
@@ -25,6 +26,10 @@ class ISpecificationBranch(IHasDateCreated):
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
     summary = Summary(title=_("Summary"), required=False)
+
+    registrant = Object(
+        schema=IPerson, readonly=True, required=True,
+        title=_("The person who linked the bug to the branch"))
 
     def destroySelf():
         """Destroy this specification branch link"""
