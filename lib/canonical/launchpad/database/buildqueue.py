@@ -20,12 +20,9 @@ from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    IBuildQueue, IBuildQueueSet, NotFoundError)
-from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingStatus, SourcePackageUrgency)
+    BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
+    SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -55,31 +52,6 @@ class BuildQueue(SQLBase):
     def urgency(self):
         """See IBuildQueue."""
         return self.build.sourcepackagerelease.urgency
-
-    @property
-    def current_component(self):
-        """See IBuildQueue."""
-        pub = self._currentPublication()
-        if pub is not None:
-            return pub.component
-        return self.build.sourcepackagerelease.component
-
-    def _currentPublication(self):
-        """See IBuildQueue."""
-        allowed_status = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
-        query = """
-        SourcePackagePublishingHistory.distrorelease = %s AND
-        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
-        SourcePackagePublishingHistory.status IN %s
-        """ % sqlvalues(
-            self.build.distroseries, self.build.sourcepackagerelease,
-            self.build.archive, allowed_status)
-
-        return SourcePackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
 
     @property
     def archhintlist(self):
@@ -165,8 +137,9 @@ class BuildQueue(SQLBase):
         msg += "U+%d " % score_urgency[self.urgency]
 
         # Calculates the component-related part of the score.
-        score += score_componentname[self.current_component.name]
-        msg += "C+%d " % score_componentname[self.current_component.name]
+        score += score_componentname[self.build.current_component.name]
+        msg += "C+%d " % score_componentname[
+            self.build.current_component.name]
 
         # Calculates the build queue time component of the score.
         right_now = datetime.now(pytz.timezone('UTC'))
@@ -206,6 +179,12 @@ class BuildQueue(SQLBase):
         return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
             distroname, distroseriesname, archname, sourcename, version, state
             ))
+
+    def markAsBuilding(self, builder):
+        """See `IBuildQueue`."""
+        self.builder = builder
+        self.buildstart = UTC_NOW
+        self.build.buildstate = BuildStatus.BUILDING
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
@@ -290,7 +269,7 @@ class BuildQueueSet(object):
         arch_ids = [d.id for d in archserieses]
 
         candidates = BuildQueue.select("""
-        build.distroarchrelease IN %s AND
+        build.distroarchseries IN %s AND
         build.buildstate = %s AND
         buildqueue.build = build.id AND
         buildqueue.builder IS NULL

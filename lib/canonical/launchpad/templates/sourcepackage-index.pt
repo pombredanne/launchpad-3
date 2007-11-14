@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">    
@@ -30,7 +36,7 @@
     but they might not be used until the package is published.
   </p>
 
-  <dl id="publishings" tal:condition="view/published_by_pocket">
+  <dl id="publishing_history" tal:condition="view/published_by_pocket">
     <tal:block repeat="pocket view/published_by_pocket">
       <tal:block condition="pocket/packages">
         <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
@@ -78,6 +84,7 @@
        <i>
          No project associated with this sourcepackage
        </i>
+       </li>
     </tal:has_no_series>
     <small>(<a tal:attributes="href string:${context/fmt:url}/+packaging">update</a>)</small>
   </ul>

@@ -4,26 +4,37 @@
 
 __metaclass__ = type
 __all__ = [
-    'RequestedMailingListAPI',
+    'MailingListAPIView',
     ]
 
 
+from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IMailingListSet, IRequestedMailingListAPI, MailingListStatus)
+    EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
 
-class RequestedMailingListAPI(LaunchpadXMLRPCView):
+# Not all developers will have built the Mailman instance (via
+# 'make mailman_instance').  In that case, this import will fail, but in that
+# case just use the constant value directly.
+try:
+    from Mailman.MemberAdaptor import ENABLED
+except ImportError:
+    ENABLED = 0
+
+
+class MailingListAPIView(LaunchpadXMLRPCView):
     """The XMLRPC API that Mailman polls for mailing list actions."""
 
-    implements(IRequestedMailingListAPI)
+    implements(IMailingListAPIView)
 
     def getPendingActions(self):
-        """See `IRequestedMailingListAPI`."""
+        """See `IMailingListAPIView`."""
         list_set = getUtility(IMailingListSet)
         # According to the interface, the return value is a dictionary where
         # the keys are one of the pending actions 'create', 'deactivate', or
@@ -63,7 +74,7 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
         return response
 
     def reportStatus(self, statuses):
-        """See `IRequestedMailingListActions`."""
+        """See `IMailingListAPIView`."""
         list_set = getUtility(IMailingListSet)
         for team_name, action_status in statuses.items():
             mailing_list = list_set.get(team_name)
@@ -90,3 +101,37 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
                 return faults.BadStatus(team_name, action_status)
         # Everything was fine.
         return True
+
+    def getMembershipInformation(self, teams):
+        """See `IMailingListAPIView`."""
+        listset = getUtility(IMailingListSet)
+        emailset = getUtility(IEmailAddressSet)
+        response = {}
+        for team_name in teams:
+            mailing_list = listset.get(team_name)
+            if mailing_list is None:
+                return faults.NoSuchTeamMailingList(team_name)
+            members = []
+            for address in mailing_list.getAddresses():
+                email_address = emailset.getByEmail(address)
+                real_name = email_address.person.displayname
+                # Hard code flags to 0 currently, meaning the member will get
+                # regular (not digest) delivery, will not get post
+                # acknowledgements, will receive their own posts, and will not
+                # be moderated.  A future phase may change some of these
+                # values.
+                flags = 0
+                # Hard code the status to ENABLED so that the member will
+                # receive list messages.  A future phase may change this when
+                # bounce processing is added.
+                status = ENABLED
+                members.append((address, real_name, flags, status))
+            response[team_name] = sorted(members, key=itemgetter(0))
+        return response
+
+    def isRegisteredInLaunchpad(self, address):
+        """See `IMailingListAPIView.`."""
+        email_address = getUtility(IEmailAddressSet).getByEmail(address)
+        return (email_address is not None and
+                email_address.status in (EmailAddressStatus.VALIDATED,
+                                         EmailAddressStatus.PREFERRED))

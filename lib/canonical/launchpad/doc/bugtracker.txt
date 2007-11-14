@@ -84,6 +84,14 @@ It's necessary to specify the exact URL, differences in the schema
     >>> mozilla_bugzilla.baseurl
     u'https://bugzilla.mozilla.org/'
 
+If the exact bugtracker isn't found but a the url searched for
+is a substring of an existing bugtracker, we use the first match.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'zilla.mozilla.org')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
 If no bug tracker can be found None is returned.
 
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
@@ -118,7 +126,6 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/.
     INFO    No watches to update on http://bugs.debian.org
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    ExternalBugtracker for BugTrackerType 'SOURCEFORGE' is not known.
@@ -134,8 +141,8 @@ timeout and call the checkwatches cronscript machinery directly.
 First, we create some bug watches to test with:
 
     >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IBugSet, IPersonSet)
     >>> from canonical.launchpad.scripts.checkwatches import (
     ...     BugWatchUpdater)
 
@@ -174,3 +181,11 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR:root:Connection timed out when updating http://bugs.example.com
+
+Errors that occur when updating a bug watch are recorded against that
+bug watch. The timeout will be recorded against the bug watch we just
+created in its last_error_type field.
+
+    >>> from canonical.launchpad.interfaces import BugWatchErrorType
+    >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
+    True

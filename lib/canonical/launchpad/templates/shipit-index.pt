@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <head>
   <style metal:fill-slot="head_epilogue" type="text/css">
@@ -56,18 +63,33 @@
     </p>
     
     <div id="chooseLinks">
-      <div>
-      <a tal:attributes="href view/download_or_buy_link">
-        I want to <span>download</span>
-        <span tal:replace="flavour_name">Ubuntu</span>
-        <span tal:replace="view/series/title" /></a>
-      </div>
-      <div>
-      <a href="login">
-        I want to <span>request CDs</span> of
-        <span tal:replace="flavour_name">Ubuntu</span>
-        <span tal:replace="view/series/title" /></a>
-      </div>
+      <tal:no-prerelease condition="not: view/prerelease_mode">
+        <div>
+          <a tal:attributes="href view/download_or_buy_link">
+            I want to <span>download</span>
+            <span tal:replace="flavour_name">Ubuntu</span>
+            <span tal:replace="view/series/title" /></a>
+        </div>
+        <div>
+          <a href="login">
+            I want to <span>request CDs</span> of
+            <span tal:replace="flavour_name">Ubuntu</span>
+            <span tal:replace="view/series/title" /></a>
+        </div>
+      </tal:no-prerelease>
+      <tal:prerelease condition="view/prerelease_mode">
+        <div>
+          <a tal:attributes="href view/beta_download_link">
+            I want to <span>download and test</span> the beta version of
+            <span tal:replace="view/series/title" /></a>
+        </div>
+        <div tal:condition="view/prerelease_mode">
+          <a href="login">
+            I want to <span>pre-order CDs</span> of
+            <span tal:replace="flavour_name">Ubuntu</span>
+            <span tal:replace="view/series/title" /></a>
+        </div>
+      </tal:prerelease>
     </div>
   
     <div class="visualClear body">&nbsp;</div>

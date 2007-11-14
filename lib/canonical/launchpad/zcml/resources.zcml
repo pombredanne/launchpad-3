@@ -49,6 +49,7 @@
     <resource name="branch" file="../images/branch.png" />
     <resource name="branch-large" file="../images/branch-large.gif" />
     <resource name="bug" file="../images/bug.png" />
+    <resource name="bug-large" file="../images/bug-large.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
     <resource name="bug-medium" file="../images/bug-medium.png" />
@@ -77,6 +78,7 @@
     <resource name="error" file="../images/error.png" />
     <resource name="error-badge" file="../images/error-badge.png" />
     <resource name="error-large" file="../images/error-large.png" />
+    <resource name="expand" file="../images/bug-status-expand.png" />
     <resource name="faq" file="../images/faq.png" />
     <resource name="favourite-yes" file="../images/fav-yes.png" />
     <resource name="favourite-no" file="../images/fav-no.png" />

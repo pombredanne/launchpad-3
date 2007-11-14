@@ -3,14 +3,15 @@
 """Bazaar transport for the Launchpad code hosting file system."""
 
 __metaclass__ = type
-__all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
-           'set_up_logging', 'UntranslatablePath']
+__all__ = ['LaunchpadServer', 'LaunchpadTransport', 'set_up_logging',
+           'UntranslatablePath']
 
 import logging
 import os
 
 from bzrlib.errors import (
-    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
+    BzrError, InProcessTransport, NoSuchFile, PermissionDenied,
+    TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
     get_transport,
@@ -22,17 +23,10 @@ from bzrlib.transport import (
 
 from canonical.authserver.interfaces import READ_ONLY
 
+from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
-    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
+    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
-
-
-def branch_id_to_path(branch_id):
-    """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
-    digit hexadecimal number.
-    """
-    h = "%08x" % int(branch_id)
-    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
 def split_with_padding(a_string, splitter, num_fields, padding=None):
@@ -131,44 +125,28 @@ class LaunchpadServer(Server):
         self.logger = logging.getLogger(
             'codehosting.lpserve.%s' % self.user_name)
 
-    def dirty(self, virtual_path):
-        """Mark the branch containing virtual_path as dirty."""
-        # XXX: JonathanLange 2007-06-18 bugs=120949:
-        # Note that we only mark branches as
-        # dirty if they end up calling VFS (i.e. Transport) methods. If a
-        # client does a writing smart operation that doesn't use VFS, we won't
-        # catch it. (e.g. Branch.set_last_revision). This problem will become
-        # more severe in Bazaar 0.18 and later.
-        #
-        # Instead we should register our own smart request handlers to override
-        # the builtin ones.
-
-        # XXX: JonathanLange 2007-09-05 bugs=139030: By translating paths here
-        # we are doing an extra, unnecessary database query per file
-        # operation. Instead, we should store the unique name of the branch in
-        # set and translate the paths during the calls to request mirror. This
-        # changes the code from one query per write operation to one query per
-        # changed branch.
-        self.logger.debug("Marking %r as dirty", virtual_path)
+    def requestMirror(self, virtual_path):
+        """Request that the branch that owns 'virtual_path' be mirrored."""
         branch_id, ignored, path = self._translate_path(virtual_path)
-        self._dirty_branch_ids.add(branch_id)
+        self.logger.info('Requesting mirror for: %r', branch_id)
+        self.authserver.requestMirror(branch_id)
 
-    def mkdir(self, virtual_path):
+    def make_branch_dir(self, virtual_path):
         """Make a new directory for the given virtual path.
 
-        If the request is to make a user or a product directory, fail with
-        NoSuchFile error. If the request is to make a branch directory, create
-        the branch in the database then create a matching directory on the
-        backing transport.
+        If the request is to make a user or a product directory, fail
+        with PermissionDenied error. If the request is to make a
+        branch directory, create the branch in the database then
+        create a matching directory on the backing transport.
         """
         self.logger.info('mkdir(%r)', virtual_path)
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
-            raise NoSuchFile(
-                'This method only for creating branches: %s' % (virtual_path,))
+            raise PermissionDenied(
+                'This method is only for creating branches: %s' % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
-            raise NoSuchFile(
+            raise PermissionDenied(
                 'Cannot create branch: %s' % (virtual_path,))
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
@@ -180,27 +158,22 @@ class LaunchpadServer(Server):
             belongs.
         :param branch: The name of the new branch.
 
-        :raise TransportNotPossible: If 'user' doesn't begin with a '~'.
-        :raise NoSuchFile: If 'product' is not the name of an existing
-            product.
+        :raise PermissionDenied: If 'user' does not begin with a '~' or if
+            'product' is not the name of an existing product.
         :return: The database ID of the new branch.
         """
         self.logger.debug('_make_branch(%r, %r, %r)', user, product, branch)
         if not user.startswith('~'):
-            raise TransportNotPossible(
+            raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
         if product == '+junk':
             user_dict = self.authserver.getUser(user)
             if not user_dict:
-                raise NoSuchFile("%s doesn't exist" % (user,))
+                raise PermissionDenied("%s doesn't exist" % (user,))
             user_id = user_dict['id']
             if user_id != self.user_id:
-                # XXX: JonathanLange 2007-06-04 bug=118736
-                # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
-                # However bzrlib doesn't translate PermissionDenied errors.
-                # See _translate_error in bzrlib/transport/remote.py.
-                raise NoSuchFile(
+                raise PermissionDenied(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
         branch_id, permissions = self.authserver.getBranchInformation(
@@ -252,8 +225,18 @@ class LaunchpadServer(Server):
         """
         self.logger.debug('translate_virtual_path(%r)', virtual_path)
         segments = get_path_segments(virtual_path)
+        # XXX: JamesHenstridge 2007-10-09
+        # We trim the segments list so that we don't raise
+        # PermissionDenied when the client tries to read
+        # /~user/project/.bzr/branch-format when checking for a shared
+        # repository (instead, we'll fail to look up the branch, and
+        # return UntranslatablePath).  This whole function will
+        # probably need refactoring when we move to actually
+        # supporting shared repos.
+        if '.bzr' in segments:
+            segments = segments[:segments.index('.bzr')]
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+            raise PermissionDenied(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
 
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
@@ -286,7 +269,6 @@ class LaunchpadServer(Server):
     def setUp(self):
         """See Server.setUp."""
         self.scheme = 'lp-%d:///' % id(self)
-        self._dirty_branch_ids = set()
         register_transport(self.scheme, self._factory)
         self._is_set_up = True
 
@@ -295,10 +277,6 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        self.logger.info('Requesting mirror for: %r', self._dirty_branch_ids)
-        for branch_id in self._dirty_branch_ids:
-            self.authserver.requestMirror(branch_id)
-        self._dirty_branch_ids = None
         unregister_transport(self.scheme, self._factory)
 
 
@@ -351,12 +329,6 @@ class LaunchpadTransport(Transport):
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
-    def _writing_call(self, methodname, relpath, *args, **kwargs):
-        """As for _call but mark the branch being written to as dirty."""
-        result = self._call(methodname, relpath, *args, **kwargs)
-        self.server.dirty(self._abspath(relpath))
-        return result
-
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport.
 
@@ -376,7 +348,7 @@ class LaunchpadTransport(Transport):
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
-        return self._writing_call('append_file', relpath, f, mode)
+        return self._call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
         self.server.logger.debug('clone(%s)', relpath)
@@ -384,10 +356,10 @@ class LaunchpadTransport(Transport):
             self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
-        return self._writing_call('delete', relpath)
+        return self._call('delete', relpath)
 
     def delete_tree(self, relpath):
-        return self._writing_call('delete_tree', relpath)
+        return self._call('delete_tree', relpath)
 
     def get(self, relpath):
         return self._call('get', relpath)
@@ -412,32 +384,35 @@ class LaunchpadTransport(Transport):
         return self._call('lock_read', relpath)
 
     def lock_write(self, relpath):
-        return self._writing_call('lock_write', relpath)
+        return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
         # If we can't translate the path, then perhaps we are being asked to
         # create a new branch directory. Delegate to the server, as it knows
         # how to deal with absolute virtual paths.
         try:
-            return self._writing_call('mkdir', relpath, mode)
+            return self._call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(self._abspath(relpath))
+            return self.server.make_branch_dir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
-        return self._writing_call('put_file', relpath, f, mode)
+        return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
         path, permissions = self._translate_virtual_path(rel_to)
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
-        return self._writing_call('rename', rel_from, path)
+        abs_from = self._abspath(rel_from)
+        if is_lock_directory(abs_from):
+            self.server.requestMirror(abs_from)
+        return self._call('rename', rel_from, path)
 
     def rmdir(self, relpath):
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
-            raise NoSuchFile(virtual_path)
-        return self._writing_call('rmdir', relpath)
+            raise PermissionDenied(virtual_path)
+        return self._call('rmdir', relpath)
 
     def stat(self, relpath):
         return self._call('stat', relpath)

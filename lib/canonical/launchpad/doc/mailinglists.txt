@@ -15,31 +15,15 @@ an existing team.  This is done through an IMailingListSet utility.
 In the following description of how to use team mailing lists, we will need
 several teams.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, TeamMembershipStatus, TeamSubscriptionPolicy)
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
-    >>> personset = getUtility(IPersonSet)
-    >>> ddaa = personset.getByName('ddaa')
-    >>> def new_team(team_name):
-    ...     displayname = ' '.join(word.capitalize()
-    ...                            for word in team_name.split('-'))
-    ...     # XXX BarryWarsaw Set the team's subscription policy to OPEN
-    ...     # because of bug 125505.  See related comment below.
-    ...     policy = TeamSubscriptionPolicy.OPEN
-    ...     return personset.newTeam(ddaa, team_name, displayname,
-    ...                              subscriptionpolicy=policy)
-
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one = new_team('team-one')
     >>> team_two = new_team('team-two')
     >>> team_three = new_team('team-three')
     >>> team_four = new_team('team-four')
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
-Define a helper function that sorts mailing lists alphabetically based on
-their team's name.
-
+    # Define a helper function that sorts mailing lists alphabetically based
+    # on their team's name.  We can't use operator.attrgetter() because that
+    # traverses only one level of attribute.
     >>> def sorted_lists(lists):
     ...     return sorted(lists, key=lambda L: L.team.name)
 
@@ -48,6 +32,8 @@ None of these teams have mailing lists yet.
     >>> sorted_lists(list_set.registered_lists)
     []
     >>> sorted_lists(list_set.approved_lists)
+    []
+    >>> sorted_lists(list_set.active_lists)
     []
     >>> print list_set.get(team_one.name)
     None
@@ -68,19 +54,20 @@ created right away.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> utc = pytz.timezone('UTC')
-    >>> registration_date = datetime.now(utc)
+    >>> registration_date = datetime.now(pytz.timezone('UTC'))
     >>> list_one = list_set.new(team_one)
     >>> verifyObject(IMailingList, list_one)
     True
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>
 
 You may not register a mailing list for a person.
 
-    >>> salgado = personset.getByName('salgado')
-    >>> list_set.new(salgado, salgado)
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> anne = new_person('Anne')
+    >>> list_set.new(anne, anne)
     Traceback (most recent call last):
     ...
     AssertionError: Cannot register a list for a person who is not a team
@@ -88,24 +75,27 @@ You may not register a mailing list for a person.
 The mailing list registrant must be a team owner or administrator.  salgado is
 neither and thus may not create a list for team_two.
 
-    >>> list_set.new(team_two, salgado)
+    >>> list_set.new(team_two, anne)
     Traceback (most recent call last):
     ...
     AssertionError: registrant is not a team owner or administrator
 
-However, if we make salgado a team administrator, he can then register the
+However, if we make Anne a team administrator, she can then register the
 mailing list.
 
     >>> # XXX BarryWarsaw bug 125505: Use .join() and .setMembershipData()
     >>> # instead of the more direct team.addMember() because the latter
-    >>> # doesn't invalidate salgado's _inTeam_cache.
-    >>> salgado.join(team_two)
-    >>> sabdfl = personset.getByName('sabdfl')
-    >>> team_two.setMembershipData(salgado, TeamMembershipStatus.ADMIN, sabdfl)
+    >>> # doesn't invalidate the person's _inTeam_cache.
+    >>> anne.join(team_two)
+    >>> bart = new_person('Bart')
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> team_two.setMembershipData(anne, TeamMembershipStatus.ADMIN, bart)
     >>> flush_database_updates()
-    >>> list_two = list_set.new(team_two, salgado)
+    >>> list_two = list_set.new(team_two, anne)
     >>> list_two
     <MailingList for team "team-two"; status=REGISTERED at ...>
+    >>> list_two.address
+    u'team-two@lists.launchpad.net'
 
 The newly registered mailing list is linked to its team, and the list's
 registrant is the team owner at the time the list was registered.  The list's
@@ -114,8 +104,12 @@ registration date is set, and its status is set to REGISTERED.
     >>> list_one.team.displayname
     u'Team One'
     >>> list_one.registrant.name
-    u'ddaa'
-    >>> registration_date <= list_one.date_registered <= datetime.now(utc)
+    u'no-priv'
+    >>> # We have to compare dates this way because of minor clock skew
+    >>> # between the Python process and the database (which is where
+    >>> # date_registered comes from).  Also, Python's date objects don't
+    >>> # support timezones.
+    >>> list_one.date_registered.date() == registration_date.date()
     True
     >>> list_one.status.name
     'REGISTERED'
@@ -135,12 +129,14 @@ welcome message text.
 The mailing list's registrant does not change even if the team's owner
 changes.
 
-    >>> login('carlos@canonical.com')
-    >>> carlos = personset.getByName('carlos')
-    >>> team_one.teamowner = carlos
+    >>> cris = new_person('Cris')
+    >>> login('foo.bar@canonical.com')
+    >>> team_one.teamowner = cris
     >>> flush_database_updates()
+    >>> login(ANONYMOUS)
+    >>> # new_team() uses No Privileges Person as the registrant.
     >>> list_one.registrant.name
-    u'ddaa'
+    u'no-priv'
 
 A mailing list cannot be registered more than once.
 
@@ -152,9 +148,9 @@ A mailing list cannot be registered more than once.
 
 == Reviewing a registered mailing list ==
 
-A registered mailing list must then be reviewed by a Launchpad administrator
-before the request to create it can be made.  Use the list set to find all
-currently registered mailing lists.
+A registered mailing list must then be reviewed by a member of
+the Mailing List Experts team before the request to create it can be
+made.  Use the list set to find all currently registered mailing lists.
 
     >>> list_three = list_set.new(team_three)
     >>> list_three
@@ -169,48 +165,61 @@ currently registered mailing lists.
      <MailingList for team "team-three"; status=REGISTERED at ...>,
      <MailingList for team "team-two"; status=REGISTERED at ...>]
 
-A mailing list's registration cannot be reviewed by a non-administrator.
+A mailing list's registration cannot be reviewed by somebody who doesn't
+participate in the Mailing List Experts team.
 
-    >>> from canonical.launchpad.interfaces import MailingListStatus
-    >>> no_priv = personset.getByName('no-priv')
-    >>> list_one.review(no_priv, MailingListStatus.APPROVED)
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, MailingListStatus)
+    >>> mailing_list_experts = getUtility(
+    ...     ILaunchpadCelebrities).mailing_list_experts
+    >>> dirk = new_person('Dirk')
+    >>> dirk.hasParticipationEntryFor(mailing_list_experts)
+    False
+    >>> list_one.review(dirk, MailingListStatus.APPROVED)
     Traceback (most recent call last):
     ...
-    AssertionError: Reviewer must be a Launchpad administrator
-    >>> list_one.review(ddaa, MailingListStatus.APPROVED)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Reviewer must be a Launchpad administrator
+    AssertionError: Reviewer must be a member of the Mailing List Experts team
 
-A Launchpad administer though, may approve the registration.
+A mailing list expert is required to approve the registration.
 
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> flush_database_updates()
+    >>> lpadmin = list(mailing_list_experts.allmembers)[0]
+    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
+    >>> syncUpdate(list_one)
     >>> list_one.status.name
+    'APPROVED'
+
+If Dirk becomes a member of the Mailing List Experts, he'll be able to approve
+a list.
+
+    >>> mailing_list_experts.addMember(dirk, lpadmin)
+    >>> list_four.review(dirk, MailingListStatus.APPROVED)
+    >>> syncUpdate(list_four)
+    >>> list_four.status.name
     'APPROVED'
 
 A mailing list that has already been reviewed, may not be re-reviewed.
 
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> list_one.review(dirk, MailingListStatus.APPROVED)
     Traceback (most recent call last):
     ...
     AssertionError: Only unreviewed mailing lists may be reviewed
-    >>> list_one.review(carlos, MailingListStatus.DECLINED)
+    >>> list_one.review(dirk, MailingListStatus.DECLINED)
     Traceback (most recent call last):
     ...
     AssertionError: Only unreviewed mailing lists may be reviewed
 
 A reviewer may also decline a mailing list registration.
 
-    >>> list_two.review(carlos, MailingListStatus.DECLINED)
-    >>> flush_database_updates()
+    >>> list_two.review(dirk, MailingListStatus.DECLINED)
+    >>> syncUpdate(list_two)
     >>> list_two.status.name
     'DECLINED'
 
 A reviewer may not review a mailing list to a state other than approved or
 declined.
 
-    >>> list_three.review(carlos, MailingListStatus.ACTIVE)
+    >>> list_three.review(dirk, MailingListStatus.ACTIVE)
     Traceback (most recent call last):
     ...
     AssertionError: Reviewed lists may only be approved or declined
@@ -218,15 +227,13 @@ declined.
 Once approved or declined the lists won't be re-considered for review.
 
     >>> sorted_lists(list_set.registered_lists)
-    [<MailingList for team "team-four"; status=REGISTERED at ...>,
-     <MailingList for team "team-three"; status=REGISTERED at ...>]
+    [<MailingList for team "team-three"; status=REGISTERED at ...>]
 
-Approve a couple of other lists to illustrate some additional outcomes later
+Approve the other list to illustrate some additional outcomes later
 on.
 
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list_four.review(carlos, MailingListStatus.APPROVED)
-    >>> flush_database_updates()
+    >>> list_three.review(dirk, MailingListStatus.APPROVED)
+    >>> syncUpdate(list_three)
     >>> list(list_set.registered_lists)
     []
 
@@ -281,8 +288,15 @@ later.
 
 After Mailman has worked at constructing lists for a while, it reports (again
 through XMLRPC not shown here) on the status of each list construction.  Most,
-if not all will succeed, thus activating the team's mailing list.
+if not all will succeed, thus activating the team's mailing list. Also, once
+a mailing list is made active, its email address is registered in Launchpad
+and associated with the team's mailing list, so that it can be used as the
+team's contact address.
 
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> print email_set.getByEmail(list_one.address)
+    None
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
@@ -290,6 +304,8 @@ if not all will succeed, thus activating the team's mailing list.
     'ACTIVE'
     >>> list_three.status.name
     'ACTIVE'
+    >>> email_set.getByEmail(list_one.address).status.name
+    'VALIDATED'
 
 Some list constructions may fail.
 
@@ -313,7 +329,7 @@ This method will return None for missing teams or non-team people.
 
     >>> print list_set.get('not an existing team')
     None
-    >>> print list_set.get(carlos.name)
+    >>> print list_set.get(dirk.name)
     None
 
 
@@ -336,6 +352,12 @@ and report the deactivation results.
     >>> list_three.status.name
     'INACTIVE'
 
+Once a list's deactivation is complete, its email address' status is set to
+NEW.
+
+    >>> email_set.getByEmail(list_three.address).status.name
+    'NEW'
+
 But lists which are not active may not be deactivated.
 
     >>> list_two.deactivate()
@@ -346,6 +368,48 @@ But lists which are not active may not be deactivated.
     Traceback (most recent call last):
     ...
     AssertionError: Only active mailing lists may be deactivated
+
+
+== Reactivating lists ==
+
+A list which is inactive may be reactivated.
+
+    >>> list_three.status.name
+    'INACTIVE'
+    >>> list_three.reactivate()
+
+This doesn't immediately reactivate the mailing list though.  Mailman still
+needs to query for the requested reactivations, take the necessary actions,
+and report the reactivation results.
+
+    >>> list_three.status.name
+    'APPROVED'
+
+But lists which are not inactive may not be reactivated.
+
+    >>> list_three.reactivate()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only inactive mailing lists may be reactivated
+
+
+== Cancelling registrations ==
+
+Any mailing list in the REGISTERED state can be cancelled.  Mailing lists in
+any other state can't though.
+
+    >>> guitarists = new_team('guitarists')
+    >>> guitarists_list = list_set.new(guitarists)
+    >>> guitarists_list
+    <MailingList for team "guitarists"; status=REGISTERED...
+    >>> guitarists_list.cancelRegistration()
+    >>> print list_set.get('guitarists')
+    None
+
+    >>> list_three.cancelRegistration()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only mailing lists in the REGISTERED state...
 
 
 == Welcome messages ==
@@ -376,7 +440,7 @@ MODIFIED is not allowed.
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     Traceback (most recent call last):
     ...
-    AssertionError: Not a valid state transition
+    AssertionError: Not a valid state transition: Modified -> Active
 
 What really happens is that the list's state is first transitioned to
 UPDATING, and then to ACTIVE or FAILED.

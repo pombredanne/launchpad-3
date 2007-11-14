@@ -38,7 +38,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
             SourcePackageName
             JOIN POTemplate ON
                 POTemplate.sourcepackagename = SourcePackageName.id AND
-                POTemplate.distrorelease = %s AND
+                POTemplate.distroseries = %s AND
                 POTemplate.languagepack = TRUE
             JOIN POTemplateName ON
                 POTemplate.potemplatename = POTemplateName.id
@@ -60,6 +60,9 @@ def export(distroseries, component, update, force_utf8, logger):
         UTF-8.
     :arg logger: A logger object.
     """
+    # We will need when the export started later to add the timestamp for this
+    # export inside the exported tarball.
+    start_date = datetime.datetime.utcnow().strftime('%Y%m%d')
     export_set = getUtility(IVPOExportSet)
 
     logger.debug("Selecting PO files for export")
@@ -110,8 +113,11 @@ def export(distroseries, component, update, force_utf8, logger):
         index += 1
 
     logger.info("Adding timestamp file")
-    contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
-    archive.add_file('rosetta-%s/timestamp.txt' % distroseries.name, contents)
+    # Is important that the timestamp contain the date when the export
+    # started, not when it finished because that notes how old is the
+    # information the export contains.
+    archive.add_file(
+        'rosetta-%s/timestamp.txt' % distroseries.name, '%s\n' % start_date)
 
     logger.info("Adding mapping file")
     mapping_text = ''

@@ -18,19 +18,8 @@ from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPOExportRequestSet, IPOTemplate,
-    ITranslationExporter, ITranslationFile)
+    ITranslationExporter, ITranslationFileData)
 from canonical.launchpad.mail import simple_sendmail
-
-
-def get_template(obj):
-    """Determine translation template that obj relates to.
-
-    :param obj: a translation file or translation template object.  If obj is
-        a template, then obj itself is returned.
-    """
-    if IPOTemplate.providedBy(obj):
-        return obj
-    return obj.potemplate
 
 
 class ExportResult:
@@ -47,6 +36,7 @@ class ExportResult:
         self.name = name
         self.url = None
         self.failure = None
+        self.object_names = []
 
     def _getFailureEmailBody(self, person):
         """Send an email notification about the export failing."""
@@ -100,17 +90,37 @@ class ExportResult:
             # There are no errors, so nothing else to do here.
             return
 
-        # The export process had errors that we should notify to admins.
-        admins_email_body = textwrap.dedent('''
-            Hello admins,
+        # The export process had errors that we should notify admins about.
+        if self.object_names:
+            names = '\n'.join(self.object_names)
+            template_sentence = "\n" + textwrap.dedent(
+                "The failed request involved these objects:\n%s" % names)
+        else:
+            template_sentence = ""
 
-            Rosetta encountered problems exporting some files requested by
-            %s. This means we have a bug in
-            Launchpad that needs to be fixed to be able to proceed with
-            this export. You can see the list of failed files with the
-            error we got:
+        try:
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
 
-            %s''') % (person.browsername, self.failure)
+                Rosetta encountered problems exporting some files requested by
+                %s. This means we have a bug in
+                Launchpad that needs to be fixed to be able to proceed with
+                this export. You can see the list of failed files with the
+                error we got:
+
+                %s%s''') % (
+                    person.browsername, self.failure, template_sentence)
+        except UnicodeDecodeError:
+            # Unfortunately this happens sometimes: invalidly-encoded data
+            # makes it into the exception description, possibly from error
+            # messages printed by msgfmt.  Before we can fix that, we need to
+            # know what exports suffer from this problem.
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
+
+                A UnicodeDecodeError occurred while trying to notify you of a
+                failure during a translation export requested by %s.
+                %s''') % (person.browsername, template_sentence)
 
         simple_sendmail(
             from_addr=config.rosetta.rosettaadmin.email,
@@ -144,13 +154,19 @@ def process_request(person, objects, format, logger):
     translation_file_list = []
     last_template_name = None
     for obj in objects:
-        template_name = get_template(obj).displayname
+        if IPOTemplate.providedBy(obj):
+            template_name = obj.displayname
+            object_name = template_name
+        else:
+            template_name = obj.potemplate.displayname
+            object_name = obj.title
+        result.object_names.append(object_name)
         if template_name != last_template_name:
             logger.debug(
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
             last_template_name = template_name
-        translation_file_list.append(ITranslationFile(obj))
+        translation_file_list.append(ITranslationFileData(obj))
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(
@@ -193,31 +209,27 @@ def process_request(person, objects, format, logger):
 def process_queue(transaction_manager, logger):
     """Process each request in the translation export queue.
 
-    Each item is removed from the queue as it is processed, so the queue will
-    be empty when this function returns.
+    Each item is removed from the queue as it is processed, we only handle
+    one request with each function call.
     """
     request_set = getUtility(IPOExportRequestSet)
 
     request = request_set.popRequest()
-    while request is not None:
-        person, objects, format = request
+    if request is None:
+        return
 
-        try:
-            process_request(person, objects, format, logger)
-        except psycopg.Error:
-            # We had a DB error, we don't try to recover it here, just exit
-            # from the script and next run will retry the export.
-            logger.error(
-                "A DB exception was raised when exporting files for %s" % (
-                    person.displayname),
-                exc_info=True)
-            transaction_manager.abort()
-            break
+    person, objects, format = request
 
-        # This is here in case we need to process the same file twice in the
-        # same queue run. If we try to do that all in one transaction, the
-        # second time we get to the file we'll get a Librarian lookup error
-        # because files are not accessible in the same transaction as they're
-        # created.
+    try:
+        process_request(person, objects, format, logger)
+    except psycopg.Error:
+        # We had a DB error, we don't try to recover it here, just exit
+        # from the script and next run will retry the export.
+        logger.error(
+            "A DB exception was raised when exporting files for %s" % (
+                person.displayname),
+            exc_info=True)
+        transaction_manager.abort()
+    else:
+        # Apply all changes.
         transaction_manager.commit()
-        request = request_set.popRequest()

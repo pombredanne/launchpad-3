@@ -6,8 +6,7 @@ initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
 see if there is any work for Mailman to do.
 
     >>> # Note that this test is run multiple times, with the harness
-    >>> # providing several globals including `mailinglist_api`,
-    >>> # `print_actions`, `new_team`, and `commit`.
+    >>> # providing `mailinglist_api` and `commit` for impedance matching.
 
 
 == Registered lists ==
@@ -22,6 +21,7 @@ back from the XMLRPC call.
 
 Mailing lists are always tied -- one-to-one -- to teams.
 
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one = new_team('team-one')
     >>> team_two = new_team('team-two')
     >>> commit()
@@ -63,6 +63,8 @@ for it to create.
 
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> commit()
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     print_actions)
     >>> print_actions(pending_actions)
     team-one --> create {'welcome_message': u'Welcome to Team One'}
     team-two --> create {}

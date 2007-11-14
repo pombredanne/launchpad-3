@@ -2,6 +2,7 @@
 """Database classes that implement SourcePacakge items."""
 
 __metaclass__ = type
+
 __all__ = [
     'SourcePackage',
     'SourcePackageQuestionTargetMixin',
@@ -9,40 +10,35 @@ __all__ = [
 
 from operator import attrgetter
 from warnings import warn
-
-from zope.interface import implements
-
 from sqlobject.sqlbuilder import SQLConstant
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
-
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, BuildStatus, PackagePublishingStatus)
-
-from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
-from canonical.launchpad.database.sourcepackagerelease import (
-    SourcePackageRelease)
-from canonical.launchpad.database.translationimportqueue import (
-    HasTranslationImportsMixin)
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
+from canonical.launchpad.database.question import (
+    QuestionTargetMixin, QuestionTargetSearch)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (
+    BuildStatus, ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
+    IQuestionTarget, PackagingType, PackagePublishingPocket,
+    PackagePublishingStatus, QUESTION_STATUS_DEFAULT_SEARCH)
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -133,7 +129,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     to the relevant database objects.
     """
 
-    implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
+    implements(
+        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
+        IQuestionTarget)
 
     def __init__(self, sourcepackagename, distroseries):
         self.sourcepackagename = sourcepackagename
@@ -163,8 +161,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 """SourcePackagePublishingHistory.sourcepackagerelease =
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
-                   SourcePackagePublishingHistory.distrorelease = %s AND
-                   SourcePackagePublishingHistory.archive IN %s
+                   SourcePackagePublishingHistory.distroseries = %s AND
+                   SourcePackagePublishingHistory.archive IN %s AND
+                   SourcePackagePublishingHistory.dateremoved is NULL
                 """ % sqlvalues(
                         self.sourcepackagename,
                         self.distroseries,
@@ -206,8 +205,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def currentrelease(self):
-        latest_package = self._getFirstPublishingHistory(
-                     exclude_status=[PackagePublishingStatus.REMOVED])
+        latest_package = self._getFirstPublishingHistory()
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
@@ -215,9 +213,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
-        latest_package = self._getFirstPublishingHistory(
-                     version=version,
-                     exclude_status=[PackagePublishingStatus.REMOVED])
+        latest_package = self._getFirstPublishingHistory(version=version)
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
@@ -261,9 +257,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`."""
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
-                     exclude_status=[PackagePublishingStatus.REMOVED],
-                     order_by=[SQLConstant(order_const),
-                       "SourcePackagePublishingHistory.datepublished"])
+            order_by=[SQLConstant(order_const),
+                      "SourcePackagePublishingHistory.datepublished"])
         return [DistributionSourcePackageRelease(
                 distribution=self.distribution,
                 sourcepackagerelease=package.sourcepackagerelease)
@@ -277,18 +272,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         releases = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename,
-                            self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
-            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
+                SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.all_distro_archive_ids),
+            clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
             orderBy=[SQLConstant(order_const+" DESC")])
         return releases.distinct()
@@ -296,21 +289,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def name(self):
         return self.sourcepackagename.name
-
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
-        return sorted(list(result), key=lambda x: x.potemplatename.name)
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            iscurrent=True)
-        return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def product(self):
@@ -364,9 +342,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
         # if we have a parent distroseries, try that
-        if self.distroseries.parentseries is not None:
+        if self.distroseries.parent_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                               distroseries=self.distroseries.parentseries)
+                               distroseries=self.distroseries.parent_series)
             return sp.packaging
         # capitulate
         return None
@@ -415,7 +393,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distrorelease = %s" % sqlvalues(self.distroseries),
+            "BugTask.distroseries = %s" % sqlvalues(self.distroseries),
             user,
             count_subcontext_clause="BugTask.sourcepackagename = %s" % (
                 sqlvalues(self.sourcepackagename)))
@@ -437,7 +415,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return (
-            'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
+            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
     def setPackaging(self, productseries, user):
@@ -475,7 +453,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         condition_clauses = ["""
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
-        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
@@ -533,3 +511,43 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return None
 
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename)
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            distroseries = %s AND
+            sourcepackagename = %s AND
+            iscurrent IS TRUE AND
+            distroseries = DistroSeries.id AND
+            DistroSeries.distribution = Distribution.id AND
+            Distribution.official_rosetta IS TRUE
+            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
+            clauseTables = ['DistroSeries', 'Distribution'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            distroseries = %s AND
+            sourcepackagename = %s AND
+            distroseries = DistroSeries.id AND
+            DistroSeries.distribution = Distribution.id AND
+            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
+            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
+            clauseTables = ['DistroSeries', 'Distribution'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            shortlist(result, 300),
+            key=lambda x: (-x.priority, x.potemplatename.name))

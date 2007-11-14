@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     ISpecificationSet,
     NotFoundError,
+    SpecificationDefinitionStatus,
     )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -72,8 +73,6 @@ from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-
-from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -206,7 +205,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
         target = data.get('target')
         if name is not None and target is not None:
             if target.getSpecification(name):
-                errormessage = self.schema['name'].errormessage
+                errormessage = INewSpecification['name'].errormessage
                 self.setFieldError('name', errormessage % name)
 
 
@@ -542,7 +541,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
 
     schema = ISpecification
     field_names = ['target']
-    label =_('Move this blueprint to a different project')
+    label = _('Move this blueprint to a different project')
 
     def validate(self, data):
         """Ensure that the target is valid and that there is not

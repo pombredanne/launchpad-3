@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_CONTACT_BUGTASK_STATUSES',
+    'BugTaskImportance',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
@@ -37,7 +38,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
-from canonical.lp import dbschema
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
@@ -48,6 +48,67 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
     DBEnumeratedType, DBItem, use_template)
+
+
+class BugTaskImportance(DBEnumeratedType):
+    """Bug Task Importance.
+
+    Importance is used by developers and their managers to indicate how
+    important fixing a bug is. Importance is typically a combination of the
+    harm caused by the bug, and how often it is encountered.
+    """
+
+    UNKNOWN = DBItem(999, """
+        Unknown
+
+        The severity of this bug task is unknown.
+        """)
+
+    CRITICAL = DBItem(50, """
+        Critical
+
+        This bug is essential to fix as soon as possible. It affects
+        system stability, data integrity and/or remote access
+        security.
+        """)
+
+    HIGH = DBItem(40, """
+        High
+
+        This bug needs urgent attention from the maintainer or
+        upstream. It affects local system security or data integrity.
+        """)
+
+    MEDIUM = DBItem(30, """
+        Medium
+
+        This bug warrants an upload just to fix it, but can be put
+        off until other major or critical bugs have been fixed.
+        """)
+
+    LOW = DBItem(20, """
+        Low
+
+        This bug does not warrant an upload just to fix it, but
+        it should be fixed, if possible, next time the maintainer
+        does an upload. For example, it might be a typo in a document.
+        """)
+
+    WISHLIST = DBItem(10, """
+        Wishlist
+
+        This is not a bug, but a request for an enhancement or
+        new feature that does not yet exist in the package. It does
+        not affect system stability. For example: it might be a
+        usability or documentation fix.
+        """)
+
+    UNDECIDED = DBItem(5, """
+        Undecided
+
+        A relevant developer or manager has not yet decided how
+        important this bug is.
+        """)
 
 
 class BugTaskStatus(DBEnumeratedType):
@@ -231,8 +292,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_('Status'), vocabulary=BugTaskStatus,
         default=BugTaskStatus.NEW)
     importance = Choice(
-        title=_('Importance'), vocabulary='BugTaskImportance',
-        default=dbschema.BugTaskImportance.UNDECIDED)
+        title=_('Importance'), vocabulary=BugTaskImportance,
+        default=BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -399,6 +460,13 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         old_task and this task.
         """
 
+    def getPackageComponent():
+        """Return the task's package's component or None.
+
+        Returns the component associated to the latest package published
+        in that distribution. If the task is not a package task, returns
+        None.
+        """
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
@@ -409,12 +477,6 @@ class INullBugTask(IBugTask):
     already been filed and finding matching reports that don't yet
     have tasks reported in your context.
     """
-
-PENDING_BUGWATCH_VOCABUARY = SimpleVocabulary(
-    [SimpleTerm(
-        "pending_bugwatch",
-        title="Show only bugs that need to be forwarded to an upstream bug "
-              "tracker")])
 
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
@@ -432,12 +494,25 @@ UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
         title="Show bugs that are open upstream"),
     ])
 
+UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug "
+              "tracker"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved elsewhere"),
+    ])
+
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
-        value_type=Choice(title=_('Status'), vocabulary=BugTaskStatusSearch, default=BugTaskStatusSearch.NEW),
+        value_type=Choice(
+            title=_('Status'),
+            vocabulary=BugTaskStatusSearch,
+            default=BugTaskStatusSearch.NEW),
         default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
         required=False)
     importance = List(
@@ -513,13 +588,14 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form for upstream products.
-    
+
     This schema is the same as IBugTaskSearch, except that it has only
     one choice for Status Upstream.
     """
     status_upstream = List(
         title=_('Status Upstream'),
-        value_type=Choice(vocabulary=PENDING_BUGWATCH_VOCABUARY),
+        value_type=Choice(
+            vocabulary=UPSTREAM_PRODUCT_STATUS_VOCABULARY),
         required=False)
 
 
@@ -623,7 +699,7 @@ class IProductSeriesBugTask(IBugTask):
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     """ISelectResults (from SQLOS) should be specifying __getslice__.
-    
+
     This interface defines the missing __getslice__ method.
     """
     def __getslice__(i, j):
@@ -796,9 +872,13 @@ class IBugTaskSet(Interface):
 
     def findExpirableBugTasks(min_days_old):
         """Return a list of bugtasks that are at least min_days_old.
-        
-        An Expirable bug task is unassigned, in the INCOMPLETE status,
-        and belongs to a Product or Distribtion that uses Malone.
+
+        A bugtask is expirable if its status is Incomplete, and the bug
+        report has been never been confirmed, and it has been inactive for
+        min_days_old. Only bugtasks that belong to Products or Distributions
+        that use launchpad to track bugs can be returned. The implementation
+        must define the criteria for determining that the bug report is
+        inactive and have never been confirmed.
         """
 
     def maintainedBugTasks(person, minimportance=None,
@@ -844,10 +924,11 @@ class IBugTaskSet(Interface):
 
 
 def valid_remote_bug_url(value):
+    """Verify that the URL is to a bug to a known bug tracker."""
     from canonical.launchpad.interfaces.bugwatch import (
         IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
-        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+        getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
         pass
     except UnrecognizedBugTrackerURL:

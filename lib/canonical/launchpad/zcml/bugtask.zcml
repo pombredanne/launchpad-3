@@ -29,10 +29,10 @@
                            date_confirmed date_incomplete date_inprogress
                            date_closed bug_subscribers is_complete
                            canTransitionToStatus isMentor canMentor
-                           isSubscribed" />
+                           isSubscribed getPackageComponent" />
         <require
             permission="launchpad.View"
-            attributes="bugtargetname bugtargetdisplayname 
+            attributes="bugtargetname bugtargetdisplayname
                         product productseries sourcepackagename distribution
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
@@ -117,10 +117,9 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugTaskTableRowView"
-      name="+bugtasks-and-nominations-table-row"
       permission="launchpad.View"
+      name="+bugtasks-and-nominations-table-row"
       template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
-
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
@@ -225,22 +224,6 @@
         class="canonical.launchpad.browser.BugTaskView"
         permission="launchpad.View"
         template="../templates/bugtask-index.pt" />
-
-    <browser:addform
-        name="+addurl"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugExtRefAddView"
-        fields="url title"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-    </browser:addform>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"

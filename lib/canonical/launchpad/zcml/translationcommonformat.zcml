@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
     <content
-        class="canonical.launchpad.translationformat.translation_common_format.TranslationMessage">
+        class="canonical.launchpad.translationformat.translation_common_format.TranslationMessageData">
         <allow
-            interface="canonical.launchpad.interfaces.ITranslationMessage" />
+            interface="canonical.launchpad.interfaces.ITranslationMessageData" />
     </content>
 
 </configure>

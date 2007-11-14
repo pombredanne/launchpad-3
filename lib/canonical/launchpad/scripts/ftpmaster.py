@@ -1,8 +1,6 @@
-"""Copyright Canonical Limited 2005-2004
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+"""FTPMaster utilities."""
 
-Author: Celso Providelo <celso.providelo@canonical.com>
-FTPMaster utilities.
-"""
 __metaclass__ = type
 
 __all__ = [
@@ -15,11 +13,10 @@ __all__ = [
     'ChrootManagerError',
     'SyncSource',
     'SyncSourceError',
-    'PackageLocationError',
-    'PackageLocation',
     'PackageCopyError',
     'PackageCopier',
-    'LpQueryDistro'
+    'LpQueryDistro',
+    'PackageRemover',
     ]
 
 import apt_pkg
@@ -35,17 +32,18 @@ from zope.component import getUtility
 from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
+    DistroSeriesStatus, IBinaryPackageNameSet, IDistributionSet,
+    IBinaryPackageReleaseSet, ILaunchpadCelebrities, NotFoundError,
+    ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    DistroSeriesStatus)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.scripts.ftpmasterbase import (
+    build_package_location, PackageLocationError, SoyuzScript, SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -153,11 +151,19 @@ class ArchiveOverrider:
                            % (package_name, self.distroseries.name))
             return
 
-        sp.currentrelease.changeOverride(new_component=self.component,
-                                         new_section=self.section)
-        self.log.info("'%s/%s/%s' source overridden"
-                      % (package_name, sp.currentrelease.component.name,
-                         sp.currentrelease.section.name))
+        override = sp.currentrelease.current_published.changeOverride(
+            new_component=self.component, new_section=self.section)
+
+        if override is None:
+            self.log.info("'%s/%s/%s' remained the same"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
+        else:
+            self.log.info("'%s/%s/%s' source overridden"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
 
     def processBinaryChange(self, package_name):
         """Perform changes in a given binary package name
@@ -197,7 +203,9 @@ class ArchiveOverrider:
             # iterations (on distroarchseries that obviously do not contain
             # any publication).
             if bpr.architecturespecific:
-                considered_archs = [bpr.build.distroarchseries]
+                archtag = bpr.build.distroarchseries.architecturetag
+                architecture = self.distroseries[archtag]
+                considered_archs = [architecture]
             else:
                 considered_archs = self.distroseries.architectures
             # Perform overrides.
@@ -219,16 +227,24 @@ class ArchiveOverrider:
                              distroarchseries.architecturetag))
             return
         dasbpr = dasbp[current.binarypackagerelease.version]
-        dasbpr.changeOverride(
+        override = dasbpr.current_publishing_record.changeOverride(
             new_component=self.component,
             new_priority=self.priority,
             new_section=self.section)
-        self.log.info(
-            "'%s/%s/%s/%s' binary overridden in %s/%s"
-            % (binaryname, current.component.name,
-               current.section.name, current.priority.name,
-               self.distroseries.name,
-               distroarchseries.architecturetag))
+
+        if override is None:
+            self.log.info(
+                "'%s/%s/%s/%s' remained the same"
+                % (current.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name))
+        else:
+            self.log.info(
+                "'%s/%s/%s/%s' binary overridden in %s"
+                % (override.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name,
+                   override.distroarchseries.displayname))
 
 
 class ArchiveCruftCheckerError(Exception):
@@ -320,7 +336,7 @@ class ArchiveCruftChecker:
         """
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
-                "File does not exists:%s" % filename)
+                "File does not exist: %s" % filename)
         unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
@@ -602,9 +618,10 @@ class ArchiveCruftChecker:
 
             for distroarchseries in self.distroseries.architectures:
                 binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-                darbp = distroarchseries.getBinaryPackage(binarypackagename)
+                dasbp = distroarchseries.getBinaryPackage(binarypackagename)
+                dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = darbp.supersede()
+                    sbpph = dasbpr.current_publishing_record.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
@@ -825,8 +842,8 @@ class ChrootManagerError(Exception):
 class ChrootManager:
     """Chroot actions wrapper.
 
-    The 'distroarchseries' and 'pocket' arguments are mandatory and
-    'filepath' is optional.
+    The 'distroarchseries' argument is mandatory and 'filepath' is
+    optional.
 
     'filepath' is required by some allowed actions as source or destination,
 
@@ -837,9 +854,8 @@ class ChrootManager:
 
     allowed_actions = ['add', 'update', 'remove', 'get']
 
-    def __init__(self, distroarchseries, pocket, filepath=None):
+    def __init__(self, distroarchseries, filepath=None):
         self.distroarchseries = distroarchseries
-        self.pocket = pocket
         self.filepath = filepath
         self._messages = []
 
@@ -878,16 +894,15 @@ class ChrootManager:
         Return the respective IPocketChroot instance.
         Raises ChrootManagerError if it could not be found.
         """
-        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot()
         if pocket_chroot is None:
             raise ChrootManagerError(
-                'Could not find chroot for %s/%s'
-                % (self.distroarchseries.title, self.pocket.name))
+                'Could not find chroot for %s'
+                % (self.distroarchseries.title))
 
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) retrieved."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) retrieved."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
         return pocket_chroot
 
@@ -896,49 +911,46 @@ class ChrootManager:
         if self.filepath is None:
             raise ChrootManagerError('Missing local chroot file path.')
         alias = self._upload()
-        return self.distroarchseries.addOrUpdateChroot(self.pocket, alias)
+        return self.distroarchseries.addOrUpdateChroot(alias)
 
     def add(self):
         """Create a new PocketChroot record.
 
         Raises ChrootManagerError if self.filepath isn't set.
-        Update of pre-existent PocketChroot record will be automaticaly
+        Update of pre-existing PocketChroot record will be automatically
         handled.
         It's a bind to the self.update method.
         """
         pocket_chroot = self._update()
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) added."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) added."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
     def update(self):
         """Update a PocketChroot record.
 
         Raises ChrootManagerError if filepath isn't set
-        Creation of inexistent PocketChroot records will be automaticaly
+        Creation of non-existing PocketChroot records will be automatically
         handled.
         """
         pocket_chroot = self._update()
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) updated."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) updated."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
     def remove(self):
-        """Overwrite existent PocketChroot file to none.
+        """Overwrite existing PocketChroot file to none.
 
         Raises ChrootManagerError if the chroot record isn't found.
         """
         pocket_chroot = self._getPocketChroot()
-        self.distroarchseries.addOrUpdateChroot(self.pocket, None)
+        self.distroarchseries.addOrUpdateChroot(None)
         self._messages.append(
-            "PocketChroot for '%s'/%s (%d) removed."
-            % (pocket_chroot.distroarchseries.title,
-               pocket_chroot.pocket.name, pocket_chroot.id))
+            "PocketChroot for '%s' (%d) removed."
+            % (pocket_chroot.distroarchseries.title, pocket_chroot.id))
 
     def get(self):
-        """Download chroot file from Librarian and store"""
+        """Download chroot file from Librarian and store."""
         pocket_chroot = self._getPocketChroot()
 
         if self.filepath is None:
@@ -1096,55 +1108,6 @@ class SyncSource:
                     % (filename, actual_size, expected_size))
 
 
-class PackageLocationError(Exception):
-    """Raised when something went wrong when building PackageLocation."""
-
-
-class PackageLocation:
-    """Object used to model locations when copying publications.
-
-    It groups distribution + distroseries + pocket in a way they
-    can be easily manipulated and compared.
-    """
-    distribution = None
-    distroseries = None
-    pocket = None
-
-    def __init__(self, distribution_name, suite_name):
-        """Store given parameters.
-
-        Build LP objects and expand suite_name into distroseries + pocket.
-        """
-        try:
-            self.distribution = getUtility(IDistributionSet)[distribution_name]
-        except NotFoundError, err:
-            raise PackageLocationError(
-                "Could not find distribution %s" % err)
-
-        if suite_name is not None:
-            try:
-                suite = self.distribution.getDistroSeriesAndPocket(suite_name)
-            except NotFoundError, err:
-                raise PackageLocationError(
-                    "Could not find suite %s" % err)
-            else:
-                self.distroseries, self.pocket = suite
-        else:
-            self.distroseries = self.distribution.currentseries
-            self.pocket = PackagePublishingPocket.RELEASE
-
-    def __eq__(self, other):
-        if (self.distribution.id == other.distribution.id and
-            self.distroseries.id == other.distroseries.id and
-            self.pocket.value == other.pocket.value):
-            return True
-        return False
-
-    def __str__(self):
-        return '%s/%s/%s' % (self.distribution.name, self.distroseries.name,
-                             self.pocket.name)
-
-
 class PackageCopyError(Exception):
     """Raised when a package copy operation failed.  The textual content
     should explain the error.
@@ -1294,11 +1257,12 @@ class PackageCopier(LaunchpadScript):
         """
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
-        from_location = PackageLocation(
+        from_location = build_package_location(
             self.options.from_distribution_name, self.options.from_suite)
+
         # from_distribution_name intentionally used here as we currently
         # only support moving within the same distro:
-        to_location = PackageLocation(
+        to_location = build_package_location(
             self.options.from_distribution_name, self.options.to_suite)
 
         if from_location == to_location:
@@ -1382,7 +1346,7 @@ class PackageCopier(LaunchpadScript):
         """
         self.logger.info("Performing source copy.")
 
-        source_copy = from_source.copyTo(
+        source_copy = from_source.current_published.copyTo(
             distroseries=to_location.distroseries,
             pocket=to_location.pocket)
 
@@ -1405,7 +1369,7 @@ class PackageCopier(LaunchpadScript):
         # is not published it source location. Both situations are
         # safe, so that's why we swallow this error.
         try:
-            binary_copy = binary.copyTo(
+            binary_copy = binary.current_publishing_record.copyTo(
                 distroseries=to_location.distroseries,
                 pocket=to_location.pocket)
         except NotFoundError:
@@ -1416,7 +1380,7 @@ class PackageCopier(LaunchpadScript):
             binary_copy.binarypackagerelease.name)
         bin_version = binary_copy.binarypackagerelease.version
         binary_copied = darbp[bin_version]
-        
+
         self.logger.info("Copied: %s" % binary_copied.title)
         return binary_copied
 
@@ -1441,7 +1405,7 @@ class LpQueryDistro(LaunchpadScript):
             '-d', '--distribution', dest='distribution_name',
             default='ubuntu', help='Context distribution name.')
         self.parser.add_option(
-            '-s', '--suite', dest='suite_name', default=None,
+            '-s', '--suite', dest='suite', default=None,
             help='Context suite name.')
 
     def main(self):
@@ -1460,9 +1424,9 @@ class LpQueryDistro(LaunchpadScript):
         LaunchpadScriptFailure.
         """
         try:
-            self.location = PackageLocation(
+            self.location = build_package_location(
                 distribution_name=self.options.distribution_name,
-                suite_name=self.options.suite_name)
+                suite=self.options.suite)
         except PackageLocationError, err:
             raise LaunchpadScriptFailure(err)
 
@@ -1518,12 +1482,12 @@ class LpQueryDistro(LaunchpadScript):
         i.e, passing an arbitrary 'suite' and asking for the CURRENT suite
         in the context distribution.
         """
-        if self.options.suite_name is not None:
+        if self.options.suite is not None:
             raise LaunchpadScriptFailure(
-                "Action does not accept defined suite_name.")
+                "Action does not accept defined suite.")
 
     # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution. raising NotFoundError instead.
+    # IDistribution.
     def getSeriesByStatus(self, status):
         """Query context distribution for a distroseries in a given status.
 
@@ -1535,7 +1499,7 @@ class LpQueryDistro(LaunchpadScript):
         for series in self.location.distribution.serieses:
             if series.status == status:
                 return series
-        raise LaunchpadScriptFailure(
+        raise NotFoundError(
                 "Could not find a %s distroseries in %s"
                 % (status.name, self.location.distribution.name))
 
@@ -1544,13 +1508,16 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
+
         It may raise LaunchpadScriptFailure if a suite was passed in the
-        command-line.
-        See self.getSeriesByStatus for further information
+        command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.CURRENT)
+        try:
+            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
+        except NotFoundError, err:
+            raise LaunchpadScriptFailure(err)
+
         return series.name
 
     @property
@@ -1558,13 +1525,31 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
-        It may raise LaunchpadScriptFailure if a suite was passed in the
+
+        It may raise `LaunchpadScriptFailure` if a suite was passed in the
         command-line.
-        See self.getSeriesByStatus for further information
+
+        Return the first FROZEN distroseries found if there is no
+        DEVELOPMENT one available.
+
+        Raises `NotFoundError` if neither a CURRENT nor a FROZEN
+        candidate could be found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.DEVELOPMENT)
+        series = None
+        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
+                         DistroSeriesStatus.FROZEN)
+        for status in wanted_status:
+            try:
+                series = self.getSeriesByStatus(status)
+            except NotFoundError:
+                pass
+
+        if series is None:
+            raise LaunchpadScriptFailure(
+                'There is no DEVELOPMENT distroseries for %s' %
+                self.location.distribution.name)
+
         return series.name
 
     @property
@@ -1596,3 +1581,93 @@ class LpQueryDistro(LaunchpadScript):
         series = self.location.distroseries
         return series.nominatedarchindep.architecturetag
 
+
+class PackageRemover(SoyuzScript):
+    """SoyuzScript implementation for published package removal.."""
+
+    usage = '%prog -s warty mozilla-firefox'
+    description = 'REMOVE a published package.'
+    success_message = (
+        "The archive will be updated in the next publishing cycle.")
+
+    def add_my_options(self):
+        """Adding local options."""
+        # XXX cprov 20071025: we need a hook for loading SoyuzScript default
+        # options automatically. This is ugly.
+        SoyuzScript.add_my_options(self)
+
+        # Mode options.
+        self.parser.add_option("-b", "--binary", dest="binaryonly",
+                               default=False, action="store_true",
+                               help="Remove binaries only.")
+        self.parser.add_option("-S", "--source-only", dest="sourceonly",
+                               default=False, action="store_true",
+                               help="Remove source only.")
+
+        # Removal information options.
+        self.parser.add_option("-u", "--user", dest="user",
+                               help="Launchpad user name.")
+        self.parser.add_option("-m", "--removal_comment",
+                               dest="removal_comment",
+                               help="Removal comment")
+
+    def mainTask(self):
+        """Execute the package removal task.
+
+        Build location and target objects.
+
+        Can raise SoyuzScriptError.
+        """
+        if len(self.args) != 1:
+            raise SoyuzScriptError(
+                "Exactly one non-option argument must be given, "
+                "the packagename.")
+
+        packagename = self.args[0]
+
+        if self.options.user is None:
+            raise SoyuzScriptError("Launchpad username must be given.")
+
+        if self.options.removal_comment is None:
+            raise SoyuzScriptError("Removal comment must be given.")
+
+        removed_by = getUtility(IPersonSet).getByName(self.options.user)
+        if removed_by is None:
+            raise SoyuzScriptError(
+                "Invalid launchpad usename: %s" % self.options.user)
+
+        removables = []
+        if self.options.binaryonly:
+            removables.extend(self.findLatestPublishedBinaries(packagename))
+        elif self.options.sourceonly:
+            removables.append(self.findLatestPublishedSource(packagename))
+        else:
+            source_pub = self.findLatestPublishedSource(packagename)
+            removables.append(source_pub)
+            removables.extend(source_pub.getPublishedBinaries())
+
+        self.logger.info("Removing candidates:")
+        for removable in removables:
+            self.logger.info('\t%s' % removable.displayname)
+
+        self.logger.info("Removed-by: %s" % removed_by.displayname)
+        self.logger.info("Comment: %s" % self.options.removal_comment)
+
+        removals = []
+        for removable in removables:
+            removed = removable.requestDeletion(
+                removed_by=removed_by,
+                removal_comment=self.options.removal_comment)
+            removals.append(removed)
+
+        if len(removals) == 1:
+            self.logger.info(
+                "%s package successfully removed." % len(removals))
+        elif len(removals) > 1:
+            self.logger.info(
+                "%s packages successfully removed." % len(removals))
+        else:
+            self.logger.info("No package removed (bug ?!?).")
+
+        # Information returned mainly for the benefit of the test harness.
+        return removals

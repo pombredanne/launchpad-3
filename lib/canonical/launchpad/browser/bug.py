@@ -1,5 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
+"""IBug related view classes."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -8,7 +10,6 @@ __all__ = [
     'BugFacets',
     'BugMarkAsDuplicateView',
     'BugNavigation',
-    'BugRelatedObjectEditView',
     'BugSecrecyEditView',
     'BugSetNavigation',
     'BugTextView',
@@ -19,11 +20,14 @@ __all__ = [
     'MaloneView',
     ]
 
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 import operator
 
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
@@ -38,21 +42,24 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
+from canonical.launchpad.mailnotification import (
+    MailWrapper, format_rfc2822_date)
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
-    LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
+    LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
 class BugNavigation(Navigation):
-
+    """Navigation for the `IBug`."""
     # It would be easier, since there is no per-bug sequence for a BugWatch
     # and we have to leak the BugWatch.id anyway, to hang bugwatches off a
     # global /bugwatchs/nnnn
@@ -68,13 +75,14 @@ class BugNavigation(Navigation):
 
     @stepthrough('+watch')
     def traverse_watches(self, name):
+        """Retrieve a BugWatch by name."""
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
 
 
 class BugFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBug.
+    """The links that will appear in the facet menu for an `IBug`.
 
     However, we never show this, but it does apply to things like
     bug nominations, by 'acquisition'.
@@ -86,11 +94,12 @@ class BugFacets(StandardLaunchpadFacets):
 
 
 class BugSetNavigation(Navigation):
-
+    """Navigation for the IBugSet."""
     usedfor = IBugSet
 
     @stepthrough('+text')
     def text(self, name):
+        """Retrieve a bug by name."""
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except (NotFoundError, ValueError):
@@ -98,6 +107,7 @@ class BugSetNavigation(Navigation):
 
 
 class BugContextMenu(ContextMenu):
+    """Context menu of actions that can be performed upon a Bug."""
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
@@ -110,26 +120,32 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
+        """Return the 'Edit description/tags' Link."""
         text = 'Edit description/tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
+        """Return the 'Set privacy/security' Link."""
         text = 'Set privacy/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
+        """Return the 'Mark as duplicate' Link."""
         text = 'Mark as duplicate'
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
+        """Return the 'lso affects project' Link."""
         text = 'Also affects project'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
+        """Return the 'Also affects distribution' Link."""
         text = 'Also affects distribution'
         return Link('+distrotask', text, icon='add')
 
     def subscription(self):
+        """Return the 'Subscribe/Unsubscribe' Link."""
         user = getUtility(ILaunchBag).user
         if user is None:
             text = 'Subscribe/Unsubscribe'
@@ -152,10 +168,12 @@ class BugContextMenu(ContextMenu):
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
+        """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def nominate(self):
+        """Return the 'Target/Nominate for release' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
@@ -166,14 +184,17 @@ class BugContextMenu(ContextMenu):
         return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
+        """Return the 'Comment or attach file' Link."""
         text = 'Comment or attach file'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
+        """Return the 'Add branch' Link."""
         text = 'Add branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
+        """Return the 'Link tp CVE' Link."""
         text = structured(
             'Link to '
             '<abbr title="Common Vulnerabilities and Exposures Index">'
@@ -182,17 +203,20 @@ class BugContextMenu(ContextMenu):
         return Link('+linkcve', text, icon='add')
 
     def unlinkcve(self):
+        """Return 'Remove CVE link' Link."""
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def offermentoring(self):
+        """Return the 'Offer mentorship' Link."""
         text = 'Offer mentorship'
         user = getUtility(ILaunchBag).user
         enabled = self.context.bug.canMentor(user)
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):
+        """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
         enabled = (self.context.bug.isMentor(user) and
@@ -201,6 +225,7 @@ class BugContextMenu(ContextMenu):
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def activitylog(self):
+        """Return the 'Activity log' Link."""
         text = 'View activity log'
         return Link('+activity', text, icon='list')
 
@@ -231,6 +256,7 @@ class MaloneView(LaunchpadFormView):
         return self.getWidgetError('scope')
 
     def initialize(self):
+        """Initialize the view to handle the request."""
         LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
         if bug_id:
@@ -278,7 +304,7 @@ class MaloneView(LaunchpadFormView):
 
 
 class BugView(LaunchpadView):
-    """View class for presenting information about an IBug.
+    """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
     adapted to IBug in order to make the security declarations work
@@ -290,7 +316,7 @@ class BugView(LaunchpadView):
     """
 
     def currentBugTask(self):
-        """Return the current IBugTask.
+        """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.
         """
@@ -349,7 +375,8 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(self.context.bugtasks, key=operator.attrgetter('id'))
+        bugtasks = sorted(
+            self.context.bugtasks, key=operator.attrgetter('id'))
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
@@ -369,6 +396,7 @@ class BugEditViewBase(LaunchpadEditFormView):
 
     @property
     def next_url(self):
+        """Return the next URL to call when this call completes."""
         return canonical_url(self.context)
 
 
@@ -413,12 +441,14 @@ class BugEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def edit_bug_action(self, action, data):
+        """Update the bug with submitted changes."""
         if not self._confirm_new_tags:
             self.updateBugFromData(data)
             self.next_url = canonical_url(self.context)
 
     @action('Yes, define new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
+        """Define a new tag."""
         self.actions['field.actions.change'].success(data)
 
     def render(self):
@@ -436,6 +466,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Update the bug."""
         self.updateBugFromData(data)
 
 
@@ -447,25 +478,30 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Update the bug."""
+        # We will modify data later, so take a copy now.
+        data = dict(data)
+
+        # We handle privacy changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.setPrivate() to
+        # ensure auditing information is recorded.
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        private = data.pop('private')
+        private_changed = bug.setPrivate(
+            private, getUtility(ILaunchBag).user)
+        if private_changed:
+            # Although the call to updateBugFromData later on will
+            # send notification of changes, it will only do so if it
+            # makes the change. We have applied the 'private' change
+            # already, so updateBugFromData will only send an event if
+            # 'security_related' is changed, and we can't have that.
+            notify(SQLObjectModifiedEvent(
+                    bug, bug_before_modification, ['private']))
+
+        # Apply other changes.
         self.updateBugFromData(data)
-
-
-class BugRelatedObjectEditView(SQLObjectEditView):
-    """View class for edit views of bug-related object.
-
-    Examples would include the edit cve page, edit subscription page,
-    etc.
-    """
-    def __init__(self, context, request):
-        SQLObjectEditView.__init__(self, context, request)
-        # Store the current bug in an attribute of the view, so that
-        # ZPT rendering code can access it.
-        self.bug = getUtility(ILaunchBag).bug
-        self.current_bugtask = getUtility(ILaunchBag).bugtask
-
-    def changed(self):
-        """Redirect to the bug page."""
-        self.request.response.redirect(canonical_url(self.current_bugtask))
 
 
 class DeprecatedAssignedBugsView:
@@ -477,11 +513,11 @@ class DeprecatedAssignedBugsView:
     FOAF URL.
     """
     def __init__(self, context, request):
-        """Redirect the user to their assigned bugs report."""
         self.context = context
         self.request = request
 
     def redirect_to_assignedbugs(self):
+        """Redirect the user to their assigned bugs report."""
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
@@ -490,14 +526,15 @@ class DeprecatedAssignedBugsView:
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
 
-    def person_text(self, person):
-        return '%s (%s)' % (person.displayname, person.name)
-
     def bug_text(self, bug):
+        """Return the bug information for text display."""
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
-        text.append('reporter: %s' % self.person_text(bug.owner))
+        text.append('date-reported: %s' % format_rfc2822_date(bug.datecreated))
+        text.append('date-updated: %s' %
+            format_rfc2822_date(bug.date_last_updated))
+        text.append('reporter: %s' % bug.owner.unique_displayname)
 
         if bug.duplicateof:
             text.append('duplicate-of: %d' % bug.duplicateof.id)
@@ -510,23 +547,53 @@ class BugTextView(LaunchpadView):
         else:
             text.append('duplicates: ')
 
-        text.append('subscribers: ')
+        if bug.private:
+            # XXX this could include date_made_private and
+            # who_made_private but Bjorn doesn't let me.
+            #    -- kiko, 2007-10-31
+            text.append('private: yes')
 
+        if bug.security_related:
+            text.append('security: yes')
+
+        text.append('attachments: ')
+        for attachment in bug.attachments:
+            text.append(' %s' % self.attachment_text(attachment))
+            
+        text.append('tags: %s' % ' '.join(bug.tags))  
+
+        text.append('subscribers: ')
         for subscription in bug.subscriptions:
-            text.append(' %s' % self.person_text(subscription.person))
+            text.append(' %s' % subscription.person.unique_displayname)
 
         return ''.join(line + '\n' for line in text)
 
     def bugtask_text(self, task):
+        """Return a BugTask for text display."""
         text = []
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
-        text.append('reporter: %s' % self.person_text(task.owner))
+        text.append('date-created: %s' % format_rfc2822_date(task.datecreated))
+
+        for status in ["confirmed", "assigned", "inprogress",
+                       "closed", "incomplete"]:
+            date = getattr(task, "date_%s" % status)
+            if date:
+                text.append("date-%s: %s" % (status, date))
+
+        text.append('reporter: %s' % task.owner.unique_displayname)
+
+        if task.bugwatch:
+            text.append('watch: %s' % task.bugwatch.url)
 
         text.append('importance: %s' % task.importance.title)
 
+        component = task.getPackageComponent()
+        if component:
+            text.append('component: %s' % component.name)
+
         if task.assignee:
-            text.append('assignee: %s' % self.person_text(task.assignee))
+            text.append('assignee: %s' % task.assignee.unique_displayname)
         else:
             text.append('assignee: ')
 
@@ -537,15 +604,56 @@ class BugTextView(LaunchpadView):
 
         return ''.join(line + '\n' for line in text)
 
+    def attachment_text(self, attachment):
+        """Return a text representation of a bug attachment."""
+        return "%s %s" % (attachment.libraryfile.http_url,
+                          attachment.libraryfile.mimetype)
+
+    def comment_text(self):
+        """Return a text representation of bug comments."""
+
+        def build_message(text):
+            mailwrapper = MailWrapper(width=72)
+            text = mailwrapper.format(text)
+            message = MIMEText(text.encode('utf-8'),
+                'plain', 'utf-8')
+            # This is redundant and makes the template noisy
+            del message['MIME-Version']
+            return message
+
+        from canonical.launchpad.browser.bugtask import (
+            get_visible_comments, get_comments_for_bugtask)
+
+        # XXX: for some reason, get_comments_for_bugtask takes a task,
+        # not a bug. For now live with it. -- kiko, 2007-10-31
+        first_task = self.context.bugtasks[0]
+        all_comments = get_comments_for_bugtask(first_task)
+        comments = get_visible_comments(all_comments[1:])
+
+        comment_mime = MIMEMultipart()
+        message = build_message(self.context.description)
+        comment_mime.attach(message)
+
+        for comment in comments:
+            message = build_message(comment.text_for_display)
+            message['Author'] = comment.owner.unique_displayname.encode('utf-8')
+            message['Date'] = format_rfc2822_date(comment.datecreated)
+            message['Message-Id'] = comment.rfc822msgid
+            comment_mime.attach(message)
+
+        return comment_mime.as_string().decode('utf-8')
+
     def render(self):
+        """Return a text representation of the Bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        texts = (
-            [self.bug_text(self.context)] +
-            [self.bugtask_text(task) for task in self.context.bugtasks])
-        return u'\n'.join(texts)
+        texts = [self.bug_text(self.context)]
+        texts.extend(self.bugtask_text(task) for task in self.context.bugtasks)
+        texts.append(self.comment_text())
+        return "\n".join(texts)
 
 
 class BugURL:
+    """Bug URL creation rules."""
     implements(ICanonicalUrlData)
 
     inside = None
@@ -556,5 +664,6 @@ class BugURL:
 
     @property
     def path(self):
+        """Return the path component of the URL."""
         return u"bugs/%d" % self.context.id
 

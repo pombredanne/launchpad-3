@@ -28,7 +28,7 @@ If we POST without the appropriate format included, we tell the user off:
   >>> browser.getControl('Format:').clear() 
   >>> browser.getControl('Request Download').click()
 
-  >>> for message in get_feedback_messages(browser):
+  >>> for message in get_feedback_messages(browser.contents):
   ...     print message
   Please select a valid format for download.
 
@@ -39,7 +39,7 @@ a nice error message.
   >>> browser.getControl('Format:').value = ['PO']
   >>> browser.getControl('Request Download').click()
 
-  >>> for message in get_feedback_messages(browser):
+  >>> for message in get_feedback_messages(browser.contents):
   ...     print message
   Please select at least one translation or template.
 
@@ -53,7 +53,7 @@ added to the export queue and individual requests are added for the PO files.
   >>> print browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
-  >>> for message in get_feedback_messages(browser):
+  >>> for message in get_feedback_messages(browser.contents):
   ...     print message
   Your request has been received. Expect to receive an email shortly.
 
@@ -69,7 +69,7 @@ This is a no-op: (See bug https://launchpad.net/rosetta/+bug/1558)
   >>> print browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
-  >>> for message in get_feedback_messages(browser):
+  >>> for message in get_feedback_messages(browser.contents):
   ...     print message
   Your request has been received. Expect to receive an email shortly.
 

@@ -10,13 +10,16 @@ import xmlrpclib
 import pytz
 
 from twisted.application import strports
+
 from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
+from canonical.config import config
+from canonical.functional import XMLRPCTestTransport, setUpMockRootFolder
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadTestSetup)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.config import config
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -29,39 +32,73 @@ def _getPort():
     return int(args[0])
 
 
-class XMLRPCv1TestCase(LaunchpadTestCase):
+class XMLRPCAuthServerTestCase(LaunchpadTestCase):
+    """Base fixture for XMLRPC test case to the AuthServer."""
+
+    # Should contain the end-point to test.
+    endpoint = ''
+
     def setUp(self):
+        """Set up the XML-RPC server."""
         LaunchpadTestCase.setUp(self)
         AuthserverTacTestSetup().setUp()
-        self.server = xmlrpclib.Server('http://localhost:%s/' % _getPort())
+        self.server = xmlrpclib.Server('http://localhost:%s%s' % (
+            _getPort(), self.endpoint))
 
     def tearDown(self):
         """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
         LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
+ 
+class SSHKeysTestMixin:
+    """Test the getSSHKeys method.
+
+    This method is present in V1 and V2 interface.
+    """
+
+    def test_getSSHKeys(self):
+        # Unknown users have no SSH keys, of course.
+        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
+
+        # Check that the SSH key in the sample data can be retrieved
+        # successfully.
+        keys = self.server.getSSHKeys('test@canonical.com')
+
+        # There should only be one key for this user.
+        self.assertEqual(1, len(keys))
+
+        # Check the keytype is being returned correctly.
+        keytype, keytext = keys[0]
+        self.assertEqual('DSA', keytype)
+
+
+
+class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
+
+    endpoint = '/'
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
-        markDict = self.server.getUser('mark@hbd.com')
-        self.assertEqual('Mark Shuttleworth', markDict['displayname'])
-        self.assertEqual(['mark@hbd.com'], markDict['emailaddresses'])
-        self.assert_(markDict.has_key('id'))
-        self.assert_(markDict.has_key('salt'))
+        mark_dict = self.server.getUser('mark@hbd.com')
+        self.assertEqual('Mark Shuttleworth', mark_dict['displayname'])
+        self.assertEqual(['mark@hbd.com'], mark_dict['emailaddresses'])
+        self.assert_(mark_dict.has_key('id'))
+        self.assert_(mark_dict.has_key('salt'))
 
         # Check that the salt is base64 encoded
         # FIXME: This is a pretty weak test, because this particular salt is ''
         #        (the sample data specifies no pw for Mark)
-        markDict['salt'].decode('base64')  # Should raise no errors
+        mark_dict['salt'].decode('base64')  # Should raise no errors
 
         # Check that the failure case (no such user) returns {}
-        emptyDict = self.server.getUser('invalid@email')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.getUser('invalid@email')
+        self.assertEqual({}, empty_dict)
 
     def test_authUser(self):
         # Check that the failure case (no such user or bad passwd) returns {}
-        emptyDict = self.server.authUser('invalid@email', '')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, empty_dict)
 
         # Authenticate a user. This requires two queries - one to retrieve
         # the salt, the other to do the actual auth. This way the auth
@@ -80,8 +117,8 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
 
     def test_authUser2(self):
         # Check that the failure case (no such user or bad passwd) returns {}
-        emptyDict = self.server.authUser('invalid@email', '')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, empty_dict)
 
         # Authenticate a user. This requires two queries - one to retrieve
         # the salt, the other to do the actual auth. This way the auth
@@ -98,57 +135,40 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         self.failUnlessEqual(r2['displayname'], 'Sample Person')
         self.failUnless('test@canonical.com' in r2['emailaddresses'])
 
-    def test_getSSHKeys(self):
-        # Unknown users have no SSH keys, of course.
-        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
 
-        # Check that the SSH key in the sample data can be retrieved
-        # successfully.
-        keys = self.server.getSSHKeys('test@canonical.com')
-
-        # There should only be one key for this user.
-        self.assertEqual(1, len(keys))
-
-        # Check the keytype is being returned correctly.
-        keytype, keytext = keys[0]
-        self.assertEqual('DSA', keytype)
-
-
-class XMLRPCv2TestCase(LaunchpadTestCase):
+class XMLRPCv2TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
     """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
-    def setUp(self):
-        LaunchpadTestCase.setUp(self)
-        AuthserverTacTestSetup().setUp()
-        self.server = xmlrpclib.Server('http://localhost:%s/v2/' % _getPort())
 
-    def tearDown(self):
-        """Tear down the test and reset the database."""
-        AuthserverTacTestSetup().tearDown()
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadTestCase.tearDown(self)
+    endpoint = '/v2/'
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
-        markDict = self.server.getUser('mark@hbd.com')
-        self.assertEqual('Mark Shuttleworth', markDict['displayname'])
-        self.assertEqual(['mark@hbd.com'], markDict['emailaddresses'])
-        self.assert_(markDict.has_key('id'))
+        mark_dict = self.server.getUser('mark@hbd.com')
+        self.assertEqual('Mark Shuttleworth', mark_dict['displayname'])
+        self.assertEqual(['mark@hbd.com'], mark_dict['emailaddresses'])
+        self.assert_(mark_dict.has_key('id'))
 
         # Check specifically that there's no 'salt' entry in the user dict.
-        self.failIf(markDict.has_key('salt'))
+        self.failIf(mark_dict.has_key('salt'))
 
         # Check that the failure case (no such user) returns {}
-        emptyDict = self.server.getUser('invalid@email')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.getUser('invalid@email')
+        self.assertEqual({}, empty_dict)
 
     def test_authUser(self):
         # Check that the failure case (no such user or bad passwd) returns {}
-        emptyDict = self.server.authUser('invalid@email', '')
-        self.assertEqual({}, emptyDict)
+        empty_dict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, empty_dict)
 
         result = self.server.authUser('test@canonical.com', 'test')
         self.failUnlessEqual(result['displayname'], 'Sample Person')
         self.failUnless('test@canonical.com' in result['emailaddresses'])
+
+
+class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
+    """Tests for the XML-RPC implementation of IHostedBranchStorage."""
+
+    endpoint = '/v2/'
 
     def test_getBranchesForUser(self):
         # XXX: Andrew Bennetts 2005-12-13:
@@ -182,21 +202,10 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.assertEqual(WRITABLE, permissions)
 
 
-class BranchAPITestCase(LaunchpadTestCase):
+class BranchAPITestCase(XMLRPCAuthServerTestCase):
     """Tests for the branch details API."""
 
-    def setUp(self):
-        LaunchpadTestCase.setUp(self)
-        self.tac = AuthserverTacTestSetup()
-        self.tac.setUp()
-        self.server = xmlrpclib.Server('http://localhost:%s/branch/'
-                                       % _getPort())
-
-    def tearDown(self):
-        """Tear down the test and reset the database."""
-        self.tac.tearDown()
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadTestCase.tearDown(self)
+    endpoint = '/branch/'
 
     def testGetBranchPullQueue(self):
         results = self.server.getBranchPullQueue(BranchType.MIRRORED.name)
@@ -235,6 +244,21 @@ class BranchAPITestCase(LaunchpadTestCase):
         completed_tuple = tuple(completed.utctimetuple())
         self.server.recordSuccess(
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
+
+
+class PrivateXMLRPCAuthServerTestCase(XMLRPCv2TestCase):
+    """Like XMLRPCv2TestCase but against the Launchpad private XML-RPC server.
+    """
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        self.server = xmlrpclib.ServerProxy(
+            'http://xmlrpc-private.launchpad.dev:8087/authserver',
+            transport=XMLRPCTestTransport())
+        setUpMockRootFolder()
+
+    def tearDown(self):
+        pass
 
 
 def test_suite():

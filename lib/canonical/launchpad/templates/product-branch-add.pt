@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -36,24 +41,14 @@
     href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
     href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
-  <p>Use this page to register a mirror branch on this project. The branch must
-    be already available on the internet in a publicly accessible location.</p>
-
   <p>You can register a branch on behalf someone else by setting the author
-    field. (The URL of the branch mirror is based on the nickname of the
-    registrant, not the author.)</p>
+    field. The URL of the branch is based on the nickname of the
+    registrant, not the author.</p>
 
-  <p>Do not use this page to:</p>
-
-  <ul>
-    <li>Request a <em>VCS import</em>, that is a Bazaar mirror of a CVS or
-      Subversion branch. Instead, edit the source details of the trunk release
-      series of this project.</li>
-
-    <li><a href="https://help.launchpad.net/CreatingAHostedBranch">Create
-      an <em>upload</em> branch</a>, that is a branch that you upload
-      directly, to use Launchpad as a community hosting service.</li>
-  </ul>
+  <p>Do not use this page to request a <em>VCS import</em>, that is a
+    Bazaar mirror of a CVS or Subversion branch. See the
+    <a href="https://help.launchpad.net/VcsImports">VCS Imports</a> help page.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 </body>

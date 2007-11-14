@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -21,13 +22,12 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugWatchSet, ICveSet, ILaunchpadCelebrities,
-    IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
-    IProductSeries, IProductSeriesBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES,
-    IBugBranch, ISourcePackage)
+    BugAttachmentType, DistroSeriesStatus, IBug, IBugAttachmentSet,
+    IBugBranch, IBugSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
+    IProductSeriesBugTask, ISourcePackage, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -55,7 +55,6 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, DistroSeriesStatus
 
 
 _bug_tag_query_template = """
@@ -162,8 +161,6 @@ class Bug(SQLBase):
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    externalrefs = SQLMultipleJoin(
-            'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
@@ -772,6 +769,34 @@ class Bug(SQLBase):
 
         return bugtask
 
+    def setPrivate(self, private, who):
+        """See `IBug`.
+
+        We also record who made the change and when the change took
+        place.
+        """
+        if self.private != private:
+            if private:
+                # Change indirect subscribers into direct subscribers
+                # *before* setting private because
+                # getIndirectSubscribers() behaves differently when
+                # the bug is private.
+                for person in self.getIndirectSubscribers():
+                    self.subscribe(person)
+
+            self.private = private
+
+            if private:
+                self.who_made_private = who
+                self.date_made_private = UTC_NOW
+            else:
+                self.who_made_private = None
+                self.date_made_private = None
+
+            return True # Changed.
+        else:
+            return False # Not changed.
+
     def getBugTask(self, target):
         """See `IBug`."""
         for bugtask in self.bugtasks:
@@ -890,7 +915,8 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers", "tags"])
+                "product", "status", "subscribers", "tags",
+                "subscribe_reporter"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -928,13 +954,23 @@ class BugSet:
         if not params.datecreated:
             params.datecreated = UTC_NOW
 
+        extra_params = {}
+        if params.private:
+            # We add some auditing information. After bug creation
+            # time these attributes are updated by Bug.setPrivate().
+            extra_params.update(
+                date_made_private=params.datecreated,
+                who_made_private=params.owner)
+
         bug = Bug(
             title=params.title, description=params.description,
             private=params.private, owner=params.owner,
             datecreated=params.datecreated,
-            security_related=params.security_related)
+            security_related=params.security_related,
+            **extra_params)
 
-        bug.subscribe(params.owner)
+        if params.subscribe_reporter:
+            bug.subscribe(params.owner)
         if params.tags:
             bug.tags = params.tags
 
