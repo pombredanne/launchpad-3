@@ -1,6 +1,9 @@
+from datetime import datetime
 import logging
 import os
 import unittest
+
+import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.urlutils import local_path_to_url
@@ -11,9 +14,13 @@ from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.puller import scheduler
+from canonical.codehosting.puller.worker import (
+    get_canonical_url_for_branch_name)
 from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.launchpad.webapp import errorlog
 
 
 class FakeBranchStatusClient:
@@ -250,6 +257,50 @@ class TestPullerMaster(TrialTestCase):
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
+
+    def makeFailure(self, exception_factory, *args, **kwargs):
+        """Make a Failure object from the given exception factory.
+
+        Any other arguments are passed straight on to the factory.
+        """
+        try:
+            raise exception_factory(*args, **kwargs)
+        except:
+            return failure.Failure()
+
+    def _getLastOOPSFilename(self, time):
+        """Find the filename for the OOPS logged at 'time'."""
+        utility = errorlog.globalErrorUtility
+        error_dir = utility.errordir(time)
+        oops_id = utility._findLastOopsId(error_dir)
+        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
+        oops_prefix = config.launchpad.errorreports.oops_prefix
+        return os.path.join(
+            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
+
+    def getLastOOPS(self, time):
+        """Return the OOPS report logged at the given time."""
+        oops_filename = self._getLastOOPSFilename(time)
+        oops_report = open(oops_filename, 'r')
+        try:
+            return errorlog.ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
+    def test_unexpectedError(self):
+        """The puller master logs an OOPS when it receives an unexpected
+        error.
+        """
+        now = datetime.now(pytz.timezone('UTC'))
+        fail = self.makeFailure(RuntimeError, 'error message')
+        self.eventHandler.unexpectedError(fail, now)
+        oops = self.getLastOOPS(now)
+        self.assertEqual(fail.getTraceback(), oops.tb_text)
+        self.assertEqual('error message', oops.value)
+        self.assertEqual('RuntimeError', oops.type)
+        self.assertEqual(
+            get_canonical_url_for_branch_name(
+                self.eventHandler.unique_name), oops.url)
 
     def test_startMirroring(self):
         deferred = self.eventHandler.startMirroring()

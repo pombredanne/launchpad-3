@@ -13,6 +13,8 @@ from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -20,6 +22,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 __metaclass__ = type
 
 __all__ = [
+    'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
     'IPOTemplateSubset',
@@ -65,6 +68,36 @@ class TranslationPriority(DBEnumeratedType):
 
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
+
+
+class IHasTranslationTemplates(Interface):
+    """An entity that has translation templates attached.
+
+    Examples include ISourcePackage, IDistribution, IDistroSeries, IProduct
+    and IProductSeries.
+    """
+
+    def getCurrentTranslationTemplates():
+        """Return an iterator over its active translation templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and `IDistribution`.official_rosetta flags
+        are set to True.
+        """
+
+    def getObsoleteTranslationTemplates():
+        """Return an iterator over its not active translation templates.
+
+        A translation template is considered not active when any of
+        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
+        are set to False.
+        """
+
+    def getTranslationTemplates():
+        """Return an iterator over all its translation templates.
+
+        The returned templates are either obsolete or current.
+        """
 
 
 class IPOTemplate(IRosettaStats):
@@ -175,7 +208,7 @@ class IPOTemplate(IRosettaStats):
     source_file_format = Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary="TranslationFileFormat")
+        vocabulary=TranslationFileFormat)
 
     priority = Int(
         title=_('Priority'),
@@ -262,7 +295,7 @@ class IPOTemplate(IRosettaStats):
         """Return an iterator over current `IPOTMsgSet` in this template."""
 
     def getHeader():
-        """Return an `ITranslationHeader` representing its header."""
+        """Return an `ITranslationHeaderData` representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
         """Return the `IPOTMesgSet` indexed by msgidtext from this template.

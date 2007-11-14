@@ -1,5 +1,4 @@
-Soyuz Set of Uploads Test
--------------------------
+= Soyuz Set of Uploads Test =
 
 This test will:
 
@@ -13,8 +12,7 @@ This test will:
   * Cleanup
 
 
-Pre-creating directories
-------------------------
+== Pre-creating directories ==
 
 First, let's create the temporary directory structure where we'll put uploaded
 files in.
@@ -30,8 +28,28 @@ files in.
   >>> os.mkdir(incoming_dir)
 
 
-Processing Uploads
-------------------
+== A note about error checking ==
+
+To be able to process the entire upload and provide the full set of
+errors, we need:
+  1. A changes file with no syntax errors
+  2. A changes file with at least a valid email address for the
+     changed-by field or the package signer, both of which must be registered
+     in Launchpad.
+  3. A changes file with a valid distroseries and pocket (e.g. gutsy-updates)
+  4. A changes file that enumerates all the files in the upload, with
+     correct md5 sum and file sizes.
+  5. Actual files uploaded that match the ones described in the changes file.
+ 
+ If (1) is not available, the upload silently fails.
+ If (2) is not available, the upload silently fails.
+ If (3) or (4) is not available, the upload is rejected immediately with
+ no further checking.
+ If any files in (5) are missing, we report as much information as we can
+ about what is available.
+
+
+== Processing Uploads ==
 
 Before asking the system to process the upload, we must prepare the
 database and services to receive it. Since we're using
@@ -117,7 +135,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
@@ -157,23 +175,23 @@ given upload into the published state, so here's a very simplistic publisher
   >>> from canonical.launchpad.database import (
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
-  >>> from canonical.lp.dbschema import PackagePublishingStatus as PPS
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus as PPS
   >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     srcs_to_publish = SPPH.select("""
-  ...         SourcePackagePublishingHistory.distrorelease = DistroRelease.id
-  ...     AND DistroRelease.distribution = Distribution.id
+  ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
+  ...     AND DistroSeries.distribution = Distribution.id
   ...     AND Distribution.name = '%s'
   ...     AND SourcePackagePublishingHistory.status = 1""" % distro,
-  ...         clauseTables=['DistroRelease', 'Distribution'])
+  ...         clauseTables=['DistroSeries', 'Distribution'])
   ...     bins_to_publish = BPPH.select("""
-  ...         BinaryPackagePublishingHistory.distroarchrelease =
-  ...             DistroArchRelease.id
-  ...     AND DistroArchRelease.distrorelease = DistroRelease.id
-  ...     AND DistroRelease.distribution = Distribution.id
+  ...         BinaryPackagePublishingHistory.distroarchseries =
+  ...             DistroArchSeries.id
+  ...     AND DistroArchSeries.distroseries = DistroSeries.id
+  ...     AND DistroSeries.distribution = Distribution.id
   ...     AND Distribution.name = '%s'
   ...     AND BinaryPackagePublishingHistory.status = 1""" % distro,
-  ...         clauseTables=['DistroArchRelease', 'DistroRelease',
+  ...         clauseTables=['DistroArchSeries', 'DistroSeries',
   ...                       'Distribution'])
   ...     published_one = False
   ...     for src in srcs_to_publish:
@@ -202,7 +220,7 @@ We can also define another helper function...
   ...     punt_upload_into_queue(leafname, distro=distro)
   ...     assert (process_uploads(upload_policy, build_id, series),
   ...             "Upload processes failed")
-  ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
+  ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should only contain a lockfile: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:
@@ -320,7 +338,7 @@ Check the email recipient for displayname containing special chars,
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1.0-4 (source)
+  DEBUG       Subject: Accepted: bar 1.0-4 (source)
   DEBUG       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
@@ -344,7 +362,7 @@ changer and the distroseries changes maillisting.
   DEBUG   Changes file is unsigned, adding changer as recipient
   DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
   DEBUG   Sent a mail:
-  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Subject: Accepted: bar 1.0-5 (source)
   DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
   DEBUG    Announcing to breezy-changes@ubuntu.com
@@ -352,7 +370,7 @@ changer and the distroseries changes maillisting.
   DEBUG    Thank you for your contribution to Ubuntu Test.
   ...
   DEBUG    Sent a mail:
-  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Subject: Accepted: bar 1.0-5 (source)
   DEBUG       Recipients: breezy-changes@ubuntu.com
   ...
   <BLANKLINE>
@@ -404,7 +422,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1:1.0-7 (source)
+  DEBUG       Subject: Accepted: bar 1:1.0-7 (source)
   ...
 
   >>> expect_okays('bar_1.0-8', upload_policy='sync')
@@ -413,7 +431,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: Accepted bar 1:1.0-8 (source)
+  DEBUG       Subject: Accepted: bar 1:1.0-8 (source)
   ...
 
 == Pocket Version Consistency ==
@@ -452,7 +470,7 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
   >>> breezy.status = DistroSeriesStatus.CURRENT
   >>> syncUpdate(breezy)
   >>> transaction.commit()
@@ -501,9 +519,8 @@ found in i386/RELEASE, because it's the only one available.
   DEBUG   Initialising connection.
   ...
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
-  DEBUG   foo: (binary) exists in i386/RELEASE
+  DEBUG   foo-1.0-1 (binary) exists in i386/RELEASE
   ...
-
 
 Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
@@ -608,8 +625,8 @@ Check there's a SourcePackageRelease with no build.
 
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName, Build)
-  >>> from canonical.lp.dbschema import (
-  ...     BuildStatus, PackagePublishingPocket)
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import BuildStatus
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id

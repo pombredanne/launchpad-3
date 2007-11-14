@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTrackerType',
     'IBugTracker',
     'IBugTrackerSet',
     'IRemoteBug',
@@ -14,13 +15,12 @@ from zope.interface import Interface, Attribute
 from zope.schema import Int, Text, TextLine, Choice
 from zope.component import getUtility
 
-from canonical.lp import dbschema
-
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, UniqueField)
 from canonical.launchpad.validators.name import name_validator
 
+from canonical.lazr import DBEnumeratedType, DBItem
 
 class BugTrackerNameField(ContentNameField):
 
@@ -54,14 +54,64 @@ class BugTrackerBaseURL(UniqueField):
         return getUtility(IBugTrackerSet).queryByBaseURL(base_url)
 
 
+class BugTrackerType(DBEnumeratedType):
+    """The Types of BugTracker Supported by Launchpad.
+
+    This enum is used to differentiate between the different types of Bug
+    Tracker that are supported by Malone in the Launchpad.
+    """
+
+    BUGZILLA = DBItem(1, """
+        Bugzilla
+
+        The godfather of open source bug tracking, the Bugzilla system was
+        developed for the Mozilla project and is now in widespread use. It
+        is big and ugly but also comprehensive.
+        """)
+
+    DEBBUGS = DBItem(2, """
+        Debbugs
+
+        The debbugs tracker is email based, and allows you to treat every
+        bug like a small mailing list.
+        """)
+
+    ROUNDUP = DBItem(3, """
+        Roundup
+
+        Roundup is a lightweight, customisable and fast web/email based bug
+        tracker written in Python.
+        """)
+
+    TRAC = DBItem(4, """
+        Trac
+
+        Trac is an enhanced wiki and issue tracking system for
+        software development projects.
+        """)
+
+    SOURCEFORGE = DBItem(5, """
+        SourceForge
+
+        SourceForge is a project hosting service which includes bug,
+        support and request tracking.
+        """)
+
+    MANTIS = DBItem(6, """
+        Mantis
+
+        Mantis is a web-based bug tracking system written in PHP.
+        """)
+
+
 class IBugTracker(Interface):
     """A remote a bug system."""
 
     id = Int(title=_('ID'))
     bugtrackertype = Choice(
         title=_('Bug Tracker Type'),
-        vocabulary="BugTrackerType",
-        default=dbschema.BugTrackerType.BUGZILLA)
+        vocabulary=BugTrackerType,
+        default=BugTrackerType.BUGZILLA)
     name = BugTrackerNameField(
         title=_('Name'),
         constraint=name_validator,
@@ -90,7 +140,8 @@ class IBugTracker(Interface):
             'breach).'),
         required=False)
     watches = Attribute('The remote watches on this bug tracker.')
-    projects = Attribute('The projects which use this bug tracker.')
+    projects = Attribute('The projects that use this bug tracker.')
+    products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
 
     def getBugsWatching(remotebug):

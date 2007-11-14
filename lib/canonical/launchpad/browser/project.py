@@ -40,7 +40,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProduct, IProductSet, IProject, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -365,17 +366,7 @@ class ProjectReviewView(ProjectEditView):
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
-class ProjectAddProductView(LaunchpadFormView):
-
-    schema = IProduct
-    field_names = ['name', 'displayname', 'title', 'summary', 'description',
-                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang']
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
-    custom_widget('wikiurl', TextWidget, displayWidth=30)
-    custom_widget('downloadurl', TextWidget, displayWidth=30)
+class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
     product = None
@@ -402,13 +393,11 @@ class ProjectAddProductView(LaunchpadFormView):
             sourceforgeproject=data['sourceforgeproject'],
             programminglang=data['programminglang'],
             project=self.context,
-            owner=self.user)
+            owner=self.user,
+            licenses = data['licenses'],
+            license_info=data['license_info'])
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProjectSetView(object):
@@ -574,15 +563,16 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:

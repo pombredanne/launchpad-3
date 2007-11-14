@@ -15,10 +15,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, IPersonSet)
+    ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet,
+    PackagePublishingStatus)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus)
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
@@ -44,6 +43,7 @@ class TestPublishDistro(TestNativePublishingBase):
 
         rc, out, err = self.runPublishDistro([])
 
+        pub_source.sync()
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
@@ -75,6 +75,8 @@ class TestPublishDistro(TestNativePublishingBase):
 
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
+        pub_source.sync()
+        pub_source2.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
@@ -160,6 +162,9 @@ class TestPublishDistro(TestNativePublishingBase):
 
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
+        pub_source.sync()
+        pub_source2.sync()
+        pub_source3.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_source3.status, PackagePublishingStatus.PUBLISHED)

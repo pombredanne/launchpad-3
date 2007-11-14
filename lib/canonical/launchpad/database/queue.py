@@ -34,16 +34,16 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
-    IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
-    QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet)
+    ArchivePurpose, IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
+    IPackageUploadCustom, IPackageUploadQueue, IPackageUploadSet, IPersonSet,
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, PackageUploadCustomFormat, pocketsuffix,
+    QueueBuildAcceptError, QueueInconsistentStateError,
+    QueueStateWriteProtectedError, QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackageUploadCustomFormat, PackagePublishingPocket,
-    PackagePublishingStatus, SourcePackageFileType, ArchivePurpose)
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -75,7 +75,7 @@ class PackageUpload(SQLBase):
                      default=PackageUploadStatus.NEW,
                      schema=PackageUploadStatus)
 
-    distroseries = ForeignKey(dbName="distrorelease",
+    distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
@@ -190,12 +190,12 @@ class PackageUpload(SQLBase):
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
-    def containsSource(self):
+    def contains_source(self):
         """See `IPackageUpload`."""
         return self.sources
 
     @cachedproperty
-    def containsBuild(self):
+    def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
 
@@ -205,25 +205,25 @@ class PackageUpload(SQLBase):
         return [custom.customformat for custom in self.customfiles]
 
     @cachedproperty
-    def containsInstaller(self):
+    def contains_installer(self):
         """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
-    def containsTranslation(self):
+    def contains_translation(self):
         """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
-    def containsUpgrader(self):
+    def contains_upgrader(self):
         """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
     @cachedproperty
-    def containsDdtp(self):
+    def contains_ddtp(self):
         """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
@@ -354,7 +354,7 @@ class PackageUpload(SQLBase):
         Component and section are only set where the file is a source upload.
         """
         files = []
-        if self.containsSource:
+        if self.contains_source:
             [source] = self.sources
             spr = source.sourcepackagerelease
             # Bail out early if this is an upload for the translations section.
@@ -416,10 +416,7 @@ class PackageUpload(SQLBase):
                 'ppa-upload-rejection.txt')
         else:
             rejection_template = get_email_template('upload-rejection.txt')
-        sender = format_address(config.uploader.default_sender_name,
-                                config.uploader.default_sender_address)
         self._sendMail(
-            sender,
             recipients,
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations,
@@ -428,125 +425,118 @@ class PackageUpload(SQLBase):
     def _sendSuccessNotification(self, recipients, announce_list,
             changes_lines, changes, summarystring, dry_run):
         """Send a success email."""
-        interpolations = {
-            "SUMMARY": summarystring,
-            "CHANGESFILE": guess_encoding("".join(changes_lines)),
-            "DISTRO": self.distroseries.distribution.title,
-            "ANNOUNCE": announce_list,
-            "STATUS": "Accepted",
-        }
+
+        def do_sendmail(message, recipients=recipients, from_addr=None,
+                        bcc=None):
+            """Perform substitutions on a template and send the email."""
+            body = message.template % message.__dict__
+            subject = "%s: %s %s (%s)" % (
+                message.STATUS, self.displayname, self.displayversion,
+                self.displayarchs)
+            if self.isPPA():
+                subject = "[PPA %s] " % self.archive.owner.name + subject
+            self._sendMail(recipients, subject, body, dry_run,
+                           from_addr=from_addr, bcc=bcc)
+
+        class NewMessage:
+            """New message."""
+            template = get_email_template('upload-new.txt')
+
+            STATUS = "New"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+            DISTRO = self.distroseries.distribution.title
+            ANNOUNCE = announce_list
+
+        class UnapprovedMessage:
+            """Unapproved message."""
+            template = get_email_template('upload-accepted.txt')
+
+            STATUS = "Waiting for approval"
+            SUMMARY = summarystring + (
+                    "\nThis upload awaits approval by a distro manager\n")
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+            DISTRO = self.distroseries.distribution.title
+            ANNOUNCE = announce_list
+
+        class AcceptedMessage:
+            """Accepted message."""
+            template = get_email_template('upload-accepted.txt')
+
+            STATUS = "Accepted"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+            DISTRO = self.distroseries.distribution.title
+            ANNOUNCE = announce_list
+
+        class PPAAcceptedMessage:
+            """PPA accepted message."""
+            template = get_email_template('ppa-upload-accepted.txt')
+
+            STATUS = "Accepted"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+
+        class AnnouncementMessage:
+            template = get_email_template('upload-announcement.txt')
+
+            STATUS = "Accepted"
+            SUMMARY = summarystring
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
-        # announce message.
-
-        uploader_address = format_address(
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
+        # announcement message.
 
         if self.status == PackageUploadStatus.NEW:
             # This is an unknown upload.
-            new_template = get_email_template('upload-new.txt')
-            self._sendMail(
-                uploader_address,
-                recipients,
-                "%s is NEW" % self.changesfile.filename,
-                new_template % interpolations,
-                dry_run)
-            return
-
-        if self.isPPA():
-            # PPA uploads receive an acceptance message.
-            accepted_template = get_email_template('ppa-upload-accepted.txt')
-            interpolations["STATUS"] = "[PPA %s] Accepted" % (
-                self.archive.owner.name)
-            subject = "[PPA %s] Accepted %s %s (%s)" % (
-                self.archive.owner.name, self.displayname,
-                self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations,
-                dry_run)
-            return
-
-        # Every message sent from here onwards uses the accepted template.
-        accepted_template = get_email_template('upload-accepted.txt')
-
-        # Auto-approved uploads to backports skips the announcement,
-        # they are usually processed with the sync policy.
-        if self.pocket == PackagePublishingPocket.BACKPORTS:
-            debug(self.logger, "Skipping announcement, it is a BACKPORT.")
-            subject = "Accepted %s %s (%s)" % (
-                self.displayname, self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations,
-                dry_run)
-            return
-
-        # Auto-approved binary uploads to security skips the announcement,
-        # they are usually processed with the security policy.
-        if (self.pocket == PackagePublishingPocket.SECURITY
-            and self.containsBuild):
-            debug(self.logger,
-                "Skipping announcement, it is a binary upload to SECURITY.")
-            subject = "Accepted %s %s (%s)" % (
-                self.displayname, self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations,
-                dry_run)
+            do_sendmail(NewMessage)
             return
 
         # Unapproved uploads coming from an insecure policy only send
         # an acceptance message.
         if self.status == PackageUploadStatus.UNAPPROVED:
             # Only send an acceptance message.
-            interpolations["SUMMARY"] += (
-                "\nThis upload awaits approval by a distro manager\n")
-            interpolations["STATUS"] = "Waiting for approval:"
-            subject = "Waiting for approval: %s %s (%s)" % (
-                self.displayname, self.displayversion, self.displayarchs)
-            self._sendMail(
-                uploader_address,
-                recipients,
-                subject,
-                accepted_template % interpolations,
-                dry_run)
+            do_sendmail(UnapprovedMessage)
+            return
+
+        if self.isPPA():
+            # PPA uploads receive an acceptance message.
+            do_sendmail(PPAAcceptedMessage)
+            return
+
+        # Auto-approved uploads to backports skips the announcement,
+        # they are usually processed with the sync policy.
+        if self.pocket == PackagePublishingPocket.BACKPORTS:
+            debug(self.logger, "Skipping announcement, it is a BACKPORT.")
+            do_sendmail(AcceptedMessage)
+            return
+
+        # Auto-approved binary uploads to security skips the announcement,
+        # they are usually processed with the security policy.
+        if (self.pocket == PackagePublishingPocket.SECURITY
+            and self.contains_build):
+            debug(self.logger,
+                "Skipping announcement, it is a binary upload to SECURITY.")
+            do_sendmail(AcceptedMessage)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
-        subject = "Accepted %s %s (%s)" % (
-            self.displayname, self.displayversion, self.displayarchs)
-        self._sendMail(
-            uploader_address,
-            recipients,
-            subject,
-            accepted_template % interpolations,
-            dry_run)
-        if announce_list:
-            sender = ""
-            if not self.signing_key:
-                sender = uploader_address
-            else:
-                sender = guess_encoding(changes['changed-by'])
+        do_sendmail(AcceptedMessage)
 
-            announce_template = get_email_template('upload-announcement.txt')
-            self._sendMail(
-                sender,
-                [str(announce_list)],
-                subject,
-                announce_template % interpolations,
-                dry_run,
+        if announce_list:
+            if not self.signing_key:
+                from_addr = None
+            else:
+                from_addr = guess_encoding(changes['changed-by'])
+
+            do_sendmail(
+                AnnouncementMessage,
+                recipients=[str(announce_list)],
+                from_addr=from_addr,
                 bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
-        return
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
@@ -556,7 +546,7 @@ class PackageUpload(SQLBase):
 
         # If this is a binary or mixed upload, we don't send *any* emails
         # provided it's not a rejection or a security upload:
-        if(self.containsBuild and
+        if(self.contains_build and
            self.status != PackageUploadStatus.REJECTED and
            self.pocket != PackagePublishingPocket.SECURITY):
             debug(self.logger, "Not sending email, upload contains binaries.")
@@ -671,12 +661,13 @@ class PackageUpload(SQLBase):
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
-    def _sendMail(self, from_addr, to_addrs, subject, mail_text, dry_run,
-                  bcc=None):
+    def _sendMail(self, to_addrs, subject, mail_text, dry_run,
+                  from_addr=None, bcc=None):
         """Send an email to to_addrs with the given text and subject.
 
         :from_addr: The email address to be used as the sender.  Must be a
                     valid ASCII str instance or a unicode one.
+                    Defaults to the email for config.uploader.
         :to_addrs: A list of email addresses to be used as recipients.  Each
                    email must be a valid ASCII str instance or a unicode one.
         :subject: The email's subject.
@@ -685,6 +676,10 @@ class PackageUpload(SQLBase):
         :bcc: Optional email Blind Carbon Copy address(es).
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
+        if from_addr is None:
+            from_addr = format_address(
+                config.uploader.default_sender_name,
+                config.uploader.default_sender_address)
 
         # `simple_sendmail`, despite handling unicode message bodies, can't
         # cope with non-ascii sender/recipient addresses, so ascii_smash
@@ -1069,7 +1064,7 @@ class PackageUploadSet:
             clauses.append("status=%s" % sqlvalues(status))
 
         if distroseries:
-            clauses.append("distrorelease=%s" % sqlvalues(distroseries))
+            clauses.append("distroseries=%s" % sqlvalues(distroseries))
 
         if pocket:
             clauses.append("pocket=%s" % sqlvalues(pocket))

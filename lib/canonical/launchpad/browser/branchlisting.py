@@ -15,6 +15,8 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.formlib import form
+from zope.schema import Choice
 
 from canonical.config import config
 from canonical.lp import decorates
@@ -22,9 +24,9 @@ from canonical.lp import decorates
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    IBranchBatchNavigator, IBranchListingFilter, IBugBranchSet,
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -74,7 +76,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, view):
         TableBatchNavigator.__init__(
-            self, view._branches(), view.request,
+            self, view.getVisibleBranchesForUser(), view.request,
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
@@ -127,6 +129,9 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     @property
     def table_class(self):
+        # XXX: MichaelHudson 2007-10-18 bug=153894: This means there are two
+        # ways of sorting a one-page branch listing, which is a confusing and
+        # incoherent.
         if self.multiple_pages:
             return "listing"
         else:
@@ -135,16 +140,20 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
-    schema = IBranchLifecycleFilter
-    field_names = ['lifecycle']
+    schema = IBranchListingFilter
+    field_names = ['lifecycle', 'sort_by']
     custom_widget('lifecycle', LaunchpadDropdownWidget)
+    custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
-    title_prefix = 'Bazaar'
+    heading_template = 'Bazaar branches for %(displayname)s'
+    # no_sort_by is a sequence of items from the BranchListingSort
+    # enumeration to not offer in the sort_by widget.
+    no_sort_by = ()
 
     @property
-    def page_title(self):
-        return '%s branches for %s' % (
-            self.title_prefix, self.context.displayname)
+    def heading(self):
+        return self.heading_template % {
+            'displayname': self.context.displayname}
 
     @property
     def initial_values(self):
@@ -173,6 +182,26 @@ class BranchListingView(LaunchpadFormView):
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
 
+    def getVisibleBranchesForUser(self):
+        """Get branches visible to the user.
+
+        This method is called from the `BranchListingBatchNavigator` to
+        get the branches to show in the listing.
+        """
+        return self._branches(self.selected_lifecycle_status)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """Does the context have any branches that are visible to the user?"""
+        return self._branches(None).count() > 0
+
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        This method is overridden in the derived classes to perform the
+        specific query.
+        """
+        raise NotImplementedError("Derived classes must implement _branches.")
+
     def roleForBranch(self, branch):
         """Overridden by derived classes to display something in
         the role column if the role column is visible."""
@@ -182,11 +211,12 @@ class BranchListingView(LaunchpadFormView):
     def no_branch_message(self):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches related to %s '
-                'but none of them match the current filter criteria '
-                'for this page. Try filtering on "Any Status".')
+                'There are branches related to %s but none of them match the '
+                'current filter criteria for this page. '
+                'Try filtering on "Any Status".')
         else:
             message = (
                 'There are no branches related to %s '
@@ -196,9 +226,77 @@ class BranchListingView(LaunchpadFormView):
                 'distributed version control.')
         return message % self.context.displayname
 
+    @property
+    def branch_listing_sort_values(self):
+        """The enum items we should present in the 'sort_by' widget.
+
+        Subclasses get the chance to avoid some sort options (it makes no
+        sense to offer to sort the product branch listing by product name!)
+        and if we're filtering to a single lifecycle status it doesn't make
+        much sense to sort by lifecycle.
+        """
+        # This is pretty painful.
+        # First we find the items which are not excluded for this view.
+        vocab_items = [item for item in BranchListingSort.items.items
+                       if item not in self.no_sort_by]
+        # Finding the value of the lifecycle_filter widget is awkward as we do
+        # this when the widgets are being set up.  We go digging in the
+        # request.
+        lifecycle_field = IBranchListingFilter['lifecycle']
+        name = self.prefix + '.' + lifecycle_field.__name__
+        form_value = self.request.form.get(name)
+        if form_value is not None:
+            try:
+                status_filter = BranchLifecycleStatusFilter.getTermByToken(
+                    form_value).value
+            except LookupError:
+                # We explicitly support bogus values in field.lifecycle --
+                # they are treated the same as "CURRENT", which includes more
+                # than one lifecycle.
+                pass
+            else:
+                if status_filter not in (BranchLifecycleStatusFilter.ALL,
+                                         BranchLifecycleStatusFilter.CURRENT):
+                    vocab_items.remove(BranchListingSort.LIFECYCLE)
+        return vocab_items
+
+    @property
+    def sort_by_field(self):
+        """The zope.schema field for the 'sort_by' widget."""
+        orig_field = IBranchListingFilter['sort_by']
+        values = self.branch_listing_sort_values
+        return Choice(__name__=orig_field.__name__,
+                      title=orig_field.title,
+                      required=True, values=values, default=values[0])
+
+    @property
+    def sort_by(self):
+        """The value of the `sort_by` widget, or None if none was present."""
+        widget = self.widgets['sort_by']
+        if widget.hasValidInput():
+            return widget.getInputValue()
+        else:
+            return None
+
+    def setUpWidgets(self, context=None):
+        """Set up the 'sort_by' widget with only the applicable choices."""
+        fields = []
+        for field_name in self.field_names:
+            if field_name == 'sort_by':
+                field = form.FormField(
+                    self.sort_by_field,
+                    custom_widget=self.custom_widgets[field_name])
+            else:
+                field = self.form_fields[field_name]
+            fields.append(field)
+        self.form_fields = form.Fields(*fields)
+        super(BranchListingView, self).setUpWidgets(context)
+
 
 class NoContextBranchListingView(BranchListingView):
     """A branch listing that has no associated product or person."""
+
+    field_names = ['lifecycle']
 
     no_branch_message = (
         'There are no branches that match the current status filter.')
@@ -210,10 +308,10 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently registered branches'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return the branches ordered by date created."""
         return getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
 
 
@@ -223,10 +321,10 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return imported branches ordered by last update."""
         return getUtility(IBranchSet).getRecentlyImportedBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
 
 
@@ -235,8 +333,8 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently changed branches'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return non-imported branches orded by last commit."""
         return getUtility(IBranchSet).getRecentlyChangedBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)

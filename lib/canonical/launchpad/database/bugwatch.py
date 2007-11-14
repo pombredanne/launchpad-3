@@ -14,11 +14,10 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
-
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
@@ -27,8 +26,9 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL)
+    BugTaskImportance, BugTrackerType, BugWatchErrorType, IBugTrackerSet,
+    IBugWatch, IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
+    NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -45,6 +45,7 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -104,6 +105,45 @@ class BugWatch(SQLBase):
         """See IBugWatch."""
         assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
+
+    def getLastErrorMessage(self):
+        """See `IBugWatch`."""
+
+        if not self.last_error_type:
+            return None
+
+        error_message_mapping = {
+            BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+                "%(bug)s appears not to exist. Check that the bug "
+                "number is correct.",
+            BugWatchErrorType.CONNECTION_ERROR: "Launchpad couldn't "
+                "connect to %(bugtracker)s.",
+            BugWatchErrorType.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
+                "valid on %(bugtracker)s. Check that the bug ID is "
+                "correct.",
+            BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
+                "%(bugtracker)s timed out.",
+            BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
+                "extract a status from %(bug)s on %(bugtracker)s.",
+            BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
+                "couldn't determine the version of %(bugtrackertype)s "
+                "running on %(bugtracker)s.",
+            BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+                "doesn't support importing bugs from %(bugtrackertype)s"
+                " bug trackers."}
+
+        if self.last_error_type in error_message_mapping:
+            message = error_message_mapping[self.last_error_type]
+        else:
+            message = ("Launchpad couldn't import bug #%(bug)s from "
+                "%(bugtracker)s.")
+
+        error_data = {
+            'bug': self.remotebug,
+            'bugtracker': self.bugtracker.title,
+            'bugtrackertype': self.bugtracker.bugtrackertype.title}
+
+        return message % error_data
 
 
 class BugWatchSet(BugSetBase):

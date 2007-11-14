@@ -21,9 +21,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    IBuildQueue, IBuildQueueSet, NotFoundError)
-from canonical.lp.dbschema import (
-    BuildStatus, SourcePackageUrgency)
+    BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
+    SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -181,6 +180,12 @@ class BuildQueue(SQLBase):
             distroname, distroseriesname, archname, sourcename, version, state
             ))
 
+    def markAsBuilding(self, builder):
+        """See `IBuildQueue`."""
+        self.builder = builder
+        self.buildstart = UTC_NOW
+        self.build.buildstate = BuildStatus.BUILDING
+
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """See IBuildQueue."""
@@ -264,7 +269,7 @@ class BuildQueueSet(object):
         arch_ids = [d.id for d in archserieses]
 
         candidates = BuildQueue.select("""
-        build.distroarchrelease IN %s AND
+        build.distroarchseries IN %s AND
         build.buildstate = %s AND
         buildqueue.build = build.id AND
         buildqueue.builder IS NULL

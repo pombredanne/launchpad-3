@@ -58,26 +58,17 @@ div.revision p {
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
-        <tal:mirrored-yet tal:condition="context/last_mirrored">
-          <tr>
-            <th>Last mirrored:</th>
+        <tr>
+          <th>Last mirrored:</th>
+          <tal:mirrored-yet tal:condition="context/last_mirrored">
             <td tal:attributes="title context/last_mirrored/fmt:datetime"
-                tal:content="context/last_mirrored/fmt:approximatedate"/></tr>
-        </tal:mirrored-yet>
-        <tr><th>Next mirror:</th>
-          <tal:mirror-disabled tal:condition="view/mirror_disabled">
-            <td>Disabled</td>
-          </tal:mirror-disabled>
-          <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
-            <tal:mirror-in-future tal:condition="view/mirror_in_future">
-              <td tal:attributes="title context/last_mirrored/fmt:datetime"
-                  tal:content="context/mirror_request_time/fmt:approximatedate"/>
-            </tal:mirror-in-future>
-            <tal:mirror-in-past tal:condition="not:view/mirror_in_future">
-              <td>As soon as possible</td>
-            </tal:mirror-in-past>
-          </tal:mirror-enabled>
+                tal:content="context/last_mirrored/fmt:approximatedate"/>
+          </tal:mirrored-yet>
+          <tal:not-mirror-yet tal:condition="not:context/last_mirrored">
+            <td>Not mirrored yet</td>
+          </tal:not-mirror-yet>
         </tr>
+        <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>
       <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
         <tr>
@@ -86,7 +77,6 @@ div.revision p {
           <td tal:condition="not: context/url" >Not specified</td>
         </tr>
       </tal:remote-branch>
-
       <tal:show-download-url condition="view/bzr_download_url">
         <tr>
           <th>Download URL:</th>
@@ -196,20 +186,6 @@ div.revision p {
   <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
        class="warning message" style="font-weight: normal">
     Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
-  </p>
-  <p tal:condition="view/show_mirror_failure" id="mirror-failure"
-       class="warning message" style="font-weight: normal">
-    Launchpad could not mirror this branch
-    <span
-      tal:attributes="title context/last_mirror_attempt/fmt:datetime"
-      tal:content="context/last_mirror_attempt/fmt:displaydate" />.
-    <span tal:condition="context/mirror_status_message">
-      The error was:
-      <span tal:replace="view/mirror_status_message">Error 1</span>
-    </span>
-    <span tal:condition="not:context/mirror_status_message">
-      No error message was recorded.
-    </span>
   </p>
 
   <tal:whiteboard condition="context/whiteboard">
@@ -327,7 +303,7 @@ div.revision p {
 
   <tal:has-related-bugs condition="context/related_bugs">
     <div id="related-bugs">
-      <h2>Related Bugs</h2>
+      <h2>Related bugs</h2>
       <tal:bugs tal:define="branch context;
                             show_edit python:True;
                             show_whiteboard python:True;">

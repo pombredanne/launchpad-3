@@ -144,5 +144,15 @@ implement IHugeVocabulary.
     ...
     UnexpectedFormData: No vocabulary specified
 
+5. When someone tries to XSS us.
+
+    >>> form = {'field.owner': u'"><script>alert(Y0u @r3 0wn3d!!!);</script>'}
+    >>> popup_widget = SinglePopupWidget(
+    ...     owner_field,  owner_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> print popup_widget()
+    <input type="text" value="&quot;&gt;&lt;script&gt;alert(Y0u 
+    @r3 0wn3d!!!);&lt;/script&gt;" id="field.owner"...
+
 Bullet-proof!
 

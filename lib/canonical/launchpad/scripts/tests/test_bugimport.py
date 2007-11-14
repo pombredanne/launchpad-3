@@ -13,11 +13,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
-    PersonCreationRationale)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, IBugSet,
+    IEmailAddressSet, IPersonSet, IProductSet, PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
-from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout
@@ -295,9 +294,6 @@ sample_bug = '''\
   <importance>HIGH</importance>
   <milestone>future</milestone>
   <assignee email="bar@example.com">Bar User</assignee>
-  <urls>
-    <url href="https://launchpad.net/">Launchpad</url>
-  </urls>
   <cves>
     <cve>2005-2736</cve>
     <cve>2005-2737</cve>
@@ -428,9 +424,6 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(bug.private, True)
         self.assertEqual(bug.security_related, True)
         self.assertEqual(bug.name, 'some-bug')
-        self.assertEqual(bug.externalrefs.count(), 1)
-        self.assertEqual(bug.externalrefs[0].url, 'https://launchpad.net/')
-        self.assertEqual(bug.externalrefs[0].title, 'Launchpad')
         self.assertEqual(sorted(cve.sequence for cve in bug.cves),
                          ['2005-2730', '2005-2736', '2005-2737'])
         self.assertEqual(bug.tags, ['bar', 'foo'])
@@ -441,7 +434,7 @@ class ImportBugTestCase(unittest.TestCase):
         # There are two bug watches
         self.assertEqual(bug.watches.count(), 2)
         self.assertEqual(sorted(watch.url for watch in bug.watches),
-                         ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
+                         ['http://bugzilla.gnome.org/bugs/show_bug.cgi?id=43',
                           'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
 
         # There should only be one bug task (on netapplet):

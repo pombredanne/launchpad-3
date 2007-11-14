@@ -6,18 +6,8 @@
     />
 
   <vocabulary
-    name="BranchReviewStatus"
-    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
-    />
-
-  <vocabulary
-    name="BugAttachmentType"
-    factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
     />
 
   <vocabulary
@@ -26,28 +16,8 @@
     />
 
   <vocabulary
-    name="BugNominationStatus"
-    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
-
-  <vocabulary
-    name="BugTaskImportance"
-    factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
     name="BugTracker"
     factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
-    />
-
-  <vocabulary
-    name="BugTrackerType"
-    factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
     />
 
   <vocabulary
@@ -61,19 +31,9 @@
       />
 
   <vocabulary
-      name="CodeImportReviewStatus"
-      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
-      />
-
-  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
-
-  <vocabulary
-    name="CveStatus"
-    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
-    />
 
   <vocabulary
     name="Distribution"
@@ -88,11 +48,6 @@
   <vocabulary
     name="DistroSeries"
     factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
-    />
-
-  <vocabulary
-    name="DistroSeriesStatus"
-    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
 
   <vocabulary
@@ -136,11 +91,6 @@
     />
 
   <vocabulary
-    name="InfestationStatus"
-    factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
-    />
-
-  <vocabulary
     name="KarmaCategory"
     factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
     />
@@ -163,11 +113,6 @@
   <vocabulary
     name="NonMergedPeopleAndTeams"
     factory="canonical.launchpad.vocabularies.NonMergedPeopleAndTeamsVocabulary"
-    />
-
-  <vocabulary
-    name="PackagePublishingPocket"
-    factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
     />
 
   <vocabulary
@@ -231,11 +176,6 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskImportance"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
     />
@@ -256,19 +196,9 @@
     />
 
   <vocabulary
-    name="TranslationFileFormat"
-    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
-    />
-
-  <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     />
-
-  <vocabulary
-   name="TranslationPermission"
-   factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-   />
 
   <vocabulary
     name="UserTeamsParticipation"

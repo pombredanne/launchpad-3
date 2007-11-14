@@ -144,6 +144,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         description=_(
             "Private bug reports are visible only to their subscribers."),
         default=False)
+    date_made_private = Datetime(
+        title=_('Date Made Private'), required=False)
+    who_made_private = Choice(
+        title=_('Who Made Private'), required=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person who set this bug private."))
     security_related = Bool(
         title=_("This bug is a security vulnerability"), required=False,
         default=False)
@@ -159,7 +165,6 @@ class IBug(IMessageTarget, ICanBeMentored):
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -368,6 +373,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no bugtask was edited.
         """
 
+    def setPrivate(private, who):
+        """Set bug privacy.
+
+            :private: True/False.
+            :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -394,9 +408,6 @@ class IBugDelta(Interface):
         "IBug's")
 
     # other things linked to the bug
-    external_reference = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "IBugExternalRefs.")
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")

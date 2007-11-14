@@ -20,10 +20,10 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    CannotBuild, BuildSlaveFailure, IBuildQueueSet, IBuildSet
-    )
+    ArchivePurpose, BuildStatus, BuildSlaveFailure, CannotBuild,
+    IBuildQueueSet, IBuildSet, PackagePublishingPocket,
+    PackagePublishingStatus)
 
-from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.buildd.utils import notes
@@ -31,11 +31,8 @@ from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
 
 
-# Builddmaster shared lockfile
-BUILDMASTER_LOCKFILENAME = 'build-master'
-
-# Builddmaster advisory-lock key
-BUILDMASTER_ADVISORY_LOCK_KEY = 666
+# builddmaster shared lockfile
+builddmaster_lockfilename = 'build-master'
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5
@@ -144,11 +141,10 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHSERIES across available pockets
-        for pocket in dbschema.PackagePublishingPocket.items:
-            if distroarchseries.getChroot(pocket):
-                # Fill out the contents
-                self._archserieses.setdefault(distroarchseries, {})
+        # Is there a chroot for this archseries?
+        if distroarchseries.getChroot():
+            # Fill out the contents.
+            self._archserieses.setdefault(distroarchseries, {})
 
     def setupBuilders(self, archseries):
         """Setting up a group of builder slaves for a given DistroArchSeries.
@@ -237,7 +233,7 @@ class BuilddMaster:
         for pubrec in sources_published:
             # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
             # should be modeled as DistroArchSeries.ppa_supported.
-            if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
+            if pubrec.archive.purpose == ArchivePurpose.PPA:
                 ppa_archtags = ('i386', 'amd64')
                 local_archs = [
                     distro_arch_series for distro_arch_series in legal_archs
@@ -414,7 +410,7 @@ class BuilddMaster:
         """
         # Get the missing dependency fields
         arch_ids = [arch.id for arch in self._archserieses]
-        status = dbschema.BuildStatus.MANUALDEPWAIT
+        status = BuildStatus.MANUALDEPWAIT
         bqset = getUtility(IBuildSet)
         candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
         # XXX cprov 2006-02-27: IBuildSet.getBuildsByArch API is evil,
@@ -430,35 +426,36 @@ class BuilddMaster:
         for build in candidates:
             # XXX cprov 2006-06-06: This iteration/check should be provided
             # by IBuild.
+
             if not build.distroseries.canUploadToPocket(build.pocket):
-                # Do not retry released distroseries/pocket.
-                self._logger.debug(
-                    'SKIPPED: %s can not built.' % build.title)
+                # skip retries for not allowed in distroseries/pocket
+                self._logger.debug('SKIPPED: %s can not build in %s/%s'
+                                   % (build.title, build.distroseries.name,
+                                      build.pocket.name))
                 continue
+
             if build.dependencies:
                 dep_score, remaining_deps = self._scoreAndCheckDependencies(
                     build.dependencies, build.distroarchseries)
-                # Store new missing dependencies.
+                # store new missing dependencies
                 build.dependencies = remaining_deps
                 if len(build.dependencies):
                     self._logger.debug(
                         'WAITING: %s "%s"' % (build.title, build.dependencies))
-                    # The build still having unsatisfied dependencies, commit
-                    # and go the the next one.
-                    self.commit()
                     continue
 
-            # Retry build if missing dependencies is empty
+            # retry build if missing dependencies is empty
             self._logger.debug('RETRY: "%s"' % build.title)
             build.retry()
-            self.commit()
+
+        self.commit()
 
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""
         # Get the current build job candidates
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=BuildStatus.NEEDSBUILD)
         if not candidates:
             return
 
@@ -501,7 +498,7 @@ class BuilddMaster:
         """
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=BuildStatus.NEEDSBUILD)
         if not candidates:
             return {}
 
@@ -541,7 +538,7 @@ class BuilddMaster:
             # or removed) as SUPERSEDED.
             spr = build_candidate.build.sourcepackagerelease
             if (spr.publishings and spr.publishings[0].status <=
-                dbschema.PackagePublishingStatus.PUBLISHED):
+                PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
                 self.commit()
             else:
@@ -549,7 +546,7 @@ class BuilddMaster:
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (build_candidate.build.id, build_candidate.id))
                 build_candidate.build.buildstate = (
-                    dbschema.BuildStatus.SUPERSEDED)
+                    BuildStatus.SUPERSEDED)
                 build_candidate.destroySelf()
 
         self.commit()
