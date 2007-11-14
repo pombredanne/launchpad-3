@@ -139,9 +139,9 @@ class ArchiveView(LaunchpadView):
 
         status_terms = [
             SimpleTerm(StatusCollection(published_status),
-                       'published','Published'),
+                       'published', 'Published'),
             SimpleTerm(StatusCollection(superseded_status),
-                       'superseded','Superseded'),
+                       'superseded', 'Superseded'),
             SimpleTerm(StatusCollection(), 'any', 'Any Status')
             ]
         status_vocabulary = SimpleVocabulary(status_terms)

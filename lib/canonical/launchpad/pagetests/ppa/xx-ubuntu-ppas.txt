@@ -185,7 +185,7 @@ no results.
     >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
     0
 
-Searching for the package "iceweasel" show's that Celso is providing this.
+Searching for the package iceweasel show's that Celso is providing this.
 
     >>> field = browser.getControl(name='field.name_filter')
     >>> field.value = 'iceweasel'
