@@ -212,7 +212,6 @@ Let's add a fuzzy translation.
     >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
     ...     carlos, {0: u'foo'}, is_fuzzy=True, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_caches() # store modification dates
 
 Since this message came from the import, it doesn't have a reviewer, but
 it does note a person which last changed it.
@@ -259,7 +258,6 @@ A translation can be removed from the import by being set to an empty string.
     >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
     ...     carlos, {0: u''}, is_fuzzy=False, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_caches() # store modification dates
 
 A current translation is kept since we don't remove anything from Launchpad
 even if it came from the import.
@@ -319,7 +317,6 @@ A No Privileges user updates a translation.
   >>> new_message = potmsgset.updateTranslation(
   ...     pofile_es, no_priv, {0: u'test string'}, is_fuzzy=False,
   ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
-  >>> flush_database_caches()
 
 This message is not made current or marked as imported.
 
@@ -356,7 +353,6 @@ new suggestion.
   >>> new_message = potmsgset.updateTranslation(
   ...     pofile_es, foobar, {0: u'test string'}, is_fuzzy=False,
   ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
-  >>> flush_database_caches()
 
 We don't have any suggestion newer than the new active translation
 
@@ -456,7 +452,12 @@ translations in Spanish:
     >>> evo_distro_translation.translations
     [u' caratas']
 
-    >>> suggestions = evo_product_message.getLocalTranslationMessages(spanish)
+    >>> def getAllSuggestions(potmsgset, language):
+    ...     local = list(potmsgset.getLocalTranslationMessages(language))
+    ...     external = list(potmsgset.getExternalTranslationMessages(language))
+    ...     return local+external
+
+    >>> suggestions = getAllSuggestions(evo_product_message, spanish)
     >>> print_suggestions(suggestions)
     Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  caratas (Launchpad)
     Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
