@@ -24,9 +24,14 @@
 
   <form method="POST"
         tal:attributes="action request/URL">
-    <tal:series repeat="series context/serieses">
 
-      <h2>
+    <p tal:condition="not: view/has_download_files">
+       No download files exist for this project.
+    </p>
+
+    <tal:series repeat="series view/sorted_serieses">
+
+      <h2 tal:condition="has_edit">
         Release series &#8220;<tal:name
                                replace="series/name">main</tal:name>&#8221;
       </h2>
@@ -44,6 +49,11 @@
 
       <tal:seriesfilesexist
           condition="series/release_files">
+        <h2 tal:condition="not: has_edit">
+          Release series &#8220;<tal:name
+                                 replace="series/name">main</tal:name>&#8221;
+        </h2>
+
         <table class="listing">
           <thead>
             <tr>
@@ -80,12 +90,13 @@
         </table>
 
       </tal:seriesfilesexist>
-
+      <!--
       <tal:not_owner condition="not: has_edit">
         <p tal:condition="not: series/release_files">
           No download files are linked to this series.
         </p>
       </tal:not_owner>
+      -->
     </tal:series>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"

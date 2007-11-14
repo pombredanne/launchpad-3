@@ -516,7 +516,22 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView(LaunchpadView):
+class SortSeriesMixin:
+    """Provide a access to `sorted_serieses`.
+
+    This handy method is shared across view classes.
+    """
+    def sorted_serieses(self):
+        """Return the series list of the product with the dev focus first."""
+        series_list = list(self.context.serieses)
+        series_list.remove(self.context.development_focus)
+        # now sort the list by name with newer versions before older
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.context.development_focus)
+        return series_list
+
+class ProductView(LaunchpadView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
@@ -640,16 +655,6 @@ class ProductView(LaunchpadView):
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
-    def sorted_serieses(self):
-        """Return the series list of the product with the dev focus first."""
-        series_list = list(self.context.serieses)
-        series_list.remove(self.context.development_focus)
-        # now sort the list by name with newer versions before older
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.context.development_focus)
-        return series_list
-
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
@@ -659,7 +664,7 @@ class ProductView(LaunchpadView):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFilesView(LaunchpadView):
+class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
@@ -711,7 +716,9 @@ class ProductDownloadFilesView(LaunchpadView):
 
         The list is sorted in reverse chronological order by date.
         """
-        return sorted(self.product.serieses, key=datecreated, reverse=True)
+        return sorted(self.product.serieses,
+                      key=lambda series: series.datecreated,
+                      reverse=True)
 
     @cachedproperty
     def has_download_files(self):
