@@ -221,16 +221,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    cdrkit - 1.0
-    2007-07-09
-    Published
-    breezy-autotest
-    editors
-    commercialpackage - 1.0-1
-    (changes)
-    Pending
-    warty
-    devel
+    cdrkit - 1.0               2007-07-09  Published  breezy-autotest  editors
+    commercialpackage - 1.0-1  (changes)   Pending    warty            devel
 
 Use can explicitly select 'published' filter and will get the same result.
 
@@ -242,16 +234,8 @@ Use can explicitly select 'published' filter and will get the same result.
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    cdrkit - 1.0
-    2007-07-09
-    Published
-    breezy-autotest
-    editors
-    commercialpackage - 1.0-1
-    (changes)
-    Pending
-    warty
-    devel
+    cdrkit - 1.0               2007-07-09  Published  breezy-autotest  editors
+    commercialpackage - 1.0-1  (changes)   Pending    warty            devel
 
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
@@ -264,16 +248,8 @@ result will only contain packages SUPERSEDED or DELETED.
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    iceweasel - 1.0
-    2007-07-09
-    Superseded
-    warty
-    editors
-    pmount - 0.1-1
-    2007-07-09
-    Deleted
-    warty
-    editors
+    iceweasel - 1.0   2007-07-09   Superseded    warty    editors
+    pmount - 0.1-1    2007-07-09   Deleted       warty    editors
 
 The 'Any Status' filter is also available, so the user can search over
 any package ever published in the context PPA.
@@ -286,26 +262,10 @@ any package ever published in the context PPA.
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    cdrkit - 1.0
-    2007-07-09
-    Published
-    breezy-autotest
-    editors
-    commercialpackage - 1.0-1
-    (changes)
-    Pending
-    warty
-    devel
-    iceweasel - 1.0
-    2007-07-09
-    Superseded
-    warty
-    editors
-    pmount - 0.1-1
-    2007-07-09
-    Deleted
-    warty
-    editors
+    cdrkit - 1.0               2007-07-09  Published  breezy-autotest  editors
+    commercialpackage - 1.0-1  (changes)   Pending    warty            devel
+    iceweasel - 1.0            2007-07-09  Superseded warty            editors
+    pmount - 0.1-1             2007-07-09  Deleted    warty            editors
 
 
 == Single-publication PPAs ==
