@@ -120,7 +120,6 @@ alone too:
   ...        for f in pub.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
-
 Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
@@ -159,6 +158,37 @@ and one binary) and the date removed properly set up:
 Source publication 20 (has a future 'scheduled deletion date') and
 binary publication 19 (file hold by another active publication), of
 course are left alone:
+
+  >>> pub = SSPPH.get(20)
+  >>> pub.dateremoved is None
+  True
+
+  >>> pub = SBPPH.get(19)
+  >>> pub.dateremoved is None
+  True
+
+Deathrow is also able to ignore files if there is any reference not
+yet dominated (scheduleddeletiondate == None), for instance,
+just-deleted packages.
+
+  >>> pub = SSPPH.get(20)
+  >>> pub.status = PackagePublishingStatus.DELETED
+  >>> pub.scheduleddeletiondate = None
+
+Deathrow will simply ignore its references, since it can't be sure
+that they could be removed or not.
+
+  >>> flush_database_updates()
+  >>> dp = DiskPool(pool_path, temp_path, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
+  >>> dr.reap(dry_run=True)
+  DEBUG: 1 Sources
+  DEBUG: 1 Binaries
+  INFO: Removing 0 files marked for reaping
+  INFO: Total bytes freed: 0
+  DEBUG: Marking 0 condemned packages as removed.
+
+The related publications were not removed from disk.
 
   >>> pub = SSPPH.get(20)
   >>> pub.dateremoved is None
