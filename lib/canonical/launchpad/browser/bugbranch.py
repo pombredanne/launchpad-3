@@ -37,12 +37,15 @@ class BugBranchAddView(LaunchpadFormView):
         branch = data['branch']
         status = data['status']
         whiteboard = data.get('whiteboard')
-        self.context.bug.addBranch(branch, self.user, status, whiteboard)
+        self.context.bug.addBranch(
+            branch=branch, registrant=self.user, status=status,
+            whiteboard=whiteboard)
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
             branch.name)
 
-    def nextURL(self):
+    @property
+    def next_url(self):
         return canonical_url(self.context)
 
 
