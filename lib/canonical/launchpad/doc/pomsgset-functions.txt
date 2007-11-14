@@ -5,7 +5,7 @@ functions exist. The following sections cover them in detail.
 
 == contract_rosetta_escapes ==
 
-    >>> from canonical.launchpad.browser.pomsgset import (
+    >>> from canonical.launchpad.browser.translationmessage import (
     ...     contract_rosetta_escapes)
 
 Normal strings get passed through unmodified.
@@ -48,7 +48,8 @@ The string '\[nbsp]' gets converted to a literal '[nbsp]'.
 
 == expand_rosetta_escapes ==
 
-    >>> from canonical.launchpad.browser.pomsgset import expand_rosetta_escapes
+    >>> from canonical.launchpad.browser.translationmessage import (
+    ...     expand_rosetta_escapes)
 
 Normal strings get passed through unmodified.
 
@@ -95,7 +96,8 @@ as below:
 
 == parse_cformat_string ==
 
-    >>> from canonical.launchpad.browser.pomsgset import parse_cformat_string
+    >>> from canonical.launchpad.browser.translationmessage import (
+    ...     parse_cformat_string)
     >>> parse_cformat_string('')
     []
     >>> parse_cformat_string('foo')
@@ -112,7 +114,8 @@ as below:
 
 == text_to_html ==
 
-    >>> from canonical.launchpad.browser.pomsgset import text_to_html
+    >>> from canonical.launchpad.browser.translationmessage import (
+    ...     text_to_html)
 
 First, do no harm.
 
@@ -177,7 +180,8 @@ And '\r' should be also handled:
 
 == convert_newlines_to_web_form ==
 
-    >>> from canonical.launchpad.browser.pomsgset import convert_newlines_to_web_form
+    >>> from canonical.launchpad.browser.translationmessage import (
+    ...     convert_newlines_to_web_form)
     >>> convert_newlines_to_web_form(u'foo')
     u'foo'
     >>> convert_newlines_to_web_form(u'foo\n')
@@ -192,7 +196,7 @@ And '\r' should be also handled:
 
 == count_lines ==
 
-  >>> from canonical.launchpad.browser.pomsgset import count_lines
+  >>> from canonical.launchpad.browser.translationmessage import count_lines
   >>> count_lines("foo")
   1
   >>> count_lines(
