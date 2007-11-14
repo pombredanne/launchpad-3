@@ -170,6 +170,11 @@ class MailingList(SQLBase):
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
+    def getSubscription(self, person):
+        """See `IMailingList`."""
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)        
+
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
         if not self.status == MailingListStatus.ACTIVE:
@@ -184,8 +189,7 @@ class MailingList(SQLBase):
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)
+        subscription = getSubscription(person)
         if subscription is not None:
             raise CannotSubscribe('%s is already subscribed to list %s' %
                                   (person.displayname, self.team.displayname))
@@ -197,8 +201,7 @@ class MailingList(SQLBase):
 
     def unsubscribe(self, person):
         """See `IMailingList`."""
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)
+        subscription = getSubscription(person)
         if subscription is None:
             raise CannotUnsubscribe(
                 '%s is not a member of the mailing list: %s' %
@@ -207,8 +210,7 @@ class MailingList(SQLBase):
 
     def changeAddress(self, person, address):
         """See `IMailingList`."""
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)
+        subscription = getSubscription(person)
         if subscription is None:
             raise CannotChangeSubscription(
                 '%s is not a member of the mailing list: %s' %
