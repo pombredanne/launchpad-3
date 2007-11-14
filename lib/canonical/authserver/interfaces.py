@@ -181,6 +181,11 @@ class IHostedBranchStorage(Interface):
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
+        Note that this function raises instances of exactly
+        twisted.web.xmlrpc.Fault; while raising subclasses would perhaps be
+        clearer, the client side would only see a Fault, so we do that on the
+        server side too for consistency.
+
         :param loginID: the person ID of the user creating the branch.
         :param personName: the unique name of the owner of the branch.
         :param productName: the unique name of the product that the branch

@@ -419,19 +419,19 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
+        message = "Product 'no-such-product' does not exist."
         self.assertRaisesFault(
-            NOT_FOUND_FAULT_CODE,
-            "Product 'no-such-product' does not exist.",
+            NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
             1, 'sabdfl', 'no-such-product', 'foo')
 
     def test_createBranch_other_user(self):
         # Test that creating a branch under another user's directory fails.
         storage = DatabaseUserDetailsStorageV2(None)
+        message = ("Mark Shuttleworth cannot create branches owned by "
+                   "No Privileges Person")
         self.assertRaisesFault(
-            PERMISSION_DENIED_FAULT_CODE,
-            "Mark Shuttleworth cannot create branches owned by "
-            "No Privileges Person",
+            PERMISSION_DENIED_FAULT_CODE, message,
             storage._createBranchInteraction,
             1, 'no-priv', 'firefox', 'foo')
 
@@ -447,17 +447,16 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     def test_createBranch_bad_user(self):
         # Test that creating a branch under a non-existent user fails.
         storage = DatabaseUserDetailsStorageV2(None)
+        message = "User/team 'no-one' does not exist."
         self.assertRaisesFault(
-            NOT_FOUND_FAULT_CODE,
-            "User/team 'no-one' does not exist.",
+            NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
             12, 'no-one', 'firefox', 'branch')
         # If both the user and the product are not found, then the missing
         # user "wins" the error reporting race (as the url reads
         # ~user/product/branch).
         self.assertRaisesFault(
-            NOT_FOUND_FAULT_CODE,
-            "User/team 'no-one' does not exist.",
+            NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
             12, 'no-one', 'no-such-product', 'branch')
 
