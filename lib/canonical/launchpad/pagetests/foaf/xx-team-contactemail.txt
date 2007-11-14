@@ -264,7 +264,7 @@ not the team's contact address.
 
 == Customizing the welcome message ==
 
-A project with a mailing list can have a custom welcome message. The
+A team with a mailing list can have a custom welcome message. The
 welcome message is customizable whether or not the mailing list is
 currently the team's contact address.
 
@@ -291,7 +291,7 @@ Changes to the welcome message take effect in the database immediately.
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
-But they takes a while to be propagated to Mailman. The user is informed
+But they takes a while to be processed by Mailman. The user is informed
 of this.
 
     >>> for msg in get_feedback_messages(browser.contents):
@@ -316,7 +316,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    Changes to this mailing list are currently being propagated.
+    Changes to this mailing list are currently being processed.
 
 Usually there is no problem. The welcome message is propagated to
 Mailman, and the informative message disappears from the contact
@@ -349,7 +349,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    Changes to this mailing list are currently being propagated.
+    Changes to this mailing list are currently being processed.
 
     >>> mailinglist_api.reportStatus({'landscape-developers':'failure'})
     True
@@ -357,8 +357,9 @@ What if the change fails to propagate? The user will know of this too.
     >>> browser.reload()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    This mailing list is in an inconsistent state because changes to
-    its configuration failed to propagate.
+    A problem occurred while processing the changes to this mailing
+    list. Your list is still functional but may be not be
+    up-to-date. Please contact a Launchpad administrator for help.
 
     # Now we have to maneuver the mailing list back into a consistent
     # state for the next test. To do this we need to bypass the
@@ -373,7 +374,7 @@ What if the change fails to propagate? The user will know of this too.
     []
 
 
-== Hidden by config variable ==
+== Hidden by configuration variable ==
 
 XXX: We don't really want all this functionality to be visible to users
 when this code lands on mainline, so there's a config variable which

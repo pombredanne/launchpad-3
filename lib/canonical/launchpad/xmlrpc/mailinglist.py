@@ -83,8 +83,8 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if action_status == 'failure':
                 if mailing_list.status == MailingListStatus.CONSTRUCTING:
                     mailing_list.transitionToStatus(MailingListStatus.FAILED)
-                elif mailing_list.status in [MailingListStatus.UPDATING,
-                                             MailingListStatus.DEACTIVATING]:
+                elif mailing_list.status in (MailingListStatus.UPDATING,
+                                             MailingListStatus.DEACTIVATING):
                     mailing_list.transitionToStatus(
                         MailingListStatus.MOD_FAILED)
                 else:

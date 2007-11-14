@@ -140,6 +140,8 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @property
     def mailing_list_status_message(self):
+        """A message about the current state of the mailing list."""
+
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
         if mailing_list is None:
             return ("Not available because you haven't applied for a "
@@ -204,9 +206,6 @@ class TeamContactAddressView(LaunchpadFormView):
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
-
-        The welcome message control will only be displayed if the
-        mailing list's state is ACTIVE, MODIFIED, or UPDATING.
         """
         super(TeamContactAddressView, self).setUpFields()
 
@@ -214,10 +213,6 @@ class TeamContactAddressView(LaunchpadFormView):
         self.form_fields = (
             form.FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
-
-        mailing_list = self.getListInState(MailingListStatus.ACTIVE,
-                                           MailingListStatus.MODIFIED,
-                                           MailingListStatus.UPDATING)
 
     def getContactMethodField(self):
         """Create the form.Fields to use for the contact_method field.
@@ -228,10 +223,12 @@ class TeamContactAddressView(LaunchpadFormView):
         term does not show up in the vocabulary.
         """
         terms = [term for term in TeamContactMethod]
-        for i, term in enumerate(TeamContactMethod):
+        for hosted_list_term_index, term in enumerate(TeamContactMethod):
             if term.value == TeamContactMethod.HOSTED_LIST:
-                hosted_list_term_index = i
                 break
+        else:
+            raise AssertionError("'Hosted list' not found as team "
+                                 "contact method!")
         if (config.mailman.expose_hosted_mailing_lists
             and self.can_be_contact_method):
             # The team's mailing list can be used as the contact
@@ -247,7 +244,7 @@ class TeamContactAddressView(LaunchpadFormView):
             # The team's mailing list does not exist or can't be
             # used as the contact address. Remove the term from the
             # field.
-            del(terms[hosted_list_term_index])
+            del terms[hosted_list_term_index]
 
         return form.FormField(
             Choice(__name__='contact_method',
@@ -278,8 +275,8 @@ class TeamContactAddressView(LaunchpadFormView):
                 except LaunchpadValidationError, error:
                     self.setFieldError('contact_address', str(error))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
-            mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if (mailing_list is None or not mailing_list.canBeContactMethod()):
+            mailing_list = self._getList()
+            if mailing_list is None or not mailing_list.canBeContactMethod():
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -400,8 +397,8 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
         address. Second, the mailing list may be in a transitional
         state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
-        super(TeamMailingListConfigurationView,
-              self).__init__(context, request)
+        super(TeamMailingListConfigurationView,self).__init__(
+            context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
 
@@ -413,12 +410,15 @@ class TeamMailingListConfigurationView(LaunchpadFormView):
         elif self.mailing_list.status == MailingListStatus.UPDATING:
             self.request.response.addNotification(
                 _("Changes to this mailing list are currently "
-                  "being propagated."))
+                  "being processed."))
 
         elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
             self.request.response.addNotification(
-                _("This mailing list is in an inconsistent state because "
-                  "changes to its configuration failed to propagate."))
+                _("A problem occurred while processing the changes to this "
+                  "mailing list.  Your list is still functional but may be "
+                  "not be up-to-date. Please "
+                  '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                  "contact a Launchpad administrator</a> for help."))
         else:
             # No other state needs a special notification.
             pass

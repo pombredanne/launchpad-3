@@ -120,14 +120,15 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            if email.status in [EmailAddressStatus.NEW, EmailAddressStatus.OLD]:
+            if email.status in [EmailAddressStatus.NEW,
+                                EmailAddressStatus.OLD]:
                 # Without this conditional, if the mailing list is the
                 # contact method
-                # (email.status==EmailAddressStatus.PREFERRED), and a
-                # user changes the mailing list configuration, then
-                # when the list status goes back to ACTIVE the email
-                # will go from PREFERRED to VALIDATED and the list
-                # will stop being the contact method.
+                # (ie. email.status==EmailAddressStatus.PREFERRED),
+                # and a user changes the mailing list configuration,
+                # then when the list status goes back to ACTIVE the
+                # email will go from PREFERRED to VALIDATED and the
+                # list will stop being the contact method.
                 email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
