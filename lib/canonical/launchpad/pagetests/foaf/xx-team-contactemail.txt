@@ -34,7 +34,7 @@ user to go through the email address confirmation process.
     >>> browser.getControl('Change').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     A confirmation message has been sent to...
 
@@ -62,7 +62,7 @@ Follow the token link, to confirm the new email address.
 
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Email address successfully confirmed.
 
@@ -88,7 +88,7 @@ mailing list to be activated.
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Mailing list requested and queued for approval.
 
@@ -106,7 +106,7 @@ mailing list to be activated.
     ['\xa0Another e-mail address']
     >>> browser.getControl('The Launchpad mailing list').disabled
     True
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Not available because the application for a mailing list is pending
     approval.
@@ -135,7 +135,7 @@ we'll ask the user to contact a Launchpad admin.
     Traceback (most recent call last):
     ...
     LookupError: ...
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print extract_text(msg)
     Not available because the application for a mailing list has been
     declined. Please contact a Launchpad administrator for further assistance.
@@ -153,7 +153,7 @@ cancelled (and then re-requested afterwards).
     >>> browser.getControl('Cancel Application').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Mailing list application cancelled.
     >>> print list_set.get('landscape-developers')
@@ -186,7 +186,7 @@ users, so we'll simulate it here by directly accessing our database code.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Not available because mailing list is being constructed.
 
@@ -200,7 +200,7 @@ users, so we'll simulate it here by directly accessing our database code.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Not available because mailing list is being constructed.
 
@@ -294,7 +294,7 @@ Changes to the welcome message take effect in the database immediately.
 But they takes a while to be propagated to Mailman. The user is informed
 of this.
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Some changes to this team's mailing list are pending an update and
     have not yet taken effect.
@@ -314,7 +314,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
         {'welcome_message': u'Welcome to the test team mailing list.'}
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Changes to this mailing list are currently being propagated.
 
@@ -327,7 +327,7 @@ address view.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> get_feedback_messages(browser)
+    >>> get_feedback_messages(browser.contents)
     []
     >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
@@ -347,7 +347,7 @@ What if the change fails to propagate? The user will know of this too.
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Changes to this mailing list are currently being propagated.
 
@@ -355,7 +355,7 @@ What if the change fails to propagate? The user will know of this too.
     True
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     This mailing list is in an inconsistent state because changes to
     its configuration failed to propagate.
@@ -369,7 +369,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> no_security_list.status = MailingListStatus.ACTIVE
     >>> no_security_list.syncUpdate()
     >>> browser.reload()
-    >>> print get_feedback_messages(browser)
+    >>> print get_feedback_messages(browser.contents)
     []
 
 
