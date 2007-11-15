@@ -17,7 +17,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.schema import Choice
+from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
@@ -89,7 +89,17 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         """
         super(TeamEditView, self).setUpFields()
         if getUtility(IMailingListSet).get(self.context.name) is not None:
-            self.form_fields['name'].readonly = True
+            # Use a custom form field that prints a readonly name and a short
+            # description about why it's readonly.
+            name_field = form.FormFields(form.FormField(
+                TextLine(__name__='name',
+                         title=_('Name'),
+                         description=_('This team has a mailing list and may '
+                                       'not be renamed.'),
+                         default=self.context.name,
+                         readonly=True,
+                         required=True)))
+            self.form_fields = name_field + self.form_fields.omit('name')
 
 
 def generateTokenAndValidationEmail(email, team):
