@@ -169,8 +169,8 @@ class FeedEntry:
         self.title = title
         self.link_alternate = link_alternate
         self.content = content
-        self.date_published = date_published
         self.date_updated = date_updated
+        self.date_published = date_published
         if authors is None:
             authors = []
         self.authors = authors
