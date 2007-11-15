@@ -34,9 +34,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, ITeamMember, LoginTokenType, MAILING_LISTS_DOMAIN,
-    MailingListStatus, TeamContactMethod, TeamMembershipStatus,
-    UnexpectedFormData)
+    ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -82,6 +81,15 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        When a team has a mailing list, renames are prohibited.
+        """
+        super(TeamEditView, self).setUpFields()
+        if getUtility(IMailingListSet).get(self.context.name) is not None:
+            self.form_fields['name'].readonly = True
 
 
 def generateTokenAndValidationEmail(email, team):

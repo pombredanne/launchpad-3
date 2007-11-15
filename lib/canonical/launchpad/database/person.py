@@ -111,6 +111,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
+
+    def _set_name(self, value):
+        """Check that rename is allowed."""
+        # Renaming a team is prohibited for any team that has a mailing list.
+        # This is because renaming a mailing list is not trivial in Mailman
+        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
+        # team edit details view, but just to be safe, we also assert that
+        # such an attempt is not being made here.  To do this, we must
+        # override the SQLObject method for setting the 'name' database
+        # column.  Watch out for when SQLObject is creating this row, because
+        # in that case self.name isn't yet available.
+        assert (self._SO_creating or
+                not self.isTeam() or
+                getUtility(IMailingListSet).get(self.name) is None), (
+            'Cannot rename teams with mailing lists')
+        # Everything's okay, so let SQLObject do the normal thing.
+        self._SO_set_name(value)
+
     password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
