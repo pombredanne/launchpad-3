@@ -432,7 +432,7 @@ checks:
 
 DEBIAN SYNC upload of a source via the 'sync' policy.
 These uploads do not generate any announcement emails for auto-accepted
-pacakges, just the upload notification.
+packages, just the upload notification.
 
 Make hoary developmental again, as syncs only happen at that stage of a
 distroseries.

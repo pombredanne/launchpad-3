@@ -549,7 +549,7 @@ class PackageUpload(SQLBase):
         # policies should send an acceptance and an announcement message.
         do_sendmail(AcceptedMessage)
 
-        # Don't announcements for Debian sync uploads.
+        # Don't send announcements for Debian sync uploads.
         if self._is_sync_upload:
             return
 
