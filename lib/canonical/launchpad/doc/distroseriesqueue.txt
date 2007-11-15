@@ -705,10 +705,10 @@ with fake changes files first so that emails can be generated.)
   ...    print 'ACCEPTED'
   ACCEPTED
 
-Two emails are generated.  We wont look what is inside them here, that is well
+An email is generated.  We wont look what is inside it here, that is well
 shown in nascentupload-announcements.txt.
 
-  >>> [notification, announcement] = pop_notifications()
+  >>> [notification] = pop_notifications()
 
 Let's reject something in the queue:
 

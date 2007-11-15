@@ -126,12 +126,6 @@ class MailingListStatus(DBEnumeratedType):
         Mailman was unsuccessful in modifying the mailing list.
         """)
 
-    MOD_FAILED = DBItem(11, """
-        Modification failed
-
-        Mailman was unsuccessful in modifying the mailing list.
-        """)
-
 
 class MailingListAutoSubscribePolicy(DBEnumeratedType):
     """A person's auto-subscription policy.

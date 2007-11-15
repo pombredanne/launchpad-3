@@ -334,7 +334,7 @@ def mailingListXMLRPCExternalSetUp(test):
     from canonical.functional import XMLRPCTestTransport
     from xmlrpclib import ServerProxy
     mailinglist_api = ServerProxy(
-        'http://xmlrpc.launchpad.dev:8087/mailinglists/',
+        'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',
         transport=XMLRPCTestTransport())
     test.globs['mailinglist_api'] = mailinglist_api
     # See above; right now this is the same for both the internal and external

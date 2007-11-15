@@ -318,7 +318,7 @@ Changes to the welcome message take effect in the database immediately.
     >>> print welcome_message.value
     Welcome to the test team mailing list.
 
-But they takes a while to be propagated to Mailman. The user is informed
+But they take a while to be propagated to Mailman. The user is informed
 of this.
 
     >>> print mailing_list_status_message(browser.contents)
@@ -347,7 +347,7 @@ Usually there is no problem. The welcome message is propagated to
 Mailman, and the informative message disappears from the contact
 address view.
 
-    >>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
     >>> print_actions(mailinglist_api.getPendingActions())
 
@@ -375,7 +375,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> print mailing_list_status_message(browser.contents)
     A change to this team's mailing list is currently being applied.
 
-    >>> mailinglist_api.reportStatus({'landscape-developers' : 'failure'})
+    >>> mailinglist_api.reportStatus({'landscape-developers':'failure'})
     True
 
     >>> browser.reload()
@@ -413,7 +413,7 @@ to 'each user individually'.
 
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> deactivate
-    >>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
     >>> print_actions(mailinglist_api.getPendingActions())
 
@@ -436,7 +436,7 @@ An inactive mailing list can be reactivated.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> create
         {'welcome_message': u'This change will fail to propagate.'}
-    >>> mailinglist_api.reportStatus({'landscape-developers' : 'success'})
+    >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
     >>> print_actions(mailinglist_api.getPendingActions())
 
@@ -451,7 +451,7 @@ This does not restore the mailing list as the team's contact method:
     ['\xa0Each member individually']
 
 
-== Hidden by config variable ==
+== Hidden by configuration variable ==
 
 XXX: We don't really want all this functionality to be visible to users
 when this code lands on mainline, so there's a config variable which

@@ -148,14 +148,9 @@ class TeamContactAddressView(MailingListTeamBaseView):
     label = "Contact address"
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget(
-        'welcome_message', TextAreaWidget, width=72, height=10)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
-
-        The welcome message control will only be displayed if the
-        mailing list's state is ACTIVE, MODIFIED, or UPDATING.
         """
         super(TeamContactAddressView, self).setUpFields()
 
@@ -163,12 +158,6 @@ class TeamContactAddressView(MailingListTeamBaseView):
         self.form_fields = (
             form.FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
-
-        mailing_list = self.getListInState(MailingListStatus.ACTIVE,
-                                           MailingListStatus.MODIFIED,
-                                           MailingListStatus.UPDATING)
-        if mailing_list is None:
-            self.form_fields = self.form_fields.omit('welcome_message')
 
     def getContactMethodField(self):
         """Create the form.Fields to use for the contact_method field.
@@ -198,7 +187,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # The team's mailing list does not exist or can't be
             # used as the contact address. Remove the term from the
             # field.
-            del(terms[hosted_list_term_index])
+            del terms[hosted_list_term_index]
 
         return form.FormField(
             Choice(__name__='contact_method',
@@ -308,8 +297,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     schema = IMailingList
     field_names = ['welcome_message']
     label = "Mailing list configuration"
-    custom_widget(
-        'welcome_message', TextAreaWidget, width=72, height=10)
+    custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
 
     def __init__(self, context, request):
         """Set feedback messages for users who want to edit the mailing list.
@@ -320,15 +308,15 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         address. Second, the mailing list may be in a transitional
         state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
-        super(TeamMailingListConfigurationView,
-              self).__init__(context, request)
+        super(TeamMailingListConfigurationView,self).__init__(
+            context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
 
     @action('Save', name='save')
     def save_action(self, action, data):
         """Sets the welcome message for a mailing list."""
-        welcome_message = data.get('welcome_message', None)
+        welcome_message = data.get('welcome_message')
         assert (self.mailing_list is not None
                 and self.mailing_list.isUsable()), (
             "Only a usable mailing list can be configured.")
