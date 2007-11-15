@@ -22,9 +22,6 @@ class ProgressUIFactory(SilentUIFactory):
         super(SilentUIFactory, self).__init__()
         self._progress_bar_factory = progress_bar_factory
 
-    def progress_bar(self):
-        return self._progress_bar_factory()
-
     def nested_progress_bar(self):
         if self._progress_bar_stack is None:
             self._progress_bar_stack = ProgressBarStack(

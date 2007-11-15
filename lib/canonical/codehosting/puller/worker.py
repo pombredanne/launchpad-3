@@ -14,8 +14,11 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
+from bzrlib.progress import DummyProgress
+import bzrlib.ui
 
 from canonical.config import config
+from canonical.codehosting import ProgressUIFactory
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -28,6 +31,7 @@ __all__ = [
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
+    'install_worker_progress_factory',
     'PullerWorker',
     'PullerWorkerProtocol'
     ]
@@ -109,7 +113,7 @@ class PullerWorkerProtocol:
     def mirrorFailed(self, branch_to_mirror, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
 
-    def progressMade(self, branch_to_mirror):
+    def progressMade(self):
         self.sendEvent('progressMade')
 
 
@@ -379,3 +383,26 @@ class PullerWorker:
     def __repr__(self):
         return ("<PullerWorker source=%s dest=%s at %x>" %
                 (self.source, self.dest, id(self)))
+
+
+class WorkerProgressBar(DummyProgress):
+    """ """
+
+    def __init__(self, puller_worker_protocol):
+        DummyProgress.__init__(self)
+        self.puller_worker_protocol = puller_worker_protocol
+
+    def _event(self, *args, **kw):
+        self.puller_worker_protocol.progressMade()
+
+    tick = _event
+    update = _event
+    child_update = _event
+    clear = _event
+    note = _event
+    child_progress = _event
+
+def install_worker_progress_factory(puller_worker_protocol):
+    def factory():
+        return WorkerProgressBar(puller_worker_protocol)
+    bzrlib.ui.ui_factory = ProgressUIFactory(factory)
