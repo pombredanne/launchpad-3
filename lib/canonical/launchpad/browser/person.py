@@ -1344,7 +1344,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
 
-    def getTotalBugCounts(self):
+    @cachedproperty
+    def total_bug_counts(self):
         """Return the totals of each type of package bug count as a dict."""
         totals = {
             'open_bugs_count': 0,

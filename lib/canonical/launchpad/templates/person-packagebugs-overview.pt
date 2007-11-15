@@ -22,7 +22,7 @@
         <th class="amount" width="15%">Unassigned</th>
         <th class="amount" width="15%">In&nbsp;Progress</th>
       </tr>
-      <tr tal:define="total_counts view/getTotalBugCounts">
+      <tr tal:define="total_counts view/total_bug_counts">
         <td>
           Totals
         </td>

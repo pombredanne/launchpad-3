@@ -293,7 +293,7 @@ render the overview report.
 The total number of bugs, broken down in the same ways as the package
 bug counts, is also available.
 
-    >>> total_counts = packagebugs_search_view.getTotalBugCounts()
+    >>> total_counts = packagebugs_search_view.total_bug_counts
     >>> print total_counts['open_bugs_count']
     1
     >>> print total_counts['critical_bugs_count']
