@@ -243,7 +243,7 @@
         name="+affects-new-product"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugAlsoAffectsProductWithProductCreationView"
-        permission="launchpad.Edit"
+        permission="launchpad.AnyPerson"
         template="../templates/bugtask-affects-new-product.pt" />
 
     <browser:page

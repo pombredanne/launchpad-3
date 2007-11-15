@@ -71,7 +71,8 @@
         </div>
       </div>
 
-      <div metal:fill-slot="buttons" />
+      <div metal:fill-slot="buttons">
+      </div>
     </div>
 
   </div>
