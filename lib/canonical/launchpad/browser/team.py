@@ -136,11 +136,9 @@ class MailingListTeamBaseView(LaunchpadFormView):
     def mailinglist_address(self):
         """The address for this team's mailing list."""
         mailing_list = self._getList()
-        if mailing_list is None:
-            raise AssertionError(
-                "Attempt to find address of nonexistent mailing list.")
-        else:
-            return mailing_list.address
+        assert mailing_list is not None, (
+                'Attempt to find address of nonexistent mailing list.')
+        return mailing_list.address
 
 
 class TeamContactAddressView(MailingListTeamBaseView):
@@ -300,7 +298,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
 
 
 class TeamMailingListConfigurationView(MailingListTeamBaseView):
-    """A team for creating and configuring a team's mailing list.
+    """A view for creating and configuring a team's mailing list.
 
     Allows creating a request for a list, cancelling the request,
     setting the welcome message, deactivating, and reactivating the
@@ -378,14 +376,11 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Creates a new mailing list."""
         list_set = getUtility(IMailingListSet)
         mailing_list = list_set.get(self.context.name)
-        if mailing_list is None:
-            list_set.new(self.context)
-            self.request.response.addInfoNotification(
-                "Mailing list requested and queued for approval.")
-        else:
-            raise AssertionError(
-                "Tried to create a mailing list for a team that "
-                "already has one.")
+        assert mailing_list is None, (
+            'Tried to create a mailing list for a team that already has one.')
+        list_set.new(self.context)
+        self.request.response.addInfoNotification(
+            "Mailing list requested and queued for approval.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
