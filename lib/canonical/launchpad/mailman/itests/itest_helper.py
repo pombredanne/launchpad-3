@@ -20,6 +20,7 @@ __all__ = [
     'IntegrationTestFailure',
     'MAILMAN_BIN',
     'TOP',
+    'approve_list',
     'create_transaction_manager',
     'make_browser',
     'mbox_iterator'
@@ -206,3 +207,30 @@ def mbox_iterator(mbox_filename):
     mbox = mailbox.UnixMailbox(open(mbox_filename), message_from_file)
     for message in mbox:
         yield message
+
+
+def approve_list(list_name):
+    """Helper for approving a mailing list.
+
+    This functionality is not yet exposed through the web.
+    """
+    # These imports are at file scope because the paths are not yet set up
+    # correctly when this module is imported.
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.interfaces import (
+        ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
+    from zope.component import getUtility
+    # Any Mailing List Expert will suffice for approving the registration.
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    lpadmin = list(experts.allmembers)[0]
+    # Review and approve the mailing list registration.
+    list_set = getUtility(IMailingListSet)
+    mailing_list = list_set.get(list_name)
+    mailing_list.review(lpadmin, MailingListStatus.APPROVED)
+    commit()
+    # Wait until Mailman has actually creating the mailing list.
+    wait_for_mailman()
+    # Return a sync'd object.
+    from canonical.launchpad.ftests import sync
+    sync(mailing_list)
+    return mailing_list

@@ -232,6 +232,7 @@ class XMLRPCRunner(Runner):
                        action, team_name)
                 statuses[team_name] = 'failure'
                 return
+            # Apply list defaults.
             mlist = MailList(team_name)
             try:
                 for key, value in list_defaults.items():

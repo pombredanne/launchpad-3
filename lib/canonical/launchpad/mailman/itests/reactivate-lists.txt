@@ -18,25 +18,17 @@ First, No Privileges Person will create a new team and its mailing list.
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
-
-    >>> list_set = getUtility(IMailingListSet)
-    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    >>> lpadmin = list(experts.allmembers)[0]
-    >>> list_one = list_set.get('itest-one')
-    >>> list_one.welcome_message = 'Greetings team one members!'
-    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
-    >>> itest_helper.wait_for_mailman()
+    >>> list_one = itest_helper.approve_list('itest-one')
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
-The mailing list now has the expected welcome message.
+Give the mailing list a welcome message.
+
+    >>> list_one.welcome_message = 'Greetings team one members!'
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
 
     >>> from Mailman.MailList import MailList
     >>> mlist = MailList('itest-one', lock=False)
@@ -103,51 +95,8 @@ On the Mailman side, the mailing list has the expected welcome message.
     >>> mlist.welcome_msg
     'Greetings team one members!'
 
-Anne is a member of the re-activated mailing list.
+Anne is a member of the re-activated mailing list, just as she was before the
+list was deactivated.
 
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com']
-
-Anne can still post messages to the reactivated mailing list.
-
-    # This test requires a us to start an SMTP server that accepts messages
-    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
-    >>> import os
-    >>> import tempfile
-    >>> descriptor, mbox_filename = tempfile.mkstemp()
-    >>> os.close(descriptor)
-    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
-    >>> smtpd.start()
-
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
-    >>> from Mailman.Post import inject
-    >>> inject('itest-one', """\
-    ... From: anne.person@example.com
-    ... To: itest-one@lists.launchpad.dev
-    ... Subject: Hello everybody
-    ... Message-ID: <first-injection>
-    ...
-    ... Hi, I am a member of this team's list.
-    ... """)
-    >>> smtp_watcher.wait_for_growth()
-
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
-    >>> len(messages)
-    1
-    >>> print messages[0].as_string()
-    From: anne.person@example.com
-    To: itest-one@lists.launchpad.dev
-    Message-ID: <first-injection>
-    Subject: [Itest-one] Hello everybody
-    ...
-    <BLANKLINE>
-    Hi, I am a member of this team's list.
-    _______________________________________________
-    Itest-one mailing list
-    Itest-one@launchpad.dev
-    http://.../mailman/listinfo/itest-one
-
-
-== Clean up ==
-
-    >>> smtpd.stop()

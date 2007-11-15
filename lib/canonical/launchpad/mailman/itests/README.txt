@@ -27,3 +27,17 @@ From the top of your Launchpad tree run this:
 % lib/canonical/launchpad/mailman/itests/runtests.py
 
 This will run all the integration doctests in this directory.
+
+NOTES:
+
+- If you've done this before and possibly have old branches laying around, you
+  will probably want to clean out and rebuild Mailman.  This may also be
+  necessary if your var_dir is on a temporary file system and you've rebootted
+  since the last time you ran the tests.  To clean everything out:
+
+  % rm -rf /tmp/var/mailman (or whatever var_dir points to above)
+  % rm -rf lib/mailman
+  % make mailman_instance
+
+  If you don't remove lib/mailman, 'make mailman_instance' will not do
+  anything.
