@@ -168,15 +168,15 @@ course are left alone:
   True
 
 Deathrow is also able to ignore files if there is any reference not
-yet dominated (scheduleddeletiondate == None), for instance,
-just-deleted packages.
+yet dominated, for instance, just-deleted packages, they will contain
+empty 'scheduleddeletiondate' (see archivepublish/domination.py).
 
   >>> pub = SSPPH.get(20)
   >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = None
 
-Deathrow will simply ignore its references, since it can't be sure
-that they could be removed or not.
+Deathrow will simply ignore references to the just-deleted package,
+since it can't be sure whether or not they can be removed.
 
   >>> flush_database_updates()
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
@@ -188,7 +188,8 @@ that they could be removed or not.
   INFO: Total bytes freed: 0
   DEBUG: Marking 0 condemned packages as removed.
 
-The related publications were not removed from disk.
+Since the just-deleted package was ignored its related publications
+were not removed from disk.
 
   >>> pub = SSPPH.get(20)
   >>> pub.dateremoved is None
