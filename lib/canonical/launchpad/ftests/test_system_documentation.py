@@ -701,31 +701,12 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
-<<<<<<< TREE
-    'mailinglist-subscriptions.txt': FunctionalDocFileSuite(
-            '../doc/mailinglist-subscriptions.txt',
-            setUp=mailingListSubscriptionSetUp,
-            tearDown=tearDown,
-            optionflags=default_optionflags,
-            layer=LaunchpadFunctionalLayer,
-            ),
     'codeimport-machine.txt': LayeredDocFileSuite(
             '../doc/codeimport-machine.txt',
             setUp=zopelessLaunchpadSecuritySetUp,
             tearDown=zopelessLaunchpadSecurityTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
             ),
-
-||||||| BASE-REVISION
-    'mailinglist-subscriptions.txt': FunctionalDocFileSuite(
-            '../doc/mailinglist-subscriptions.txt',
-            setUp=mailingListSubscriptionSetUp,
-            tearDown=tearDown,
-            optionflags=default_optionflags,
-            layer=LaunchpadFunctionalLayer,
-            ),
-=======
->>>>>>> MERGE-SOURCE
     # Also run the pillar.txt doctest under the Zopeless layer.
     # This exposed bug #149632.
     'pillar.txt-zopeless': LayeredDocFileSuite(
