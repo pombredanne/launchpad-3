@@ -790,7 +790,6 @@ Except when there is no active translations...
 
 
 
-
 POTMsgSet.getDummyPOMsgSet
 --------------------------
 
