@@ -855,6 +855,7 @@ class POFile(SQLBase, POFileMixIn):
             query.append("""
                 (POTMsgSet.msgid_plural IS NULL OR
                  TranslationMessage.msgstr%d IS NOT NULL)""" % plural_form)
+        query.append('is_current IS TRUE')
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported

@@ -370,7 +370,6 @@ class SourcePackageRelease(SQLBase):
         if urgency is not None:
             self.urgency = urgency
 
-
     @property
     def upload_changesfile(self):
         """See ISourcePackageRelease."""

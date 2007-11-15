@@ -62,12 +62,6 @@ class IPOTMsgSet(Interface):
     plural_text = Text(
         title=_("The plural text for this message or None."), readonly=True)
 
-    def getTranslationMessages(language_code):
-        """Return all the translation messages for this IPOTMsgSet.
-
-        :param language_code: language we want translations for.
-        """
-
     def getCurrentDummyTranslationMessage(language):
         """Return a DummyTranslationMessage for this message language.
 
@@ -135,9 +129,6 @@ class IPOTMsgSet(Interface):
 
         Returns a modified or newly created translation message.
         """
-
-    def getNewSuggestions(language):
-        """Return suggestions for this message made since last review."""
 
     def flags():
         """Return a list of flags on this set."""

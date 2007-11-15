@@ -179,6 +179,7 @@ class ITranslationMessage(Interface):
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
 
+    # Used in a script to remove upstream translations.
     def destroySelf():
         """Remove this object.
 
@@ -186,7 +187,7 @@ class ITranslationMessage(Interface):
         """
 
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
-    def makeHTMLID(description, for_potmsgset=None):
+    def makeHTMLID(description):
         """Unique identifier for self, suitable for use in HTML element ids.
 
         Constructs an identifier for use in HTML.  This identifier matches the
@@ -195,11 +196,6 @@ class ITranslationMessage(Interface):
         :param description: a keyword to be embedded in the id string, e.g.
             "suggestion" or "translation."  Must be suitable for use in an
             HTML element id.
-        :param for_potmsgset: the `POTMsgSet` that this is a suggestion or
-            translation for.  In the case of a suggestion, that will be a
-            different one than this submission's `POMsgSet` is attached to.
-            For a translation, on the other hand, it *will* be that
-            `POTMsgSet`.  If no value is given, the latter is assumed.
         """
 
 

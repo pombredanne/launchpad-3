@@ -640,8 +640,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION L1>
         #  ...
         #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
+            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
