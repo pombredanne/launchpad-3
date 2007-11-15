@@ -110,7 +110,7 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
     IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
-    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
     ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
@@ -2717,6 +2717,26 @@ class PersonEditEmailsView:
             return
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
+
+    @property
+    def usable_team_mailing_lists(self):
+        """Mailing lists for all the teams in which this user participates.
+
+        If a team doesn't have a mailing list, or the mailing list isn't usable,
+        it's not included.
+        """
+        mailing_list_set = getUtility(IMailingListSet)
+
+        usable_lists = []
+        for membership in self.context.teams_participated_in:
+            mailing_list = mailing_list_set.get(membership.team.name)
+            ### XXX-TODO: replace with isUsable once that branch lands.
+            if mailing_list.status in (MailingListStatus.ACTIVE,
+                                       MailingListStatus.MODIFIED,
+                                       MailingListStatus.UPDATING,
+                                       MailingListStatus.MOD_FAILED):
+                usable_lists.append(mailing_list)
+        return usable_lists
 
 
 class TeamReassignmentView(ObjectReassignmentView):

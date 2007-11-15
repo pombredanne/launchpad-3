@@ -22,7 +22,7 @@
     tal:content="structure view/message"
     class="informational message"
   />
-  
+
   <form name="email" action="" method="POST">
 
   <tal:block condition="context/preferredemail">
@@ -44,7 +44,7 @@
     <div tal:repeat="email context/validatedemails" >
       <label tal:attributes="for email/email">
         <input type="radio" tal:attributes="value email/email; id email/email"
-               name="VALIDATED_SELECTED" /> 
+               name="VALIDATED_SELECTED" />
         <b tal:content="email/email" />
       </label>
     </div>
@@ -84,28 +84,30 @@
 
   </form>
 
-  <tal:block tal:condition="view/availableMailingLists">
+  <tal:block tal:condition="view/usable_team_mailing_lists">
     <h1>Mailing list subscriptions</h1>
 
     <form name="subscriptions" action="" method="POST">
       <table>
-        <tr tal:repeat="sub view/mailingLists">
-          <td><b replace="sub/mailing_list/name">Launchpad Developers</b></td>
+        <tr tal:repeat="mlist view/usable_team_mailing_lists">
+          <nothing tal:define="subscription
+           python:mlist.getSubscription(context)" />
+          <td><b replace="mlist/name">Launchpad Developers</b></td>
           <td>
             <select tal:attributes="name string:${email}_subscribe">
-              <!--LEONARDR-TODO: Generate a hash in the view or generate the HTML itself.-->
-              <option tal:attributes="checked sub/subscription/address=='Preferred'" 
+              <option tal:attributes="checked
+                                      python:subscription.address=='Preferred'"
                       name="Preferred" />
-              <option repeat="email person/emailAddresses" 
+              <option repeat="email context/emailAddresses"
                       attributes="name string:${email}
-                                  checked sub/subscription/address==email" />
-              <option tal:attributes="checked !sub/subscription" 
+                                  checked python:subscription.address==email" />
+              <option tal:attributes="checked not:subscription"
                       name="Don't subscribe" />
             </select>
           </td>
         </tr>
-      </table
-      <input type="submit" value="Apply changes" 
+      </table>
+      <input type="submit" value="Apply changes"
              name="CHANGE_SUBSCRIPTIONS" />>
     </form>
   </tal:block>
