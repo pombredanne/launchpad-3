@@ -139,7 +139,8 @@
     <resource name="meeting-mugshot" file="../images/meeting-mugshot.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
     <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
-    <resource name="rss" file="../images/rss.gif" />
+    <resource name="rss" file="../images/rss.png" />
+    <resource name="rss-large" file="../images/rss-large.png" />
     <resource name="team" file="../images/team.png" />
     <resource name="team-badge" file="../images/team-badge.png" />
     <resource name="team-logo" file="../images/team-logo.png" />
