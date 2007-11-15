@@ -34,6 +34,9 @@ class BugBranch(SQLBase):
         default=BugBranchStatus.INPROGRESS)
     whiteboard = StringCol(notNull=False, default=None)
 
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', notNull=True)
+
     @property
     def bug_task(self):
         """See `IBugBranch`."""
