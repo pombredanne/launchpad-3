@@ -861,8 +861,14 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    def linkBranch(branch, summary=None):
-        """Link the given branch to this specification."""
+    def linkBranch(branch, registrant, summary=None):
+        """Link the given branch to this specification.
+
+        :param branch: The branch to link to this specification.
+        :param registrant: The user making the link.
+        :param summary: Free form text which can be used to describe
+            implementation details.
+        """
 
 
 # Interfaces for containers

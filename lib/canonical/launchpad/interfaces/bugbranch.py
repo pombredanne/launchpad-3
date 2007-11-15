@@ -19,6 +19,7 @@ from canonical.launchpad.fields import BugField
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -81,6 +82,10 @@ class IBugBranch(IHasDateCreated, IHasBug):
             "first bug task (in case where there is no task reported "
             "against the branch's product)."),
         readonly=True)
+
+    registrant = Object(
+        schema=IPerson, readonly=True, required=True,
+        title=_("The person who linked the bug to the branch"))
 
 
 class IBugBranchSet(Interface):

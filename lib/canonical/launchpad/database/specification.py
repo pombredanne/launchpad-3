@@ -625,13 +625,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
 
-    def linkBranch(self, branch, summary=None):
+    def linkBranch(self, branch, registrant, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink
         return SpecificationBranch(specification=self,
                                    branch=branch,
-                                   summary=summary)
+                                   summary=summary,
+                                   registrant=registrant)
 
 
 class HasSpecificationsMixin:

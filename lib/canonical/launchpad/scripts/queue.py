@@ -452,13 +452,11 @@ class QueueActionReject(QueueAction):
         for queue_item in self.items:
             self.display('Rejecting %s' % queue_item.displayname)
             try:
-                queue_item.setRejected()
+                queue_item.rejectFromQueue(
+                    logger=self.log, dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
                 self.display('** %s could not be rejected due %s'
                              % (queue_item.displayname, info))
-            else:
-                queue_item.syncUpdate()
-                queue_item.notify(logger=self.log, dry_run=self.no_mail)
 
         self.displayRule()
         self.displayBottom()
@@ -478,14 +476,12 @@ class QueueActionAccept(QueueAction):
         for queue_item in self.items:
             self.display('Accepting %s' % queue_item.displayname)
             try:
-                queue_item.setAccepted()
+                queue_item.acceptFromQueue(
+                    announce_list=self.announcelist, logger=self.log,
+                    dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
                 self.display('** %s could not be accepted due %s'
                              % (queue_item.displayname, info))
-            else:
-                queue_item.syncUpdate()
-                queue_item.notify(announce_list=self.announcelist,
-                                  logger=self.log, dry_run=self.no_mail)
 
         self.displayRule()
         self.displayBottom()

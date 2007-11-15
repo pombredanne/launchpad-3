@@ -188,6 +188,19 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
+        """See `IPackageUpload`."""
+        self.setAccepted()
+        self.notify(announce_list=announce_list, logger=logger,
+                    dry_run=dry_run)
+        self.syncUpdate()
+
+    def rejectFromQueue(self, logger=None, dry_run=False):
+        """See `IPackageUpload`."""
+        self.setRejected()
+        self.notify(logger=logger, dry_run=dry_run)
+        self.syncUpdate()
+
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
@@ -199,6 +212,16 @@ class PackageUpload(SQLBase):
     def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
+
+    @cachedproperty
+    def _is_sync_upload(self):
+        """Return True if this is a (Debian) sync upload.
+
+        Sync uploads are source-only, unsigned and not targeted to
+        the security pocket."""
+        return (not self.signing_key
+                and self.contains_source and not self.contains_build
+                and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
     def _customFormats(self):
@@ -526,6 +549,10 @@ class PackageUpload(SQLBase):
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         do_sendmail(AcceptedMessage)
+
+        # Don't send announcements for Debian sync uploads.
+        if self._is_sync_upload:
+            return
 
         if announce_list:
             if not self.signing_key:

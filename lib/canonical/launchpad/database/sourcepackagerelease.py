@@ -36,8 +36,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
-from canonical.launchpad.database.queue import (
-    PackageUpload)
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.scripts.queue import QueueActionError
@@ -371,7 +370,6 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
-
 
     @property
     def upload_changesfile(self):
