@@ -97,9 +97,20 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
                          description=_('This team has a mailing list and may '
                                        'not be renamed.'),
                          default=self.context.name,
-                         readonly=True,
-                         required=True)))
+                         readonly=True)))
             self.form_fields = name_field + self.form_fields.omit('name')
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        When a team has a mailing list, renames are prohibited.
+        """
+        super(TeamEditView, self).setUpWidgets()
+        if getUtility(IMailingListSet).get(self.context.name) is not None:
+            # Avoid the "(Optional)" tag on the Name field.  This attribute
+            # must be set on the widget and so can't be used in setUpFields()
+            # when we create the TextLine.
+            self.widgets['name'].required = True
 
 
 def generateTokenAndValidationEmail(email, team):
