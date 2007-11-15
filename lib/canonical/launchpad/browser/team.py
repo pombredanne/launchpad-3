@@ -123,14 +123,14 @@ class MailingListTeamBaseView(LaunchpadFormView):
         return None
 
     @property
-    def list_is_or_could_be_contact_method(self):
-        """Checks whether or not
+    def list_is_usable(self):
+        """Checks whether or not the list is usable; ie. accepting messages.
 
         The list must exist and must be in a state acceptable to
-        MailingList.canBeContactMethod.
+        MailingList.isUsable.
         """
         mailing_list = self._getList()
-        return mailing_list is not None and mailing_list.canBeContactMethod()
+        return mailing_list is not None and mailing_list.isUsable()
 
     @property
     def mailinglist_address(self):
@@ -186,7 +186,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 hosted_list_term_index = i
                 break
         if (config.mailman.expose_hosted_mailing_lists
-            and self.list_is_or_could_be_contact_method):
+            and self.list_is_usable):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
@@ -232,7 +232,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                     self.setFieldError('contact_address', str(error))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if (mailing_list is None or not mailing_list.canBeContactMethod()):
+            if (mailing_list is None or not mailing_list.isUsable()):
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -273,9 +273,8 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert (mailing_list is not None
-                    and mailing_list.canBeContactMethod()), (
-                "A team can only use an active mailing list as its contact "
+            assert (mailing_list is not None and mailing_list.isUsable()), (
+                "A team can only use a usable mailing list as its contact "
                 "address.")
             context.setContactAddress(
                 email_set.getByEmail(mailing_list.address))
@@ -333,8 +332,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message', None)
         assert (self.mailing_list is not None
-                and self.mailing_list.canBeContactMethod()), (
-            "Only an active mailing list can be configured.")
+                and self.mailing_list.isUsable()), (
+            "Only a usable mailing list can be configured.")
 
         if (welcome_message is not None
             and welcome_message != self.mailing_list.welcome_message):
@@ -423,14 +422,14 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
     @property
-    def list_could_be_contact_method_but_isnt(self):
+    def list_is_usable_but_not_contact_method(self):
         """The list could be the contact method for its team, but isn't.
 
-        The list exists and is in a compatible state, but isn't set as
-        the contact method.
+        The list exists and is usable, but isn't set as the contact
+        method.
         """
 
-        return (self.list_is_or_could_be_contact_method and
+        return (self.list_is_usable and
                 (self.context.preferredemail is None or
                  self.mailing_list.address !=
                  self.context.preferredemail.email))
