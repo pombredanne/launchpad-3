@@ -90,7 +90,7 @@
               </tal:no-items>
             </tal:has-search>
             <tal:extra-bottom condition="view/extra_bottom|nothing"
-                              tal:replace="structure view/extra_bottom" />
+                              replace="structure view/extra_bottom" />
         </div>
     </body>
 </html>

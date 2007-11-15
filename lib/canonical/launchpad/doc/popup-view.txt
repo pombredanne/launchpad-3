@@ -3,14 +3,12 @@
 This is the view used by the page rendered inside the popup windows we use
 for fields which have an IHugeVocabulary.
 
-    >>> from zope.component import getView, getUtility
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> bugtask = getUtility(IBugTaskSet).get(2)
-    >>> request = LaunchpadTestRequest(
-    ...     form=dict(vocabulary='Product', field='field.product'))
-    >>> view = getView(bugtask, 'popup-window', request)
+    >>> form = dict(vocabulary='Product', field='field.product')
+    >>> view = create_view(bugtask, 'popup-window', form=form)
     >>> view.title()
     'Select a project'
     >>> view.vocabulary()
@@ -25,10 +23,8 @@ We didn't provide any search terms, so there will be no items to display.
 If we do provide some search text, though, we'll see all items that match
 our search.
 
-    >>> request = LaunchpadTestRequest(
-    ...     form=dict(vocabulary='Product', field='field.product',
-    ...               search='firefox'))
-    >>> view = getView(bugtask, 'popup-window', request)
+    >>> form['search'] = 'firefox'
+    >>> view = create_view(bugtask, 'popup-window', form=form)
     >>> batch = view.search()
     >>> print len(batch.batch)
     1
@@ -43,18 +39,14 @@ not yet registered.  Since this page opens in a popup window, this link's
 target will be the parent window.  Also, this link is only shown when a
 non-empty string was used for the search.
 
-    >>> request = LaunchpadTestRequest(
-    ...     form=dict(vocabulary='Product', field='field.product',
-    ...               search=''))
-    >>> view = getView(bugtask, 'popup-search-upstream', request)
+    >>> form['search'] = ''
+    >>> view = create_view(bugtask, 'popup-search-upstream', form=form)
     >>> batch = view.search()
     >>> view.extra_bottom
     ''
 
-    >>> request = LaunchpadTestRequest(
-    ...     form=dict(vocabulary='Product', field='field.product',
-    ...               search='fooo'))
-    >>> view = getView(bugtask, 'popup-search-upstream', request)
+    >>> form['search'] = 'fooo'
+    >>> view = create_view(bugtask, 'popup-search-upstream', form=form)
     >>> batch = view.search()
     >>> print view.extra_bottom
     Didn't find the project you were looking for?
@@ -112,14 +104,4 @@ implement IHugeVocabulary.
     Traceback (most recent call last):
     ...
     UnexpectedFormData: No vocabulary specified
-
-5. When someone tries to XSS us.
-
-    >>> form = {'field.owner': u'"><script>alert(Y0u @r3 0wn3d!!!);</script>'}
-    >>> popup_widget = SinglePopupWidget(
-    ...     owner_field,  owner_field.vocabulary,
-    ...     LaunchpadTestRequest(form=form))
-    >>> print popup_widget()
-    <input type="text" value="&quot;&gt;&lt;script&gt;alert(Y0u 
-    @r3 0wn3d!!!);&lt;/script&gt;" id="field.owner"...
 
