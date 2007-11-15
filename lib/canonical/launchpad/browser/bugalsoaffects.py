@@ -262,6 +262,8 @@ class ChooseProductStep(AlsoAffectsStep):
 
         # The user has entered a product name but we couldn't find it.
         # Show a meaningful error message instead of "Invalid value".
+        # TODO: Change this to tell the user to search for the project on the
+        # popup widget.
         new_product_url = "%s/+new" % (
             canonical_url(getUtility(IProductSet)))
         search_url = self.widgets['product'].popupHref()
@@ -632,9 +634,8 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             self.request.form['field.existing_product'] = terms[0].token
 
     def validate_existing_product(self, action, data):
-        # XXX: For some reason this is always being called with an empty data
-        # dictionary.
-        return
+        self._validate(action, data)
+        self._findProductsUsingGivenBugTrackerAndStoreThem()
         project = data.get('existing_product')
         try:
             valid_upstreamtask(self.context.bug, project)

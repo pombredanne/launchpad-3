@@ -75,12 +75,12 @@ If we try using that same existing project again, we'll get an error
 explaining we can't because it's already known that it's affected by
 this bug.
 
-    # XXX: Currently disabled as the validator is not working.
-    >> user_browser.goBack()
-    >> user_browser.getControl('Use Existing Project').click()
-    >> user_browser.title
-
-    >> print get_feedback_messages(user_browser)[0]
+    >>> user_browser.goBack()
+    >>> user_browser.getControl('Use Existing Project').click()
+    >>> user_browser.title
+    'Bug #2 - Record as affecting another project' 
+    >>> print get_feedback_messages(user_browser.contents)[-1]
+    A fix for this bug has already been requested for The Foo Project
 
 Now we'll tell Launchpad to not use the existing upstream as we want to report
 the bug as affecting another (unregistered) upstream.
