@@ -89,7 +89,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='ProductSeries', notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=False, default=None)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
@@ -624,13 +624,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
 
-    def linkBranch(self, branch, summary=None):
+    def linkBranch(self, branch, registrant, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink
         return SpecificationBranch(specification=self,
                                    branch=branch,
-                                   summary=summary)
+                                   summary=summary,
+                                   registrant=registrant)
 
 
 class HasSpecificationsMixin:

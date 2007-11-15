@@ -473,12 +473,12 @@ def read_current_binaries(distro_series):
     query = """
     SELECT bpn.name, bpr.version, c.name
     FROM binarypackagerelease bpr, binarypackagename bpn, component c,
-        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
+        securebinarypackagepublishinghistory sbpph, distroarchseries dar
     WHERE
         bpr.binarypackagename = bpn.id AND
              sbpph.binarypackagerelease = bpr.id AND
         sbpph.component = c.id AND
-        sbpph.distroarchrelease = dar.id AND
+        sbpph.distroarchseries = dar.id AND
         sbpph.status = %s AND
         sbpph.archive IN %s AND
         dar.id IN %s
