@@ -20,8 +20,7 @@ class SourcePackageReleaseView(LaunchpadView):
     @property
     def changelog(self):
         """Return a linkified changelog."""
-        return self._linkify_changelog(
-            self.context.changelog, self.context.name)
+        return self._linkify_changelog(self.context.changelog)
 
     @property
     def change_summary(self):

@@ -424,6 +424,12 @@ Unknown email addresses are not altered in any way:
     >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
     'nobody@example.com'
 
+Users who specifiy that their email adresses must be hidden also do not get
+linkified:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='test@canonical.com')
+    'test@canonical.com'
+
 == Test the 'fmt:' namespace where the context is a dict. ==
 
 fmt:pagetitle takes a page template CONTEXTS dict, and gives you a string

@@ -155,7 +155,8 @@ form LP: #nnn where nnn is the bug number.
   'http://launchpad.dev/bugs/10'
 
 If any email addresses in the changelog are recognised as registered in
-Launchpad, they are linkified to point to the person's profile page.
+Launchpad, they are linkified to point to the person's profile page.  Here,
+'commercialpackage' happens to have a recognised address in its changelog:
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/+source/commercialpackage/")

@@ -1702,7 +1702,9 @@ class FormattersAPI:
         for match in matches:
             address = match.group()
             person = getUtility(IPersonSet).getByEmail(address)
-            if person is not None:
+            # Only linkify if person exists and does not want to hide
+            # their email addresses.
+            if person is not None and not person.hide_email_addresses:
                 person_formatter = PersonFormatterAPI(person)
                 image_html = ObjectImageDisplayAPI(person).icon()
                 text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
