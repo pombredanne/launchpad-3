@@ -26,8 +26,7 @@ those notifications look like.
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
-    ...     SQLObjectCreatedEvent)
+    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IPersonSet, IDistributionSet, IDistroSeriesSet,
     ...     ISourcePackageNameSet, IBugSet, CreateBugParams)
@@ -322,8 +321,7 @@ out to the bug notification recipient list. Let's create a CVE ref and
 attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
-    >>> from canonical.lp.dbschema import CveStatus
+    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
     >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
     ...     description="a brief CVE description", status=CveStatus.ENTRY)
     >>> from canonical.launchpad.database import Bug

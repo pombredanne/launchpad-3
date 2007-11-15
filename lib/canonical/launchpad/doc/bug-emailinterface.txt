@@ -555,9 +555,30 @@ permission to complete the operation will be denied.)
     >>> bug_four.private
     True
 
+We flush the database caches to ensure that the timestamp is set:
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+A timestamp and the user that sets the bug private is also recorded:
+
+    >>> bug_four.date_made_private
+    datetime.datetime(...)
+    >>> bug_four.who_made_private.name
+    u'name12'
+
+The bug report can also be made public:
+
     >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
     False
+
+The timestamp and user are cleared:
+
+    >>> print bug_four.date_made_private
+    None
+    >>> print bug_four.who_made_private
+    None
 
 Specifying something else than 'yes' or 'no' produces an error:
 
@@ -605,7 +626,8 @@ Switching off the security flag won't make the bug public, though.
 
     >>> bug_four.private
     True
-    >>> bug_four.private = False
+    >>> bug_four.setPrivate(False, getUtility(ILaunchBag).user)
+    True
 
 Specifying something else than 'yes' or 'no' produces an error:
 

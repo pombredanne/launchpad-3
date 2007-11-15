@@ -11,11 +11,10 @@ bug watches on Roundup bug trackers is externalbugtracker.Roundup, which
 implements IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Roundup
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugtracker)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugtracker,

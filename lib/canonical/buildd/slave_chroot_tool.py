@@ -40,7 +40,7 @@ class SlaveChrootBuilder:
         self.config = {}
 
         required_config_items = [
-            ('chroot', ['distribution', 'distrorelease', 'distrorelease',
+            ('chroot', ['distribution', 'distroseries', 'distroseries',
                         'architecture', 'debootstraparchive', 'variant']),
             ('apt', ['archiveroot', 'components', 'pockets',
                      'signingdisabled']),
@@ -82,7 +82,7 @@ class SlaveChrootBuilder:
 
         print "Debootstrapping %s/%s/%s (%s) from %s ..." % (
             chrconf["distribution"],
-            chrconf["distrorelease"],
+            chrconf["distroseries"],
             chrconf["architecture"],
             chrconf["variant"],
             chrconf["debootstraparchive"])
@@ -91,7 +91,7 @@ class SlaveChrootBuilder:
                 "--variant=%s %s %s %s" % (
                 chrconf["architecture"],
                 chrconf["variant"],
-                chrconf["distrorelease"],
+                chrconf["distroseries"],
                 self.treeroot+"/chroot-autobuild",
                 chrconf["debootstraparchive"]))
 
@@ -181,7 +181,7 @@ class SlaveChrootBuilder:
                 execute("echo deb %s %s%s %s | "
                         "sudo sh -c 'cat >> "
                         "%s/chroot-autobuild/etc/apt/sources.list.%s'" %(
-                    root, self.config['chroot']['distrorelease'],
+                    root, self.config['chroot']['distroseries'],
                     pocket, " ".join(component_set),
                     self.treeroot, component_set[-1]))
 
@@ -235,7 +235,7 @@ class SlaveChrootBuilder:
             print "Preparing chroot tarball..."
             chroottarname = ("chroot-%s-%s-%s.tar.bz2"
                              %(self.config['chroot']['distribution'],
-                               self.config['chroot']['distrorelease'],
+                               self.config['chroot']['distroseries'],
                                self.config['chroot']['architecture']))
             execute("sudo tar -C %s -cjf %s chroot-autobuild"
                     %(self.treeroot, chroottarname))
@@ -247,7 +247,7 @@ class SlaveChrootBuilder:
         if affirmed(yesno):
             print "Constructed chroot-%s-%s-%s.tar.bz2" % (
                 self.config['chroot']['distribution'],
-                self.config['chroot']['distrorelease'],
+                self.config['chroot']['distroseries'],
                 self.config['chroot']['architecture'])
 
 def process(chroottar, slavebin, cmd=None):

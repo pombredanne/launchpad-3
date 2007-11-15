@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <metal:quantity_widgets define-macro="quantity_widgets">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
@@ -32,7 +38,7 @@
         <tal:save-widget define="widget nocall:cell">
 
           <tal:is-header condition="repeat/cell/start">
-            <th tal:content="cell" />
+            <th tal:content="cell" style="text-align: right" />
           </tal:is-header>
           <tal:is-not-header condition="not: repeat/cell/start">
             <td style="text-align: center">
@@ -237,3 +243,4 @@
 </body>
 </html>
 </metal:meta-master>
+</tal:root>

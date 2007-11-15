@@ -11,8 +11,7 @@ from zope.event import notify
 
 from zope.app.event.objectevent import ObjectModifiedEvent
 
-from canonical.lp.dbschema import CveStatus
-from canonical.launchpad.interfaces import ICveSet
+from canonical.launchpad.interfaces import CveStatus, ICveSet
 
 
 CVEDB_NS = '{http://cve.mitre.org/cve/downloads/xml_schema_info.html}'
