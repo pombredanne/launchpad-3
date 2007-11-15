@@ -1,7 +1,7 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
- = Database table and corresponding content class for NewsItem
+ = Database table and corresponding content class for Announcement
  = Page to create a news item
  = Page that lists news items
    = people who can edit them see all of them and active status
@@ -18,7 +18,8 @@
   = Fix up <link rel> linkages to feeds.launchpad.xxx
   = HTML rendering of RSS feeds
  = Clean up announcement date widget cargo culted code
- * Make an RSS feed of all announcements from all projects
+ = Make an RSS feed of all announcements from all projects
+ = Make it possible to publish a retracted item
  * TESTS
- * Clean up unused imports
+ * Clean up unused imports & generally de-lint
 

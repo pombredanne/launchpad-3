@@ -77,9 +77,15 @@ class Announcement(SQLBase):
         assert not (project and distribution)
         assert (product or project or distribution)
 
-        self.product = product
-        self.project = project
-        self.distribution = distribution
+        if self.product != product:
+            self.product = product
+            self.date_updated = UTC_NOW
+        if self.project != project:
+            self.project = project
+            self.date_updated = UTC_NOW
+        if self.distribution != distribution:
+            self.distribution = distribution
+            self.date_updated = UTC_NOW
 
     def set_publication_date(self, publication_date):
         """See IAnnouncement."""
@@ -91,6 +97,8 @@ class Announcement(SQLBase):
             self.date_announced = None
         else:
             self.date_announced = publication_date
+        self.date_updated = None
+        self.active = True
 
     def erase_permanently(self):
         """See IAnnouncement."""
@@ -102,6 +110,14 @@ class Announcement(SQLBase):
         if self.date_announced is None:
             return True
         return self.date_announced.replace(tzinfo=None) > \
+               self.date_announced.utcnow()
+
+    @property
+    def published(self):
+        """See IAnnouncement."""
+        if self.active is False:
+            return False
+        return self.date_announced.replace(tzinfo=None) < \
                self.date_announced.utcnow()
 
 

@@ -104,6 +104,10 @@ class IAnnouncement(Interface):
 
     # attributes
     future = Attribute("Whether or not this announcement is yet public.")
+    published = Attribute(
+        "Whether or not this announcement is published. This is different "
+        "to IAnnouncement.future because it factors in retraction, while "
+        "IAnnouncement.future looks only at the date_announced.")
 
     def modify(title, summary=None, url=None):
         """Update the details of the announcement. This will record the

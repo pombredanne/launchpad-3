@@ -231,6 +231,7 @@ class AnnouncementRetractView(LaunchpadFormView):
 
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
+        self.context.active = False
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     def validate_cancel(self, action, data):

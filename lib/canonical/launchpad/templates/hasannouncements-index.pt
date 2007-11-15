@@ -57,9 +57,6 @@
         <strong tal:condition="not: announcement/date_announced">
             No publishing date set.
         </strong>
-        <strong tal:condition="not: announcement/active">
-            Retracted.
-        </strong>
         <tal:updated condition="announcement/date_updated">
             Updated
             <span tal:replace="announcement/date_updated/fmt:displaydate"
@@ -76,10 +73,11 @@
              tal:attributes="href announcement/fmt:url">
              <img src="/@@/edit" alt="[Edit]" />
              Edit this announcement.</a>
-          <a tal:condition="announcement/future"
+          <a tal:condition="not: announcement/published"
              tal:attributes="href string:${announcement/fmt:url}/+publish">
              Publish now!</a>
-          <a tal:attributes="href string:${announcement/fmt:url}/+retract">
+          <a tal:condition="announcement/active"
+             tal:attributes="href string:${announcement/fmt:url}/+retract">
              Retract this item.</a>
         </tal:editor>
       </p>
