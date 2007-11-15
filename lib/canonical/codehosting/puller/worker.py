@@ -386,9 +386,14 @@ class PullerWorker:
 
 
 class WorkerProgressBar(DummyProgress):
-    """ XXX. """
+    """A progress bar that informs a PullerWorkerProtocol of progress."""
 
     def _event(self, *args, **kw):
+        """Inform the PullerWorkerProtocol of progress.
+
+        This method is attached to the class as all of the progress bar
+        methods: tick, update, child_update, clear and note.
+        """
         self.puller_worker_protocol.progressMade()
 
     tick = _event
@@ -398,11 +403,12 @@ class WorkerProgressBar(DummyProgress):
     note = _event
 
     def child_progress(self, **kwargs):
-        r = WorkerProgressBar(**kwargs)
-        r.puller_worker_protocol = self.puller_worker_protocol
-        return r
+        """As we don't care about nesting progress bars, return self."""
+        return self
 
 def install_worker_progress_factory(puller_worker_protocol):
+    """Install an UIFactory that informs a PullerWorkerProtocol of progress.
+    """
     def factory(*args, **kw):
         r = WorkerProgressBar(*args, **kw)
         r.puller_worker_protocol = puller_worker_protocol

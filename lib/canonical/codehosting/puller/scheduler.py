@@ -1,7 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-""" XXX. """
-
 __metaclass__ = type
 __all__ = ['BadMessage',
            'BranchStatusClient',
@@ -197,7 +195,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._stderr.write(data)
 
     def timeoutConnection(self):
-        self.unexpectedError(failure.Failure(TimeoutError('foo XXX')))
+        self.unexpectedError(failure.Failure(TimeoutError()))
 
     def unexpectedError(self, failure):
         """Called when we receive data that violates the protocol.
