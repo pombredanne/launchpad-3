@@ -139,7 +139,7 @@ is also sent to feedback@canonical.com.
 
     >>> user_browser.open('http://launchpad.dev/projects/+new')
     >>> user_browser.getControl('Part of').value = 'mozilla'
-    >>> user_browser.getControl('Name', index=0).value = 'testoss'
+    >>> user_browser.getControl('Name', index=0).value = 'foss'
     >>> user_browser.getControl('Display Name').value = 'Test Other'
     >>> user_browser.getControl('Title').value = 'This is a Test Product'
     >>> user_browser.getControl(name='field.description').value = (
@@ -152,7 +152,7 @@ is also sent to feedback@canonical.com.
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
-    'http://launchpad.dev/testoss'
+    'http://launchpad.dev/foss'
     >>> 'Test Product' in user_browser.contents
     True
 
