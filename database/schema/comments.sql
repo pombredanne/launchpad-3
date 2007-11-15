@@ -34,6 +34,9 @@ COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the assoc
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
+COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
+COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
+COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 
 -- BranchMergeProposal
 
@@ -47,6 +50,31 @@ COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other informa
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
+COMMENT ON COLUMN BranchMergeProposal.commit_message IS 'This is the commit message that is to be used when the branch is landed by a robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the merge proposal in the overall landing queue.  If the branch has a merge_robot set and the merge robot controls multiple branches then the queue position is unique over all the queued merge proposals for the landing robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
+COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
+COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
+COMMENT ON COLUMN BranchMergeProposal.queuer IS 'The individual who submitted the branch to the merge queue. This is usually the merge proposal registrant.';
+COMMENT ON COLUMN BranchMergeProposal.date_queued IS 'When the queuer submitted the branch to the merge queue.';
+COMMENT ON COLUMN BranchMergeProposal.queued_revision_id IS 'The Bazaar revision ID that is queued to land.';
+COMMENT ON COLUMN BranchMergeProposal.merger IS 'The merger is the person who merged the branch.';
+COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision ID that was actually merged.  If the owner of the source branch is a trusted person, this may be different than the revision_id that was actually queued or reviewed.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+
+
+-- BranchMergeRobot
+
+COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
+COMMENT ON COLUMN BranchMergeRobot.registrant IS 'The person that created the merge robot.';
+COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to update the robot and manage the landing queue.';
+COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
+COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
+COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
 
 -- BranchSubscription
 
@@ -389,6 +417,8 @@ COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version o
 COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
+COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
+COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product upstream uses Blueprints officially. This is useful to help indicate whether or not the upstream project will be actively watching the blueprints in Launchpad.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -723,7 +753,7 @@ COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product 
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroSeries that should get the translation effort focus.';
 COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
-
+COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 
 -- DistroSeries
 
@@ -1728,39 +1758,17 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 
 
 -- StructuralSubscription
-/*
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
 COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
 COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
 COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
 COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
 COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
-COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution release.';
-COMMENT ON COLUMN StructuralSubscription.sourcepackagerelease IS 'The subscription\`s target, when it is a source-package release';
-COMMENT ON COLUMN StructuralSubscription.binarypackagerelease IS 'The subscription\`s target, when it is a binary-package release';
+COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution series.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
 COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
 COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
-COMMENT ON COLUMN StructuralSubscription.specification_flavour IS 'The volume and type of notification this subscription will generate for specifications related to the target. The value is an item of the enumeration `StructuralSubscriptionSpecificationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.bug_flavour IS 'The volume and type of notification this subscription will generate for bugs related to the target. The value is an item of the enumeration `StructuralSubscriptionBugsFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.translation_flavour IS 'The volume and type of notification this subscription will generate for translations related to the target. The value is an item of the enumeration `StructuralSubscriptionTranslationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.code_flavour IS 'The volume and type of notification this subscription will generate for branches related to the target. The value is an item of the enumeration `StructuralSubscriptionCodeFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.registry_flavour IS 'The volume and type of notification this subscription will generate for registry changes related to the target. The value is an item of the enumeration `StructuralSubscriptionRegistryFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.is_verbose IS 'A flag determining whether the notifications resulting from this subscription will contain the item\`s metadata and change history, or only the last change.';
+COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
+COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
-
--- Notification
-COMMENT ON TABLE Notification IS 'A notification to a user, resulting from a subscription to a structure or an application item.';
-COMMENT ON COLUMN Notification.bug IS 'The bug this notification is about.';
-COMMENT ON COLUMN Notification.specification IS 'The specification this notification is about.';
-COMMENT ON COLUMN Notification.branch IS 'The branch this notification is about.';
-COMMENT ON COLUMN Notification.translationgroup IS 'The translation this notification is about.';
-COMMENT ON COLUMN Notification.question IS 'The question this notification is about.';
-COMMENT ON COLUMN Notification.message IS 'The message to be sent for this notification.';
-COMMENT ON COLUMN Notification.date_emailed IS 'The date this notification was emailed, or NULL if it hasn\'t yet been sent.';
-COMMENT ON COLUMN Notification.structuralsubscription IS 'The subscription for which this notification was generated, when it is a structural subscription.';
-COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which this notification was generated, when it is a bug subscription.';
-COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
-COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
-COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
-*/
-
+COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
