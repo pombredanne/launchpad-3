@@ -19,7 +19,8 @@ import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
+from bzrlib.tests import (
+    TestCaseInTempDir, TestCaseWithMemoryTransport, TestCaseWithTransport)
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -32,7 +33,8 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError,
-    get_canonical_url_for_branch_name, PullerWorkerProtocol)
+    get_canonical_url_for_branch_name, install_worker_progress_factory,
+    PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.launchpad.database import Branch
@@ -855,6 +857,35 @@ class TestCanonicalUrl(unittest.TestCase):
         self.assertEqual(
             canonical_url(branch),
             get_canonical_url_for_branch_name(unique_name))
+
+
+class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
+    """Tests for the WorkerProgressBar progress reporting mechanism."""
+
+    class StubProtocol:
+        """A stub for PullerWorkerProtocol that just defines progressMade."""
+        def __init__(self):
+            self.call_count = 0
+        def progressMade(self):
+            self.call_count += 1
+
+    def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        self.saved_factory = bzrlib.ui.ui_factory
+
+    def tearDown(self):
+        TestCaseWithMemoryTransport.tearDown(self)
+        bzrlib.ui.ui_factory = self.saved_factory
+        reset_logging()
+
+    def test_simple(self):
+        # Even the simplest of pulls should call progressMade at least once.
+        p = self.StubProtocol()
+        install_worker_progress_factory(p)
+        b1 = self.make_branch('some-branch')
+        b2 = self.make_branch('some-other-branch')
+        b1.pull(b2)
+        self.assertPositive(p.call_count)
 
 
 def test_suite():
