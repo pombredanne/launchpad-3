@@ -105,11 +105,11 @@ such team pages read-only.
     >>> mailing_list.syncUpdate()
     >>> logout()
 
+Because the 'name' field is read-only, it's not a control that we can get
+a hold of to change.
+
     >>> browser.getLink('Change details').click()
-    >>> browser.getControl('Name', index=0).value
-    'landscape-developers'
-    >>> browser.getControl('Name', index=0).value = 'landscape-heros'
-    >>> browser.getControl('Save').click()
+    >>> browser.getControl(name='field.name').value
     Traceback (most recent call last):
     ...
-    AssertionError: Cannot rename teams with mailing lists
+    LookupError: name 'field.name'
