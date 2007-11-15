@@ -24,11 +24,11 @@ CREATE TABLE StructuralSubscription (
     date_last_updated timestamp without time zone NOT NULL
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 
-    CONSTRAINT structural_subscription_one_target CHECK (null_count(ARRAY[
+    CONSTRAINT one_target CHECK (null_count(ARRAY[
         product, productseries, project, distroseries, distribution
         ]) = 4),
-    CONSTRAINT require_sourcepackagename CHECK (
-        distribution IS NULL = sourcepackagename IS NULL
+    CONSTRAINT sourcepackagename_requires_distribution CHECK (
+        sourcepackagename IS NULL OR distribution IS NOT NULL
         )
     /*
     (product IS NOT NULL AND productseries IS NULL AND
