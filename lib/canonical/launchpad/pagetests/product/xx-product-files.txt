@@ -30,6 +30,7 @@ page does not show any files.
     >>> print para.string.strip()
     No download files exist for this project.
 
+
 == Deletion is only for the privileged ==
 
 As an anonymous user the files for download should be shown, but not
@@ -255,6 +256,7 @@ are listed within series in reverse chronological order, except
     foo2.txt
     foo.txt
 
+
 == Downloading and deleting files ==
 
 Download one of the files.
@@ -307,3 +309,36 @@ Ensure the file is no longer listed.
     foo09.txt
     foo3.txt
     foo.txt
+
+
+== Listing on the ProductRelease page ==
+
+Download files are shown on the page for the product release.
+
+    >>> firefox_owner.open('http://launchpad.dev/firefox/trunk/0.9')
+    >>> content = find_main_content(firefox_owner.contents)
+    >>> rows = content.findAll('tr')
+    >>> for row in rows[1:]:
+    ...     a_list = row.findAll('a')
+    ...     if len(a_list) > 0:
+    ...        print a_list[0].string
+    foo09.txt
+
+As with the other listing, the administrators have the option to
+delete files.  In this context the 'Release' column would be redundant
+so it is not shown.
+
+    >>> row = content.find('table').find('tr')
+    >>> print extract_text(row)
+    Delete
+    Download
+    Description
+
+Non-administrators do not have the delete option.
+
+    >>> non_owner.open('http://launchpad.dev/firefox/trunk/0.9')
+    >>> content = find_main_content(non_owner.contents)
+    >>> row = content.find('table').find('tr')
+    >>> print extract_text(row)
+    Download
+    Description
