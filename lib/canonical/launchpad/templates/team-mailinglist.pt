@@ -10,7 +10,7 @@
   <p id="mailing_list_status_message"
      tal:condition="view/mailing_list_status_message">
     <b tal:content="structure view/mailing_list_status_message">
-      This team's mailing list will be available within a minute.
+      This team's mailing list will be available within a few minutes.
     </b>
   </p>
 
