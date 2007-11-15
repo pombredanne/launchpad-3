@@ -705,20 +705,10 @@ class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
                         del_count += 1
         return del_count
 
-    def file_url(self, series, release, file_):
+    def file_url(self, release, file_):
         """Create a download URL for the file."""
         return "%s/+download/%s" % (canonical_url(release),
                                     file_.libraryfile.filename)
-
-    @cachedproperty
-    def series_latest_first(self):
-        """Return a list of series for the product.
-
-        The list is sorted in reverse chronological order by date.
-        """
-        return sorted(self.product.serieses,
-                      key=lambda series: series.datecreated,
-                      reverse=True)
 
     @cachedproperty
     def has_download_files(self):

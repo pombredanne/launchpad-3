@@ -75,7 +75,7 @@
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.file_url(series,release,file)"
+                  <a tal:attributes="href python:view.file_url(release,file)"
                        tal:content="file/libraryfile/filename">filename</a></td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
