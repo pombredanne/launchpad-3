@@ -11,8 +11,8 @@ from zope.schema.interfaces import (
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
@@ -553,4 +553,20 @@ class MugshotImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+
+class PillarNameField(BlacklistableContentNameField):
+
+    errormessage = _("%s is already in use by another project")
+
+    def _getByName(self, name):
+        return getUtility(IPillarNameSet).getByName(name)
+
+
+class ProductNameField(PillarNameField):
+
+    @property
+    def _content_iface(self):
+        # Local import to avoid circular dependencies.
+        from canonical.launchpad.interfaces.product import IProduct
+        return IProduct
 

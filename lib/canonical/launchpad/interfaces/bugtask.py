@@ -13,6 +13,7 @@ __all__ = [
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
     'IAddBugTaskForm',
+    'IAddBugTaskWithProductCreationForm',
     'IBugTask',
     'IBugTaskDelta',
     'IBugTaskSearch',
@@ -33,18 +34,21 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
+    Bool, Choice, Datetime, Field, Int, List, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine, Tag
+from canonical.launchpad.fields import (
+    Description, ProductNameField, StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
     DBEnumeratedType, DBItem, use_template)
@@ -947,6 +951,20 @@ class IAddBugTaskForm(Interface):
         title=_('Visited steps'), required=False,
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
+
+class IAddBugTaskWithProductCreationForm(Interface):
+
+    bug_url = StrippedTextLine(
+        title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,
+        description=_("The URL of this bug in the remote bug tracker."))
+    displayname = TextLine(title=_('Project name'))
+    name = ProductNameField(
+        title=_('Project ID'), constraint=name_validator, required=True,
+        description=_(
+            "A short name starting with a lowercase letter or number, "
+            "followed by letters, dots, hyphens or plusses. e.g. firefox, "
+            "linux, gnome-terminal."))
+    summary = Summary(title=_('Project summary'), required=True)
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):

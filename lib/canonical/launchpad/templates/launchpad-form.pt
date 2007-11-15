@@ -90,9 +90,10 @@
                   show_optional python:view.showOptionalMarker(field_name)">
     <tal:is-visible condition="widget/visible">
       <tr tal:condition="python: view.isSingleLineLayout(field_name)">
-        <th><label tal:attributes="for widget/name"
-                   tal:content="string:${widget/label}:">
-          Label</label></th>
+        <th tal:condition="not: no_label|nothing">
+          <label tal:attributes="for widget/name"
+                 tal:content="string:${widget/label}:">Label</label>
+        </th>
         <td tal:attributes="class error_class" width="100%">
           <div>
             <input tal:replace="structure widget" />

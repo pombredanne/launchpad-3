@@ -1,0 +1,103 @@
+= Registering an upstream affected by a given bug =
+
+Sometimes users want to indicate that a bug also affects another upstream but
+then they realize that upstream is not yet registered in Launchpad.  In order
+to make their life easier, we allow them to register a new upstream and
+indicate that it's affected by a given bug, all at once.
+
+The page where this can be done is linked to from the popup widget included in
+the +choose-affected-product page.  That link takes the user to the
++affects-new-product page.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product')
+    >>> user_browser.title
+    'Bug #1 - Record as affecting another project'
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=42')
+    >>> user_browser.getControl('Project name').value = 'The Foo Project'
+    >>> user_browser.getControl('Project ID').value = 'foo'
+    >>> user_browser.getControl('Project summary').value = 'The Foo Project'
+    >>> user_browser.getControl('Continue').click()
+
+We're now redirected to the newly created bugtask page.
+
+    >>> user_browser.title
+    'Bug #1 in The Foo Project...'
+
+When creating a new upstream through this page we'll check if there's any
+upstream already registered in Launchpad which uses the same bugtracker as
+the one specified by the user. If there are any we present them as options
+for the user to use as the affected upstream.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/tomcat/+bug/2/+affects-new-product')
+    >>> user_browser.title
+    'Bug #2 - Record as affecting another project'
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=421')
+    >>> user_browser.getControl('Project name').value = 'The Bar Project'
+    >>> user_browser.getControl('Project ID').value = 'bar'
+    >>> user_browser.getControl('Project summary').value = 'The Bar Project'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> user_browser.title
+    'Bug #2 - Record as affecting another project'
+
+    # XXX: Damn, this test will fail once I merge from mainline as
+    # get_feedback_messages has changed to expect the contents rather than the
+    # browser object.
+    >>> print get_feedback_messages(user_browser)[0]
+    There are some projects using the bug tracker you specified. One of
+    these may be the one you were trying to register.
+    >>> user_browser.getControl(name='field.existing_product').displayValue
+    ['\xa0The Foo Project']
+
+Now we can either choose to report the bug as affecting our existing Foo
+Project or create the new Bar Project.
+
+    >>> user_browser.getControl('Use Existing Project')
+    <SubmitControl name='field.actions.use_existing_product' type='submit'>
+    >>> user_browser.getControl('Continue')
+    <SubmitControl name='field.actions.continue' type='submit'>
+
+First, let's use the existing project.
+
+    >>> user_browser.getControl('Use Existing Project').click()
+    >>> user_browser.title
+    'Bug #2 in The Foo Project...'
+
+    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
+    >>> for img in affects_table.findAll('img'):
+    ...     for key, value in img.attrs:
+    ...         if '@@/bug-remote' in value:
+    ...             print extract_text(img.findPrevious('a'))
+    auto-bugs.foo.org #421
+
+If we try using that same existing project again, we'll get an error
+explaining we can't because it's already known that it's affected by
+this bug.
+
+    # XXX: Currently disabled as the validator is not working.
+    >> user_browser.goBack()
+    >> user_browser.getControl('Use Existing Project').click()
+    >> user_browser.title
+
+    >> print get_feedback_messages(user_browser)[0]
+
+Now we'll tell Launchpad to not use the existing upstream as we want to report
+the bug as affecting another (unregistered) upstream.
+
+    >>> user_browser.goBack()
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=123')
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.title
+    'Bug #2 in The Bar Project:...
+    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
+    >>> for img in affects_table.findAll('img'):
+    ...     for key, value in img.attrs:
+    ...         if '@@/bug-remote' in value:
+    ...             print extract_text(img.findPrevious('a'))
+    auto-bugs.foo.org #123
+    auto-bugs.foo.org #421

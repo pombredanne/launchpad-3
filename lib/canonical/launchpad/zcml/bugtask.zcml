@@ -206,6 +206,13 @@
         permission="launchpad.Edit"
         template="../templates/bug-nominate-for-series.pt" />
 
+    <browser:page
+        name="+affects-new-product"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugAlsoAffectsProductWithProductCreationView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-affects-new-product.pt" />
+
     <browser:generalform
         name="+addbranch"
         schema="canonical.launchpad.interfaces.IBugBranch"
