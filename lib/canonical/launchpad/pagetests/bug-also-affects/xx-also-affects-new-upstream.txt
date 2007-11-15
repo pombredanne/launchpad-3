@@ -6,13 +6,32 @@ to make their life easier, we allow them to register a new upstream and
 indicate that it's affected by a given bug, all at once.
 
 The page where this can be done is linked to from the popup widget included in
-the +choose-affected-product page.  That link takes the user to the
-+affects-new-product page.
+the +choose-affected-product page.  Since the link is a javascript popup, we
+can't follow it directly, so let's extract the real URL and open it manually.
 
     >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product')
+    ...     'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
+    >>> choose_link = user_browser.getLink('Choose')
+    >>> choose_link.url
+    "javascript:popup_window('@@popup-search-upstream?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'field.product','300','420')"
+    >>> import re
+    >>> choose_url = re.search(
+    ...     "popup_window\('([^']*)'", choose_link.url).group(1)
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/firefox/+bug/1/' + choose_url)
     >>> user_browser.title
-    'Bug #1 - Record as affecting another project'
+    'Select a project'
+
+Whenever a search is done in this page (which is rendered to the user in a
+popup window), a link is included at the bottom of the page inviting the user
+to register a new project in case he didn't find the one he was looking for.
+
+    >>> user_browser.getControl(name='search').value = 'mozilla'
+    >>> user_browser.getControl('Search').click()
+
+    >>> user_browser.getLink('Register it').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product'
     >>> user_browser.getControl('Bug URL').value = (
     ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=42')
     >>> user_browser.getControl('Project name').value = 'The Foo Project'
