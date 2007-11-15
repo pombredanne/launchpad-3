@@ -7,8 +7,11 @@ __metaclass__ = type
 __all__ = [
     'HasAnnouncementsView',
     'AnnouncementAddView',
-    'AnnouncementContextMenu',
+    'AnnouncementRetargetView',
+    'AnnouncementPublishView',
+    'AnnouncementRetractView',
     'AnnouncementEditView',
+    'AnnouncementContextMenu',
     'AnnouncementSHP',
     ]
 
@@ -28,6 +31,7 @@ from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
     AddAnnouncementForm,
+    AnnouncementRetargetForm,
     IDistribution,
     ILaunchBag,
     IAnnouncement,
@@ -47,6 +51,31 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.widgets import AnnouncementDateWidget
 from zope.app.form.browser import TextWidget
+
+
+class AnnouncementContextMenu(ContextMenu):
+
+    usedfor = IAnnouncement
+    links = ['edit', 'retarget']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Modify announcement'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Retarget'
+        return Link('+retarget', text, icon='edit')
+
+
+class AnnouncementSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return "News for %s" % cgi.escape(self.context.target.title)
+
+    def getMainHeading(self):
+        return self.context.title
 
 
 class AnnouncementAddView(LaunchpadFormView):
@@ -75,30 +104,7 @@ class AnnouncementAddView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """The next URL to redirect to after creating a new specification.
-
-        The default implementation returns a URL for the new specification
-        itself. Subclasses can override this behaviour by returning an
-        alternative URL.
-        """
         return self._next_url
-
-
-class AnnouncementContextMenu(ContextMenu):
-
-    usedfor = IAnnouncement
-    links = ['edit', 'retarget']
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Edit title and summary'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def retarget(self):
-        text = 'Retarget'
-        return Link('+retarget', text, icon='edit')
-
 
 
 class AnnouncementEditView(LaunchpadFormView):
@@ -122,23 +128,28 @@ class AnnouncementEditView(LaunchpadFormView):
         self.context.url = data.get('url')
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
     @property
     def next_url(self):
         return self._nextURL
 
 
+class AnnouncementRetargetView(LaunchpadFormView):
 
-
-class AnnouncementRetargetingView(LaunchpadFormView):
-
-    schema = IAnnouncement
+    schema = AnnouncementRetargetForm
     field_names = ['target']
     label = _('Move this announcement to a different project')
 
     def validate(self, data):
-        """Ensure that the target is valid and that there is not
-        already a blueprint with the same name as this one for the
-        given target.
+        """Ensure that the person can publish announcement at the new
+        target.
         """
 
         target = data.get('target')
@@ -150,36 +161,101 @@ class AnnouncementRetargetingView(LaunchpadFormView):
                 cgi.escape(self.request.form.get("field.target")))
             return
 
-    @action(_('Retarget Blueprint'), name='retarget')
-    def register_action(self, action, data):
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        target = data['target']
-        if target.getSpecification(self.context.name) is not None:
-            return '%s already has a blueprint called %s' % (
-                target.displayname, self.context.name)
-        product = distribution = None
+        if not check_permission('launchpad.Edit', target):
+            self.setFieldError('target',
+                "You don't have permission to make announcements for "
+                "%s. Please check that name and try again." %
+                target.displayname)
+            return
+
+    @action(_('Retarget'), name='retarget')
+    def retarget_action(self, action, data):
+        target = data.get('target')
+        product = project = distribution = None
         if IProduct.providedBy(target):
-            product = target
+            self.context.product = target
+            self.context.project = None
+            self.context.distribution = None
         elif IDistribution.providedBy(target):
-            distribution = target
+            self.context.distribution = target
+            self.context.product = None
+            self.context.project = None
+        elif IProject.providedBy(target):
+            self.context.project = target
+            self.context.distribution = None
+            self.context.project = None
         else:
             raise AssertionError, 'Unknown target'
-        self.context.retarget(product=product, distribution=distribution)
-        self._nextURL = canonical_url(self.context)
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     @property
     def next_url(self):
         return self._nextURL
 
 
-class AnnouncementSHP(StructuralHeaderPresentation):
+class AnnouncementPublishView(LaunchpadFormView):
 
-    def getIntroHeading(self):
-        return "News for %s" % cgi.escape(self.context.target.title)
+    schema = IAnnouncement
+    field_names = ['publication_date']
+    label = _('Publish this announcement')
 
-    def getMainHeading(self):
-        return self.context.title
+    def validate(self, data):
+        """Make sure that the date proposed for publication is reasonable."""
+
+        target = data.get('target')
+
+        if target is None:
+            self.setFieldError('target',
+                "There is no project with the name '%s'. "
+                "Please check that name and try again." %
+                cgi.escape(self.request.form.get("field.target")))
+            return
+
+    @action(_('Publish'), name='publish')
+    def publish_action(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    @property
+    def next_url(self):
+        return self._nextURL
+
+
+class AnnouncementRetractView(LaunchpadFormView):
+
+    schema = IAnnouncement
+    label = _('Retract this announcement')
+
+    @action(_('Retract'), name='retract')
+    def retract_action(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    @property
+    def next_url(self):
+        return self._nextURL
 
 
 class HasAnnouncementsView(LaunchpadView):

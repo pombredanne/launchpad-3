@@ -731,6 +731,12 @@ announcement_add = 'Make an announcement'
 
 announcement_edit = 'Modify an announcement'
 
+announcement_publish = 'Publish this announcement'
+
+announcement_retarget = 'Move announcement to a different project'
+
+announcement_retract = 'Retract this announcement'
+
 notification_test = 'Notification test'
 
 object_branding = ContextDisplayName('Change the images used to represent '

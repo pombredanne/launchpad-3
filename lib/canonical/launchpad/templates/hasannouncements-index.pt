@@ -31,16 +31,24 @@
 
     <tal:per_announcement repeat="announcement view/batchnav/currentBatch">
       <h2>
-        <tal:date tal:condition="announcement/date_announced"
-                tal:content="announcement/date_announced/fmt:date">
+        <tal:date tal:condition="announcement/date_announced">
+          <span tal:replace="announcement/date_announced/fmt:date">
             22 Oct 2008
-        </tal:date>:
+          </span>:
+        </tal:date>
         <tal:title content="announcement/title">News item title</tal:title>
       </h2>
 
       <p>
-        <img src="/@@/warning" title="Announcement is not yet public"
-             tal:condition="announcement/future" />
+        <tal:future condition="announcement/future">
+          <img src="/@@/warning" title="Announcement is not yet public" />
+          <strong tal:condition="announcement/active">
+            <tal:date_set condition="announcement/date_announced">
+              This will be published on
+              <span tal:replace="announcement/date_announced/fmt:datetime" />
+            </tal:date_set>
+          </strong>
+        </tal:future>
         <strong tal:condition="not: announcement/active">
             [Retracted]
         </strong>

@@ -12,7 +12,7 @@
  = Editors can click to edit news items
  * Make sure publishing / retraction workflow is smooth
    * Consider using "published" or "visible" instead of "active"
- * Ability to retarget announcements
+ = Ability to retarget announcements
  * Ability to delete announcements
  * Add RSS feeds for project news
  * Clean up announcement date widget cargo culted code
