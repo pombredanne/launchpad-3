@@ -25,12 +25,12 @@
 
     <metal:widgets fill-slot="widgets">
 
-      <div class="informational message"
-             tal:condition="view/mailing_list_status_message">
-        <span tal:content="structure view/mailing_list_status_message">
-          This team's mailing list could not be created.
-        </span>
-      </div>
+      <p id="mailing_list_status_message"
+         tal:condition="view/mailing_list_status_message">
+        <b tal:content="structure view/mailing_list_status_message">
+          This team's mailing list will be available shortly.
+        </b>
+      </p>
 
       <p tal:condition="view/list_is_or_could_be_contact_method">
         This team's mailing list is active at
@@ -66,10 +66,11 @@
 
       <p id="mailing_list_not_contact_address"
          tal:condition="view/list_could_be_contact_method_but_isnt">
-        This team's mailing list is not set as the team contact address.
-        <input type="submit" class="button" id="submit_contact_address_form"
-               onclick="document.forms.set_mailing_list_as_contact_address.submit();"
-               value="Set mailing list as contact address" />
+        This team's mailing list is not set as the team contact
+        address. You can
+        <a tal:attributes="href string:${context/fmt:url}/+contactaddress">
+          set it
+        </a>.
       </p>
 
       <div tal:condition="view/list_is_or_could_be_contact_method">

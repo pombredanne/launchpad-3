@@ -133,8 +133,15 @@ we'll ask the user to contact a Launchpad admin.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print extract_text(msg)
+    >>> def mailing_list_status_message(contents):
+    ...     """Find out if a mailing list is in an unusual state."""
+    ...     tag = find_tag_by_id(contents, 'mailing_list_status_message')
+    ...     if tag:
+    ...         return extract_text(tag.b)
+    ...     else:
+    ...         return ""
+
+    >>> print mailing_list_status_message(browser.contents)
     The application for this team's mailing list has been declined. Please
     contact a Launchpad administrator for further assistance.
 
@@ -191,8 +198,7 @@ list as last time -- it was rejected and we requested a new one.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     This team's mailing list will be available shortly.
 
     >>> mailing_list.startConstructing()
@@ -203,8 +209,7 @@ list as last time -- it was rejected and we requested a new one.
     ...
     LookupError: ...
 
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     This team's mailing list will be available shortly.
 
 Even after the mailing list has been requested and approved, it cannot
@@ -229,9 +234,10 @@ the team's contact address.
     ...
     LookupError: ...
 
-    >>> print find_tag_by_id(browser.contents,
-    ...                      'mailing_list_not_contact_address').contents[0]
-    This team's mailing list is not set as the team contact address.
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...                                   'mailing_list_not_contact_address'))
+    This team's mailing list is not set as the team contact
+    address. You can...set it...
 
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
@@ -257,49 +263,32 @@ manipulate the list.
     LinkNotFoundError
 
 When the mailing list is not the team's contact address, the mailing
-list configuration screen displays a message to this effect:
+list configuration screen displays a message to this effect.
 
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> print find_tag_by_id(browser.contents,
-    ...                      'mailing_list_not_contact_address').contents[0]
-    This team's mailing list is not set as the team contact address.
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...                                   'mailing_list_not_contact_address'))
+    This team's mailing list is not set as the team contact
+    address. You can... set it...
 
-The mailing list configuration screen makes it easy to set the team
-contact address directly, rather than going through the contact
-address screen. The form works through Javascript; to test it I'll
-verify the button's script and then carry out the intent of that
-script.
+The message contains a link to the contact address screen.
 
-    >>> print find_tag_by_id(browser.contents,
-    ...                      'submit_contact_address_form')['onclick']
-    document.forms.set_mailing_list_as_contact_address.submit();
-    >>> browser.getForm('set_mailing_list_as_contact_address').submit()
-
+    >>> browser.getLink('set it').click()
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
 
-[REVIEWER PLEASE NOTE: I'm trying to figure out a weird Javascript
-browser issue. As you can see by running the test, this code works,
-and the same HTTP requests and responses are in play during a
-Javascript-enabled test, but for some reason a Javascript submission
-of the form I just called submit() on doesn't redirect the browser
-back to the main team view. It refreshes the current view. If I can't
-resolve this in time to get this landed, I'll replace the button with
-a link.]
-
-The message about the team's mailing list is gone, as is the button.
+When the mailing list is the team's contact address, the message does
+not show up.
 
     >>> browser.getLink('Configure mailing list').click()
     >>> find_tag_by_id(browser.contents,
     ...                'mailing_list_not_contact_address') is None
     True
-    >>> browser.getControl('submit_contact_address_form')
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
 
 The contact address is now set to the mailing list address:
 
@@ -332,8 +321,7 @@ Changes to the welcome message take effect in the database immediately.
 But they takes a while to be propagated to Mailman. The user is informed
 of this.
 
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     An update to this team's mailing list is pending and has not yet
     taken effect.
 
@@ -352,8 +340,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
         {'welcome_message': u'Welcome to the test team mailing list.'}
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     A change to this team's mailing list is currently being applied.
 
 Usually there is no problem. The welcome message is propagated to
@@ -365,8 +352,8 @@ address view.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> get_feedback_messages(browser.contents)
-    []
+    >>> print mailing_list_status_message(browser.contents)
+
     >>> welcome_message = browser.getControl('Welcome message')
     >>> print welcome_message.value
     Welcome to the test team mailing list.
@@ -385,16 +372,14 @@ What if the change fails to propagate? The user will know of this too.
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     A change to this team's mailing list is currently being applied.
 
     >>> mailinglist_api.reportStatus({'landscape-developers' : 'failure'})
     True
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     This team's mailing list is in an inconsistent state because a
     change to its configuration was not applied. Please contact a
     Launchpad administrator for further assistance.
@@ -408,8 +393,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> no_security_list.status = MailingListStatus.ACTIVE
     >>> no_security_list.syncUpdate()
     >>> browser.reload()
-    >>> print get_feedback_messages(browser.contents)
-    []
+    >>> print mailing_list_status_message(browser.contents)
 
 
 == Deactivating and reactivating lists ==
@@ -424,8 +408,7 @@ to 'each user individually'.
     ['\xa0Each member individually']
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     This team's mailing list is being deactivated.
 
     >>> print_actions(mailinglist_api.getPendingActions())
@@ -435,20 +418,19 @@ to 'each user individually'.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     This team's mailing list has been deactivated.
 
 An inactive mailing list can be reactivated.
 
     >>> browser.getControl('Reactivate this Mailing List').click()
+    >>> print mailing_list_status_message(browser.contents)
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     The mailing list will be reactivated shortly.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
     This team's mailing list will be available shortly.
 
     >>> print_actions(mailinglist_api.getPendingActions())
@@ -459,8 +441,8 @@ An inactive mailing list can be reactivated.
     >>> print_actions(mailinglist_api.getPendingActions())
 
     >>> browser.reload()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print mailing_list_status_message(browser.contents)
+
 
 This does not restore the mailing list as the team's contact method:
 
