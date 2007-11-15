@@ -319,7 +319,7 @@ class BranchDateLastModified(BranchTestCase):
         params.setBugTarget(product=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
-        bug.addBranch(branch)
+        bug.addBranch(branch, branch.owner)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
@@ -333,7 +333,7 @@ class BranchDateLastModified(BranchTestCase):
             name='some-spec', title='Some spec', product=branch.product,
             owner=branch.owner, summary='', specurl=None,
             definition_status=SpecificationDefinitionStatus.NEW)
-        spec.linkBranch(branch)
+        spec.linkBranch(branch, branch.owner)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
