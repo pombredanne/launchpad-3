@@ -12,13 +12,10 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-top-contributors" />
-</metal:rightportlets>
+</metal:portlets>
 
 <metal:heading fill-slot="pageheading">
    <h1>Download project files</h1>
@@ -29,9 +26,14 @@
 
   <form method="POST"
         tal:attributes="action request/URL">
-    <tal:series repeat="series context/serieses">
 
-      <h2>
+    <p tal:condition="not: view/has_download_files">
+       No download files exist for this project.
+    </p>
+
+    <tal:series repeat="series view/sorted_serieses">
+
+      <h2 tal:condition="has_edit">
         Release series &#8220;<tal:name
                                replace="series/name">main</tal:name>&#8221;
       </h2>
@@ -49,6 +51,11 @@
 
       <tal:seriesfilesexist
           condition="series/release_files">
+        <h2 tal:condition="not: has_edit">
+          Release series &#8220;<tal:name
+                                 replace="series/name">main</tal:name>&#8221;
+        </h2>
+
         <table class="listing">
           <thead>
             <tr>
@@ -70,7 +77,7 @@
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.file_url(series,release,file)"
+                  <a tal:attributes="href python:view.file_url(release,file)"
                        tal:content="file/libraryfile/filename">filename</a></td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
@@ -85,16 +92,19 @@
         </table>
 
       </tal:seriesfilesexist>
+      <!--
       <tal:not_owner condition="not: has_edit">
         <p tal:condition="not: series/release_files">
           No download files are linked to this series.
         </p>
       </tal:not_owner>
+      -->
     </tal:series>
-    <input tal:condition="has_edit"
-           type="submit"
-           name="delete_files"
-           value="Delete Files" />
+    <input tal:condition="python: has_edit and view.has_download_files"
+        type="submit"
+        name="delete_files"
+        value="Delete Files" />
+
   </form>
 
 </div>

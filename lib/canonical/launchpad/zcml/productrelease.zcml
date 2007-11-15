@@ -53,9 +53,6 @@
         for="canonical.launchpad.interfaces.IProductRelease"
         facet="overview"
         permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/productrelease-index.pt" />
         <!-- ProductReleases Portlets -->
         <browser:page
             name="+portlet-details"
@@ -66,6 +63,15 @@
             template="../templates/object-portlet-summary.pt"
             />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        facet="overview"
+        permission="zope.Public"
+        name="+index"
+        class="canonical.launchpad.browser.ProductReleaseView"
+        template="../templates/productrelease-index.pt"
+	/>
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductRelease"
