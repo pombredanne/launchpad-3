@@ -6,32 +6,21 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
-
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <p metal:fill-slot="help-hasannouncements-announcements">
   Project administrators can publish additional announcements, edit these
   announcements or retract them.
 </p>
 
-<metal:heading fill-slot="pageheading">
-  <h1>News and announcements</h1>
-</metal:heading>
-
-<div metal:fill-slot="main">
+  <h1 metal:fill-slot="heading">All announcements</h1>
+  <div metal:fill-slot="main">
 
     <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
           tal:attributes="
-            href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}${context/fmt:url}/announcements.atom" />
+            href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}announcements.atom" />
 
     <tal:per_announcement
         repeat="announcement view/batchnav/currentBatch"

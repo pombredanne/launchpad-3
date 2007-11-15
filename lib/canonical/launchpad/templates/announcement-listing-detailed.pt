@@ -1,0 +1,53 @@
+<h2>
+  <tal:date tal:condition="context/date_announced">
+    <span tal:replace="context/date_announced/fmt:date">
+      22 Oct 2008
+    </span>:
+  </tal:date>
+  <tal:title content="context/title">News item title</tal:title>
+</h2>
+
+<p>
+  <tal:future condition="context/future">
+    <img src="/@@/warning" title="Announcement is not yet public" />
+    <strong tal:condition="context/active">
+      <tal:date_set condition="context/date_announced">
+        This will be published on
+        <span tal:replace="context/date_announced/fmt:datetime" />
+      </tal:date_set>
+    </strong>
+  </tal:future>
+  <strong tal:condition="not: context/active">
+      [Retracted]
+  </strong>
+  <strong tal:condition="not: context/date_announced">
+      No publishing date set.
+  </strong>
+  <tal:updated condition="context/date_updated">
+      Updated
+      <span tal:replace="context/date_updated/fmt:displaydate"
+      />.
+  </tal:updated>
+  <tal:summary condition="context/summary"
+               tal:replace="structure context/summary" />
+  <a tal:condition="context/url"
+     tal:attributes="href context/url">
+     <img src="/@@/link" alt="Link" /> Read more...</a>
+  <tal:editor condition="context/required:launchpad.Edit">
+  <br />
+    <a
+       tal:attributes="href context/fmt:url">
+       <img src="/@@/edit" alt="[Edit]" />
+       Edit this announcement.</a>
+    <a tal:condition="not: context/published"
+       tal:attributes="href string:${context/fmt:url}/+publish">
+       Publish now!</a>
+    <a tal:condition="context/active"
+       tal:attributes="href string:${context/fmt:url}/+retract">
+       Retract this item.</a>
+  </tal:editor>
+</p>
+<p>
+  Created by
+  <tal:registrant replace="structure context/registrant/fmt:link" />
+</p>

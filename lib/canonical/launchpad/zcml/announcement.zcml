@@ -22,6 +22,14 @@
         attribute_to_parent="target"
         />
 
+    <browser:page
+      for="canonical.launchpad.interfaces.IAnnouncement"
+      facet="overview"
+      permission="zope.Public"
+      template="../templates/announcement-listing-detailed.pt"
+      name="+listing-detailed"
+      />
+
     <browser:pages
       for="canonical.launchpad.interfaces.IAnnouncement"
       class="canonical.launchpad.browser.announcement.AnnouncementEditView"
@@ -101,5 +109,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IAnnouncementSet"
         name="+announcements" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAnnouncementSet"
+        name="+announcements"
+        facet="overview"
+        class="canonical.launchpad.browser.HasAnnouncementsView"
+        permission="zope.Public"
+        template="../templates/announcements-all.pt"
+        />
 
 </configure>

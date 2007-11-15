@@ -737,6 +737,8 @@ announcement_retarget = 'Move announcement to a different project'
 
 announcement_retract = 'Retract this announcement'
 
+announcements_all = 'Announcements from all projects hosted in Launchpad'
+
 notification_test = 'Notification test'
 
 object_branding = ContextDisplayName('Change the images used to represent '
