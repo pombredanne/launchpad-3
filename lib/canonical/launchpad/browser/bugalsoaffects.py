@@ -261,20 +261,17 @@ class ChooseProductStep(AlsoAffectsStep):
             return
 
         # The user has entered a product name but we couldn't find it.
-        # Show a meaningful error message instead of "Invalid value".
-        # TODO: Change this to tell the user to search for the project on the
-        # popup widget.
-        new_product_url = "%s/+new" % (
-            canonical_url(getUtility(IProductSet)))
+        # Tell the user to search for it using the popup widget as it'll allow
+        # the user to register a new product if the one he is looking for is
+        # not yet registered.
         search_url = self.widgets['product'].popupHref()
         self.setFieldError(
             'product',
-            'There is no project in Launchpad named "%s". You may'
-            ' want to <a href="%s">search for it</a>, or'
-            ' <a href="%s">register it</a> if you can\'t find it.' % (
+            'There is no project in Launchpad named "%s". Please '
+            '<a href="%s">search for it</a> as it may be registered with '
+            'a different name.' % (
                 cgi.escape(entered_product),
-                cgi.escape(search_url, quote=True),
-                cgi.escape(new_product_url, quote=True)))
+                cgi.escape(search_url, quote=True)))
 
     def main_action(self, data):
         """Inject the selected product into the form and set the next_view to
@@ -566,26 +563,6 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
 
-    def _getBugTracker(self):
-        """Return the IBugTracker which runs on the URL specified in the form.
-
-        Return None if the bug tracker under that URL is not registered in
-        Launchpad.
-        """
-        bug_url = self.request.form.get('field.bug_url')
-        if not bug_url:
-            return None
-
-        bugwatch_set = getUtility(IBugWatchSet)
-        try:
-            bugtracker, bug = bugwatch_set.extractBugTrackerAndBug(bug_url)
-        except NoBugTrackerFound:
-            # There's no bugtracker registered with the given URL, so we
-            # don't need to worry about finding products using it.
-            return None
-        else:
-            return bugtracker
-
     def _findProductsUsingGivenBugTrackerAndStoreThem(self):
         """Find products using the bugtracker wich runs on the given URL.
 
@@ -594,7 +571,18 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         If there are too many products using that bugtracker then we'll store
         only the first ones that somehow match the name given.
         """
-        bugtracker = self._getBugTracker()
+        bug_url = self.request.form.get('field.bug_url')
+        if not bug_url:
+            return
+
+        bugwatch_set = getUtility(IBugWatchSet)
+        try:
+            bugtracker, bug = bugwatch_set.extractBugTrackerAndBug(bug_url)
+        except NoBugTrackerFound:
+            # There's no bugtracker registered with the given URL, so we
+            # don't need to worry about finding products using it.
+            bugtracker = None
+
         if bugtracker is None:
             return
         count = bugtracker.products.count()
@@ -611,14 +599,19 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             pass
 
     def setUpFields(self):
+        """Setup an extra field with all products using the given bugtracker.
+
+        This extra field is setup only if there is one or more products using
+        that bugtracker.
+        """
         super(BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
-        bugtracker = self._getBugTracker()
-        if bugtracker is None or bugtracker.products.count() < 1:
+        self._findProductsUsingGivenBugTrackerAndStoreThem()
+        if self.existing_products is None or self.existing_products.count() < 1:
             # No need to setup any extra fields.
             return
 
         terms = []
-        for product in bugtracker.products:
+        for product in self.existing_products:
             terms.append(SimpleTerm(product, product.name, product.title))
         existing_product = form.FormField(
             Choice(__name__='existing_product',
@@ -634,8 +627,8 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             self.request.form['field.existing_product'] = terms[0].token
 
     def validate_existing_product(self, action, data):
+        """Check if the chosen project is not already affected by this bug."""
         self._validate(action, data)
-        self._findProductsUsingGivenBugTrackerAndStoreThem()
         project = data.get('existing_product')
         try:
             valid_upstreamtask(self.context.bug, project)
@@ -646,7 +639,10 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     @action('Use Existing Project', name='use_existing_product',
             validator=validate_existing_product)
     def use_existing_product_action(self, action, data):
-        self._findProductsUsingGivenBugTrackerAndStoreThem()
+        """Record the chosen project as being affected by this bug.
+
+        Also creates a bugwatch for the given remote bug.
+        """
         data['product'] = data['existing_product']
         self._createBugTaskAndWatch(data)
 
@@ -658,7 +654,6 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         other products registered in Launchpad, then we show these products to
         the user and ask if he doesn't want to create the task in one of them.
         """
-        self._findProductsUsingGivenBugTrackerAndStoreThem()
         if self.existing_products and not self.request.form.get('create_new'):
             # Present the projects using that bugtracker to the user as
             # possible options to report the bug on. If there are too many

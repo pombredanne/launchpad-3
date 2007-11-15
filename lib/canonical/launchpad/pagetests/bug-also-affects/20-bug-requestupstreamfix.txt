@@ -116,21 +116,6 @@ so let's extract the real URL and open it manually.
     >>> user_browser.title
     'Select a project'
 
-If we go back again, we see that we also give the user the possibility
-to register the product if he doesn't find it.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
-    ...     '+choose-affected-product')
-    >>> user_browser.getControl('Project').value = 'no-such-product'
-    >>> user_browser.getControl('Continue').click()
-    >>> user_browser.url
-    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
-
-    >>> user_browser.getLink('register it').click()
-    >>> user_browser.title
-    'Register a project in Launchpad'
-
 Since we don't restrict the input, the user can write anything, so we
 need to make sure that everything is quoted before displaying the input.
 
