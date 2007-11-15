@@ -44,10 +44,7 @@ for the user to use as the affected upstream.
     >>> user_browser.title
     'Bug #2 - Record as affecting another project'
 
-    # XXX: Damn, this test will fail once I merge from mainline as
-    # get_feedback_messages has changed to expect the contents rather than the
-    # browser object.
-    >>> print get_feedback_messages(user_browser)[0]
+    >>> print get_feedback_messages(user_browser.contents)[0]
     There are some projects using the bug tracker you specified. One of
     these may be the one you were trying to register.
     >>> user_browser.getControl(name='field.existing_product').displayValue
