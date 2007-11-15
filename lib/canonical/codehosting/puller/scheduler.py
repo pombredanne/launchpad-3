@@ -292,6 +292,9 @@ class PullerMaster:
         return self.branch_status_client.mirrorComplete(
             self.branch_id, revision_id)
 
+    def progressMade(self):
+        pass
+
     def unexpectedError(self, failure, now=None):
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),

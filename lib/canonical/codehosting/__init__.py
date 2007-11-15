@@ -16,10 +16,10 @@ class ProgressUIFactory(SilentUIFactory):
     def __init__(self, progress_bar_factory):
         """Construct a ProgressUIFactory.
 
-        :param progress_bar_factory: A nullary callable that returns a
-            ProgressBar.
+        :param progress_bar_factory: A callable that returns a
+            ProgressBar.  It must take up to 8 arguments.
         """
-        super(SilentUIFactory, self).__init__()
+        super(ProgressUIFactory, self).__init__()
         self._progress_bar_factory = progress_bar_factory
 
     def nested_progress_bar(self):

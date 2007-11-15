@@ -386,11 +386,7 @@ class PullerWorker:
 
 
 class WorkerProgressBar(DummyProgress):
-    """ """
-
-    def __init__(self, puller_worker_protocol):
-        DummyProgress.__init__(self)
-        self.puller_worker_protocol = puller_worker_protocol
+    """ XXX. """
 
     def _event(self, *args, **kw):
         self.puller_worker_protocol.progressMade()
@@ -400,9 +396,15 @@ class WorkerProgressBar(DummyProgress):
     child_update = _event
     clear = _event
     note = _event
-    child_progress = _event
+
+    def child_progress(self, **kwargs):
+        r = WorkerProgressBar(**kwargs)
+        r.puller_worker_protocol = self.puller_worker_protocol
+        return r
 
 def install_worker_progress_factory(puller_worker_protocol):
-    def factory():
-        return WorkerProgressBar(puller_worker_protocol)
+    def factory(*args, **kw):
+        r = WorkerProgressBar(*args, **kw)
+        r.puller_worker_protocol = puller_worker_protocol
+        return r
     bzrlib.ui.ui_factory = ProgressUIFactory(factory)
