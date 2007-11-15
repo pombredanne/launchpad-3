@@ -35,8 +35,8 @@ class Announcement(SQLBase):
 
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
-    date_announced = UtcDateTimeCol(
-        dbName='date_announced', default=UTC_NOW)
+    date_announced = UtcDateTimeCol(dbName='date_announced')
+    date_updated = UtcDateTimeCol(dbName='date_updated')
     registrant = ForeignKey(dbName='registrant',
                             foreignKey='Person', notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
@@ -46,6 +46,17 @@ class Announcement(SQLBase):
     summary = StringCol(default=None)
     url = StringCol(default=None)
     active = BoolCol(notNull=True, default=True)
+
+    def modify(self, title, summary=None, url=None):
+        if self.title != title:
+            self.date_updated = UTC_NOW
+            self.title = title
+        if self.summary != summary:
+            self.date_updated = UTC_NOW
+            self.summary = summary
+        if self.url != url:
+            self.date_updated = UTC_NOW
+            self.url = url
 
     @property
     def target(self):

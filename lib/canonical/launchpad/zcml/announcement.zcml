@@ -9,8 +9,7 @@
         <allow interface="canonical.launchpad.interfaces.IAnnouncement" />
         <require
             permission="launchpad.Edit"
-            set_attributes="title summary url date_announced active
-                            product project distribution" />
+            set_attributes="active" />
     </content>
 
     <browser:defaultView

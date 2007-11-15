@@ -58,6 +58,11 @@
         <strong tal:condition="not: announcement/active">
             Retracted.
         </strong>
+        <tal:updated condition="announcement/date_updated">
+            Updated
+            <span tal:replace="announcement/date_updated/fmt:displaydate"
+            />.
+        </tal:updated>
         <tal:summary condition="announcement/summary"
                      tal:replace="structure announcement/summary" />
         <a tal:condition="announcement/url"

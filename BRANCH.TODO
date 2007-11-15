@@ -13,7 +13,10 @@
  = Ability to retarget announcements
  = Make sure publishing / retraction workflow is smooth
  = Ability to delete announcements
+ = Add a date_updated for RSS feeds
  * Add RSS feeds for project news
+  * HTML rendering of RSS feeds
  * Clean up announcement date widget cargo culted code
  * TESTS
+ * Clean up unused imports
 

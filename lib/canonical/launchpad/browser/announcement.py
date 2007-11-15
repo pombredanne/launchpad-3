@@ -123,9 +123,9 @@ class AnnouncementEditView(LaunchpadFormView):
 
     @action(_('Modify'), name='modify')
     def modify_action(self, action, data):
-        self.context.title = data.get('title')
-        self.context.summary = data.get('summary')
-        self.context.url = data.get('url')
+        self.context.modify(title=data.get('title'),
+                            summary=data.get('summary'),
+                            url=data.get('url'))
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     def validate_cancel(self, action, data):

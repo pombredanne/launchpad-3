@@ -80,6 +80,8 @@ class IAnnouncement(Interface):
         "The date the announcement will be published, or the date it was "
         "published if it is in the past. The date will only be effective "
         "if the 'published' flag is True.")
+    date_updated = Attribute(
+        "The date this announcement was last updated, if ever.")
 
     # target
     product = Attribute("The product for this announcement.")
@@ -96,6 +98,10 @@ class IAnnouncement(Interface):
 
     # attributes
     future = Attribute("Whether or not this announcement is yet public.")
+
+    def modify(title, summary=None, url=None):
+        """Update the details of the announcement. This will record the
+        date_updated."""
 
     def retarget(product=None, distribution=None, project=None):
         """Retarget the announcement to a new project. One and only one of the
