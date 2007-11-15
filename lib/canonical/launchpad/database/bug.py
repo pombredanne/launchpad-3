@@ -22,12 +22,12 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBranch, IBugSet,
-    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IProduct, IProductSeries, IProductSeriesBugTask, ISourcePackage,
-    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, DistroSeriesStatus, IBug, IBugAttachmentSet,
+    IBugBranch, IBugSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
+    IProductSeriesBugTask, ISourcePackage, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -55,7 +55,6 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType
 
 
 _bug_tag_query_template = """
@@ -512,7 +511,7 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, whiteboard=None, status=None):
+    def addBranch(self, branch, registrant, whiteboard=None, status=None):
         """See `IBug`."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
@@ -521,7 +520,8 @@ class Bug(SQLBase):
             status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard, status=status)
+            branch=branch, bug=self, whiteboard=whiteboard, status=status,
+            registrant=registrant)
 
         notify(SQLObjectCreatedEvent(bug_branch))
 
@@ -770,6 +770,34 @@ class Bug(SQLBase):
 
         return bugtask
 
+    def setPrivate(self, private, who):
+        """See `IBug`.
+
+        We also record who made the change and when the change took
+        place.
+        """
+        if self.private != private:
+            if private:
+                # Change indirect subscribers into direct subscribers
+                # *before* setting private because
+                # getIndirectSubscribers() behaves differently when
+                # the bug is private.
+                for person in self.getIndirectSubscribers():
+                    self.subscribe(person)
+
+            self.private = private
+
+            if private:
+                self.who_made_private = who
+                self.date_made_private = UTC_NOW
+            else:
+                self.who_made_private = None
+                self.date_made_private = None
+
+            return True # Changed.
+        else:
+            return False # Not changed.
+
     def getBugTask(self, target):
         """See `IBug`."""
         for bugtask in self.bugtasks:
@@ -927,11 +955,20 @@ class BugSet:
         if not params.datecreated:
             params.datecreated = UTC_NOW
 
+        extra_params = {}
+        if params.private:
+            # We add some auditing information. After bug creation
+            # time these attributes are updated by Bug.setPrivate().
+            extra_params.update(
+                date_made_private=params.datecreated,
+                who_made_private=params.owner)
+
         bug = Bug(
             title=params.title, description=params.description,
             private=params.private, owner=params.owner,
             datecreated=params.datecreated,
-            security_related=params.security_related)
+            security_related=params.security_related,
+            **extra_params)
 
         if params.subscribe_reporter:
             bug.subscribe(params.owner)

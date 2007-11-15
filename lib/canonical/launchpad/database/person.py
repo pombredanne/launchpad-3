@@ -39,23 +39,21 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, ArchivePurpose, BugTaskSearchParams,
+    AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
-    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
-    IHasLogo, IHasMugshot, IHWSubmissionSet, IIrcID, IIrcIDSet, IJabberID,
-    IJabberIDSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
-    ILoginTokenSet, IMailingListSet, INACTIVE_ACCOUNT_STATUSES,
-    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
-    ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey, ISSHKeySet,
-    ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus,
-    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES)
-
-from canonical.lp.dbschema import BugTaskImportance
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
+    IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
+    IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
+    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
+    IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -716,7 +714,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distrorelease = %s
+            AND RequestedCDs.distroseries = %s
             AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
@@ -1778,12 +1776,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease, archive
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
+              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
               """ % (query_clause)
@@ -2108,7 +2106,7 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s AND
+            POTemplate.distroseries = %s AND
             POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
@@ -2562,7 +2560,7 @@ class PersonSet:
                 FROM TranslationImportQueueEntry AS a,
                      TranslationImportQueueEntry AS b
                 WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
-                AND a.distrorelease = b.distrorelease
+                AND a.distroseries = b.distroseries
                 AND a.sourcepackagename = b.sourcepackagename
                 AND a.productseries = b.productseries
                 AND a.path = b.path

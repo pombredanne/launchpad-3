@@ -24,17 +24,20 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+    IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
+from twisted.web.xmlrpc import Fault
+
 
 UTC = pytz.timezone('UTC')
-
 
 def utf8(x):
     if isinstance(x, unicode):
@@ -351,23 +354,28 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         See `IHostedBranchStorage`.
         """
+
+        owner = getUtility(IPersonSet).getByName(personName)
+        if owner is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "User/team %r does not exist." % personName)
+
         if productName == '+junk':
             product = None
         else:
             product = getUtility(IProductSet).getByName(productName)
             if product is None:
-                return ''
+                raise Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Product %r does not exist." % productName)
 
-        person_set = getUtility(IPersonSet)
-        owner = person_set.getByName(personName)
-
-        branch_set = getUtility(IBranchSet)
         try:
-            branch = branch_set.new(
+            branch = getUtility(IBranchSet).new(
                 BranchType.HOSTED, branchName, requester, owner,
                 product, None, None, author=requester)
-        except BranchCreationException:
-            return ''
+        except (BranchCreationException, LaunchpadValidationError), e:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
         else:
             return branch.id
 

@@ -248,19 +248,19 @@ class Dominator:
             # SourcePackageRelease which are/have been in this
             # distroseries...
             considered_binaries = BinaryPackagePublishingHistory.select("""
-            binarypackagepublishinghistory.distroarchrelease =
-                distroarchrelease.id AND
+            binarypackagepublishinghistory.distroarchseries =
+                distroarchseries.id AND
             binarypackagepublishinghistory.scheduleddeletiondate IS NULL AND
             binarypackagepublishinghistory.archive = %s AND
             build.sourcepackagerelease = %s AND
-            distroarchrelease.distrorelease = %s AND
+            distroarchseries.distroseries = %s AND
             binarypackagepublishinghistory.binarypackagerelease =
             binarypackagerelease.id AND
             binarypackagerelease.build = build.id AND
             binarypackagepublishinghistory.pocket = %s
             """ % sqlvalues(self.archive, srcpkg_release,
                             pub_record.distroseries, pub_record.pocket),
-            clauseTables=['DistroArchRelease', 'BinaryPackageRelease','Build'])
+            clauseTables=['DistroArchSeries', 'BinaryPackageRelease','Build'])
 
             # There is at least one non-removed binary to consider
             if considered_binaries.count() > 0:
@@ -329,7 +329,7 @@ class Dominator:
                 BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
                 sbpph WHERE bpr.binarypackagename = bpn.id AND
                 sbpph.binarypackagerelease = bpr.id AND
-                sbpph.distroarchrelease = %s AND sbpph.archive = %s AND
+                sbpph.distroarchseries = %s AND sbpph.archive = %s AND
                 sbpph.status = %s AND sbpph.pocket = %s
                 GROUP BY bpn.id""" % sqlvalues(
                 distroarchseries, self.archive,
@@ -337,7 +337,7 @@ class Dominator:
 
             binaries = SecureBinaryPackagePublishingHistory.select(
                 """
-                securebinarypackagepublishinghistory.distroarchrelease = %s
+                securebinarypackagepublishinghistory.distroarchseries = %s
                 AND securebinarypackagepublishinghistory.archive = %s
                 AND securebinarypackagepublishinghistory.pocket = %s
                 AND securebinarypackagepublishinghistory.status = %s AND
@@ -363,7 +363,7 @@ class Dominator:
             ]
 
         sources = SecureSourcePackagePublishingHistory.select("""
-            securesourcepackagepublishinghistory.distrorelease = %s AND
+            securesourcepackagepublishinghistory.distroseries = %s AND
             securesourcepackagepublishinghistory.archive = %s AND
             securesourcepackagepublishinghistory.pocket = %s AND
             securesourcepackagepublishinghistory.status IN %s AND
@@ -371,15 +371,15 @@ class Dominator:
             """ % sqlvalues(dr, self.archive, pocket, dominate_status))
 
         binaries = SecureBinaryPackagePublishingHistory.select("""
-            securebinarypackagepublishinghistory.distroarchrelease =
-                distroarchrelease.id AND
-            distroarchrelease.distrorelease = %s AND
+            securebinarypackagepublishinghistory.distroarchseries =
+                distroarchseries.id AND
+            distroarchseries.distroseries = %s AND
             securebinarypackagepublishinghistory.archive = %s AND
             securebinarypackagepublishinghistory.pocket = %s AND
             securebinarypackagepublishinghistory.status IN %s AND
             securebinarypackagepublishinghistory.scheduleddeletiondate is NULL
             """ % sqlvalues(dr, self.archive, pocket, dominate_status),
-            clauseTables=['DistroArchRelease'])
+            clauseTables=['DistroArchSeries'])
 
         self._judgeSuperseded(sources, binaries, config)
 

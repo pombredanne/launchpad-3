@@ -51,7 +51,7 @@ Attempting to link to the same bug again gives an error.
     >>> browser.getLink('Link to bug report').click()
     >>> browser.getControl('The bug that is linked to.').value = "9"
     >>> browser.getControl('Link').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Bug #9 is already linked to this branch

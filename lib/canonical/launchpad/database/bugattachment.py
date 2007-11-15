@@ -8,14 +8,12 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 
-from canonical.lp import dbschema
-
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectDeletedEvent
 from canonical.launchpad.interfaces import (
-    IBugAttachmentSet, IBugAttachment, NotFoundError)
+    BugAttachmentType, IBugAttachmentSet, IBugAttachment, NotFoundError)
 
 
 class BugAttachment(SQLBase):
@@ -28,7 +26,7 @@ class BugAttachment(SQLBase):
     bug = ForeignKey(
         foreignKey='Bug', dbName='bug', notNull=True)
     type = EnumCol(
-        schema=dbschema.BugAttachmentType, notNull=True,
+        schema=BugAttachmentType, notNull=True,
         default=IBugAttachment['type'].default)
     title = StringCol(notNull=True)
     libraryfile = ForeignKey(

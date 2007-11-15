@@ -173,7 +173,7 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branchmergeproposal_edit = 'Edit branch merge proposal'
 
-branch_register_merge_proposal = 'Register branch merge proposal'
+branch_register_merge_proposal = 'Propose branch for merging'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
@@ -782,8 +782,8 @@ person_answer_contact_for = ContextDisplayName(
 person_bounties = ContextDisplayName('Bounties for %s')
 
 def person_branches(context, view):
-    """Return the view's page_title."""
-    return view.page_title
+    """Return the view's heading."""
+    return view.heading
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
@@ -1292,6 +1292,8 @@ team_invitations = ContextBrowsername("Invitations sent to %s")
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
+
+team_mailinglist = 'Configure mailing list'
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 

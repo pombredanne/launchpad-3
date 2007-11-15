@@ -61,7 +61,6 @@ It is not necessarily the same as:
 which is the component the source was originally uploaded to, before
 any overriding action.
 
-
 The build can report any corresponding uploads using the package_upload
 property:
 
@@ -133,7 +132,6 @@ given build record entry.
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.sourcepackagerelease.component.id
     >>> section = firefox_build.sourcepackagerelease.section.id
-    >>> from canonical.lp import dbschema
     >>> from canonical.launchpad.interfaces import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None

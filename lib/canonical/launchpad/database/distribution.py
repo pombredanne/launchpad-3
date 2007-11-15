@@ -664,9 +664,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -675,7 +675,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -690,9 +690,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -701,7 +701,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -723,15 +723,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(sourcepackagename, self,
                             self.all_distro_archive_ids),
             orderBy='id',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             distinct=True))
 
         if len(sprs) == 0:
@@ -840,9 +840,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             # the search to the distribution release, making a best
             # effort to find a package.
             publishing = SourcePackagePublishingHistory.selectFirst('''
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
-                DistroRelease.distribution = %s AND
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id AND
+                DistroSeries.distribution = %s AND
                 SourcePackagePublishingHistory.archive IN %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
@@ -852,7 +852,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
                                 PackagePublishingStatus.PUBLISHED),
-                clauseTables=['SourcePackageRelease', 'DistroRelease'],
+                clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")
             if publishing is not None:

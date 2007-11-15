@@ -53,16 +53,22 @@ If we ask for just one bug, we get only one.
     ...     print "%s, %s" % (bug.title, bug.duplicates.count())
     Firefox install instructions should be complete, 2
 
-getMostCommonBugs() is also privacy aware. If bug one is marked private,
-we will no longer see it in the results, because no-priv is not
-subscribed to the bug.
+getMostCommonBugs() is also privacy aware. If bug one is marked
+private, we will no longer see it in the results, because no-priv is
+not subscribed to the bug. Note that setPrivate adds all indirect
+subscribers as direct subscribers to the bug so we must unsubscribe
+immediately.
 
     >>> print current_user.name
     no-priv
 
     >>> bug_one.isSubscribed(current_user)
     False
-    >>> bug_one.private = True
+    >>> bug_one.setPrivate(True, current_user)
+    True
+    >>> bug_one.isSubscribed(current_user)
+    True
+    >>> bug_one.unsubscribe(current_user)
     >>> flush_database_updates()
 
     >>> for bug in firefox.getMostCommonBugs(current_user):

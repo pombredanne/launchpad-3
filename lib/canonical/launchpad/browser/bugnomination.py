@@ -20,8 +20,7 @@ from zope.publisher.interfaces import NotFound
 from canonical.launchpad import _
 from canonical.launchpad.browser import BugContextMenu
 from canonical.launchpad.interfaces import (
-    ICveSet, ILaunchBag, IBug, IBugNomination, IBugNominationForm,
-    INullBugTask)
+    ICveSet, ILaunchBag, IBugNomination, IBugNominationForm, INullBugTask)
 
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)

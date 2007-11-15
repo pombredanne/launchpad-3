@@ -1,0 +1,64 @@
+= Modifying lists =
+
+A team administrator can also make changes to the mailing list, but currently
+the only thing they can change is the list's welcome message.
+
+First, No Privileges Person will create a new team, called 'Team One' through
+the web.  Then he will request a mailing list for that team, and an expert
+will approve that request.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
+
+Before approving the creation of the mailing list, let's set the welcome
+message.  It's not currently possible to set the welcome message when the list
+is created through the web, so this simulates how that would work when the
+feature is exposed.
+
+    >>> list_set = getUtility(IMailingListSet)
+    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> lpadmin = list(experts.allmembers)[0]
+    >>> list_one = list_set.get('itest-one')
+    >>> list_one.welcome_message = 'Greetings team one members!'
+    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+
+    >>> itest_helper.wait_for_mailman()
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+The welcome message should have been set when the list was created.  Let's see
+what that is on the Mailman side.
+
+    >>> from Mailman.MailList import MailList
+    >>> mailing_list = MailList('itest-one', lock=False)
+    >>> mailing_list.welcome_msg
+    'Greetings team one members!'
+
+Also, because the welcome message can't currently be set through the web after
+the list is created, let's simulate what that would do.
+
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
+    >>> list_one.welcome_message = 'Salutations team one members!'
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+    # Reload the MailList object so that Mailman gets the updated data.
+    >>> mailing_list.Load()
+    >>> mailing_list.welcome_msg
+    'Salutations team one members!'
