@@ -3,7 +3,11 @@
 """Database class for Announcement."""
 
 __metaclass__ = type
-__all__ = ['Announcement', ]
+__all__ = [
+    'Announcement',
+    'AnnouncementSet',
+    'HasAnnouncements',
+    ]
 
 import operator
 import time, pytz, datetime
@@ -14,13 +18,12 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IProduct, IProject, IDistribution)
+    IAnnouncement, IAnnouncementSet, IProduct, IProject, IDistribution)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IAnnouncement
 
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -176,5 +179,23 @@ class HasAnnouncements:
             raise AssertionError, 'Unsupported announcement target'
         return Announcement.select(query, limit=limit)
 
+
+class AnnouncementSet:
+
+    implements(IAnnouncementSet)
+
+    displayname = 'Launchpad-hosted'
+    title = 'Launchpad'
+
+    def announcements(self, limit=5):
+        """See IHasAnnouncements."""
+
+        # filter for published news items if necessary
+        query = """
+          Announcement.date_announced <= timezone('UTC'::text, now()) AND
+          Announcement.active IS TRUE
+          """
+
+        return Announcement.select(query, limit=limit)
 
 

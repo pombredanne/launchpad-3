@@ -18,6 +18,7 @@
   = Fix up <link rel> linkages to feeds.launchpad.xxx
   = HTML rendering of RSS feeds
  = Clean up announcement date widget cargo culted code
+ * Make an RSS feed of all announcements from all projects
  * TESTS
  * Clean up unused imports
 

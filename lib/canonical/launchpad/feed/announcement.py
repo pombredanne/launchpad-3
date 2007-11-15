@@ -13,21 +13,22 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IDistribution, IHasAnnouncements, ILaunchpadRoot,
+    IAnnouncement, IAnnouncementSet, IDistribution, IHasAnnouncements,
     IProduct, IProject)
+from canonical.launchpad.interfaces import IFeedsApplication
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
 
 class AnnouncementsFeed(FeedBase):
 
-    usedfor = ILaunchpadRoot
+    usedfor = IFeedsApplication
     feedname = "announcements"
 
     def getItems(self):
         """See `IFeed`."""
         # quantity is defined in FeedBase or config file
-        items = self.context.announcements(limit=self.quantity)
+        items = getUtility(IAnnouncementSet).announcements(limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
         return items
@@ -35,9 +36,10 @@ class AnnouncementsFeed(FeedBase):
     def itemToFeedEntry(self, announcement):
         """See `IFeed`."""
         title = FeedTypedData('[%s] %s' % (
-            announcement.target.displayname, announcement.title))
+            announcement.target.name, announcement.title))
         if announcement.url is None:
-            url = canonical_url(announcement.target)+'/+announcements'
+            url = canonical_url(announcement.target, rootsite="mainsite")
+            url += '/+announcements'
         else:
             url = announcement.url
         entry = FeedEntry(title=title,

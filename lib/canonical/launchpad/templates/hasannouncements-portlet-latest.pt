@@ -15,7 +15,9 @@
         tal:content="announcement/title">
     </li>
   </ul>
-  <a href="+announcements">&raquo Details...</a>
+  <a tal:condition="context/required:launchpad.Edit"
+     href="+announce">&raquo; Make an announcement...</a><br />
+  <a href="+announcements">&raquo; Details...</a>
   </div>
 </div>
 </tal:news>

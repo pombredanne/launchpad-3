@@ -64,7 +64,7 @@ from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
     IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, IHasAnnouncements,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, IMakesAnnouncements,
     ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName,
     MirrorContent, PackagePublishingStatus, PackageUploadStatus,
     NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
@@ -84,7 +84,7 @@ class Distribution(SQLBase, BugTargetBase, HasAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, IHasAnnouncements, IQuestionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, IMakesAnnouncements, IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'

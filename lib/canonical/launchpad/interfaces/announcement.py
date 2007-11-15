@@ -9,6 +9,8 @@ __all__ = [
     'AnnouncementRetargetForm',
     'IAnnouncement',
     'IHasAnnouncements',
+    'IMakesAnnouncements',
+    'IAnnouncementSet',
     ]
 
 from zope.interface import Interface, Attribute
@@ -36,22 +38,26 @@ class AnnouncementRetargetForm(Interface):
 class IHasAnnouncements(Interface):
     """A mixin class for pillars that have announcements."""
 
+    def getAnnouncement(id):
+        """Return the requested announcement."""
+
+    def announcements(limit=5):
+        """Return a list of announcements visible to this user.
+
+        If limit is provided, then the list is limited to that number of the
+        most recent Announcements.
+        """
+
+
+class IMakesAnnouncements(IHasAnnouncements):
+    """An interface for pillars that can make announcements."""
+
     def announce(user, title, summary=None, url=None,
                  publication_date=None):
         """Create a Announcement for this project.
 
         The user is the person making the announcement. The publication date
         is either 'NOW', or None (a future date), or a specified datetime.
-        """
-
-    def getAnnouncement(id):
-        """Return the requested announcement."""
-
-    def announcements(user, limit=5):
-        """Return a list of announcements visible to this user.
-
-        If limit is provided, then the list is limited to that number of the
-        most recent Announcements.
         """
 
 
@@ -70,7 +76,7 @@ class AddAnnouncementForm(Interface):
 
 
 class IAnnouncement(Interface):
-    """A News Item."""
+    """An Announcement."""
 
     # lifecycle
     id = Attribute("The unique ID of this announcement")
@@ -118,4 +124,15 @@ class IAnnouncement(Interface):
 
     def erase_permanently():
         """Remove this announcement permanently."""
+
+
+class IAnnouncementSet(IHasAnnouncements):
+    """The set of all public announcements."""
+
+    displayname = Attribute("Launchpad")
+    title = Attribute("Launchpad title")
+
+    def announcements(limit=5):
+        """Return the latest <limit> announcements."""
+
 

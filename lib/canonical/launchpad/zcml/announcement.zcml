@@ -76,7 +76,7 @@
     </browser:pages>
 
     <browser:pages
-      for="canonical.launchpad.interfaces.IHasAnnouncements"
+      for="canonical.launchpad.interfaces.IMakesAnnouncements"
       class="canonical.launchpad.browser.announcement.AnnouncementAddView"
       facet="overview"
       permission="launchpad.Edit">
@@ -84,5 +84,22 @@
         name="+announce"
         template="../templates/announcement-add.pt" />
     </browser:pages>
+
+    <!-- AnnouncementSet -->
+    <securedutility
+        class="canonical.launchpad.database.AnnouncementSet"
+        provides="canonical.launchpad.interfaces.IAnnouncementSet">
+        <allow interface="canonical.launchpad.interfaces.IAnnouncementSet" />
+    </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IAnnouncementSet"
+        path_expression="string:+announcements"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IAnnouncementSet"
+        name="+announcements" />
 
 </configure>

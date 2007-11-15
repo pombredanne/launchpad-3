@@ -11,6 +11,10 @@
   <body>
     <div metal:fill-slot="main">
 
+      <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+            tal:attributes="
+              href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}announcements.atom" />
+
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
@@ -70,7 +74,8 @@
             <li>
               <a href="https://help.launchpad.net/ProjectNews">
                 <strong>Project announcements:</strong><br />
-                Publish your news in Launchpad and via RSS.</a>
+                Publish your news in Launchpad and via Atom / RSS.</a>
+                <img src="/@@/rss" alt="RSS" />
             </li>
             <li>
               <a

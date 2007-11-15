@@ -49,6 +49,7 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
+    IAnnouncementSet,
     IAppFrontPageSearchForm,
     IBazaarApplication,
     IBinaryPackageNameSet,
@@ -419,6 +420,7 @@ class LaunchpadRootNavigation(Navigation):
             'https://help.launchpad.net/Feedback', status=301)
 
     stepto_utilities = {
+        '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,

@@ -18,7 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IHasAnnouncements,
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IMakesAnnouncements,
     IProduct, IProject, IProjectSet, ISearchableByQuestionOwner,
     ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationFilter, SpecificationImplementationStatus,
@@ -51,7 +51,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, IHasAnnouncements, ISearchableByQuestionOwner)
+               IHasMugshot, IMakesAnnouncements, ISearchableByQuestionOwner)
 
     _table = "Project"
 
