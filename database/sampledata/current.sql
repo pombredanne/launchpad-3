@@ -798,7 +798,7 @@ INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof
 
 The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.344941', NULL, NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, NULL, false, false, '2006-07-14 08:47:36.124403', NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf user@domain.org lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
@@ -914,9 +914,9 @@ ALTER TABLE bugattachment ENABLE TRIGGER ALL;
 
 ALTER TABLE bugbranch DISABLE TRIGGER ALL;
 
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL);
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL);
-INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard, registrant) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL, 12);
+INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard, registrant) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL, 1);
+INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard, registrant) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL, 12);
 
 
 ALTER TABLE bugbranch ENABLE TRIGGER ALL;
@@ -6647,7 +6647,7 @@ INSERT INTO question (id, "owner", title, description, assignee, answerer, produ
 
 Question: what after?
 .......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 18, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, NULL, NULL, 119, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto:user@domain.com link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
 
 Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
 
@@ -7255,7 +7255,7 @@ ALTER TABLE specification ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
 
-INSERT INTO specificationbranch (id, datecreated, specification, branch, summary) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue');
+INSERT INTO specificationbranch (id, datecreated, specification, branch, summary, registrant) VALUES (1, '2006-11-02 09:07:48.389829', 6, 20, 'This branch should fix the issue', 12);
 
 
 ALTER TABLE specificationbranch ENABLE TRIGGER ALL;
