@@ -172,8 +172,8 @@ class MailingList(SQLBase):
 
     def getSubscription(self, person):
         """See `IMailingList`."""
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)        
+        return MailingListSubscription.selectOneBy(person=person,
+                                                   mailing_list=self)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""

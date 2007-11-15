@@ -97,6 +97,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.component import getUtility
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
@@ -2718,26 +2719,34 @@ class PersonEditEmailsView:
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
 
-    @property
-    def usable_team_mailing_lists(self):
-        """Mailing lists for all the teams in which this user participates.
+    def setUpFields(self):
+        """There is a lists for all the teams in which this user participates.
 
         If a team doesn't have a mailing list, or the mailing list isn't usable,
         it's not included.
         """
         mailing_list_set = getUtility(IMailingListSet)
-
-        usable_lists = []
-        for membership in self.context.teams_participated_in:
-            mailing_list = mailing_list_set.get(membership.team.name)
+        dropdown_widgets = []
+        choices = [email.email for email in self.context.validatedemails]
+        choices.insert(0, "Preferred")
+        choices.append("Don't subscribe")
+        for team_membership in self.context.teams_participated_in:
+            mailing_list = mailing_list_set.get(team_membership.team.name)
             ### XXX-TODO: replace with isUsable once that branch lands.
             if mailing_list.status in (MailingListStatus.ACTIVE,
                                        MailingListStatus.MODIFIED,
                                        MailingListStatus.UPDATING,
                                        MailingListStatus.MOD_FAILED):
-                usable_lists.append(mailing_list)
-        return usable_lists
-
+                subscription = team_membership.getSubscription(self.context)
+                if subscription:
+                    if subscription.email is None:
+                        value = "Preferred"
+                    else:
+                        value = subscription.email
+                else:
+                    value = "Don't subscribe"
+                field = Choice(values=choices, value=value)
+                self.form_fields.append(field)
 
 class TeamReassignmentView(ObjectReassignmentView):
 
