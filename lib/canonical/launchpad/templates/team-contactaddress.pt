@@ -12,12 +12,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">

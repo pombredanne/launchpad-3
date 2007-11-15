@@ -199,7 +199,7 @@ list as last time -- it was rejected and we requested a new one.
     LookupError: ...
 
     >>> print mailing_list_status_message(browser.contents)
-    This team's mailing list will be available shortly.
+    This team's mailing list will be available within a minute.
 
     >>> mailing_list.startConstructing()
     >>> mailing_list.syncUpdate()
@@ -210,7 +210,7 @@ list as last time -- it was rejected and we requested a new one.
     LookupError: ...
 
     >>> print mailing_list_status_message(browser.contents)
-    This team's mailing list will be available shortly.
+    This team's mailing list will be available within a minute.
 
 Even after the mailing list has been requested and approved, it cannot
 be configured until it's made active:
@@ -427,11 +427,11 @@ An inactive mailing list can be reactivated.
     >>> print mailing_list_status_message(browser.contents)
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    The mailing list will be reactivated shortly.
+    The mailing list will be reactivated within a minute.
 
     >>> browser.getLink('Configure mailing list').click()
     >>> print mailing_list_status_message(browser.contents)
-    This team's mailing list will be available shortly.
+    This team's mailing list will be available within a minute.
 
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> create

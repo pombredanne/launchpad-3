@@ -397,7 +397,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Deactivates a mailing list."""
         getUtility(IMailingListSet).get(self.context.name).deactivate()
         self.request.response.addInfoNotification(
-            "The mailing list will be deactivated shortly.")
+            "The mailing list will be deactivated within a minute.")
         self.next_url = canonical_url(self.context)
 
     def reactivate_list_validator(self, action, data):
@@ -413,7 +413,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     def reactivate_list(self, action, data):
         getUtility(IMailingListSet).get(self.context.name).reactivate()
         self.request.response.addInfoNotification(
-            "The mailing list will be reactivated shortly.")
+            "The mailing list will be reactivated within a minute.")
         self.next_url = canonical_url(self.context)
 
     @property
@@ -444,7 +444,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             return None
         elif self.mailing_list.status in [MailingListStatus.APPROVED,
                                           MailingListStatus.CONSTRUCTING]:
-            return _("This team's mailing list will be available shortly.")
+            return _("This team's mailing list will be available within "
+                     "a minute.")
         elif self.mailing_list.status == MailingListStatus.DECLINED:
             return _("The application for this team's mailing list has been "
                      'declined. Please '
