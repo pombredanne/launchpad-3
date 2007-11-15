@@ -132,8 +132,9 @@ class BugImporter:
         # We require an email address:
         email = node.get('email')
         if email is None:
-            raise BugXMLSyntaxError('element %s (name=%s) has no email address'
-                                    % (node.tag, name))
+            raise BugXMLSyntaxError(
+                'element %s (name=%s) has no email address'
+                % (node.tag, name))
 
         displayname = get_text(node)
         if not displayname:
@@ -263,7 +264,9 @@ class BugImporter:
             private=private or security_related,
             security_related=security_related,
             owner=owner))
-        bug.private = private
+        # Security related bugs must be created private, so we set it
+        # correctly after creation.
+        bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
 
@@ -279,8 +282,9 @@ class BugImporter:
             self.createAttachments(bug, msg, commentnode)
 
         # set up bug
-        bug.private = get_value(bugnode, 'private') == 'True'
-        bug.security_related = get_value(bugnode, 'security_related') == 'True'
+        bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
+        bug.security_related = (
+            get_value(bugnode, 'security_related') == 'True')
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:

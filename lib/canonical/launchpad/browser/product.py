@@ -200,9 +200,12 @@ class ProductLicenseMixin:
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
 
+            reply_to = format_address(user.displayname, 
+                                      user.preferredemail.email)
             simple_sendmail(fromaddress,
                             'feedback@launchpad.net',
-                            subject, message)
+                            subject, message,
+                            headers={'Reply-To': reply_to})
 
             self.request.response.addInfoNotification(_(
                 "Launchpad is free to use for software under approved "
@@ -1177,16 +1180,16 @@ class ProductBranchesView(BranchListingView):
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:

@@ -76,7 +76,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, view):
         TableBatchNavigator.__init__(
-            self, view._branches(), view.request,
+            self, view.getVisibleBranchesForUser(), view.request,
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
@@ -182,6 +182,26 @@ class BranchListingView(LaunchpadFormView):
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
 
+    def getVisibleBranchesForUser(self):
+        """Get branches visible to the user.
+
+        This method is called from the `BranchListingBatchNavigator` to
+        get the branches to show in the listing.
+        """
+        return self._branches(self.selected_lifecycle_status)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """Does the context have any branches that are visible to the user?"""
+        return self._branches(None).count() > 0
+
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        This method is overridden in the derived classes to perform the
+        specific query.
+        """
+        raise NotImplementedError("Derived classes must implement _branches.")
+
     def roleForBranch(self, branch):
         """Overridden by derived classes to display something in
         the role column if the role column is visible."""
@@ -191,11 +211,12 @@ class BranchListingView(LaunchpadFormView):
     def no_branch_message(self):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches related to %s '
-                'but none of them match the current filter criteria '
-                'for this page. Try filtering on "Any Status".')
+                'There are branches related to %s but none of them match the '
+                'current filter criteria for this page. '
+                'Try filtering on "Any Status".')
         else:
             message = (
                 'There are no branches related to %s '
@@ -287,10 +308,10 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently registered branches'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return the branches ordered by date created."""
         return getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
 
 
@@ -300,10 +321,10 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return imported branches ordered by last update."""
         return getUtility(IBranchSet).getRecentlyImportedBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
 
 
@@ -312,8 +333,8 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently changed branches'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return non-imported branches orded by last commit."""
         return getUtility(IBranchSet).getRecentlyChangedBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)

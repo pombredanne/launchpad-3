@@ -21,8 +21,7 @@ displayed:
     >>> owner_browser.url
     'http://.../firefox/+question/2'
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> print soup.first('div', 'error message').renderContents()
     The question is not in a state where you can confirm an
     answer.
@@ -81,7 +80,7 @@ On the confirmation page, the user can see the answer that he is
 confirming.
 
     >>> owner_browser.open(confirm_url)
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> for comment in  soup.fetch('div', 'boardCommentBody'):
     ...     print comment.renderContents()
     <p>SVG is supported out of the box in recent versions of Firefox. I
@@ -96,8 +95,11 @@ button. He can enter an optional message along his confirmation.
 
 This adds his comment to the question and mark it as 'Solved.'
 
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print soup.find('b', text='Status:').next.strip()
     Solved
-    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    >>> print find_tags_by_class(
+    ...     owner_browser.contents, 'boardCommentBody')[-1].renderContents()
     <p>Thanks! This indeed solved the problem.</p>
+
+

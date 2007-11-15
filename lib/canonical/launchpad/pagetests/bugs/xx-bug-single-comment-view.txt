@@ -7,8 +7,7 @@ comment.
 
     >>> def print_comment_titles(page):
     ...     """Prints all the comment titles that are visible on the page."""
-    ...     from BeautifulSoup import BeautifulSoup
-    ...     soup = BeautifulSoup(browser.contents)
+    ...     soup = find_main_content(browser.contents)
     ...     comment_details = soup('div', 'boardCommentDetails')
     ...     for details in comment_details:
     ...         print details.first('strong').string

@@ -17,10 +17,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchType, BranchLifecycleStatus, BranchCreationForbidden,
-    BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, PersonCreationRationale, TeamSubscriptionPolicy)
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
+    IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -467,8 +468,12 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
         """If the creator isn't a member of the owner an exception is raised."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotMemberOfOwnerTeam, self.doug, self.xray)
+
+    def test_creation_under_different_user(self):
+        """If the owner is a user other than the creator an exception is raised.
+        """
         self.assertPolicyCheckRaises(
-            BranchCreatorNotMemberOfOwnerTeam, self.albert, self.bob)
+            BranchCreatorNotOwner, self.albert, self.bob)
 
     def test_public_branch_creation(self):
         """Branches where the creator is a memeber of owner will be public."""
@@ -893,19 +898,21 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         # Override the product that is used in the check tests.
         self.firefox = None
 
-    def test_junk_brances_public(self):
+    def test_junk_branches_public(self):
         """Branches created by anyone that has no product defined are created
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22 bug=120501
-        # Bug 120501 is about whether or not users are able to create junk
-        # branches in the team namespace.
-        self.assertPublic(self.albert, self.xray)
-        self.assertPublic(self.albert, self.yankee)
-        self.assertPublic(self.albert, self.zulu)
 
-        self.assertPublic(self.doug, self.doug)
+    def test_no_team_junk_branches(self):
+        """We forbid the creation of team-owned +junk branches."""
+        self.assertPolicyCheckRaises(
+            BranchCreationNoTeamOwnedJunkBranches, self.albert, self.xray)
+
+    def test_no_create_junk_branch_for_other_user(self):
+        """One user can't create +junk branches owned by another."""
+        self.assertPolicyCheckRaises(
+            BranchCreatorNotOwner, self.albert, self.doug)
 
 
 def test_suite():

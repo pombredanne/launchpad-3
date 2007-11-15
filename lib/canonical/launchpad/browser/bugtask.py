@@ -5,29 +5,30 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_comments_for_bugtask',
+    'BugListingBatchNavigator',
+    'BugListingPortletView',
+    'BugNominationsView',
+    'BugsBugTaskSearchListingView',
     'BugTargetTraversalMixin',
-    'BugTaskNavigation',
-    'BugTaskSetNavigation',
+    'BugTargetView',
     'BugTaskContextMenu',
     'BugTaskEditView',
-    'BugTaskPortletView',
-    'BugTaskStatusView',
     'BugTaskListingView',
-    'BugListingPortletView',
-    'BugTaskSearchListingView',
-    'BugNominationsView',
-    'NominationsReviewTableBatchNavigatorView',
-    'BugTaskTableRowView',
-    'BugTargetView',
+    'BugTaskNavigation',
+    'BugTaskPortletView',
     'BugTasksAndNominationsView',
-    'BugTaskView',
-    'get_sortorder_from_request',
-    'get_buglisting_search_filter_url',
-    'BugTargetTextView',
-    'BugListingBatchNavigator',
-    'BugsBugTaskSearchListingView',
+    'BugTaskSearchListingView',
+    'BugTaskSetNavigation',
     'BugTaskSOP',
+    'BugTaskStatusView',
+    'BugTaskTableRowView',
+    'BugTaskTextView',
+    'BugTaskView',
+    'get_buglisting_search_filter_url',
+    'get_comments_for_bugtask',
+    'get_sortorder_from_request',
+    'NominationsReviewTableBatchNavigatorView',
+    'TextualBugTaskSearchListingView',
     ]
 
 import cgi
@@ -80,7 +81,7 @@ from canonical.launchpad import helpers
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
-from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -127,7 +128,7 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
-        assert comments.has_key(message_id)
+        assert comments.has_key(message_id), message_id
         comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
@@ -140,6 +141,27 @@ def get_comments_for_bugtask(bugtask, truncate=False):
             current_title = comment.title
             comment.display_title = True
     return comments
+
+
+def get_visible_comments(comments):
+    """Return comments, filtering out empty or duplicated ones."""
+    visible_comments = []
+    previous_comment = None
+    for comment in comments:
+        # Omit comments that are identical to their previous
+        # comment, which were probably produced by
+        # double-submissions or user errors, and which don't add
+        # anything useful to the bug itself.
+        # Also omit comments with no body text or attachments to display.
+        if (comment.isEmpty() or
+            previous_comment and
+            previous_comment.isIdenticalTo(comment)):
+            continue
+
+        visible_comments.append(comment)
+        previous_comment = comment
+
+    return visible_comments
 
 
 def get_sortorder_from_request(request):
@@ -339,6 +361,16 @@ class BugTaskSetNavigation(GetitemNavigation):
 class BugTaskContextMenu(BugContextMenu):
     """Context menu of actions that can be performed upon an `IBugTask`."""
     usedfor = IBugTask
+
+
+class BugTaskTextView(LaunchpadView):
+    """View for a simple text page displaying information about a bug task."""
+
+    def render(self):
+        """Return a text representation of the parent bug."""
+        view = BugTextView(self.context.bug, self.request)
+        view.initialize()
+        return view.render()
 
 
 class BugTaskView(LaunchpadView, CanBeMentoredView):
@@ -653,25 +685,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         # The first comment is generally identical to the description,
         # and we include a special link to it in the template if it
         # isn't.
-        comments = self.comments[1:]
-
-        visible_comments = []
-        previous_comment = None
-        for comment in comments:
-            # Omit comments that are identical to their previous
-            # comment, which were probably produced by
-            # double-submissions or user errors, and which don't add
-            # anything useful to the bug itself.
-            # Also omit comments with no body text or attachments to display.
-            if (comment.isEmpty() or
-                previous_comment and
-                previous_comment.isIdenticalTo(comment)):
-                continue
-
-            visible_comments.append(comment)
-            previous_comment = comment
-
-        return visible_comments
+        return get_visible_comments(self.comments[1:])
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1429,7 +1443,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
 
 class BugTaskSearchListingView(LaunchpadFormView):
-    """Base class for bug listings."""
+    """View that renders a list of bugs for a given set of search criteria."""
 
     # These widgets are customised so as to keep the presentation of this view
     # and its descendants consistent after refactoring to use
@@ -1648,13 +1662,26 @@ class BugTaskSearchListingView(LaunchpadFormView):
             size=config.malone.buglist_batch_size)
 
     def search(self, searchtext=None, context=None, extra_params=None):
-        """Return an ITableBatchNavigator for the GET search criteria.
+        """Return an `ITableBatchNavigator` for the GET search criteria.
 
-        If :searchtext: is None, the searchtext will be gotten from the
-        request.
+        :param searchtext: If the searchtext is None, the search text will be
+        gotten from the request.
 
-        :extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in :extra_params: take
+        :param extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in `extra_params` take
+        precedence over request params.
+        """
+        unbatchedTasks = self.searchUnbatched(searchtext, context, extra_params)
+        return self._getBatchNavigator(unbatchedTasks)
+
+    def searchUnbatched(self, searchtext=None, context=None, extra_params=None):
+        """Return a `SelectResults` object for the GET search criteria.
+
+        :param searchtext: If the searchtext is None, the search text will be
+        gotten from the request.
+
+        :param extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in `extra_params` take
         precedence over request params.
         """
         # Base classes can provide an explicit search context.
@@ -1664,7 +1691,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         tasks = context.searchTasks(search_params)
-        return self._getBatchNavigator(tasks)
+        return tasks
 
     def getWidgetValues(
         self, vocabulary_name=None, vocabulary=None, default_values=()):
@@ -2083,14 +2110,13 @@ class BugTargetView(LaunchpadView):
         return self.context.searchTasks(params)[:limit]
 
 
-
-class BugTargetTextView(LaunchpadView):
-    """View for simple text page showing bugs filed against a bug target."""
+class TextualBugTaskSearchListingView(BugTaskSearchListingView):
+    """View that renders a list of bug IDs for a given set of search criteria."""
 
     def render(self):
         """Render the BugTarget for text display."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
+        tasks = self.searchUnbatched()
 
         # We use task.bugID rather than task.bug.id here as the latter
         # would require an extra query per task.

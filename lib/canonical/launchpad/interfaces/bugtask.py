@@ -464,6 +464,13 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         old_task and this task.
         """
 
+    def getPackageComponent():
+        """Return the task's package's component or None.
+
+        Returns the component associated to the latest package published
+        in that distribution. If the task is not a package task, returns
+        None.
+        """
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
@@ -870,8 +877,12 @@ class IBugTaskSet(Interface):
     def findExpirableBugTasks(min_days_old):
         """Return a list of bugtasks that are at least min_days_old.
 
-        An Expirable bug task is unassigned, in the INCOMPLETE status,
-        and belongs to a Product or Distribtion that uses Malone.
+        A bugtask is expirable if its status is Incomplete, and the bug
+        report has been never been confirmed, and it has been inactive for
+        min_days_old. Only bugtasks that belong to Products or Distributions
+        that use launchpad to track bugs can be returned. The implementation
+        must define the criteria for determining that the bug report is
+        inactive and have never been confirmed.
         """
 
     def maintainedBugTasks(person, minimportance=None,
