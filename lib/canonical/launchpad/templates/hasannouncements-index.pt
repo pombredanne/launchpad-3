@@ -29,6 +29,8 @@
 
 <div metal:fill-slot="main">
 
+    <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+          tal:attributes="href string:${context/fmt:url}/announcements.atom" />
     <tal:per_announcement repeat="announcement view/batchnav/currentBatch">
       <h2>
         <tal:date tal:condition="announcement/date_announced">

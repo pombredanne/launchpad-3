@@ -9,13 +9,18 @@
   metal:use-macro="view/macro:page/default"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:portlets fill-slot="portlets">
-      <tal:portlet replace="structure context/@@+portlet-lifecycle" />
-      <tal:portlet replace="structure context/@@+portlet-milestones" />
-    </metal:portlets>
+<body>
+  <metal:portlets fill-slot="portlets">
+    <tal:portlet replace="structure context/@@+portlet-lifecycle" />
+    <tal:portlet replace="structure context/@@+portlet-milestones" />
+  </metal:portlets>
 
-    <div metal:fill-slot="main">
+<div metal:fill-slot="main">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+        tal:attributes="
+        href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}${context/fmt:url}/announcements.atom" />
+
       <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Ubuntu Linux</h1>
       <div

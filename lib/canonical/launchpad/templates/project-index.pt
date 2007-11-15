@@ -18,6 +18,9 @@
 
     <div metal:fill-slot="main">
 
+      <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+            tal:attributes="
+              href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}${context/fmt:url}/announcements.atom" />
     <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
       This project is currently inactive <a href="+review">(change this)</a>
     </p>

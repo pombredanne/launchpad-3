@@ -14,7 +14,8 @@
  = Make sure publishing / retraction workflow is smooth
  = Ability to delete announcements
  = Add a date_updated for RSS feeds
- * Add RSS feeds for project news
+ = Add RSS feeds for project news
+  = Fix up <link rel> linkages to feeds.launchpad.xxx
   * HTML rendering of RSS feeds
  * Clean up announcement date widget cargo culted code
  * TESTS

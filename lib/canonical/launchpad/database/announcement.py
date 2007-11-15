@@ -35,8 +35,8 @@ class Announcement(SQLBase):
 
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
-    date_announced = UtcDateTimeCol(dbName='date_announced')
-    date_updated = UtcDateTimeCol(dbName='date_updated')
+    date_announced = UtcDateTimeCol(default=None)
+    date_updated = UtcDateTimeCol(default=None)
     registrant = ForeignKey(dbName='registrant',
                             foreignKey='Person', notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')

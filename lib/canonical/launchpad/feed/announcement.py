@@ -13,7 +13,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IHasAnnouncements, ILaunchpadRoot)
+    IAnnouncement, IDistribution, IHasAnnouncements, ILaunchpadRoot,
+    IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -44,7 +45,9 @@ class AnnouncementsFeed(FeedBase):
                           link_alternate=url,
                           date_updated=announcement.date_updated,
                           date_published=announcement.date_announced,
-                          authors=[FeedPerson(announcement.registrant)],
+                          authors=[FeedPerson(
+                                    announcement.registrant,
+                                    rootsite="mainsite")],
                           content=FeedTypedData(announcement.summary))
         return entry
 
@@ -89,7 +92,8 @@ class TargetAnnouncementsFeed(FeedBase):
         """See `IFeed`."""
         title = FeedTypedData(announcement.title)
         if announcement.url is None:
-            url = canonical_url(self.context)+'/+announcements'
+            url = canonical_url(self.context, rootsite="mainsite")
+            url += '/+announcements'
         else:
             url = announcement.url
         entry = FeedEntry(title=title,
@@ -97,7 +101,9 @@ class TargetAnnouncementsFeed(FeedBase):
                           link_alternate=url,
                           date_updated=announcement.date_updated,
                           date_published=announcement.date_announced,
-                          authors=[FeedPerson(announcement.registrant)],
+                          authors=[FeedPerson(
+                                    announcement.registrant,
+                                    rootsite="mainsite")],
                           content=FeedTypedData(announcement.summary))
         return entry
 

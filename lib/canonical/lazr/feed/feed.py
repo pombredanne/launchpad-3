@@ -115,11 +115,11 @@ class FeedBase(LaunchpadFormView):
     def date_updated(self):
         """See `IFeed`."""
         sorted_items = sorted(self.getItems(),
-                              key=operator.attrgetter('date_updated'),
+                              key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
             return None
-        return sorted_items[0].date_updated
+        return sorted_items[0].last_modified
 
     def render(self):
         """See `IFeed`."""
@@ -178,6 +178,12 @@ class FeedEntry:
             contribuors = []
         self.contributors = contributors
         self.id = id_
+
+    @property
+    def last_modified(self):
+        if self.date_published is not None and self.date_updated is not None:
+            return max(self.date_published, self.date_updated)
+        return self.date_published or self.date_updated
 
 
 class FeedTypedData:
