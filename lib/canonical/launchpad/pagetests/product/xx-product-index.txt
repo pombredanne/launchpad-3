@@ -3,11 +3,112 @@ more tests and documentation. See bug #141052 for more information.
 
 Check that the product main page works.
 
-    >>> user_browser.open('http://launchpad.dev/tomcat')
+= Translation Pages =
+
     >>> user_browser.open('http://launchpad.dev/evolution')
 
-Also, it has a link to help translate it.
+The product page has a link to help translate it.
 
     >>> user_browser.getLink('Help translate').click()
     >>> print user_browser.title
     Translations of The Evolution Groupware Application in Launchpad
+
+It has no external links:
+
+    >>> print find_tag_by_id(user_browser.contents, 'external-links-heading')
+    None
+
+= Links and Programming languages =
+
+Define a function to help find bits we are interested in:
+
+    >>> def get_urls(content):
+    ...     for name in [
+    ...     'homepageurl-link',
+    ...     'sourceforge-link',
+    ...     'freshmeat-link',
+    ...     'wikiurl-link',
+    ...     'screenshotsurl-link',
+    ...     'downloadurl-link',
+    ...     ]:
+    ...         tag = find_tag_by_id(content, name)
+    ...         if tag:
+    ...             print extract_text(tag), tag['href']
+
+Now update Tomcat to actually have this data:
+
+    >>> import transaction
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database import Product
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+
+    >>> tomcat = Product.selectOneBy(name="tomcat")
+    >>> tomcat.homepageurl = "http://home.page/"
+    >>> tomcat.freshmeatproject = "fm-tomcat"
+    >>> tomcat.sourceforgeproject = "sf-tomcat"
+    >>> tomcat.wikiurl = "http://wiki.url/"
+    >>> tomcat.screenshotsurl = "http://screenshots.url/"
+    >>> tomcat.downloadurl = "http://download.url/"
+    >>> tomcat.programminglang = "C++,Xenon and Purple"
+
+    >>> logout()
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+Let's check it out:
+
+    >>> browser.open('http://launchpad.dev/tomcat')
+    >>> tag = find_tag_by_id(browser.contents, 'external-links-heading')
+    >>> print extract_text(tag)
+    External Resources
+
+    >>> get_urls(browser.contents)
+    Home page http://home.page/
+    Sourceforge project http://sourceforge.net/projects/sf-tomcat
+    Freshmeat record http://freshmeat.net/projects/fm-tomcat
+    Wiki http://wiki.url/
+    Screenshots http://screenshots.url/
+    External downloads http://download.url/
+
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'product-languages'))
+    C++,Xenon and Purple
+
+When the freshmeat or sourceforge URLs are identical to the homepage, we omit
+the homepage:
+
+    >>> login(ANONYMOUS)
+
+    >>> tomcat = Product.selectOneBy(name="tomcat")
+    >>> tomcat.homepageurl = "http://sourceforge.net/projects/sf-tomcat"
+
+    >>> logout()
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> browser.open('http://launchpad.dev/tomcat')
+    >>> get_urls(browser.contents)
+    Sourceforge project http://sourceforge.net/projects/sf-tomcat
+    Freshmeat record http://freshmeat.net/projects/fm-tomcat
+    Wiki http://wiki.url/
+    Screenshots http://screenshots.url/
+    External downloads http://download.url/
+
+    >>> login(ANONYMOUS)
+
+    >>> tomcat = Product.selectOneBy(name="tomcat")
+    >>> tomcat.homepageurl = "http://freshmeat.net/projects/fm-tomcat"
+
+    >>> logout()
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> browser.open('http://launchpad.dev/tomcat')
+    >>> get_urls(browser.contents)
+    Sourceforge project http://sourceforge.net/projects/sf-tomcat
+    Freshmeat record http://freshmeat.net/projects/fm-tomcat
+    Wiki http://wiki.url/
+    Screenshots http://screenshots.url/
+    External downloads http://download.url/
+

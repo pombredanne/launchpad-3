@@ -23,7 +23,7 @@ from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     BranchType, IBranchSet, IPersonSet, IRevisionSet)
-from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
+from canonical.codehosting.scanner.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper

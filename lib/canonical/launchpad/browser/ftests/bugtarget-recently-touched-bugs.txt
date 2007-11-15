@@ -50,7 +50,8 @@ will be first in the list.
 
 Only bugs that the user is allowed to see will be present in the list.
 
-    >>> bug_c.private = True
+    >>> bug_c.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug_c)
 
     >>> login('no-priv@canonical.com')

@@ -28,7 +28,6 @@ the bug itself.
     >>> browser.url
     'http://feeds.launchpad.dev/jokosher/latest-bugs.html?show_column=bugtargetdisplayname'
 
-    >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     3
@@ -59,7 +58,6 @@ as the latest bugs feed for a product.
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
 
-    >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     10
@@ -87,7 +85,6 @@ This feed gets the latest bugs for a person.
     >>> browser.url
     'http://feeds.launchpad.dev/~name16/latest-bugs.html'
 
-    >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     11
@@ -121,7 +118,6 @@ a feed.
     >>> browser.title
     'Bugs from custom search'
 
-    >>> soup = BeautifulSoup(browser.contents)
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)

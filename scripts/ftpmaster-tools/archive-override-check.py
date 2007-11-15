@@ -95,7 +95,7 @@ def checkOverrides(distroseries, pocket, log):
             spr.name, spr.version, spp.component.name, spp.section.name,
             spr.urgency.name)
 
-        for bpp in spp.publishedBinaries():
+        for bpp in spp.getPublishedBinaries():
             bpr = bpp.binarypackagerelease
             checker.addBinary(
                 bpr.name, bpr.version, bpp.distroarchseries.architecturetag,

@@ -109,12 +109,13 @@ def find_main_content(content):
     return find_tag_by_id(content, 'maincontent')
 
 
-def get_feedback_messages(browser):
+def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
     message_classes = [
         'message', 'informational message', 'error message', 'warning message']
-    strainer = SoupStrainer(['div', 'p'], {'class': message_classes})
-    soup = BeautifulSoup(browser.contents, parseOnlyThese=strainer)
+    soup = BeautifulSoup(
+        content,
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
 
 
