@@ -26,7 +26,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
 
 
 class BugAlsoAffectsProductMetaView(LaunchpadView):
@@ -166,6 +166,7 @@ class ChooseProductStep(AlsoAffectsStep):
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
 
+    custom_widget('product', SearchForUpstreamPopupWidget)
     _field_names = ['product']
     label = u"Record as affecting another project"
     step_name = "choose_product"
