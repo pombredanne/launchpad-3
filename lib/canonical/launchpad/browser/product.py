@@ -517,9 +517,9 @@ class ProductSetContextMenu(ContextMenu):
 
 
 class SortSeriesMixin:
-    """Provide a access to `sorted_serieses`.
+    """Provide access to `sorted_serieses`.
 
-    This handy method is shared across view classes.
+    This handy method is shared across several view classes.
     """
     def sorted_serieses(self):
         """Return the series list of the product with the dev focus first."""
@@ -530,6 +530,7 @@ class SortSeriesMixin:
                                              key=attrgetter('name'))
         series_list.insert(0, self.context.development_focus)
         return series_list
+
 
 class ProductView(LaunchpadView, SortSeriesMixin):
 
