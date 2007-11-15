@@ -1,6 +1,17 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
+""" XXX. """
+
 __metaclass__ = type
+__all__ = ['BadMessage',
+           'BranchStatusClient',
+           'LockError',
+           'JobScheduler',
+           'PullerMaster',
+           'PullerMasterProtocol',
+           'TimeoutError',
+           ]
+
 
 import os
 from StringIO import StringIO
@@ -23,14 +34,6 @@ from canonical.codehosting.puller.worker import (
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
-__all__ = ['BadMessage',
-           'BranchStatusClient',
-           'LockError',
-           'JobScheduler',
-           'PullerMaster',
-           'PullerMasterProtocol',
-           'TimeoutError',
-           ]
 
 class BadMessage(Exception):
     """Raised when the protocol receives a message that we don't recognize."""
@@ -82,6 +85,9 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             finished (either successfully or unsuccesfully).
         :param listener: A PullerMaster object that is notified when the
             protocol receives events from the worker.
+        :param clock: A provider of Twisted's IReactorTime.  This parameter
+            exists to allow testing that does not depend on an external clock;
+            when it is not passed the reactor is used.
         """
         # This Deferred is created when branch mirroring starts and is fired
         # when it finishes (successfully or otherwise). Once this deferred is
@@ -191,7 +197,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._stderr.write(data)
 
     def timeoutConnection(self):
-        self.unexpectedError(failure.Failure(TimeoutError('foo')))
+        self.unexpectedError(failure.Failure(TimeoutError('foo XXX')))
 
     def unexpectedError(self, failure):
         """Called when we receive data that violates the protocol.

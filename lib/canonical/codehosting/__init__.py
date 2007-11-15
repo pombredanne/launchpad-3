@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'ProgressUIFactory']
 
 
+from bzrlib.progress import ProgressBarStack
 from bzrlib.ui import SilentUIFactory
 
 
@@ -26,7 +27,7 @@ class ProgressUIFactory(SilentUIFactory):
 
     def nested_progress_bar(self):
         if self._progress_bar_stack is None:
-            self._progress_bar_stack = bzrlib.progress.ProgressBarStack(
+            self._progress_bar_stack = ProgressBarStack(
                 klass=self._progress_bar_factory)
         return self._progress_bar_stack.get_nested()
 

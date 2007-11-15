@@ -41,7 +41,6 @@ import time
 
 from bzrlib.progress import DummyProgress
 import bzrlib.ui
-from bzrlib.ui import SilentUIFactory
 
 from canonical.codehosting import ProgressUIFactory
 

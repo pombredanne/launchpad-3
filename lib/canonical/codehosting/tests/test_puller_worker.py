@@ -3,7 +3,7 @@
 """Unit tests for worker.py."""
 
 __metaclass__ = type
-__all__ = []
+
 
 import httplib
 import os
@@ -829,7 +829,7 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
         self.assertSentNetstrings(
             ['mirrorFailed', '2', 'Error Message', 'OOPS'])
 
-    def test_progress(self):
+    def test_progressMade(self):
         """Calling 'progressMade' sends an arbitrary string indicating
         progress.
         """

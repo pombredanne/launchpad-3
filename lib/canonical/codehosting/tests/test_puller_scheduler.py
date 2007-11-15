@@ -201,7 +201,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.clock.advance(config.supermirror.worker_timeout - 1)
         self.sendToProtocol(*message)
         self.clock.advance(2)
-        self.assertEqual(False, self.protocol.unexpected_error_received)
+        self.assertProtocolSuccess()
 
     def test_progressMadeResetsTimeout(self):
         """Receiving 'progressMade' resets the timeout."""
@@ -212,7 +212,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.assertMessageResetsTimeout('startMirroring', 0)
 
     def test_mirrorSucceededDoesNotResetTimeout(self):
-        """Receiving 'mirrorSucceeded' resets the timeout.
+        """Receiving 'mirrorSucceeded' doesn't reset the timeout.
 
         It's possible that in pathological cases, the worker process might
         hang around even after it has said that it's finished. When that
@@ -227,7 +227,7 @@ class TestPullerMasterProtocol(TrialTestCase):
             self.termination_deferred, scheduler.TimeoutError)
 
     def test_mirrorFailedDoesNotResetTimeout(self):
-        """Receiving 'mirrorFailed' resets the timeout.
+        """Receiving 'mirrorFailed' doesn't reset the timeout.
 
         mirrorFailed doesn't reset the timeout for the same reasons as
         mirrorSucceeded.
@@ -240,7 +240,7 @@ class TestPullerMasterProtocol(TrialTestCase):
             self.termination_deferred, scheduler.TimeoutError)
 
     def test_progressMade(self):
-        """Receiving a progressMade message notifies the listener."""
+        """Receiving a 'progressMade' message notifies the listener."""
         self.sendToProtocol('progressMade', 0)
         self.assertEqual(['progressMade'], self.listener.calls)
         self.assertProtocolSuccess()
