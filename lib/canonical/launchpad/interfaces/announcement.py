@@ -102,3 +102,14 @@ class IAnnouncement(Interface):
         arguments must not be None.
         """
 
+    def set_publication_date(publication_date):
+        """Set the publication date. The value passed is either:
+
+          'NOW': publish this announcement immediately,
+          None: publish it at some future date,
+          A datetime: publish it on the date given.
+        """
+
+    def erase_permanently():
+        """Remove this announcement permanently."""
+

@@ -173,19 +173,15 @@ class AnnouncementRetargetView(LaunchpadFormView):
         target = data.get('target')
         product = project = distribution = None
         if IProduct.providedBy(target):
-            self.context.product = target
-            self.context.project = None
-            self.context.distribution = None
+            product = target
         elif IDistribution.providedBy(target):
-            self.context.distribution = target
-            self.context.product = None
-            self.context.project = None
+            distribution = target
         elif IProject.providedBy(target):
-            self.context.project = target
-            self.context.distribution = None
-            self.context.project = None
+            project = target
         else:
             raise AssertionError, 'Unknown target'
+        self.context.retarget(product=product, project=project,
+                              distribution=distribution)
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     def validate_cancel(self, action, data):
@@ -203,24 +199,16 @@ class AnnouncementRetargetView(LaunchpadFormView):
 
 class AnnouncementPublishView(LaunchpadFormView):
 
-    schema = IAnnouncement
+    schema = AddAnnouncementForm
     field_names = ['publication_date']
     label = _('Publish this announcement')
 
-    def validate(self, data):
-        """Make sure that the date proposed for publication is reasonable."""
-
-        target = data.get('target')
-
-        if target is None:
-            self.setFieldError('target',
-                "There is no project with the name '%s'. "
-                "Please check that name and try again." %
-                cgi.escape(self.request.form.get("field.target")))
-            return
+    custom_widget('publication_date', AnnouncementDateWidget)
 
     @action(_('Publish'), name='publish')
     def publish_action(self, action, data):
+        publication_date = data['publication_date']
+        self.context.set_publication_date(publication_date)
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     def validate_cancel(self, action, data):
@@ -251,6 +239,11 @@ class AnnouncementRetractView(LaunchpadFormView):
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    @action(_("Delete"), name="delete", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self.context.erase_permanently()
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     @property

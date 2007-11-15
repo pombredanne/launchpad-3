@@ -56,8 +56,35 @@ class Announcement(SQLBase):
         elif self.distribution is not None:
             return self.distribution
 
+    def retarget(self, product=None, project=None, distribution=None):
+        """See IAnnouncement."""
+        assert not (product and distribution)
+        assert not (product and project)
+        assert not (project and distribution)
+        assert (product or project or distribution)
+
+        self.product = product
+        self.project = project
+        self.distribution = distribution
+
+    def set_publication_date(self, publication_date):
+        """See IAnnouncement."""
+        # figure out the correct date_announced by mapping from the provided
+        # publication date to a database value
+        if publication_date == 'NOW':
+            self.date_announced = UTC_NOW
+        elif publication_date == None:
+            self.date_announced = None
+        else:
+            self.date_announced = publication_date
+
+    def erase_permanently(self):
+        """See IAnnouncement."""
+        Announcement.delete(self.id)
+
     @property
     def future(self):
+        """See IAnnouncement."""
         if self.date_announced is None:
             return True
         return self.date_announced.replace(tzinfo=None) > \
@@ -82,26 +109,19 @@ class HasAnnouncements:
         else:
             raise AssertionError, 'Unsupported announcement target'
 
-        # figure out the correct date_announced by mapping from the provided
-        # publication date to a database value
-        if publication_date == 'NOW':
-            date_announced = UTC_NOW
-        elif publication_date == None:
-            date_announced = None
-        else:
-            date_announced = publication_date
-
         # create the news item
-        return Announcement(
+        announcement = Announcement(
             registrant = user,
             title = title,
             summary = summary,
             url = url,
-            date_announced = date_announced,
             product = product,
             project = project,
             distribution = distribution
             )
+
+        announcement.set_publication_date(publication_date)
+        return announcement
 
     def getAnnouncement(self, name):
         try:

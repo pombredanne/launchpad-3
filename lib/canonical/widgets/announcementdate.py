@@ -16,7 +16,8 @@ from zope.schema import Choice, Datetime
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    IAnnouncement, ILaunchBag)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _
@@ -30,9 +31,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
 
     implements(IAlwaysSubmittedWidget)
 
-    # The current announcement date, if any
-    _announcement_date = None
-
     def __init__(self, context, request):
         SimpleInputWidget.__init__(self, context, request)
         fields = form.Fields(
@@ -42,9 +40,20 @@ class AnnouncementDateWidget(SimpleInputWidget):
                      required=False, default=None))
         fields['action'].custom_widget = CustomWidgetFactory(
             LaunchpadRadioWidget)
+        if IAnnouncement.providedBy(self.context.context):
+            # we are editing an existing announcement
+            data = {}
+            date_announced = self.context.context.date_announced
+            data['announcement_date'] = date_announced
+            if date_announced is None:
+                data['action'] = 'sometime'
+            else:
+                data['action'] = 'specific'
+        else:
+            data={'action': 'immediately'}
         widgets = form.setUpWidgets(
             fields, self.name, context, request, ignore_request=False,
-            data={'action': 'immediately'})
+            data=data)
         self.action_widget = widgets['action']
         self.announcement_date_widget = widgets['announcement_date']
 
@@ -86,13 +95,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
                 LaunchpadValidationError(
                     _('Please do not provide a date if you want to publish '
                       'immediately.')))
-            raise self._error
-        if action == "sometime" and announcement_date is not None:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please do not provide a date if you want to '
-                      'publish the announcement manually, later.')))
             raise self._error
         if action == 'specific' and announcement_date is None:
             self._error = WidgetInputError(

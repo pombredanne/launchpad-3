@@ -23,8 +23,6 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      Please note that you can only move this announcement to a project for
-      which you are an administrator.
     </p>
 
     <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">

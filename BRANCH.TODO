@@ -10,10 +10,9 @@
    = Products also include project news
  = Display up to 5 news items on project/product/distro home page
  = Editors can click to edit news items
- * Make sure publishing / retraction workflow is smooth
-   * Consider using "published" or "visible" instead of "active"
  = Ability to retarget announcements
- * Ability to delete announcements
+ = Make sure publishing / retraction workflow is smooth
+ = Ability to delete announcements
  * Add RSS feeds for project news
  * Clean up announcement date widget cargo culted code
  * TESTS

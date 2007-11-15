@@ -63,13 +63,20 @@
         <a tal:condition="announcement/url"
            tal:attributes="href announcement/url">
            <img src="/@@/link" alt="Link" /> Read more...</a>
+        <tal:editor condition="announcement/required:launchpad.Edit">
+        <br />
+          <a
+             tal:attributes="href announcement/fmt:url">
+             <img src="/@@/edit" alt="[Edit]" />
+             Edit this announcement.</a>
+          <a tal:condition="announcement/future"
+             tal:attributes="href string:${announcement/fmt:url}/+publish">
+             Publish now!</a>
+          <a tal:attributes="href string:${announcement/fmt:url}/+retract">
+             Retract this item.</a>
+        </tal:editor>
       </p>
       <p>
-        <a tal:condition="announcement/required:launchpad.Edit"
-           tal:attributes="href announcement/fmt:url">
-           <img src="/@@/edit" alt="[Edit]" />
-           Edit this announcement.
-        </a>
         Created by
         <tal:registrant replace="structure announcement/registrant/fmt:link" />
       </p>

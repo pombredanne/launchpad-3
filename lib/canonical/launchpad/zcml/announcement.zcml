@@ -50,7 +50,7 @@
       permission="launchpad.Edit">
       <browser:page
         name="+publish"
-        template="../templates/announcement-edit.pt" />
+        template="../templates/announcement-publish.pt" />
     </browser:pages>
 
     <browser:pages
@@ -60,7 +60,7 @@
       permission="launchpad.Edit">
       <browser:page
         name="+retract"
-        template="../templates/announcement-edit.pt" />
+        template="../templates/announcement-retract.pt" />
     </browser:pages>
 
     <browser:pages
