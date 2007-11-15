@@ -7,19 +7,22 @@
 
 <div metal:fill-slot="main">
 
-  <p id="mailing_list_status_message"
-     tal:condition="view/mailing_list_status_message">
-    <b tal:content="structure view/mailing_list_status_message">
-      This team's mailing list will be available within a few minutes.
-    </b>
-  </p>
-
-  <p tal:condition="view/list_is_usable">
-    This team's mailing list is active at
-    <b><address tal:replace="view/mailinglist_address" /></b>.
-  </p>
-
   <div metal:use-macro="context/@@launchpad_form/form">
+
+    <metal:extra-info fill-slot="extra_info">
+      <p id="mailing_list_status_message"
+         tal:condition="view/mailing_list_status_message">
+        <b tal:content="structure view/mailing_list_status_message">
+          This team's mailing list will be available within a few minutes.
+        </b>
+      </p>
+
+      <p tal:condition="view/list_is_usable">
+        This team's mailing list is active at
+        <b><address tal:replace="view/mailinglist_address" /></b>.
+      </p>
+    </metal:extra-info>
+
     <metal:widgets fill-slot="widgets">
       <div id="no_mailing_list"
          tal:condition="view/list_can_be_requested">
@@ -33,8 +36,7 @@
         <p>
           <!--XXX leonardr 2007-11-13 bug=162483. Need a link here to
                   mailing list help.-->
-          &#187; <a href="http://help.launchpad.net/">help
-          available on team mailing lists</a>.
+          &#187; <a href="http://help.launchpad.net/">Help for mailing lists</a>
         </p>
         <input tal:replace="structure view/request_list_creation/render" />
       </div>
@@ -49,11 +51,11 @@
 
       <p id="mailing_list_not_contact_address"
          tal:condition="view/list_is_usable_but_not_contact_method">
-        This team's mailing list is not set as the team contact
+        The mailing list is not set as the team contact
         address. You can
-        <a tal:attributes="href string:${context/fmt:url}/+contactaddress">
-          set it
-        </a>.
+        <a tal:attributes="href
+                           string:${context/fmt:url}/+contactaddress">
+          set it</a>.
       </p>
 
       <div tal:condition="view/list_is_usable">
@@ -67,9 +69,18 @@
       <p tal:condition="view/list_is_usable">
         <input tal:replace="structure view/save_action/render" />
       </p>
-      <p tal:condition="view/list_can_be_deactivated">
+
+      <span tal:condition="view/list_can_be_deactivated">
+
+        <h2>Deactivation</h2>
+
+        <p>Deactivating this list will stop it from accepting posted
+        messages. You can reactivate the list later, without having to
+        get administrator approval.</p>
+
         <input tal:replace="structure view/deactivate_list/render" />
-      </p>
+      </span>
+
       <p tal:condition="view/list_can_be_reactivated">
         <input tal:replace="structure view/reactivate_list/render" />
       </p>
