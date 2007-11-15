@@ -6,37 +6,54 @@ added by gina. Now he wants to validate it.
     >>> stub.test_emails[:] = []
 
     >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-    >>> browser.open('http://launchpad.dev/~foo/+editemails')
-    >>> browser.title
-    Your e-mail addresses
+    >>> browser.open('http://launchpad.dev/~salgado/+editemails')
+    >>> print browser.title
+    Guilherme Salgado's e-mail addresses
 
-    >>> browser.getControl('salgado@ubuntu.com').selected = True
+    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com').selected = True
     >>> browser.getControl('Confirm').click()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    A new email was sent to...
+    A new email was sent to 'salgado@ubuntu.com'...
 
 Retrieve the email and make sure it was sent to the right address.
 
+    >>> import email
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_msg)
-    >>> to_addrs
-    ['salgado@ubuntu.com']
+    >>> print msg.get('to')
+    salgado@ubuntu.com
 
 Visit the token URL mentioned in the email, and get redirected to
 +validateemail.
 
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
-    >>> token_url = get_token_url_from_email(msg)
+    >>> token_url = get_token_url_from_email(raw_msg)
     >>> browser.open(token_url)
 
     >>> print browser.url
     http://launchpad.dev/token/.../+validateemail
-    # XXX FIXME
+    >>> print browser.title
+    Confirm e-mail address
+
     >>> print browser.contents
-    ...Confirm e-mail address...salgado@ubuntu.com...
+    <!DOCTYPE...Confirm e-mail address...salgado@ubuntu.com...
 
     >>> browser.getControl('Continue').click()
-    >>> print browser.url
-    http://launchpad.dev/~salgado
+    >>> print browser.title
+    Guilherme Salgado in Launchpad
+
+Check that the email address now shows up as validated.
+
+    >>> browser.getLink('Update e-mail addresses').click()
+    >>> browser.getControl(name="VALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com')
+    <ItemControl...optionValue='salgado@ubuntu.com'>
+
+    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com')
+    Traceback (most recent call last):
+    ...
+    LookupError...

@@ -1,12 +1,16 @@
-  'foo' doesn't want to use baz.foo@canonical.com on Launchpad. He removes it.
+'foo' doesn't want to use baz.foo@canonical.com on Launchpad. He removes it.
 
-  >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
-  >>> browser.open('http://launchpad.dev/~foo/+editemails')
-  >>> browser.getControl('baz.foo@canonical.com').selected = True
-  >>> browser.getControl('Remove').click()
-  >>> print_browser_messages(browser.contents)
-  The email address...has been removed...
+    >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
+    >>> browser.open('http://launchpad.dev/~foo/+editemails')
+    >>> browser.getControl(name='VALIDATED_SELECTED').getControl(
+    ...     value='baz.foo@canonical.com').selected = True
+    >>> browser.getControl('Remove').click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    The email address...has been removed...
 
-  >>> browser.getLink('Update e-mail addresses').click()
-  >>> browser.getControl('baz.foo@canonical.com')
-  LookupError
+    >>> browser.getControl(name='VALIDATED_SELECTED').getControl(
+    ...     value='baz.foo@canonical.com')
+    Traceback (most recent call last):
+    ...
+    LookupError: value 'baz.foo@canonical.com'
