@@ -109,12 +109,13 @@ def find_main_content(content):
     return find_tag_by_id(content, 'maincontent')
 
 
-def get_feedback_messages(browser):
+def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
     message_classes = [
         'message', 'informational message', 'error message', 'warning message']
-    strainer = SoupStrainer(['div', 'p'], {'class': message_classes})
-    soup = BeautifulSoup(browser.contents, parseOnlyThese=strainer)
+    soup = BeautifulSoup(
+        content,
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
 
 
@@ -206,7 +207,10 @@ def print_action_links(content):
     actions = find_portlet(content, 'Actions')
     entries = actions.findAll('li')
     for entry in entries:
-        print '%s: %s' % (entry.a.string, entry.a['href'])
+        if entry.a:
+            print '%s: %s' % (entry.a.string, entry.a['href'])
+        elif entry.strong:
+            print entry.strong.string
 
 def print_comments(page):
     """Print the comments on a BugTask index page."""

@@ -13,7 +13,7 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroSeries, IBug,
+        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
         IBugTaskSet, IMessageSet, IDistroBugTask,
@@ -22,13 +22,12 @@ from canonical.launchpad.interfaces import (
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
         BugTaskStatus)
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
+    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lp.dbschema import BugTaskImportance
 
 
 def get_error_message(filename, **interpolation_items):
@@ -137,7 +136,7 @@ class BugEmailCommand(EmailCommand):
                 filealias=filealias,
                 parsed_message=parsed_msg)
             if message.text_contents.strip() == '':
-                 raise EmailProcessingError(
+                raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'))
 
             params = CreateBugParams(
@@ -176,10 +175,9 @@ class EditEmailCommand(EmailCommand):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
-            context_snapshot = Snapshot(context, providing=providedBy(context))
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
-        if not ISQLObjectCreatedEvent.providedBy(current_event):
-            notify(SQLObjectToBeModifiedEvent(context, args))
         edited = False
         for attr_name, attr_value in args.items():
             if getattr(context, attr_name) != attr_value:
@@ -197,42 +195,105 @@ class EditEmailCommand(EmailCommand):
         setattr(context, attr_name, attr_value)
 
 
-class PrivateEmailCommand(EditEmailCommand):
-    """Marks a bug public or private."""
+class PrivateEmailCommand(EmailCommand):
+    """Marks a bug public or private.
+
+    We do not subclass `EditEmailCommand` because we must call
+    `IBug.setPrivate` to update privacy settings, rather than just
+    updating an attribute.
+    """
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`. Much of this method has been lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         private_arg = self.string_args[0]
         if private_arg == 'yes':
-            return {'private': True}
+            private = True
         elif private_arg == 'no':
-            return {'private': False}
+            private = False
         else:
             raise EmailProcessingError(
                 get_error_message('private-parameter-mismatch.txt'))
 
+        # Snapshot.
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
-class SecurityEmailCommand(EditEmailCommand):
+        # Apply requested changes.
+        edited = context.setPrivate(private, getUtility(ILaunchBag).user)
+
+        # Update the current event.
+        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+            edited_fields.add('private')
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
+
+
+class SecurityEmailCommand(EmailCommand):
     """Marks a bug as security related."""
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`.
+
+        Much of this method was lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         [security_flag] = self.string_args
         if security_flag == 'yes':
-            return {'security_related': True, 'private': True}
+            security_related = True
         elif security_flag == 'no':
-            return {'security_related': False}
+            security_related = False
         else:
             raise EmailProcessingError(
                 get_error_message('security-parameter-mismatch.txt'))
+
+        # Take a snapshot.
+        edited = False
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
+
+        # Apply requested changes.
+        if security_related:
+            user = getUtility(ILaunchBag).user
+            if context.setPrivate(True, user):
+                edited = True
+                edited_fields.add('private')
+        if context.security_related != security_related:
+            context.security_related = security_related
+            edited = True
+            edited_fields.add('security_related')
+
+        # Update the current event.
+        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -640,6 +701,55 @@ class AssigneeEmailCommand(EditEmailCommand):
         context.transitionToAssignee(attr_value)
 
 
+class MilestoneEmailCommand(EditEmailCommand):
+    """Sets the milestone for the bugtask."""
+
+    implements(IBugTaskEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        user = getUtility(ILaunchBag).user
+        milestone_name = self.string_args[0]
+
+        if milestone_name == '-':
+            # Remove milestone
+            return {self.name: None}
+        elif self._userCanEditMilestone(user, context):
+            milestone = context.pillar.getMilestone(milestone_name)
+            if milestone is None:
+                raise EmailProcessingError(
+                    "The milestone %s does not exist for %s. Note that "
+                    "milestones are not automatically created from emails; "
+                    "they must be created on the website." % (
+                        milestone_name, context.pillar.title))
+            else:
+                return {self.name: milestone}
+        else:
+            raise EmailProcessingError(
+                "You do not have permission to set the milestone for %s. "
+                "Only owners, drivers and bug contacts may assign "
+                "milestones." % (context.pillar.title,))
+
+    def _userCanEditMilestone(self, user, bugtask):
+        """Can the user edit the Milestone field?"""
+        # Adapted from BugTaskEditView.userCanEditMilestone.
+
+        # XXX: GavinPanella 2007-10-18 bug=154088: Consider
+        # refactoring this method and the userCanEditMilestone method
+        # on BugTaskEditView into a new method on IBugTask. This is
+        # non-trivial because check_permission cannot be used in a
+        # database class.
+
+        pillar = bugtask.pillar
+        bugcontact = pillar.bugcontact
+        if user is not None and bugcontact is not None:
+            if user.inTeam(bugcontact):
+                return True
+        return check_permission("launchpad.Edit", pillar)
+
+
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
 
@@ -779,6 +889,7 @@ class EmailCommands:
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
+        'milestone': MilestoneEmailCommand,
         'status': StatusEmailCommand,
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,

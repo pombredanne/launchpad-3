@@ -162,8 +162,10 @@ class ICodeImportSet(Interface):
     # should be removed after the transition to the new code import system is
     # complete.
 
-    def newWithId(id, registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def newWithId(id, registrant, branch, rcs_type,
+            review_status=CodeImportReviewStatus.NEW,
+            date_last_successful=None,
+            svn_branch_url=None, cvs_root=None, cvs_module=None):
         """Create a new CodeImport with a specified database id."""
 
     def getAll():

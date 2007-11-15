@@ -2,7 +2,8 @@
 
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, PackagePublishingPocket)
 
 Empty request.
 
@@ -26,7 +27,7 @@ and a list of packages represented by IDistroSeriesSourcePackageRelease
 as 'packages', as:
 
   [
-   {'pocketdetails': dbschema.PackagePublishingPocket,
+   {'pocketdetails': PackagePublishingPocket,
     'packages': [IDistroSeriesSourcePackagerelease, ...]}
    ...
   ]
@@ -108,7 +109,7 @@ sourcepackagename before passing to regexp.
   >>> libc = hoary.getSourcePackage('libstdc++')['b8p']
   >>> libc_view = queryView(libc, "+changelog", request)
   >>> print libc_view.changelog
-  libstdc++ (<a href="../../../hoary/+source/libstdc++/9.9-1">9.9-1</a>) hoary; urgency=high
+  libstdc++ (9.9-1) hoary; urgency=high
   <BLANKLINE>
    * Placeholder
   <BLANKLINE>

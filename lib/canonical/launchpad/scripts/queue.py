@@ -23,17 +23,14 @@ from sha import sha
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IPackageUploadSet,
-    IComponentSet, ISectionSet, QueueInconsistentStateError)
+    IDistributionSet, IPackageUploadSet, IComponentSet, ISectionSet,
+    NotFoundError, PackagePublishingPriority,
+    PackagePublishingPocket, PackageUploadStatus, QueueInconsistentStateError)
 
-from canonical.archiveuploader.tagfiles import TagFileParseError
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackagePublishingPriority,
-    PackagePublishingPocket)
 
 
 name_queue_map = {
@@ -59,7 +56,7 @@ HEAD = "-" * 9 + "|----|" + "-" * 22 + "|" + "-" * 22 + "|" + "-" * 15
 FOOT_MARGIN = " " * (9 + 6 + 1 + 22 + 1 + 22 + 2)
 RULE = "-" * (12 + 9 + 6 + 1 + 22 + 1 + 22 + 2)
 
-FILTERMSG="""
+FILTERMSG = """
     Omit the filter for all records.
     Filter string consists of a queue ID or a pair <name>[/<version>]:
 
@@ -255,9 +252,9 @@ class QueueAction:
         # We may discuss a more reasonable output format later
         # and avoid extra boring code. The IDRQ.displayname should
         # do should be enough.
-        if queue_item.containsSource:
+        if queue_item.contains_source:
             source_tag = 'S'
-        if queue_item.containsBuild:
+        if queue_item.contains_build:
             build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
@@ -454,13 +451,11 @@ class QueueActionReject(QueueAction):
         for queue_item in self.items:
             self.display('Rejecting %s' % queue_item.displayname)
             try:
-                queue_item.setRejected()
+                queue_item.rejectFromQueue(
+                    logger=self.log, dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
                 self.display('** %s could not be rejected due %s'
                              % (queue_item.displayname, info))
-            else:
-                queue_item.syncUpdate()
-                queue_item.notify(logger=self.log, dry_run=self.no_mail)
 
         self.displayRule()
         self.displayBottom()
@@ -480,14 +475,12 @@ class QueueActionAccept(QueueAction):
         for queue_item in self.items:
             self.display('Accepting %s' % queue_item.displayname)
             try:
-                queue_item.setAccepted()
+                queue_item.acceptFromQueue(
+                    announce_list=self.announcelist, logger=self.log,
+                    dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
                 self.display('** %s could not be accepted due %s'
                              % (queue_item.displayname, info))
-            else:
-                queue_item.syncUpdate()
-                queue_item.notify(announce_list=self.announcelist,
-                                  logger=self.log, dry_run=self.no_mail)
 
         self.displayRule()
         self.displayBottom()
@@ -613,8 +606,6 @@ class QueueActionOverride(QueueAction):
                                         binary.priority.name))
                         binary.override(component=component, section=section,
                                         priority=priority)
-                        # break loop, just in case
-                        break
                 # See if the new component requires a new archive on the build:
                 if component:
                     distribution = (

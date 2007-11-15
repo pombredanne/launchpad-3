@@ -113,6 +113,8 @@ Not found as empty list:
     >>> print len(warty2.getPublishedReleases('nosuchpackage'))
     0
 
+See distroseries-publishing-lookups.txt for more information.
+
 canUploadToPocket method helps us to decide if an upload is allowed or
 not, according the distroseries status and the upload target pocket.
 
@@ -121,8 +123,8 @@ not, according the distroseries status and the upload target pocket.
    >>> breezy_autotest = ubuntu['breezy-autotest']
    >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.lp.dbschema import (
-   ...     PackagePublishingPocket, DistroSeriesStatus)
+   >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+   >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
    >>> warty.status.name
    'CURRENT'
@@ -435,7 +437,12 @@ Perform `post publication` override:
 
    >>> new_section = getUtility(ISectionSet)['base']
 
-   >>> netapplet_srcrel.changeOverride(new_section=new_section)
+   >>> override = netapplet_srcrel.current_published.changeOverride(
+   ...     new_section=new_section)
+   >>> override.section == new_section
+   True
+   >>> override.status.name
+   'PENDING'
    >>> pub_hist = netapplet_srcrel.publishing_history
    >>> pub_hist.count()
    2
@@ -447,7 +454,7 @@ Override information about 'pmount' is pending publication:
 
 Supersede current publication:
 
-   >>> superseded_netapplet = netapplet_srcrel.supersede()
+   >>> superseded_netapplet = netapplet_srcrel.current_published.supersede()
    >>> netapplet_srcrel.publishing_history.count()
    2
 
@@ -466,6 +473,10 @@ We have several ways to copy translations between distro series.  We bring a
 transaction manager (in this case a fake one) to make these work.
 
     >>> class FakeTransactionManager:
+    ...     """Mock transaction manager for test."""
+    ...     # The translations-copying code does not want its connection reset
+    ...     # after every transaction.  Give it a field to change.
+    ...     reset_after_transaction = True
     ...     def begin(self):
     ...         pass
     ...     def commit(self):
@@ -514,12 +525,17 @@ distribution.
 
 Only current PO templates are copied from the distribution parent:
 
-   >>> len(hoary.potemplates) > len(hoary.currentpotemplates)
+   >>> len(hoary.getTranslationTemplates()) > len(
+   ...     hoary.getCurrentTranslationTemplates())
    True
-   >>> len(humpy.potemplates) == len(humpy.currentpotemplates)
+   >>> len(humpy.getTranslationTemplates()) == len(
+   ...     humpy.getCurrentTranslationTemplates())
    True
-   >>> len(humpy.potemplates) == len(hoary.currentpotemplates)
+   >>> len(humpy.getTranslationTemplates()) == len(
+   ...     hoary.getCurrentTranslationTemplates())
    True
+   >>> humpy.getObsoleteTranslationTemplates()
+   []
 
 Define a couple of functions we will need to compare the files from the parent
 and child distro series.
@@ -549,9 +565,11 @@ and child distro series.
    ...         template.potemplatename.name, template.sourcepackagename.name)
    ...
    ...     orig_templates = sorted(
-   ...         orig_distroseries.currentpotemplates,
+   ...         orig_distroseries.getCurrentTranslationTemplates(),
    ...         key=sortkey)
-   ...     dest_templates = sorted(dest_distroseries.potemplates, key=sortkey)
+   ...     dest_templates = sorted(
+   ...         dest_distroseries.getCurrentTranslationTemplates(),
+   ...         key=sortkey)
    ...
    ...     output_text = ''
    ...     for i in range(len(orig_templates)):
@@ -872,8 +890,8 @@ to do the translation migration to this new distro series.
     >>> testing_series = distroseriesset.new(
     ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
     ...     'Yo Momma', '99.4',hoary, hoary.owner)
-    >>> len(testing_series.potemplates)
-    0
+    >>> testing_series.getTranslationTemplates()
+    []
 
 The script starts its own transactions, so we need to commit here to be sure
 the new series will be available in the script.
@@ -900,12 +918,13 @@ translations from testing_series' parent distro series (hoary)
 
 Once the script finished, new distro series does have templates.
 
-    >>> len(testing_series.potemplates) > 0
+    >>> len(testing_series.getCurrentTranslationTemplates()) > 0
     True
 
 And all current templates were copied.
 
-    >>> len(hoary.currentpotemplates) == len(testing_series.currentpotemplates)
+    >>> len(hoary.getCurrentTranslationTemplates()) == len(
+    ...     testing_series.getCurrentTranslationTemplates())
     True
 
 
@@ -920,7 +939,7 @@ the future.
    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
    >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.lp.dbschema import (
+   >>> from canonical.launchpad.interfaces import (
    ...    PackagePublishingPocket, PackagePublishingStatus)
 
    >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
@@ -985,7 +1004,7 @@ restricted to it.
    ...     component=component_main, archive=debian_archive).count()
    0
 
-ISPP.publishedBinaries returns all the binaries generated by the
+ISPP.getPublishedBinaries returns all the binaries generated by the
 publication in question:
 
    >>> warty = ubuntu['warty']
@@ -1003,7 +1022,7 @@ publication in question:
    >>> warty_pub_source.section.name
    u'web'
 
-   >>> warty_mozilla_pub_binaries = warty_pub_source.publishedBinaries()
+   >>> warty_mozilla_pub_binaries = warty_pub_source.getPublishedBinaries()
    >>> warty_mozilla_pub_binaries.count()
    4
    >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]

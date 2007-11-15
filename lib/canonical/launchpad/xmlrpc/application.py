@@ -18,7 +18,8 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMailingListApplication, IPrivateApplication)
+    IAuthServerApplication, ILaunchBag, IMailingListApplication,
+    IPrivateApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -27,7 +28,13 @@ class PrivateApplication:
 
     @property
     def mailinglists(self):
+        """See `IPrivateApplication`."""
         return getUtility(IMailingListApplication)
+
+    @property
+    def authserver(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IAuthServerApplication)
 
 
 class ISelfTest(Interface):

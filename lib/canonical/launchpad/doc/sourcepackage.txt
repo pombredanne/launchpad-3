@@ -98,9 +98,9 @@ upload, even though it gets changed in the publishing record.
 Only PUBLISHED records are considered when looking the latest published
 component. If there are no PUBLISHED records, None is returned.
 
-    >>> from canonical.lp.dbschema import PackagePublishingStatus
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
-    >>> latest_publishing.status = PackagePublishingStatus.REMOVED
+    >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
     >>> syncUpdate(latest_publishing)
     >>> print firefox_warty.latest_published_component
     None
@@ -270,7 +270,7 @@ number linkification just below.
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
     >>> print spr_view.changelog
-    pmount (<a href="../../../hoary/+source/pmount/0.1-1">0.1-1</a>) hoary; urgency=low
+    pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)
@@ -353,7 +353,7 @@ Lastly, note that sourcepackages know how to compare to each other:
 
 SourcePackageName implements IHasTranslationImports interface:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)

@@ -1,0 +1,88 @@
+= Displaying Bug Watch Errors to the User =
+
+If an error occurs when importing the remote status of a bug that is
+being watched in Launchpad that error will be displayed to users.
+
+To test this we will add a watch to an existing bug, bug #12, which has
+no existing bug watches.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> login('test@canonical.com')
+    >>> bug12 = getUtility(IBugSet).get(12)
+    >>> bug12.watches.count() == 0
+    True
+    >>> logout()
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
+    >>> user_browser.getLink('Also affects project').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product'
+
+    >>> bug_url = 'https://bugzilla.mozilla.org/show_bug.cgi?id=900'
+    >>> user_browser.getControl('Project:').value = 'thunderbird'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('URL:').value = bug_url
+    >>> user_browser.getControl('Add to Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/thunderbird/+bug/12'
+
+We can now alter the bug watch manually to check that the correct error
+messages are displayed.
+
+    >>> from canonical.launchpad.interfaces import (BugWatchErrorType,
+    ...     BugTaskStatus, IBugTrackerSet, UNKNOWN_REMOTE_STATUS)
+
+    >>> login('test@canonical.com')
+    >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
+    >>> bug12 = getUtility(IBugSet).get(12)
+    >>> watch = bug12.getBugWatch(tracker, 900)
+    >>> watch.last_error_type = BugWatchErrorType.BUG_NOT_FOUND
+    >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    >>> logout()
+
+The error, telling us that the bug wasn't found on the remote server,
+should now be displayed to the user.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
+    >>> for tag in find_tags_by_class(user_browser.contents,
+    ...     'error message'):
+    ...     print tag.renderContents()
+    The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
+    that the bug number is correct.
+
+We can observe this for each of the BugWatchErrorType values:
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     set_bugwatch_error_type)
+    >>> for item in sorted(BugWatchErrorType.items):
+    ...     set_bugwatch_error_type(watch, item)
+    ...     user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
+    ...     for tag in find_tags_by_class(user_browser.contents,
+    ...         'error message'):
+    ...         print tag.renderContents()
+    The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
+    that the bug number is correct.
+    Launchpad couldn't connect to The Mozilla.org Bug Tracker.
+    Bug ID 900 isn't valid on The Mozilla.org Bug Tracker. Check that
+    the bug ID is correct.
+    Launchpad's connection to The Mozilla.org Bug Tracker timed out.
+    Launchpad couldn't extract a status from 900 on The Mozilla.org Bug
+    Tracker.
+    Launchpad couldn't determine the version of Bugzilla running on The
+    Mozilla.org Bug Tracker.
+    Launchpad doesn't support importing bugs from Bugzilla bug trackers.
+
+Finally, if the error gets solved (or no error occurs), the error
+message will go away.
+
+    >>> login('test@canonical.com')
+    >>> watch.remotestatus = None
+    >>> watch.last_error_type = None
+    >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    >>> logout()
+    >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
+    >>> len(find_tags_by_class(user_browser.contents, 'error message'))
+    0

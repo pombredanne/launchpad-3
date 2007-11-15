@@ -181,7 +181,7 @@ to raise the correct exception:
   UnexpectedFormData: No suitable state found for value "foo"
 
 
-Check if page still working for sourcepackages with no builds. (bug #62545)
+Check if page still works for sourcepackages with no builds (bug #62545):
 
   >>> browser.open(
   ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
@@ -189,9 +189,9 @@ Check if page still working for sourcepackages with no builds. (bug #62545)
   >>> browser.getControl("Update").click()
 
   >>> print find_tag_by_id(browser.contents, 'empty-result')
-   <div id="empty-result">
-           No builds for mozilla-firefox in Test Distro Hoary.
-   </div>
+  <div id="empty-result">
+          No matching builds.
+  </div>
 
 
 Checking that we show the right message for a distribution that
@@ -199,12 +199,12 @@ doesn't have any builds.
 
   >>> browser.open("http://launchpad.dev/debian/+builds")
   >>> browser.contents
-  '...No Currently building builds for Debian GNU/Linux...'
+  '...No packages currently building...'
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
   >>> browser.contents
-  '...No builds for Debian GNU/Linux...'
+  '...No matching builds...'
 
 
 == Partner builds ==
@@ -235,9 +235,17 @@ status is shown in parentheses after the build status.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
     >>> print extract_text(find_tag_by_id(browser.contents,"portlet-builds"))
-    Builds of mozilla-firefox - 0.9
-    warty hppa Successfully built
-    hoary i386 Currently building
-    breezy-autotest i386 Successfully built (NEW)
-    warty i386 Successfully built
+    Builds
+    warty
+    hppa
+    Successfully built
+    hoary
+    i386
+    Currently building
+    breezy-autotest
+    i386
+    Successfully built (NEW)
+    warty
+    i386
+    Successfully built
 

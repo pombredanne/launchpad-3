@@ -29,7 +29,7 @@
                            date_confirmed date_incomplete date_inprogress
                            date_closed bug_subscribers is_complete
                            canTransitionToStatus isMentor canMentor
-                           isSubscribed" />
+                           isSubscribed getPackageComponent" />
         <require
             permission="launchpad.View"
             attributes="bugtargetname bugtargetdisplayname
@@ -149,6 +149,14 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+text"
+        class="canonical.launchpad.browser.BugTaskTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
+
     <!-- NullBugTask -->
     <content class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
@@ -224,22 +232,6 @@
         class="canonical.launchpad.browser.BugTaskView"
         permission="launchpad.View"
         template="../templates/bugtask-index.pt" />
-
-    <browser:addform
-        name="+addurl"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugExtRefAddView"
-        fields="url title"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-    </browser:addform>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"

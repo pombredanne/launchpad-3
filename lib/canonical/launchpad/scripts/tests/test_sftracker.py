@@ -9,10 +9,9 @@ import unittest
 import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IEmailAddressSet, ILaunchpadCelebrities, IPersonSet,
-    IProductSet, PersonCreationRationale)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, IEmailAddressSet,
+    ILaunchpadCelebrities, IPersonSet, IProductSet, PersonCreationRationale)
 from canonical.launchpad.scripts import sftracker
-from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -313,12 +312,6 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.libraryfile.filename, 'hello.txt')
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
-
-        self.assertEqual(bug.externalrefs.count(), 1)
-        self.assertEqual(bug.externalrefs[0].url,
-                         'http://sourceforge.net/tracker/index.php?'
-                         'func=detail&aid=1278591&group_id=60374&atid=493974')
-        self.assertEqual(bug.externalrefs[0].title, 'SF #1278591')
 
         self.assertEqual(bug.activity.count(), 1)
         self.assertEqual(bug.activity[0].person,

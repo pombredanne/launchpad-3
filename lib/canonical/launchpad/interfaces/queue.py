@@ -101,15 +101,15 @@ class IPackageUpload(Interface):
     sourcepackagerelease = Attribute(
         "The source package release for this item")
 
-    containsSource = Attribute("whether or not this upload contains sources")
-    containsBuild = Attribute("whether or not this upload contains binaries")
-    containsInstaller = Attribute(
+    contains_source = Attribute("whether or not this upload contains sources")
+    contains_build = Attribute("whether or not this upload contains binaries")
+    contains_installer = Attribute(
         "whether or not this upload contains installers images")
-    containsTranslation = Attribute(
+    contains_translation = Attribute(
         "whether or not this upload contains translations")
-    containsUpgrader = Attribute(
+    contains_upgrader = Attribute(
         "wheter or not this upload contains upgrader images")
-    containsDdtp = Attribute(
+    contains_ddtp = Attribute(
         "wheter or not this upload contains DDTP images")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
@@ -132,6 +132,12 @@ class IPackageUpload(Interface):
 
     def setRejected():
         """Set queue state to REJECTED."""
+
+    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+        """Call setAccepted, do a syncUpdate, and send notification email."""
+
+    def rejectFromQueue(logger=None, dry_run=False):
+        """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it

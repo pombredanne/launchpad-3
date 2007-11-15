@@ -14,6 +14,8 @@ __all__ = [
 
 import os
 
+from canonical.codehosting import branch_id_to_path
+
 from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import NotFoundError, PermissionError
 
@@ -364,12 +366,7 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
 
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
-        # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
-        # places, such as librarian.storage._relFileLocation and
-        # supermirror_rewritemap.split_branch_id.
-        h = "%08x" % int(branchID)
-        path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
-
+        path = branch_id_to_path(branchID)
         self._listener = None
         WriteLoggingDirectory.__init__(
             self, avatar, os.path.join(avatar.homeDirsRoot, path),

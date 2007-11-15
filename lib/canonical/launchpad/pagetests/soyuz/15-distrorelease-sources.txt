@@ -43,11 +43,34 @@ Let's have a look at the firefox DistributionSourcePackage.
   # Let's go to the next batch, where we can see it.
   >>> browser.getLink("Next").click()
   >>> browser.getLink("mozilla-firefox").click()
+  >>> print browser.url
+  http://localhost/ubuntu/+source/mozilla-firefox
 
+Click the "Show publishing history" link to see specific information
+about Firefox's publishing history.
 
-There we can see the entire publishing history for the source and
-links to the pages with more specific (useful) information. By
-clicking in the 'target' distroseries we will get to the
+  >>> browser.getLink("Show publishing history").click()
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
+  0.9
+  PENDING:
+  WartyII
+  pocket Release
+  in component main
+  and section editors
+  0.9
+  PUBLISHED:
+  WartyII
+  pocket Release
+  in component main
+  and section web
+  Published
+  on 2004-09-27
+
+Jump back to the DistributionSourcePackage page to continue the tests:
+
+  >>> browser.open('http://localhost/ubuntu/+source/mozilla-firefox')
+
+By clicking in the 'target' distroseries we will get to the
 SourcePackage page:
 
   >>> browser.getLink("warty").click()
@@ -57,8 +80,8 @@ SourcePackage page:
 This page provides its versions publications organised by pocket.
 We can see 'mozilla-firefox' is published once in pocket RELEASE:
 
-  >>> print find_tag_by_id(browser.contents, 'publishings')
-  <dl id="publishings">
+  >>> print find_tag_by_id(browser.contents, 'publishing_history')
+  <dl id="publishing_history">
     <dt><dfn>Release</dfn></dt>
     <dd>
       <p>The package versions that were published
@@ -173,10 +196,9 @@ for each published version.
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 
-  >>> print find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
-  <pre id="mozilla-firefox_0.9">
-    Mozilla dummy Changelog......
-  </pre>
+  >>> tag = find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
+  >>> print extract_text(tag)
+  Mozilla dummy Changelog......
 
 
 Back to the SourcePackage page:
@@ -193,11 +215,9 @@ page is provided by an DistroSeriesSourcePackageRelease instance:
 
 There we can see the respective 'changelog' content for this version:
 
-  >>> print find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
-  <pre id="mozilla-firefox_0.9">
-    Mozilla dummy Changelog......
-  <BLANKLINE>
-  </pre>
+  >>> tag = find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
+  >>> print extract_text(tag)
+  Mozilla dummy Changelog......
 
 With the possibility to download the entire changesfile (if available):
 
@@ -271,8 +291,8 @@ in the previous section of this page.
 This page provides its versions publications organised by pocket.
 We can see 'commercialpackage' is published once in pocket RELEASE:
 
-    >>> print find_tag_by_id(browser.contents, 'publishings')
-    <dl id="publishings">
+    >>> print find_tag_by_id(browser.contents, 'publishing_history')
+    <dl id="publishing_history">
     ...
     <a href="/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1">commercialpackage 1.0-1</a>
     ...
@@ -332,10 +352,9 @@ for each published version.
     >>> browser.url
     'http://launchpad.dev/ubuntu/breezy-autotest/+source/commercialpackage/+changelog'
 
-    >>> print find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
-    <pre id="commercialpackage_1.0-1">
-      commercialpackage...
-    ...</pre>
+    >>> tag = find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
+    >>> print extract_text(tag)
+    commercialpackage...
 
 
 Back to the SourcePackage page:
@@ -353,10 +372,9 @@ page is provided by an DistroSeriesSourcePackageRelease instance:
 
 There we can see the respective 'changelog' content for this version:
 
-    >>> print find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
-    <pre id="commercialpackage_1.0-1">
-      commercialpackage...
-    ...
+    >>> tag = find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
+    >>> print extract_text(tag)
+    commercialpackage...
 
 With the possibility to download the entire changesfile (if available):
 
@@ -378,3 +396,4 @@ And also download the files contained in this source, like '.orig',
     ...
     <a href="http://localhost:58000/68/commercialpackage_1.0-1.dsc">commercialpackage_1.0-1.dsc</a>
     ...
+

@@ -54,7 +54,7 @@ class GettextMOExporter:
         self.format = TranslationFileFormat.MO
         self.supported_source_formats = [TranslationFileFormat.PO]
 
-    def exportTranslationMessage(self, translation_message):
+    def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         raise NotImplementedError(
             "This file format doesn't allow to export a single message.")
