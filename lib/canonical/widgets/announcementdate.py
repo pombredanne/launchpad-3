@@ -6,11 +6,10 @@ from StringIO import StringIO
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import ISimpleInputWidget, SimpleInputWidget
 from zope.app.form.interfaces import (
-    ConversionError, ValidationError, WidgetInputError)
+    ConversionError, WidgetInputError)
 from zope.formlib import form
 from zope.schema import Choice, Datetime
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
