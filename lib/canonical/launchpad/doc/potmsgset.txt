@@ -497,16 +497,6 @@ We will use this helper function to print all suggestions found:
 
 == POTMsgSet.getExternallyUsedTranslationMessages ==
 
-    >>> from canonical.launchpad.database import POFile, POTMsgSet
-    >>> pofile = POFile.get(12)
-    >>> potmsgset = POTMsgSet.get(143)
-    >>> suggestions = potmsgset.getExternallyUsedTranslationMessages(
-    ...     pofile.language)
-    >>> print pofile.title
-    evolution?
-    >>> print_suggestions(suggestions)
-    bla
-
 On one side, we have a translation template for the evolution product.
 
     >>> evo_product_template = evolution_potemplate
