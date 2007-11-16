@@ -342,11 +342,10 @@ check that it is a legal value.
 
 === QUIESCE ===
 
-When an operator quiesces a machine, a QUIESCE event should be created
-to record the operator's identity, the affected machine, and a
-user-provided message explaining why quiescing was requested.
-
-Quiescing is a privileged administrative operation.
+When an operator quiesces a machine (this is an administrative
+operation), a QUIESCE event should be created to record the operator's
+identity, the affected machine, and a user-provided message explaining
+why quiescing was requested.
 
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
 
