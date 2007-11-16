@@ -412,17 +412,6 @@
             />
     </content>
 -->
-    <!-- Launchpad publication machinery. We have customized publication
-    and requests that need to be hooked up.
-    -->
-    <publisher
-        name="BROWSER"
-        factory="canonical.launchpad.webapp.servers.LaunchpadRequestPublicationFactory"
-        methods="GET POST HEAD"
-        mimetypes="*"
-        priority="15"
-        />
-
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"

@@ -1,3 +1,6 @@
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
+
 """Vocabularies for content objects.
 
 Here should vocabularies that represent a set of conent objects be placed.
