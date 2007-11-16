@@ -39,7 +39,7 @@ status.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
     Traceback (most recent call last):
     ...
-    TypeError: findExpirableBugTasks() takes exactly 2 arguments (1 given)
+    TypeError: findExpirableBugTasks() takes at least 2 arguments (1 given)
 
 Looking back 9,999 days, findExpirableBugTasks() reports that there are
 no expirable bugtasks in the sampledata.
@@ -98,10 +98,14 @@ Let's also make some bugs that almost qualify for expiration.
     # A bugtask that is not expirable because its status is CONFIRMED.
     >>> confirmed_bugtask = create_old_bug(
     ...     'confirmed', 61, ubuntu, status=BugTaskStatus.CONFIRMED)
+    >>> confirmed_bugtask.bug.can_expire
+    False
 
     # A bugtask that is not expirable because it is a duplicate.
     >>> duplicate_bugtask = create_old_bug('duplicate', 61, ubuntu)
     >>> duplicate_bugtask.bug.duplicateof = confirmed_bugtask.bug
+    >>> duplicate_bugtask.bug.can_expire
+    False
 
     # A bugtask that is not expirable because it does not use Launchpad Bugs.
     >>> external_bugtask = create_old_bug('external', 61, thunderbird)
@@ -111,6 +115,8 @@ Let's also make some bugs that almost qualify for expiration.
     # A bugtask that is not expirable because it has a milestone.
     >>> milestone_bugtask = create_old_bug('milestone', 61, ubuntu)
     >>> milestone_bugtask.milestone = ubuntu.currentseries.newMilestone("0.1")
+    >>> milestone_bugtask.bug.can_expire
+    False
 
     # A bugtask that is not expirable because it has no reply messages.
     >>> no_replies_bugtask = create_old_bug(
@@ -135,6 +141,9 @@ expired. The other bugs do not meet one of the preconditions.
     ...     new_bugtask, assigned_bugtask, confirmed_bugtask,
     ...     duplicate_bugtask, external_bugtask, milestone_bugtask,
     ...     no_replies_bugtask, recent_bugtask, no_expiration_bugtask]
+
+    # Sync the bugs and bugtasks defined above with their modified DB values.
+    >>> sync_bugtasks(bugtasks)
 
     >>> summarize_bugtasks(bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
@@ -180,16 +189,14 @@ If the valid bugtask becomes Invalid or Won't Fix, the hoary bugtask
 will be expirable.
 
     >>> new_bugtask.transitionToStatus(BugTaskStatus.WONTFIX, sample_person)
+    >>> sync_bugtasks(new_bugtask)
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     thunderbird  False   351  Won't Fix   False     False  False  False
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
 
-    # Sync the bugs and bugtasks defined above with their modified DB values.
-    >>> for bugtask in bugtasks:
-    ...     sync(bugtask)
-    ...     sync(bugtask.bug)
+
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
     >>> summarize_bugtasks(expirable_bugtasks)
@@ -271,10 +278,7 @@ config.malone.expiration_dbuser.
     >>> process.returncode
     0
 
-    # Sync the bugs and bugtasks defined above with their modified DB values.
-    >>> for bugtask in bugtasks:
-    ...     sync(bugtask)
-    ...     sync(bugtask.bug)
+    >>> sync_bugtasks(bugtasks)
 
 
 == After the script has run ==
@@ -350,6 +354,7 @@ not participate in bug expiration. When uses_bug_expiration is set to
 True for a project, old bugs will be expired the next time the bugs are
 expired.
 
+    >>> from canonical.launchpad.ftests import sync
     >>> no_expiration_bugtask.pillar.enable_bug_expiration = True
     >>> sync(no_expiration_bugtask.pillar)
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)

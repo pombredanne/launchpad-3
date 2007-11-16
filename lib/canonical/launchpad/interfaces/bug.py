@@ -183,6 +183,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
+    can_expire = Attribute(
+        "True or False if the Incomplete bug report will expire if the "
+        "bug becomes inactive.")
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
 

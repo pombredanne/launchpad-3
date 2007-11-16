@@ -4,7 +4,12 @@
 
 __metaclass__ = type
 
-__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
+__all__ = [
+    'Bug',
+    'BugSet',
+    'can_bug_expire',
+    'get_bug_tags',
+    'get_bug_tags_open_count']
 
 
 import operator
@@ -22,12 +27,13 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, DistroSeriesStatus, IBug, IBugAttachmentSet,
-    IBugBranch, IBugSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
+    BugTaskStatus, DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBranch,
+    IBugSet, IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
     IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, ISourcePackage, IUpstreamBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IProductSeriesBugTask, ISourcePackage, IUpstreamBugTask,
+    NominationError, NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES, BugAttachmentType)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -116,6 +122,37 @@ def get_bug_tags_open_count(maincontext_clause, user,
             tables=', '.join(from_tables),
             condition=' AND '.join(conditions)))
     return shortlist([(row[0], row[1]) for row in cur.fetchall()])
+
+
+def can_bug_expire(bug):
+    """Return True if the bug meets the basic preconditions for expiration.
+
+    This function does not check the bugtask preconditions.
+    See `IBug.can_expire` or `bugTaskSet.findExpirableBugTasks` to check or
+    get a list of bugs that can expire.
+    """
+    # Bugs cannot be expired if any bugtask is valid.
+    expirable_statuses = [
+        BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
+        BugTaskStatus.WONTFIX]
+    if len([bt for bt in bug.bugtasks
+            if bt.status not in expirable_statuses]) != 0:
+        return False
+    # No one has replied to the first message reporting the bug.
+    # The bug reporter should be notified that more information
+    # is required to confirm the bug report.
+    if bug.messages.count() == 1:
+        return False
+    # Does the bug have incomplete bugtasks whose pillars have
+    # enabled bug expiration?
+    incomplete_bugtasks = [bt for bt in bug.bugtasks
+                           if bt.status == BugTaskStatus.INCOMPLETE]
+    if len(incomplete_bugtasks) == 0:
+        return False
+    if len([bt for bt in incomplete_bugtasks
+           if bt.pillar.enable_bug_expiration is True]) == 0:
+        return False
+    return True
 
 
 class BugTag(SQLBase):
@@ -214,6 +251,31 @@ class Bug(SQLBase):
         for task in self.bugtasks:
             result.add(task.pillar)
         return sorted(result, key=pillar_sort_key)
+
+    @property
+    def can_expire(self):
+        """See `IBug`.
+
+        Only Incomplete bug reports that affect a single pillar with
+        enabled_bug_expiration set to True can be expired. Expiration
+        happens when the bug becomes inactive--the date of the last update
+        older than the Launchpad expiration age. The bug report is considered
+        unexpirable if it is a duplicate, the bugtask is assigned or has
+        a milestone, or the bug report has another bugtask that is not
+        Incomplete or Invalid. If the bug report does not have any messages,
+        it is assumed that a bug contact has not explained to the bug
+        reporter what is needed to confirm the bug.
+        """
+        # IbugTaskSet.findExpirableBugTasks() is the authorative determiner if
+        # a bug can expire, but it is expensive. We do some general checks
+        # for bugs that obviously cannot expire before using IBugTaskSet.
+        if not can_bug_expire(self):
+            return False
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(0, self)
+        if len(bugtasks) != 0:
+            return True
+        else:
+            return False
 
     @property
     def initial_message(self):

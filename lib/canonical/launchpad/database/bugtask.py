@@ -1552,7 +1552,7 @@ class BugTaskSet:
 
         return bugtask
 
-    def findExpirableBugTasks(self, min_days_old):
+    def findExpirableBugTasks(self, min_days_old, bug=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -1574,6 +1574,13 @@ class BugTaskSet:
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
         """
+        # We import here to avoid cyclic import issues in other
+        # places in launchpad.
+        from canonical.launchpad.database.bug import can_bug_expire
+        if bug is not None:
+            bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
+        else:
+            bug_clause = ''
         all_bugtasks = BugTask.select("""
             BugTask.id IN (
                 SELECT BugTask.id
@@ -1601,6 +1608,7 @@ class BugTaskSet:
                      OR DistroSeries.id IS NOT NULL
                      OR Product.id IS NOT NULL
                      OR ProductSeries.id IS NOT NULL)
+                """ + bug_clause + """
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
@@ -1609,23 +1617,12 @@ class BugTaskSet:
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
-        expirable_statuses = [
-            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
-            BugTaskStatus.WONTFIX]
         bugtasks = []
         for bugtask in all_bugtasks:
-            # Bugtasks cannot be expired if any bugtask of the bug is valid.
-            if len([bt for bt in bugtask.related_tasks
-                    if bt.status not in expirable_statuses]) != 0:
-                continue
-            # No one has replied to the first message reporting the bug.
-            # The bug reporter should be notified that more information
-            # is required to confirm the bug report.
-            if bugtask.bug.messages.count() == 1:
-                continue
             # Only add bugtasks that are not product or distribution
             # conjoined slaves.
-            if bugtask.conjoined_master is None:
+            if (can_bug_expire(bugtask.bug)
+                and bugtask.conjoined_master is None):
                 bugtasks.append(bugtask)
         return bugtasks
 

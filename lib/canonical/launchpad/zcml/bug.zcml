@@ -15,7 +15,7 @@
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
         <allow attributes="id private bugtasks affected_pillars
-                           subscriptions syncUpdate
+                           can_expire subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers mentoring_offers
                            canMentor isMentor getNullBugTask
