@@ -525,14 +525,14 @@ class Builder(SQLBase):
         """
         clauses = ["""
             buildqueue.build = build.id AND
-            build.distroarchrelease = distroarchrelease.id AND
+            build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
             build.buildstate = %s AND
-            distroarchrelease.processorfamily = %s AND
+            distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
         """ % sqlvalues(BuildStatus.NEEDSBUILD, self.processor.family)]
 
-        clauseTables = ['Build', 'DistroArchRelease', 'Archive']
+        clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
         if self.trusted:
             clauses.append("""
