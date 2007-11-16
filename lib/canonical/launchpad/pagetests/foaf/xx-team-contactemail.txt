@@ -331,7 +331,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     >>> from canonical.functional import XMLRPCTestTransport
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     print_actions)
-    >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
+    >>> private_root = 'http://xmlrpc-private.launchpad.dev:8087/'
     >>> mailinglist_api = xmlrpclib.ServerProxy(
     ...    private_root + 'mailinglists/',
     ...    transport=XMLRPCTestTransport())
