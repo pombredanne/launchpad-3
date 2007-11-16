@@ -280,21 +280,20 @@ class IMailingList(Interface):
     welcome_message = Text(
         title=_('Welcome message text'),
         description=_('Any instructions or links that should be sent to new '
-                      'subscribers to this mailing list.')
+                      'subscribers to this mailing list.'),
+        required=False,
         )
 
     address = TextLine(
         title=_("This list's email address."), required=True, readonly=True,
         description=_("The text representation of this team's email address."))
 
-    def canBeContactMethod():
-        """Is this mailing list in a state to be selected as a contact method?
+    def isUsable():
+        """Is this mailing list in a state to accept messages?
 
-        Only mailing lists that have actually been created can be
-        selected as a contact method for a team. This doesn't
-        neccessarily mean that the list can actually be _used_ as a
-        contact method right now: its status might be
-        `MailingListStatus.MOD_FAILED`.
+        This doesn't neccessarily mean that the list is in perfect
+        shape: its status might be `MailingListStatus.MOD_FAILED`. But
+        it should be able to handle messages.
         """
 
     def review(reviewer, status):
