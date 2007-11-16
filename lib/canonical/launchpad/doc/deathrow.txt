@@ -62,62 +62,62 @@ And, if we mark some packages to be pending removal. Source publication
   >>> future_date = datetime.datetime(year=this_year + 2, month=1, day=1,
   ...                                 tzinfo=pytz.timezone('UTC'))
 
-  >>> pub_record = SSPPH.get(15)
-  >>> print pub_record.dateremoved
+  >>> publishing_record = SSPPH.get(15)
+  >>> print publishing_record.dateremoved
   None
-  >>> pub_record.status = PackagePublishingStatus.DELETED
-  >>> pub_record.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
 Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
 
-  >>> pub_record = SSPPH.get(12)
-  >>> print pub_record.distroseries.name
+  >>> publishing_record = SSPPH.get(12)
+  >>> print publishing_record.distroseries.name
   hoary
-  >>> print pub_record.dateremoved
+  >>> print publishing_record.dateremoved
   None
-  >>> pub_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> pub_record.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
 But so does source publication 20, which we'll set to pending removal
 but with a scheduled deletion date in the future. Because not all of the
 references to the file are ready to be removed, the file will not be
 deleted yet.
 
-  >>> pub_record = SSPPH.get(20)
-  >>> print pub_record.distroseries.name
+  >>> publishing_record = SSPPH.get(20)
+  >>> print publishing_record.distroseries.name
   warty
   >>> print [f.libraryfile.filename
-  ...        for f in pub_record.sourcepackagerelease.files]
+  ...        for f in publishing_record.sourcepackagerelease.files]
   [u'alsa-utils_1.0.9a-4ubuntu1.dsc']
-  >>> pub_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> pub_record.scheduleddeletiondate = future_date
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = future_date
 
 Knock off some binaries as well:
 
-  >>> pub_record = SBPPH.get(17)
-  >>> print pub_record.dateremoved
+  >>> publishing_record = SBPPH.get(17)
+  >>> print publishing_record.dateremoved
   None
-  >>> pub_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> pub_record.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
-  >>> pub_record = SBPPH.get(19)
-  >>> print pub_record.dateremoved
+  >>> publishing_record = SBPPH.get(19)
+  >>> print publishing_record.dateremoved
   None
-  >>> pub_record.status = PackagePublishingStatus.DELETED
-  >>> pub_record.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
 As above, both 19 and 21 binary publication refer to the same pmount
 binaries, and since 21 is not to be removed, 19 is supposed to be left
 alone too:
 
-  >>> pub_record = SBPPH.get(21)
+  >>> publishing_record = SBPPH.get(21)
   >>> print [f.libraryfile.filename
-  ...        for f in pub_record.binarypackagerelease.files]
+  ...        for f in publishing_record.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
-  >>> pub_record = SBPPH.get(19)
+  >>> publishing_record = SBPPH.get(19)
   >>> print [f.libraryfile.filename
-  ...        for f in pub_record.binarypackagerelease.files]
+  ...        for f in publishing_record.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
 Flush our these updates and kick the DeathRow processor again.
@@ -143,37 +143,37 @@ the transaction when that flag is set.
 Look at the results of our actions. Two packages removed (one source
 and one binary) and the date removed properly set up:
 
-  >>> source_pub_record = SSPPH.get(15)
-  >>> source_pub_record.status.name
+  >>> source_publishing_record = SSPPH.get(15)
+  >>> source_publishing_record.status.name
   'DELETED'
-  >>> source_pub_record.dateremoved
+  >>> source_publishing_record.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
-  >>> binary_pub_record = SBPPH.get(17)
-  >>> binary_pub_record.status.name
+  >>> binary_publishing_record = SBPPH.get(17)
+  >>> binary_publishing_record.status.name
   'SUPERSEDED'
-  >>> binary_pub_record.dateremoved
+  >>> binary_publishing_record.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 Source publication 20 (has a future 'scheduled deletion date') and
 binary publication 19 (file hold by another active publication), of
 course are left alone:
 
-  >>> pub_record = SSPPH.get(20)
-  >>> pub_record.dateremoved is None
+  >>> publishing_record = SSPPH.get(20)
+  >>> publishing_record.dateremoved is None
   True
 
-  >>> pub_record = SBPPH.get(19)
-  >>> pub_record.dateremoved is None
+  >>> publishing_record = SBPPH.get(19)
+  >>> publishing_record.dateremoved is None
   True
 
 Deathrow is also able to ignore files if there is any reference not
 yet dominated, for instance, just-deleted packages, they will contain
 empty 'scheduleddeletiondate' (see archivepublish/domination.py).
 
-  >>> pub_record = SSPPH.get(20)
-  >>> pub_record.status = PackagePublishingStatus.DELETED
-  >>> pub_record.scheduleddeletiondate = None
+  >>> publishing_record = SSPPH.get(20)
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = None
 
 Deathrow will simply ignore references to the just-deleted package,
 since it can't be sure whether or not they can be removed.
@@ -191,12 +191,12 @@ since it can't be sure whether or not they can be removed.
 Since the just-deleted package was ignored its related publications
 were not removed from disk.
 
-  >>> pub_record = SSPPH.get(20)
-  >>> pub_record.dateremoved is None
+  >>> publishing_record = SSPPH.get(20)
+  >>> publishing_record.dateremoved is None
   True
 
-  >>> pub_record = SBPPH.get(19)
-  >>> pub_record.dateremoved is None
+  >>> publishing_record = SBPPH.get(19)
+  >>> publishing_record.dateremoved is None
   True
 
 
@@ -209,12 +209,12 @@ Test that bytes freed computing is handled correctly:
   ...    print "DEBUG: (Not really!) removing %s %s/%s" % (cn, sn, fn)
   ...    return 5
   >>> death_row._removeFile = removeFileReturningSize
-  >>> pub_record = SSPPH.get(2)
-  >>> pub_record.status = PackagePublishingStatus.DELETED
-  >>> pub_record.scheduleddeletiondate = old_date
-  >>> pub_record = SBPPH.get(24)
-  >>> pub_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> pub_record.scheduleddeletiondate = old_date
+  >>> publishing_record = SSPPH.get(2)
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
+  >>> publishing_record = SBPPH.get(24)
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> death_row.reap()
   DEBUG: 2 Sources
@@ -231,9 +231,9 @@ Test that random exceptions are handled correctly:
   ...    print "DEBUG: (Not really!) removing %s %s/%s" % (cn, sn, fn)
   ...    raise TypeError
   >>> death_row._removeFile = removeFileRaisingOtherException
-  >>> pub_record = SSPPH.get(10)
-  >>> pub_record.status = PackagePublishingStatus.SUPERSEDED
-  >>> pub_record.scheduleddeletiondate = old_date
+  >>> publishing_record = SSPPH.get(10)
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> death_row.reap()
   DEBUG: 2 Sources
