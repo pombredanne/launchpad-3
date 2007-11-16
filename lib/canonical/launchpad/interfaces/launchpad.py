@@ -8,7 +8,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -54,6 +54,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
@@ -508,3 +509,18 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
+
+class ILaunchpadUsage(Interface):
+    """How the project uses Launchpad."""
+    official_answers = Bool(
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
+    enable_bug_expiration = Bool(
+        title=_('Expire Incomplete bug reports when they become inactive'),
+        required=True)

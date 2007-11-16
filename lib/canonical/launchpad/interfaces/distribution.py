@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.schema import (
-    Object, Choice, Int, Text, TextLine, Bool)
+    Object, Choice, Int, Text, TextLine)
 from zope.interface import (
     Interface, Attribute)
 
@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
-    IHasSecurityContact, ISpecificationTarget, PillarNameField)
+    IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget,
+    PillarNameField)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
@@ -41,7 +42,8 @@ class DistributionNameField(PillarNameField):
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ISpecificationTarget):
+    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
+    ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -157,15 +159,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_answers = Bool(
-        title=_('People can ask questions in Launchpad Answers'),
-        required=True)
-    official_malone = Bool(
-        title=_('Bugs in this distribution are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this distribution are done in Launchpad'),
-        required=True)
 
     # properties
     currentseries = Attribute(
