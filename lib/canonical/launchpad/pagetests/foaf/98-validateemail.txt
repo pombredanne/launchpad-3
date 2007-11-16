@@ -1,3 +1,5 @@
+= Validating an email address =
+
 The user 'salgado' has an unvalidated email address that was probably
 added by gina. Now he wants to validate it.
 
@@ -38,8 +40,8 @@ Visit the token URL mentioned in the email, and get redirected to
     >>> print browser.title
     Confirm e-mail address
 
-    >>> print browser.contents
-    <!DOCTYPE...Confirm e-mail address...salgado@ubuntu.com...
+    >>> print find_main_content(browser.contents)
+    <div...Confirm e-mail address...salgado@ubuntu.com...
 
     >>> browser.getControl('Continue').click()
     >>> print browser.title

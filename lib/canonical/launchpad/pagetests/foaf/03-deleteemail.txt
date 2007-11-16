@@ -1,6 +1,8 @@
+= Removing an email =
+
 'foo' doesn't want to use baz.foo@canonical.com on Launchpad. He removes it.
 
-    >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
+    >>> browser = setupBrowser(auth='Basic foo@baz.com:f')
     >>> browser.open('http://launchpad.dev/~foo/+editemails')
     >>> browser.getControl(name='VALIDATED_SELECTED').getControl(
     ...     value='baz.foo@canonical.com').selected = True
