@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
 
@@ -7,7 +8,9 @@ __metaclass__ = type
 __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
+    'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
@@ -182,6 +185,21 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to a team that they are not a member of.
+    """
+
+
+class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
+    """We forbid the creation of team-owned +junk branches.
+
+    Raised when a user is attempting to create a team-owned +junk branch.
+    """
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
     """
 
 
@@ -417,6 +435,8 @@ class IBranch(IHasOwner):
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_modified = Datetime(
+        title=_('Date Last Modified'), required=True, readonly=False)
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""

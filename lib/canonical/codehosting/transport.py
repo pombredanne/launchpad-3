@@ -21,7 +21,10 @@ from bzrlib.transport import (
     unregister_transport,
     )
 
-from canonical.authserver.interfaces import READ_ONLY
+from twisted.web.xmlrpc import Fault
+
+from canonical.authserver.interfaces import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
@@ -167,23 +170,29 @@ class LaunchpadServer(Server):
             raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        if product == '+junk':
-            user_dict = self.authserver.getUser(user)
-            if not user_dict:
-                raise PermissionDenied("%s doesn't exist" % (user,))
-            user_id = user_dict['id']
-            if user_id != self.user_id:
-                raise PermissionDenied(
-                    "+junk is only allowed under user directories, not team "
-                    "directories.")
         branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
         if branch_id != '':
             self.logger.debug('Branch (%r, %r, %r) already exists ')
             return branch_id
         else:
-            return self.authserver.createBranch(
-                self.user_id, user, product, branch)
+            try:
+                return self.authserver.createBranch(
+                    self.user_id, user, product, branch)
+            except Fault, f:
+                if f.faultCode == NOT_FOUND_FAULT_CODE:
+                    # One might think that it would make sense to raise
+                    # NoSuchFile here, but that makes the client do "clever"
+                    # things like say "Parent directory of
+                    # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
+                    # does not exist.  You may supply --create-prefix to
+                    # create all leading parent directories."  Which is just
+                    # misleading.
+                    raise TransportNotPossible(f.faultString)
+                elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
+                    raise PermissionDenied(f.faultString)
+                else:
+                    raise
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions and

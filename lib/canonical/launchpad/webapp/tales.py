@@ -1,9 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0613,E0201,R0911
+# pylint: disable-msg=C0103,W0613,R0911
 #
-"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
-"""
 __metaclass__ = type
 
 import bisect
@@ -847,27 +846,24 @@ class DateTimeFormatterAPI:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
 
-    def displaydate(self):
+    def _now(self):
+        # This method exists to be overridden in tests.
         if self._datetime.tzinfo:
             # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
+            return datetime.now(pytz.timezone('UTC'))
         else:
             # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = abs(now - self._datetime)
+            return datetime.utcnow()
+
+    def displaydate(self):
+        delta = abs(self._now() - self._datetime)
         if delta > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return 'on ' + self.date()
         return self.approximatedate()
 
     def approximatedate(self):
-        if self._datetime.tzinfo:
-            # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
-        else:
-            # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = now - self._datetime
+        delta = self._now() - self._datetime
         if abs(delta) > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return self.date()
@@ -878,20 +874,23 @@ class DateTimeFormatterAPI:
         minutes = (delta.seconds - (3600*hours)) / 60
         seconds = delta.seconds % 60
         result = ''
-        comma = ''
         if future:
             result += 'in '
         if days != 0:
-            result += '%d days' % days
-            comma = ', '
-        if days == 0 and hours != 0:
-            result += '%s%d hours' % (comma, hours)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes != 0:
-            result += '%s%d minutes' % (comma, minutes)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes == 0:
-            result += '%s%d seconds' % (comma, seconds)
+            amount = days
+            unit = 'day'
+        elif hours != 0:
+            amount = hours
+            unit = 'hour'
+        elif minutes != 0:
+            amount = minutes
+            unit = 'minute'
+        else:
+            amount = seconds
+            unit = 'second'
+        if amount != 1:
+            unit += 's'
+        result += '%s %s' % (amount, unit)
         if not future:
             result += ' ago'
         return result
