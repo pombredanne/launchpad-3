@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
 
@@ -522,6 +523,7 @@ class Bug(SQLBase):
         bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard, status=status,
             registrant=registrant)
+        branch.date_last_modified = UTC_NOW
 
         notify(SQLObjectCreatedEvent(bug_branch))
 
