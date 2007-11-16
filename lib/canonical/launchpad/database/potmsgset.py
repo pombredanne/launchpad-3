@@ -118,10 +118,18 @@ class POTMsgSet(SQLBase):
         return shortlist(result, longest_expected=20, hardlimit=100)
 
     def _getExternalTranslationMessages(self, language, used=True):
+        """Return all non-fuzzy TranslationMessages for the same english
+        string which are used or suggested in other templates.
+
+        A message is used if it's either imported or current, and unused
+        otherwise.
+        """
+        in_use_clause = "is_current IS TRUE OR is_imported IS TRUE"
         if used:
-            query = ['(is_current IS TRUE OR is_imported IS TRUE)']
+            query = [in_use_clause]
         else:
-            query = ['(is_current IS NOT TRUE AND is_imported IS NOT TRUE)']
+            query = ["NOT (%s)" % in_use_clause]
+        query.append('is_fuzzy IS NOT TRUE')
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')
 

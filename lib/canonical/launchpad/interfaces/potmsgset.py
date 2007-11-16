@@ -79,24 +79,28 @@ class IPOTMsgSet(Interface):
 
     def getLocalTranslationMessages(language):
         """Returns all the local unused translation messages for the POTMsgSet.
+
         Unused are those which are not current or imported, and local are
         those which are directly attached to this POTMsgSet.
 
         :param language: language we want translations for.
         """
 
-    def getExternallyUsedTranslationMessages(pofile):
-        """Returns all the local unused translation messages for the POTMsgSet.
-        Unused are those which are not current or imported, and local are
-        those which are directly attached to this POTMsgSet.
+    def getExternallyUsedTranslationMessages(language):
+        """Returns all the externally used translation messages for the same
+        English message (msgid_singular, msgid_plural combination).
+
+        "Used" messages are either current or imported ones.
 
         :param language: language we want translations for.
         """
 
-    def getExternallySuggestedTranslationMessages(pofile):
-        """Returns all the local unused translation messages for the POTMsgSet.
-        Unused are those which are not current or imported, and local are
-        those which are directly attached to this POTMsgSet.
+    def getExternallySuggestedTranslationMessages(language):
+        """Returns all the externally unused translation messages for the same
+        English message (msgid_singular, msgid_plural combination).
+
+        Externally unused messages are those which have been sent as
+        suggestions but are not current or imported.
 
         :param language: language we want translations for.
         """

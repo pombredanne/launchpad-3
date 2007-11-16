@@ -1087,7 +1087,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             - Active translations to other contexts (elsewhere)
             - Non-editor translations to other contexts (wiki)
         """
-        # Clean up suggestions storage.
+        # Prepare suggestions storage.
         self.suggestion_blocks = {}
         self.suggestions_count = {}
 
@@ -1112,27 +1112,22 @@ class CurrentTranslationMessageView(LaunchpadView):
             key=operator.attrgetter("date_created"),
             reverse=True)
 
+
+        alt_submissions = []
         if self.sec_lang is None:
-            alt_submissions = []
             alt_title = None
         else:
-            alt_current = self.context.potmsgset.getCurrentTranslationMessage(
-                self.sec_lang)
-            if alt_current:
-                alt_submissions = [alt_current]
-            else:
-                alt_submissions = []
+            alt_current = potmsgset.getCurrentTranslationMessage(self.sec_lang)
+            if alt_current is not None:
+                alt_submissions.append(alt_current)
             alt_submissions += (
-                self.context.potmsgset.getExternallyUsedTranslationMessages(
-                    self.sec_lang))
+                potmsgset.getExternallyUsedTranslationMessages(self.sec_lang))
             alt_title = self.sec_lang.englishname
 
         for index in self.pluralform_indices:
             seen_translations = set([self.context.translations[index]])
             if not self.context.is_imported:
-                imported = (
-                    self.context.potmsgset.getImportedTranslationMessage(
-                        self.context.pofile.language))
+                imported = potmsgset.getImportedTranslationMessage(language)
                 if imported:
                     seen_translations.add(imported.translations[index])
             local_suggestions = TranslationMessageSuggestions(
