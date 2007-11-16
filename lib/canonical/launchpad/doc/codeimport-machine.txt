@@ -93,8 +93,8 @@ hostname and online state information.
 
 == Modifying CodeImportMachine ==
 
-The web app cannot edit this information, because it does not have
-UPDATE rights on the CodeImportMachine table.
+The webapp cannot edit this information, because it does not have UPDATE
+rights on the CodeImportMachine table.
 
     >>> from canonical.launchpad.interfaces import CodeImportMachineState
     >>> removeSecurityProxy(machine).state = CodeImportMachineState.ONLINE
