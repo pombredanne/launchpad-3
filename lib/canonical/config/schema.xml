@@ -527,7 +527,7 @@ k            </description>
                 notifications.
             </description>
         </key>
-        <key name="bugnotification_interval" datatye="integer"
+        <key name="bugnotification_interval" datatype="integer"
             required="no" default="5">
           <description>
               The number of minutes that at most should pass between
@@ -611,6 +611,18 @@ k            </description>
             Configuration for cronscripts/rosetta-package-po-attach
         </description>
         <key name="dbuser" datatype="string" default="poattach" />
+    </sectiontype>
+
+    <sectiontype name="processmail" extends="database_options">
+        <description>
+            Configuration for cronscripts/process-mail.py
+        </description>
+        <key name="dbuser" datatype="string" default="processmail">
+            <description>
+                The database user which will be used to process incoming 
+                emails.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="rosetta">
@@ -1110,6 +1122,7 @@ k            </description>
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
+        <section name="*" type="processmail" attribute="processmail" />
         <section name="*" type="productreleasefinder"
                  attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
