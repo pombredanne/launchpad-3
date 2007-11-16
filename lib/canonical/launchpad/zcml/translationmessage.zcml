@@ -20,7 +20,8 @@
             interface="canonical.launchpad.interfaces.ITranslationMessage" />
     </content>
 
-    <!-- XXX: Commented until we start migrating view code.
+    <!-- XXX CarlosPerelloMarin 2007-11-16 Commented until we start migrating
+         view code.
     <content class="canonical.launchpad.browser.POMsgSetSuggestions">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationMessageSuggestions"

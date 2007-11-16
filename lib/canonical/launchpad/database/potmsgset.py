@@ -484,7 +484,8 @@ class POTMsgSet(SQLBase):
         # And finally, set the same whitespaces at the start/end of the string.
         new_text = self.normalizeWhitespaces(new_text)
         # Also, if it's an empty string, replace it with None.
-        # XXX: Until we figure out ResettingTranslations
+        # XXX CarlosPerelloMarin 2007-11-16: Until we figure out
+        # ResettingTranslations
         if new_text == '':
             new_text = None
 
