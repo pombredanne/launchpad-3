@@ -194,6 +194,12 @@ teams.
     False
     >>> not_a_person.account_status
     <DBItem AccountStatus.NOACCOUNT...
+
+    # Empty stub.test_emails as later we'll want to show that no notifications
+    # are sent when we add the owner as a member of the team.
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails = []
+
     >>> not_a_person.convertToTeam(team_owner=ddaa)
     >>> not_a_person.isTeam()
     True
@@ -208,6 +214,12 @@ The team owner is also added as an administrator of its team.
 
     >>> [member.name for member in not_a_person.adminmembers]
     [u'ddaa']
+
+    # As said previously, no notifications are sent when we add the team owner
+    # as a member of his team.
+    >>> transaction.commit()
+    >>> stub.test_emails
+    []
 
 And we can even add other members to our new team!
 
@@ -521,6 +533,7 @@ trying to match the text only against the beginning of an email address:
     >>> print_people(personset.find('ubuntu'))
     Mirror Administrators (ubuntu-mirror-admins): []
     Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Translators (ubuntu-translators): []

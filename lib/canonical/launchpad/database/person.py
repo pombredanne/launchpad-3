@@ -213,8 +213,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self.creation_rationale = None
         self.teamowner = team_owner
         alsoProvides(self, ITeam)
-        self.addMember(
-            team_owner, reviewer=team_owner, status=TeamMembershipStatus.ADMIN)
+        # Add the owner as a team admin manually because we know what we're
+        # doing and we don't want any email notifications to be sent.
+        TeamMembershipSet().new(
+            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
 
     # specification-related joins
     @property
