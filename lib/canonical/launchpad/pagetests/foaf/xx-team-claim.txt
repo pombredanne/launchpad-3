@@ -2,7 +2,7 @@
 
 Sometimes (mostly when processing package uploads) Launchpad will create new
 people when in fact it should have created teams.  When that happens, it
-should be possible for a user to claim these profiles and turn them into a
+should be possible for a user to claim these profiles and turn them into
 teams.
 
 On the home page of any automatically created person, there is a link which
@@ -54,7 +54,9 @@ turning that profile into a team.
     one of its admins to accept the message from Launchpad so that you can
     finish the process.)
 
-    # Follow the link sent to us by email.
+That will send an email to the address given, with a link to finish the
+claiming process.
+
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
@@ -69,8 +71,12 @@ turning that profile into a team.
     >>> user_browser.title
     'Claim Launchpad team'
 
-    # The owner of the claimed team will be the person who started the claim
-    # process and that can't be changed here.
+Here the user sees a form where he can enter a few more details about the
+team and finish the claiming process, making the person who started the
+claim process the team's owner.
+
+    # The 'Team Owner' widget is rendered as read-only in this page, so we
+    # can't use browser.getControl() to see its value.
     >>> user_browser.getControl('Team Owner')
     Traceback (most recent call last):
     ...
@@ -84,6 +90,9 @@ turning that profile into a team.
     >>> user_browser.getControl('Display Name').value = 'Ubuntu Doc Team'
     >>> user_browser.getControl('Team Description').value = 'The doc team'
     >>> user_browser.getControl('Continue').click()
+
+Once the conversion is finished the user is redirected to the team's home
+page.
 
     >>> user_browser.title
     'Ubuntu Doc Team in Launchpad'

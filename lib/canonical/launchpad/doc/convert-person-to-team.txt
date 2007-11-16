@@ -23,9 +23,9 @@ team and the name of the team owner as arguments.
     >>> process.returncode
     0
 
-    # XXX: The script already committed its transaction but for some reason
-    # we need to forcibly begin another transaction here.
-    # -- Guilherme Salgado, 2007-10-25
+    # The script already committed its transaction but this test runs
+    # the LaunchpadFunctionalLayer which, in turn, uses the SERIALIZABLE
+    # isolation level, so we need to forcibly begin another transaction here.
     >>> import transaction; transaction.abort()
 
     # Flush the caches because our objects were changed in another
