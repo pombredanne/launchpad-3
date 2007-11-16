@@ -351,7 +351,6 @@ SELECT
     m.commenttext AS comment,
     m.id AS msgsetid
 FROM POMsgSet m
-        JOIN POSubmission ON POSubmission.pomsgset = m.id
         LEFT OUTER JOIN POSubmission AS s0 ON
             s0.pomsgset = m.id AND
             s0.pluralform = 0 AND
@@ -373,7 +372,12 @@ WHERE
     s1.id IS NULL AND
     s2.id IS NULL AND
     s3.id IS NULL AND
-    reviewer IS NOT NULL;
+    reviewer IS NOT NULL AND
+    EXISTS (
+        SELECT id
+        FROM POSubmission
+        WHERE
+            POSubmission.pomsgset = m.id);
 
 -- SELECT 'Patching up ValidationStatus', statement_timestamp(); -- DEBUG
 

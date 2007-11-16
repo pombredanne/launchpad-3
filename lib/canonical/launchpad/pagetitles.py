@@ -173,7 +173,7 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branchmergeproposal_edit = 'Edit branch merge proposal'
 
-branch_register_merge_proposal = 'Register branch merge proposal'
+branch_register_merge_proposal = 'Propose branch for merging'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))

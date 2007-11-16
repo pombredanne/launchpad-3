@@ -5,7 +5,7 @@ the code from one branch into another.
 
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
-is `Register merge proposal`.
+is `Propose for merging`.
 
 
 == Registering a merge proposal ==
@@ -14,7 +14,7 @@ Users who are not logged on do not see the link to register.
 
     >>> anon_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('Register merge proposal')
+    >>> anon_browser.getLink('Propose for merging')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -24,7 +24,7 @@ Logged in users can.
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> nopriv_browser.getLink('Register merge proposal').click()
+    >>> nopriv_browser.getLink('Propose for merging').click()
     >>> nopriv_browser.getControl('Target Branch').value = (
     ...     '~name12/gnome-terminal/main')
     >>> nopriv_browser.getControl('Whiteboard').value = (
@@ -68,7 +68,7 @@ shown.
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
-    >>> sample_browser.getLink('Register merge proposal').click()
+    >>> sample_browser.getLink('Propose for merging').click()
     >>> sample_browser.getControl('Target Branch').value = (
     ...     '~name12/gnome-terminal/main')
     >>> sample_browser.getControl('Whiteboard').value = (
@@ -147,7 +147,7 @@ When registering merge proposals, there is an optional dependent branch.
 This is used when the source branch has branched of a branch other than
 the target branch.
 
-    >>> sample_browser.getLink('Register merge proposal').click()
+    >>> sample_browser.getLink('Propose for merging').click()
     >>> sample_browser.getControl('Target Branch').value = (
     ...     '~name12/gnome-terminal/main')
     >>> sample_browser.getControl('Dependent Branch').value = (

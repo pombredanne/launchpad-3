@@ -207,10 +207,8 @@ class TestQueueTool(TestQueueBase):
         """Check if accepting a source package generates an email."""
         queue_action = self.execute_command('accept alsa-utils', no_mail=False)
         self.assertEqual(1, queue_action.items_size)
-        self.assertEqual(2, len(stub.test_emails))
-        # Second email sent (first to pop from queue) is the announcement:
-        self.assertEmail(['autotest_changes@ubuntu.com'])
-        # First email sent (second to pop) is the uploader's notification:
+        self.assertEqual(1, len(stub.test_emails))
+        # Email sent is the uploader's notification:
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 

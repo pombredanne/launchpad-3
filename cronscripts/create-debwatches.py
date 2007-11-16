@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 # This script aims to ensure that there is a Malone watch on Debian bugs
 # that meet certain criteria. The Malone watch will be linked to a BugTask

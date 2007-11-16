@@ -1,4 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# _valid_nick() in generate_nick causes E1101
+# vars() causes W0612
+# pylint: disable-msg=E0611,W0212,E1101,W0612
+
 """Implementation classes for a Person."""
 
 __metaclass__ = type

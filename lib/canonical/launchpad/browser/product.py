@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'download_file_url',
     'ProductNavigation',
     'ProductDynMenu',
     'ProductShortLink',
@@ -86,6 +87,14 @@ from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
+def download_file_url(release, file_):
+    """Construct the download file URL.
+
+    Given a a release and file, return the file download URL.
+    """
+    return "%s/+download/%s" % (canonical_url(release),
+                                file_.libraryfile.filename)
+
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
@@ -157,23 +166,23 @@ class ProductLicenseMixin:
             not license_widget.allow_pending_license):
             # License is optional on +edit page if not already set.
             self.setFieldError(
-                'licenses', 
+                'licenses',
                 'Select all licenses for this software or select '
                 'Other/Proprietary or Other/Open Source.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
-                    'license_info', 
+                    'license_info',
                     'A description of the "Other/Proprietary" '
                     'license you checked is required.')
         elif License.OTHER_OPEN_SOURCE in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
-                    'license_info', 
+                    'license_info',
                     'A description of the "Other/Open Source" '
                     'license you checked is required.')
         else:
-            # Launchpad is ok with all licenses used in this project
+            # Launchpad is ok with all licenses used in this project.
             pass
 
     def notifyFeedbackMailingList(self):
@@ -200,9 +209,12 @@ class ProductLicenseMixin:
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
 
+            reply_to = format_address(user.displayname, 
+                                      user.preferredemail.email)
             simple_sendmail(fromaddress,
                             'feedback@launchpad.net',
-                            subject, message)
+                            subject, message,
+                            headers={'Reply-To': reply_to})
 
             self.request.response.addInfoNotification(_(
                 "Launchpad is free to use for software under approved "
@@ -511,7 +523,26 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView(LaunchpadView):
+class SortSeriesMixin:
+    """Provide access to helpers for series."""
+
+    @property
+    def sorted_series_list(self):
+        """Return a sorted list of series.
+
+        The series list is sorted by version in reverse order.
+        The development focus is always first in the list.
+        """
+        series_list = list(self.context.serieses)
+        series_list.remove(self.context.development_focus)
+        # Now sort the list by name with newer versions before older.
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.context.development_focus)
+        return series_list
+
+
+class ProductView(LaunchpadView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
@@ -546,8 +577,8 @@ class ProductView(LaunchpadView):
 
     @property
     def should_display_homepage(self):
-        return (self.context.homepageurl and 
-                self.context.homepageurl not in 
+        return (self.context.homepageurl and
+                self.context.homepageurl not in
                     [self.freshmeat_url, self.sourceforge_url])
 
     @cachedproperty
@@ -626,16 +657,6 @@ class ProductView(LaunchpadView):
         return [product for product in self.context.project.products
                         if product.id != self.context.id]
 
-    def sorted_serieses(self):
-        """Return the series list of the product with the dev focus first."""
-        series_list = list(self.context.serieses)
-        series_list.remove(self.context.development_focus)
-        # now sort the list by name with newer versions before older
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.context.development_focus)
-        return series_list
-
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
@@ -645,7 +666,7 @@ class ProductView(LaunchpadView):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFilesView(LaunchpadView):
+class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
@@ -686,10 +707,18 @@ class ProductDownloadFilesView(LaunchpadView):
                         del_count += 1
         return del_count
 
-    def file_url(self, series, release, file_):
+    def file_url(self, release, file_):
         """Create a download URL for the file."""
-        return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+        return download_file_url(release, file_)
+
+    @cachedproperty
+    def has_download_files(self):
+        """Across series and releases do any download files exist?"""
+        for series in self.product.serieses:
+            for release in series.releases:
+                if release.files.count() > 0:
+                    return True
+        return False
 
     @cachedproperty
     def milestones(self):
@@ -731,7 +760,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     def setUpWidgets(self):
         super(ProductEditView, self).setUpWidgets()
-        # Licenses are optional on +edit page if they have not already 
+        # Licenses are optional on +edit page if they have not already
         # been set. Subclasses may not have 'licenses' widget.
         # ('licenses' in self.widgets) is broken.
         if (len(self.context.licenses) == 0 and
@@ -962,7 +991,7 @@ class ProductSetView(LaunchpadView):
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     """Abstract class for adding a new product.
 
-    ProductLicenseMixin requires the "product" attribute be set in the 
+    ProductLicenseMixin requires the "product" attribute be set in the
     child classes' action handler.
     """
 
@@ -988,7 +1017,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 
 class ProductAddView(ProductAddViewBase):
 
-    field_names = (ProductAddViewBase.field_names 
+    field_names = (ProductAddViewBase.field_names
                    + ['owner', 'project', 'reviewed'])
 
     label = "Register an upstream open source project"

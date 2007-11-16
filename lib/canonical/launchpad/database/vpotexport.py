@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database class to handle translation template export view."""
 
