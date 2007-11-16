@@ -111,7 +111,7 @@ class ICodeImportMachine(Interface):
 
         Set state to OFFLINE, and record the corresponding event.
 
-        :param reason: CodeImportMachineOfflineReason enum value.
+        :param reason: `CodeImportMachineOfflineReason` enum value.
         """
 
     def setQuiescing(user, message):
