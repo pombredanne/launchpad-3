@@ -110,7 +110,6 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.INACTIVE,
                                     MailingListStatus.MOD_FAILED), (
                 'target_state result must be inactive or mod_failed')
-            self._clearSubscriptions()
         else:
             raise AssertionError(
                 'Not a valid state transition: %s -> %s'
@@ -121,7 +120,8 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            if email.status in [EmailAddressStatus.NEW, EmailAddressStatus.OLD]:
+            if email.status in [EmailAddressStatus.NEW,
+                                EmailAddressStatus.OLD]:
                 # Without this conditional, if the mailing list is the
                 # contact method
                 # (email.status==EmailAddressStatus.PREFERRED), and a
