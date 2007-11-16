@@ -1405,7 +1405,8 @@ class TranslationMessageSuggestions:
                 'date_created': submission.date_created,
                 'suggestion_html_id':
                     self.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
-                        self.pofile.language.code, submission.id, plural_form)),
+                        submission.pofile.language.code, submission.id,
+                        plural_form)),
                 'translation_html_id':
                     translation.makeHTMLID(
                         'translation_%s' % (plural_form)),
