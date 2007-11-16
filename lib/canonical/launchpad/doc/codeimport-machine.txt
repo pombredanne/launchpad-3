@@ -245,6 +245,18 @@ does not matter to the state machine.
 From the OFFLINE state, a machine can only go ONLINE. The setOffline and
 setQuiescing methods must fail.
 
+Since our scripts and daemons run at "READ COMMITTED" isolation level,
+there are races that we cannot easily detect within the limitation of
+SQLObject, when the watchdog process and the controller daemon
+concurrently call setOffline. Those undetected races will lead to the
+creation of redundant OFFLINE events with different reason values, where
+one of the reasons will be WATCHDOG. Those races should not have any
+other adverse effect.
+
+If the machine state is already offline, setOffline will defensively
+fail, this will usefully detect logic errors where a single thread of
+execution makes redundant calls to this method.
+
     >>> machine = reset_machine(machine)
     >>> machine.setOnline()
     >>> print machine.state.name
