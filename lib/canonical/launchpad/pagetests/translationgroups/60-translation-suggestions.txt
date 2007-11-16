@@ -21,11 +21,13 @@ Let's add a new suggestion as a person without privileges.
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10
   >>> browser.getLink('Previous').click()
 
+  >>> #import sys; print >>sys.stderr, browser.contents
+
 Now, we can see the added suggestion + others from the sample data.
 
-  >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_704_0")
+  >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_703_0")
   <...<samp> </samp>new suggestion...
-  >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_704_0_origin")
+  >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_703_0_origin")
   <...
   ...Suggested by...No Privileges Person...
 
