@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
 
@@ -573,7 +574,7 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, whiteboard=None, status=None):
+    def addBranch(self, branch, registrant, whiteboard=None, status=None):
         """See `IBug`."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
@@ -582,7 +583,9 @@ class Bug(SQLBase):
             status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard, status=status)
+            branch=branch, bug=self, whiteboard=whiteboard, status=status,
+            registrant=registrant)
+        branch.date_last_modified = UTC_NOW
 
         notify(SQLObjectCreatedEvent(bug_branch))
 

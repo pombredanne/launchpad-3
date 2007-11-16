@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
 
@@ -392,12 +393,6 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
-        """
-
-    def getProductsWithUserDevelopmentBranches():
-        """Return products that have a user branch for the development series.
-
-        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
 
     def getProductsWithUserDevelopmentBranches():
