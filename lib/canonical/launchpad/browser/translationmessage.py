@@ -1102,17 +1102,23 @@ class CurrentTranslationMessageView(LaunchpadView):
         language = self.context.pofile.language
         potmsgset = self.context.potmsgset
 
-        local = sorted(potmsgset.getLocalTranslationMessages(language),
-                       key=operator.attrgetter("date_created"),
-                       reverse=True)
-        externally_used = sorted(
-            potmsgset.getExternallyUsedTranslationMessages(language),
-            key=operator.attrgetter("date_created"),
-            reverse=True)
-        externally_suggested = sorted(
-            potmsgset.getExternallySuggestedTranslationMessages(language),
-            key=operator.attrgetter("date_created"),
-            reverse=True)
+        # Show suggestions only when you can actually do something with them
+        # (i.e. you are logged in and have access to at least submit
+        # suggestions).
+        if self.form_is_writeable:
+            local = sorted(potmsgset.getLocalTranslationMessages(language),
+                           key=operator.attrgetter("date_created"),
+                           reverse=True)
+            externally_used = sorted(
+                potmsgset.getExternallyUsedTranslationMessages(language),
+                key=operator.attrgetter("date_created"),
+                reverse=True)
+            externally_suggested = sorted(
+                potmsgset.getExternallySuggestedTranslationMessages(language),
+                key=operator.attrgetter("date_created"),
+                reverse=True)
+        else:
+            local = externally_used = externally_suggested = []
 
 
         alt_submissions = []
