@@ -40,9 +40,8 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
-    ITranslationMessageSuggestions, NotFoundError, TranslationConflict,
-    TranslationConstants, UnexpectedFormData)
-from canonical.launchpad.database import TranslationMessage
+    ITranslationMessageSet, ITranslationMessageSuggestions, NotFoundError,
+    TranslationConflict, TranslationConstants, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -348,7 +347,8 @@ def _getSuggestionFromFormId(form_id):
     # Extract the suggestion ID.
     suggestion_id = int(expr_match.group(3))
     plural_form = int(expr_match.group(4))
-    translationmessage = TranslationMessage.get(suggestion_id)
+    translationmessage = getUtility(ITranslationMessageSet).getByID(
+        suggestion_id)
     return translationmessage.translations[plural_form]
 
 

@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = [
     'TranslationMessage',
     'DummyTranslationMessage',
+    'TranslationMessageSet'
     ]
 
 from datetime import datetime
@@ -18,7 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ITranslationMessage, RosettaTranslationOrigin,
+    ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
 
 
@@ -244,3 +245,16 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 return False
         # We found no translations in this translation_message
         return True
+
+
+class TranslationMessageSet:
+    implements(ITranslationMessageSet)
+
+    def getByID(self, ID):
+        """See `ILanguageSet`."""
+        assert isinstance(ID, int), (
+            "%s is not a valid type for 'ID'" % type(ID))
+        try:
+            return TranslationMessage.get(ID)
+        except SQLObjectNotFound:
+            return None

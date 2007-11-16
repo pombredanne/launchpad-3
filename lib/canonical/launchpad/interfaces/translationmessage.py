@@ -13,6 +13,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 __metaclass__ = type
 __all__ = [
     'ITranslationMessage',
+    'ITranslationMessageSet',
     'ITranslationMessageSuggestions',
     'RosettaTranslationOrigin',
     'TranslationConflict',
@@ -214,3 +215,9 @@ class ITranslationMessageSuggestions(Interface):
     user_is_official_translator = Bool(
         title=(u'Whether the user is an official translator.'),
         required=True)
+
+class ITranslationMessageSet(Interface):
+    """Getting to TranslationMessages from view code."""
+
+    def getByID(id):
+        """Return the TranslationMessage with the given ID or None."""
