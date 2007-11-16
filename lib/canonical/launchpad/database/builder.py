@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -80,7 +81,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['name']
+    _defaultOrder = ['processor', '-trusted', 'name']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)

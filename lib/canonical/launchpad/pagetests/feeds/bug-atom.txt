@@ -31,7 +31,7 @@ the bug itself.
     >>> browser.url
     'http://feeds.launchpad.dev/jokosher/latest-bugs.atom'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/jokosher/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
@@ -65,7 +65,7 @@ as the latest bugs feed for a product.
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/mozilla/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
@@ -99,7 +99,7 @@ This feed gets the latest bugs for a person.
     >>> browser.url
     'http://feeds.launchpad.dev/~name16/latest-bugs.atom'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/~name16/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
@@ -161,7 +161,7 @@ some results.
     >>> browser.title
     'Bugs for Simple Team'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/~simple-team/latest-bugs.atom
 
@@ -183,7 +183,7 @@ a feed.
     >>> browser.title
     'Bugs from custom search'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> feed_id = extract_text(soup.find('id'))
     >>> print feed_id
     http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports

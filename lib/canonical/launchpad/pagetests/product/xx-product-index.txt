@@ -112,3 +112,10 @@ the homepage:
     Screenshots http://screenshots.url/
     External downloads http://download.url/
 
+= Timeline =
+
+The product timeline shows all of the product series, sorted by name,
+except the current development focus is always first.
+
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> 

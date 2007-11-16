@@ -23,7 +23,7 @@ from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     BranchType, IBranchSet, IPersonSet, IRevisionSet)
-from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
+from canonical.codehosting.scanner.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
@@ -74,6 +74,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def setUpDBBranch(self):
         LaunchpadZopelessLayer.txn.begin()
         arbitraryowner = getUtility(IPersonSet).get(1)
+        date_created = datetime.datetime(2000, 1, 1, 12, tzinfo=pytz.UTC)
         self.db_branch = getUtility(IBranchSet).new(
             branch_type=BranchType.MIRRORED,
             name="test",
@@ -82,7 +83,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
             product=None,
             url=self.bzr_branch_url,
             title="Test branch",
-            summary="Branch for testing")
+            summary="Branch for testing",
+            date_created=date_created)
         LaunchpadZopelessLayer.txn.commit()
 
     def setUpAuthor(self):
@@ -319,14 +321,20 @@ class TestBzrSync(BzrSyncTestCase):
             new_parents=0, new_authors=0)
         self.assertEqual(self.db_branch.revision_count, 2)
 
-    def test_last_scanned_id_recorded(self):
+    def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
         self.syncAndCount()
         self.assertEquals(NULL_REVISION, self.db_branch.last_scanned_id)
+        last_modified = self.db_branch.date_last_modified
+        last_scanned = self.db_branch.last_scanned
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
+        self.assertTrue(self.db_branch.last_scanned > last_scanned,
+                        "last_scanned was not updated")
+        self.assertTrue(self.db_branch.date_last_modified > last_modified,
+                        "date_last_modifed was not updated")
 
     def test_timestamp_parsing(self):
         # Test that the timezone selected does not affect the

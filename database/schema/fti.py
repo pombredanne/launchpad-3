@@ -68,7 +68,7 @@ ALL_FTI = [
             ('changelog', D),
             ]),
 
-    ('distroreleasepackagecache', [
+    ('distroseriespackagecache', [
             ('name', A),
             ('summaries', B),
             ('descriptions', C),

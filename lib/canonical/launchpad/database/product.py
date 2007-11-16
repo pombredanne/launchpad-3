@@ -1,9 +1,10 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet', 'ProductLicense']
+__all__ = ['Product', 'ProductSet']
 
 
 import operator
@@ -32,6 +33,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
+from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.question import (
@@ -581,10 +583,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
             "ProductSeries.product = %s AND "
-            "Packaging.distrorelease = DistroRelease.id AND "
-            "DistroRelease.distribution = Distribution.id"
+            "Packaging.distroseries = DistroSeries.id AND "
+            "DistroSeries.distribution = Distribution.id"
             "" % sqlvalues(self.id),
-            clauseTables=['Packaging', 'ProductSeries', 'DistroRelease'],
+            clauseTables=['Packaging', 'ProductSeries', 'DistroSeries'],
             orderBy='name',
             distinct=True
             )
@@ -790,10 +792,3 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
-
-
-class ProductLicense(SQLBase):
-    """A product's license."""
-
-    product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
-    license = EnumCol(dbName='license', notNull=True, schema=License)

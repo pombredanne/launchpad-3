@@ -75,7 +75,8 @@ bug got submitted correctly:
 
     >>> process_email(submit_mail)
 
-    >>> import transaction
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.ftests import sync
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.mail import stub
     >>> bugset = getUtility(IBugSet)
@@ -248,7 +249,7 @@ includes commands, the email has to be OpenPGP-signed.
     ... """
 
     >>> process_email(comment_mail)
-    >>> transaction.commit()
+    >>> commit()
 
     >>> from canonical.launchpad.interfaces import IMessageSet
     >>> bug_one = bugset.get(1)
@@ -289,7 +290,7 @@ For that you can send mails to edit@malone-domain.
     ... """
 
     >>> process_email(edit_mail)
-    >>> transaction.commit()
+    >>> commit()
 
 No comments were added to the bugs:
 
@@ -304,6 +305,7 @@ And the summaries were changed:
     Changed summary
     >>> print bug_five.title
     Nicer summary
+
 
 == GPG signing and adding comments ==
 
@@ -334,7 +336,6 @@ principal with that.
     ...     current_principal, directlyProvidedBy(current_principal),
     ...     IWeaklyAuthenticatedPrincipal)
 
-
 Now we send a comment containing commands.
 
     >>> comment_mail = """From: test@canonical.com
@@ -350,7 +351,7 @@ Now we send a comment containing commands.
     ... /Sample Person
     ... """
     >>> process_email(comment_mail)
-    >>> transaction.commit()
+    >>> commit()
 
 The Malone handler saw that this email was signed, but since
 IWeaklyAuthenticatedPrincipal was provided by the current principal, no
@@ -369,7 +370,7 @@ And an error message was sent to the Sample Person, telling him what's
 wrong.
 
     >>> def print_latest_email():
-    ...     transaction.commit()
+    ...     commit()
     ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
     ...     sent_msg = email.message_from_string(raw_message)
     ...     error_mail, original_mail = sent_msg.get_payload()
@@ -396,7 +397,7 @@ The same will happen if we send the same email without signing it:
     ...     comment_mail, _class=MockUnsignedMessage)
     >>> handler.process(msg, msg['To'])
     True
-    >>> transaction.commit()
+    >>> commit()
 
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
     Traceback (most recent call last):
@@ -433,7 +434,7 @@ to the bug:
     ... /Sample Person
     ... """
     >>> process_email(comment_mail)
-    >>> transaction.commit()
+    >>> commit()
 
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test3>')[0]
     >>> bug_one = bugset.get(1)
@@ -463,7 +464,8 @@ to edit bug 4:
     ...                  " bug %d\n" % bug.id)
     ...     edit_mail += ' ' + '\n '.join(commands)
     ...     process_email(edit_mail)
-    ...     transaction.commit()
+    ...     commit()
+    ...     sync(bug)
 
 
 === bug $bugid ===
@@ -555,9 +557,30 @@ permission to complete the operation will be denied.)
     >>> bug_four.private
     True
 
+We flush the database caches to ensure that the timestamp is set:
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+A timestamp and the user that sets the bug private is also recorded:
+
+    >>> bug_four.date_made_private
+    datetime.datetime(...)
+    >>> bug_four.who_made_private.name
+    u'name12'
+
+The bug report can also be made public:
+
     >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
     False
+
+The timestamp and user are cleared:
+
+    >>> print bug_four.date_made_private
+    None
+    >>> print bug_four.who_made_private
+    None
 
 Specifying something else than 'yes' or 'no' produces an error:
 
@@ -605,7 +628,9 @@ Switching off the security flag won't make the bug public, though.
 
     >>> bug_four.private
     True
-    >>> bug_four.private = False
+    >>> bug_four.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+    >>> commit()
 
 Specifying something else than 'yes' or 'no' produces an error:
 
@@ -925,6 +950,7 @@ If the CVE sequence can't be found, an error message is sent to the
 user.
 
     >>> bug = new_firefox_bug()
+    >>> commit()
     >>> submit_commands(bug, 'cve no-such-cve')
     >>> bug.cves.count()
     0
@@ -1018,9 +1044,11 @@ A milestone can be assigned to the current task.
     >>> print firefox_task.milestone
     None
     >>> submit_commands(bug_four, 'milestone 1.0')
+    >>> sync(firefox_task)
     >>> print firefox_task.milestone.name
     1.0
     >>> submit_commands(bug_four, 'milestone -')
+    >>> sync(firefox_task)
     >>> print firefox_task.milestone
     None
 
@@ -1046,7 +1074,7 @@ permissions also elicits an error message:
 
     >>> login('test@canonical.com')
     >>> bug = new_firefox_bug()
-    >>> transaction.commit()
+    >>> commit()
 
     >>> login('no-priv@canonical.com')
     >>> for bugtask in bug.bugtasks:
@@ -1055,6 +1083,7 @@ permissions also elicits an error message:
     >>> print bug.bugtasks[0].milestone
     None
     >>> submit_commands(bug, 'milestone 1.0')
+    >>> sync(bug.bugtasks[0])
     >>> print bug.bugtasks[0].milestone
     None
     >>> print_latest_email()
@@ -1076,6 +1105,7 @@ Like the web UI, we can assign a bug to nobody.
     >>> submit_commands(
     ...     bug_four, 'affects debian',
     ...     'assignee nobody')
+    >>> sync(debian_task)
     >>> debian_task.assignee is None
     True
 
@@ -1098,7 +1128,7 @@ task will be created:
     >>> print evolution_task.sourcepackagename.name
     evolution
 
-It's also possible to add tasks for specific distribution serieses as
+It's also possible to add tasks for specific distribution series as
 well.
 
     >>> bug = new_firefox_bug()
@@ -1152,13 +1182,22 @@ Targeting an existing nomination won't create another nomination.
     Ubuntu Warty
 
 If Sample Person would be the Ubuntu driver, he'll be able to target
-bugs directly to serieses.
+bugs directly to series.
 
+    >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    # The script's default user doesn't have permission to change the driver.
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> login('test@canonical.com')
+     >>> sync(bug)
 
 Now a new bugtask for the series will be create directly.
 
@@ -1203,9 +1242,13 @@ task, and the series specific task.
 As with the example with no source package above; if the user isn't a
 driver of the series, only a nomination will be created.
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.driver = None
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> login('test@canonical.com')
 
     >>> bug = new_firefox_bug()
@@ -1224,7 +1267,7 @@ driver of the series, only a nomination will be created.
     ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
-Nominating product series work the same way as for distro serieses.
+Nominating product series work the same way as for distro series.
 Sample person is a driver for the Firefox trunk series, so the
 nomination is automatically approved.
 
@@ -1295,11 +1338,17 @@ be grouped together:
 
 Bug contacts can set some restricted statuses:
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> upstream_task.pillar.bugcontact = email_user
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> sync(bug_four)
     >>> login(email_user.preferredemail.email)
 
     >>> submit_commands(bug_four, 'status wontfix')
+    >>> sync(upstream_task)
     >>> print upstream_task.status.title
     Won't Fix
 
@@ -1308,8 +1357,12 @@ Everyone else gets an explanatory error message:
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> upstream_task.pillar.bugcontact = None
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> login('no-priv@canonical.com')
 
     >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
@@ -1476,15 +1529,20 @@ which bug task to edit:
     ...     IDistributionSet, ISourcePackageNameSet)
     >>> from canonical.launchpad.database.packagebugcontact import (
     ...     PackageBugContact)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
     >>> helge = getUtility(IPersonSet).getByName('kreutzm')
     >>> mozilla_pkg_bug_contact = PackageBugContact(
     ...     distribution=ubuntu, sourcepackagename=mozilla_name,
     ...     bugcontact=helge)
-
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
     >>> login('kreutzm@itp.uni-hannover.de')
+
     >>> submit_commands(
     ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
@@ -1662,7 +1720,7 @@ send_process_error_notification().
 
 The To and Subject headers got set to the values we provided:
 
-    >>> transaction.commit()
+    >>> commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['To']

@@ -58,7 +58,7 @@ class ImportdSourceTransport:
         swap_basename = os.path.basename(self._localTarball() + '.swp')
         tarball_file = open(self._localTarball())
         try:
-            self.remote_transport.put(swap_basename, tarball_file)
+            self.remote_transport.put_file(swap_basename, tarball_file)
         except NoSuchFile:
             # remote_dir does not exist, create it. We do try not create any
             # parent of remote_dir, because the expected usage is to have the
@@ -67,7 +67,7 @@ class ImportdSourceTransport:
             parent_transport = self.remote_transport.clone('..')
             needed = parent_transport.relpath(self.remote_dir)
             parent_transport.mkdir(needed)
-            self.remote_transport.put(swap_basename, tarball_file)
+            self.remote_transport.put_file(swap_basename, tarball_file)
         tarball_file.close()
 
     def _finalizeUpload(self):

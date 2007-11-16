@@ -33,6 +33,7 @@ All merge proposals have to be registered by a Person.
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, IPersonSet)
     >>> person_set = getUtility(IPersonSet)
+    >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> from canonical.launchpad.ftests import time_counter
     >>> now = time_counter()

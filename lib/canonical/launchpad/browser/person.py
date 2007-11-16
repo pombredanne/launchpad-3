@@ -108,17 +108,17 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BranchListingSort, BugTaskSearchParams, BugTaskStatus,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
-    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
-    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet, IGPGHandler,
+    IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet, ILaunchBag,
+    ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
-    ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
-    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
-    NotFoundError, PersonCreationRationale, QuestionParticipation,
-    SpecificationFilter, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -884,9 +884,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'editlanguages', 'polls', 'add_poll',
-             'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
+             'add_poll', 'joinleave', 'mentorships', 'reassign',
+             'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -962,6 +962,16 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_mailing_list(self):
+        target = '+mailinglist'
+        text = 'Configure mailing list'
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        enabled = config.mailman.expose_hosted_mailing_lists
+        summary = (
+            'The mailing list associated with %s' % self.context.browsername)
+        return Link(target, text, summary, enabled=enabled, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -3005,10 +3015,9 @@ class PersonBranchesView(BranchListingView):
     extra_columns = ('author', 'product', 'role')
     heading_template = 'Bazaar branches related to %(displayname)s'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3034,10 +3043,9 @@ class PersonAuthoredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches authored by %(displayname)s'
     no_sort_by = (BranchListingSort.AUTHOR,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3047,10 +3055,9 @@ class PersonRegisteredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3059,10 +3066,9 @@ class PersonSubscribedBranchesView(BranchListingView):
     extra_columns = ('author', 'product')
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -3072,4 +3078,3 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0 and team != self.context]
-

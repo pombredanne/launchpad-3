@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
 
@@ -130,7 +131,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Status"), required=True,
         vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
-    parentseries = Choice(
+    parent_series = Choice(
         title=_("Parent series"),
         description=_("The series from which this one was branched."),
         required=True,
@@ -162,7 +163,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "series.")
     architectures = Attribute("The architectures in this series.")
     nominatedarchindep = Attribute(
-        "DistroArchRelease designed to build architecture-independent "
+        "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
     milestones = Attribute(_(
         "The visible milestones associated with this series, "
@@ -606,5 +607,5 @@ class IDistroSeriesSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+            version, parent_series, owner):
         """Creates a new distroseries"""

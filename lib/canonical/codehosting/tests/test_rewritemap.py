@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
-from canonical.launchpad.scripts import supermirror_rewritemap
+from canonical.codehosting import rewritemap
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -22,9 +22,9 @@ class TestRewriteMapScript(TestCase):
         LaunchpadZopelessLayer.switchDbUser(config.supermirror.dbuser)
 
     def test_file_generation(self):
-        """A simple smoke test for the supermirror_rewritemap cronscript."""
+        """A simple smoke test for the rewritemap cronscript."""
         file = StringIO()
-        supermirror_rewritemap.write_map(file)
+        rewritemap.write_map(file)
         lines = file.getvalue().splitlines()
         self.failUnless('~name12/gnome-terminal/main\t00/00/00/0f' in lines,
                 'expected line not found in %r' % (lines,))
@@ -32,7 +32,7 @@ class TestRewriteMapScript(TestCase):
     def test_file_generation_junk_product(self):
         """Like test_file_generation, but demonstrating a +junk product."""
         file = StringIO()
-        supermirror_rewritemap.write_map(file)
+        rewritemap.write_map(file)
         lines = file.getvalue().splitlines()
         self.failUnless('~spiv/+junk/feature\t00/00/00/16' in lines,
                 'expected line not found in %r' % (lines,))
@@ -45,7 +45,7 @@ class TestRewriteMapScript(TestCase):
         branch.private = True
         # Now create the rewrite map.
         file = StringIO()
-        supermirror_rewritemap.write_map(file)
+        rewritemap.write_map(file)
         lines = file.getvalue().splitlines()
         self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
                     'private branch %s should not be in %r' %
@@ -58,7 +58,7 @@ class TestRewriteMapScript(TestCase):
         branch.branch_type = BranchType.REMOTE
         # Now create the rewrite map.
         file = StringIO()
-        supermirror_rewritemap.write_map(file)
+        rewritemap.write_map(file)
         lines = file.getvalue().splitlines()
         self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
                     'remote branch %s should not be in %r' %
