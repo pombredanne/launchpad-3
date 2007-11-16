@@ -124,11 +124,11 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
-        in_use_clause = "is_current IS TRUE OR is_imported IS TRUE"
+        in_use_clause = "(is_current IS TRUE OR is_imported IS TRUE)"
         if used:
             query = [in_use_clause]
         else:
-            query = ["NOT (%s)" % in_use_clause]
+            query = ["NOT %s" % in_use_clause]
         query.append('is_fuzzy IS NOT TRUE')
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')
