@@ -135,9 +135,20 @@ class POTMsgSet(SQLBase):
 
         query.append('''
                 potmsgset IN (
-                    SELECT id FROM POTMsgSet
-                        WHERE id!=%s AND
-                        msgid_singular=%s)''' % sqlvalues(self,
+                    SELECT POTMsgSet.id FROM POTMsgSet
+                        JOIN POTemplate ON POTMsgSet.potemplate = POTemplate.id
+                        LEFT JOIN ProductSeries ON
+                            POTemplate.productseries = ProductSeries.id
+                        LEFT JOIN Product ON ProductSeries.product = Product.id
+                        LEFT JOIN DistroSeries ON
+                            POTemplate.distroseries = DistroSeries.id
+                        LEFT JOIN Distribution ON
+                            DistroSeries.distribution = Distribution.id
+                      WHERE POTMsgSet.id!=%s AND
+                          msgid_singular=%s AND
+                          (Product.official_rosetta OR
+                           Distribution.official_rosetta)
+                          )''' % sqlvalues(self,
                                                           self.msgid_singular))
 
         result = TranslationMessage.select(' AND '.join(query),
