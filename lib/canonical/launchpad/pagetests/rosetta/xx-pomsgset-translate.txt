@@ -248,40 +248,38 @@ both shown separately:
   >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
   False
 
-# XXX CarlosPerelloMarin 2007-11-16: Suggestions are disabled for a later
-# landing.
-#Now, we will check suggestions in this form.
-#
-#  >>> browser.open(
-#  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-#  ...     '+pots/evolution-2.2/es/14/+translate')
-#
-#Check that suggestions come in from other contexts:
-#
-#  >>> "Suggested in" in browser.contents
-#  True
-#  >>> find_tag_by_id(browser.contents, 'msgset_143_es_suggestion_693_0')
-#  <...suggestion added by a non-editor for a multiline entry...>
-#
-#Check that no other suggestions are presented (since no others are
-#relevant for this message):
-#
-#  >>> "Suggested by" in browser.contents
-#  False
-#  >>> "Used in" in browser.contents
-#  False
-#
-#Check for the translator note:
-#
-#  >>> "This is an example of commenttext for a multiline" in browser.contents
-#  True
-#
-#Also check that the alternative language selection is working:
-#
-#  >>> browser.getControl(name='field.alternative_language').value = ['ca']
-#  >>> browser.getControl(name='select_alternate_language').click()
-#  >>> browser.url
-#  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ca&field.alternative_language-empty-marker=1&select_alternate_language=Change'
+Now, we will check suggestions in this form.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/14/+translate')
+
+Check that suggestions come in from other contexts:
+
+  >>> "Suggested in" in browser.contents
+  True
+  >>> find_tag_by_id(browser.contents, 'msgset_143_es_suggestion_697_0')
+  <...suggestion added by a non-editor for a multiline entry...>
+
+Check that no other suggestions are presented (since no others are
+relevant for this message):
+
+  >>> "Suggested by" in browser.contents
+  False
+  >>> "Used in" in browser.contents
+  False
+
+Check for the translator note:
+
+  >>> "This is an example of commenttext for a multiline" in browser.contents
+  True
+
+Also check that the alternative language selection is working:
+
+  >>> browser.getControl(name='field.alternative_language').value = ['ca']
+  >>> browser.getControl(name='select_alternate_language').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ca&field.alternative_language-empty-marker=1&select_alternate_language=Change'
 
 If we specify more than one alternative language in the URL, we get an
 UnexpectedFormData exception:
@@ -380,11 +378,10 @@ Also, we should still have previous translation:
 
 But also, the new one should appear in the form.
 
-# XXX CarlosPerelloMarin 2007-11-16: Disabled suggestions for a later landing.
-#  >>> find_tag_by_id(
-#  ...     slow_submission.contents,
-#  ...     'msgset_143_es_suggestion_715_0').renderContents()
-#  'foo!!'
+  >>> find_tag_by_id(
+  ...     slow_submission.contents,
+  ...     'msgset_143_es_suggestion_703_0').renderContents()
+  'foo!!'
 
 == Unreviewed translations ==
 
