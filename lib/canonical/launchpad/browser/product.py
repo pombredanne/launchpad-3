@@ -90,7 +90,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 def download_file_url(release, file_):
     """Construct the download file URL.
 
-    Given a a release and file, return the file download URL.
+    Given a release and file, return the file download URL.
     """
     return "%s/+download/%s" % (canonical_url(release),
                                 file_.libraryfile.filename)
