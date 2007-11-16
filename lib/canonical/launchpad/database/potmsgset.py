@@ -116,11 +116,7 @@ class POTMsgSet(SQLBase):
         result = TranslationMessage.select(query, clauseTables=['POFile'])
         return shortlist(result, longest_expected=20, hardlimit=100)
 
-    def _getExternalTranslationMessages(self, language, local, used=True):
-        if local is None:
-            local = (self.getLocalTranslationMessages(language) +
-                     [self.getCurrentTranslationMessage(language)] +
-                     [self.getImportedTranslationMessage(language)])
+    def _getExternalTranslationMessages(self, language, used=True):
         if used:
             query = ['(is_current IS TRUE OR is_imported IS TRUE)']
         else:
@@ -145,22 +141,15 @@ class POTMsgSet(SQLBase):
 
         result = TranslationMessage.select(' AND '.join(query),
                                            clauseTables=['POFile'])
-        return list(result)
-
-        # Filter duplicates out?
-        for local_translation in local:
-            subquery = ''
-            for translation in local_translation.translations:
-                if translation:
-                    pass
+        return shortlist(result, longest_expected=20, hardlimit=100)
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return self._getExternalTranslationMessages(language, None, used=True)
+        return self._getExternalTranslationMessages(language, used=True)
 
     def getExternallySuggestedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return self._getExternalTranslationMessages(language, None, used=False)
+        return self._getExternalTranslationMessages(language, used=False)
 
     def flags(self):
         if self.flagscomment is None:

@@ -12,7 +12,7 @@ __all__ = [
     'CurrentTranslationMessagePageView',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
-    'POMsgSetSuggestions',
+    'TranslationMessageSuggestions',
     ]
 
 import cgi
@@ -1035,18 +1035,18 @@ class CurrentTranslationMessageView(LaunchpadView):
             reverse=True)
 
         for index in self.pluralform_indices:
-            local_suggestions = POMsgSetSuggestions(
-                'Suggestions', potmsgset, self.context.pofile,
+            local_suggestions = TranslationMessageSuggestions(
+                'Suggestions', self.context, self.context.pofile,
                 local[:self.max_entries],
                 self.user_is_official_translator, self.form_is_writeable,
                 index)
-            externally_used_suggestions = POMsgSetSuggestions(
-                'Used in', potmsgset, self.context.pofile,
+            externally_used_suggestions = TranslationMessageSuggestions(
+                'Used in', self.context, self.context.pofile,
                 externally_used[:self.max_entries],
                 self.user_is_official_translator, self.form_is_writeable,
                 index)
-            externally_suggested_suggestions = POMsgSetSuggestions(
-                'Suggested in', potmsgset, self.context.pofile,
+            externally_suggested_suggestions = TranslationMessageSuggestions(
+                'Suggested in', self.context, self.context.pofile,
                 externally_suggested[:self.max_entries],
                 self.user_is_official_translator, self.form_is_writeable,
                 index)
@@ -1219,14 +1219,14 @@ class CurrentTranslationMessageView(LaunchpadView):
         return non_editor, elsewhere, wiki, alt_lang_suggestions
 
     def _buildSuggestions(self, title, submissions):
-        """Return `POMsgSetSuggestions` for the provided submissions.
+        """Return `TranslationMessageSuggestions` for the provided submissions.
 
-        Creates and returns a single `POMsgSetSuggestions` object.
+        Creates and returns a single `TranslationMessageSuggestions` object.
         """
         submissions = sorted(submissions,
                              key=operator.attrgetter("date_created"),
                              reverse=True)
-        return POMsgSetSuggestions(
+        return TranslationMessageSuggestions(
             title, self.context, submissions[:self.max_entries],
             self.user_is_official_translator, self.form_is_writeable)
 
@@ -1425,8 +1425,8 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
 #
 
 
-class POMsgSetSuggestions:
-    """See `IPOMsgSetSuggestions`."""
+class TranslationMessageSuggestions:
+    """See `ITranslationMessageSuggestions`."""
 
     implements(ITranslationMessageSuggestions)
 
@@ -1434,11 +1434,11 @@ class POMsgSetSuggestions:
         """Return if submission is from the same PO file as a POMsgSet."""
         return self.pofile == submission['pofile']
 
-    def __init__(self, title, potmsgset, pofile, submissions,
+    def __init__(self, title, translation, pofile, submissions,
                  user_is_official_translator, form_is_writeable,
                  plural_form):
         self.title = title
-        self.potmsgset = potmsgset
+        self.potmsgset = translation.potmsgset
         self.pofile = pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
@@ -1446,6 +1446,7 @@ class POMsgSetSuggestions:
         for submission in submissions:
             self.submissions.append({
                 'id': submission.id,
+                'translationmessage' : submission,
                 'language': submission.pofile.language,
                 'plural_index': plural_form,
                 'suggestion_text': text_to_html(
@@ -1456,8 +1457,8 @@ class POMsgSetSuggestions:
                 'person': submission.submitter,
                 'date_created': submission.date_created,
                 'suggestion_html_id':
-                    submission.makeHTMLID('suggestion'),
+                    submission.makeHTMLID('suggestion_%s' % (submission.id)),
                 'translation_html_id':
-                    submission.makeHTMLID(
+                    translation.makeHTMLID(
                         'translation_%s' % (plural_form)),
                 })

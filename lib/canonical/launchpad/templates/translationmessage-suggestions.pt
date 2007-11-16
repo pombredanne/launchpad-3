@@ -77,7 +77,7 @@
         tal:condition="python:not(context.isFromSamePOFile(submission))">
       <tal:source content="string:${context/title}" />
       <a tal:content="submission/pofile/potemplate/displayname"
-         tal:attributes="href string:${submission/pofile/fmt:url}/+translate">
+         tal:attributes="href string:${submission/translationmessage/fmt:url}/+translate">
         Spanish translation for evolution
       </a> by
       <a tal:content="submission/person/browsername"
