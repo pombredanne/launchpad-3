@@ -163,7 +163,7 @@ be used to create an event describing the changes.
 
 Application code should not modify CodeImport objects directly, instead
 they should call the appropriate mutator methods of CodeImport. This
-allow CodeImportEvent objects to be transparently created when needed.
+allows CodeImportEvent objects to be transparently created when needed.
 This is enforced by not defining a set_schema for ICodeImport.
 
 In this document, we are testing the CodeImportEvent creation
