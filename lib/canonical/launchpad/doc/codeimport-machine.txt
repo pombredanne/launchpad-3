@@ -236,6 +236,12 @@ records the corresponding event.
 
 Not all CodeImportMachine.state transitions are allowed.
 
+The CodeImportMachine.setOffline method needs to be provided a value
+from the CodeImportMachineOfflineReason enum. The specific reason value
+does not matter to the state machine.
+
+    >>> some_reason = CodeImportMachineOfflineReason.STOPPED
+
 From the OFFLINE state, a machine can only go ONLINE. The setOffline and
 setQuiescing methods must fail.
 
@@ -245,7 +251,7 @@ setQuiescing methods must fail.
     ONLINE
 
     >>> machine = reset_machine(machine)
-    >>> machine.setOffline(CodeImportMachineOfflineReason.WATCHDOG)
+    >>> machine.setOffline(some_reason)
     Traceback (most recent call last):
     ...
     AssertionError: State of machine frobisher was OFFLINE.
@@ -262,7 +268,7 @@ must fail.
 
     >>> machine = reset_machine(machine)
     >>> machine.setOnline()
-    >>> machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
+    >>> machine.setOffline(some_reason)
     >>> print machine.state.name
     OFFLINE
 
@@ -289,7 +295,7 @@ require a new event type. We will add it later if we find we need it.
     >>> machine = reset_machine(machine)
     >>> machine.setOnline()
     >>> machine.setQuiescing(ddaa, "Because.")
-    >>> machine.setOffline(CodeImportMachineOfflineReason.QUIESCED)
+    >>> machine.setOffline(some_reason)
     >>> print machine.state.name
     OFFLINE
 
