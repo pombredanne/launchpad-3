@@ -1095,6 +1095,9 @@ class CurrentTranslationMessageView(LaunchpadView):
             # We must hide all suggestions because this message may contain
             # private information that we don't want to show to anonymous
             # users, such as email addresses.
+            for index in self.pluralform_indices:
+                self.suggestion_blocks[index] = []
+                self.suggestions_count[index] = 0
             return
 
         language = self.context.pofile.language

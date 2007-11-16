@@ -46,7 +46,7 @@ this test a tripwire for the number potentially getting out of hand.
     >>> print anon_browser.contents
     <...
     >>> statement_count = query_counter.count
-    >>> 0 < statement_count < 100
+    >>> 0 < statement_count < 150
     True
 
 === Reviewing and translating ===
