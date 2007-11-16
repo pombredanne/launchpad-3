@@ -28,11 +28,10 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-
+from canonical.launchpad.browser.product import download_file_url
 from canonical.launchpad.webapp import (
     ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
     canonical_url, custom_widget, enabled_with_permission, stepthrough)
-
 
 class ProductReleaseNavigation(Navigation):
 
@@ -156,5 +155,4 @@ class ProductReleaseView(LaunchpadView):
 
     def file_url(self, file_):
         """Create a download URL for the file."""
-        return "%s/+download/%s" % (canonical_url(self.context),
-                                    file_.libraryfile.filename)
+        return download_file_url(self.context, file_)

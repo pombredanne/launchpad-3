@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'download_file_url',
     'ProductNavigation',
     'ProductDynMenu',
     'ProductShortLink',
@@ -85,6 +86,14 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
+
+def download_file_url(release, file_):
+    """Construct the download file URL.
+
+    Given a a release and file, return the file download URL.
+    """
+    return "%s/+download/%s" % (canonical_url(release),
+                                file_.libraryfile.filename)
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
@@ -173,7 +182,7 @@ class ProductLicenseMixin:
                     'A description of the "Other/Open Source" '
                     'license you checked is required.')
         else:
-            # Launchpad is ok with all licenses used in this project
+            # Launchpad is ok with all licenses used in this project.
             pass
 
     def notifyFeedbackMailingList(self):
@@ -517,15 +526,18 @@ class ProductSetContextMenu(ContextMenu):
 
 
 class SortSeriesMixin:
-    """Provide access to `sorted_serieses`.
+    """Provide access to helpers for series."""
 
-    This handy method is shared across several view classes.
-    """
-    def sorted_serieses(self):
-        """Return the series list of the product with the dev focus first."""
+    @property
+    def sorted_series_list(self):
+        """Return a sorted list of series.
+
+        The series list is sorted by version in reverse order.
+        The development focus is always first in the list.
+        """
         series_list = list(self.context.serieses)
         series_list.remove(self.context.development_focus)
-        # now sort the list by name with newer versions before older
+        # Now sort the list by name with newer versions before older.
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))
         series_list.insert(0, self.context.development_focus)
@@ -708,8 +720,7 @@ class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
 
     def file_url(self, release, file_):
         """Create a download URL for the file."""
-        return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+        return download_file_url(release, file_)
 
     @cachedproperty
     def has_download_files(self):

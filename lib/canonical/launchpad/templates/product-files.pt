@@ -31,7 +31,7 @@
        No download files exist for this project.
     </p>
 
-    <tal:series repeat="series view/sorted_serieses">
+    <tal:series repeat="series view/sorted_series_list">
 
       <h2 tal:condition="has_edit">
         Release series &#8220;<tal:name
@@ -92,13 +92,6 @@
         </table>
 
       </tal:seriesfilesexist>
-      <!--
-      <tal:not_owner condition="not: has_edit">
-        <p tal:condition="not: series/release_files">
-          No download files are linked to this series.
-        </p>
-      </tal:not_owner>
-      -->
     </tal:series>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"
