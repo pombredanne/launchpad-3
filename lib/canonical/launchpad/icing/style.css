@@ -703,7 +703,7 @@ body {min-width: 480px;}
   margin-top: 30px;
   padding: 20px 20px 40px 240px;
   position: relative;
-  top: 28px;
+  top: 28px; /* positions private background inside the tabs */
 }
 * html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
 body.applicationhome #container {padding-left: 20px;}
