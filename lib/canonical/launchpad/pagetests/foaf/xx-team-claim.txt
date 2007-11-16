@@ -18,20 +18,25 @@ definitely doesn't seem to be a team.
     <Link text="Hey, I'm Alexander Limi."...
 
 If a profile does look like a team and there is a logged in user, the link
-is different.
+is different...
 
     >>> from canonical.launchpad.database import PersonSet
     >>> doc_team = PersonSet().getByName('doc')
     >>> [email.email for email in doc_team.guessedemails]
     [u'doc@lists.ubuntu.com']
+
+Non-logged-in users see only a link to claim the profile..
+
     >>> browser.open('http://launchpad.dev/~doc')
     >>> browser.getLink(url='+claimteam')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-
     >>> browser.getLink(url='+claim')
     <Link text="Hey, I'm Ubuntu Doc Team."...
+
+While logged-in users get a link to claim that profile and turn it into a
+team.
 
     >>> user_browser.open('http://launchpad.dev/~doc')
     >>> user_browser.getLink('Hey, this is a team I run').click()
