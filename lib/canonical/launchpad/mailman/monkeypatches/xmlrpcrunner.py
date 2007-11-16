@@ -158,7 +158,6 @@ class XMLRPCRunner(Runner):
                 adds = future_members - current_members
                 deletes = current_members - future_members
                 updates = current_members & future_members
-
                 # Handle additions first.
                 for address in adds:
                     mlist.addNewMember(address, realname=member_map[address])
@@ -232,21 +231,24 @@ class XMLRPCRunner(Runner):
                        action, team_name)
                 statuses[team_name] = 'failure'
                 return
-            # Apply list defaults.
-            mlist = MailList(team_name)
-            try:
-                for key, value in list_defaults.items():
-                    setattr(mlist, key, value)
-                # Do MTA specific creation steps.
-                if mm_cfg.MTA:
-                    modname = 'Mailman.MTA.' + mm_cfg.MTA
-                    __import__(modname)
-                    sys.modules[modname].create(mlist, quiet=True)
-                statuses[team_name] = 'success'
-                syslog('xmlrpc', 'Successfully %s list: %s', action, team_name)
-                mlist.Save()
-            finally:
-                mlist.Unlock()
+            self._apply_list_defaults(team_name, list_defaults)
+            statuses[team_name] = 'success'
+            syslog('xmlrpc', 'Successfully %s list: %s', action, team_name)
+
+    def _apply_list_defaults(self, team_name, list_defaults):
+        # Apply list defaults.
+        mlist = MailList(team_name)
+        try:
+            for key, value in list_defaults.items():
+                setattr(mlist, key, value)
+            # Do MTA specific creation steps.
+            if mm_cfg.MTA:
+                modname = 'Mailman.MTA.' + mm_cfg.MTA
+                __import__(modname)
+                sys.modules[modname].create(mlist, quiet=True)
+            mlist.Save()
+        finally:
+            mlist.Unlock()
 
     def _reactivate(self, team_name, tgz_file):
         """Reactivate an archived mailing list from backup file."""

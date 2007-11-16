@@ -13,6 +13,9 @@ Here are the steps to run these integration tests:
     xmlrpc_runner_sleep 2
     launch yes
 
+  You may also need to either change xmlrpc_url or ensure that you have a
+  mapping for xmlrpc-private.launchpad.dev in your /etc/hosts file.
+
   We'll make this better when the new config stuff lands.
   
 - make schema

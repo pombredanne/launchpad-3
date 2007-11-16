@@ -15,19 +15,20 @@ First, No Privileges Person will create a new team and its mailing list.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> list_one = itest_helper.approve_list('itest-one')
+    >>> list_one = itest_helper.review_list('itest-one')
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
 Give the mailing list a welcome message.
 
-    >>> list_one.welcome_message = 'Greetings team one members!'
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
+    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.getControl('Welcome message text').value = (
+    ...     'Greetings team one members!')
+    >>> browser.getControl('Save').click()
     >>> itest_helper.wait_for_mailman()
 
     >>> from Mailman.MailList import MailList
@@ -38,6 +39,7 @@ Give the mailing list a welcome message.
 Subscribe Anne to the mailing list so that she can post to after
 re-activation.
 
+    # For convenience, don't do this through the web.
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> anne = new_person('Anne')
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -47,17 +49,17 @@ re-activation.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
+    >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> itest_helper.wait_for_mailman()
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com']
 
-Deactivation is not yet exposed in the web interface, so we'll simulate what
-that would do.
+Now the team owner deactivates the list.
 
-    >>> list_one.deactivate()
-    >>> commit()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Deactivate this Mailing List').click()
     >>> itest_helper.wait_for_mailman()
 
 As far as Mailman is concerned, the mailing list no longer exists.
@@ -65,16 +67,13 @@ As far as Mailman is concerned, the mailing list no longer exists.
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
 
-Re-activation is not yet exposed through the web, so simulate what that would
-do under the hood.
+Now the team owner reactivates the list.
 
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(list_one)
-    >>> list_one.reactivate()
-    >>> commit()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Reactivate this Mailing List').click()
     >>> itest_helper.wait_for_mailman()
 
-Now, Mailman reports that the mailing list exists again.
+Mailman reports that the mailing list exists again.
 
     >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))

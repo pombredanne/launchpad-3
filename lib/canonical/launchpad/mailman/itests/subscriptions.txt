@@ -11,10 +11,10 @@ list.  First, create the mailing list.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> list_one = itest_helper.approve_list('itest-one')
+    >>> list_one = itest_helper.review_list('itest-one')
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -44,7 +44,7 @@ people and join them to teams through the backdoor.
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
-Both Anne and Bart should now be members of the mailing list.
+Both Anne and Bart are now members of the mailing list.
 
     >>> from Mailman.MailList import MailList
     >>> mailing_list = MailList('itest-one', lock=False)
@@ -55,8 +55,8 @@ Both Anne and Bart should now be members of the mailing list.
     Anne Person <anne.person@example.com>
     Bart Person <bperson@example.org>
 
-Add Cris and Dirk as members, change Anne's preferred email address, and
-unsubscribe Bart from the mailing list.
+Cris and Dirk now subscribe to the team and its list.  Anne changes her
+preferred email address, and Bart unsubscribes from the mailing list.
 
     >>> team_one = person_set.getByName('itest-one')
     >>> sync(list_one)
@@ -81,8 +81,8 @@ unsubscribe Bart from the mailing list.
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
-Now, Anne should be subscribed with her alternate email address, and Cris and
-Dirk are the only other members.
+Anne is now subscribed with her alternate email address, and Cris and Dirk are
+the only other members.
 
     # Reload the list data.
     >>> mailing_list.Load()

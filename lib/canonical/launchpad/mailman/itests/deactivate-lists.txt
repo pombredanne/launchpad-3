@@ -1,14 +1,12 @@
 = Deactivating mailing lists =
 
-A team administrator can deactivate a mailing list (although this is currently
-not supported through the web interface).  Mailman handles this by archiving
-and deleting the mailing list data, however it is easily recreated should the
-team administrator decide to reactivate the mailing list later.  Reactivation
-does not require an expert's approval.
+A team administrator can also deactivate a mailing list.  Mailman handles this
+by archiving and deleting the mailing list data, which allows for easy
+reconstitution later.
 
-First, No Privileges Person will create a new team, called 'Team One' through
-the web.  Then he will request a mailing list for that team, and an expert
-will approve that request.
+First, No Privileges Person will create a new team through the web.  Then he
+will request a mailing list for that team, and an expert will approve that
+request.
 
     >>> import itest_helper
     >>> browser = itest_helper.make_browser()
@@ -18,10 +16,10 @@ will approve that request.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> list_one = itest_helper.approve_list('itest-one')
+    >>> list_one = itest_helper.review_list('itest-one')
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -35,14 +33,10 @@ Because the mailing list is active, there is no archived backup file.
     >>> os.path.exists(backup_file)
     False
 
-Deactivation is not yet exposed in the web interface, so we'll simulate what
-that would do.
+The team administrator can deactivate the list through the web.
 
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(list_one)
-    >>> list_one.deactivate()
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
+    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.getControl('Deactivate this Mailing List').click()
     >>> itest_helper.wait_for_mailman()
 
 As far as Mailman is concerned, the mailing list no longer exists.
