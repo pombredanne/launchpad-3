@@ -406,6 +406,7 @@ class WorkerProgressBar(DummyProgress):
         """As we don't care about nesting progress bars, return self."""
         return self
 
+
 def install_worker_progress_factory(puller_worker_protocol):
     """Install an UIFactory that informs a PullerWorkerProtocol of progress.
     """

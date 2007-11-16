@@ -122,9 +122,6 @@ class TestPullerMasterProtocol(TrialTestCase):
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
 
-        def progressMade(self):
-            self.calls.append('progressMade')
-
 
     class StubTransport:
         """Stub transport that implements the minimum for a ProcessProtocol.
@@ -208,7 +205,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.assertMessageResetsTimeout('progressMade', 0)
 
     def test_startMirroringResetsTimeout(self):
-        """Receiving 'progressMade' resets the timeout."""
+        """Receiving 'startMirroring' resets the timeout."""
         self.assertMessageResetsTimeout('startMirroring', 0)
 
     def test_mirrorSucceededDoesNotResetTimeout(self):
@@ -238,12 +235,6 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, scheduler.TimeoutError)
-
-    def test_progressMade(self):
-        """Receiving a 'progressMade' message notifies the listener."""
-        self.sendToProtocol('progressMade', 0)
-        self.assertEqual(['progressMade'], self.listener.calls)
-        self.assertProtocolSuccess()
 
     def test_processTermination(self):
         """The protocol fires a Deferred when it is terminated."""

@@ -3,8 +3,8 @@
 __metaclass__ = type
 __all__ = ['BadMessage',
            'BranchStatusClient',
-           'LockError',
            'JobScheduler',
+           'LockError',
            'PullerMaster',
            'PullerMasterProtocol',
            'TimeoutError',
@@ -84,8 +84,8 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         :param listener: A PullerMaster object that is notified when the
             protocol receives events from the worker.
         :param clock: A provider of Twisted's IReactorTime.  This parameter
-            exists to allow testing that does not depend on an external clock;
-            when it is not passed the reactor is used.
+            exists to allow testing that does not depend on an external clock.
+            If a clock is not passed in explicitly the reactor is used.
         """
         # This Deferred is created when branch mirroring starts and is fired
         # when it finishes (successfully or otherwise). Once this deferred is
@@ -135,11 +135,15 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._current_args = []
 
     def callLater(self, period, func):
-        # Override TimeoutMixin.callLater so we use self.clock. This allows us
-        # to write unit tests that don't depend on actual wall clock time.
+        """Override TimeoutMixin.callLater so we use self.clock.
+
+        This allows us to write unit tests that don't depend on actual wall
+        clock time.
+        """
         return self.clock.callLater(period, func)
 
     def connectionMade(self):
+        """Start the timeout counter when connection is made."""
         self.setTimeout(config.supermirror.worker_timeout)
 
     def dataReceived(self, data):
@@ -185,8 +189,8 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
     def do_progressMade(self):
+        """Any progress resets the timout counter."""
         self.resetTimeout()
-        self.listener.progressMade()
 
     def outReceived(self, data):
         self.dataReceived(data)
@@ -195,14 +199,16 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._stderr.write(data)
 
     def timeoutConnection(self):
+        """When a timeout occurs, kill the process and record a TimeoutError.
+        """
         self.unexpectedError(failure.Failure(TimeoutError()))
 
     def unexpectedError(self, failure):
-        """Called when we receive data that violates the protocol.
+        """Called when we receive malformed, or on timeout.
 
-        This could be because the client didn't send a netstring, or sent an
-        recognized command, or sent the wrong number of arguments for a
-        command etc.
+        Causes of malformed data could be the client not sending a netstring,
+        or sending an recognized command, or sending the wrong number of
+        arguments for a command etc.
 
         Calling this method kills the child process and fires the completion
         deferred that was provided to the constructor.
@@ -289,9 +295,6 @@ class PullerMaster:
         self.logger.info('Successfully mirrored to rev %s', revision_id)
         return self.branch_status_client.mirrorComplete(
             self.branch_id, revision_id)
-
-    def progressMade(self):
-        pass
 
     def unexpectedError(self, failure, now=None):
         request = errorlog.ScriptRequest([

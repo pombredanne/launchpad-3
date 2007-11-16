@@ -23,6 +23,7 @@ class ProgressUIFactory(SilentUIFactory):
         self._progress_bar_factory = progress_bar_factory
 
     def nested_progress_bar(self):
+        """See `bzrlib.ui.UIFactory.nested_progress_bar`."""
         if self._progress_bar_stack is None:
             self._progress_bar_stack = ProgressBarStack(
                 klass=self._progress_bar_factory)
