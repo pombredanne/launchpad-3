@@ -37,16 +37,18 @@
       <tal:widget define="widget nocall:view/widgets/VALIDATED_SELECTED">
         <metal:block use-macro="context/@@launchpad_form/widget_row" />
       </tal:widget>
-      <input tal:replace="structure view/action_remove_validated/render" />
       <input tal:replace="structure view/action_set_preferred/render" />
-      <br />
+      <input tal:replace="structure view/action_remove_validated/render" />
+      <br /><br />
 
-      <tal:widget define="widget nocall:view/widgets/UNVALIDATED_SELECTED">
-        <metal:block use-macro="context/@@launchpad_form/widget_row" />
-      </tal:widget>
-      <input tal:replace="structure view/action_remove_unvalidated/render" />
-      <input tal:replace="structure view/action_confirm/render" />
-      <br />
+      <tal:block tal:condition="view/unvalidated_addresses">
+        <tal:widget define="widget nocall:view/widgets/UNVALIDATED_SELECTED">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <input tal:replace="structure view/action_confirm/render" />
+        <input tal:replace="structure view/action_remove_unvalidated/render" />
+        <br /><br />
+      </tal:block>
 
       <tal:widget define="widget nocall:view/widgets/newemail">
         <metal:block use-macro="context/@@launchpad_form/widget_row" />
