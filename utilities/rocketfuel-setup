@@ -183,7 +183,7 @@ NameVirtualHost 127.0.0.88:80
 
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
-  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev
+  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev feeds.launchpad.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0

@@ -9,7 +9,6 @@ if you log in.
 
 The GNOME standard string for credits is well handled.
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> msgid = find_tag_by_id(browser.contents, 'msgset_199_singular')
   >>> print msgid.renderContents().strip()
   translation-credits
@@ -50,7 +49,6 @@ But, if you are logged in, the system will show you the data.
 
 The GNOME standard string for credits is now available:
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> msgid = find_tag_by_id(user_browser.contents, 'msgset_199_singular')
   >>> print msgid.renderContents().strip()
   translation-credits

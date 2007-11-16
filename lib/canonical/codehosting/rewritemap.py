@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.codehosting import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 
 
@@ -34,20 +35,7 @@ def generate_mapping_for_branch(branch):
         product_name = branch.product_name
     branch_name = branch.name
 
-    branch_location = split_branch_id(branch.id)
+    branch_location = branch_id_to_path(branch.id)
 
     return ('~%s/%s/%s\t%s\n' %
         (person_name, product_name, branch_name, branch_location))
-
-
-def split_branch_id(branch_id):
-    """Split a branch ID over multiple directories.
-
-    e.g.:
-
-        >>> split_branch_id(0xabcdef12)
-        'ab/cd/ef/12'
-    """
-    hex_id = "%08x" % int(branch_id)
-    return '%s/%s/%s/%s' % (hex_id[:2], hex_id[2:4], hex_id[4:6], hex_id[6:])
-

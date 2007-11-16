@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
@@ -31,7 +32,7 @@ class Packaging(SQLBase):
                                    dbName="sourcepackagename",
                                    notNull=True)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distrorelease',
+                               dbName='distroseries',
                                notNull=True)
     packaging = EnumCol(dbName='packaging', notNull=True,
                         enum=PackagingType)

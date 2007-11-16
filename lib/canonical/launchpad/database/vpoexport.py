@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database class for Rosetta PO export view."""
 
@@ -112,12 +113,12 @@ class VPOExportSet:
         join = '''
             FROM POFile
               JOIN POTemplate ON POTemplate.id = POFile.potemplate
-              JOIN DistroRelease ON
-                DistroRelease.id = POTemplate.distrorelease'''
+              JOIN DistroSeries ON
+                DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
-              DistroRelease.id = %s
+              DistroSeries.id = %s
               ''' % sqlvalues(series)
 
         if date is not None:
@@ -132,7 +133,7 @@ class VPOExportSet:
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease=DistroRelease.id
+                SourcePackagePublishingHistory.distroseries=DistroSeries.id
             JOIN SourcePackageRelease ON
                 SourcePackagePublishingHistory.sourcepackagerelease=
                      SourcePackageRelease.id
@@ -177,8 +178,8 @@ class VPOExportSet:
         join = '''
             SELECT DISTINCT POTemplate.id
             FROM POTemplate
-              JOIN DistroRelease ON
-                DistroRelease.id = POTemplate.distrorelease'''
+              JOIN DistroSeries ON
+                DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
@@ -188,8 +189,8 @@ class VPOExportSet:
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id
             JOIN SourcePackageRelease ON
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id
@@ -231,7 +232,7 @@ class VPOExportSet:
 
         if date is None:
             join = None
-            where = ('distrorelease = %s AND languagepack = True' %
+            where = ('distroseries = %s AND languagepack = True' %
                     sqlvalues(series.id))
         else:
             join = [
@@ -244,7 +245,7 @@ class VPOExportSet:
                     'POSubmission.pomsgset = POMsgSet.id AND '
                     'POSubmission.active IS TRUE',
             ]
-            where = 'POTemplate.distrorelease = %s' % sqlvalues(series)
+            where = 'POTemplate.distroseries = %s' % sqlvalues(series)
 
         return self._select(join=join, where=where)
 

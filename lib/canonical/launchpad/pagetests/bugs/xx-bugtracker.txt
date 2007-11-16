@@ -149,7 +149,7 @@ tracker uses.
 
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
-  >>> for message in get_feedback_messages(user_browser):
+  >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.

@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -51,7 +52,7 @@ class TranslationImportQueueEntry(SQLBase):
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease', notNull=False, default=None)
+        dbName='distroseries', notNull=False, default=None)
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
     is_published = BoolCol(dbName='is_published', notNull=True)
@@ -468,7 +469,7 @@ class TranslationImportQueueEntry(SQLBase):
         query = ("path LIKE %s || '%%.pot' AND id <> %s" %
                  (quote_like(path), self.id))
         if self.distroseries is not None:
-            query += ' AND distrorelease = %s' % sqlvalues(
+            query += ' AND distroseries = %s' % sqlvalues(
                 self.distroseries)
         if self.sourcepackagename is not None:
             query += ' AND sourcepackagename = %s' % sqlvalues(
@@ -592,7 +593,7 @@ class TranslationImportQueue:
                 'TranslationImportQueueEntry.sourcepackagename = %s' % (
                     sqlvalues(sourcepackagename)))
             queries.append(
-                'TranslationImportQueueEntry.distrorelease = %s' % sqlvalues(
+                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
                     distroseries))
         else:
             # The import is related with a productseries.
@@ -711,15 +712,15 @@ class TranslationImportQueue:
             elif IProductSeries.providedBy(target):
                 queries.append('productseries = %s' % sqlvalues(target))
             elif IDistribution.providedBy(target):
-                queries.append('distrorelease = DistroRelease.id')
+                queries.append('distroseries = DistroSeries.id')
                 queries.append(
-                    'DistroRelease.distribution = %s' % sqlvalues(target))
-                clause_tables.append('DistroRelease')
+                    'DistroSeries.distribution = %s' % sqlvalues(target))
+                clause_tables.append('DistroSeries')
             elif IDistroSeries.providedBy(target):
-                queries.append('distrorelease = %s' % sqlvalues(target))
+                queries.append('distroseries = %s' % sqlvalues(target))
             elif ISourcePackage.providedBy(target):
                 queries.append(
-                    'distrorelease = %s' % sqlvalues(target.distroseries))
+                    'distroseries = %s' % sqlvalues(target.distroseries))
                 queries.append(
                     'sourcepackagename = %s' % sqlvalues(
                         target.sourcepackagename))
@@ -755,11 +756,11 @@ class TranslationImportQueue:
             ISourcePackage.providedBy(target)):
             # If the Distribution series has actived the option to defer
             # translation imports, we ignore those entries.
-            if 'DistroRelease' not in clause_tables:
-                clause_tables.append('DistroRelease')
-                queries.append('distrorelease = DistroRelease.id')
+            if 'DistroSeries' not in clause_tables:
+                clause_tables.append('DistroSeries')
+                queries.append('distroseries = DistroSeries.id')
 
-            queries.append('DistroRelease.defer_translation_imports IS FALSE')
+            queries.append('DistroSeries.defer_translation_imports IS FALSE')
 
         return TranslationImportQueueEntry.selectFirst(
             " AND ".join(queries), clauseTables=clause_tables,
@@ -786,10 +787,10 @@ class TranslationImportQueue:
             distinct=True)
 
         query = []
-        query.append('TranslationImportQueueEntry.distrorelease IS NOT NULL')
+        query.append('TranslationImportQueueEntry.distroseries IS NOT NULL')
         query.append(
-            'TranslationImportQueueEntry.distrorelease=DistroRelease.id')
-        query.append('DistroRelease.defer_translation_imports IS FALSE')
+            'TranslationImportQueueEntry.distroseries=DistroSeries.id')
+        query.append('DistroSeries.defer_translation_imports IS FALSE')
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))

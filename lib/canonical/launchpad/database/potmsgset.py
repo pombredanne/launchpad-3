@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['POTMsgSet']
@@ -118,10 +119,10 @@ class POTMsgSet(SQLBase):
                         POTemplate.productseries = ProductSeries.id
                     LEFT JOIN Product ON
                         ProductSeries.product = Product.id
-                    LEFT JOIN DistroRelease ON
-                        POTemplate.distrorelease = DistroRelease.id
+                    LEFT JOIN DistroSeries ON
+                        POTemplate.distroseries = DistroSeries.id
                     LEFT JOIN Distribution ON
-                        DistroRelease.distribution = Distribution.id
+                        DistroSeries.distribution = Distribution.id
                 WHERE
                     POSubmission.pluralform = %s AND
                     (POSubmission.active IS TRUE OR

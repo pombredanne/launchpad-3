@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['DistroSeriesPackageCache', ]
@@ -15,9 +16,9 @@ from canonical.launchpad.interfaces import IDistroSeriesPackageCache
 
 class DistroSeriesPackageCache(SQLBase):
     implements(IDistroSeriesPackageCache)
-    _table = 'DistroReleasePackageCache'
+    _table = 'DistroSeriesPackageCache'
 
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=True)
     binarypackagename = ForeignKey(dbName='binarypackagename',
         foreignKey='BinaryPackageName', notNull=True)

@@ -1,4 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# _valid_nick() in generate_nick causes E1101
+# vars() causes W0612
+# pylint: disable-msg=E0611,W0212,E1101,W0612
+
 """Implementation classes for a Person."""
 
 __metaclass__ = type
@@ -714,7 +718,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distrorelease = %s
+            AND RequestedCDs.distroseries = %s
             AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
@@ -1776,12 +1780,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease, archive
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
+              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
               """ % (query_clause)
@@ -2106,7 +2110,7 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s AND
+            POTemplate.distroseries = %s AND
             POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
@@ -2560,7 +2564,7 @@ class PersonSet:
                 FROM TranslationImportQueueEntry AS a,
                      TranslationImportQueueEntry AS b
                 WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
-                AND a.distrorelease = b.distrorelease
+                AND a.distroseries = b.distroseries
                 AND a.sourcepackagename = b.sourcepackagename
                 AND a.productseries = b.productseries
                 AND a.path = b.path

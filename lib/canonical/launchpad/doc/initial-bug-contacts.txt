@@ -128,8 +128,7 @@ when a bug contact for the new package is already subscribed to the bug:
     >>> from zope.event import notify
 
     >>> import transaction
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroBugTask, IDistroSeriesBugTask)
@@ -305,10 +304,6 @@ The Ubuntu Gnome team was subscribed to the bug:
 
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package.
-
-    >>> notify(
-    ...     SQLObjectToBeModifiedEvent(
-    ...         bug_one_in_ubuntu_firefox.bug, {"private": True}))
 
     >>> bug_one_in_ubuntu_firefox.bug.setPrivate(
     ...     True, getUtility(ILaunchBag).user)
