@@ -60,7 +60,7 @@ class BugJanitor:
             'activity for %d days.]')
         self.log.info(
             'Expiring unattended, INCOMPLETE bugtasks older than '
-            '%d days for projects that use Malone.' %
+            '%d days for projects that use Launchpad Bugs.' %
             self.days_before_expiration)
         self._login()
         try:

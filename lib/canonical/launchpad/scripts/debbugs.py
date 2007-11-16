@@ -1,3 +1,5 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0703
 
 import os
 import re
