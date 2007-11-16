@@ -191,8 +191,8 @@ goes online.
 
 The setOffline method sets the machine's state to OFFLINE and records
 the corresponding event. It is called when a code-import-controller
-daemon stops, or when the watchdog detects that it has not been updated
-its heartbeat for some time.
+daemon stops, or when the watchdog detects that it has not updated its
+heartbeat for some time.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
