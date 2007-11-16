@@ -220,7 +220,7 @@ product's bugs text page, according to the following URL pattern:
 
    http://launchpad.dev/<target>/+bugs-text
 
-For example, users can see the list of bug IDs for Mozilla Firefox:
+For example, users can see the IDs of open bugs on Mozilla Firefox:
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
     >>> anon_browser.url
@@ -229,10 +229,22 @@ For example, users can see the list of bug IDs for Mozilla Firefox:
     text/plain;charset=utf-8 
 
     >>> print anon_browser.contents
-    1
-    4
     5
-    6
+    4
+
+The textual bugs page supports advanced searches in the same way as the
+graphical bugs page. To perform an advanced search, users can append any
+of the standard set of search parameters to a textual bugs page URL:
+
+    >>> base_url = 'http://launchpad.dev/firefox/+bugs-text'
+    >>> search_parameters = 'field.status:list=FIXRELEASED'
+    >>> url = base_url + '?' + search_parameters
+    >>> anon_browser.open(url)
+    >>> print anon_browser.headers['content-type']
+    text/plain;charset=utf-8
+
+    >>> print anon_browser.contents
+    1
 
 
 == Private bugs ==

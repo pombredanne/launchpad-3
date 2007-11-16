@@ -178,8 +178,17 @@
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
 
+    <tal:user condition="view/user">
+      <tal:description
+        define="global description context/bug/description/fmt:text-to-html" />
+    </tal:user>
+    <tal:not-user condition="not:view/user">
+      <tal:description
+        define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
+    </tal:not-user>
+
     <div id="bug-description"
-         tal:content="structure context/bug/description/fmt:text-to-html" />
+         tal:content="structure description" />
 
   </div>
 

@@ -9,7 +9,6 @@ __all__ = [
     'BugListingPortletView',
     'BugNominationsView',
     'BugsBugTaskSearchListingView',
-    'BugTargetTextView',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
@@ -29,6 +28,7 @@ __all__ = [
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
     'NominationsReviewTableBatchNavigatorView',
+    'TextualBugTaskSearchListingView',
     ]
 
 import cgi
@@ -1443,7 +1443,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
 
 class BugTaskSearchListingView(LaunchpadFormView):
-    """Base class for bug listings."""
+    """View that renders a list of bugs for a given set of search criteria."""
 
     # These widgets are customised so as to keep the presentation of this view
     # and its descendants consistent after refactoring to use
@@ -1662,13 +1662,26 @@ class BugTaskSearchListingView(LaunchpadFormView):
             size=config.malone.buglist_batch_size)
 
     def search(self, searchtext=None, context=None, extra_params=None):
-        """Return an ITableBatchNavigator for the GET search criteria.
+        """Return an `ITableBatchNavigator` for the GET search criteria.
 
-        If :searchtext: is None, the searchtext will be gotten from the
-        request.
+        :param searchtext: If the searchtext is None, the search text will be
+        gotten from the request.
 
-        :extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in :extra_params: take
+        :param extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in `extra_params` take
+        precedence over request params.
+        """
+        unbatchedTasks = self.searchUnbatched(searchtext, context, extra_params)
+        return self._getBatchNavigator(unbatchedTasks)
+
+    def searchUnbatched(self, searchtext=None, context=None, extra_params=None):
+        """Return a `SelectResults` object for the GET search criteria.
+
+        :param searchtext: If the searchtext is None, the search text will be
+        gotten from the request.
+
+        :param extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in `extra_params` take
         precedence over request params.
         """
         # Base classes can provide an explicit search context.
@@ -1678,7 +1691,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         tasks = context.searchTasks(search_params)
-        return self._getBatchNavigator(tasks)
+        return tasks
 
     def getWidgetValues(
         self, vocabulary_name=None, vocabulary=None, default_values=()):
@@ -2097,14 +2110,13 @@ class BugTargetView(LaunchpadView):
         return self.context.searchTasks(params)[:limit]
 
 
-
-class BugTargetTextView(LaunchpadView):
-    """View for simple text page showing bugs filed against a bug target."""
+class TextualBugTaskSearchListingView(BugTaskSearchListingView):
+    """View that renders a list of bug IDs for a given set of search criteria."""
 
     def render(self):
         """Render the BugTarget for text display."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
+        tasks = self.searchUnbatched()
 
         # We use task.bugID rather than task.bug.id here as the latter
         # would require an extra query per task.

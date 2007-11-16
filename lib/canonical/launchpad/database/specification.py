@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -624,13 +625,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
 
-    def linkBranch(self, branch, summary=None):
+    def linkBranch(self, branch, registrant, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink
+        branch.date_last_modified = UTC_NOW
         return SpecificationBranch(specification=self,
                                    branch=branch,
-                                   summary=summary)
+                                   summary=summary,
+                                   registrant=registrant)
 
 
 class HasSpecificationsMixin:
