@@ -248,12 +248,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
 
 class TranslationMessageSet:
+    """See `ITranslationMessageSet`."""
     implements(ITranslationMessageSet)
 
     def getByID(self, ID):
         """See `ILanguageSet`."""
-        assert isinstance(ID, int), (
-            "%s is not a valid type for 'ID'" % type(ID))
         try:
             return TranslationMessage.get(ID)
         except SQLObjectNotFound:

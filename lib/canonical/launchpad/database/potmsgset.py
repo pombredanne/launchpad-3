@@ -117,9 +117,11 @@ class POTMsgSet(SQLBase):
         result = TranslationMessage.select(query, clauseTables=['POFile'])
         return shortlist(result, longest_expected=20, hardlimit=100)
 
-    def _getExternalTranslationMessages(self, language, used=True):
-        """Return all non-fuzzy TranslationMessages for the same english
-        string which are used or suggested in other templates.
+    def _getExternalTranslationMessages(self, language, used):
+        """Return external suggestions for this message.
+
+        External suggestions are all non-fuzzy TranslationMessages for the
+        same english string which are used or suggested in other templates.
 
         A message is used if it's either imported or current, and unused
         otherwise.
@@ -329,8 +331,8 @@ class POTMsgSet(SQLBase):
             # If the current message has been changed and
             # there was a different person (a reviewer) from the
             # message submitter doing it, add reviewer karma as well.
-            if (new_message != current_message):
-                if (new_message.submitter != submitter):
+            if new_message != current_message:
+                if new_message.submitter != submitter:
                     submitter.assignKarma(
                         'translationreview',
                         product=self.potemplate.product,

@@ -1106,63 +1106,77 @@ class CurrentTranslationMessageView(LaunchpadView):
         # (i.e. you are logged in and have access to at least submit
         # suggestions).
         if self.form_is_writeable:
-            local = sorted(potmsgset.getLocalTranslationMessages(language),
-                           key=operator.attrgetter("date_created"),
-                           reverse=True)
+            # Get a list of local suggestions for this message: local are
+            # those who have been submitted directly against it and are
+            # newer than the date of the last review.
+            local = sorted(
+                potmsgset.getLocalTranslationMessages(language),
+                key=operator.attrgetter("date_created"),
+                reverse=True)
+
+            # Get a list of translations which are _used_ as translations
+            # for this same message in a different translation template.
             externally_used = sorted(
                 potmsgset.getExternallyUsedTranslationMessages(language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
+
+            # Get a list of translations which are not suggested as
+            # translations for this same message in a different translation
+            # template, but are not used.
             externally_suggested = sorted(
                 potmsgset.getExternallySuggestedTranslationMessages(language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
+
+            # Fetch a list of current and externally used translations for
+            # this message in an alternative language.
+            alt_submissions = []
+            if self.sec_lang is None:
+                alt_title = None
+            else:
+                # User is asking for alternative language suggestions.
+                alt_current = potmsgset.getCurrentTranslationMessage(
+                    self.sec_lang)
+                if alt_current is not None:
+                    alt_submissions.append(alt_current)
+                alt_submissions.extend(
+                    potmsgset.getExternallyUsedTranslationMessages(
+                        self.sec_lang))
+                alt_title = self.sec_lang.englishname
         else:
+            # Don't show suggestions for anonymous users.
             local = externally_used = externally_suggested = []
-
-
-        alt_submissions = []
-        if self.sec_lang is None:
             alt_title = None
-        else:
-            alt_current = potmsgset.getCurrentTranslationMessage(
-                self.sec_lang)
-            if alt_current is not None:
-                alt_submissions.append(alt_current)
-            alt_submissions += (
-                potmsgset.getExternallyUsedTranslationMessages(self.sec_lang))
-            alt_title = self.sec_lang.englishname
+            alt_submissions = []
 
+
+        # To maintain compatibility with the old DB model as much as possible,
+        # lets split out all the submissions by their plural form.
+        # Builds ITranslationMessageSuggestions for each type of the
+        # suggestion per plural form.
         for index in self.pluralform_indices:
-            seen_translations = set([self.context.translations[index]])
+            self.seen_translations = set([self.context.translations[index]])
             if not self.context.is_imported:
                 imported = potmsgset.getImportedTranslationMessage(language)
                 if imported:
-                    seen_translations.add(imported.translations[index])
-            local_suggestions = TranslationMessageSuggestions(
-                'Suggestions', self.context,
-                local[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index, seen_translations)
-            seen_translations = local_suggestions.seen_translations
-            externally_used_suggestions = TranslationMessageSuggestions(
-                'Used in', self.context,
-                externally_used[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index, seen_translations)
-            seen_translations = externally_used_suggestions.seen_translations
-            externally_suggested_suggestions = TranslationMessageSuggestions(
-                'Suggested in', self.context,
-                externally_suggested[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index, seen_translations)
-            seen_translations = (
-                externally_suggested_suggestions.seen_translations)
-            alternate_language_suggestions = TranslationMessageSuggestions(
-                alt_title, self.context,
-                alt_submissions[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index, seen_translations)
+                    self.seen_translations.add(imported.translations[index])
+            local_suggestions = (
+                self._buildTranslationMessageSuggestions('Suggestions',
+                                                         local,
+                                                         index))
+            externally_used_suggestions = (
+                self._buildTranslationMessageSuggestions('Used in',
+                                                         externally_used,
+                                                         index))
+            externally_suggested_suggestions = (
+                self._buildTranslationMessageSuggestions('Suggested in',
+                                                         externally_suggested,
+                                                         index))
+            alternate_language_suggestions = (
+                self._buildTranslationMessageSuggestions(alt_title,
+                                                         alt_submissions,
+                                                         index))
 
             self.suggestion_blocks[index] = [
                 local_suggestions, externally_used_suggestions,
@@ -1173,6 +1187,20 @@ class CurrentTranslationMessageView(LaunchpadView):
                 len(externally_used_suggestions.submissions) +
                 len(externally_suggested_suggestions.submissions) +
                 len(alternate_language_suggestions.submissions))
+
+    def _buildTranslationMessageSuggestions(self, title, suggestions, index):
+        """Build filtered list of submissions to be shown in the view.
+
+        `title` is the title for the suggestion type, `suggestions` is
+        a list of suggestions, and `index` is the plural form.
+        """
+        iterable_submissions = TranslationMessageSuggestions(
+            title, self.context,
+            suggestions[:self.max_entries],
+            self.user_is_official_translator, self.form_is_writeable,
+            index, self.seen_translations)
+        self.seen_translations = iterable_submissions.seen_translations
+        return iterable_submissions
 
     def getOfficialTranslation(self, index, is_imported=False):
         """Return current or imported translation for plural form 'index'."""
