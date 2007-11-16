@@ -9,6 +9,7 @@ __all__ = [
     'ProductReleaseRdfView',
     'ProductReleaseAddDownloadFileView',
     'ProductReleaseNavigation',
+    'ProductReleaseView',
     ]
 
 from StringIO import StringIO
@@ -27,11 +28,10 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-
+from canonical.launchpad.browser.product import download_file_url
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Navigation, LaunchpadFormView, Link,
-    enabled_with_permission, custom_widget, action, stepthrough)
-
+    ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
+    canonical_url, custom_widget, enabled_with_permission, stepthrough)
 
 class ProductReleaseNavigation(Navigation):
 
@@ -147,3 +147,12 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             self.request.response.addNotification(
                 "Your file '%s' has been uploaded." % filename)
         self.next_url = canonical_url(self.context)
+
+
+class ProductReleaseView(LaunchpadView):
+    """View for ProductRelease overview."""
+    __used_for__ = IProductRelease
+
+    def file_url(self, file_):
+        """Create a download URL for the file."""
+        return download_file_url(self.context, file_)
