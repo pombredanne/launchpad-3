@@ -78,7 +78,7 @@ class IPOTMsgSet(Interface):
         """Returns a TranslationMessage as imported from the package."""
 
     def getLocalTranslationMessages(language):
-        """Returns all the local unused translation messages for the POTMsgSet.
+        """Returns all local unused translation messages for the POTMsgSet.
 
         Unused are those which are not current or imported, and local are
         those which are directly attached to this POTMsgSet.
@@ -179,16 +179,17 @@ class IPOTMsgSet(Interface):
         """
 
     def normalizeWhitespaces(unicode_text):
-        """Return 'unicode_text' with the same trailing and leading whitespaces
-        that self.singular_text has.
+        """Return 'unicode_text' with the same trailing and leading
+        whitespaces that self.singular_text has.
 
-        If 'unicode_text' has only whitespaces but self.singular_text has other
-        characters, the empty string (u'') is returned to note it as an
+        If 'unicode_text' has only whitespaces but self.singular_text has
+        other characters, the empty string (u'') is returned to note it as an
         untranslated string.
         """
 
     def normalizeNewLines(unicode_text):
-        """Return 'unicode_text' with new lines chars in sync with the msgid."""
+        """Return 'unicode_text' with new lines chars in sync with the msgid.
+        """
 
 
     hide_translations_from_anonymous = Attribute(

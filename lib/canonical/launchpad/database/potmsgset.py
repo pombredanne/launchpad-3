@@ -148,8 +148,7 @@ class POTMsgSet(SQLBase):
                           msgid_singular=%s AND
                           (Product.official_rosetta OR
                            Distribution.official_rosetta)
-                          )''' % sqlvalues(self,
-                                                          self.msgid_singular))
+                          )''' % sqlvalues(self, self.msgid_singular))
 
         result = TranslationMessage.select(' AND '.join(query),
                                            clauseTables=['POFile'])
@@ -278,8 +277,8 @@ class POTMsgSet(SQLBase):
         """Find a message for this language exactly matching given
         `translations` strings comparing only `pluralforms` of them.
         """
-        query=('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s' %
-                   sqlvalues(self, language))
+        query = ('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s' %
+                 sqlvalues(self, language))
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
                 query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
@@ -379,8 +378,8 @@ class POTMsgSet(SQLBase):
         sanitized_translations = self._sanitizeTranslations(
             new_translations, pofile.language.pluralforms)
         # Check that the translations are correct.
-        validation_status = self._validate_translations(sanitized_translations,
-                                                        is_fuzzy, ignore_errors)
+        validation_status = self._validate_translations(
+            sanitized_translations, is_fuzzy, ignore_errors)
 
         # If not an editor, default to submitting a suggestion only.
         just_a_suggestion = not is_editor
@@ -426,7 +425,8 @@ class POTMsgSet(SQLBase):
 
             if just_a_suggestion:
                 # Adds suggestion karma: editors get their translations
-                # automatically approved, so they get 'reviewer' karma instead.
+                # automatically approved, so they get 'reviewer' karma
+                # instead.
                 submitter.assignKarma(
                     'translationsuggestionadded',
                     product=self.potemplate.product,
@@ -493,7 +493,7 @@ class POTMsgSet(SQLBase):
         new_text = self.convertDotToSpace(text)
         # Now, fix the newline chars.
         new_text = self.normalizeNewLines(new_text)
-        # And finally, set the same whitespaces at the start/end of the string.
+        # Finally, set the same whitespaces at the start/end of the string.
         new_text = self.normalizeWhitespaces(new_text)
         # Also, if it's an empty string, replace it with None.
         # XXX CarlosPerelloMarin 2007-11-16: Until we figure out
@@ -550,7 +550,8 @@ class POTMsgSet(SQLBase):
         # the same time a 'mac' and 'unix' style.
         stripped_translation_text = translation_text.replace(
             windows_style, u'')
-        stripped_singular_text = self.singular_text.replace(windows_style, u'')
+        stripped_singular_text = self.singular_text.replace(
+            windows_style, u'')
 
         # Get the style that uses singular_text.
         original_style = None

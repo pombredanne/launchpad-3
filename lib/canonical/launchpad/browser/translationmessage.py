@@ -1120,7 +1120,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         if self.sec_lang is None:
             alt_title = None
         else:
-            alt_current = potmsgset.getCurrentTranslationMessage(self.sec_lang)
+            alt_current = potmsgset.getCurrentTranslationMessage(
+                self.sec_lang)
             if alt_current is not None:
                 alt_submissions.append(alt_current)
             alt_submissions += (
