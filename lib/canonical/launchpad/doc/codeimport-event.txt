@@ -67,6 +67,14 @@ message.
     ...     else:
     ...         print "No exception raised, expected: %s" % (exc_type,)
 
+All CodeImportEvent creation methods explicitly check that their
+arguments are not None. See the implementation of CodeImportEventSet for
+the rationale.
+
+    >>> def fail_if_argument_is_none(callable, *args):
+    ...     """Callable must fails if given at least one None argument."""
+    ...     assert_raises(AssertionError, callable, *args)
+
 
 === CREATE ===
 
@@ -105,11 +113,9 @@ First we create a Subversion import.
 CodeImportSet.newCreate creates an event from the new CodeImport object
 and the person that created it. Here, the creator is the nopriv user.
 
-If either the code_import argument or the user argument are None, an
-AssertionError must be raised.
+    >>> fail_if_argument_is_none(event_set.newCreate, None, nopriv)
+    >>> fail_if_argument_is_none(event_set.newCreate, svn_import, None)
 
-    >>> assert_raises(AssertionError, event_set.newCreate, None, nopriv)
-    >>> assert_raises(AssertionError, event_set.newCreate, svn_import, None)
     >>> svn_create_event = event_set.newCreate(svn_import, nopriv)
     >>> verify_event(svn_create_event)
     CREATE
@@ -176,7 +182,8 @@ applied to the code import. Before making any change, the beginModify
 method must be called. It returns a token that captures the initial
 state of the the code import.
 
-    >>> assert_raises(AssertionError, event_set.beginModify, None)
+    >>> fail_if_argument_is_none(event_set.beginModify, None)
+
     >>> token = event_set.beginModify(svn_import)
 
 Then changes can be applied.
@@ -187,12 +194,13 @@ Then changes can be applied.
 After applying changes, the newModify method can create an event that
 details the changes that have been applied.
 
-    >>> assert_raises(
-    ...     AssertionError, event_set.newModify, None, nopriv, token)
-    >>> assert_raises(
-    ...     AssertionError, event_set.newModify, svn_import, None, token)
-    >>> assert_raises(
-    ...     AssertionError, event_set.newModify, svn_import, nopriv, None)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, None, nopriv, token)
+    >>> fail_if_argument_is_none
+    ...     event_set.newModify, svn_import, None, token)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, svn_import, nopriv, None)
+
     >>> modify_event = event_set.newModify(svn_import, nopriv, token)
     >>> verify_event(modify_event)
     MODIFY
@@ -288,7 +296,8 @@ CodeImportMachine that marks this machine as accepting jobs. This method
 logs the change by creating an ONLINE event using the
 ICodeImportEventSet.newOnline method.
 
-    >>> assert_raises(AssertionError, event_set.newOnline, None)
+    >>> fail_if_argument_is_none(event_set.newOnline, None)
+
     >>> online_event = event_set.newOnline(machine)
     >>> verify_event(online_event)
     ONLINE
@@ -308,8 +317,10 @@ ICodeImportSet.newOffline method.
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportMachineOfflineReason)
     >>> QUIESCED = CodeImportMachineOfflineReason.QUIESCED
-    >>> assert_raises(AssertionError, event_set.newOffline, None, QUIESCED)
-    >>> assert_raises(AssertionError, event_set.newOffline, machine, None)
+
+    >>> fail_if_argument_is_none(event_set.newOffline, None, QUIESCED)
+    >>> fail_if_argument_is_none(event_set.newOffline, machine, None)
+
     >>> offline_event = event_set.newOffline(machine, QUIESCED)
     >>> verify_event(offline_event)
     OFFLINE
@@ -339,12 +350,13 @@ Quiescing is a privileged administrative operation.
 
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
 
-    >>> assert_raises(
-    ...     AssertionError, event_set.newQuiesce, None, ddaa, 'Message.')
-    >>> assert_raises(
-    ...     AssertionError, event_set.newQuiesce, machine, None, 'Message.')
-    >>> assert_raises(
-    ...     AssertionError, event_set.newQuiesce, machine, ddaa, None)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, None, ddaa, 'Message.')
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, machine, None, 'Message.')
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, machine, ddaa, None)
+
     >>> quiesce_event = event_set.newQuiesce(
     ...     machine, ddaa, 'Production rollout.')
     >>> verify_event(quiesce_event)
