@@ -18,8 +18,8 @@ the web.
     >>> browser.title
     'ITest One in Launchpad'
 
-To request a mailing list, No Privileges Person navigates to the 'Change
-contact address' page and registers their application for a mailing list.
+To request a mailing list, No Privileges Person navigates to the 'Configure
+mailing list' page and registers their application for a mailing list.
 
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()

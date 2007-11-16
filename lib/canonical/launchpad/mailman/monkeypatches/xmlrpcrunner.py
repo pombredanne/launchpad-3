@@ -236,7 +236,7 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Successfully %s list: %s', action, team_name)
 
     def _apply_list_defaults(self, team_name, list_defaults):
-        # Apply list defaults.
+        """Apply mailing list defaults and tie the new list into the MTA."""
         mlist = MailList(team_name)
         try:
             for key, value in list_defaults.items():
