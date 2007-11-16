@@ -704,7 +704,8 @@ body {min-width: 480px;}
   padding: 48px 20px 40px 240px;
   position: relative;
 }
-* html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
+* html #container {margin-top: 0; position: static;} /* fixes in IE6 */
+
 /* Something private for a public project has a cordon inside the tabs: */
 #container.private {background: url(/@@/private-bg) left 28px repeat-x;}
 
