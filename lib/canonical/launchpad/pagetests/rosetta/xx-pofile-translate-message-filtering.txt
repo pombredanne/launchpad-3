@@ -70,7 +70,8 @@ The set of messages that are untranslated in the second batch:
 Now, we are going to select messages with new suggestions submitted after
 they were last reviewed.
 
-# XXX Disabled until suggestions are enabled again
+# XXX CarlosPerelloMarin 2007-11-16: Disabled until suggestions are enabled
+# again.
 #  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
 #  >>> user_browser.getControl('Filter').click()
 #  >>> user_browser.url

@@ -188,6 +188,8 @@ class POFileMixIn(RosettaStats):
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
 
+    # XXX CarlosPerelloMarin 2007-11-16: Disabled until we implement
+    # suggestions again.
     def getCurrentSuggestions(self, potmsgsets):
         """See `IPOTemplate`."""
         raise NotImplementedError
@@ -318,6 +320,8 @@ class POFileMixIn(RosettaStats):
 #
 #        return result
 
+    # XXX CarlosPerelloMarin 2007-11-16: Disabled until we implement
+    # suggestions again.
     def getExternalSuggestions(self, potmsgsets):
         """See `IPOTemplate`."""
         raise NotImplementedError

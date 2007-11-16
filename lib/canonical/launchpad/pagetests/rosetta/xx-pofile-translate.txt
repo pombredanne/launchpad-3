@@ -132,8 +132,8 @@ constructed as an underscore-separated sequence of:
     msgset_130_singular
 
 
-XXX previous list should also contain the next list of ids once
-suggestions are enabled again.
+XXX CarlosPerelloMarin 2007-11-16: previous list should also contain the next
+list of ids once suggestions are enabled again.
 
     msgset_130_es_suggestion_1_0
     msgset_130_es_suggestion_1_0_origin
@@ -147,7 +147,8 @@ each translatable message with one radiobutton to select the existing
 translation (the default); a group (possibly empty) of suggested translations;
 and one for a custom translation entered into a text input field.
 
-# XXX Disabled until suggestion code is fixed in later landings.
+# XXX CarlosPerelloMarin 2007-11-16: Disabled until suggestion code is fixed
+# in later landings.
 #Here we see an example where three suggestions are offered, making for five
 #identically-named radio buttons and sundry other HTML tags.
 #

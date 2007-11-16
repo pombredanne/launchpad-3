@@ -464,7 +464,7 @@ the given timestamp.
 
 
 == POTMsgSet.getExternalTranslationMessage ==
-XXX Danilo: unported, from pomsgset.getCurrentSubmissions
+XXX Danilo 2007-11-16: unported, from pomsgset.getCurrentSubmissions
 
 This method returns all submissions that are currently used in other
 translation files for the same message IPOMsgSet is translating.
@@ -607,7 +607,7 @@ Let's restore the flags for next section.
     >>> flush_database_updates()
 
 == getWikiSubmissions ==
-XXX Danilo: unported, from pomsgset.getCurrentSubmissions
+XXX Danilo 2007-11-16: unported, from pomsgset.getCurrentSubmissions
 
 This method returns a set of submissions that have translations for the
 same msgid as the given IPOMsgSet across the whole system.
@@ -704,8 +704,8 @@ Launchpad for translations.
 
 
 == latest_change_date ==
-XXX Danilo: we may want to reintroduce this on TranslationMessage instead,
-but only as a property.  Commented out for now.
+XXX Danilo 2007-11-16: we may want to reintroduce this on TranslationMessage
+instead, but only as a property.  Commented out for now.
 
 With latest_change_date we are able to know when the message's last
 time updates was.
@@ -794,7 +794,7 @@ Except when there is no active translations...
 POTMsgSet.getDummyPOMsgSet
 --------------------------
 
-XXX: needs porting to DummyTranslationMessage instead
+XXX Danilo 2007-11-16: needs porting to DummyTranslationMessage instead
 
 Some times, there are POMsgSet objects that are not yet created in our
 database and thus, we need to get dummy ones for read operations.

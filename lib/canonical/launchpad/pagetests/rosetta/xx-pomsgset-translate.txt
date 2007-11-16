@@ -248,7 +248,8 @@ both shown separately:
   >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
   False
 
-# XXX: Suggestions are disabled for a later landing.
+# XXX CarlosPerelloMarin 2007-11-16: Suggestions are disabled for a later
+# landing.
 #Now, we will check suggestions in this form.
 #
 #  >>> browser.open(
@@ -379,7 +380,7 @@ Also, we should still have previous translation:
 
 But also, the new one should appear in the form.
 
-# XXX Disabled suggestions for a later landing.
+# XXX CarlosPerelloMarin 2007-11-16: Disabled suggestions for a later landing.
 #  >>> find_tag_by_id(
 #  ...     slow_submission.contents,
 #  ...     'msgset_143_es_suggestion_715_0').renderContents()

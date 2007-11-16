@@ -23,7 +23,7 @@ Let's add a new suggestion as a person without privileges.
 
 Now, we can see the added suggestion + others from the sample data.
 
-# XXX Suggestions are disabled
+# XXX CarlosPerelloMarin 2007-11-16: Suggestions are disabled
 #  >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_715_0")
 #  <...<samp> </samp>new suggestion...
 #  >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_715_0_origin")
