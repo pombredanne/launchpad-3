@@ -13,16 +13,16 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
     ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingList, IMilestone,
-    IPackageUpload, IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset,
-    IPollOption, IPOTemplate, IPOTemplateName, IPOTemplateNameSet,
-    IPOTemplateSubset, IProduct, IProductRelease, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISourcePackage, ISpecification,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPOFile, IPOTemplate,
+    IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset, IPackageUpload,
+    IPackageUploadQueue, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
+    ISprint, ISprintSpecification, IStandardShipItRequest,
+    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
+    ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -358,6 +358,7 @@ class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
 
+
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
@@ -399,10 +400,6 @@ class EditPersonBySelf(AuthorizationBase):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
 
-class EditMailingListByTeamOwnerOrTeamAdminsOrAdmins(
-        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IMailingList
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
         EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):

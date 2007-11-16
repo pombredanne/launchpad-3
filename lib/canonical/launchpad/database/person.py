@@ -1,4 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# _valid_nick() in generate_nick causes E1101
+# vars() causes W0612
+# pylint: disable-msg=E0611,W0212,E1101,W0612
+
 """Implementation classes for a Person."""
 
 __metaclass__ = type
@@ -1649,6 +1653,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.person.id == self.id
+
         if self.preferredemail is not None:
             self.preferredemail.status = EmailAddressStatus.VALIDATED
             # We need to flush updates, because we don't know what order

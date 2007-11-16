@@ -5,53 +5,38 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
-
-<form tal:attributes="action string:${context/fmt:url}/+contactaddress"
-      tal:condition="view/list_could_be_contact_method_but_isnt"
-      method="POST" id="set_mailing_list_as_contact_address">
-  <input type="hidden" id="field.contact_method.0" name="field.contact_method"
-         value="HOSTED_LIST" />
-  <input type="hidden" name="field.actions.change" value="Change"/>
-</form>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <metal:widgets fill-slot="widgets">
+    <metal:extra-info fill-slot="extra_info">
+      <p id="mailing_list_status_message"
+         tal:condition="view/mailing_list_status_message">
+        <b tal:content="structure view/mailing_list_status_message">
+          This team's mailing list will be available within a few minutes.
+        </b>
+      </p>
 
-      <div class="informational message"
-             tal:condition="view/mailing_list_status_message">
-        <span tal:content="structure view/mailing_list_status_message">
-          This team's mailing list could not be created.
-        </span>
-      </div>
-
-      <p tal:condition="view/list_is_or_could_be_contact_method">
+      <p tal:condition="view/list_is_usable">
         This team's mailing list is active at
         <b><address tal:replace="view/mailinglist_address" /></b>.
       </p>
+    </metal:extra-info>
 
+    <metal:widgets fill-slot="widgets">
       <div id="no_mailing_list"
          tal:condition="view/list_can_be_requested">
         <p>
-          This team has no mailing list associated with it, but you
-          can request one. Once a Launchpad administrator approves
-          your request, team members can subscribe and post to the
-          team mailing list. The team mailing list may also be used as
-          the team's contact address.
+          You can request a mailing list for this team. Once a
+          Launchpad administrator approves your request, team members
+          can subscribe and post to the team mailing list. The team
+          mailing list may also be used as the team's contact address.
         </p>
 
         <p>
           <!--XXX leonardr 2007-11-13 bug=162483. Need a link here to
                   mailing list help.-->
-          There is also <a href="http://help.launchpad.net/">help
-          available on team mailing lists</a>.
+          &#187; <a href="http://help.launchpad.net/">Help for mailing lists</a>
         </p>
         <input tal:replace="structure view/request_list_creation/render" />
       </div>
@@ -65,14 +50,15 @@
       </div>
 
       <p id="mailing_list_not_contact_address"
-         tal:condition="view/list_could_be_contact_method_but_isnt">
-        This team's mailing list is not set as the team contact address.
-        <input type="submit" class="button" id="submit_contact_address_form"
-               onclick="document.forms.set_mailing_list_as_contact_address.submit();"
-               value="Set mailing list as contact address" />
+         tal:condition="view/list_is_usable_but_not_contact_method">
+        The mailing list is not set as the team contact
+        address. You can
+        <a tal:attributes="href
+                           string:${context/fmt:url}/+contactaddress">
+          set it</a>.
       </p>
 
-      <div tal:condition="view/list_is_or_could_be_contact_method">
+      <div tal:condition="view/list_is_usable">
        <tal:widget define="widget nocall:view/widgets/welcome_message">
          <metal:block use-macro="context/@@launchpad_form/widget_row" />
        </tal:widget>
@@ -80,12 +66,21 @@
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons">
-      <p tal:condition="view/list_is_or_could_be_contact_method">
+      <p tal:condition="view/list_is_usable">
         <input tal:replace="structure view/save_action/render" />
       </p>
-      <p tal:condition="view/list_can_be_deactivated">
+
+      <span tal:condition="view/list_can_be_deactivated">
+
+        <h2>Deactivation</h2>
+
+        <p>Deactivating this list will stop it from accepting posted
+        messages. You can reactivate the list later, without having to
+        get administrator approval.</p>
+
         <input tal:replace="structure view/deactivate_list/render" />
-      </p>
+      </span>
+
       <p tal:condition="view/list_can_be_reactivated">
         <input tal:replace="structure view/reactivate_list/render" />
       </p>

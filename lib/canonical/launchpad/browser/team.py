@@ -152,24 +152,22 @@ class MailingListTeamBaseView(LaunchpadFormView):
         return None
 
     @property
-    def list_is_or_could_be_contact_method(self):
-        """Checks whether or not
+    def list_is_usable(self):
+        """Checks whether or not the list is usable; ie. accepting messages.
 
         The list must exist and must be in a state acceptable to
-        MailingList.canBeContactMethod.
+        MailingList.isUsable.
         """
         mailing_list = self._getList()
-        return mailing_list is not None and mailing_list.canBeContactMethod()
+        return mailing_list is not None and mailing_list.isUsable()
 
     @property
     def mailinglist_address(self):
         """The address for this team's mailing list."""
         mailing_list = self._getList()
-        if mailing_list is None:
-            raise AssertionError(
-                "Attempt to find address of nonexistent mailing list.")
-        else:
-            return mailing_list.address
+        assert mailing_list is not None, (
+                'Attempt to find address of nonexistent mailing list.')
+        return mailing_list.address
 
 
 class TeamContactAddressView(MailingListTeamBaseView):
@@ -179,14 +177,9 @@ class TeamContactAddressView(MailingListTeamBaseView):
     label = "Contact address"
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget(
-        'welcome_message', TextAreaWidget, width=72, height=10)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
-
-        The welcome message control will only be displayed if the
-        mailing list's state is ACTIVE, MODIFIED, or UPDATING.
         """
         super(TeamContactAddressView, self).setUpFields()
 
@@ -194,12 +187,6 @@ class TeamContactAddressView(MailingListTeamBaseView):
         self.form_fields = (
             form.FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
-
-        mailing_list = self.getListInState(MailingListStatus.ACTIVE,
-                                           MailingListStatus.MODIFIED,
-                                           MailingListStatus.UPDATING)
-        if mailing_list is None:
-            self.form_fields = self.form_fields.omit('welcome_message')
 
     def getContactMethodField(self):
         """Create the form.Fields to use for the contact_method field.
@@ -215,7 +202,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 hosted_list_term_index = i
                 break
         if (config.mailman.expose_hosted_mailing_lists
-            and self.list_is_or_could_be_contact_method):
+            and self.list_is_usable):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
@@ -229,7 +216,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # The team's mailing list does not exist or can't be
             # used as the contact address. Remove the term from the
             # field.
-            del(terms[hosted_list_term_index])
+            del terms[hosted_list_term_index]
 
         return form.FormField(
             Choice(__name__='contact_method',
@@ -261,7 +248,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                     self.setFieldError('contact_address', str(error))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if (mailing_list is None or not mailing_list.canBeContactMethod()):
+            if (mailing_list is None or not mailing_list.isUsable()):
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -302,9 +289,8 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert (mailing_list is not None
-                    and mailing_list.canBeContactMethod()), (
-                "A team can only use an active mailing list as its contact "
+            assert (mailing_list is not None and mailing_list.isUsable()), (
+                "A team can only use a usable mailing list as its contact "
                 "address.")
             context.setContactAddress(
                 email_set.getByEmail(mailing_list.address))
@@ -330,7 +316,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
 
 
 class TeamMailingListConfigurationView(MailingListTeamBaseView):
-    """A team for creating and configuring a team's mailing list.
+    """A view for creating and configuring a team's mailing list.
 
     Allows creating a request for a list, cancelling the request,
     setting the welcome message, deactivating, and reactivating the
@@ -340,8 +326,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     schema = IMailingList
     field_names = ['welcome_message']
     label = "Mailing list configuration"
-    custom_widget(
-        'welcome_message', TextAreaWidget, width=72, height=10)
+    custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
 
     def __init__(self, context, request):
         """Set feedback messages for users who want to edit the mailing list.
@@ -352,18 +337,18 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         address. Second, the mailing list may be in a transitional
         state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
-        super(TeamMailingListConfigurationView,
-              self).__init__(context, request)
+        super(TeamMailingListConfigurationView,self).__init__(
+            context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
 
     @action('Save', name='save')
     def save_action(self, action, data):
         """Sets the welcome message for a mailing list."""
-        welcome_message = data.get('welcome_message', None)
+        welcome_message = data.get('welcome_message')
         assert (self.mailing_list is not None
-                and self.mailing_list.canBeContactMethod()), (
-            "Only an active mailing list can be configured.")
+                and self.mailing_list.isUsable()), (
+            "Only a usable mailing list can be configured.")
 
         if (welcome_message is not None
             and welcome_message != self.mailing_list.welcome_message):
@@ -408,14 +393,11 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Creates a new mailing list."""
         list_set = getUtility(IMailingListSet)
         mailing_list = list_set.get(self.context.name)
-        if mailing_list is None:
-            list_set.new(self.context)
-            self.request.response.addInfoNotification(
-                "Mailing list requested and queued for approval.")
-        else:
-            raise AssertionError(
-                "Tried to create a mailing list for a team that "
-                "already has one.")
+        assert mailing_list is None, (
+            'Tried to create a mailing list for a team that already has one.')
+        list_set.new(self.context)
+        self.request.response.addInfoNotification(
+            "Mailing list requested and queued for approval.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
@@ -432,7 +414,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Deactivates a mailing list."""
         getUtility(IMailingListSet).get(self.context.name).deactivate()
         self.request.response.addInfoNotification(
-            "The mailing list will be deactivated shortly.")
+            "The mailing list will be deactivated within a few minutes.")
         self.next_url = canonical_url(self.context)
 
     def reactivate_list_validator(self, action, data):
@@ -448,18 +430,18 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     def reactivate_list(self, action, data):
         getUtility(IMailingListSet).get(self.context.name).reactivate()
         self.request.response.addInfoNotification(
-            "The mailing list will be reactivated shortly.")
+            "The mailing list will be reactivated within a few minutes.")
         self.next_url = canonical_url(self.context)
 
     @property
-    def list_could_be_contact_method_but_isnt(self):
+    def list_is_usable_but_not_contact_method(self):
         """The list could be the contact method for its team, but isn't.
 
-        The list exists and is in a compatible state, but isn't set as
-        the contact method.
+        The list exists and is usable, but isn't set as the contact
+        method.
         """
 
-        return (self.list_is_or_could_be_contact_method and
+        return (self.list_is_usable and
                 (self.context.preferredemail is None or
                  self.mailing_list.address !=
                  self.context.preferredemail.email))
@@ -479,7 +461,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             return None
         elif self.mailing_list.status in [MailingListStatus.APPROVED,
                                           MailingListStatus.CONSTRUCTING]:
-            return _("This team's mailing list will be available shortly.")
+            return _("This team's mailing list will be available within "
+                     "a few minutes.")
         elif self.mailing_list.status == MailingListStatus.DECLINED:
             return _("The application for this team's mailing list has been "
                      'declined. Please '

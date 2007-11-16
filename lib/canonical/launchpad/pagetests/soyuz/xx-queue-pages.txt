@@ -188,12 +188,9 @@ nascentupload-announcements.txt).
 
   >>> from canonical.launchpad.mail import stub
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-  >>> [notification, announcement] = pop_notifications()
+  >>> [notification] = pop_notifications()
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
-
-  >>> announcement['To']
-  'autotest_changes@ubuntu.com'
 
 Forcing a duplicated submission on a queue item is recognised:
 

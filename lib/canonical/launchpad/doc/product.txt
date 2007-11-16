@@ -446,3 +446,28 @@ If we change the development_focus, primary_translatable changes as well.
     >>> firefox.development_focus = firefox_10
     >>> print firefox.primary_translatable.displayname
     1.0
+
+
+= Series list = 
+
+The series for a product are returned as a sorted list, with the
+exception that the current development focus is first.
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> firefox_view = getView(firefox, "+index", request)
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    1.0
+    trunk
+
+Change the development focus and the sort order changes.
+
+    >>> firefox.development_focus = sorted_series[-1]
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    trunk
+    1.0
