@@ -11,7 +11,7 @@ from datetime import datetime
 import pytz
 
 from zope.interface import implements
-from sqlobject import BoolCol, ForeignKey, StringCol
+from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW

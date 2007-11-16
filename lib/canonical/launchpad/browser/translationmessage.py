@@ -40,7 +40,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
-    ITranslationMessageSet, ITranslationMessageSuggestions, NotFoundError,
+    ITranslationMessageSet, ITranslationMessageSuggestions,
     TranslationConflict, TranslationConstants, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
