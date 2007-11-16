@@ -87,9 +87,10 @@ deb-src <a tal:attributes="href context/archive_url"
       <div>
         <form name="package_search" action="" method="GET">
            <label for="name">Package name contains:</label>
-           <input id="name" title="Package Name" size="20"
-                  type="text" name="name_filter"
+           <input id="field.name_filter" title="Package Name" size="20"
+                  type="text" name="field.name_filter"
                   tal:attributes="value view/name_filter"/>
+           <span tal:replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
       </div>

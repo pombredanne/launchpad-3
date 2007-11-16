@@ -218,7 +218,7 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def registermerge(self):
-        text = 'Register merge proposal'
+        text = 'Propose for merging'
         return Link('+register-merge', text, icon='edit')
 
     def landingcandidates(self):
