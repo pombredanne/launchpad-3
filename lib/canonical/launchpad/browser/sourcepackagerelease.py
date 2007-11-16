@@ -59,7 +59,12 @@ class SourcePackageReleaseView(LaunchpadView):
         return changelog
 
     def _linkify_changelog(self, changelog):
-        """Linkify source packages and bug numbers in changelogs."""
+        """Linkify the changelog.
+
+        This obfuscates email addresses to anonymous users, linkifies
+        them for non-anonymous and links to the bug page for any bug
+        numbers mentioned.
+        """
         if changelog is None:
             return ''
 

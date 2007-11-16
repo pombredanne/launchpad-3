@@ -1693,10 +1693,7 @@ class FormattersAPI:
         If an email address is recognised as one registered in Launchpad,
         it is linkified to point to the profile page for that person.
         """
-        if not self._stringtoformat:
-            return self._stringtoformat
-        else:
-            text = self._stringtoformat
+        text = self._stringtoformat
 
         matches = re.finditer(self._re_email, text)
         for match in matches:

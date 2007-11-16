@@ -410,25 +410,37 @@ Launchpad and linkify them to point at the profile page for that person.
 The resulting HTML includes a person icon next to the linked text to
 emphasise the linkage.
 
-    >>> test_tales('foo/fmt:linkify-email', foo='foo.bar@canonical.com')
-    u'<a href="http://launchpad.dev/~name16"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;foo.bar@canonical.com</a>'
+    >>> test_tales('foo/fmt:linkify-email',
+    ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
+    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a>...'
 
 Multiple addresses may be linkified at once:
 
     >>> test_tales('foo/fmt:linkify-email',
     ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
-    u'<a href="http://launchpad.dev/~name16"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;foo.bar@canonical.com</a> and <a href="http://launchpad.dev/~cprov"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;cprov@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a> and <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person" />&nbsp;cprov@ubuntu.com</a>'
+
+Team addresses are linkified with a team icon:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
+    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team" />&nbsp;support@ubuntu.com</a>'
 
 Unknown email addresses are not altered in any way:
 
     >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
     'nobody@example.com'
 
-Users who specifiy that their email adresses must be hidden also do not get
-linkified:
+Users who specifiy that their email adresses must be hidden also do not
+get linkified.  test@canonical.com is hidden:
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> discreet_user = person_set.getByEmail('test@canonical.com')
+    >>> discreet_user.hide_email_addresses
+    True
 
     >>> test_tales('foo/fmt:linkify-email', foo='test@canonical.com')
     'test@canonical.com'
+
 
 == Test the 'fmt:' namespace where the context is a dict. ==
 
