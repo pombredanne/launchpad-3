@@ -94,31 +94,35 @@ from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import implements
 from zope.component import getUtility
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.schema import Choice, TextLine
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.widgets import PasswordChangeWidget
+from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
     BranchListingSort, BugTaskSearchParams, BugTaskStatus,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet, IGPGHandler,
-    IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet, ILaunchBag,
-    ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
-    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, QuestionParticipation, SSHKeyType,
-    SpecificationFilter, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData)
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
+    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
+    IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
+    IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
+    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    QuestionParticipation, SSHKeyType, SpecificationFilter,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -2532,204 +2536,244 @@ class TeamLeaveView(PersonView):
         self.request.response.redirect('./')
 
 
-class PersonEditEmailsView:
+class PersonEditEmailsView(LaunchpadFormView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.errormessage = None
-        self.message = None
-        self.badlyFormedEmail = None
-        self.user = getUtility(ILaunchBag).user
+    schema = IEmailAddress
 
-    def unvalidatedAndGuessedEmails(self):
-        """Return a Set containing all unvalidated and guessed emails."""
+    custom_widget('VALIDATED_SELECTED', LaunchpadRadioWidget,
+                  orientation='vertical')
+    custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
+                  orientation='vertical')
+
+    def setUpFields(self):
+        super(PersonEditEmailsView, self).setUpFields()
+        self.form_fields = form.FormFields(
+            self._validated_emails_field(),
+            self._unvalidated_emails_field(),
+            form.fields(TextLine(__name__='newemail',
+                                 title=u'Add a new address',
+                                 required=False))
+            )
+
+    def _validated_emails_field(self):
+        """Create a field with a vocabulary of validated emails.
+
+        :return: A form.Fields instance containing the list of emails
+        """
+        terms = [SimpleTerm(term.email) for term in self.context.validatedemails]
+        return form.Fields(
+            Choice(__name__='VALIDATED_SELECTED',
+                   source=SimpleVocabulary(terms),
+                   required=False,
+                   title=_('These other addresses are confirmed as being yours')
+                   ),
+            custom_widget = self.custom_widgets['VALIDATED_SELECTED'])
+
+    def _unvalidated_emails_field(self):
+        """Create a field with a vocabulary of unvalidated and guessed emails.
+
+        :return: A form.Fields instance containing the list of emails
+        """
         emailset = set()
         emailset = emailset.union(e.email for e in self.context.guessedemails)
         emailset = emailset.union(e for e in self.context.unvalidatedemails)
-        return emailset
+        terms = [SimpleTerm(term) for term in emailset]
+        return form.Fields(
+            Choice(__name__='UNVALIDATED_SELECTED',
+                   source=SimpleVocabulary(terms),
+                   required=False,
+                   title=_('These addresses may also be yours')),
+            custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
-    def emailFormSubmitted(self):
-        """Check if the user submitted the form and process it.
+    def _selected_address_validator(self, data, validated, error):
+        """A generic validator for this view's actions.
 
-        Return True if the form was submitted or False if it was not.
+        Makes sure one (and only one) email address is selected and that
+        the selected address belongs to the context person.
         """
-        form = self.request.form
-        if "REMOVE_VALIDATED" in form:
-            self._deleteValidatedEmail()
-        elif "SET_PREFERRED" in form:
-            self._setPreferred()
-        elif "REMOVE_UNVALIDATED" in form:
-            self._deleteUnvalidatedEmail()
-        elif "VALIDATE" in form:
-            self._validateEmail()
-        elif "ADD_EMAIL" in form:
-            self._addEmail()
+        if validated:
+            field = 'VALIDATED_SELECTED'
         else:
-            return False
-
-        # Any self-posting page that updates the database and want to display
-        # these updated values have to call flush_database_updates().
-        flush_database_updates()
-        return True
-
-    def _validateEmail(self):
-        """Send a validation url to the selected email address."""
-        email = self.request.form.get("UNVALIDATED_SELECTED")
+            field = 'UNVALIDATED_SELECTED'
+        email = data.get(field)
         if email is None:
-            self.message = (
-                "You must select the email address you want to confirm.")
+            self.addError(error)
+            return None
+        elif isinstance(data[field], list):
+            self.addError("You must not select more than one address.")
+            return None
+
+        # Make sure the selected address actually belongs to this
+        # person.
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
+        assert emailaddress.person.id == self.context.id, (
+            "differing ids in emailaddress.person.id(%s,%d) == "
+            "self.context.id(%s,%d) (%s)"
+            % (emailaddress.person.name, emailaddress.person.id,
+               self.context.name, self.context.id, emailaddress.email))
+
+        # Return the EmailAddress object for use in any further validation.
+        return emailaddress
+
+    ### Actions to do with validated email addresses.
+
+    def action_remove_validated_validator(self, action, data):
+        """Make sure the user selected an email address to remove."""
+        emailaddress = self._selected_address_validator(
+            data, True,
+            "You must select the e-mail address you want to remove.")
+        if emailaddress is None:
             return
 
+        if self.context.preferredemail == emailaddress:
+            # This will happen only if a person is submitting a stale page.
+            self.addInfoNotification(
+                "You can't remove %s because it's your contact email "
+                "address." % self.context.preferredemail.email)
+            return
+        assert self.context.preferredemail is not None
+
+    @action(_("Remove"), name="remove_validated",
+            validator=action_remove_validated_validator)
+    def action_remove_validated(self, action, data):
+        """Delete the selected (validated) email address."""
+        email = data['VALIDATED_SELECTED']
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
+        emailaddress.destroySelf()
+        self.addInfoNotification(
+            "The email address '%s' has been removed." % email)
+
+    def action_set_preferred_validator(self, action, data):
+        """Make sure the user selected an address."""
+        emailaddress = self._selected_address_validator(
+            data, True,
+            "You must select which e-mail address you want to set "
+            "as your contact address")
+        if emailaddress is None:
+            return
+
+        if emailaddress.status == EmailAddressStatus.PREFERRED:
+            self.addInfoNotification = (
+                "%s is already set as your contact address." % email)
+
+    @action(_("Set as contact address"), name="set_preferred",
+            validator=action_set_preferred_validator)
+    def action_set_preferred(self, action, data):
+        """Set the selected email as preferred for the person in context."""
+        email = data['VALIDATED_SELECTED']
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
+        self.context.setPreferredEmail(emailaddress)
+        self.addInfoNotification(
+            "Your contact address has been changed to: %s" % email)
+
+    ### Actions to do with unvalidated email addresses.
+
+    def action_confirm_validator(self, action, data):
+        """Make sure the user selected an email address to confirm."""
+        self._selected_address_validator(
+            data, False,
+            "You must select the e-mail address you want to confirm.")
+
+    @action(_('Confirm'), name='validate', validator=action_confirm_validator)
+    def action_confirm(self, action, data):
+        """Mail a validation URL to the selected email address."""
+        email = data['UNVALIDATED_SELECTED']
         token = getUtility(ILoginTokenSet).new(
                     self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
+        self.addInfoNotification("A new email was sent to '%s' with "
+                                 "instructions on how to confirm that "
+                                 "it belongs to you." % email)
 
-        self.message = ("A new email was sent to '%s' with instructions on "
-                        "how to confirm that it belongs to you." % email)
-
-    def _deleteUnvalidatedEmail(self):
-        """Delete the selected email address, which is not validated.
-
-        This email address can be either on the EmailAddress table marked with
-        status new, or in the LoginToken table.
-        """
-        email = self.request.form.get("UNVALIDATED_SELECTED")
-        if email is None:
-            self.message = (
-                "You must select the email address you want to remove.")
-            return
-
-        emailset = getUtility(IEmailAddressSet)
-        logintokenset = getUtility(ILoginTokenSet)
-        if email in [e.email for e in self.context.guessedemails]:
-            emailaddress = emailset.getByEmail(email)
-            # These asserts will fail only if someone poisons the form.
-            assert emailaddress.person.id == self.context.id
+    def action_remove_unvalidated_validator(self, action, data):
+        """Make sure the user selected an email address to remove."""
+        emailaddress = self._selected_address_validator(
+            data, False,
+            "You must select the e-mail address you want to remove.")
+        if emailAddress is not None:
             assert self.context.preferredemail.id != emailaddress.id
+
+    @action(_("Remove"), name="remove_unvalidated")
+    def action_remove_unvalidated(self, action, data):
+        """Delete the selected (un-validated) email address.
+
+        This selected address can be either on the EmailAddress table
+        marked with status NEW, or in the LoginToken table.
+        """
+        email = data['UNVALIDATED_SELECTED']
+        if email in [e.email for e in self.context.guessedemails]:
+            emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
             emailaddress.destroySelf()
 
         if email in self.context.unvalidatedemails:
+            logintokenset = getUtility(ILoginTokenSet)
             logintokenset.deleteByEmailRequesterAndType(
                 email, self.context, LoginTokenType.VALIDATEEMAIL)
 
-        self.message = "The email address '%s' has been removed." % email
+        self.addInfoNotification(
+            "The email address '%s' has been removed." % email)
 
-    def _deleteValidatedEmail(self):
-        """Delete the selected email address, which is already validated."""
-        email = self.request.form.get("VALIDATED_SELECTED")
-        if email is None:
-            self.message = (
-                "You must select the email address you want to remove.")
-            return
+    ### Actions to do with new email addresses
 
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(email)
-        # These asserts will fail only if someone poisons the form.
-        assert emailaddress.person.id == self.context.id
-        assert self.context.preferredemail is not None
-        if self.context.preferredemail == emailaddress:
-            # This will happen only if a person is submitting a stale page.
-            self.message = (
-                "You can't remove %s because it's your contact email "
-                "address." % self.context.preferredemail.email)
-            return
-        emailaddress.destroySelf()
-        self.message = "The email address '%s' has been removed." % email
+    def action_add_email_validator(self, action, data):
+        """Make sure the user entered a valid email address.
 
-    def _addEmail(self):
-        """Register a new email for the person in context.
-
-        Check if the email is "well formed" and if it's not yet in our
-        database and then register it to the person in context.
+        The email address must be syntactically valid and must not already
+        be in use.
         """
-        person = self.context
-        emailset = getUtility(IEmailAddressSet)
-        logintokenset = getUtility(ILoginTokenSet)
+        newemail = data['newemail']
+        # XXX - Why lower()? Some parts of an email address are case-sensitive.
         newemail = self.request.form.get("newemail", "").strip().lower()
         if not valid_email(newemail):
-            self.message = (
+            self.addError(
                 "'%s' doesn't seem to be a valid email address." % newemail)
-            self.badlyFormedEmail = newemail
             return
 
         email = emailset.getByEmail(newemail)
-        if email is not None and email.person.id == person.id:
-            self.message = (
+        person = self.context
+        if email is not None:
+            if email.person.id == person.id:
+                self.addInfoNotification = (
                     "The email address '%s' is already registered as your "
                     "email address. This can be either because you already "
                     "added this email address before or because it have "
-                    "been detected by our system as being yours. In case "
-                    "it was detected by our systeam, it's probably shown "
-                    "on this page and is waiting to be confirmed as being "
+                    "been detected by our system as being yours. If "
+                    "it was detected by our system, it's probably shown "
+                    "on this page and is waiting to be confirmed as "
                     "yours." % email.email)
-            return
-        elif email is not None:
-            # self.message is rendered using 'structure' on the page template,
-            # so it's better to escape browsername because people can put
-            # whatever they want in their name/displayname. On the other hand,
-            # we don't need to escape email addresses because they are always
-            # validated (which means they can't have html tags) before being
-            # inserted in the database.
-            owner = email.person
-            browsername = cgi.escape(owner.browsername)
-            owner_name = urllib.quote(owner.name)
-            merge_url = (
-                '%s/+requestmerge?field.dupeaccount=%s'
-                 % (canonical_url(getUtility(IPersonSet)),owner_name))
-            self.message = (
-                    "The email address '%s' is already registered by "
-                    "<a href=\"%s\">%s</a>. If you think that is a "
-                    "duplicated account, you can <a href=\"%s\">merge it</a> "
+            else:
+                owner = email.person
+                owner_name = urllib.quote(owner.name)
+                merge_url = (
+                    '%s/+requestmerge?field.dupeaccount=%s'
+                    % (canonical_url(getUtility(IPersonSet)), owner_name))
+                self.addInfoNotification(
+                    "The email address '%s' is already registered to "
+                    '<a href="%s">%s</a>. If you think that is a '
+                    'duplicated account, you can <a href="%s">merge it</a> '
                     "into your account. "
-                    % (email.email, canonical_url(owner), browsername,
+                    % (email.email, canonical_url(owner), owner.browsername,
                        merge_url))
-            return
 
+    @action(_("Add"), name="add_email",
+            validator=action_add_email_validator)
+    def action_add_email(self, action, data):
+        """Register a new email for the person in context."""
+        newemail = data['newemail']
+        logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
                     person, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
-        self.message = (
+        self.addInfoNotification(
                 "A confirmation message has been sent to '%s'. "
                 "Follow the instructions in that message to confirm that the "
                 "address is yours. "
                 "(If the message doesn't arrive in a few minutes, your mail "
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
-
-    def _setPreferred(self):
-        """Set the selected email as preferred for the person in context."""
-        email = self.request.form.get("VALIDATED_SELECTED")
-        if email is None:
-            self.message = (
-                "To set your contact address you have to choose an address "
-                "from the list of confirmed addresses and click on Set as "
-                "Contact Address.")
-            return
-        elif isinstance(email, list):
-            self.message = (
-                    "Only one email address can be set as your contact "
-                    "address. Please select the one you want and click on "
-                    "Set as Contact Address.")
-            return
-
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id, (
-                "differing ids in emailaddress.person.id(%s,%d) == "
-                "self.context.id(%s,%d) (%s)"
-                % (emailaddress.person.name, emailaddress.person.id,
-                   self.context.name, self.context.id, emailaddress.email))
-
-        if emailaddress.status != EmailAddressStatus.VALIDATED:
-            self.message = (
-                "%s is already set as your contact address." % email)
-            return
-        self.context.setPreferredEmail(emailaddress)
-        self.message = "Your contact address has been changed to: %s" % email
 
 
 class TeamReassignmentView(ObjectReassignmentView):
