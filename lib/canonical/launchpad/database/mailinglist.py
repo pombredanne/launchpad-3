@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -120,15 +121,14 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            if email.status in [EmailAddressStatus.NEW,
-                                EmailAddressStatus.OLD]:
+            if email.status in [EmailAddressStatus.NEW, EmailAddressStatus.OLD]:
                 # Without this conditional, if the mailing list is the
                 # contact method
-                # (ie. email.status==EmailAddressStatus.PREFERRED),
-                # and a user changes the mailing list configuration,
-                # then when the list status goes back to ACTIVE the
-                # email will go from PREFERRED to VALIDATED and the
-                # list will stop being the contact method.
+                # (email.status==EmailAddressStatus.PREFERRED), and a
+                # user changes the mailing list configuration, then
+                # when the list status goes back to ACTIVE the email
+                # will go from PREFERRED to VALIDATED and the list
+                # will stop being the contact method.
                 email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
@@ -159,7 +159,7 @@ class MailingList(SQLBase):
     def _get_welcome_message(self):
         return self.welcome_message_text
 
-    def canBeContactMethod(self):
+    def isUsable(self):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
@@ -174,14 +174,14 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.canBeContactMethod():
+        elif self.isUsable():
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.
             self.status = MailingListStatus.MODIFIED
         else:
             raise AssertionError(
-                'Only registered or active mailing lists may be modified')
+                'Only registered or usable mailing lists may be modified')
         self.welcome_message_text = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -211,6 +212,16 @@ class PackageUpload(SQLBase):
     def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
+
+    @cachedproperty
+    def _is_sync_upload(self):
+        """Return True if this is a (Debian) sync upload.
+
+        Sync uploads are source-only, unsigned and not targeted to
+        the security pocket."""
+        return (not self.signing_key
+                and self.contains_source and not self.contains_build
+                and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
     def _customFormats(self):
@@ -538,6 +549,10 @@ class PackageUpload(SQLBase):
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         do_sendmail(AcceptedMessage)
+
+        # Don't send announcements for Debian sync uploads.
+        if self._is_sync_upload:
+            return
 
         if announce_list:
             if not self.signing_key:

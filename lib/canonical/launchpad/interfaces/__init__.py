@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
 __metaclass__ = type
 
@@ -109,6 +110,7 @@ from canonical.launchpad.interfaces.potranslation import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productbounty import *
+from canonical.launchpad.interfaces.productlicense import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.project import *

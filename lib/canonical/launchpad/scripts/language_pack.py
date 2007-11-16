@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=W0702
 
 """Functions for language pack creation script."""
 
