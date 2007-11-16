@@ -28,9 +28,6 @@ from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import IFeed
 
-# BUG_MAX_AGE is in seconds
-BUG_MAX_AGE = config.launchpad.max_bug_feed_cache_minutes * MINUTES
-
 
 def get_unique_bug_tasks(items):
     """Given a list of BugTasks return a list with one BugTask per Bug.
@@ -73,7 +70,9 @@ class BugFeedContentView(LaunchpadView):
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
-    max_age = BUG_MAX_AGE
+    # max_age is in seconds
+    max_age = config.launchpad.max_bug_feed_cache_minutes * MINUTES
+
     rootsite = "bugs"
 
     def initialize(self):

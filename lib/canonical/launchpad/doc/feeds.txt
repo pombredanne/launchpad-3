@@ -118,9 +118,9 @@ by browsers and the reverse-proxy in front of the feeds servers.
     3600
     >>> BugsFeedBase.max_age
     1800
-    >>> config.launchpad.max_feed_cache_minutes == FeedBase.max_age / 60
+    >>> config.launchpad.max_feed_cache_minutes * 60 == FeedBase.max_age
     True
-    >>> (config.launchpad.max_bug_feed_cache_minutes
-    ...  == BugsFeedBase.max_age / 60)
+    >>> (config.launchpad.max_bug_feed_cache_minutes * 60
+    ...  == BugsFeedBase.max_age)
     True
 
