@@ -156,16 +156,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             self.assertEqual(
                 candidate.status, PackagePublishingStatus.PENDING)
 
-        # A commit is required to materialize the new publishing records.
-        self.layer.txn.commit()
-
         def excludeOlds(found, old_pending_ids):
-            found_pendings = [pub.id for pub in found]
-            result = []
-            for pub_id in found_pendings:
-                if pub_id not in old_pending_ids:
-                    result.append(pub_id)
-            return result
+            return [pub.id for pub in found if pub.id not in old_pending_ids]
 
         sources_pending = target_archive.getPublishedSources(
             status=PackagePublishingStatus.PENDING)
@@ -181,11 +173,13 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         # list of Secure*PublishingHistory records and the lookups are
         # the records from the correspondent DB view *PackagePublishingHistory.
         copied_ids = [pub.id for pub in copied]
-        pending_ids = []
-        pending_ids.extend(sources_pending_ids)
-        pending_ids.extend(binaries_pending_ids)
+        pending_ids = sources_pending_ids + binaries_pending_ids
 
-        self.assertEqual(sorted(pending_ids), sorted(copied_ids))
+        self.assertEqual(
+            sorted(copied_ids), sorted(pending_ids),
+            "The copy did not succeed.\nExpected IDs: %s\nFound IDs: %s" % (
+                sorted(copied_ids), sorted(pending_ids))
+            )
 
     def testCopyBetweenDistroSeries(self):
         """Check the copy operation between distroseries."""
