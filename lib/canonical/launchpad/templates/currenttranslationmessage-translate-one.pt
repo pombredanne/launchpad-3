@@ -445,7 +445,8 @@
       <tal:suggestion_block
            define="suggestion_block translation_dictionary/suggestion_block">
         <tal:suggestions repeat="suggestions suggestion_block">
-          <div tal:replace="structure suggestions/@@+display" />
+          <div tal:condition="suggestions"
+               tal:replace="structure suggestions/@@+display" />
         </tal:suggestions>
       </tal:suggestion_block>
       <tr class="secondary translation"

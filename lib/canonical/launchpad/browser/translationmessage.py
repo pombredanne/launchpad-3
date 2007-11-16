@@ -1019,9 +1019,44 @@ class CurrentTranslationMessageView(LaunchpadView):
         #        len(wiki.submissions) +
         #        len(alt_lang_suggestions.submissions))
 
+        language = self.context.pofile.language
+        potmsgset = self.context.potmsgset
+
+        local = sorted(potmsgset.getLocalTranslationMessages(language),
+                       key=operator.attrgetter("date_created"),
+                       reverse=True)
+        externally_used = sorted(
+            potmsgset.getExternallyUsedTranslationMessages(language),
+            key=operator.attrgetter("date_created"),
+            reverse=True)
+        externally_suggested = sorted(
+            potmsgset.getExternallySuggestedTranslationMessages(language),
+            key=operator.attrgetter("date_created"),
+            reverse=True)
+
         for index in self.pluralform_indices:
-            self.suggestion_blocks[index] = []
-            self.suggestions_count[index] = 0
+            local_suggestions = POMsgSetSuggestions(
+                'Suggestions', potmsgset, self.context.pofile,
+                local[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index)
+            externally_used_suggestions = POMsgSetSuggestions(
+                'Used in', potmsgset, self.context.pofile,
+                externally_used[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index)
+            externally_suggested_suggestions = POMsgSetSuggestions(
+                'Suggested in', potmsgset, self.context.pofile,
+                externally_suggested[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index)
+            self.suggestion_blocks[index] = [
+                local_suggestions, externally_used_suggestions,
+                externally_suggested_suggestions, None]
+            self.suggestions_count[index] = (
+                len(local_suggestions.submissions) +
+                len(externally_used_suggestions.submissions) +
+                len(externally_suggested_suggestions.submissions))
 
         # Initialise the translation dictionaries used from the
         # translation form.
@@ -1397,29 +1432,32 @@ class POMsgSetSuggestions:
 
     def isFromSamePOFile(self, submission):
         """Return if submission is from the same PO file as a POMsgSet."""
-        return self.pomsgset.pofile == submission['pomsgset'].pofile
+        return self.pofile == submission['pofile']
 
-    def __init__(self, title, pomsgset, submissions,
-                 user_is_official_translator, form_is_writeable):
+    def __init__(self, title, potmsgset, pofile, submissions,
+                 user_is_official_translator, form_is_writeable,
+                 plural_form):
         self.title = title
-        self.pomsgset = pomsgset
+        self.potmsgset = potmsgset
+        self.pofile = pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
         for submission in submissions:
             self.submissions.append({
                 'id': submission.id,
-                'language': submission.pomsgset.pofile.language,
-                'plural_index': submission.pluralform,
+                'language': submission.pofile.language,
+                'plural_index': plural_form,
                 'suggestion_text': text_to_html(
-                    submission.potranslation.translation,
-                    submission.pomsgset.potmsgset.flags()),
-                'pomsgset': submission.pomsgset,
-                'person': submission.person,
+                    submission.translations[plural_form],
+                    submission.potmsgset.flags()),
+                'potmsgset': submission.potmsgset,
+                'pofile': submission.pofile,
+                'person': submission.submitter,
                 'date_created': submission.date_created,
                 'suggestion_html_id':
-                    submission.makeHTMLID('suggestion', pomsgset.potmsgset),
+                    submission.makeHTMLID('suggestion'),
                 'translation_html_id':
-                    pomsgset.makeHTMLID(
-                        'translation_%s' % (submission.pluralform)),
+                    submission.makeHTMLID(
+                        'translation_%s' % (plural_form)),
                 })

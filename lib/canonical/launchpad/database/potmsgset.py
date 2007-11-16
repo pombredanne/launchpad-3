@@ -116,6 +116,52 @@ class POTMsgSet(SQLBase):
         result = TranslationMessage.select(query, clauseTables=['POFile'])
         return shortlist(result, longest_expected=20, hardlimit=100)
 
+    def _getExternalTranslationMessages(self, language, local, used=True):
+        if local is None:
+            local = (self.getLocalTranslationMessages(language) +
+                     [self.getCurrentTranslationMessage(language)] +
+                     [self.getImportedTranslationMessage(language)])
+        if used:
+            query = ['(is_current IS TRUE OR is_imported IS TRUE)']
+        else:
+            query = ['(is_current IS NOT TRUE AND is_imported IS NOT TRUE)']
+        query.append('POFile.language = %s' % sqlvalues(language))
+        query.append('POFile.id = TranslationMessage.pofile')
+
+        subquery = '''
+                potmsgset IN (
+                    SELECT id FROM POTMsgSet
+                        WHERE id!=%s AND
+                        msgid_singular=%s AND '''
+        if self.msgid_plural is not None:
+            subquery += 'msgid_plural=%s)'
+            query.append(subquery % sqlvalues(self,
+                                              self.msgid_singular,
+                                              self.msgid_plural))
+        else:
+            subquery += 'msgid_plural IS NULL)'
+            query.append(subquery % sqlvalues(self,
+                                              self.msgid_singular))
+
+        result = TranslationMessage.select(' AND '.join(query),
+                                           clauseTables=['POFile'])
+        return list(result)
+
+        # Filter duplicates out?
+        for local_translation in local:
+            subquery = ''
+            for translation in local_translation.translations:
+                if translation:
+                    pass
+
+    def getExternallyUsedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        return self._getExternalTranslationMessages(language, None, used=True)
+
+    def getExternallySuggestedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        return self._getExternalTranslationMessages(language, None, used=False)
+
     def flags(self):
         if self.flagscomment is None:
             return []

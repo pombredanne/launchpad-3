@@ -84,6 +84,22 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
+    def getExternallyUsedTranslationMessages(pofile):
+        """Returns all the local unused translation messages for the POTMsgSet.
+        Unused are those which are not current or imported, and local are
+        those which are directly attached to this POTMsgSet.
+
+        :param language: language we want translations for.
+        """
+
+    def getExternallySuggestedTranslationMessages(pofile):
+        """Returns all the local unused translation messages for the POTMsgSet.
+        Unused are those which are not current or imported, and local are
+        those which are directly attached to this POTMsgSet.
+
+        :param language: language we want translations for.
+        """
+
     def hasTranslationChangedInLaunchpad(language):
         """Whether an imported translation differs from the current one.
 
