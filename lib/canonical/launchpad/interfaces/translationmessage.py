@@ -199,15 +199,14 @@ class ITranslationMessage(Interface):
         """
 
 
-# XXX CarlosPerelloMarin 20071024: We will need to migrate this once we start
-# touching view classes.
 class ITranslationMessageSuggestions(Interface):
     """Suggested `ITranslationMessage`s for a `POTMsgSet`.
 
-    When displaying `POTMsgSet`s in `POMsgSetView` we display different types
-    of suggestions: non-reviewer translations, translations that occur in
-    other contexts, and translations in alternate languages. See
-    `POMsgSetView._buildSuggestions` for details.
+    When displaying `POTMsgSet`s in `CurrentTranslationMessageView`
+    we display different types of suggestions: non-reviewer translations,
+    translations that occur in other contexts, and translations in
+    alternate languages. See `CurrentTranslationMessageView._buildSuggestions`
+    for details.
     """
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")

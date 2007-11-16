@@ -980,12 +980,6 @@ class CurrentTranslationMessageView(LaunchpadView):
             second_lang_pofile = potemplate.getPOFileByLang(second_lang_code)
             if second_lang_pofile:
                 self.sec_lang = second_lang_pofile.language
-                singular_text = self.context.potmsgset.singular_text
-                try:
-                    self.second_lang_potmsgset = (
-                        second_lang_pofile[singular_text].potmsgset)
-                except NotFoundError:
-                    pass
 
     def initialize(self):
         # XXX: kiko 2006-09-27:
@@ -1003,60 +997,9 @@ class CurrentTranslationMessageView(LaunchpadView):
         # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
         # using a generic template.
-        self.suggestion_blocks = {}
-        self.suggestions_count = {}
         self.pluralform_indices = range(self.context.plural_forms)
-        # XXX CarlosPerelloMarin 2007-11-14: Disabled to get everything else
-        # working.
-        #
-        #for index in self.pluralform_indices:
-        #    non_editor, elsewhere, wiki, alt_lang_suggestions = \
-        #        self._buildAllSuggestions(index)
-        #    self.suggestion_blocks[index] = \
-        #        [non_editor, elsewhere, wiki, alt_lang_suggestions]
-        #    self.suggestions_count[index] = (
-        #        len(non_editor.submissions) + len(elsewhere.submissions) +
-        #        len(wiki.submissions) +
-        #        len(alt_lang_suggestions.submissions))
 
-        language = self.context.pofile.language
-        potmsgset = self.context.potmsgset
-
-        local = sorted(potmsgset.getLocalTranslationMessages(language),
-                       key=operator.attrgetter("date_created"),
-                       reverse=True)
-        externally_used = sorted(
-            potmsgset.getExternallyUsedTranslationMessages(language),
-            key=operator.attrgetter("date_created"),
-            reverse=True)
-        externally_suggested = sorted(
-            potmsgset.getExternallySuggestedTranslationMessages(language),
-            key=operator.attrgetter("date_created"),
-            reverse=True)
-
-        for index in self.pluralform_indices:
-            local_suggestions = TranslationMessageSuggestions(
-                'Suggestions', self.context, self.context.pofile,
-                local[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index)
-            externally_used_suggestions = TranslationMessageSuggestions(
-                'Used in', self.context, self.context.pofile,
-                externally_used[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index)
-            externally_suggested_suggestions = TranslationMessageSuggestions(
-                'Suggested in', self.context, self.context.pofile,
-                externally_suggested[:self.max_entries],
-                self.user_is_official_translator, self.form_is_writeable,
-                index)
-            self.suggestion_blocks[index] = [
-                local_suggestions, externally_used_suggestions,
-                externally_suggested_suggestions, None]
-            self.suggestions_count[index] = (
-                len(local_suggestions.submissions) +
-                len(externally_used_suggestions.submissions) +
-                len(externally_suggested_suggestions.submissions))
+        self._buildAllSuggestions()
 
         # Initialise the translation dictionaries used from the
         # translation form.
@@ -1123,8 +1066,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         # HTML id for singular form of this message
         self.html_id_singular = self.context.makeHTMLID('translation_0')
 
-    def _buildAllSuggestions(self, index):
-        """Builds all suggestions for a certain plural form index.
+    def _buildAllSuggestions(self):
+        """Builds all suggestions and puts them into suggestions_block.
 
         This method does the ugly nitty gritty of making sure we don't
         display duplicated suggestions; this is done by checking the
@@ -1132,103 +1075,93 @@ class CurrentTranslationMessageView(LaunchpadView):
         submission per string.
 
         The decreasing order of preference this method encodes is:
-            - Active translations to other contexts (elsewhere)
             - Non-active translations to this context and to the pofile
               from which this translation was imported (non_editor)
+            - Active translations to other contexts (elsewhere)
             - Non-editor translations to other contexts (wiki)
         """
-        def build_dict(subs):
-            """Build a dict of POSubmissions keyed on its translation text."""
-            # When duplicate translations occur in subs, the last
-            # submission in the sequence is the one stored as a
-            # consequence of how dict() works; in this case the
-            # sequences are ordered by -date_created and therefore the
-            # oldest duplicate is the one selected. This is why the date
-            # for Carlos' submission in 35-rosetta-suggestions.txt is
-            # 2005-04-07 and not 2005-05-06.
-            return dict((sub.potranslation.translation, sub) for sub in subs)
-
-        def prune_dict(main, pruners):
-            """Build dict from main pruning keys present in any of pruners.
-
-            Pruners should be a list of iterables.
-
-            Return a dict with all items in main whose keys do not occur
-            in any of pruners. main is a dict, pruners is a list of dicts.
-            """
-            pruners_merged = set()
-            for pruner in pruners:
-                pruners_merged = pruners_merged.union(pruner)
-            return dict((k, v) for (k, v) in main.iteritems()
-                        if k not in pruners_merged)
+        # Clean up suggestions storage.
+        self.suggestion_blocks = {}
+        self.suggestions_count = {}
 
         if self.message_must_be_hidden:
             # We must hide all suggestions because this message may contain
             # private information that we don't want to show to anonymous
             # users, such as email addresses.
-            non_editor = self._buildSuggestions(None, [])
-            elsewhere = self._buildSuggestions(None, [])
-            wiki = self._buildSuggestions(None, [])
-            alt_lang_suggestions = self._buildSuggestions(None, [])
-            return non_editor, elsewhere, wiki, alt_lang_suggestions
+            return
 
-        wiki = self.context.getWikiSubmissions(index)
-        wiki_translations = build_dict(wiki)
+        language = self.context.pofile.language
+        potmsgset = self.context.potmsgset
 
-        current = self.context.getCurrentSubmissions(index)
-        current_translations = build_dict(current)
+        local = sorted(potmsgset.getLocalTranslationMessages(language),
+                       key=operator.attrgetter("date_created"),
+                       reverse=True)
+        externally_used = sorted(
+            potmsgset.getExternallyUsedTranslationMessages(language),
+            key=operator.attrgetter("date_created"),
+            reverse=True)
+        externally_suggested = sorted(
+            potmsgset.getExternallySuggestedTranslationMessages(language),
+            key=operator.attrgetter("date_created"),
+            reverse=True)
 
-        non_editor = self.context.getNewSubmissions(index)
-        non_editor_translations = build_dict(non_editor)
-
-        # Use a set for pruning; this is a bit inconsistent with the
-        # other pruners which are dicts, but prune_dict copes well with
-        # it.
-        active_translations = set([self.context.active_texts[index]])
-        published_translations = set([self.context.published_texts[index]])
-
-        wiki_translations_clean = prune_dict(wiki_translations,
-           [current_translations, non_editor_translations,
-            active_translations, published_translations])
-        wiki = self._buildSuggestions("Suggested in",
-            wiki_translations_clean.values())
-
-        non_editor_translations = prune_dict(non_editor_translations,
-            [current_translations, active_translations])
-        title = "Suggestions"
-        non_editor = self._buildSuggestions(title,
-            non_editor_translations.values())
-
-        elsewhere_translations = prune_dict(current_translations,
-                                            [active_translations,
-                                             published_translations])
-        elsewhere = self._buildSuggestions("Used in",
-            elsewhere_translations.values())
-
-        if self.second_lang_potmsgset is None:
+        if self.sec_lang is None:
             alt_submissions = []
-            title = None
+            alt_title = None
         else:
-            alt_submissions = (
-                self.second_lang_potmsgset.getCurrentSubmissions(
-                    self.sec_lang, index))
-            title = self.sec_lang.englishname
-        # What a relief -- no need to do pruning here for alternative
-        # languages as they are highly unlikely to collide.
-        alt_lang_suggestions = self._buildSuggestions(title, alt_submissions)
-        return non_editor, elsewhere, wiki, alt_lang_suggestions
+            alt_current = self.context.potmsgset.getCurrentTranslationMessage(
+                self.sec_lang)
+            if alt_current:
+                alt_submissions = [alt_current]
+            else:
+                alt_submissions = []
+            alt_submissions += (
+                self.context.potmsgset.getExternallyUsedTranslationMessages(
+                    self.sec_lang))
+            alt_title = self.sec_lang.englishname
 
-    def _buildSuggestions(self, title, submissions):
-        """Return `TranslationMessageSuggestions` for the provided submissions.
+        for index in self.pluralform_indices:
+            seen_translations = set([self.context.translations[index]])
+            if not self.context.is_imported:
+                imported = (
+                    self.context.potmsgset.getImportedTranslationMessage(
+                        self.context.pofile.language))
+                if imported:
+                    seen_translations.add(imported.translations[index])
+            local_suggestions = TranslationMessageSuggestions(
+                'Suggestions', self.context,
+                local[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index, seen_translations)
+            seen_translations = local_suggestions.seen_translations
+            externally_used_suggestions = TranslationMessageSuggestions(
+                'Used in', self.context,
+                externally_used[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index, seen_translations)
+            seen_translations = externally_used_suggestions.seen_translations
+            externally_suggested_suggestions = TranslationMessageSuggestions(
+                'Suggested in', self.context,
+                externally_suggested[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index, seen_translations)
+            seen_translations = (
+                externally_suggested_suggestions.seen_translations)
+            alternate_language_suggestions = TranslationMessageSuggestions(
+                alt_title, self.context,
+                alt_submissions[:self.max_entries],
+                self.user_is_official_translator, self.form_is_writeable,
+                index, seen_translations)
 
-        Creates and returns a single `TranslationMessageSuggestions` object.
-        """
-        submissions = sorted(submissions,
-                             key=operator.attrgetter("date_created"),
-                             reverse=True)
-        return TranslationMessageSuggestions(
-            title, self.context, submissions[:self.max_entries],
-            self.user_is_official_translator, self.form_is_writeable)
+            self.suggestion_blocks[index] = [
+                local_suggestions, externally_used_suggestions,
+                externally_suggested_suggestions,
+                alternate_language_suggestions]
+            self.suggestions_count[index] = (
+                len(local_suggestions.submissions) +
+                len(externally_used_suggestions.submissions) +
+                len(externally_suggested_suggestions.submissions) +
+                len(alternate_language_suggestions.submissions))
 
     def getOfficialTranslation(self, index, is_imported=False):
         """Return current or imported translation for plural form 'index'."""
@@ -1434,16 +1367,23 @@ class TranslationMessageSuggestions:
         """Return if submission is from the same PO file as a POMsgSet."""
         return self.pofile == submission['pofile']
 
-    def __init__(self, title, translation, pofile, submissions,
+    def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form):
+                 plural_form, seen_translations=set()):
         self.title = title
         self.potmsgset = translation.potmsgset
-        self.pofile = pofile
+        self.pofile = translation.pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
+
         for submission in submissions:
+            this_translation = submission.translations[plural_form]
+            if (this_translation is None or
+                this_translation in seen_translations):
+                continue
+            else:
+                seen_translations.add(this_translation)
             self.submissions.append({
                 'id': submission.id,
                 'translationmessage' : submission,
@@ -1462,3 +1402,4 @@ class TranslationMessageSuggestions:
                     translation.makeHTMLID(
                         'translation_%s' % (plural_form)),
                 })
+        self.seen_translations = seen_translations
