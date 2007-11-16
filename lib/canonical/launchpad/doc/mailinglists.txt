@@ -489,7 +489,7 @@ ACTIVE or REGISTERED status.
     ... This list has been deactivated."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified
 
 
 == Renaming teams with mailing lists ==
