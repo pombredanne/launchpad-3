@@ -179,6 +179,8 @@ valid.
     >>> len(expirable_bugtasks)
     0
 
+    >>> hoary_bugtask.bug.can_expire
+    False
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     thunderbird  False   351  New         False     False  False  False
@@ -190,13 +192,13 @@ will be expirable.
 
     >>> new_bugtask.transitionToStatus(BugTaskStatus.WONTFIX, sample_person)
     >>> sync_bugtasks(new_bugtask)
+    >>> hoary_bugtask.bug.can_expire
+    True
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     thunderbird  False   351  Won't Fix   False     False  False  False
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
-
-
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
     >>> summarize_bugtasks(expirable_bugtasks)
@@ -350,13 +352,15 @@ status changes.
 == enable_bug_expiration ==
 
 The bugtask no_expiration_bugtask has not been expired because it does
-not participate in bug expiration. When uses_bug_expiration is set to
+not participate in bug expiration. When enable_bug_expiration is set to
 True for a project, old bugs will be expired the next time the bugs are
 expired.
 
     >>> from canonical.launchpad.ftests import sync
     >>> no_expiration_bugtask.pillar.enable_bug_expiration = True
     >>> sync(no_expiration_bugtask.pillar)
+    >>> no_expiration_bugtask.bug.can_expire
+    True
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
