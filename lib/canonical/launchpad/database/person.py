@@ -203,6 +203,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
+    def convertToTeam(self, team_owner):
+        """See `IPerson`."""
+        assert not self.isTeam(), "Can't convert a team to a team."
+        assert self.account_status == AccountStatus.NOACCOUNT, (
+            "Only Person entries whose account_status is NOACCOUNT can be "
+            "converted into teams.")
+        self.password = None
+        self.creation_rationale = None
+        self.teamowner = team_owner
+        alsoProvides(self, ITeam)
+        self.addMember(
+            team_owner, reviewer=team_owner, status=TeamMembershipStatus.ADMIN)
+
     # specification-related joins
     @property
     def approver_specs(self):

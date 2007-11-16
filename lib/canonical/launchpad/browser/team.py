@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
     'TeamAddView',
     'TeamBrandingView',
