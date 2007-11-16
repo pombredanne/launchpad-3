@@ -1692,6 +1692,10 @@ class FormattersAPI:
 
         If an email address is recognised as one registered in Launchpad,
         it is linkified to point to the profile page for that person.
+
+        Note that someone could theoretically register any old email
+        address in Launchpad and then have it linkified.  This may or not
+        may be a concern but is noted here for posterity anyway.
         """
         text = self._stringtoformat
 

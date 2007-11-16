@@ -412,18 +412,23 @@ emphasise the linkage.
 
     >>> test_tales('foo/fmt:linkify-email',
     ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
-    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a>...'
+    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
+    />&nbsp;foo.bar@canonical.com</a>...'
 
 Multiple addresses may be linkified at once:
 
     >>> test_tales('foo/fmt:linkify-email',
     ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
-    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a> and <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person" />&nbsp;cprov@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
+    />&nbsp;foo.bar@canonical.com</a> and
+    <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person"
+    />&nbsp;cprov@ubuntu.com</a>'
 
 Team addresses are linkified with a team icon:
 
     >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
-    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team" />&nbsp;support@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team"
+    />&nbsp;support@ubuntu.com</a>'
 
 Unknown email addresses are not altered in any way:
 
