@@ -33,6 +33,9 @@ COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when 
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
+COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
+COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
+COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 
 -- BranchMergeProposal
 
@@ -46,6 +49,31 @@ COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other informa
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
+COMMENT ON COLUMN BranchMergeProposal.commit_message IS 'This is the commit message that is to be used when the branch is landed by a robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the merge proposal in the overall landing queue.  If the branch has a merge_robot set and the merge robot controls multiple branches then the queue position is unique over all the queued merge proposals for the landing robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
+COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
+COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
+COMMENT ON COLUMN BranchMergeProposal.queuer IS 'The individual who submitted the branch to the merge queue. This is usually the merge proposal registrant.';
+COMMENT ON COLUMN BranchMergeProposal.date_queued IS 'When the queuer submitted the branch to the merge queue.';
+COMMENT ON COLUMN BranchMergeProposal.queued_revision_id IS 'The Bazaar revision ID that is queued to land.';
+COMMENT ON COLUMN BranchMergeProposal.merger IS 'The merger is the person who merged the branch.';
+COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision ID that was actually merged.  If the owner of the source branch is a trusted person, this may be different than the revision_id that was actually queued or reviewed.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+
+
+-- BranchMergeRobot
+
+COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
+COMMENT ON COLUMN BranchMergeRobot.registrant IS 'The person that created the merge robot.';
+COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to update the robot and manage the landing queue.';
+COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
+COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
+COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
 
 -- BranchSubscription
 
@@ -86,6 +114,7 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
+COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
@@ -387,6 +416,8 @@ COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version o
 COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
+COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
+COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product upstream uses Blueprints officially. This is useful to help indicate whether or not the upstream project will be actively watching the blueprints in Launchpad.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -721,7 +752,7 @@ COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product 
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroSeries that should get the translation effort focus.';
 COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
-
+COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 
 -- DistroSeries
 
@@ -1062,6 +1093,7 @@ COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message fo
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
 COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
 COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
+COMMENT ON COLUMN SpecificationBranch.registrant IS 'The person who linked the specification to the branch.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
@@ -1658,40 +1690,84 @@ COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the sub
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
+COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
+COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
+COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
+COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
+
+COMMENT ON TABLE HWVendorId IS 'Associates tuples (bus, vendor ID for this bus) with vendor names.';
+COMMENT ON COLUMN HWVendorId.bus IS 'The bus.';
+COMMENT ON COLUMN HWVendorId.vendor_id_for_bus IS 'The ID of a vendor for the bus given by column `bus`';
+
+COMMENT ON TABLE HWDevice IS 'Basic information on devices.';
+COMMENT ON COLUMN HWDevice.bus_vendor_id IS 'A reference to a HWVendorID record.';
+COMMENT ON COLUMN HWDevice.bus_product_id IS 'The bus product ID of a device';
+COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a device that shares its vendor and product ID with another, technically different, device.';
+COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
+COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
+
+COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
+COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
+COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
+COMMENT ON COLUMN HWDeviceNameVariant.device IS 'The device named by this alternative vendor and product names.';
+COMMENT ON COLUMN HWDeviceNameVariant.submissions IS 'The number of submissions containing this alternative vendor and product name.';
+
+COMMENT ON TABLE HWDeviceDriverLink IS 'Combinations of devices and drivers mentioned in submissions.';
+COMMENT ON COLUMN HWDeviceDriverLink.device IS 'The device controlled by the driver.';
+COMMENT ON COLUMN HWDeviceDriverLink.driver IS 'The driver controlling the device.';
+
+COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
+COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
+COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
+COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+
+COMMENT ON TABLE HWTest IS 'General information about a device test.';
+COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';
+COMMENT ON COLUMN HWTest.name IS 'The name of a test.';
+
+COMMENT ON TABLE HWTestAnswerChoice IS 'Choice values of multiple choice tests/questions.';
+COMMENT ON COLUMN HWTestAnswerChoice.choice IS 'The choice value.';
+COMMENT ON COLUMN HWTestAnswerChoice.test IS 'The test this choice belongs to.';
+
+COMMENT ON TABLE HWTestAnswer IS 'The answer for a test from a submission. This can be either a multiple choice selection or a numerical value. Exactly one of the columns choice, intval, floatval must be non-null.';
+COMMENT ON COLUMN HWTestAnswer.test IS 'The test answered by this answer.';
+COMMENT ON COLUMN HWTestAnswer.choice IS 'The selected value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswer.intval IS 'The integer result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.floatval IS 'The double precision floating point number result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.unit IS 'The physical unit of a test with a numerical result.';
+
+COMMENT ON TABLE HWTestAnswerCount IS 'Accumulated results of tests. Either the column choice or the columns average and sum_square must be non-null.';
+COMMENT ON COLUMN HWTestAnswerCount.test IS 'The test.';
+COMMENT ON COLUMN HWTestAnswerCount.distroarchseries IS 'The distroarchseries for which results are accumulated,';
+COMMENT ON COLUMN HWTestAnswerCount.choice IS 'The choice value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswerCount.average IS 'The average value of the result of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.sum_square IS 'The sum of the squares of the results of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.unit IS 'The physical unit of a numerical test result.';
+COMMENT ON COLUMN HWTestAnswerCount.num_answers IS 'The number of submissions from which the result is accumulated.';
+
+COMMENT ON TABLE HWTestAnswerDevice IS 'Association of test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerDevice.device_driver IS 'The device/driver combination.';
+
+COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
+
+
 -- StructuralSubscription
-/*
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
 COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
 COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
 COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
 COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
 COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
-COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution release.';
-COMMENT ON COLUMN StructuralSubscription.sourcepackagerelease IS 'The subscription\`s target, when it is a source-package release';
-COMMENT ON COLUMN StructuralSubscription.binarypackagerelease IS 'The subscription\`s target, when it is a binary-package release';
+COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution series.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
 COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
 COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
-COMMENT ON COLUMN StructuralSubscription.specification_flavour IS 'The volume and type of notification this subscription will generate for specifications related to the target. The value is an item of the enumeration `StructuralSubscriptionSpecificationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.bug_flavour IS 'The volume and type of notification this subscription will generate for bugs related to the target. The value is an item of the enumeration `StructuralSubscriptionBugsFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.translation_flavour IS 'The volume and type of notification this subscription will generate for translations related to the target. The value is an item of the enumeration `StructuralSubscriptionTranslationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.code_flavour IS 'The volume and type of notification this subscription will generate for branches related to the target. The value is an item of the enumeration `StructuralSubscriptionCodeFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.registry_flavour IS 'The volume and type of notification this subscription will generate for registry changes related to the target. The value is an item of the enumeration `StructuralSubscriptionRegistryFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.is_verbose IS 'A flag determining whether the notifications resulting from this subscription will contain the item\`s metadata and change history, or only the last change.';
+COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
+COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
-
--- Notification
-COMMENT ON TABLE Notification IS 'A notification to a user, resulting from a subscription to a structure or an application item.';
-COMMENT ON COLUMN Notification.bug IS 'The bug this notification is about.';
-COMMENT ON COLUMN Notification.specification IS 'The specification this notification is about.';
-COMMENT ON COLUMN Notification.branch IS 'The branch this notification is about.';
-COMMENT ON COLUMN Notification.translationgroup IS 'The translation this notification is about.';
-COMMENT ON COLUMN Notification.question IS 'The question this notification is about.';
-COMMENT ON COLUMN Notification.message IS 'The message to be sent for this notification.';
-COMMENT ON COLUMN Notification.date_emailed IS 'The date this notification was emailed, or NULL if it hasn\'t yet been sent.';
-COMMENT ON COLUMN Notification.structuralsubscription IS 'The subscription for which this notification was generated, when it is a structural subscription.';
-COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which this notification was generated, when it is a bug subscription.';
-COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
-COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
-COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
-*/
-
+COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';

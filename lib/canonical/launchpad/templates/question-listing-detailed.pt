@@ -1,11 +1,17 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+  <tal:user condition="view/user">
+    <tal:description
+      define="global description context/description/fmt:shorten/320" />
+  </tal:user>
+  <tal:not-user condition="not:view/user">
+    <tal:description
+      define="global description context/description/fmt:obfuscate-email/fmt:shorten/320" />
+  </tal:not-user>
 <tr class="noted"
-    tal:attributes="title context/description/fmt:shorten/320">
+    tal:attributes="title description">
   <td class="icon left">
     <img alt="" src="/@@/question" />
   </td>
@@ -40,3 +46,4 @@
   </td>
 </tr>
 </tal:root>
+
