@@ -32,16 +32,20 @@ class SlaveScanner(LaunchpadCronScript):
         self.logger.info("Dispatching Jobs.")
 
         for builder in builder_set:
+            self.logger.info("Processing: %s" % builder.name)
             # XXX cprov 20071109: we don't support manual dispatching
             # yet. Once we support it this clause should be removed.
             if builder.manual:
+                self.logger.warn('builder is in manual state. Ignored.')
                 continue
-
             if not builder.is_available:
-                self.logger.warn('%s: not available.' % builder.name)
+                self.logger.warn('builder is not available. Ignored.')
                 continue
-
             candidate = builder.findBuildCandidate()
+            if candidate is None:
+                self.logger.debug(
+                    "No candidates available for builder.")
+                continue
             builder.dispatchBuildCandidate(candidate)
 
         self.logger.info("Slave Scan Process Finished.")

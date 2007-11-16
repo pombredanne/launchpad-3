@@ -128,8 +128,10 @@ class IBuilder(IHasOwner):
         A dictionary that maps a pocket to pockets that it can
         depend on for a build.
         """)
-    is_available = Attribute(
-        "Whether or not a builder is available for building new jobs. ")
+    is_available = Bool(
+        title=_("Whether or not a builder is available for building "
+                "new jobs. "),
+        required=False)
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
@@ -236,8 +238,8 @@ class IBuilder(IHasOwner):
     def findBuildCandidate():
         """Return the candidate for building.
 
-        The result the pending BuildQueue item with the highest score for
-        this builder ProcessorFamily or None if no candidate is available.
+        The pending BuildQueue item with the highest score for this builder
+        ProcessorFamily or None if no candidate is available.
         """
 
     def dispatchBuildCandidate(candidate):

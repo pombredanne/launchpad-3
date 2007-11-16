@@ -311,7 +311,7 @@ class Builder(SQLBase):
         # reviewed the UI to hide their information until public disclosure.
         if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
             raise CannotBuild(
-                'Soyuz is not yet capable to build SECURITY uploads.')
+                'Soyuz is not yet capable of building SECURITY uploads.')
 
         # The main distribution has policies to prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
@@ -517,11 +517,14 @@ class Builder(SQLBase):
             return False
         return True
 
+    # XXX cprov 20071116: It should become part of the public
+    # findBuildCandidate once we start to detect superseded builds
+    # at build creation time.
     def _findBuildCandidate(self):
-        """Actually the real build candidate lookup.
+        """Return the highest priority pending build candidate for this buider.
 
-        It will become public (with the same name) when we get able to detect
-        superseded builds at build creation time.
+        Returns a IBuildQueue record queued for this builder processorfamily
+        with the highest lastscore or None if there is no one available.
         """
         clauses = ["""
             buildqueue.build = build.id AND
@@ -558,10 +561,9 @@ class Builder(SQLBase):
         candidate = self._findBuildCandidate()
 
         if not candidate:
-            logger.debug("No candidates available.")
             return None
 
-        while candidate.is_last_version is False:
+        while candidate and candidate.is_last_version is False:
             logger.debug(
                 "Build %s SUPERSEDED, queue item %s REMOVED"
                 % (candidate.build.id, candidate.id))

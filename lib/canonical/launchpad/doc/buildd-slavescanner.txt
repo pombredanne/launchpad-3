@@ -31,10 +31,6 @@ standard output with noisely output.
 
   >>> import logging
 
-We use StringIO later to simulate bits of the build slave file retrieval
-
-  >>> from StringIO import StringIO
-
 First let's test an essential part of the BuilddMaster class, the
 BuilderGroup() class, by creating an empty BuilderGroup object
 
@@ -43,33 +39,13 @@ BuilderGroup() class, by creating an empty BuilderGroup object
   >>> buildergroup = BuilderGroup(
   ...     logging.getLogger(), local_transaction)
 
-Mock Builder, a class to emulate the Builder behaviour:
+Import MockBuilder and a series of MockSlaves to be used in this test.
 
-  >>> class MockBuilder:
-  ...     def __init__(self, name, slave):
-  ...         self.slave = slave
-  ...         self.builderok = True
-  ...         self.manual = False
-  ...         self.url = 'http://fake:0000'
-  ...         slave.urlbase = self.url
-  ...         self.name = name
-  ...         self.trusted = False
-  ...     def failbuilder(self, reason):
-  ...         self.builderok = False
-  ...         self.failnotes = reason
-  ...     def slaveStatusSentence(self):
-  ...         return self.slave.status()
-  ...     def cleanSlave(self):
-  ...         return self.slave.clean()
-  ...     def requestAbort(self):
-  ...         return self.slave.abort()
-  ...     def resetSlaveHost(self, logger):
-  ...         pass
-  ...     def checkSlaveAlive(self):
-  ...         pass
-  ...     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
-  ...         pass
-
+  >>> from canonical.launchpad.ftests.soyuzbuilddhelpers import (
+  ...    MockBuilder, SaneBuildingSlave, SaneWaitingSlave, InsaneWaitingSlave,
+  ...    LostBuildingSlave, LostWaitingSlave, LostBuildingBrokenSlave,
+  ...    BrokenSlave, OkSlave, BuildingSlave, AbortedSlave, WaitingSlave,
+  ...    AbortingSlave)
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
@@ -94,48 +70,24 @@ testing purposes.
 Initializing the sane_builder. It was not rescued, since the job
 identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
-  >>> class SaneBuildingSlave:
-  ...     """A mock slave that is currently building."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '8-1')
-  ...     def clean(self):
-  ...         print 'Rescuing SaneSlave'
-
-  >>> sanebuilding_builder = MockBuilder('Sane Building Slave',
-  ...                                    SaneBuildingSlave())
-
+  >>> sanebuilding_builder = MockBuilder(
+  ...     'Sane Building Slave', SaneBuildingSlave())
   >>> buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
   True
 
 A sane WAITING slave:
 
-  >>> class SaneWaitingSlave:
-  ...     """A mock slave that is currently waiting."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
-  ...     def clean(self):
-  ...         print 'Rescuing SaneSlave'
-
-  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
-  ...                                   SaneWaitingSlave())
-
+  >>> sanewaiting_builder = MockBuilder(
+  ...     'Sane Waiting Slave', SaneWaitingSlave())
   >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
   True
 
-A sane WAITING slave but with wrong BuildQueue/Build relation:
+A insane WAITING slave, with wrong BuildQueue/Build relation:
 
-  >>> class SaneWaitingSlave:
-  ...     """A mock slave waiting with a bogus Build/BuildQueue relation."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
-  ...     def clean(self):
-  ...         pass
-
-  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
-  ...                                   SaneWaitingSlave())
-
-  >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder)
-  WARNING:root:Builder 'Sane Waiting Slave' rescued from '7-1: Job build entry mismatch'
+  >>> insanewaiting_builder = MockBuilder(
+  ...     'Insane Waiting Slave', InsaneWaitingSlave())
+  >>> buildergroup.rescueBuilderIfLost(insanewaiting_builder)
+  WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1: Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
 Build.id == 7, so this pair relation is wrong.
@@ -143,31 +95,15 @@ Build.id == 7, so this pair relation is wrong.
 Let's test slaves with job identifier pointing non-existent
 Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 
-  >>> class LostBuildingSlave:
-  ...     """A mock slave building bogus Build/BuildQueue IDs."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '1000-10000')
-  ...     def abort(self):
-  ...         pass
-
-  >>> lostbuilding_builder = MockBuilder('Lost Building Slave',
-  ...                                    LostBuildingSlave())
-
+  >>> lostbuilding_builder = MockBuilder(
+  ...     'Lost Building Slave', LostBuildingSlave())
   >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
   WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
 
 Then a lost slave in status 'WAITING':
 
-  >>> class LostWaitingSlave:
-  ...     """A mock slave waiting with bogus Build/BuildQueue IDs."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
-  ...     def clean(self):
-  ...         pass
-
-  >>> lostwaiting_builder = MockBuilder('Lost Waiting Slave',
-  ...                                    LostWaitingSlave())
-
+  >>> lostwaiting_builder = MockBuilder(
+  ...     'Lost Waiting Slave', LostWaitingSlave())
   >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
   WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
 
@@ -176,188 +112,75 @@ Both got rescued, as expected.
 Slave-scanner will deactivate a 'lost-building' builder that could not
 be aborted appropriately.
 
-  >>> import xmlrpclib
-  >>> class LostBuildingBrokenSlave:
-  ...     """A mock slave building bogus Build/BuildQueue IDs."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '1000-10000')
-  ...     def abort(self):
-  ...         raise xmlrpclib.Fault(8002, "Could not abort")
-
-  >>> lostbuilding_builder = MockBuilder('Lost Building Broken Slave',
-  ...                                    LostBuildingBrokenSlave())
+  >>> lostbuilding_builder = MockBuilder(
+  ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
-
   >>> buildergroup.updateBuilderStatus(lostbuilding_builder, hoary_i386)
   WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
   Traceback (most recent call last):
   ...
   Fault: <Fault 8002: 'Could not abort'>
 
-Let's create a bunch of mock slaves for testing the Builder State Handler:
+'ensurePresent()' slave method always return True, it theoretically
+means the slave has the requested file in cache.
 
-  >>> class BrokenSlave:
-  ...     """A mock slave that reports that it is broken."""
-  ...     def status(self):
-  ...         raise xmlrpclib.Fault(8001, "Broken slave")
+The mock slaves will also print, when necessary, whether it has been
+passed an 'archives' property in the args dictionary.
 
-
-Make ensurePresent() always return True, it theoretically means the
-slave has the requested file in cache.  This mock slave will also print
-whether it has been passed an 'archives' property in the args dictionary.
 The archives are passed from the buildmaster and controls what archives
-exist in the apt sources.list.  If nothing is passed, the slave's default
+exist in the apt sources.list.  If nothing is passed, the chroot's default
 list applies, otherwise the passed list is used.  This behaviour is required
 in build slaves because some jobs may only depend on certain archives and
 hence certain package dependencies.
-
-  >>> class OkSlave:
-  ...     """An idle mock slave that prints information about itself."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.IDLE', '')
-  ...     def ensurepresent(self, sha1, url):
-  ...         print "ensurepresent called"
-  ...         return True, None
-  ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'OkSlave BUILDING'
-  ...         print info
-  ...         if 'archives' in args:
-  ...             print "Archives: %s" % sorted(args['archives'])
-  ...         else:
-  ...             print "No archives set."
-  ...         print "Suite: %s" % args['suite']
-  ...         print "Archive Purpose: %s" % args['archive_purpose']
-  ...         return ('BuildStatus.Building', info)
-  ...     def fetchlogtail(self, size):
-  ...         return 'BOGUS'
-  ...     def clean(self):
-  ...         pass
-  ...     def info(self):
-  ...         return ('1.0', 'i386', 'debian')
-
-
-  >>> class BuildingSlave(OkSlave):
-  ...     """A mock slave that looks like it's currently building."""
-  ...     def status(self):
-  ...         buildlog = xmlrpclib.Binary("This is a build log")
-  ...         return ('BuilderStatus.BUILDING', '1-1', buildlog)
-  ...     def getFile(self, sum):
-  ...         if sum == "buildlog":
-  ...             s = StringIO("This is a build log")
-  ...             s.headers={'content-length':19}
-  ...             return s
-
-
-  >>> class AbortedSlave(OkSlave):
-  ...     """A mock slave that looks like it's aborted."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.ABORTED', '1-1')
-
-
-  >>> class WaitingSlave(OkSlave):
-  ...     """A mock slave that looks like it's currently waiting."""
-  ...     def __init__(self, state, dependencies=None):
-  ...         self.state = state
-  ...         self.dependencies = dependencies
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', self.state, '1-1', {},
-  ...                 self.dependencies )
-  ...     def getFile(self, sum):
-  ...         if sum == "buildlog":
-  ...             s = StringIO("This is a build log")
-  ...             s.headers={'content-length':19}
-  ...             return s
-
-  >>> class AbortingSlave(OkSlave):
-  ...     """A mock slave that looks like it's in the process of aborting."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.ABORTING', '1-1')
-
 
   >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
 
   >>> builder2 = MockBuilder('Idle Slave', OkSlave())
 
-  >>> builder3 = MockBuilder('Package Failed',
-  ...                        WaitingSlave('BuildStatus.PACKAGEFAIL'))
+  >>> builder3 = MockBuilder(
+  ...    'Package Failed', WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
-  >>> builder4 = MockBuilder('Missing Dependency build',
-  ...                        WaitingSlave('BuildStatus.DEPFAIL',
-  ...                                     'baz (>= 1.0.1)'))
+  >>> builder4 = MockBuilder(
+  ...     'Missing Dependency build',
+  ...     WaitingSlave('BuildStatus.DEPFAIL', 'baz (>= 1.0.1)'))
 
-  >>> builder5 = MockBuilder('Bad Chroot',
-  ...                        WaitingSlave('BuildStatus.CHROOTFAIL'))
+  >>> builder5 = MockBuilder(
+  ...     'Bad Chroot', WaitingSlave('BuildStatus.CHROOTFAIL'))
 
-  >>> builder6 = MockBuilder('I am out of order',
-  ...                        WaitingSlave('BuildStatus.BUILDERFAIL'))
+  >>> builder6 = MockBuilder(
+  ...     'I am out of order', WaitingSlave('BuildStatus.BUILDERFAIL'))
 
   >>> builder7 = MockBuilder('I am busy', BuildingSlave())
 
   >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
 
-  >>> builder9 = MockBuilder('I am trying to terminate the child process',
-  ...                        AbortingSlave())
+  >>> builder9 = MockBuilder(
+  ...     'I am trying to terminate the child process', AbortingSlave())
 
-  >>> builder10 = MockBuilder('Package Successfully Built',
-  ...                         WaitingSlave('BuildStatus.OK'))
+  >>> builder10 = MockBuilder(
+  ...     'Package Successfully Built',
+  ...      WaitingSlave('BuildStatus.OK'))
 
-  >>> builder11 = MockBuilder('I am giving this job back',
-  ...		               WaitingSlave('BuildStatus.GIVENBACK'))
+  >>> builder11 = MockBuilder(
+  ...     'I am giving this job back',
+  ...     WaitingSlave('BuildStatus.GIVENBACK'))
 
-
-  >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
-  ...                          builder5, builder6, builder7, builder8,
-  ...                          builder9, builder10, builder11]
-
-  Stub classes to emulate Build and BuildQueue
-
-  >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
+  >>> buildergroup.builders = [
+  ...     builder1, builder2, builder3, builder4, builder5, builder6,
+  ...     builder7, builder8, builder9, builder10, builder11]
 
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
 
-  >>> class MockBuild:
-  ...     def __init__(self, id):
-  ...         self.id = id
-  ...         self.buildstate = None
-  ...         self.builder = None
-  ...         self.datebuilt = None
-  ...         self.buildduration = None
-  ...         self.buildlog = None
-  ...         self.dependencies = None
-  ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
-  ...         self.archive = tmp_build.archive
-  ...         self.distroarchseries = tmp_build.distroarchseries
-  ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
-  ...         self.pocket = tmp_build.pocket
-  ...         self.title = 'Mock Build'
-  ...         self.notification_sent = False
-  ...         self.is_trusted = tmp_build.is_trusted
-  ...         self.binarypackages = ['one', 'two', 'three']
-  ...     @property
-  ...     def distroseries(self):
-  ...         return self.distroarchseries.distroseries
-  ...     @property
-  ...     def distribution(self):
-  ...         return self.distroarchseries.distroseries.distribution
-  ...     def notify(self, extra_info=None):
-  ...         from sqlobject import SQLObjectNotFound
-  ...         self.notification_sent = True
-  ...         try:
-  ...             real_build = getUtility(IBuildSet).getByBuildID(self.id)
-  ...         except SQLObjectNotFound, e:
-  ...             pass
-  ...         else:
-  ...             real_build.notify(extra_info=extra_info)
-
+  >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
   >>> import datetime, pytz
+
   >>> UTC = pytz.timezone('UTC')
 
 We want to get a Build and make BuildQueue items for it:
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
   >>> a_build = getUtility(IBuildSet).getByBuildID(8)
 
 To make testing easier we provide a convenience function to put a BuildQueue
@@ -367,28 +190,6 @@ object into a preset fixed state:
   >>> def setupBuildQueue(build_queue, builder):
   ...      build_queue.builder = builder
   ...      build_queue.buildstart = default_start
-
-  >>> from canonical import encoding
-
-XXX cprov 20070615: Historically we used a MockBuildQueue class, this
-is deprecated, please do not extend it and try to reduce its usage.
-We should apply efforts to use the real BuildQueue object instead.
-
-  >>> class MockBuildQueue:
-  ...     def __init__(self, id, builder, build):
-  ...         self.id = id
-  ...         self.build = build
-  ...         self.name = "unimportant-name"
-  ...         self.files = []
-  ...         self.component_name = "main"
-  ...         self.archhintlist = ""
-  ...         self.is_trusted = build.is_trusted
-  ...         self.archseries = build.distroarchseries
-  ...         self.version = build.sourcepackagerelease.version
-  ...         setupBuildQueue(self, builder)
-  ...     def destroySelf(self):
-  ...         pass
-
 
 Remove any previous buildmaster ROOT directory, to avoid any garbage
 lock conflict (it would be recreated automatically if necessary)
@@ -892,12 +693,12 @@ Create a totally bogus CHROOT
   >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=pocket, chroot=chroot)
 
-Setup a buildd-slave instance for a succesfully 'scan' procedure.
+Setup a buildd-slave instance for a successfull 'scan' procedure.
 
   >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
   >>> BuilddSlaveTestSetup().setUp()
 
-Initialiase the BuildMaster with all available distroarchseriess.
+Initialiase the BuildMaster with all available distroarchseries.
 Because the sampledata builders are busy we issue and warning stating that.
 
   >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
@@ -928,8 +729,8 @@ the the following API:
  * dispatchBuildCandidate: dispatch a build for a given candidate.
 
 IBuilder.findCandidate also identifies if there are builds for
-superseded source package releases in the queue and mark the
-correspondent build record as SUPERSEDED.
+superseded source package releases in the queue and marks the
+corresponding build record as SUPERSEDED.
 
   >>> old_candidate = a_builder.findBuildCandidate()
   >>> print old_candidate.build.buildstate.name
@@ -941,9 +742,9 @@ The 'candidate' is constant until we dispatch it.
   >>> new_candidate.id == old_candidate.id
   True
 
-A lot of effort is required in order to make the current candidate to
-be considered 'superseded', basically,  it involves directly tweaking
-the status of the current publication (as a permissive database user).
+In order to make the current candidate be considered 'superseded' we
+need to tweak the status of the current publication directly, as a
+permissive database user.
 
   >>> from canonical.config import config
   >>> from canonical.launchpad.interfaces import PackagePublishingStatus
@@ -960,7 +761,7 @@ the status of the current publication (as a permissive database user).
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-Now, if we look up for a build candidate, we will see that it changed.
+Now, if we try to get a new build candidate, we will see that it changed.
 
   >>> new_candidate = a_builder.findBuildCandidate()
   >>> new_candidate.id != old_candidate.id
@@ -998,7 +799,9 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
   >>> candidate.destroySelf()
 
 Currently we can theoretically dispatch a build candidate for a
-builder in 'manual' mode. This is not yet optimal because we can only
+builder in 'manual' mode.
+
+Although this will not be optimal, because we can only
 do it once the manual builder has been collected (due to the
 BuildQueue.builder constraint). Also because we don't yet provide a
 API/UI method to request the dispatch in advance.
@@ -1191,7 +994,7 @@ A build in the security pocket:
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> a_builder.dispatchBuildCandidate(bqItem3)
-  WARNING:root:Could not build: Soyuz is not yet capable to build SECURITY uploads.
+  WARNING:root:Could not build: Soyuz is not yet capable of building SECURITY uploads.
 
 XXX cprov 20071025: The pocket-dependency infrastructure is ready to
 deal with SECURITY pocket, however we explicitly skip security builds

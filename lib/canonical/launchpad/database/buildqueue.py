@@ -39,48 +39,48 @@ class BuildQueue(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
 
     def manualScore(self, value):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         self.lastscore = value
         self.manual = True
 
     @property
     def archseries(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.distroarchseries
 
     @property
     def urgency(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.sourcepackagerelease.urgency
 
     @property
     def archhintlist(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.sourcepackagerelease.architecturehintlist
 
     @property
     def name(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.sourcepackagerelease.name
 
     @property
     def version(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.sourcepackagerelease.version
 
     @property
     def files(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.sourcepackagerelease.files
 
     @property
     def builddependsindep(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         return self.build.sourcepackagerelease.builddependsindep
 
     @property
     def buildduration(self):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         if self.buildstart:
             UTC = pytz.timezone('UTC')
             now = datetime.now(UTC)
@@ -89,12 +89,12 @@ class BuildQueue(SQLBase):
 
     @property
     def is_trusted(self):
-        """See IBuildQueue"""
+        """See `IBuildQueue`."""
         return self.build.is_trusted
 
     @property
     def is_last_version(self):
-        """See  IBuildQueue ."""
+        """See `IBuildQueue`."""
         spr = self.build.sourcepackagerelease
         if (spr.publishings and spr.publishings[0].status >
             PackagePublishingStatus.PUBLISHED):
@@ -103,7 +103,7 @@ class BuildQueue(SQLBase):
         return True
 
     def score(self):
-        """See IBuildQueue"""
+        """See `IBuildQueue`."""
         # Grab any logger instance available.
         logger = logging.getLogger()
 
@@ -168,7 +168,7 @@ class BuildQueue(SQLBase):
         logger.debug("%s= %d" % (msg, self.lastscore))
 
     def getLogFileName(self):
-        """See IBuildQueue"""
+        """See `IBuildQueue`."""
         sourcename = self.build.sourcepackagerelease.name
         version = self.build.sourcepackagerelease.version
         # we rely on previous storage of current buildstate
@@ -198,7 +198,7 @@ class BuildQueue(SQLBase):
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
-        """See IBuildQueue."""
+        """See `IBuildQueue`."""
         logger.warn(
             "Builder %s forgot about build %s -- resetting buildqueue record"
             % (self.builder.url, self.build.title))
@@ -208,17 +208,17 @@ class BuildQueue(SQLBase):
 
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
-        """See IBuildQueue"""
+        """See `IBuildQueue`."""
         self.logtail = encoding.guess(str(logtail))
 
     def updateBuild_ABORTING(self, buildid, build_status,
                              logtail, filemap, dependencies, logger):
-        """See IBuildQueue"""
+        """See `IBuildQueue`."""
         self.logtail = "Waiting for slave process to be terminated"
 
     def updateBuild_ABORTED(self, buildid, build_status,
                             logtail, filemap, dependencies, logger):
-        """See IBuildQueue"""
+        """See `IBuildQueue`."""
         self.builder.cleanSlave()
         self.builder = None
         self.buildstart = None
@@ -226,41 +226,41 @@ class BuildQueue(SQLBase):
 
 
 class BuildQueueSet(object):
-    """See IBuildQueueSet"""
+    """Utility to deal with BuildQueue content class."""
     implements(IBuildQueueSet)
 
     def __init__(self):
         self.title = "The Launchpad build queue"
 
     def __iter__(self):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         return iter(BuildQueue.select())
 
     def __getitem__(self, job_id):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         try:
             return BuildQueue.get(job_id)
         except SQLObjectNotFound:
             raise NotFoundError(job_id)
 
     def get(self, job_id):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         return BuildQueue.get(job_id)
 
     def count(self):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         return BuildQueue.select().count()
 
     def getByBuilder(self, builder):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
 
     def getActiveBuildJobs(self):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         return BuildQueue.select('buildstart is not null')
 
     def fetchByBuildIds(self, build_ids):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         if len(build_ids) == 0:
             return []
 
@@ -269,7 +269,7 @@ class BuildQueueSet(object):
             prejoins=['builder'])
 
     def calculateCandidates(self, archserieses, state):
-        """See IBuildQueueSet."""
+        """See `IBuildQueueSet`."""
         if not archserieses:
             # return an empty SQLResult instance to make the callsites happy.
             return BuildQueue.select("1=2")

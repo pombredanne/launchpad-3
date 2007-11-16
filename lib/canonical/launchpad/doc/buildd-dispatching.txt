@@ -85,7 +85,7 @@ Check if there are builders available:
   >>> bob_builder.is_available
   True
 
-Verify how the inexistent builder was excluded, marked as failed:
+Verify how the nonexistent builder was excluded, marked as failed:
 
   >>> frog_builder = builder_set['frog']
   >>> frog_builder.builderok
