@@ -115,6 +115,7 @@ class Branch(SQLBase):
         orderBy='id')
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch')
@@ -173,6 +174,11 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
+        # Update the last_modified_date of the source and target branches to
+        # be the date_created for the merge proposal.
+        self.date_last_modified = date_created
+        target_branch.date_last_modified = date_created
+
         return BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
@@ -362,6 +368,7 @@ class Branch(SQLBase):
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See `IBranch`."""
+        self.date_last_modified = UTC_NOW
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
@@ -710,7 +717,8 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
-            date_created=date_created, branch_type=branch_type)
+            date_created=date_created, branch_type=branch_type,
+            date_last_modified=date_created)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
