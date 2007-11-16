@@ -70,15 +70,13 @@ The set of messages that are untranslated in the second batch:
 Now, we are going to select messages with new suggestions submitted after
 they were last reviewed.
 
-# XXX CarlosPerelloMarin 2007-11-16: Disabled until suggestions are enabled
-# again.
-#  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
-#  >>> user_browser.getControl('Filter').click()
-#  >>> user_browser.url
-#  'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
-#
-#  >>> print_shown_messages(user_browser)
-#  134: '<samp> </samp>caratas'
+  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
+  >>> user_browser.getControl('Filter').click()
+  >>> user_browser.url
+  'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
+
+  >>> print_shown_messages(user_browser)
+  134: '<samp> </samp>caratas'
 
 
 === Messages needing review ===
@@ -210,16 +208,12 @@ see our own translation since we are only showing untranslated strings.
 
 We do, however, see Spanish suggestions.
 
-XXX JeroenVermeulen 2007-11-09: We've disabled suggestions for Phase 2 schema
-refactorings.  Re-enable this test once they work again.
-
-  #>>> print text.decode('utf-8')
+  >>> text = extract_text(find_main_content(user_browser.contents))
+  >>> print text.encode('UTF-8')
   Template ...
-  English: evolution addressbook
+  English: current addressbook folder
   Current Chinese (China): (no translation yet)
   Suggestions:
-  ...
-  libreta de direcciones de Evolution
+  carpeta de libretas de direcciones actual
   Spanish
   ...
-
