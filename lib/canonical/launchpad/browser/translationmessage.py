@@ -515,19 +515,29 @@ class BaseTranslationView(LaunchpadView):
         plural_indices_to_store = (
             self.form_posted_translations_has_store_flag.get(potmsgset, []))
 
+        translationmessage = potmsgset.getCurrentTranslationMessage(
+            self.pofile.language)
+
         # If the user submitted a translation without checking its checkbox,
         # we assume they don't want to save it. We revert any submitted value
         # to its current active translation.
+        has_translations = False
         for index in translations:
             if index not in plural_indices_to_store:
-                translationmessage = potmsgset.getCurrentTranslationMessage(
-                    self.pofile.language)
                 if (translationmessage is not None and
                     translationmessage.translations[index] is not None):
                     translations[index] = (
                         translationmessage.translations[index])
                 else:
                     translations[index] = u''
+            if translations[index]:
+                # There are translations
+                has_translations = True
+
+        if translationmessage is None and not has_translations:
+            # There is no current translation yet, neither we get any
+            # translation submitted, so we don't need to store anything.
+            return None
 
         is_fuzzy = self.form_posted_needsreview.get(potmsgset, False)
 
