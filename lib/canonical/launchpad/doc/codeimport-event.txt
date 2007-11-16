@@ -196,7 +196,7 @@ details the changes that have been applied.
 
     >>> fail_if_argument_is_none(
     ...     event_set.newModify, None, nopriv, token)
-    >>> fail_if_argument_is_none
+    >>> fail_if_argument_is_none(
     ...     event_set.newModify, svn_import, None, token)
     >>> fail_if_argument_is_none(
     ...     event_set.newModify, svn_import, nopriv, None)
