@@ -430,6 +430,38 @@ checks:
  >>> os.remove(os.path.join(datadir('suite/bar_1.0-2'), 'bar_1.0.orig.tar.gz'))
 
 
+DEBIAN SYNC upload of a source via the 'sync' policy.
+These uploads do not generate any announcement emails for auto-accepted
+packages, just the upload notification.
+
+Make hoary developmental again, as syncs only happen at that stage of a
+distroseries.
+
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-5/bar_1.0-5_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+One email generated:
+
+  >>> [notification] = pop_notifications()
+  >>> notification['Subject']
+  'Accepted: bar 1.0-5 (source)'
+
+Reset hoary back to released and remove disk file created during processing:
+
+  >>> hoary.status = DistroSeriesStatus.CURRENT
+  >>> os.remove(os.path.join(datadir('suite/bar_1.0-5'),
+  ...     'bar_1.0.orig.tar.gz'))
+
+
 AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
 
   >>> security_policy = getPolicy(

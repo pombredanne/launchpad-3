@@ -412,6 +412,12 @@ any other state can't though.
     AssertionError: Only mailing lists in the REGISTERED state...
 
 
+== Mailing list permissions ===
+
+Permissions on a team's mailing list are not tracked separately from
+permissions on the team.
+
+
 == Welcome messages ==
 
 Mailing lists have a welcome message text which is sent to new members when
@@ -419,8 +425,10 @@ they subscribe to a list.  The welcome message can contain any text.
 
     >>> print list_one.welcome_message
     None
+    >>> login('foo.bar@canonical.com')
     >>> list_one.welcome_message = """\
     ... Welcome to the Team One mailing list."""
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_one.welcome_message
     u'Welcome to the Team One mailing list.'
@@ -460,7 +468,9 @@ a particular welcome message.
 
     >>> team_five = new_team('team-five')
     >>> list_five = list_set.new(team_five)
+    >>> login('foo.bar@canonical.com')
     >>> list_five.welcome_message = u'Welcome to Team Five'
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_five.status.name
     'REGISTERED'
@@ -468,14 +478,15 @@ a particular welcome message.
 You cannot change the welcome message text for a mailing list in anything but
 ACTIVE or REGISTERED status.
 
+    >>> login('foo.bar@canonical.com')
     >>> list_two.welcome_message = """\
     ... This list has been declined."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified
 
     >>> list_four.welcome_message = """\
     ... This list has been deactivated."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified

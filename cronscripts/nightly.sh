@@ -66,7 +66,7 @@ echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
 echo == Updating bug watches `date` ==
-LPCONFIG=production LP_DBUSER=temp_checkwatches python checkwatches.py
+python checkwatches.py
 
 echo == POFile stats `date` ==
 python rosetta-pofile-stats.py

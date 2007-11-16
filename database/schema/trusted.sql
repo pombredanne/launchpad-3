@@ -1,5 +1,35 @@
 -- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+
+CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    import sha
+    return sha.new(args[0]).hexdigest()
+$$;
+
+COMMENT ON FUNCTION sha1(text) IS
+    'Return the SHA1 one way cryptographic hash as a string of 40 hex digits';
+
+
+CREATE OR REPLACE FUNCTION null_count(p_values anyarray) RETURNS integer
+LANGUAGE plpgsql IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+DECLARE
+    v_index integer;
+    v_null_count integer := 0;
+BEGIN
+    FOR v_index IN array_lower(p_values,1)..array_upper(p_values,1) LOOP
+        IF p_values[v_index] IS NULL THEN
+            v_null_count := v_null_count + 1;
+        END IF;
+    END LOOP;
+    RETURN v_null_count;
+END;
+$$;
+
+COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
+
 /* This is created as a function so the same definition can be used with
     many tables
 */
@@ -173,17 +203,6 @@ $$;
 
 COMMENT ON FUNCTION valid_regexp(text)
     IS 'Returns true if the input can be compiled as a regular expression.';
-
-
-CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
-LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
-$$
-    import sha
-    return sha.new(args[0]).hexdigest()
-$$;
-
-COMMENT ON FUNCTION sha1(text) IS
-    'Return the SHA1 one way cryptographic hash as a string of 40 hex digits';
 
 
 CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
