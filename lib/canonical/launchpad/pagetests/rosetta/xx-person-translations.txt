@@ -1,6 +1,9 @@
 Test that the person's translation history page displays the latest
 translations and translation groups related to the person in question.
 
+XXX CarlosPerelloMarin 2007-11-16 bug=163198 : This test should be
+improved to be more robust.
+
   >>> anon_browser.open(
   ...     "http://translations.launchpad.dev/people/carlos/+translations")
   >>> print find_main_content(anon_browser.contents).renderContents()

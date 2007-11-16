@@ -584,8 +584,8 @@ class BaseTranslationView(LaunchpadView):
 
         # Check the values we got with the submit for the 'Needs review' flag
         # so we prepare the new render with the same values.
-        if self.form_posted_needsreview.has_key(
-            current_translation_message.potmsgset):
+        if current_translation_message.potmsgset in (
+            self.form_posted_needsreview):
             is_fuzzy = self.form_posted_needsreview[
                 current_translation_message.potmsgset]
         else:
@@ -799,12 +799,11 @@ class BaseTranslationView(LaunchpadView):
                     msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox
                     in form)
 
-            if not self.form_posted_translations.has_key(potmsgset):
+            if potmsgset not in self.form_posted_translations:
                 self.form_posted_translations[potmsgset] = {}
             self.form_posted_translations[potmsgset][pluralform] = value
 
-            if not self.form_posted_translations_has_store_flag.has_key(
-                potmsgset):
+            if potmsgset not in self.form_posted_translations_has_store_flag:
                 self.form_posted_translations_has_store_flag[potmsgset] = []
             if store:
                 self.form_posted_translations_has_store_flag[
@@ -1085,7 +1084,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
-                # info that we don't want to show to anoymous users.
+                # info that we don't want to show to anonymous users.
                 translation_entry['current_translation'] = u'''
                     To prevent privacy issues, this translation is not
                     available to anonymous users,<br />
