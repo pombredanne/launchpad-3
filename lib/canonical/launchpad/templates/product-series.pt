@@ -18,9 +18,9 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
-    <div tal:repeat="series view/sorted_serieses">
+    <div tal:repeat="series view/sorted_series_list">
       <div tal:define="is_focus python:context.development_focus == series"
-           tal:attributes="class 
+           tal:attributes="class
               python:is_focus and 'highlighted' or 'unhighlighted'">
         <metal:series use-macro="series/@@+macros/detailed_display">
           <div metal:fill-slot="extra"
