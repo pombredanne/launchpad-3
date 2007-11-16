@@ -63,7 +63,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             filename = os.path.basename(self.context.path)
             guessed_language, file_ext = filename.split(u'.', 1)
             (language, variant) = (
-                language_set.getLanguageAndVariantFromString(guessed_language))
+                language_set.getLanguageAndVariantFromString(
+                    guessed_language))
             if language is not None:
                 field_values['language'] = language
                 # Need to warn the user that we guessed the language
