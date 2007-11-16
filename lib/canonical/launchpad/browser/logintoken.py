@@ -159,9 +159,9 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     expected_token_types = (LoginTokenType.PROFILECLAIM,)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email).person
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email).person
         super(ClaimProfileView, self).initialize()
 
     @property
@@ -212,15 +212,15 @@ class ClaimTeamView(
     expected_token_types = (LoginTokenType.TEAMCLAIM,)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email).person
-        # Let's pretend the claimed profile provides ITeam while we
-        # render/process this page, so that it behaves like a team.
-        # Use a local import as we don't want removeSecurityProxy used
-        # anywhere else.
-        from zope.security.proxy import removeSecurityProxy
-        directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email).person
+            # Let's pretend the claimed profile provides ITeam while we
+            # render/process this page, so that it behaves like a team.
+            # Use a local import as we don't want removeSecurityProxy used
+            # anywhere else.
+            from zope.security.proxy import removeSecurityProxy
+            directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
         super(ClaimTeamView, self).initialize()
 
     def setUpWidgets(self, context=None):
@@ -326,9 +326,9 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                             LoginTokenType.VALIDATESIGNONLYGPG)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
-            self.field_names = ['text_signature']
+        if not self.redirectIfInvalidOrConsumedToken():
+            if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+                self.field_names = ['text_signature']
         super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
@@ -638,9 +638,9 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.email = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email)
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.email = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email)
         super(NewAccountView, self).initialize()
 
     # Use a method to set self.next_url rather than a property because we
