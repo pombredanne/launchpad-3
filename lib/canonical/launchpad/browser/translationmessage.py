@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSuggestions, NotFoundError, TranslationConflict,
     TranslationConstants, UnexpectedFormData)
+from canonical.launchpad.database import TranslationMessage
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -346,13 +347,9 @@ def _getSuggestionFromFormId(form_id):
 
     # Extract the suggestion ID.
     suggestion_id = int(expr_match.group(3))
-
-    # XXX CarlosPerelloMarin 2007-11-14: Enable this again once browser code
-    # is migrated.
-    #posubmissionset = getUtility(IPOSubmissionSet)
-    #suggestion = posubmissionset.getPOSubmissionByID(suggestion_id)
-
-    #return suggestion.potranslation.translation
+    plural_form = int(expr_match.group(4))
+    translationmessage = TranslationMessage.get(suggestion_id)
+    return translationmessage.translations[plural_form]
 
 
 class BaseTranslationView(LaunchpadView):
@@ -1397,7 +1394,8 @@ class TranslationMessageSuggestions:
                 'person': submission.submitter,
                 'date_created': submission.date_created,
                 'suggestion_html_id':
-                    submission.makeHTMLID('suggestion_%s' % (submission.id)),
+                    submission.makeHTMLID('suggestion_%s_%s' % (submission.id,
+                                                                plural_form)),
                 'translation_html_id':
                     translation.makeHTMLID(
                         'translation_%s' % (plural_form)),
