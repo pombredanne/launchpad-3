@@ -133,20 +133,12 @@ class POTMsgSet(SQLBase):
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')
 
-        subquery = '''
+        query.append('''
                 potmsgset IN (
                     SELECT id FROM POTMsgSet
                         WHERE id!=%s AND
-                        msgid_singular=%s AND '''
-        if self.msgid_plural is not None:
-            subquery += 'msgid_plural=%s)'
-            query.append(subquery % sqlvalues(self,
-                                              self.msgid_singular,
-                                              self.msgid_plural))
-        else:
-            subquery += 'msgid_plural IS NULL)'
-            query.append(subquery % sqlvalues(self,
-                                              self.msgid_singular))
+                        msgid_singular=%s)''' % sqlvalues(self,
+                                                          self.msgid_singular))
 
         result = TranslationMessage.select(' AND '.join(query),
                                            clauseTables=['POFile'])
