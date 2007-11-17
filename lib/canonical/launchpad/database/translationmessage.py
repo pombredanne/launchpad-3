@@ -4,13 +4,14 @@ __metaclass__ = type
 __all__ = [
     'TranslationMessage',
     'DummyTranslationMessage',
+    'TranslationMessageSet'
     ]
 
 from datetime import datetime
 import pytz
 
 from zope.interface import implements
-from sqlobject import BoolCol, ForeignKey, StringCol
+from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
@@ -18,7 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ITranslationMessage, RosettaTranslationOrigin,
+    ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
 
 
@@ -244,3 +245,15 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 return False
         # We found no translations in this translation_message
         return True
+
+
+class TranslationMessageSet:
+    """See `ITranslationMessageSet`."""
+    implements(ITranslationMessageSet)
+
+    def getByID(self, ID):
+        """See `ILanguageSet`."""
+        try:
+            return TranslationMessage.get(ID)
+        except SQLObjectNotFound:
+            return None

@@ -85,6 +85,14 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
+    <!-- TranslationMessageSet -->
+    <securedutility
+        class="canonical.launchpad.database.TranslationMessageSet"
+        provides="canonical.launchpad.interfaces.ITranslationMessageSet">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessageSet" />
+    </securedutility>
+
 </facet>
 
 </configure>

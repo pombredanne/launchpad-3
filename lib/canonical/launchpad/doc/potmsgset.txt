@@ -463,11 +463,11 @@ the given timestamp.
   False
 
 
-== POTMsgSet.getExternalTranslationMessage ==
-XXX Danilo 2007-11-16: unported, from pomsgset.getCurrentSubmissions
+== External translation suggestions ==
 
-This method returns all submissions that are currently used in other
-translation files for the same message IPOMsgSet is translating.
+External translation suggestions are current, imported or suggested
+translation for exactly the same English string, but in a different
+translation template.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPOTemplateSet, IProductSet,
@@ -482,6 +482,7 @@ We will use this helper function to print all suggestions found:
 
     >>> def print_suggestions(suggestions):
     ...     """Print IPOFile title, translation and where is it used."""
+    ...     lines = []
     ...     for suggestion in suggestions:
     ...         usage = []
     ...         if suggestion.is_current:
@@ -490,12 +491,16 @@ We will use this helper function to print all suggestions found:
     ...             usage.append('Upstream')
     ...         if not usage:
     ...             usage.append('None')
-    ...         print '%s: %s (%s)' % (
+    ...         lines.append('%s: %s (%s)' % (
     ...             suggestion.pofile.title,
     ...             suggestion.translations[0],
-    ...             ' & '.join(usage))
+    ...             ' & '.join(usage)))
+    ...	    for line in sorted(lines):
+    ...         print line
 
-On one side, we have a translation template for the evolution product.
+== POTMsgSet.getExternallyUsedTranslationMessages ==
+
+ On one side, we have a translation template for the evolution product.
 
     >>> evo_product_template = evolution_potemplate
     >>> print evo_product_template.title
@@ -543,24 +548,16 @@ translations in Spanish:
     >>> evo_distro_translation.translations
     [u' caratas']
 
-We are defining a helper method to fetch all translation suggestions together.
+    >>> suggestions = evo_product_message.getExternallyUsedTranslationMessages(
+    ...     spanish)
+    >>> print_suggestions(suggestions)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  caratas (Launchpad)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
 
-    >>> def getAllSuggestions(potmsgset, language):
-    ...     local = list(potmsgset.getLocalTranslationMessages(language))
-    ...     external = list(potmsgset.getExternalTranslationMessages(language))
-    ...     return local+external
-
-XXX: 2007-11-14 DaniloSegan: suggestions are not working yet
-
-#    >>> suggestions = getAllSuggestions(evo_product_message, spanish)
-#    >>> print_suggestions(suggestions)
-#    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  caratas (Launchpad)
-#    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
-
-#    >>> suggestions = evo_distro_message.getLocalTranslationMessages(spanish)
-#    >>> print_suggestions(suggestions)
-#    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":  tarjetas (Upstream)
-#    Spanish (es) translation of evolution-2.2 in Evolution trunk:  tarjetas (Launchpad & Upstream)
+    >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
+    ...    spanish)
+    >>> print_suggestions(suggestions)
+    Spanish (es) translation of evolution-2.2 in Evolution trunk:  tarjetas (Launchpad & Upstream)
 
 We need to be logged in as an admin to do some special attribute
 changes:
@@ -570,35 +567,35 @@ changes:
 When a translation template is set as not current, those translations
 are not available as suggestions anymore:
 
-#    >>> evo_distro_template.iscurrent = False
-#    >>> flush_database_updates()
-#    >>> suggestions = evo_product_message.getCurrentSubmissions(
-#    ...     TranslationConstants.SINGULAR_FORM)
-#    >>> len(suggestions)
-#    0
+    >>> evo_distro_template.iscurrent = False
+    >>> flush_database_updates()
+    >>> suggestions = evo_product_message.getExternallyUsedTranslationMessages(
+    ...     spanish)
+    >>> len(suggestions)
+    0
 
 The same happens if the distribution is not officially using
 translations.
 
-     >>> ubuntu.official_rosetta = False
+    >>> ubuntu.official_rosetta = False
 
-#     # We set the template as current again so we are sure that we don't show
-#     # suggestions just due to the change to the official_rosetta flag.
-#     >>> evo_distro_template.iscurrent = True
-#     >>> flush_database_updates()
-#     >>> suggestions = evo_product_message.getCurrentSubmissions(
-#     ...     TranslationConstants.SINGULAR_FORM)
-#     >>> len(suggestions)
-#     0
+    # We set the template as current again so we are sure that we don't show
+    # suggestions just due to the change to the official_rosetta flag.
+    >>> evo_distro_template.iscurrent = True
+    >>> flush_database_updates()
+    >>> suggestions = evo_product_message.getExternallyUsedTranslationMessages(
+    ...     spanish)
+    >>> len(suggestions)
+    0
 
 And products not using translations officially have the same behaviour.
 
-#     >>> evolution.official_rosetta = False
-#     >>> flush_database_updates()
-#     >>> suggestions = evo_distro_message.getCurrentSubmissions(
-#     ...     TranslationConstants.SINGULAR_FORM)
-#     >>> len(suggestions)
-#     0
+    >>> evolution.official_rosetta = False
+    >>> flush_database_updates()
+    >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
+    ...    spanish)
+    >>> len(suggestions)
+    0
 
 Let's restore the flags for next section.
 
@@ -606,11 +603,10 @@ Let's restore the flags for next section.
     >>> evolution.official_rosetta = True
     >>> flush_database_updates()
 
-== getWikiSubmissions ==
-XXX Danilo 2007-11-16: unported, from pomsgset.getCurrentSubmissions
+== POTMsgSet.getExternallySuggestedTranslationMessages ==
 
-This method returns a set of submissions that have translations for the
-same msgid as the given IPOMsgSet across the whole system.
+This method returns a set of submissions that have suggested translations
+for the same msgid as the given POTMsgSet across the whole system.
 
     # This will be needed to call a private method to invalidate an internal
     # cache.
@@ -625,21 +621,26 @@ Ubuntu Hoary distribution.
 
 Let's take a message 'test man page' that is translated into Spanish.
 
-#     >>> pomsgset_translated = evo_man_template.getPOTMsgSetByMsgIDText(
-#     ...     'test man page').getPOMsgSet('es')
-#     >>> print pomsgset_translated.pofile.title
-#     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-#     >>> pomsgset_translated.active_texts
-#     [u'just a translation']
+    >>> potmsgset_translated = evo_man_template.getPOTMsgSetByMsgIDText(
+    ...     'test man page')
+    >>> pofile = evo_man_template.getPOFileByLang('es')
+    >>> print pofile.title
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+    >>> current = potmsgset_translated.getCurrentTranslationMessage(
+    ...     pofile.language)
+    >>> print current.translations
+    [u'just a translation']
 
 It doesn't return other submissions done in the given IPOMsgSet because
 the 'wiki' space is for any submission done outside that IPOMsgSet.
 
-#     # There is no other message with the same msgid in our system that has a
-#     # non active submission.
-#     >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
-#     >>> len(wiki_submissions)
-#     0
+    # There is no other message with the same msgid in our system that has a
+    # non active submission.
+    >>> wiki_submissions = (
+    ...     potmsgset_translated.getExternallySuggestedTranslationMessages(
+    ...         pofile.language))
+    >>> len(wiki_submissions)
+    0
 
 Now, we get a dummy message that has the same msgid as the previous one.
 A dummy message is one that is not yet stored in our database, we use
@@ -647,165 +648,78 @@ them to be able to render those messages in our UI, once we get a
 submission with a value for it, it's created in our database so it's not
 dummy anymore.
 
-#     >>> pmount_hoary_package = ubuntu_hoary.getSourcePackage('pmount')
-#     >>> pmount_man_template = getUtility(IPOTemplateSet).getSubset(
-#     ...     sourcepackagename=pmount_hoary_package.sourcepackagename,
-#     ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
-#     >>> pomsgset_untranslated = pmount_man_template.getPOTMsgSetByMsgIDText(
-#     ...     'test man page').getDummyPOMsgSet('es')
-#     >>> print pomsgset_untranslated.pofile.title
-#     Spanish (es) translation of man in Ubuntu Hoary package "pmount"
+    >>> pmount_hoary_package = ubuntu_hoary.getSourcePackage('pmount')
+    >>> pmount_man_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=pmount_hoary_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
+    >>> potmsgset_untranslated = pmount_man_template.getPOTMsgSetByMsgIDText(
+    ...     'test man page')
+    >>> pofile = pmount_man_template.getDummyPOFile('es')
+    >>> print pofile.title
+    Spanish (es) translation of man in Ubuntu Hoary package "pmount"
 
 Given that it doesn't exist in our database, is impossible to have a
 submission already for it.
 
-#     >>> pomsgset_untranslated.active_texts
-#     [None]
-#     >>> pomsgset_untranslated.published_texts
-#     [None]
+    >>> current = potmsgset_untranslated.getCurrentTranslationMessage(
+    ...     pofile.language)
+    >>> print current
+    None
+    >>> imported = potmsgset_untranslated.getImportedTranslationMessage(
+    ...     pofile.language)
+    >>> print imported
+    None
 
 This other dummy IPOMsgSet though, will get all submissions done in
 pomsgset_translated (except ones with the same translation that is already
 active) as it's another context.
 
-#     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
-#     >>> print_suggestions(wiki_submissions)
-#     Spanish (es) translation of man in Ubuntu Hoary package "evolution": blah, blah, blah (None)
-#     Spanish (es) translation of man in Ubuntu Hoary package "evolution": lalalala (None)
+    >>> wiki_submissions = (
+    ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
+    ...         pofile.language))
+    >>> print_suggestions(wiki_submissions)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution": blah, blah, blah (None)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution": lalalala (None)
 
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
-#     >>> pomsgset_translated.pofile.potemplate.iscurrent = False
-#     >>> flush_database_updates()
+    >>> potmsgset_translated.potemplate.iscurrent = False
+    >>> flush_database_updates()
 
-#     # We need to invalidate the cache that handle suggestions using a private
-#     # method, otherwise our changes will not affect cached values.
-#     >>> removeSecurityProxy(pomsgset_untranslated)._invalidateSubmissionsCaches()
-#     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
-#     >>> len(wiki_submissions)
-#     0
+    >>> wiki_submissions = (
+    ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
+    ...         pofile.language))
+    >>> len(wiki_submissions)
+    0
 
 Nor do we get any suggestions if the Ubuntu distribution is not using
 Launchpad for translations.
 
-#     # We set the template as current again so we are sure that we don't show
-#     # suggestions just due to the change to the official_rosetta flag.
-#     >>> pomsgset_translated.pofile.potemplate.iscurrent = True
-#     >>> ubuntu.official_rosetta = False
-#     >>> flush_database_updates()
+    # We set the template as current again so we are sure that we don't show
+    # suggestions just due to the change to the official_rosetta flag.
+    >>> potmsgset_translated.potemplate.iscurrent = True
+    >>> ubuntu.official_rosetta = False
+    >>> flush_database_updates()
 
-#     # We need to invalidate the cache that handle suggestions using a private
-#     # method, otherwise our changes will not affect cached values.
-#     >>> removeSecurityProxy(pomsgset_untranslated)._invalidateSubmissionsCaches()
-#     >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
-#     >>> len(wiki_submissions)
-#     0
+    >>> wiki_submissions = (
+    ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
+    ...         pofile.language))
+    >>> len(wiki_submissions)
+    0
 
+== POTMsgSet.getCurrentDummyTranslationMessage ==
 
-== latest_change_date ==
-XXX Danilo 2007-11-16: we may want to reintroduce this on TranslationMessage
-instead, but only as a property.  Commented out for now.
-
-With latest_change_date we are able to know when the message's last
-time updates was.
-
-It works for messages without plural forms.
-
-#     >>> pomsgset_translated.potmsgset.msgid_plural is None
-#     True
-#     >>> print pomsgset_translated.latest_change_date
-#     2007-01-24 19:16:06.386519+00:00
-
-Is newer or equal than the translation is use.
-
-#     >>> (pomsgset_translated.latest_change_date >=
-#     ...  pomsgset_translated.getActiveSubmission(0).datecreated)
-#     True
-
-And, in this case, given that it is a review timestamp, it matches
-date_reviewed.
-
-#     >>> pomsgset_translated.latest_change_date == (
-#     ...     pomsgset_translated.date_reviewed)
-#     True
-
-And with messages with plural forms.
-
-#     >>> pofile_es = upstream_evo.getPOFileByLang('es')
-#     >>> pomsgset_with_plurals = pofile_es.getPOMsgSet(u'%d contact')
-#     >>> pomsgset_with_plurals.potmsgset.msgid_plural is None
-#     False
-
-It's always newer than the all existing translations create time...
-
-#     >>> for plural_form in range(pomsgset_with_plurals.pluralforms):
-#     ...     active_submission = pomsgset_with_plurals.getActiveSubmission(
-#     ...         plural_form)
-#     ...     assert (
-#     ...         pomsgset_with_plurals.latest_change_date >=
-#     ...         active_submission.datecreated), (
-#     ...             'latest_change_date is older than plural form'
-#     ...             ' %d datecreated' % active_submission.datecreated)
-
-... or equal to the last review time of the message.
-
-#     >>> print pomsgset_with_plurals.date_reviewed
-#     2005-10-11 20:18:55.981500+00:00
-#     >>> pomsgset_with_plurals.latest_change_date == (
-#     ...     pomsgset_with_plurals.date_reviewed)
-#     True
-
-There are some cases, when we don't have a date_reviewed.
-
-#     >>> pomsgset_with_plurals.date_reviewed = None
-#     >>> pomsgset_with_plurals.reviewer = None
-
-but the field is still not None.
-
-#     >>> print pomsgset_with_plurals.latest_change_date
-#     2005-04-07 13:19:17.601068+00:00
-
-Even when we miss some plural forms.
-
-#     # Remove the active submission for the plural form 1.
-#     >>> pomsgset_with_plurals.setActiveSubmission(1, None)
-
-We still get a latest_change_date.
-
-#    >>> print pomsgset_with_plurals.latest_change_date
-#    2005-04-07 13:19:17.601068+00:00
-
-Except when there is no active translations...
-
-#     >>> pomsgset_with_plurals.setActiveSubmission(0, None)
-
-#     # We know there are no more active submissions because we only have
-#     # two plural forms and both have been disabled.
-#     >>> pomsgset_with_plurals.pluralforms
-#     2
-
-#     >>> print pomsgset_with_plurals.latest_change_date
-#     None
-
-
-
-
-POTMsgSet.getDummyPOMsgSet
---------------------------
-
-XXX Danilo 2007-11-16: needs porting to DummyTranslationMessage instead
-
-Some times, there are POMsgSet objects that are not yet created in our
-database and thus, we need to get dummy ones for read operations.
+Sometimes, there are POTMsgSet objects with no translations to a language,
+and we need to get dummy objects which emulate them to do read operations.
 This method give us such dummy objects.
 
     >>> spanish_in_mexico = getUtility(ILanguageSet).getLanguageByCode('es_MX')
     >>> potmsgset.getCurrentDummyTranslationMessage(spanish_in_mexico) is None
     False
 
-But, if we already have such POMsgSet in our database, and we request
-a dummy one, that's broken and we should detect it.
+But, if we already have a TranslationMessage for a POTMsgSet in our database,
+and we request a dummy one, that's broken and we detect it.
 
     >>> potmsgset.getCurrentDummyTranslationMessage(spanish)
     Traceback (most recent call last):

@@ -117,6 +117,54 @@ class POTMsgSet(SQLBase):
         result = TranslationMessage.select(query, clauseTables=['POFile'])
         return shortlist(result, longest_expected=20, hardlimit=100)
 
+    def _getExternalTranslationMessages(self, language, used):
+        """Return external suggestions for this message.
+
+        External suggestions are all non-fuzzy TranslationMessages for the
+        same english string which are used or suggested in other templates.
+
+        A message is used if it's either imported or current, and unused
+        otherwise.
+        """
+        in_use_clause = "(is_current IS TRUE OR is_imported IS TRUE)"
+        if used:
+            query = [in_use_clause]
+        else:
+            query = ["(NOT %s)" % in_use_clause]
+        query.append('is_fuzzy IS NOT TRUE')
+        query.append('POFile.language = %s' % sqlvalues(language))
+        query.append('POFile.id = TranslationMessage.pofile')
+
+        query.append('''
+                potmsgset IN (
+                    SELECT POTMsgSet.id FROM POTMsgSet
+                        JOIN POTemplate ON POTMsgSet.potemplate = POTemplate.id
+                        LEFT JOIN ProductSeries ON
+                            POTemplate.productseries = ProductSeries.id
+                        LEFT JOIN Product ON ProductSeries.product = Product.id
+                        LEFT JOIN DistroSeries ON
+                            POTemplate.distroseries = DistroSeries.id
+                        LEFT JOIN Distribution ON
+                            DistroSeries.distribution = Distribution.id
+                      WHERE POTMsgSet.id!=%s AND
+                          msgid_singular=%s AND
+                          POTemplate.iscurrent AND
+                          (Product.official_rosetta OR
+                           Distribution.official_rosetta)
+                          )''' % sqlvalues(self, self.msgid_singular))
+
+        result = TranslationMessage.select(' AND '.join(query),
+                                           clauseTables=['POFile'])
+        return shortlist(result, longest_expected=20, hardlimit=100)
+
+    def getExternallyUsedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        return self._getExternalTranslationMessages(language, used=True)
+
+    def getExternallySuggestedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        return self._getExternalTranslationMessages(language, used=False)
+
     def flags(self):
         if self.flagscomment is None:
             return []
@@ -230,9 +278,10 @@ class POTMsgSet(SQLBase):
 
     def _findTranslationMessage(self, language, potranslations, pluralforms):
         """Find a message for this language exactly matching given
-        `translations` strings comparing only `pluralforms` of them."""
-        query=('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s'
-               % sqlvalues(self, language))
+        `translations` strings comparing only `pluralforms` of them.
+        """
+        query = ('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s' %
+                 sqlvalues(self, language))
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
                 query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
@@ -280,21 +329,21 @@ class POTMsgSet(SQLBase):
                     distribution=self.potemplate.distribution,
                     sourcepackagename=self.potemplate.sourcepackagename)
 
-                # If the current message has been changed and
-                # there was a different person (a reviewer) from the
-                # message submitter doing it, add reviewer karma as well.
-                if (new_message != current_message):
-                    if (new_message.submitter != submitter):
-                        submitter.assignKarma(
-                            'translationreview',
-                            product=self.potemplate.product,
-                            distribution=self.potemplate.distribution,
-                            sourcepackagename=self.potemplate.sourcepackagename)
+            # If the current message has been changed, and it was submitted
+            # by a different person than is now doing the review (i.e.
+            # `submitter`), then give this reviewer karma as well.
+            if new_message != current_message:
+                if new_message.submitter != submitter:
+                    submitter.assignKarma(
+                        'translationreview',
+                        product=self.potemplate.product,
+                        distribution=self.potemplate.distribution,
+                        sourcepackagename=self.potemplate.sourcepackagename)
 
-                    new_message.reviewer = submitter
-                    new_message.date_reviewed = UTC_NOW
-                    pofile.date_changed = UTC_NOW
-                    pofile.lasttranslator = submitter
+                new_message.reviewer = submitter
+                new_message.date_reviewed = UTC_NOW
+                pofile.date_changed = UTC_NOW
+                pofile.lasttranslator = submitter
 
 
     def updateTranslation(self, pofile, submitter, new_translations, is_fuzzy,
@@ -332,8 +381,8 @@ class POTMsgSet(SQLBase):
         sanitized_translations = self._sanitizeTranslations(
             new_translations, pofile.language.pluralforms)
         # Check that the translations are correct.
-        validation_status = self._validate_translations(sanitized_translations,
-                                                        is_fuzzy, ignore_errors)
+        validation_status = self._validate_translations(
+            sanitized_translations, is_fuzzy, ignore_errors)
 
         # If not an editor, default to submitting a suggestion only.
         just_a_suggestion = not is_editor
@@ -379,7 +428,8 @@ class POTMsgSet(SQLBase):
 
             if just_a_suggestion:
                 # Adds suggestion karma: editors get their translations
-                # automatically approved, so they get 'reviewer' karma instead.
+                # automatically approved, so they get 'reviewer' karma
+                # instead.
                 submitter.assignKarma(
                     'translationsuggestionadded',
                     product=self.potemplate.product,
@@ -446,7 +496,7 @@ class POTMsgSet(SQLBase):
         new_text = self.convertDotToSpace(text)
         # Now, fix the newline chars.
         new_text = self.normalizeNewLines(new_text)
-        # And finally, set the same whitespaces at the start/end of the string.
+        # Finally, set the same whitespaces at the start/end of the string.
         new_text = self.normalizeWhitespaces(new_text)
         # Also, if it's an empty string, replace it with None.
         # XXX CarlosPerelloMarin 2007-11-16: Until we figure out
@@ -503,7 +553,8 @@ class POTMsgSet(SQLBase):
         # the same time a 'mac' and 'unix' style.
         stripped_translation_text = translation_text.replace(
             windows_style, u'')
-        stripped_singular_text = self.singular_text.replace(windows_style, u'')
+        stripped_singular_text = self.singular_text.replace(
+            windows_style, u'')
 
         # Get the style that uses singular_text.
         original_style = None

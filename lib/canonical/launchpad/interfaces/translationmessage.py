@@ -13,6 +13,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 __metaclass__ = type
 __all__ = [
     'ITranslationMessage',
+    'ITranslationMessageSet',
     'ITranslationMessageSuggestions',
     'RosettaTranslationOrigin',
     'TranslationConflict',
@@ -199,19 +200,25 @@ class ITranslationMessage(Interface):
         """
 
 
-# XXX CarlosPerelloMarin 20071024: We will need to migrate this once we start
-# touching view classes.
 class ITranslationMessageSuggestions(Interface):
     """Suggested `ITranslationMessage`s for a `POTMsgSet`.
 
-    When displaying `POTMsgSet`s in `POMsgSetView` we display different types
-    of suggestions: non-reviewer translations, translations that occur in
-    other contexts, and translations in alternate languages. See
-    `POMsgSetView._buildSuggestions` for details.
+    When displaying `POTMsgSet`s in `CurrentTranslationMessageView`
+    we display different types of suggestions: non-reviewer translations,
+    translations that occur in other contexts, and translations in
+    alternate languages. See `CurrentTranslationMessageView._buildSuggestions`
+    for details.
     """
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")
-    submissions = Attribute("An iterable of POSubmission objects")
+    submissions = Attribute("An iterable of submissions.")
     user_is_official_translator = Bool(
         title=(u'Whether the user is an official translator.'),
         required=True)
+
+
+class ITranslationMessageSet(Interface):
+    """Getting to TranslationMessages from the view code."""
+
+    def getByID(id):
+        """Return the TranslationMessage with the given ID or None."""
