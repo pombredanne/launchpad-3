@@ -173,7 +173,7 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branchmergeproposal_edit = 'Edit branch merge proposal'
 
-branch_register_merge_proposal = 'Register branch merge proposal'
+branch_register_merge_proposal = 'Propose branch for merging'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
@@ -736,8 +736,6 @@ object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
 
-object_potemplatenames = ContextDisplayName('Template names for %s')
-
 object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextTitle('Translation templates for %s')
@@ -890,10 +888,6 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-def pomsgset_translate(context, view):
-    """Return the page title for editing a PO file."""
-    return smartquote('Edit "%s"' % context.pofile.title)
-
 # potemplate_chart is a fragment
 
 potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
@@ -903,14 +897,6 @@ potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
-
-potemplatename_add = 'Add a new template name to Launchpad'
-
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
-
-potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
-
-potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a project in Launchpad'
 
@@ -1293,6 +1279,8 @@ team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
+team_mailinglist = 'Configure mailing list'
+
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
 team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
@@ -1351,6 +1339,12 @@ translationimportqueueentry_index = 'Translation import queue entry'
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translationmessage_translate(context, view):
+    """Return the page to translate a template into a language per message."""
+    return 'Translating %s into %s' % (
+        context.pofile.potemplate.displayname,
+        context.pofile.language.englishname)
 
 def translator_edit(context, view):
     """Return the page title for editing a translator in a group."""

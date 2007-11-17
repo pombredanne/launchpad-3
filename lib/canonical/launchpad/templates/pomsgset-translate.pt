@@ -83,7 +83,7 @@
               </tr>
             </thead>
             <tbody id="messages_to_translate">
-              <div tal:replace="structure view/pomsgset_view" />
+              <div tal:replace="structure view/translationmessage_view" />
             </tbody>
             <tfoot>
               <tr tal:condition="view/form_is_writeable">

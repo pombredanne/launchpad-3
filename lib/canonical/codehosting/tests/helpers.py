@@ -18,7 +18,7 @@ import unittest
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists
+from bzrlib.errors import FileExists, TransportNotPossible
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
@@ -26,6 +26,7 @@ from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
+from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -39,6 +40,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.xmlrpc import Fault
 
 
 class AvatarTestCase(TwistedTestCase):
@@ -83,6 +85,10 @@ def exception_names(exceptions):
         names = []
         for exc in exceptions:
             names.extend(exception_names(exc))
+    elif exceptions is TransportNotPossible:
+        # Unfortunately, not all exceptions render themselves as their name.
+        # More cases like this may need to be added
+        names = ["Transport operation not possible"]
     else:
         names = [exceptions.__name__]
     return names
@@ -273,7 +279,17 @@ def deferToThread(f):
 
 
 class FakeLaunchpad:
-    """Stub RPC interface to Launchpad."""
+    """Stub RPC interface to Launchpad.
+
+    If the 'failing_branch_name' attribute is set and createBranch() is called
+    with its value for the branch_name parameter, a Fault will be raised with
+    code and message taken from the 'failing_branch_code' and
+    'failing_branch_string' attributes respectively.
+    """
+
+    failing_branch_name = None
+    failing_branch_code = None
+    failing_branch_string = None
 
     def __init__(self):
         self._person_set = {
@@ -308,7 +324,13 @@ class FakeLaunchpad:
         return new_id
 
     def createBranch(self, login_id, user, product, branch_name):
-        """See IHostedBranchStorage.createBranch."""
+        """See `IHostedBranchStorage.createBranch`.
+
+        Also see the description of 'failing_branch_name' in the class
+        docstring.
+        """
+        if self.failing_branch_name == branch_name:
+            raise Fault(self.failing_branch_code, self.failing_branch_string)
         for user_id, user_info in self._person_set.iteritems():
             if user_info['name'] == user:
                 break
@@ -317,6 +339,10 @@ class FakeLaunchpad:
         product_id = self.fetchProductID(product)
         if product_id is None:
             return ''
+        user = self.getUser(user_id)
+        if product_id == '' and 'team' in user['name']:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE,
+                        'Cannot create team-owned +junk branches.')
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():

@@ -1,0 +1,90 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+<facet facet="translations">
+
+    <content class="canonical.launchpad.database.TranslationMessage">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessage" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ITranslationMessage" />
+    </content>
+
+    <!-- Dummy Translation Message. It's a read only class. -->
+    <content class="canonical.launchpad.database.DummyTranslationMessage">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessage" />
+    </content>
+
+    <!-- XXX CarlosPerelloMarin 2007-11-16 Commented until we start migrating
+         view code.
+    <content class="canonical.launchpad.browser.POMsgSetSuggestions">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
+            />
+    </content>
+    -->
+
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.ITranslationMessage"
+      factory="canonical.launchpad.browser.CurrentTranslationMessageSOP"
+      permission="zope.Public"
+      />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ITranslationMessage"
+        path_expression="string:${potmsgset/sequence}"
+        attribute_to_parent="pofile"
+        />
+
+    <browser:menus
+        module="canonical.launchpad.browser.translationmessage"
+        classes="CurrentTranslationMessageFacets
+                 CurrentTranslationMessageAppMenus"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationMessage"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ITranslationMessage"
+        class="canonical.launchpad.browser.CurrentTranslationMessageIndexView"
+        permission="zope.Public"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
+        class="canonical.launchpad.browser.TranslateRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.ITranslationMessage"
+        permission="zope.Public"
+        template="../templates/translationmessage-translate.pt"
+        class="canonical.launchpad.browser.CurrentTranslationMessagePageView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+display"
+        for="canonical.launchpad.interfaces.ITranslationMessageSuggestions"
+        permission="launchpad.AnyPerson"
+        template="../templates/translationmessage-suggestions.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+</facet>
+
+</configure>

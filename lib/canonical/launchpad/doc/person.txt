@@ -675,11 +675,13 @@ English and languages marked as non-visible such as 'zh' or 'de_DE'.
 The IPerson interface offers a way of returning POFileTranslator records
 for a Person:
 
-    >>> [pt.pofile.title for pt in carlos.translation_history]
-    [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
-     u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
-     u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-     u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
+    >>> for pt in carlos.translation_history:
+    ...     print pt.pofile.title
+    Spanish (es) translation of alsa-utils in alsa-utils trunk
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
+    Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"
 
 The IPersonSet component contains a few convenience methods to return
 Person objects that have contributed translations.
