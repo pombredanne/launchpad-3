@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachineSet',
+    'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
 
@@ -46,6 +47,40 @@ class CodeImportMachineState(DBEnumeratedType):
         """)
 
 
+class CodeImportMachineOfflineReason(DBEnumeratedType):
+    """Reason why a CodeImportMachine is offline.
+
+    A machine goes offline when a code-import-controller daemon process shuts
+    down, or appears to have crashed. Recording the reason a machine went
+    offline provides useful diagnostic information.
+    """
+
+    # Daemon termination
+
+    STOPPED = DBItem(110, """
+        Stopped
+
+        The code-import-controller daemon was shut-down, interrupting running
+        jobs.
+        """)
+
+    QUIESCED = DBItem(120, """
+        Quiesced
+
+        The code-import-controller daemon has shut down after completing
+        any running jobs.
+        """)
+
+    # Crash recovery
+
+    WATCHDOG = DBItem(210, """
+        Watchdog
+
+        The watchdog has detected that the machine's heartbeat has not been
+        updated recently.
+        """)
+
+
 class ICodeImportMachine(Interface):
     """A machine that can perform imports."""
 
@@ -65,6 +100,29 @@ class ICodeImportMachine(Interface):
         title=_("Heartbeat"),
         description=_("When the controller deamon last recorded it was"
                       " running."))
+
+    def setOnline():
+        """Record that the machine is online, marking it ready to accept jobs.
+
+        Set state to ONLINE, and record the corresponding event.
+        """
+
+    def setOffline(reason):
+        """Record that the machine is offline.
+
+        Set state to OFFLINE, and record the corresponding event.
+
+        :param reason: `CodeImportMachineOfflineReason` enum value.
+        """
+
+    def setQuiescing(user, message):
+        """Initiate an orderly shut down without interrupting running jobs.
+
+        Set state to QUIESCING, and record the corresponding event.
+
+        :param user: `Person` that requested the machine to quiesce.
+        :param message: User-provided message.
+        """
 
 
 class ICodeImportMachineSet(Interface):
