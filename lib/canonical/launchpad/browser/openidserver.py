@@ -21,7 +21,8 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.proxy import isinstance as zisinstance
 
-from openid.message import IDENTIFIER_SELECT, OPENID_NS, SREG_URI
+from openid.message import (
+    IDENTIFIER_SELECT, OPENID_NS, SREG_URI, registerNamespaceAlias)
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
@@ -50,6 +51,7 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'OpenID'
 LAUNCHPAD_TEAMS_NS = 'http://ns.launchpad.net/2007/openid-teams'
+registerNamespaceAlias(LAUNCHPAD_TEAMS_NS, 'lp')
 
 # Shut up noisy OpenID library
 def null_log(message, level=0):

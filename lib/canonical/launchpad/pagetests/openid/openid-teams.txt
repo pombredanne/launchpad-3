@@ -29,7 +29,6 @@ and one that does exist but the user is not a member of:
     ...     'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.ns.lp': 'http://ns.launchpad.net/2007/openid-teams',
     ...     'openid.lp.query_membership':
     ...         'ubuntu-team,no-such-team,launchpad-beta-testers',
     ...     })
