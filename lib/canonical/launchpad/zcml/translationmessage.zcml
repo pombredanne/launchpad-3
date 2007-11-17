@@ -29,6 +29,13 @@
     </content>
     -->
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.ITranslationMessage"
+      factory="canonical.launchpad.browser.CurrentTranslationMessageSOP"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationMessage"
         path_expression="string:${potmsgset/sequence}"

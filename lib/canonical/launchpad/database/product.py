@@ -47,10 +47,11 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, TranslationPermission)
+    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
+    IProductSet, IQuestionTarget, License, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -58,8 +59,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 
-    implements(IProduct, IFAQTarget, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
+               ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -112,6 +113,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     private_bugs = BoolCol(
