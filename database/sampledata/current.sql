@@ -8898,6 +8898,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
 
   * Initial version
+      Address for testing linkification: Foo Bar <foo.bar@canonical.com>
 
  -- Julian Edwards <launchpad@julian-edwards.com>   Thu, 16 Feb 2006 15:34:09 +0000', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
