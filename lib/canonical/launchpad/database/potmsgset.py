@@ -130,7 +130,7 @@ class POTMsgSet(SQLBase):
         if used:
             query = [in_use_clause]
         else:
-            query = ["NOT %s" % in_use_clause]
+            query = ["(NOT %s)" % in_use_clause]
         query.append('is_fuzzy IS NOT TRUE')
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')

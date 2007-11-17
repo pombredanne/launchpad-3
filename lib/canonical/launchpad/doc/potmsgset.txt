@@ -482,6 +482,7 @@ We will use this helper function to print all suggestions found:
 
     >>> def print_suggestions(suggestions):
     ...     """Print IPOFile title, translation and where is it used."""
+    ...     lines = []
     ...     for suggestion in suggestions:
     ...         usage = []
     ...         if suggestion.is_current:
@@ -490,10 +491,12 @@ We will use this helper function to print all suggestions found:
     ...             usage.append('Upstream')
     ...         if not usage:
     ...             usage.append('None')
-    ...         print '%s: %s (%s)' % (
+    ...         lines.append('%s: %s (%s)' % (
     ...             suggestion.pofile.title,
     ...             suggestion.translations[0],
-    ...             ' & '.join(usage))
+    ...             ' & '.join(usage)))
+    ...	    for line in sorted(lines):
+    ...         print line
 
 == POTMsgSet.getExternallyUsedTranslationMessages ==
 
@@ -675,8 +678,8 @@ active) as it's another context.
     ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
     ...         pofile.language))
     >>> print_suggestions(wiki_submissions)
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution": lalalala (None)
     Spanish (es) translation of man in Ubuntu Hoary package "evolution": blah, blah, blah (None)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution": lalalala (None)
 
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
