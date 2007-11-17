@@ -21,22 +21,21 @@ There are rows.
 = Template export set entry =
 
 VPOTExport represent a row for an entry in the POTemplate. Each row has
-the following information:
+the following information, among other things:
 
  * potemplate: Template which this row is for.
- * header: The template header.
+ * template_header: The template header.
  * sequence: The order in which this row's message appears inside the
        exported file.
- * pluralform: Plural form index for the message represented in this row.
  * context: Context text for the message represented in this row.
- * msgid: The message to translate represented in this row.
+ * msgid_singular: The message to translate in this row (in the singular).
 
  And some metadata information:
 
- * commenttext
- * sourcecomment
- * filereferences
- * flagscomment
+ * comment
+ * source_comment
+ * file_references
+ * flags_comment
 
 Get the first row from the set. It represents the first message of the
 template.
@@ -51,7 +50,7 @@ We are working with the evolution-2.2 template.
 And this first row has the information for the 'Found %i invalid file.'
 message.
 
-    >>> first.msgid
+    >>> first.msgid_singular
     u'Found %i invalid file.'
 
     # We will need the potmsgset of this message to demonstrate the values
@@ -71,7 +70,7 @@ appear in the exported file.
 The POT file header is a template of common information that will get filled
 in with language specifics by translators.
 
-    >>> print first.header
+    >>> print first.template_header
     Project-Id-Version: PACKAGE VERSION
     Report-Msgid-Bugs-To:
     POT-Creation-Date: 2005-08-25 14:56+0200
@@ -84,15 +83,16 @@ in with language specifics by translators.
     Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
 
 Each message could have a singular form (identified by the index 0) and a
-plural form (identified by the index 1). In this case, the message is a
-singular form.
+plural form (identified by the index 1). In this case, the message has both.
 
-    >>> first.pluralform
-    0
+    >>> first.msgid_singular is None
+    False
+    >>> first.msgid_plural is None
+    False
 
 Comment text is a comment added by a translator.
 
-    >>> first.commenttext
+    >>> first.comment
     u''
     >>> potmsgset.commenttext
     u''
@@ -100,7 +100,7 @@ Comment text is a comment added by a translator.
 Source comment is the comment added by a developer to help translators
 to understand the message they are translating.
 
-    >>> first.sourcecomment
+    >>> first.source_comment
     u''
     >>> potmsgset.sourcecomment
     u''
@@ -108,7 +108,7 @@ to understand the message they are translating.
 File references is a reference to the source code file and line number where
 this message was extracted from.
 
-    >>> first.filereferences
+    >>> first.file_references
     u'encfs/encfsctl.cpp:346'
     >>> potmsgset.filereferences
     u'encfs/encfsctl.cpp:346'
@@ -116,7 +116,7 @@ this message was extracted from.
 flags comment represent a set of flags used to validate the message
 translation.
 
-    >>> first.flagscomment
+    >>> first.flags_comment
     u'c-format'
     >>> potmsgset.flagscomment
     u'c-format'

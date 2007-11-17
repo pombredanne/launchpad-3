@@ -553,11 +553,12 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 
 
 -- POTMsgSet
-COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
-
-COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON TABLE POTMsgSet IS 'This table is stores a collection of msgids
+without their translations and all kind of information associated to that set
+of messages that could be found in a potemplate file.';
 COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
-COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
+COMMENT ON COLUMN POTMsgSet.msgid_singular IS 'The singular msgid for this message.';
+COMMENT ON COLUMN POTMsgSet.msgid_plural IS 'The plural msgid for this message.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
@@ -571,19 +572,13 @@ COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackag
 COMMENT ON COLUMN POTemplate.distroseries IS 'A reference to the distribution from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
-COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
+COMMENT ON COLUMN POTemplate.name IS 'The name of the POTemplate set. It must be unique';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
 COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
 COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
 COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
-
--- POTemplateName
-COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
-COMMENT ON COLUMN POTemplateName.name IS 'The name of the POTemplate set. It must be unique';
-COMMENT ON COLUMN POTemplateName.title IS 'The title we are going to use every time that we render a view of this POTemplateName row.';
-COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTemplateName so the user could know more about it.';
-COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
+COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for this POTemplate';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
@@ -591,51 +586,8 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
-COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POMsgSets with new, unreviewed POSubmissions.';
-
--- POSubmission
-COMMENT ON TABLE POSubmission IS 'This table records the fact
-that we saw, or someone submitted, a particular translation for a particular
-msgset under a particular licence, at a specific time.';
-COMMENT ON COLUMN POSubmission.pomsgset IS 'The message set for which the
-submission or sighting was made.';
-COMMENT ON COLUMN POSubmission.pluralform IS 'The plural form of the
-submission which was made.';
-COMMENT ON COLUMN POSubmission.potranslation IS 'The translation that was
-submitted or sighted.';
-COMMENT ON COLUMN POSubmission.person IS 'The person that made
-the submission through the web to rosetta, or the last-translator on the
-pofile that we are processing, or the person who uploaded that pofile to
-rosetta. In short, our best guess as to the person who is contributing that
-translation.';
-COMMENT ON COLUMN POSubmission.origin IS 'The source of this
-translation. This indicates whether the translation was in a pofile that we
-parsed (probably one published in a package or branch or tarball), or was
-submitted through the web.';
-COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
-COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
-COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
-
--- POMsgSet
-COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
-POMsgSet was fuzzy when it was last imported from a published PO file. By
-comparing the current fuzzy state (in the "fuzzy" field) to that, we know if
-we have changed the fuzzy condition of the messageset in Rosetta.';
-COMMENT ON COLUMN POMsgSet.publishedcomplete IS 'This indicates that this
-POMsgSet was complete when it was last imported from a published PO file. By
-"complete" we mean "has a translation for every expected plural form". We
-can compare the current completeness state (in the "iscomplete" field) to
-this, to know if we have changed the completeness of the messageset in
-Rosetta since it was imported.';
-COMMENT ON COLUMN POMsgSet.isfuzzy IS 'This indicates if the msgset is
-currently fuzzy in Rosetta. The other indicator, publishedfuzzy, shows the
-same status for the last published pofile we pulled in.';
-COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
-Rosetta has an active translation for every expected plural form of this
-message set.';
-COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
-COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
-COMMENT ON COLUMN POMsgSet.language IS 'Language this POMsgSet is in; copied from its POFile for performance reasons.';
+COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
+unreviewed TranslationMessages for this POFile.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -660,6 +612,54 @@ COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated th
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
+-- TranslationMessage
+COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
+translation for a POTMsgSet message. It knows who, when and where did it,
+and whether it was reviewed by someone and when was it reviewed.';
+COMMENT ON COLUMN TranslationMessage.pofile IS 'The translation file which
+this translation message is part of.';
+COMMENT ON COLUMN TranslationMessage.potmsgset IS 'The template message which
+this translation message is a translation of.';
+COMMENT ON COLUMN TranslationMessage.date_created IS 'The date we saw this
+translation first.';
+COMMENT ON COLUMN TranslationMessage.submitter IS 'The person that made
+the submission through the web to Launchpad, or the last translator on the
+translation file that we are processing, or the person who uploaded that
+pofile to Launchpad. In short, our best guess as to the person who is
+contributing that translation.';
+COMMENT ON COLUMN TranslationMessage.date_reviewed IS 'The date when this
+message was reviewed for last time.';
+COMMENT ON COLUMN TranslationMessage.reviewer IS 'The person who did the
+review and accepted current translations.';
+COMMENT ON COLUMN TranslationMessage.msgstr0 IS 'Translation for plural form 0
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr1 IS 'Translation for plural form 1
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr2 IS 'Translation for plural form 2
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr3 IS 'Translation for plural form 3
+(if any).';
+COMMENT ON COLUMN TranslationMessage.comment IS 'Text of translator
+comment from the translation file.';
+COMMENT ON COLUMN TranslationMessage.origin IS 'The source of this
+translation. This indicates whether the translation was in a translation file
+that we parsed (probably one published in a package or branch or tarball), in
+which case its value will be 1, or was submitted through the web, in which
+case its value will be 2.';
+COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
+validated this translation. Being 0 the value that says this row has not been
+validated yet, 1 the value that says it is correct and 2 the value noting that
+there was an unknown error with the validation.';
+COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
+is being used in Launchpad.';
+COMMENT ON COLUMN TranslationMessage.is_fuzzy IS 'Whether this translation
+must be checked before use it.';
+COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
+is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
+this translation was obsolete in last imported file.';
+COMMENT ON COLUMN TranslationMessage.was_fuzzy_in_last_import IS 'Whether this
+imported translation must be checked before use it.';
 
 -- Question
 COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
@@ -1614,8 +1614,10 @@ COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distrib
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
 COMMENT ON COLUMN POFileTranslator.person IS 'The person who submitted the translation.';
 COMMENT ON COLUMN POFileTranslator.pofile IS 'The pofile the translation was submitted for.';
-COMMENT ON COLUMN POFileTranslator.latest_posubmission IS 'The most recent translation submitted by this user to this pofile.';
-COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent submission was made.';
+COMMENT ON COLUMN POFileTranslator.latest_message IS 'Latest translation
+message added to the translation file.';
+COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When was added latest
+translation message.';
 
 -- NameBlacklist
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';

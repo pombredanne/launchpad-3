@@ -12,6 +12,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
@@ -87,35 +88,23 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
 
         for pofile in pofiles:
             logger_object.debug('Processing %s...' % pofile.title)
-            if pofile.last_touched_pomsgset is not None:
-                # Save who was last reviewer to show it when we change active
-                # translations.
-                old_reviewer = pofile.last_touched_pomsgset.reviewer
             pofile_items_deleted = 0
-            for pomsgset in pofile.pomsgsets:
+            for message in pofile.translation_messages:
                 active_changed = False
-                for posubmission in pomsgset.submissions:
-                    if posubmission.origin == RosettaTranslationOrigin.SCM:
-                        if posubmission.active:
-                            active_changed = True
-                        posubmission.destroySelf()
-                        pofile_items_deleted += 1
-                # Let's fix the flags that depend on translations, we modified
-                # the IPOMsgSet and we should leave it in a consistent status.
-                pomsgset.updateFlags()
+                if message.origin == RosettaTranslationOrigin.SCM:
+                    if message.is_current:
+                        active_changed = True
+                    message.destroySelf()
+                    pofile_items_deleted += 1
                 if active_changed:
-                    pomsgset.updateReviewerInfo(rosetta_expert)
+                    message.pofile.date_changed = UTC_NOW
+                    message.pofile.lasttranslator = rosetta_expert
+                    message.reviewer = rosetta_expert
+                    message.date_reviewed = UTC_NOW
 
             items_deleted += pofile_items_deleted
             logger_object.debug(
                  'Removed %d submissions' % pofile_items_deleted)
-            if (pofile_items_deleted > 0 and
-                pofile.last_touched_pomsgset is not None):
-                logger_object.debug(
-                    'After some removals, latest reviewer changed from'
-                    ' %s to %s ' % (
-                        old_reviewer.displayname,
-                        pofile.last_touched_pomsgset.reviewer.displayname))
             pofile.updateStatistics()
             ztm.commit()
 
@@ -123,6 +112,7 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
     # that we removed.
     logger_object.debug(
         'Removed %d submissions in total.' % items_deleted)
+
 
 def main(argv):
     options = parse_options(argv[1:])

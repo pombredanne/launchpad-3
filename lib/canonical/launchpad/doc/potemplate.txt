@@ -11,8 +11,6 @@ Test that the security setup for IPOTemplateSet is working
 This method will return all IPOTemplate that have a given name.
 
   >>> evolution_templates = potemplate_set.getAllByName('evolution-2.2')
-  >>> len(evolution_templates)
-  2
   >>> titles = [potemplate.title
   ...           for potemplate in evolution_templates
   ...          ]
@@ -131,12 +129,27 @@ But if we give the empty string or None, we get nothing
   >>> potemplatesubset.getClosestPOTemplate('') is None
   True
 
+
 = POTemplate =
 
-Check that we can get IPOFile based on its path.
+POTemplate is an object with all strings that must be translated for a
+concrete context.
 
-  >>> from canonical.launchpad.database import POTemplate
-  >>> potemplate = POTemplate.get(1)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.interfaces import IPOTemplate
+    >>> potemplate = POTemplate.get(1)
+
+It implements the IPOTemplate interface.
+
+    >>> verifyObject(IPOTemplate, potemplate)
+    True
+
+
+== getPOFileByPath ==
+
+We can get an IPOFile inside a templage based on its path.
+
   >>> pofile = potemplate.getPOFileByPath('es.po')
   >>> print pofile.title
   Spanish (es) translation of evolution-2.2 in Evolution trunk
@@ -179,7 +192,7 @@ Or any fuzzy (need-review) entries:
 == relatives_by_name ==
 
 This property gives us an iterator of IPOTemplate objects that have the
-same IPOTemplateName and are 'current'.
+same name and are 'current'.
 
 This is the template we are working with:
 
@@ -187,7 +200,7 @@ This is the template we are working with:
   u'Template "evolution-2.2" in Evolution trunk'
 
 And this is the list of templates related with this one based on its
-IPOTemplateName:
+name:
 
   >>> for relative_potemplate in potemplate.relatives_by_name:
   ...     assert relative_potemplate.iscurrent
@@ -501,38 +514,6 @@ Templates can be exported to its native format.
     "      <p>If a feed is permanently moved to a new location Drupal will "
     "automatically update the feed URL to the new address.</p>"
     msgstr ""
-
-There are some situations when a msgidplural changes, while the msgid
-singular remains unchanged.
-
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'Found %i invalid file.')
-
-    # It has plural forms.
-    >>> print potmsgset.msgid_plural
-    Found %i invalid files.
-
-    # We change the plural form.
-    >>> from canonical.launchpad.interfaces import TranslationConstants
-    >>> pomsgidsighting = potmsgset.makeMessageIDSighting(
-    ...     u'something else', TranslationConstants.PLURAL_FORM, update=True)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> print potmsgset.msgid_plural
-    something else
-
-When that happens, the export should reflect that change.
-
-    >>> print potemplate.export()
-    #, fuzzy
-    ...
-    #: encfs/encfsctl.cpp:346
-    #, c-format
-    msgid "Found %i invalid file."
-    msgid_plural "something else"
-    msgstr[0] ""
-    msgstr[1] ""
-    ...
 
 
 == exportWithTranslations() ==

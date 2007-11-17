@@ -115,12 +115,12 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <!-- Note: This is a POMsgSet page. This registration is duplicated
-      in pomsgset.zcml, so that they can work on pages where IPOFile is the
-      context.) -->
+    <!-- Note: This is a TranslationMessage page. This registration is
+      duplicated in translationmessage.zcml, so that they can work on
+      pages where IPOFile is the context.) -->
     <browser:pages
       for="canonical.launchpad.interfaces.IPOFile"
-      class="canonical.launchpad.browser.POMsgSetView"
+      class="canonical.launchpad.browser.CurrentTranslationMessageView"
       permission="launchpad.AnyPerson"
       layer="canonical.launchpad.layers.TranslationsLayer" >
       <browser:page

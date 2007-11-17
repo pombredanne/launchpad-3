@@ -98,8 +98,9 @@ class ITranslationMessageData(Interface):
         title=u'The context of the message.',
         required=True, readonly=True)
 
-    msgid = Text(
-        title=u'The msgid of the message.', required=True, readonly=True)
+    msgid_singular = Text(
+        title=u'The singular msgid of the message.', required=True,
+        readonly=True)
 
     msgid_plural = Text(
         title=u'The plural msgid of the message or None.',

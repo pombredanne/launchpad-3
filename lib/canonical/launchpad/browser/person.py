@@ -2223,7 +2223,6 @@ class PersonTranslationView(LaunchpadView):
         # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
         # to pofile.potemplate.displayname, it would be ideal to also
         # prejoin inside translation_history:
-        #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
         #   potemplate.distroseries
@@ -2249,8 +2248,8 @@ class PersonTranslationView(LaunchpadView):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
 
-    def should_display_message(self, pomsgset):
-        """Should a certain POMsgSet be displayed.
+    def should_display_message(self, translationmessage):
+        """Should a certain `TranslationMessage` be displayed.
 
         Return False if user is not logged in and message may contain
         sensitive data such as email addresses.
@@ -2259,7 +2258,8 @@ class PersonTranslationView(LaunchpadView):
         """
         if self.user:
             return True
-        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
+        return not (
+            translationmessage.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):
