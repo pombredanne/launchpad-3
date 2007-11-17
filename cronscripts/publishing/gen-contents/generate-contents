@@ -11,6 +11,7 @@ set -u
 
 # share lockfile with cron.daily
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
+
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
 
@@ -21,13 +22,16 @@ LPPATH='/srv/launchpad.net/codelines/current'
 LPCONTENT="$LPPATH/cronscripts/publishing/gen-contents"
 
 # apt-ftparchive configuration file destination
+APTCONF_HEADER_TEMPLATE="apt_conf_header.template"
+APTCONF_DIST_TEMPLATE="apt_conf_dist.template"
 APTCONF="apt-contents.conf"
 CONTENTHEADER="Contents.top"
 
-## XXX cprov 20070423: We need to retrieve 'development' distrorelease
-## from helper script. See bug # 49174
-# target suite
-suites='gutsy'
+# target suites ()
+# suites='dapper edgy feisty gutsy hardy'
+# XXX cprov 20071117: It would be nice also have 'supported' query
+# available in lp-query-distro.py.
+suites=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py development`
 
 # target architectures
 archs='i386 amd64 hppa powerpc ia64 sparc lpia'
@@ -61,7 +65,11 @@ trap cleanup EXIT
 echo 'Ensure we have a private tree in place ...'
 mkdir -p $CONTENTARCHIVE/ubuntu-misc
 mkdir -p $CONTENTARCHIVE/ubuntu-cache
+
+cat $LPCONTENT/$APTCONF_HEADER_TEMPLATE > $LPCONTENT/$APTCONF
 for suite in $suites; do
+  sed -e "s/\$SUITE/$suite/g" $LPCONTENT/$APTCONF_DIST_TEMPLATE >> \
+       $LPCONTENT/$APTCONF
   for component in $components; do
     for dir in $dirs; do
       path="$CONTENTARCHIVE/ubuntu/dists/$suite/$component/$dir"
