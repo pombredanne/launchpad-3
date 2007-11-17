@@ -148,6 +148,7 @@ class POTMsgSet(SQLBase):
                             DistroSeries.distribution = Distribution.id
                       WHERE POTMsgSet.id!=%s AND
                           msgid_singular=%s AND
+                          POTemplate.iscurrent AND
                           (Product.official_rosetta OR
                            Distribution.official_rosetta)
                           )''' % sqlvalues(self, self.msgid_singular))
@@ -328,9 +329,9 @@ class POTMsgSet(SQLBase):
                     distribution=self.potemplate.distribution,
                     sourcepackagename=self.potemplate.sourcepackagename)
 
-            # If the current message has been changed and
-            # there was a different person (a reviewer) from the
-            # message submitter doing it, add reviewer karma as well.
+            # If the current message has been changed, and it was submitted
+            # by a different person than is now doing the review (i.e.
+            # `submitter`), then give this reviewer karma as well.
             if new_message != current_message:
                 if new_message.submitter != submitter:
                     submitter.assignKarma(

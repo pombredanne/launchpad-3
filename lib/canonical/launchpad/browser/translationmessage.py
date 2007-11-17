@@ -1121,7 +1121,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 key=operator.attrgetter("date_created"),
                 reverse=True)
 
-            # Get a list of translations which are not suggested as
+            # Get a list of translations which are suggested as
             # translations for this same message in a different translation
             # template, but are not used.
             externally_suggested = sorted(
@@ -1152,7 +1152,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
 
         # To maintain compatibility with the old DB model as much as possible,
-        # lets split out all the submissions by their plural form.
+        # let's split out all the submissions by their plural form.
         # Builds ITranslationMessageSuggestions for each type of the
         # suggestion per plural form.
         for index in self.pluralform_indices:
@@ -1162,21 +1162,17 @@ class CurrentTranslationMessageView(LaunchpadView):
                 if imported:
                     self.seen_translations.add(imported.translations[index])
             local_suggestions = (
-                self._buildTranslationMessageSuggestions('Suggestions',
-                                                         local,
-                                                         index))
+                self._buildTranslationMessageSuggestions(
+                    'Suggestions', local, index))
             externally_used_suggestions = (
-                self._buildTranslationMessageSuggestions('Used in',
-                                                         externally_used,
-                                                         index))
+                self._buildTranslationMessageSuggestions(
+                    'Used in', externally_used, index))
             externally_suggested_suggestions = (
-                self._buildTranslationMessageSuggestions('Suggested in',
-                                                         externally_suggested,
-                                                         index))
+                self._buildTranslationMessageSuggestions(
+                    'Suggested in', externally_suggested, index))
             alternate_language_suggestions = (
-                self._buildTranslationMessageSuggestions(alt_title,
-                                                         alt_submissions,
-                                                         index))
+                self._buildTranslationMessageSuggestions(
+                    alt_title, alt_submissions, index))
 
             self.suggestion_blocks[index] = [
                 local_suggestions, externally_used_suggestions,
