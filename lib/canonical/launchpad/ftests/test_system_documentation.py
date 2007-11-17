@@ -308,8 +308,7 @@ def zopelessLaunchpadSecuritySetUp(test):
     LaunchpadSecurityPolicy.
     """
     setGlobs(test)
-    test.old_security_policy = getSecurityPolicy()
-    setSecurityPolicy(LaunchpadSecurityPolicy)
+    test.old_security_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
 
 
 def zopelessLaunchpadSecurityTearDown(test):
