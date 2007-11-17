@@ -99,7 +99,7 @@
     tal:condition="context/bug/getQuestionCreatedFromBug"
     tal:define="question context/bug/getQuestionCreatedFromBug">
     This bug report was converted into a question:
-    Question #<tal:question-id replace="question/id" />:
+    question #<tal:question-id replace="question/id" />:
     <a href=""
       tal:attributes="href question/fmt:url"
       tal:content="question/title">%s</a>.

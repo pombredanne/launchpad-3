@@ -13,7 +13,10 @@ __all__ = [
     'QuestionTargetMixin',
     ]
 
+from datetime import datetime
 import operator
+import pytz
+
 from email.Utils import make_msgid
 
 from zope.component import getUtility
@@ -1008,6 +1011,7 @@ class QuestionTargetMixin:
         question = self.newQuestion(
             bug.owner, bug.title, bug.description,
             datecreated=bug.datecreated)
+        question.datelastquery = datetime.now(pytz.timezone('UTC'))
         question.linkBug(bug)
         for message in bug.messages[1:]:
             # Bug.message[0] is the original message, and probably a duplicate

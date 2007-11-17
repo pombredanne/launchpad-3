@@ -814,6 +814,14 @@ class QuestionWorkflowView(LaunchpadFormView):
         return '%s/+addquestion' % canonical_url(self.context.target,
                                                  rootsite='answers')
 
+    @property
+    def original_bug(self):
+        """Return the bug that the question was created from or None."""
+        for buglink in self.context.bug_links:
+            if self.context == buglink.bug.getQuestionCreatedFromBug():
+                return buglink.bug
+
+        return None
 
 
 class QuestionConfirmAnswerView(QuestionWorkflowView):

@@ -1,4 +1,4 @@
-= This bug is a question =
+= Convert bug to question =
 
 Some bugs that are filed, aren't really bugs, they are questions.
 When the bug target's pillar uses Launchpad to track bugs, the
@@ -29,12 +29,12 @@ is really a question. He chooses to make a question from it.
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
     >>> user_browser.getLink('Convert to question').click()
     >>> user_browser.title
-    'Bug #10 - Convert this to a question'
+    'Bug #10 - Convert this bug to a question'
 
 The 'Convert this to a question' page explains what will happen if No
 Privileges Person chooses to make the bug into a question. There is a
-required field for a comment. He decides to create the question using
-the 'Convert this bug to a question' button.
+field for a comment. He decides to create the question using the
+'Convert this bug to a question' button.
 
     >>> find_main_content(user_browser.contents).p
     <p>... the bug's status is set to Invalid. The new question
@@ -44,8 +44,7 @@ the 'Convert this bug to a question' button.
     >>> user_browser.getControl('Convert this Bug into a Question').click()
 
 No Privileges Person is shown the bug page again. There is a permanent
-informational message stating that a question was was created from the
-bug.
+informational message stating that a question was created from the bug.
 
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
@@ -53,7 +52,7 @@ bug.
     >>> content = find_main_content(user_browser.contents)
     >>> content.find(id="bug-is-question")
     <p...This bug report was converted into a question:
-     Question #...: <a ...>another test bug</a>. </p>
+     question #...: <a ...>another test bug</a>. </p>
 
 The bug status is Invalid for 'linux-source-2.6.15 (Ubuntu)'--It
 cannot be edited.
@@ -62,8 +61,14 @@ cannot be edited.
     Affects                       Status   Importance  Assigned to
     linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;
 
+He sees his comment was appended to the bug report's messages.
+
+    >>> print extract_text(
+    ...     content.findAll('div', {'class' : 'boardComment'})[-1])
+    No Privileges Person wrote ... This bug is a question.
+
 No Privileges Person looks at the page heading and sees that Foo Bar
-is the bu owner. He sees the link to the question in the 'Related
+is the bug owner. He sees the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
     >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
@@ -76,31 +81,16 @@ questions' portlet, and uses it to go to the question page.
     test bug</a>
 
     >>> user_browser.getLink('another test bug').click()
+
+No Privileges Person cass see that the question was created from a
+bug. He uses the link to Related bug to return to the bug.
+
     >>> user_browser.title
     'linux-source-2.6.15 in ubuntu question #...: ...another test bug...'
 
-No Privileges Person sees that the question status is Open and that is
-was asked by Foo Bar in the page heading. Foo Bar is the only
-subscriber to this question (a question in Ubuntu would have many
-indirect subscribers in the real world). As No Privileges Person is not
-the question owner, he is invited to help answer the problem. He uses
-the link to Related bug to return to the bug.
-
-    >>> content = find_main_content(user_browser.contents)
-    >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
-    Open Question #..., asked ... by Foo Bar
-
-    >>> question_id = user_browser.url.split('/')[-1]
-    >>> portlet_heading = 'Subscribers to question #%s' % question_id
-    >>> portlet = find_portlet(user_browser.contents, portlet_heading)
-    >>> portlet.a
-    <a href="/~name16">Foo Bar</a>
-
-    >>> content.h2
-    <h2>...Can you help with this problem?...</h2>
-
-    >>> user_browser.getControl("Add Answer").type
-    'submit'
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'original-bug'))
+    This question was originally filed as bug #10.
 
     >>> portlet = find_portlet(user_browser.contents, 'Related bugs')
     >>> portlet.a
@@ -109,18 +99,6 @@ the link to Related bug to return to the bug.
     >>> user_browser.getLink('#10: another test bug').click()
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
-
-Foo Bar received an email informing him that he asked a question. He
-used the link the email to view the page in his browser.
-
-    >>> admin_browser.open(question_anchor['href'])
-    >>> admin_browser.title
-    'linux-source-2.6.15 in ubuntu question #...: ...another test bug...'
-
-    >>> admin_browser.getControl('Problem Solved').type
-    'submit'
-    >>> admin_browser.getControl("I'm Providing More Information").type
-    'submit'
 
 
 == When a question cannot be created from a bug  ==
@@ -135,14 +113,19 @@ into a question.
     'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
     >>> user_browser.getLink('Convert to question').click()
     >>> user_browser.title
-    'Bug #9 - Convert this to a question'
+    'Bug #9 - Convert this bug to a question'
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
     Mozilla Thunderbird does not use Launchpad to track bugs. ...
 
-The form is present, but without a button to create the question.
-No Privileges Person chooses the Cancel button.
+The page is present, but without a comment field or a button to create
+the question.
+
+    >>> user_browser.getControl('Comment')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
 
     >>> user_browser.getControl('Convert to question').click()
     Traceback (most recent call last):
@@ -157,7 +140,7 @@ or a bookmark, he sees that he cannot create the question again.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+create-question')
     >>> user_browser.title
-    'Bug #10 - Convert this to a question'
+    'Bug #10 - Convert this bug to a question'
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
@@ -182,39 +165,41 @@ could not be created.
     >>> user_browser.getControl('Convert this Bug into a Question').click()
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
-    >>> get_feedback_messages(user_browser)[0]
-    u'This bug report was converted into a question:...Question #16...'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    This bug report was converted into a question:...question #16...
 
     >>> user_browser.goBack(count=1)
     >>> user_browser.getControl('Comment').value = 'This will fail.'
     >>> user_browser.getControl('Convert this Bug into a Question').click()
-    >>> get_feedback_messages(user_browser)[0]
-    u'This bug could not be converted into a question.'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    This bug could not be converted into a question.
+    This bug report was converted into a question: question #16:
+    Copy, Cut and Delete operations should work on selections.
 
 
 == Remove the question ==
 
 After a question is created from a bug, the bug's Action menu displays
-the 'Remove the question' link. No Privileges Person decides to
+the 'Convert back to bug' link. No Privileges Person decides to
 reactivate a bug report.
 
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
-    >>> user_browser.getLink('Remove the question').click()
+    >>> user_browser.getLink('Convert back to bug').click()
     >>> user_browser.title
-    'Bug #12 - Remove the question'
+    'Bug #12 - Convert this question back to a bug'
 
-The 'Remove the question' page explains what will happen if No
+The 'Convert back to bug' page explains what will happen if No
 Privileges Person chooses to reactivate the bug. There is an optional
 field for a comment. No other input is needed. No Privileges Person
-uses the 'Remove the Question' button.
+uses the 'Convert Back to Bug' button.
 
     >>> find_main_content(user_browser.contents).p
     <p>... Reactivate this bug report by removing the question created
     from the bug. ...
 
     >>> user_browser.getControl('Comment').value = 'I misunderstood.'
-    >>> user_browser.getControl('Remove the Question').click()
+    >>> user_browser.getControl('Convert Back to Bug').click()
 
 No Privileges Person is shown the bug page again. There is a notice
 stating that a question was removed from the bug. The Related
@@ -224,8 +209,8 @@ it is still in the Open status.
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
 
-    >>> get_feedback_messages(user_browser)
-    [u'Removed Question #...: Copy, Cut and Delete operations should work...']
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    Removed Question #...: Copy, Cut and Delete operations should work...
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
     >>> print portlet
@@ -251,3 +236,33 @@ again. The bug status is sill Invalid for Jokosher, but he can edit it.
     Jokosher                      Invalid  Critical     &mdash;
     Affecting: Jokosher
     Filed here by: Foo Bar...
+
+He reads his comment that was appended to the bug report's messages.
+
+    >>> print extract_text(
+    ...     content.findAll('div', {'class' : 'boardComment'})[-1])
+    No Privileges Person wrote ... I misunderstood.
+
+When the remove question page is visited, and there is no question,
+the form is not displayed. This can happened if the URL is hacked or
+the question was removed, and the user used his back button to return
+to the page. No Privileges Person sees a message that there is no
+question to remove.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+remove-question')
+    >>> user_browser.title
+    'Bug #12 - Convert this question back to a bug'
+    >>> find_main_content(user_browser.contents).p
+    <p>
+    The bug was not converted to a question. There is nothing to change. ...
+
+    >>> user_browser.getControl('Comment')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> user_browser.getControl('Convert Back to Bug').click()
+    Traceback (most recent call last):
+    ...
+    LookupError: ...

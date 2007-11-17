@@ -10,17 +10,6 @@
   i18n:domain="malone">
 
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/bug/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-      </div>
-
-      <h1>Remove the question</h1>
-    </metal:heading>
-
     <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/bug/@@+portlet-questions" />
     </metal:leftportlets>
@@ -30,6 +19,15 @@
     </metal:rightportlets>
 
     <metal:main fill-slot="main">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
+
+      <h1>Convert this question back to a bug</h1>
+
       <metal:form use-macro="context/@@launchpad_form/form">
         <div metal:fill-slot="extra_info">
           <p tal:condition="not: view/has_question">
@@ -41,8 +39,8 @@
             Reactivate this bug report by removing the question created
             from the bug. The bug's status, importance, etc.. can then
             be edited. The bug's status will not be updated for any project
-            that it affects. A bug contact must update the approprate
-            statues after the question is removed. The question will still
+            that it affects. A bug contact must update the appropriate
+            status after the question is removed. The question will still
             exist--its status can be updated separately from this bug.
           </p>
         </div>
@@ -57,9 +55,9 @@
 
     <metal:help fill-slot="help">
       <p>
-        Choose 'Remove the Question' to restore the bug report. The
-        bug's status, importance, ect... in all locations that is affects
-        can be edit again. A comment is required to explain that the
+        Choose 'Convert Back to Bug' to restore the bug report. The
+        bug's status, importance, etc... in all locations that it affects
+        can be edited again. A comment may be provided to explain that the
         bug reported is reactivated. After the question is removed, the
         bug's status should be updated for the affected project.
       </p>

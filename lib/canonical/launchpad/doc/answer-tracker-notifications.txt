@@ -1021,7 +1021,8 @@ be used. So, if the team only officially speaks French, it will only
 receive notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
-    >>> # Resend the new message notification
+
+    # Resend the new message notification
     >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -1042,7 +1043,7 @@ if the team supported languages includes the question language:
     >>> ubuntu.addAnswerContact(launchpad_devs)
     True
 
-    >>> # Resend the new message notification
+    # Resend the new message notification
     >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]

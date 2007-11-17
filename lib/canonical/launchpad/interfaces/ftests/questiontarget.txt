@@ -494,32 +494,36 @@ of the target's questions.
     [u'en', u'fr']
 
 
-== Creating a question from a bug ==
+== createQuestionFromBug() ==
 
 The target can create a question from a bug, and link that bug to the
 new question. The question owner is the same as the bug owner. The
 question title and description are taken from the bug. The messages on
 the bug are copied to the question.
 
+    >>> from datetime import datetime
+    >>> from pytz import UTC
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IBugSet, IProductSet)
-    >>> jokosher = getUtility(IProductSet)['jokosher']
+
+    >>> now = datetime.now(UTC)
+
+    >>> target = getUtility(IProductSet)['jokosher']
     >>> bug_params = CreateBugParams(
     ...     title="Print is broken", comment="blah blah blah",
     ...     owner=sample_person)
-    >>> bug_params.setBugTarget(product=jokosher)
-    >>> jokosher_bug = getUtility(IBugSet).createBug(bug_params)
-    >>> bug_message = jokosher_bug.newMessage(
+    >>> target_bug = target.createBug(bug_params)
+    >>> bug_message = target_bug.newMessage(
     ...     owner=sample_person, subject="Opps, my mistake",
     ...     content="This is really a question.")
 
-    >>> target_question = target.createQuestionFromBug(jokosher_bug)
+    >>> target_question = target.createQuestionFromBug(target_bug)
 
-    >>> target_question.owner == jokosher_bug.owner
+    >>> target_question.owner == target_bug.owner
     True
-    >>> target_question.title == jokosher_bug.title
+    >>> target_question.title == target_bug.title
     True
-    >>> target_question.description == jokosher_bug.description
+    >>> target_question.description == target_bug.description
     True
     >>> question_message = target_question.messages[-1]
     >>> question_message.text_contents == bug_message.text_contents
@@ -535,6 +539,17 @@ the bug are copied to the question.
     [u'Print is broken']
     >>> target_question.messages[-1].text_contents
     u'This is really a question.'
+
+The question's datecreated attribute is the same as the bug's
+datecreated. The question's datelastquery attribute has a current
+datetime stamp to indicate the question is active. The question janitor
+would otherwise mistake the questions made from old bugs as old
+questions and would expire them.
+
+    >>> target_question.datecreated == target_bug.datecreated
+    True
+    >>> target_question.datelastquery > now
+    True
 
 The question language is always English because all bugs in Launchpad
 are written in English.

@@ -10,17 +10,6 @@
   i18n:domain="malone">
 
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/bug/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-      </div>
-
-      <h1>Convert this to a question</h1>
-    </metal:heading>
-
     <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/bug/@@+portlet-questions" />
     </metal:leftportlets>
@@ -30,6 +19,15 @@
     </metal:rightportlets>
 
     <metal:main fill-slot="main">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
+
+      <h1>Convert this bug to a question</h1>
+
       <metal:form use-macro="context/@@launchpad_form/form">
         <div metal:fill-slot="extra_info">
           <p tal:condition="not: view/can_be_a_question">
@@ -43,8 +41,9 @@
                 replace="context/target/displayname">Firefox</tal:target>
               does not use Launchpad to track bugs.
             </tal:uses-malone>
-            This bug may be valid in other locations. Only one location must
-            be valid for a bug to be convertible to a question.
+            This bug may be valid in other locations, or it is not valid in
+            any locations. Only one location must be valid for a bug to be
+            convertible to a question.
           </p>
 
           <p>

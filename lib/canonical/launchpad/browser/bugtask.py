@@ -5,20 +5,20 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugCreateQuestionView',
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
-    'BugRemoveQuestionView',
     'BugsBugTaskSearchListingView',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
+    'BugTaskCreateQuestionView',
     'BugTaskEditView',
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
     'BugTasksAndNominationsView',
+    'BugTaskRemoveQuestionView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskSOP',
@@ -68,12 +68,12 @@ from canonical.launchpad.interfaces import (
     BugNominationStatus, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet,
     IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
-    IBugTaskSet, IConvertToQuestionForm, ICveSet, IDistribution,
+    IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
-    IProject, IRemoveQuestionFromBugForm, ISourcePackage, IUpstreamBugTask,
+    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, valid_upstreamtask, validate_distrotask,
@@ -2349,9 +2349,15 @@ class BugTaskSOP(StructuralObjectPresentation):
         return None
 
 
-class BugCreateQuestionView(LaunchpadFormView):
+class BugTaskCreateQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
-    schema = IConvertToQuestionForm
+    schema = ICreateQuestionFromBugTaskForm
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        if not self.can_be_a_question:
+            self.form_fields = self.form_fields.omit('comment')
 
     @property
     def next_url(self):
@@ -2383,9 +2389,15 @@ class BugCreateQuestionView(LaunchpadFormView):
         self.context.bug.convertToQuestion(self.user, comment=comment)
 
 
-class BugRemoveQuestionView(LaunchpadFormView):
+class BugTaskRemoveQuestionView(LaunchpadFormView):
     """View for creating a question from a bug."""
-    schema = IRemoveQuestionFromBugForm
+    schema = IRemoveQuestionFromBugTaskForm
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        if not self.has_question:
+            self.form_fields = self.form_fields.omit('comment')
 
     @property
     def next_url(self):
@@ -2397,7 +2409,7 @@ class BugRemoveQuestionView(LaunchpadFormView):
         """Return True if a question was created from this bug, or False."""
         return self.context.bug.getQuestionCreatedFromBug() is not None
 
-    @action('Remove the Question', name='remove')
+    @action('Convert Back to Bug', name='remove')
     def remove_action(self, action, data):
         """Remove a question from this bug.
 
@@ -2422,3 +2434,9 @@ class BugRemoveQuestionView(LaunchpadFormView):
             'Removed Question #%s: <a href="%s">%s<a>.'
             % (question.id, canonical_url(question),
                cgi.escape(question.title)))
+        comment = data.get('comment', None)
+        if comment is not None:
+            self.context.bug.newMessage(
+                owner=getUtility(ILaunchBag).user,
+                subject=self.context.bug.followup_subject(),
+                content=comment)

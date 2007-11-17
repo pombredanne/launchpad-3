@@ -114,9 +114,9 @@ class BugNameField(ContentNameField):
 class IBugBecameQuestionEvent(Interface):
     """A bug became a question."""
 
-    bug = Attribute("The bug that was changed to a question.")
+    bug = Attribute("The bug that was changed into a question.")
     question = Attribute("The question that the bug became.")
-    user = Attribute("The user that changed the bug to a question.")
+    user = Attribute("The user that changed the bug into a question.")
 
 
 class CreatedBugWithNoBugTasksError(Exception):

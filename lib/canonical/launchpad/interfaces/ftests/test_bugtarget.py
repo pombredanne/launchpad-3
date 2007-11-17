@@ -38,6 +38,7 @@ def productSetUp(test):
     setUp(test)
     test.globs['bugtarget'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
+    test.globs['question_target'] = test.globs['bugtarget']
 
 
 def project_filebug(project, summary, status=None):
@@ -79,6 +80,7 @@ def productSeriesSetUp(test):
     firefox = getUtility(IProductSet).getByName('firefox')
     test.globs['bugtarget'] = firefox.getSeries('trunk')
     test.globs['filebug'] = productseries_filebug
+    test.globs['question_target'] = firefox
 
 
 def distributionSetUp(test):
@@ -86,6 +88,7 @@ def distributionSetUp(test):
     setUp(test)
     test.globs['bugtarget'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
+    test.globs['question_target'] = test.globs['bugtarget']
 
 
 def distributionSourcePackageSetUp(test):
@@ -94,6 +97,7 @@ def distributionSourcePackageSetUp(test):
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSourcePackage('mozilla-firefox')
     test.globs['filebug'] = bugtarget_filebug
+    test.globs['question_target'] = test.globs['bugtarget']
 
 
 def distroseries_filebug(distroseries, summary, sourcepackagename=None,
@@ -117,6 +121,7 @@ def distributionSeriesSetUp(test):
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSeries('hoary')
     test.globs['filebug'] = distroseries_filebug
+    test.globs['question_target'] = ubuntu
 
 
 def sourcepackage_filebug(source_package, summary, status=None):
@@ -139,6 +144,7 @@ def sourcePackageSetUp(test):
     warty = ubuntu.getSeries('warty')
     test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
     test.globs['filebug'] = sourcepackage_filebug
+    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
 def test_suite():

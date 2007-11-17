@@ -51,8 +51,10 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         description. The bug owner is the question owner. The question
         is automatically linked to the bug.
         
-        Note that bug messages and attachments are not duplicated for the
-        question. The question is a start of a new conversation.
+        Note that bug messages are copied to the question, but attachments
+        are not. The question is the same age as the bug, though its
+        datelastquery attribute is current to signify the question is
+        active.
         
         :bug: An IBug.
         """
