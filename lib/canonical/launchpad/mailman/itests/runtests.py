@@ -4,16 +4,13 @@
 """Run all the Launchpad-Mailman integration doctests in this directory."""
 
 import os
+import re
 import sys
 import errno
-import shutil
 import doctest
 import optparse
 import unittest
-import traceback
 import itest_helper
-
-from operator import itemgetter
 
 sys.path.insert(0, itest_helper.TOP)
 sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
@@ -88,8 +85,8 @@ def integrationTestCleanUp(test):
 
 
 
-def find_tests():
-    """Search for doctests.
+def find_tests(match_regexps):
+    """Search for doctests with filenames that match the given regexps.
 
     Return a unittest.TestSuite object.
     """
@@ -97,6 +94,12 @@ def find_tests():
     integrationTestCleanUp(None)
     suite = unittest.TestSuite()
     for filename in os.listdir(itest_helper.HERE):
+        if match_regexps:
+            for regexp in match_regexps:
+                if re.search(regexp, filename, re.IGNORECASE):
+                    break
+            else:
+                continue
         if os.path.splitext(filename)[1] != '.txt':
             continue
         test = doctest.DocFileSuite(
@@ -120,20 +123,20 @@ def v_callback(option, opt, value, parser):
 
 
 def parseargs():
-    parser = optparse.OptionParser(usage=_("""\
+    parser = optparse.OptionParser(usage="""\
 %prog [options]
 
-Run the Launchpad/Mailman integration test suite."""))
+Run the Launchpad/Mailman integration test suite.""")
     parser.set_defaults(verbosity=2)
     parser.add_option('-v', '--verbose',
                       action='callback', callback=v_callback,
-                      dest='verbosity', help=_("""\
+                      dest='verbosity', help="""\
 Increase verbosity by 1, which defaults to %default.  Use -q to reduce
-verbosity.  -v and -q options accumulate."""))
+verbosity.  -v and -q options accumulate.""")
     parser.add_option('-q', '--quiet',
                       action='callback', callback=v_callback,
-                      dest='verbosity', help=_("""\
-Reduce verbosity by 1 (but not below 0)."""))
+                      dest='verbosity', help="""\
+Reduce verbosity by 1 (but not below 0).""")
     opts, args = parser.parse_args()
     return parser, opts, args
 
@@ -144,10 +147,7 @@ def main():
     Return True if there were failures or errors, otherwise False.
     """
     parser, opts, args = parseargs()
-    if args:
-        parser.error('Unexpected arguments')
-
-    suite = find_tests()
+    suite = find_tests(args)
     runner = unittest.TextTestRunner(verbosity=opts.verbosity)
     results = runner.run(suite)
     if results.failures or results.errors:
