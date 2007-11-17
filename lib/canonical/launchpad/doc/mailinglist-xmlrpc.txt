@@ -14,8 +14,8 @@ see if there is any work for Mailman to do.
 When there's nothing for Mailman to do, we'll just get an empty dictionary
 back from the XMLRPC call.
 
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
     >>> mailinglist_api.getPendingActions()
     {}
 
@@ -142,7 +142,7 @@ scenes.
     >>> list_three = list_set.new(team_three)
     >>> list_three.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
-        
+
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> commit()
     >>> print_actions(pending_actions)
@@ -173,7 +173,7 @@ deactivation failed for some reason.
     'INACTIVE'
     >>> list_three = list_set.get('team-three')
     >>> list_three.status.name
-    'FAILED'
+    'MOD_FAILED'
 
 
 == Modifying mailing lists ==
@@ -239,7 +239,7 @@ the other...
     'ACTIVE'
     >>> list_five = list_set.get('team-five')
     >>> list_five.status.name
-    'FAILED'
+    'MOD_FAILED'
 
 
 == Error conditions ==
@@ -286,8 +286,24 @@ status report, either success...
 
 This is also true of lists in the failed state.
 
-    >>> list_five.status.name
+    >>> list_two.status.name
     'FAILED'
+    >>> mailinglist_api.reportStatus({'team-two': 'success'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "success"
+            for team: team-two'>
+
+    >>> mailinglist_api.reportStatus({'team-two': 'failure'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "failure"
+            for team: team-two'>
+
+And of lists in the modification-failed state.
+
+    >>> list_five.status.name
+    'MOD_FAILED'
     >>> mailinglist_api.reportStatus({'team-five': 'success'})
     Traceback (most recent call last):
     ...

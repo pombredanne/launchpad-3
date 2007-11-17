@@ -12,13 +12,10 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/product/@@+portlet-details" />
-</metal:rightportlets>
+</metal:portlets>
 
 <metal:heading fill-slot="pageheading">
   <h1 tal:content="context/title">Foo Release</h1>
@@ -43,6 +40,37 @@
       and give it a description, including new features and other
       highlights.</i>
     </p>
+
+    <tal:downloadfiles
+        define="has_edit context/required:launchpad.Edit"
+        condition="context/files">
+      <h2>Download files for this release</h2>
+        <table class="listing">
+          <thead>
+            <tr>
+              <th tal:condition="has_edit" width="10%">Delete</th>
+              <th>Download</th>
+              <th width="50%">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+              <tr tal:repeat="file context/files">
+                <td tal:condition="has_edit"
+                    align="center">
+                  <input type="checkbox"
+                         tal:define="cbnum string:${repeat/file/index}"
+                         tal:attributes="value file/libraryfile/id;
+                         name string:checkbox_${cbnum}" />
+                </td>
+                <td>
+                  <img alt="download icon" src="/@@/download" />
+                  <a tal:attributes="href python:view.file_url(file)"
+                       tal:content="file/libraryfile/filename">filename</a></td>
+                <td tal:content="file/description">Installer for i386</td>
+              </tr>
+          </tbody>
+        </table>
+    </tal:downloadfiles>
 
 </div>
 

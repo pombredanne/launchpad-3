@@ -144,7 +144,8 @@ class ArchiveOverrider:
         """
         sp = self.distroseries.getSourcePackage(package_name)
 
-        if not sp or not sp.currentrelease:
+        if (not sp or not sp.currentrelease or
+            not sp.currentrelease.current_published):
             self.log.error("'%s' source isn't published in %s"
                            % (package_name, self.distroseries.name))
             return

@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
 
@@ -11,15 +12,15 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
+    'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonSet',
-    'IPerson',
     'IRequestPeopleMerge',
+    'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
     'TeamContactMethod',

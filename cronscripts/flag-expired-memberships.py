@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """Flag expired team memberships and warn about impending expiration."""
 
