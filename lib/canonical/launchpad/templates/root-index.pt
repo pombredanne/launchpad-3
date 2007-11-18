@@ -55,8 +55,7 @@
           <p id="application-summary">
             Launchpad is a free software hosting and development
             website. We make it easy to <strong>collaborate
-            across multiple projects</strong>
-            in the free software world.
+            across multiple projects</strong>.
             <br />
             <center>
               <a href="/+about">
@@ -104,8 +103,14 @@
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
+            <li class="product"><a href="/phpwms">PHP Website Management
+              System</a>
+            </li>
+            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
+            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
+            <li class="product"><a href="/democracy">Miro TV Player</a></li>
             <li class="product"><a href="/awn">Avant Window Navigator</a></li>
             <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/tangocms">TangoCMS</a></li>
