@@ -970,6 +970,7 @@ ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
+ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}

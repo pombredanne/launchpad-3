@@ -124,35 +124,6 @@ class Announcement(SQLBase):
 class HasAnnouncements:
     """A mixin class for pillars that can have announcements."""
 
-    def announce(self, user, title, summary=None, url=None,
-                 publication_date=None):
-        """See IHasAnnouncements."""
-
-        # establish the appropriate target
-        project = product = distribution = None
-        if IProduct.providedBy(self):
-            product = self
-        elif IProject.providedBy(self):
-            project = self
-        elif IDistribution.providedBy(self):
-            distribution = self
-        else:
-            raise AssertionError, 'Unsupported announcement target'
-
-        # create the news item
-        announcement = Announcement(
-            registrant = user,
-            title = title,
-            summary = summary,
-            url = url,
-            product = product,
-            project = project,
-            distribution = distribution
-            )
-
-        announcement.set_publication_date(publication_date)
-        return announcement
-
     def getAnnouncement(self, name):
         try:
             announcement_id = int(name)
@@ -194,6 +165,38 @@ class HasAnnouncements:
         else:
             raise AssertionError, 'Unsupported announcement target'
         return Announcement.select(query, limit=limit)
+
+
+class MakesAnnouncements(HasAnnouncements):
+
+    def announce(self, user, title, summary=None, url=None,
+                 publication_date=None):
+        """See IHasAnnouncements."""
+
+        # establish the appropriate target
+        project = product = distribution = None
+        if IProduct.providedBy(self):
+            product = self
+        elif IProject.providedBy(self):
+            project = self
+        elif IDistribution.providedBy(self):
+            distribution = self
+        else:
+            raise AssertionError, 'Unsupported announcement target'
+
+        # create the news item
+        announcement = Announcement(
+            registrant = user,
+            title = title,
+            summary = summary,
+            url = url,
+            product = product,
+            project = project,
+            distribution = distribution
+            )
+
+        announcement.set_publication_date(publication_date)
+        return announcement
 
 
 class AnnouncementSet:

@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
-from canonical.launchpad.interfaces.announcement import IHasAnnouncements
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import PillarNameField
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
@@ -84,7 +84,7 @@ class ProductNameField(PillarNameField):
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IHasAnnouncements, IHasOwner,
+               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
                IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
     """A Product.

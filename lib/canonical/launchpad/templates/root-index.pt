@@ -73,7 +73,7 @@
             <li>
               <a href="https://help.launchpad.net/ProjectNews">
                 <strong>Project announcements:</strong><br />
-                Publish your news in Launchpad and via Atom / RSS.</a>
+                Publish your news in Launchpad and via Atom / RSS feeds.</a>
                 <img src="/@@/rss" alt="RSS" />
             </li>
             <li>
@@ -96,7 +96,7 @@
             </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2007-10-24.
+            Updated 2007-11-17
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

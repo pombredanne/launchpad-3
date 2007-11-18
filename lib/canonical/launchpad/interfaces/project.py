@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasIcon, IHasLogo, IHasMugshot, IHasOwner)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
-from canonical.launchpad.interfaces.announcement import IHasAnnouncements
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import PillarNameField
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -44,8 +44,9 @@ class ProjectNameField(PillarNameField):
 
 class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
-               IHasMugshot, IHasAnnouncements, IHasOwner, IHasSpecifications,
-               IHasSprints, IHasTranslationGroup, IKarmaContext):
+               IHasMugshot, IHasOwner, IHasSpecifications,
+               IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
+               IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

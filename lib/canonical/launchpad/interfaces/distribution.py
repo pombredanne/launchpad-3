@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget,
     PillarNameField)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
-from canonical.launchpad.interfaces.announcement import IHasAnnouncements
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -42,7 +42,7 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasAnnouncements, IHasOwner,
+    IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
     ILaunchpadUsage, ISpecificationTarget):
     """An operating system distribution."""

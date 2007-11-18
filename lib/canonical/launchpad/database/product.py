@@ -31,7 +31,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.announcement import HasAnnouncements
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
@@ -55,9 +55,11 @@ from canonical.launchpad.interfaces import (
     TranslationPermission)
 
 
-class Product(SQLBase, BugTargetBase, HasAnnouncements, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin, HasTranslationImportsMixin):
+class Product(SQLBase, BugTargetBase, MakesAnnouncements,
+              HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
+              BranchVisibilityPolicyMixin, QuestionTargetMixin,
+              HasTranslationImportsMixin):
+
     """A Product."""
 
     implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,

@@ -36,7 +36,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
-from canonical.launchpad.database.announcement import HasAnnouncements
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -47,7 +47,7 @@ from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasAnnouncements, HasSprintsMixin, KarmaContextMixin,
+              MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
