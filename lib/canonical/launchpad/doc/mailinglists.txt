@@ -483,10 +483,28 @@ ACTIVE or REGISTERED status.
     ... This list has been declined."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified
 
     >>> list_four.welcome_message = """\
     ... This list has been deactivated."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified
+
+
+== Renaming teams with mailing lists ==
+
+A team that has a mailing list may not be renamed.
+
+    >>> login('no-priv@canonical.com')
+    >>> team_one.name = 'team-canonical'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot rename teams with mailing lists
+
+But a team with no mailing list (yet) can still be renamed.
+
+    >>> team_six = new_team('team-six')
+    >>> team_six.name = 'team-canonical'
+    >>> team_six.name
+    u'team-canonical'

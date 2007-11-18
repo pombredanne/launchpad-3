@@ -204,4 +204,3 @@ a sorted list of dictionaries with URLs, filenames and filesizes.
    {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
     'filesize': 3,
     'filename': u'mozilla-firefox_0.9_i386.deb'}]
-

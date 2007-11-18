@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Publishing interfaces."""
 
@@ -142,7 +143,7 @@ class IPublishing(Interface):
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket):
+    def copyTo(distroseries, pocket, archive):
         """Copy this publication to another location.
 
         Return the publishing in the targeted location, either a

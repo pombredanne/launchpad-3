@@ -12,8 +12,15 @@
         />
     <require
         permission="launchpad.Edit"
-        set_schema="canonical.launchpad.interfaces.IBranch"
+        set_attributes="name title summary url whiteboard mirror_status_message
+                        private owner author product home_page lifecycle_status
+                        last_mirrored last_mirrored_id last_mirror_attempt
+                        mirror_failures pull_disabled mirror_request_time
+                        last_scanned last_scanned_id revision_count branch_type"
         />
+    <require
+        permission="launchpad.AnyPerson"
+        set_attributes="date_last_modified"/>
   </content>
 
   <content class="canonical.launchpad.database.BranchWithSortKeys">

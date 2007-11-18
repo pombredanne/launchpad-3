@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
@@ -35,9 +36,9 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
-from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
 
 

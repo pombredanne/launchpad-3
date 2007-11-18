@@ -21,7 +21,7 @@
         tal:attributes="
               href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}${context/fmt:url}/announcements.atom" />
 
-  <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
+  <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive <a href="+review">(change this)</a>
   </p>
 
@@ -111,7 +111,7 @@
           <h2>Timeline</h2>
 
           <div class="project series"
-               tal:repeat="series view/sorted_serieses">
+               tal:repeat="series view/sorted_series_list">
 
             <div tal:define="
                    is_focus python:context.development_focus == series"

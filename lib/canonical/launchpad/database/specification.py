@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -628,6 +629,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink
+        branch.date_last_modified = UTC_NOW
         return SpecificationBranch(specification=self,
                                    branch=branch,
                                    summary=summary,

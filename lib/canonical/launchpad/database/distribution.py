@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
@@ -65,9 +66,9 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
     IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
     IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, IMakesAnnouncements,
-    ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName,
-    MirrorContent, PackagePublishingStatus, PackageUploadStatus,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
+    ISourcePackageName, MirrorContent, PackagePublishingStatus,
+    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
@@ -84,7 +85,8 @@ class Distribution(SQLBase, BugTargetBase, HasAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, IMakesAnnouncements, IQuestionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IMakesAnnouncements, IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -137,6 +139,8 @@ class Distribution(SQLBase, BugTargetBase, HasAnnouncements,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroSeries', notNull=False, default=None)
     source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',

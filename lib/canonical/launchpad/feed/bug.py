@@ -15,6 +15,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
@@ -26,9 +27,6 @@ from canonical.launchpad.interfaces import (
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import IFeed
-
-# XXX - bac 2-Oct-2007 - Bug 153785 - this value should be in a config file.
-BUG_MAX_AGE = 30 * MINUTES
 
 
 def get_unique_bug_tasks(items):
@@ -72,7 +70,9 @@ class BugFeedContentView(LaunchpadView):
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
-    max_age = BUG_MAX_AGE
+    # max_age is in seconds
+    max_age = config.launchpad.max_bug_feed_cache_minutes * MINUTES
+
     rootsite = "bugs"
 
     def initialize(self):

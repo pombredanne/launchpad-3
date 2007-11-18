@@ -1,4 +1,15 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['BadMessage',
+           'BranchStatusClient',
+           'JobScheduler',
+           'LockError',
+           'PullerMaster',
+           'PullerMasterProtocol',
+           'TimeoutError',
+           ]
+
 
 import os
 from StringIO import StringIO
@@ -8,6 +19,7 @@ import sys
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
+from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
 from twisted.web.xmlrpc import Proxy
 
@@ -27,6 +39,10 @@ class BadMessage(Exception):
     def __init__(self, bad_netstring):
         Exception.__init__(
             self, 'Received unrecognized message: %r' % bad_netstring)
+
+
+class TimeoutError(Exception):
+    """Raised when the listener doesn't receive messages for a long time."""
 
 
 class BranchStatusClient:
@@ -55,16 +71,21 @@ class BranchStatusClient:
             'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
-class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
+class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
     """The protocol for receiving events from the puller worker."""
 
-    def __init__(self, deferred, listener):
+    unexpected_error_received = False
+
+    def __init__(self, deferred, listener, clock=None):
         """Construct an instance of the protocol, for listening to a worker.
 
         :param deferred: A Deferred that will be fired when the worker has
             finished (either successfully or unsuccesfully).
         :param listener: A PullerMaster object that is notified when the
             protocol receives events from the worker.
+        :param clock: A provider of Twisted's IReactorTime.  This parameter
+            exists to allow testing that does not depend on an external clock.
+            If a clock is not passed in explicitly the reactor is used.
         """
         # This Deferred is created when branch mirroring starts and is fired
         # when it finishes (successfully or otherwise). Once this deferred is
@@ -77,8 +98,12 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
+        if clock is None:
+            clock = reactor
+        self.clock = clock
 
     def _processTerminated(self, reason):
+        self.setTimeout(None)
         if self._termination_deferred is None:
             # We have already fired the deferred and do not want to do so
             # again.
@@ -109,6 +134,18 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self._expected_args = None
         self._current_args = []
 
+    def callLater(self, period, func):
+        """Override TimeoutMixin.callLater so we use self.clock.
+
+        This allows us to write unit tests that don't depend on actual wall
+        clock time.
+        """
+        return self.clock.callLater(period, func)
+
+    def connectionMade(self):
+        """Start the timeout counter when connection is made."""
+        self.setTimeout(config.supermirror.worker_timeout)
+
     def dataReceived(self, data):
         NetstringReceiver.dataReceived(self, data)
         # XXX: JonathanLange 2007-10-16
@@ -138,6 +175,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
                 self._resetState()
 
     def do_startMirroring(self):
+        self.resetTimeout()
         self._branch_mirror_complete_deferred = defer.maybeDeferred(
             self.listener.startMirroring)
         self._branch_mirror_complete_deferred.addErrback(self.unexpectedError)
@@ -150,22 +188,32 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self._branch_mirror_complete_deferred.addCallback(
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
+    def do_progressMade(self):
+        """Any progress resets the timout counter."""
+        self.resetTimeout()
+
     def outReceived(self, data):
         self.dataReceived(data)
 
     def errReceived(self, data):
         self._stderr.write(data)
 
-    def unexpectedError(self, failure):
-        """Called when we receive data that violates the protocol.
+    def timeoutConnection(self):
+        """When a timeout occurs, kill the process and record a TimeoutError.
+        """
+        self.unexpectedError(failure.Failure(TimeoutError()))
 
-        This could be because the client didn't send a netstring, or sent an
-        recognized command, or sent the wrong number of arguments for a
-        command etc.
+    def unexpectedError(self, failure):
+        """Called when we receive malformed, or on timeout.
+
+        Causes of malformed data could be the client not sending a netstring,
+        or sending an recognized command, or sending the wrong number of
+        arguments for a command etc.
 
         Calling this method kills the child process and fires the completion
         deferred that was provided to the constructor.
         """
+        self.unexpected_error_received = True
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:

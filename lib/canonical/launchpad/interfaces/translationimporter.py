@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces to handle translation files imports."""
 
@@ -14,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Int, List, TextLine
+from zope.schema import Bool, Int, List, TextLine
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)

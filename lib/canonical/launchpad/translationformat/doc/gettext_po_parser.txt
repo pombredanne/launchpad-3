@@ -268,7 +268,7 @@ Parsing a PO template:
 
   >>> len(translation_file.messages)
   1
-  >>> print translation_file.messages[0].msgid
+  >>> print translation_file.messages[0].msgid_singular
   Foo
 
 PO templates, and other PO files that do not specify their encoding,
@@ -388,5 +388,5 @@ are decoded correctly.
 In this case, the numeric representation are UTF-8 only characters and we can
 see that we get its Unicode equivalent.
 
-  >>> translation_file.messages[1].msgid
+  >>> translation_file.messages[1].msgid_singular
   u'view \xab${version_title}\xbb'

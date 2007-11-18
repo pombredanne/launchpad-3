@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=W0702
 
 """Functions for language pack creation script."""
 
@@ -33,16 +34,14 @@ def iter_sourcepackage_translationdomain_mapping(series):
     """
     cur = cursor()
     cur.execute("""
-        SELECT SourcePackageName.name, POTemplateName.translationdomain
+        SELECT SourcePackageName.name, POTemplate.translation_domain
         FROM
             SourcePackageName
             JOIN POTemplate ON
                 POTemplate.sourcepackagename = SourcePackageName.id AND
                 POTemplate.distroseries = %s AND
                 POTemplate.languagepack = TRUE
-            JOIN POTemplateName ON
-                POTemplate.potemplatename = POTemplateName.id
-        ORDER BY SourcePackageName.name, POTemplateName.translationdomain
+        ORDER BY SourcePackageName.name, POTemplate.translation_domain
         """ % sqlvalues(series))
 
     for (sourcepackagename, translationdomain,) in cur.fetchall():
@@ -86,7 +85,7 @@ def export(distroseries, component, update, force_utf8, logger):
             (pofile.id, index + 1, pofile_count))
 
         potemplate = pofile.potemplate
-        domain = potemplate.potemplatename.translationdomain.encode('ascii')
+        domain = potemplate.translation_domain.encode('ascii')
         language_code = pofile.language.code.encode('ascii')
 
         if pofile.variant is not None:
