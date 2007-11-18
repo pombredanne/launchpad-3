@@ -36,7 +36,7 @@ fi
 if [ -z "$1" ]; then
     rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
     # XXX sinzui 2007-11-18 bug=163612:
-    # The bzr+ssh protovol is causes an exception; fallback to sftp.
+    # The bzr+ssh protocol causes an exception; fallback to sftp.
     rev=`echo $rev | sed 's/bzr+ssh:/sftp:/'`
     files=`bzr st --short -r $rev | sed '/^.[MN]/!d; s/.* //'`
 else
