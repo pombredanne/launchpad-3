@@ -489,6 +489,14 @@ class PackagePublishingStatus(DBEnumeratedType):
         reason.
         """)
 
+    OBSOLETE = DBItem(5, """
+        Obsolete
+
+        When a publication is no longer required because of an obsolete
+        distroseries it is marked "obsolete" and is removed during
+        domination.
+        """)
+
 
 class PackagePublishingPriority(DBEnumeratedType):
     """Package Publishing Priority
