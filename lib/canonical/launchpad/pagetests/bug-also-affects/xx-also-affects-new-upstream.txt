@@ -63,7 +63,7 @@ for the user to use as the affected upstream.
     >>> user_browser.title
     'Bug #2 - Record as affecting another project'
 
-    >>> print get_feedback_messages(user_browser.contents)[0]
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There are some projects using the bug tracker you specified. One of
     these may be the one you were trying to register.
     >>> user_browser.getControl(name='field.existing_product').displayValue
@@ -83,12 +83,9 @@ First, let's use the existing project.
     >>> user_browser.title
     'Bug #2 in The Foo Project...'
 
-    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
-    >>> for img in affects_table.findAll('img'):
-    ...     for key, value in img.attrs:
-    ...         if '@@/bug-remote' in value:
-    ...             print extract_text(img.findPrevious('a'))
-    auto-bugs.foo.org #421
+    >>> from canonical.launchpad.ftests.bug import print_remote_bugtasks
+    >>> print_remote_bugtasks(user_browser.contents)
+    The Foo Project     auto-bugs.foo.org #421
 
 If we try using that same existing project again, we'll get an error
 explaining we can't because it's already known that it's affected by
@@ -110,10 +107,26 @@ the bug as affecting another (unregistered) upstream.
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.title
     'Bug #2 in The Bar Project:...
-    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
-    >>> for img in affects_table.findAll('img'):
-    ...     for key, value in img.attrs:
-    ...         if '@@/bug-remote' in value:
-    ...             print extract_text(img.findPrevious('a'))
-    auto-bugs.foo.org #123
-    auto-bugs.foo.org #421
+    >>> print_remote_bugtasks(user_browser.contents)
+    The Bar Project     auto-bugs.foo.org #123
+    The Bar Project     auto-bugs.foo.org #421
+
+== Error handling ==
+
+If the URL of the remote bug is not recognized by Launchpad, we'll tell the
+user and ask him to check if it's correct.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product')
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://foo.org/notabug.cgi?id=42')
+    >>> user_browser.getControl('Project name').value = 'Foo Project'
+    >>> user_browser.getControl('Project ID').value = 'bazfoo'
+    >>> user_browser.getControl('Project summary').value = 'The Foo Project'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.title
+    'Bug #1 - Record as affecting another project'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    There is 1 error.
+    Launchpad does not recognize the bug tracker at this URL.
+

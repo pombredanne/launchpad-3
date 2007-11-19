@@ -4,7 +4,8 @@
 
 import re
 from canonical.launchpad.ftests.test_pages import (
-    extract_text, find_main_content, find_portlet, find_tag_by_id)
+    extract_text, find_main_content, find_portlet, find_tag_by_id,
+    find_tags_by_class)
 
 DIRECT_SUBS_PORTLET_INDEX = 0
 INDIRECT_SUBS_PORTLET_INDEX = 1
@@ -32,6 +33,19 @@ def print_subscribers(bug_page, subscriber_portlet_index):
         for li in portlet.fetch('li'):
             if li.a:
                 print li.a.renderContents()
+
+
+def print_remote_bugtasks(content):
+    """Print the remote bugtasks of this bug.
+
+    For each remote bugtask, print the target and the bugwatch.
+    """
+    affects_table = find_tags_by_class(content, 'listing')[0]
+    for img in affects_table.findAll('img'):
+        for key, value in img.attrs:
+            if '@@/bug-remote' in value:
+                target = extract_text(img.findAllPrevious('td')[-1])
+                print target, extract_text(img.findPrevious('a'))
 
 
 def print_bugs_table(content, table_id):

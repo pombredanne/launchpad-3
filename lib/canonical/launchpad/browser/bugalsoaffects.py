@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
     IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
     ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
-    validate_new_distrotask, valid_upstreamtask)
+    UnrecognizedBugTrackerURL, validate_new_distrotask, valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
 
@@ -564,7 +564,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
 
-    def _findProductsUsingGivenBugTrackerAndStoreThem(self):
+    def _loadProductsUsingBugTracker(self):
         """Find products using the bugtracker wich runs on the given URL.
 
         These products are stored in self.existing_products.
@@ -579,21 +579,24 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         bugwatch_set = getUtility(IBugWatchSet)
         try:
             bugtracker, bug = bugwatch_set.extractBugTrackerAndBug(bug_url)
-        except NoBugTrackerFound:
+        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
             # There's no bugtracker registered with the given URL, so we
             # don't need to worry about finding products using it.
-            bugtracker = None
-
-        if bugtracker is None:
             return
+
         count = bugtracker.products.count()
         if count > 0 and count <= self.MAX_PRODUCTS_TO_DISPLAY:
-            self.existing_products = bugtracker.products
+            self.existing_products = list(bugtracker.products)
         elif count > self.MAX_PRODUCTS_TO_DISPLAY:
+            # Use a local import as we don't want removeSecurityProxy used
+            # anywhere else.
+            from zope.security.proxy import removeSecurityProxy
             name_matches = getUtility(IProductSet).search(
                 self.request.form.get('field.name'))
-            self.existing_products = bugtracker.products.intersect(
-                name_matches).limit(self.MAX_PRODUCTS_TO_DISPLAY)
+            products = bugtracker.products.intersect(
+                removeSecurityProxy(name_matches))
+            self.existing_products = list(
+                products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:
             # The bugtracker is registered in Launchpad but there are no
             # products using it at the moment.
@@ -606,8 +609,8 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         that bugtracker.
         """
         super(BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
-        self._findProductsUsingGivenBugTrackerAndStoreThem()
-        if self.existing_products is None or self.existing_products.count() < 1:
+        self._loadProductsUsingBugTracker()
+        if self.existing_products is None or len(self.existing_products) < 1:
             # No need to setup any extra fields.
             return
 

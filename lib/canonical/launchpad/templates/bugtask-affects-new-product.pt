@@ -26,7 +26,7 @@
           <table class="form">
             <tal:existing-product
                 define="widget nocall:widgets/existing_product;
-                        no_label default">
+                        display_label python:False">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:existing-product>
 
@@ -75,6 +75,13 @@
       </div>
     </div>
 
+  </div>
+
+  <div metal:fill-slot="help">
+    <p>This bug seems to affect a project which is not yet registered in
+    Launchpad.  Here you can register the project and link this bug to the
+    relevant bug in the project's bug tracker.
+    <p>
   </div>
 
 </body>

@@ -555,14 +555,16 @@ class MugshotImageUpload(BaseImageUpload):
 
 
 class PillarNameField(BlacklistableContentNameField):
+    """Base field used for names of distros/projects/products."""
 
-    errormessage = _("%s is already in use by another project")
+    errormessage = _("%s is already used by another project")
 
     def _getByName(self, name):
         return getUtility(IPillarNameSet).getByName(name)
 
 
 class ProductNameField(PillarNameField):
+    """Field used by IProduct.name."""
 
     @property
     def _content_iface(self):
