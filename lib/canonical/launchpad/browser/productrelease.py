@@ -33,6 +33,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
     canonical_url, custom_widget, enabled_with_permission, stepthrough)
 
+
 class ProductReleaseNavigation(Navigation):
 
     usedfor = IProductRelease

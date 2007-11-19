@@ -125,6 +125,13 @@ class CodeImportEventDataType(DBEnumeratedType):
     item associated to an event has a type from this enumeration.
     """
 
+    # Generic data
+
+    MESSAGE = DBItem(10, """Message
+
+    User-provided message.
+    """)
+
     # CodeImport attributes
 
     CODE_IMPORT = DBItem(110, """
@@ -226,6 +233,13 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Subversion URL, when recording an import source change.
         """)
 
+    # Data related to machine events
+
+    OFFLINE_REASON = DBItem(410, """Offline Reason
+
+    Reason why a code import machine went offline.
+    """)
+
 
 class ICodeImportEvent(Interface):
     """One event in the code-import audit trail."""
@@ -306,6 +320,30 @@ class ICodeImportEventSet(Interface):
         :param person: `Person` who requested the change.
         :param token: `CodeImportEventToken` created by `beginModify`.
         :return: `CodeImportEvent` of MODIFY type, or None.
+        """
+
+    def newOnline(machine):
+        """Record that an import machine went online.
+
+        :param machine: `CodeImportMachine` whose state changed to ONLINE.
+        :return: `CodeImportEvent` of ONLINE type.
+        """
+
+    def newOffline(machine, reason):
+        """Record that an import machine went offline.
+
+        :param machine: `CodeImportMachine` whose state changed to OFFLINE.
+        :param reason: `CodeImportMachineOfflineReason` enum value.
+        :return: `CodeImportEvent` of OFFLINE type.
+        """
+
+    def newQuiesce(machine, user, message):
+        """Record that user requested the machine to quiesce for maintenance.
+
+        :param machine: `CodeImportMachine` whose state changed to QUIESCING.
+        :param user: `Person` that requested quiescing.
+        :param message: User-provided message.
+        :return: `CodeImportEvent` of QUIESCE type.
         """
 
 

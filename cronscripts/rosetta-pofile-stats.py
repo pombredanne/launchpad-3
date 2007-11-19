@@ -19,6 +19,6 @@ class VerifyPOFileStats(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = VerifyPOFileStats(name="pofile-stats")
+    script = VerifyPOFileStats(name="pofile-stats", dbuser='pofilestats')
     script.lock_and_run()
 

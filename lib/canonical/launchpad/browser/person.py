@@ -1379,7 +1379,23 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
 
-    def getPackageBugCounts(self):
+    @cachedproperty
+    def total_bug_counts(self):
+        """Return the totals of each type of package bug count as a dict."""
+        totals = {
+            'open_bugs_count': 0,
+            'critical_bugs_count': 0,
+            'unassigned_bugs_count': 0,
+            'inprogress_bugs_count': 0,}
+
+        for package_counts in self.package_bug_counts:
+            for key in totals.keys():
+                totals[key] += int(package_counts[key])
+
+        return totals
+
+    @cachedproperty
+    def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
         for package_counts in self.context.getBugContactOpenBugCounts(
@@ -2251,7 +2267,6 @@ class PersonTranslationView(LaunchpadView):
         # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
         # to pofile.potemplate.displayname, it would be ideal to also
         # prejoin inside translation_history:
-        #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
         #   potemplate.distroseries
@@ -2277,8 +2292,8 @@ class PersonTranslationView(LaunchpadView):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
 
-    def should_display_message(self, pomsgset):
-        """Should a certain POMsgSet be displayed.
+    def should_display_message(self, translationmessage):
+        """Should a certain `TranslationMessage` be displayed.
 
         Return False if user is not logged in and message may contain
         sensitive data such as email addresses.
@@ -2287,7 +2302,8 @@ class PersonTranslationView(LaunchpadView):
         """
         if self.user:
             return True
-        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
+        return not (
+            translationmessage.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):

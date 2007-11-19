@@ -115,6 +115,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
+
+    def _set_name(self, value):
+        """Check that rename is allowed."""
+        # Renaming a team is prohibited for any team that has a mailing list.
+        # This is because renaming a mailing list is not trivial in Mailman
+        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
+        # team edit details view, but just to be safe, we also assert that
+        # such an attempt is not being made here.  To do this, we must
+        # override the SQLObject method for setting the 'name' database
+        # column.  Watch out for when SQLObject is creating this row, because
+        # in that case self.name isn't yet available.
+        assert (self._SO_creating or
+                not self.isTeam() or
+                getUtility(IMailingListSet).get(self.name) is None), (
+            'Cannot rename teams with mailing lists')
+        # Everything's okay, so let SQLObject do the normal thing.
+        self._SO_set_name(value)
+
     password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
@@ -1573,16 +1591,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def translation_history(self):
         """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
+        query = ['POFileTranslator.person = %s' % sqlvalues(self),
+                 'POFileTranslator.pofile = POFile.id',
+                 'POFile.language = Language.id',
+                 "Language.code != 'en'"]
         history = POFileTranslator.select(
-            "POFileTranslator.person = %s AND "
-            "POFileTranslator.pofile = POFile.id AND "
-            "POFile.language = Language.id AND "
-            "Language.code != 'en'" % sqlvalues(self),
+            ' AND '.join(query),
             prejoins=[
-                "pofile.potemplate",
-                "latest_posubmission",
-                "latest_posubmission.pomsgset.potmsgset.primemsgid_",
-                "latest_posubmission.potranslation"],
+                'pofile.potemplate',
+                'latest_message',
+                'latest_message.potmsgset.msgid_singular',
+                'latest_message.msgstr0'],
             clauseTables=['Language', 'POFile'],
             orderBy="-date_last_touched")
         return history
@@ -2555,14 +2574,20 @@ class PersonSet:
             ''' % vars())
         skip.append(('poexportrequest', 'person'))
 
-        # Update the POSubmissions. They should not conflict since each of
-        # them is independent
+        # Update the TranslationMessage. They should not conflict since each
+        # of them are independent
         cur.execute('''
-            UPDATE POSubmission
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
+            UPDATE TranslationMessage
+            SET submitter=%(to_id)d
+            WHERE submitter=%(from_id)d
             ''' % vars())
-        skip.append(('posubmission', 'person'))
+        skip.append(('translationmessage', 'submitter'))
+        cur.execute('''
+            UPDATE TranslationMessage
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d
+            ''' % vars())
+        skip.append(('translationmessage', 'reviewer'))
 
         # Handle the POFileTranslator cache by doing nothing. As it is
         # maintained by triggers, the data migration has already been done

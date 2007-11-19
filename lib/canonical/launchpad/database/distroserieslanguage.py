@@ -65,8 +65,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             POTemplate.iscurrent = TRUE
             ''' % sqlvalues(self.language.id, self.distroseries.id),
             clauseTables=['POTemplate'],
-            prejoins=["potemplate.sourcepackagename",
-                      "last_touched_pomsgset.reviewer"],
+            prejoins=["potemplate.sourcepackagename"],
             orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property
@@ -85,7 +84,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
         return sorted(pofiles + dummies,
                       key=lambda x: (-x.potemplate.priority,
-                                     x.potemplate.potemplatename.name,
+                                     x.potemplate.name,
                                      x.potemplate.id))
 
     @property

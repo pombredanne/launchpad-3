@@ -9,8 +9,10 @@ import errno
 import base64
 import signal
 import socket
+import mailbox
 import datetime
 
+from email import message_from_file
 from subprocess import Popen, PIPE
 
 __all__ = [
@@ -20,6 +22,8 @@ __all__ = [
     'TOP',
     'create_transaction_manager',
     'make_browser',
+    'mbox_iterator'
+    'review_list',
     'run_mailman',
     'transactionmgr',
     'wait_for_mailman',
@@ -194,3 +198,39 @@ class LogWatcher:
     def resync(self):
         """Re-sync the file size so that we can watch it again."""
         self._last_size = get_size(self._log_path)
+
+
+def mbox_iterator(mbox_filename):
+    """Iterate over the messages in a mailbox."""
+    # We have to use Python 2.4's icky mailbox module until Launchpad upgrades
+    # Zope to a Python 2.5 compatible version.
+    mbox = mailbox.UnixMailbox(open(mbox_filename), message_from_file)
+    for message in mbox:
+        yield message
+
+
+def review_list(list_name, status=None):
+    """Helper for approving a mailing list.
+
+    This functionality is not yet exposed through the web.
+    """
+    # These imports are at file scope because the paths are not yet set up
+    # correctly when this module is imported.
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.interfaces import (
+        ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
+    from zope.component import getUtility
+    if status is None:
+        status = MailingListStatus.APPROVED
+    # Any Mailing List Expert will suffice for approving the registration.
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    lpadmin = list(experts.allmembers)[0]
+    # Review and approve the mailing list registration.
+    list_set = getUtility(IMailingListSet)
+    mailing_list = list_set.get(list_name)
+    mailing_list.review(lpadmin, status)
+    commit()
+    # Wait until Mailman has actually creating the mailing list.
+    wait_for_mailman()
+    # Return an updated mailing list object.
+    return list_set.get(list_name)
