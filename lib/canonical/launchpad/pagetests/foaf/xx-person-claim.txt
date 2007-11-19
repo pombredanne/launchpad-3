@@ -33,9 +33,8 @@ given email address is not associated with that profile.
     >>> for tag in soup('div', 'message'):
     ...     print tag.renderContents()
     We couldn't find this email address. Please try another one that could
-    possibly be associated with this profile. Note that this profile's
-    name (limi) was generated based on the email address it's associated
-    with."
+    possibly be associated with this profile. Note that this profile's name
+    (limi) was generated based on the email address it's associated with.
 
 Then he tries with Sample Person's email address.
 
@@ -44,11 +43,12 @@ Then he tries with Sample Person's email address.
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('div', 'message'):
     ...     print tag.renderContents()
-    This email address is associated with yet another Launchpad profile,
-    which you seem to have used at some point. If that's the case, you can
-    combine this profile with the other one (you'll have to log in with the
-    other profile first, though). If that's not the case, please try with a
-    different email address.
+    This email address is associated with yet another Launchpad profile, which
+    you seem to have used at some point. If that's the case, you can <a
+    href="/people/+requestmerge?field.dupeaccount=limi">combine this profile
+    with the other one</a> (you'll have to log in with the other profile
+    first, though). If that's not the case, please try with a different email
+    address.
 
 And once again he tries with an email address he found in Launchpad, but
 this one is associated with an unvalidated profile.
@@ -104,7 +104,7 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
     >>> user_browser.open('http://launchpad.dev/~spiv')
     >>> print user_browser.contents
     <...
-    ...<a...Hey, I'm Andrew Bennetts</a>...
+    ...<a...Hey, I'm Andrew Bennetts.</a>...
     ...Confirmed e-mail addresses...
     ...andrew.bennetts@ubuntulinux.com...
     ...
