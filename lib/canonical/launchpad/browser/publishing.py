@@ -101,4 +101,3 @@ class SourcePublishingRecordView(BasePublishingRecordView):
 class BinaryPublishingRecordView(BasePublishingRecordView):
     """View class for `IBinaryPackagePublishingHistory`."""
     __used_for__ = IBinaryPackagePublishingHistory
-

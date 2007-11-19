@@ -32,7 +32,6 @@
     //-->
     </script>
 
-
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
               tal:condition="context/whiteboard">

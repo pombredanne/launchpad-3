@@ -17,7 +17,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.schema import Choice
+from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
@@ -34,9 +34,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, ITeamMember, LoginTokenType, MAILING_LISTS_DOMAIN,
-    MailingListStatus, TeamContactMethod, TeamMembershipStatus,
-    UnexpectedFormData)
+    ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -82,6 +81,36 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        When a team has a mailing list, renames are prohibited.
+        """
+        super(TeamEditView, self).setUpFields()
+        if getUtility(IMailingListSet).get(self.context.name) is not None:
+            # Use a custom form field that prints a readonly name and a short
+            # description about why it's readonly.
+            name_field = form.FormFields(form.FormField(
+                TextLine(__name__='name',
+                         title=_('Name'),
+                         description=_('This team has a mailing list and may '
+                                       'not be renamed.'),
+                         default=self.context.name,
+                         readonly=True)))
+            self.form_fields = name_field + self.form_fields.omit('name')
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        When a team has a mailing list, renames are prohibited.
+        """
+        super(TeamEditView, self).setUpWidgets()
+        if getUtility(IMailingListSet).get(self.context.name) is not None:
+            # Avoid the "(Optional)" tag on the Name field.  This attribute
+            # must be set on the widget and so can't be used in setUpFields()
+            # when we create the TextLine.
+            self.widgets['name'].required = True
 
 
 def generateTokenAndValidationEmail(email, team):

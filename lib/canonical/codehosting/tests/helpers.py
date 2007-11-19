@@ -256,12 +256,6 @@ class BranchTestCase(TestCaseWithTransport):
             branch_type, name, owner, owner, product, url,
             **optional_branch_args)
 
-    def relaxSecurityPolicy(self):
-        """Switch to using 'PermissiveSecurityPolicy'."""
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
-
     def restrictSecurityPolicy(self):
         """Switch to using 'LaunchpadSecurityPolicy'."""
         old_policy = getSecurityPolicy()

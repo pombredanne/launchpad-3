@@ -17,7 +17,7 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_answers
+                      official_malone official_answers enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot 
                       license_info licenses"
@@ -334,18 +334,6 @@
     <browser:page
       name="+reassign"
       template="../templates/object-reassignment.pt"
-      />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="launchpad.Admin"
-    class="canonical.launchpad.browser.ProductView"
-    layer="canonical.launchpad.layers.TranslationsLayer" >
-    <browser:page
-      name="+potemplatenames"
-      facet="translations"
-      template="../templates/object-potemplatenames.pt"
       />
   </browser:pages>
 

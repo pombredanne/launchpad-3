@@ -12,6 +12,7 @@ __all__ = [
 
 from sqlobject import StringCol
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
@@ -19,7 +20,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
+    ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState,
+    ICodeImportEventSet)
 
 
 class CodeImportMachine(SQLBase):
@@ -33,6 +35,28 @@ class CodeImportMachine(SQLBase):
     state = EnumCol(enum=CodeImportMachineState, notNull=True,
         default=CodeImportMachineState.OFFLINE)
     heartbeat = UtcDateTimeCol(notNull=False)
+
+    def setOnline(self):
+        """See `ICodeImportMachine`."""
+        assert self.state == CodeImportMachineState.OFFLINE, (
+            "State of machine %s was %s." % (self.hostname, self.state.name))
+        self.state = CodeImportMachineState.ONLINE
+        getUtility(ICodeImportEventSet).newOnline(self)
+
+    def setOffline(self, reason):
+        """See `ICodeImportMachine`."""
+        assert self.state in (CodeImportMachineState.ONLINE,
+                              CodeImportMachineState.QUIESCING), (
+            "State of machine %s was %s." % (self.hostname, self.state.name))
+        self.state = CodeImportMachineState.OFFLINE
+        getUtility(ICodeImportEventSet).newOffline(self, reason)
+
+    def setQuiescing(self, user, message):
+        """See `ICodeImportMachine`."""
+        assert self.state == CodeImportMachineState.ONLINE, (
+            "State of machine %s was %s." % (self.hostname, self.state.name))
+        self.state = CodeImportMachineState.QUIESCING
+        getUtility(ICodeImportEventSet).newQuiesce(self, user, message)
 
 
 class CodeImportMachineSet(object):

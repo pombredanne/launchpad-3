@@ -31,8 +31,8 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage,
     PackagePublishingPocket)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepto, redirection)
+    ApplicationMenu, GetitemNavigation, Link, redirection,
+    StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
@@ -134,7 +134,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates', 'imports', 'translationdownload']
+    links = ['help', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -147,10 +147,6 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def templates(self):
-        return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
 class SourcePackageTranslationsExportView(BaseExportView):
@@ -269,11 +265,6 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def potemplatenames(self):
-        potemplates = self.context.getTranslationTemplates()
-        potemplatenames = set([p.potemplatename for p in potemplates])
-        return sorted(potemplatenames, key=lambda item: item.name)
 
     def searchName(self):
         return False

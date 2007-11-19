@@ -4,7 +4,6 @@
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
-from canonical.launchpad import _
 
 __metaclass__ = type
 
