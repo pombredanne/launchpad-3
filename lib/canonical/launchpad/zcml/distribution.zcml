@@ -20,8 +20,7 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="official_malone official_rosetta official_answers
-                      enable_bug_expiration"
+      set_attributes="official_malone official_rosetta official_answers"
       />
     <require
       permission="launchpad.TranslationsAdmin"
