@@ -124,7 +124,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
+export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
