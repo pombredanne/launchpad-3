@@ -196,10 +196,9 @@ for each published version.
   >>> browser.url
   'http://localhost/ubuntu/warty/+source/mozilla-firefox/+changelog'
 
-  >>> print find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
-  <pre id="mozilla-firefox_0.9">
-    Mozilla dummy Changelog......
-  </pre>
+  >>> tag = find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
+  >>> print extract_text(tag)
+  Mozilla dummy Changelog......
 
 
 Back to the SourcePackage page:
@@ -216,11 +215,9 @@ page is provided by an DistroSeriesSourcePackageRelease instance:
 
 There we can see the respective 'changelog' content for this version:
 
-  >>> print find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
-  <pre id="mozilla-firefox_0.9">
-    Mozilla dummy Changelog......
-  <BLANKLINE>
-  </pre>
+  >>> tag = find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
+  >>> print extract_text(tag)
+  Mozilla dummy Changelog......
 
 With the possibility to download the entire changesfile (if available):
 
@@ -257,6 +254,19 @@ and this is linkified so that when clicked it takes us to the bug page:
 
   >>> browser.getLink('LP: #10').url
   'http://launchpad.dev/bugs/10'
+
+The same page for commercialpackage has an email address in the
+changelog that is recognised in Launchpad.  It is linkified to point at
+the profile page for that person:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/breezy-autotest/+source/"
+  ...     "commercialpackage/1.0-1")
+  >>> changelog = find_tag_by_id(
+  ...     user_browser.contents, 'commercialpackage_1.0-1')
+  >>> changelog.find('a')
+  <a href="http://launchpad.dev/~name16"><img ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a>
+
 
 Let's check how the page behaves if we no files are present:
 
@@ -355,10 +365,9 @@ for each published version.
     >>> browser.url
     'http://launchpad.dev/ubuntu/breezy-autotest/+source/commercialpackage/+changelog'
 
-    >>> print find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
-    <pre id="commercialpackage_1.0-1">
-      commercialpackage...
-    ...</pre>
+    >>> tag = find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
+    >>> print extract_text(tag)
+    commercialpackage...
 
 
 Back to the SourcePackage page:
@@ -376,10 +385,9 @@ page is provided by an DistroSeriesSourcePackageRelease instance:
 
 There we can see the respective 'changelog' content for this version:
 
-    >>> print find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
-    <pre id="commercialpackage_1.0-1">
-      commercialpackage...
-    ...
+    >>> tag = find_tag_by_id(browser.contents, 'commercialpackage_1.0-1')
+    >>> print extract_text(tag)
+    commercialpackage...
 
 With the possibility to download the entire changesfile (if available):
 
@@ -401,3 +409,4 @@ And also download the files contained in this source, like '.orig',
     ...
     <a href="http://localhost:58000/68/commercialpackage_1.0-1.dsc">commercialpackage_1.0-1.dsc</a>
     ...
+

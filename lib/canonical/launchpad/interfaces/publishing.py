@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Publishing interfaces."""
 
@@ -112,7 +113,7 @@ class IPublishing(Interface):
         """
 
     def getIndexStanza():
-        """Return respective archive index stanza contents
+        """Return archive index stanza contents
 
         It's based on the locally provided buildIndexStanzaTemplate method,
         which differs for binary and source instances.
@@ -123,6 +124,30 @@ class IPublishing(Interface):
 
         The fields and values ae mapped into a dictionary, where the key is
         the field name and value is the value string.
+        """
+
+    def supersede():
+        """Supersede this publication.
+
+        Return the superseded publishing records, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
+
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        param removed_by: `IPerson` responsible for the removal.
+        param removal_comment: optional text describing the removal reason.
+
+        Return the deleted publishing records, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
+
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        Return the publishing in the targeted location, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
 
@@ -157,7 +182,7 @@ class IFilePublishing(Interface):
     archive_url = Attribute('The on-archive URL for the published file.')
 
     publishing_record = Attribute(
-        "Return the respective Source or Binary publishing record "
+        "Return the Source or Binary publishing record "
         "(in the form of I{Source,Binary}PackagePublishingHistory).")
 
     def publish(diskpool, log):
@@ -281,14 +306,22 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
 
-    def publishedBinaries():
+    def getPublishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeriess in this DistroSeries, ordered by
+        record for DistroArchSeries in this DistroSeries, ordered by
         architecturetag.
         """
 
+    def changeOverride(new_component=None, new_section=None):
+        """Change the component and/or section of this publication
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
 
 #
 # Binary package publishing
@@ -401,6 +434,16 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypacakgerelease in this distroarchseries.")
+
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority of this publication.
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
 
 
 class PackagePublishingStatus(DBEnumeratedType):

@@ -21,8 +21,7 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.proxy import isinstance as zisinstance
 
-from openid.message import (
-    IDENTIFIER_SELECT, OPENID_NS, SREG_URI, registerNamespaceAlias)
+from openid.message import IDENTIFIER_SELECT, SREG_URI, registerNamespaceAlias
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
@@ -33,8 +32,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
     IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
-    UnexpectedFormData)
+    LoginTokenType, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -170,7 +168,7 @@ class OpenIdMixin:
     @property
     def sreg_field_names(self):
         """Return the list of sreg keys that will be provided to the RP."""
-        # XXX: jamesh 2007-07-09: Port to use openid.sreg module.
+        # XXX: jamesh 2007-07-09 bug=163718: Port to use openid.sreg module.
         field_names = set()
         # Collect the field names requested.  We treat required and
         # optional parameters the same.
@@ -202,7 +200,7 @@ class OpenIdMixin:
         Shipping information is taken from the last shipped Shipit
         request.
         """
-        # XXX: jamesh 2007-07-09: Port to use openid.sreg module.
+        # XXX: jamesh 2007-07-09 bug=163718: Port to use openid.sreg module.
         assert self.user is not None, (
             'Must be logged in to calculate sreg items')
         # Collect registration values

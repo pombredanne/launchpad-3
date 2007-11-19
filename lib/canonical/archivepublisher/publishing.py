@@ -273,7 +273,7 @@ class Publisher(object):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
-                self._writeDistroRelease(distroseries, pocket)
+                self._writeDistroSeries(distroseries, pocket)
 
     def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""
@@ -404,7 +404,7 @@ class Publisher(object):
             return False
         return True
 
-    def _writeDistroRelease(self, distroseries, pocket):
+    def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
         # XXX: kiko 2006-08-24: Untested method.
 
@@ -428,7 +428,7 @@ class Publisher(object):
             for architecture in architectures:
                 # XXX malcc 2006-09-20: We don't like the way we build this
                 # all_architectures list. Make this better code.
-                clean_architecture = self._writeDistroArchRelease(
+                clean_architecture = self._writeDistroArchSeries(
                     distroseries, pocket, component, architecture, all_files)
                 if clean_architecture != "source":
                     all_architectures.add(clean_architecture)
@@ -467,7 +467,7 @@ class Publisher(object):
 
         f.close()
 
-    def _writeDistroArchRelease(self, distroseries, pocket, component,
+    def _writeDistroArchSeries(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
         # XXX kiko 2006-08-24: Untested method.

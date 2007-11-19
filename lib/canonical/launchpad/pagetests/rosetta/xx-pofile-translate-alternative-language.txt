@@ -76,7 +76,7 @@ The Spanish translations now show up as suggestions.  For example, where
 "tarjetas."
 
     >>> print extract_text(find_main_content(
-    ...     browser.contents)).encode('utf-8', 'backslashescape')
+    ...     browser.contents)).encode('UTF-8')
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
     Translating into Catalan
     ...
@@ -104,7 +104,7 @@ To avoid that, the page omits the suggestions.  It does warn Carlos that the
 suggestions will be shown only if he adds Japanese to his preferred languages
 first.
 
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Not showing suggestions from selected alternative language Japanese (ja).
     If you wish to see suggestions from this language, add it to your
@@ -155,7 +155,7 @@ Carlos can see that he is viewing the first page of results in the
 navigation bar between the translation controls and the messages.
 
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
-    >>> print extract_text(navigation)
+    >>> print extract_text(navigation).decode('utf-8')
     1 ... 10  of 13 results ...
 
 Carlos uses the 'Save & Continue' button to see the next page of

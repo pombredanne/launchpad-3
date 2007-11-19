@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
+>
   <body>
 
     <metal:portlets fill-slot="portlets">
@@ -7,6 +17,10 @@
     </metal:portlets>
 
     <div metal:fill-slot="main">
+
+    <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
+      This project is currently inactive <a href="+review">(change this)</a>
+    </p>
 
     <tal:block condition="view/required:launchpad.Edit">
       <p tal:condition="not: context/products" class="warning message"> 

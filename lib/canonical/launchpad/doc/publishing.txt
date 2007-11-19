@@ -175,3 +175,32 @@ Generating respective "Packages" stanzas:
  >>> [pub_file.archive_url for pub_file in bpph.files]
  [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
+== Source Package Publishing Views ==
+
+The default view for SourcePackagePublishingHistory offers a convenience
+property that can be used to display files that are related to that
+publication; this includes binary and source files. The property returns
+a sorted list of dictionaries with URLs, filenames and filesizes.
+
+  >>> from zope.component import getMultiAdapter
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> view = getMultiAdapter((spph, LaunchpadTestRequest()),
+  ...           name="+listing-ppa-detailed")
+  >>> view.published_source_and_binary_files
+  [{'url': 'http://.../alsa-utils_1.0.8-1ubuntu1.dsc',
+   'filesize': 3,
+   'filename': u'alsa-utils_1.0.8-1ubuntu1.dsc'}]
+
+  >>> ice = SourcePackagePublishingHistory.get(28)
+  >>> view = getMultiAdapter((ice, LaunchpadTestRequest()),
+  ...           name="+listing-ppa-detailed")
+  >>> view.published_source_and_binary_files
+  [{'url': 'http://localhost:58000/3/firefox-0.9.2.orig.tar.gz',
+    'filesize': 9922560,
+    'filename': u'firefox-0.9.2.orig.tar.gz'},
+   {'url': 'http://localhost:58000/62/iceweasel-1.0.dsc',
+    'filesize': 123,
+    'filename': u'iceweasel-1.0.dsc'},
+   {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
+    'filesize': 3,
+    'filename': u'mozilla-firefox_0.9_i386.deb'}]
