@@ -1,9 +1,12 @@
 # Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import TranslationFileFormat
+
 from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
@@ -117,7 +120,7 @@ class ITranslationImportQueueEntry(Interface):
 
     format = Choice(
         title=_('The file format of the import.'),
-        vocabulary='TranslationFileFormat',
+        vocabulary=TranslationFileFormat,
         required=True, readonly=True)
 
     status = Choice(
@@ -301,13 +304,19 @@ class ITranslationImportQueue(Interface):
 class IEditTranslationImportQueueEntry(Interface):
     """Set of widgets needed to moderate an entry on the imports queue."""
 
-    potemplatename = Choice(
-        title=_("Template Name"),
-        description=_("The name of this PO template, for example"
-            " 'evolution-2.2'. Each translation template's name"
-            " is unique within its package"),
-        required=True,
-        vocabulary="POTemplateName")
+    name = TextLine(
+        title=_("Template name"),
+        description=_("The name of this PO template, for example "
+            "'evolution-2.2'. Each translation template has a "
+            "unique name in its package."),
+        required=True)
+
+    translation_domain = TextLine(
+        title=_("Translation domain"),
+        description=_("The translation domain for a translation template. "
+            "Used with PO file format when generating MO files for inclusion "
+            "in language pack or MO tarball exports."),
+        required=True)
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),

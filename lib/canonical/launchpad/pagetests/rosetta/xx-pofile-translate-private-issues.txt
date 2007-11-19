@@ -9,14 +9,13 @@ if you log in.
 
 The GNOME standard string for credits is well handled.
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> msgid = find_tag_by_id(browser.contents, 'msgset_199_singular')
-  >>> print msgid.renderContents().strip()
+  >>> print msgid.renderContents()
   translation-credits
 
   >>> translation = find_tag_by_id(
   ...     browser.contents, 'msgset_199_es_translation_0')
-  >>> print translation.renderContents().strip()
+  >>> print translation.renderContents()
   To prevent privacy issues, this translation is not available to anonymous
   users,<br /> if you want to see it, please, <a href="+login">log in</a>
   first.
@@ -24,13 +23,13 @@ The GNOME standard string for credits is well handled.
 And the same for KDE one.
 
   >>> msgid = find_tag_by_id(browser.contents, 'msgset_200_singular')
-  >>> print msgid.renderContents().strip()
+  >>> print msgid.renderContents()
   _: EMAIL OF TRANSLATORS<img alt="" src="/@@/translation-newline" /><br />
   Your emails
 
   >>> translation = find_tag_by_id(
   ...     browser.contents, 'msgset_200_es_translation_0')
-  >>> print translation.renderContents().strip()
+  >>> print translation.renderContents()
   To prevent privacy issues, this translation is not available to anonymous
   users,<br /> if you want to see it, please, <a href="+login">log in</a>
   first.
@@ -50,27 +49,27 @@ But, if you are logged in, the system will show you the data.
 
 The GNOME standard string for credits is now available:
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> msgid = find_tag_by_id(user_browser.contents, 'msgset_199_singular')
-  >>> print msgid.renderContents().strip()
+  >>> print msgid.renderContents()
   translation-credits
 
   >>> translation = find_tag_by_id(
   ...     user_browser.contents, 'msgset_199_es_translation_0')
-  >>> print translation.renderContents().strip()
-  (no translation yet)
+  >>> print extract_text(translation.renderContents())
+  Launchpad Contributions:
+  Carlos ... http://translations.launchpad.dev/~carlos
 
 And the same for KDE one.
 
   >>> msgid = find_tag_by_id(user_browser.contents, 'msgset_200_singular')
-  >>> print msgid.renderContents().strip()
+  >>> print msgid.renderContents()
   _: EMAIL OF TRANSLATORS<img alt="" src="/@@/translation-newline" /><br />
   Your emails
 
   >>> translation = find_tag_by_id(
   ...     user_browser.contents, 'msgset_200_es_translation_0')
-  >>> print translation.renderContents().strip()
-  danilo@canonical.com,,
+  >>> print translation.renderContents()
+  ,,carlos@canonical.com
 
 Also, suggestions should not appear.
 

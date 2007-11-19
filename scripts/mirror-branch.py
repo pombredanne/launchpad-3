@@ -15,7 +15,7 @@ import bzrlib.repository
 from canonical.launchpad.interfaces import BranchType
 from canonical.codehosting.puller import configure_oops_reporting
 from canonical.codehosting.puller.worker import (
-    PullerWorker, PullerWorkerProtocol)
+    install_worker_progress_factory, PullerWorker, PullerWorkerProtocol)
 
 
 def shut_up_deprecation_warning():
@@ -55,6 +55,7 @@ if __name__ == '__main__':
     force_bzr_to_use_urllib()
 
     protocol = PullerWorkerProtocol(sys.stdout)
+    install_worker_progress_factory(protocol)
     PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
         protocol).mirror()

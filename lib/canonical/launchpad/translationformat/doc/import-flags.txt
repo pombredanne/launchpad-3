@@ -14,9 +14,11 @@ We'll be going through usual steps of the PO file lifetime:
 == Helper imports ==
 
     >>> from zope.app import datetimeutils
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
+    ...     ILaunchpadCelebrities, IPersonSet,
     ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
@@ -49,9 +51,10 @@ To ease the pain of importing many files during testing, lets introduce
 a helper function to import either a PO file or a PO template from the string
 with the contents of the file.
 
+
     >>> def import_pofile_or_potemplate(file_contents, person, series,
     ...                                 pofile=None, potemplate=None,
-    ...                                 published=True):
+    ...                                 is_imported=True):
     ...     """Import a `POFile` or `POTemplate` from the string.
     ...
     ...	    If pofile is None, it imports a potemplate.
@@ -60,11 +63,11 @@ with the contents of the file.
     ...     translation_import_queue = getUtility(ITranslationImportQueue)
     ...     if pofile:
     ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, published, person,
+    ...             pofile.path, file_contents, is_imported, person,
     ...             productseries=series, pofile=pofile)
     ...     else:
-    ...         # A POTemplate can only be published, so setting
-    ...         # the published flag makes no difference.
+    ...         # A POTemplate can only be 'imported', so setting
+    ...         # the is_imported flag makes no difference.
     ...         entry = translation_import_queue.addOrUpdateEntry(
     ...             potemplate.path, file_contents, True, person,
     ...             productseries=series, potemplate=potemplate)
@@ -81,7 +84,7 @@ And lets define a nice printout function for PO files.
 
     >>> def print_pofile(pofile):
     ...     # We are using length=18 for msgid, translation and
-    ...     # published translation to be able to fit them with two
+    ...     # imported translation to be able to fit them with two
     ...     # fuzzy flags into a single line for nicer and more
     ...     # readable diffs in the test.
     ...     def strip_to_length(string, length=18):
@@ -92,30 +95,30 @@ And lets define a nice printout function for PO files.
     ...             return string
     ...
     ...     print "%2s. %-18s %-18s %-4s %-18s %-4s" % (
-    ...         "no", "msgid", "translation", "fuz", "published", "pfuz")
+    ...         "no", "msgid", "translation", "fuz", "imported", "ifuz")
     ...     for potmsgset in pofile.potemplate.getPOTMsgSets():
     ...         msgid = potmsgset.singular_text
-    ...         pomsgset = pofile.getPOMsgSetFromPOTMsgSet(potmsgset)
-    ...         publishedfuzzy = fuzzy = ''
-    ...         published = translation = None
-    ...         if pomsgset is not None:
-    ...             active_texts = pomsgset.active_texts
-    ...             published_texts = pomsgset.published_texts
-    ...             if len(active_texts) > 0:
-    ...                 translation = active_texts[0]
-    ...             if len(published_texts) > 0:
-    ...                 published = published_texts[0]
-    ...             if pomsgset.publishedfuzzy:
-    ...                 publishedfuzzy = 'yes'
-    ...             if pomsgset.isfuzzy:
+    ...         current = potmsgset.getCurrentTranslationMessage(
+    ...             pofile.language)
+    ...         imported = potmsgset.getImportedTranslationMessage(
+    ...             pofile.language)
+    ...         imported_fuzzy = fuzzy = ''
+    ...         imported_translation = translation = None
+    ...         if imported is not None:
+    ...		    imported_translation = imported.msgstr0.translation
+    ...             if imported.was_fuzzy_in_last_import:
+    ...                 imported_fuzzy = 'yes'
+    ...         if current is not None:
+    ...		    translation = current.msgstr0.translation
+    ...             if current.is_fuzzy:
     ...                 fuzzy = 'yes'
     ...         print "% 2d. %-18s %-18s %-4s %-18s %-4s *" % (
     ...             potmsgset.sequence,
     ...             strip_to_length(msgid),
     ...             strip_to_length(translation),
     ...             strip_to_length(fuzzy, 4),
-    ...             strip_to_length(published),
-    ...             strip_to_length(publishedfuzzy, 4))
+    ...             strip_to_length(imported_translation),
+    ...             strip_to_length(imported_fuzzy, 4))
 
 
 We'll be doing all our imports into Firefox trunk as
@@ -126,11 +129,11 @@ carlos@canonical.com.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> firefox_potemplatename = getUtility(IPOTemplateNameSet)['firefox']
     >>> firefox_potsubset = POTemplateSubset(productseries=firefox_trunk)
 
     >>> firefox_potemplate = firefox_potsubset.new(
-    ...     potemplatename=firefox_potemplatename,
+    ...     name='firefox',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=carlos)
 
@@ -169,12 +172,13 @@ be able to import translations later on.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
-Usually, the first import we get is published (i.e. coming from a
+Usually, the first import we get is imported (i.e. coming from a
 package upload in Ubuntu).
 
     # fifth and sixth are untranslated
-    >>> test_translation_published = r'''
+    >>> test_translation_imported = r'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: %s\n"
@@ -199,18 +203,19 @@ package upload in Ubuntu).
 
     >>> firefox_serbian = firefox_potemplate.newPOFile('sr')
     >>> firefox_serbian.path='sr.po'
-    >>> entry = import_pofile_or_potemplate(test_translation_published,
+    >>> entry = import_pofile_or_potemplate(test_translation_imported,
     ...                                     carlos, firefox_trunk,
     ...                                     pofile=firefox_serbian)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 When this file is imported, we notice that all the messages are
-imported as expected: active translation is set to the same published
+imported as expected: current translation is set to the same imported
 one, and fuzzy flags are carried over as well.
 
     >>> print_pofile(firefox_serbian)
-    no. msgid              translation        fuz  published          pfuz
+    no. msgid              translation        fuz  imported           ifuz
      1. first              a                       a                       *
      2. second             b                       b                       *
      3. third              c                  yes  c                  yes  *
@@ -232,15 +237,15 @@ from the "fourth" message, and the "fifth" message is newly translated.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "X-Launchpad-Export-Date: %s\n"
     ...
-    ... # stays as published
+    ... # stays as imported
     ... msgid "first"
     ... msgstr "a"
     ...
-    ... # changes published translation
+    ... # changes imported translation
     ... msgid "second"
     ... msgstr "b-from-LP"
     ...
-    ... # same as already published one
+    ... # same as already imported one
     ... #, fuzzy
     ... msgid "third"
     ... msgstr "c"
@@ -257,17 +262,18 @@ from the "fourth" message, and the "fifth" message is newly translated.
     >>> entry = import_pofile_or_potemplate(test_translation_update1,
     ...                                     carlos, firefox_trunk,
     ...                                     pofile=firefox_serbian,
-    ...                                     published=False)
+    ...                                     is_imported=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
 Again, PO file in the database reflects the changes: translations for
 "second", "fourth" and "fifth" are updated (and now different from
-published translations), and fuzzy flag is off on "fourth" (and
-published fuzzy is still on).
+imported translations), and fuzzy flag is off on "fourth" (and
+imported fuzzy is still on).
 
     >>> print_pofile(firefox_serbian)
-    no. msgid              translation        fuz  published          pfuz
+    no. msgid              translation        fuz  imported           ifuz
      1. first              a                       a                       *
      2. second             b-from-LP               b                       *
      3. third              c                  yes  c                  yes  *
@@ -277,10 +283,11 @@ published fuzzy is still on).
 
 
 Common next step is having a new package upload which provides us with
-updated translations upstream.  A fuzzy flag is removed from the
-"fourth" message, and both "fifth" and "sixth" are translated.
+updated translations upstream.  The "second" message translation is changed,
+a fuzzy flag is removed from the "fourth" message, and both "fifth" and
+"sixth" are translated.
 
-    >>> test_translation_published_update = r'''
+    >>> test_translation_imported_update = r'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: %s\n"
@@ -292,13 +299,13 @@ updated translations upstream.  A fuzzy flag is removed from the
     ... msgstr "a"
     ...
     ... msgid "second"
-    ... msgstr "b"
+    ... msgstr "b-updated"
     ...
     ... #, fuzzy
     ... msgid "third"
     ... msgstr "c"
     ...
-    ... # removes the fuzzy flag on the published translation
+    ... # removes the fuzzy flag on the imported translation
     ... msgid "fourth"
     ... msgstr "d"
     ...
@@ -310,33 +317,35 @@ updated translations upstream.  A fuzzy flag is removed from the
     ... msgstr "f"
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
-    >>> entry = import_pofile_or_potemplate(test_translation_published_update,
+    >>> entry = import_pofile_or_potemplate(test_translation_imported_update,
     ...                                     carlos, firefox_trunk,
     ...                                     pofile=firefox_serbian,
-    ...                                     published=True)
+    ...                                     is_imported=True)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
-We can see that the published fuzzy flag has been removed from the
+We can see that the imported fuzzy flag has been removed from the
 "fourth" message in the database, and that translations for "fifth"
-and "sixth" have been updated.  However, note that active translation
+and "sixth" have been updated.  However, note that current translation
 for "fifth" has not been overriden by a package upload, since we give
 preference to translations done inside Launchpad over imported ones.
 
     >>> print_pofile(firefox_serbian)
-    no. msgid              translation        fuz  published          pfuz
+    no. msgid              translation        fuz  imported           ifuz
      1. first              a                       a                       *
-     2. second             b-from-LP               b                       *
+     2. second             b-from-LP               b-updated               *
      3. third              c                  yes  c                  yes  *
      4. fourth             d-from-LP               d                       *
      5. fifth              e-from-LP               e                       *
      6. sixth              f                       f                       *
 
 
-Finally, we do another translator (i.e. not from a package) update,
-where we remove the fuzzy flag from the published translation for
-"third", and revert "fourth" to the published translation.  We also
-update the "fifth" translation with a new translation.
+A new translation for "second" message through Launchpad is added.  We also
+do another translator (i.e. not from a package) update, where we remove the
+fuzzy flag from the imported translation for "third", and revert "fourth"
+to the imported translation.  Finally, "fifth" translation is updated with
+a new translation.
 
     >>> test_translation_update2 = r'''
     ... msgid ""
@@ -346,23 +355,22 @@ update the "fifth" translation with a new translation.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "X-Launchpad-Export-Date: %s\n"
     ...
-    ... # stays as published
+    ... # stays as imported
     ... msgid "first"
     ... msgstr "a"
     ...
-    ... # stays the same as it was (but not published)
     ... msgid "second"
-    ... msgstr "b-from-LP"
+    ... msgstr "b-from-LP-two"
     ...
-    ... # same as already published one, removes the fuzzy flag
+    ... # same as already imported one, removes the fuzzy flag
     ... msgid "third"
     ... msgstr "c"
     ...
-    ... # revert to published translation
+    ... # revert to imported translation
     ... msgid "fourth"
     ... msgstr "d"
     ...
-    ... # updates active translation
+    ... # updates current translation
     ... msgid "fifth"
     ... msgstr "e-from-LP-two"
     ...
@@ -374,19 +382,76 @@ update the "fifth" translation with a new translation.
     >>> entry = import_pofile_or_potemplate(test_translation_update2,
     ...                                     carlos, firefox_trunk,
     ...                                     pofile=firefox_serbian,
-    ...                                     published=False)
+    ...                                     is_imported=False)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
 
-We can see that "third" message has fuzzy flag removed from the active
-translation (but not from the published one), "fourth" is reverted to
-the same translation as published, and "fifth" has an updated
+We can see that "third" message has fuzzy flag removed from the current
+translation (but not from the imported one), "fourth" is reverted to
+the same translation as imported, and "fifth" has an updated
 translation.
 
     >>> print_pofile(firefox_serbian)
-    no. msgid              translation        fuz  published          pfuz
+    no. msgid              translation        fuz  imported           ifuz
      1. first              a                       a                       *
-     2. second             b-from-LP               b                       *
+     2. second             b-from-LP-two           b-updated               *
+     3. third              c                       c                  yes  *
+     4. fourth             d                       d                       *
+     5. fifth              e-from-LP-two           e                       *
+     6. sixth              f                       f                       *
+
+Finally, we make sure that adding another suggestion to the "second" message
+works properly, even if it makes us have two non-current and non-imported
+suggestions.
+
+    >>> test_translation_update3 = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: %s\n"
+    ... "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Launchpad-Export-Date: %s\n"
+    ...
+    ... # stays as imported
+    ... msgid "first"
+    ... msgstr "a"
+    ...
+    ... msgid "second"
+    ... msgstr "b-from-LP-three"
+    ...
+    ... # same as already imported one, removes the fuzzy flag
+    ... msgid "third"
+    ... msgstr "c"
+    ...
+    ... # revert to imported translation
+    ... msgid "fourth"
+    ... msgstr "d"
+    ...
+    ... # updates current translation
+    ... msgid "fifth"
+    ... msgstr "e-from-LP-two"
+    ...
+    ... # sixth message is not being updated at all
+    ... msgid "sixth"
+    ... msgstr "f"
+    ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
+
+    >>> entry = import_pofile_or_potemplate(test_translation_update3,
+    ...                                     carlos, firefox_trunk,
+    ...                                     pofile=firefox_serbian,
+    ...                                     is_imported=False)
+    >>> print entry.status.name
+    IMPORTED
+
+Notice that "second" message is indeed updated properly.  We are making sure
+we don't get any problems with too many non-current suggestions for that
+one ("b-from-LP", "b-from-LP-two").
+
+    >>> print_pofile(firefox_serbian)
+    no. msgid              translation        fuz  imported           ifuz
+     1. first              a                       a                       *
+     2. second             b-from-LP-three         b-updated               *
      3. third              c                       c                  yes  *
      4. fourth             d                       d                       *
      5. fifth              e-from-LP-two           e                       *

@@ -27,14 +27,14 @@ instance here:
     42: FUBAR
     42: FUBAR
     >>> issuezilla.updateBugWatches(mozilla_bugzilla.watches)
-    WARNING:root:Didn't find bug u'42' on https://bugzilla.mozilla.org
+    WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: RESOLVED FIXED
     123543: ASSIGNED
-    42: UNKNOWN
-    42: UNKNOWN
+    42: FUBAR
+    42: FUBAR
 
 
 Bugzilla prior to 2.11
@@ -62,11 +62,11 @@ Mozilla.org's using this old version. Here's the scoop:
 We support them just fine:
 
     >>> old_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
-    WARNING:root:Didn't find bug u'2000' on https://bugzilla.mozilla.org
+    WARNING:...:Didn't find bug u'2000' on https://bugzilla.mozilla.org
     (local bugs: 1).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    2000: UNKNOWN
+    2000: RESOLVED FIXED
     123543: ASSIGNED
     42: RESOLVED FIXED
     42: RESOLVED FIXED
@@ -99,14 +99,14 @@ Some Bugzillas have some weird properties that we need to cater for:
 Yet everything still works as expected:
 
     >>> weird_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
-    WARNING:root:Didn't find bug u'42' on https://bugzilla.mozilla.org
+    WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: ASSIGNED
     123543: RESOLVED FIXED
-    42: UNKNOWN
-    42: UNKNOWN
+    42: RESOLVED FIXED
+    42: RESOLVED FIXED
 
 
 Broken Bugzillas

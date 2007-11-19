@@ -1,3 +1,10 @@
-<pre tal:attributes="id string:${context/name}_${context/version}">
-  <tal:span replace="structure view/changelog"/>
-</pre>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<pre style="margin: 0"
+     tal:attributes="id string:${context/name}_${context/version}"
+     tal:content="structure view/changelog" />
+</tal:root>

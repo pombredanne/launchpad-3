@@ -1,7 +1,4 @@
 Hello,
 
 %(reviewer_name)s has declined the invitation to make %(member_name)s a member of %(team_name)s.
-
 %(comment)s
-Regards,
-The Launchpad team

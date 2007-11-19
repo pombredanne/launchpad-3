@@ -1,0 +1,277 @@
+Queue pages are designed to offer the ability to perform
+control and visualisation over the current uploads queue.
+Currently the queue page is only available for DistroSeriess.
+Setup a browser as the upload manager:
+
+  >>> admin_browser.open("http://launchpad.dev/ubuntu")
+
+Change ubuntu's upload manager to be carlos:
+
+  >>> admin_browser.getLink("Change upload manager").click()
+  >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
+  >>> admin_browser.getControl("Change").click()
+
+We are at "Distribution Overview" page, let's see that carlos is now the
+upload manager:
+
+  >>> admin_browser.url
+  'http://launchpad.dev/ubuntu'
+  >>> admin_browser.getLink("Change upload manager").click()
+  >>> admin_browser.getControl(name="field.upload_admin").value
+  'carlos'
+
+Even if the link "View Uploads" is presented also for anonymous
+requests in Distrorelease page, authentication is required to access
+queue page itself:
+
+  >>> anon_browser.open("http://localhost/ubuntu/breezy-autotest")
+  >>> queue_link = anon_browser.getLink("Show uploads")
+
+  >>> queue_link.url
+  'http://localhost/ubuntu/breezy-autotest/+queue'
+
+  >>> queue_link.click()
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
+
+Anonymous action will fail:
+(This POST is made by hand since the UI would never allow it.)
+
+  >>> print http(r"""
+  ... POST /ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=1&Accept=Accept""")
+  HTTP/1.1 500 Internal Server Error
+  Content-Length: ...
+  <BLANKLINE>
+  Application error.  Unauthenticated user POSTing to page that requires authentication.
+
+
+Non-admin (sample person) attempts to act on the queue items will fail:
+
+  >>> print http(r"""
+  ... POST /ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=2&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...You do not have permission to act on queue items...
+
+
+Non-admins are denied access to the UNAPPROVED queue:
+
+  >>> user_browser.open(
+  ...     "http://localhost/ubuntu/breezy-autotest/"
+  ...     "+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: User don't have permission to see this queue.
+
+Page access is also denied for empty queues (bug #74965):
+
+  >>> user_browser.open(
+  ...     "http://localhost/distros/ubuntu/warty/"
+  ...     "+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: User don't have permission to see this queue.
+
+Access is allowed for upload managers and admins:
+
+  >>> upload_manager_browser = setupBrowser(
+  ...       auth="Basic carlos@canonical.com:test")
+  >>> upload_manager_browser.open(
+  ...     "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(
+  ...     name="queue_state").displayValue=['Unapproved']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
+  '...Unapproved...'
+
+  >>> admin_browser.open(
+  ...     "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> admin_browser.getControl(
+  ...     name="queue_state").displayValue=['Unapproved']
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
+  '...Unapproved...'
+
+Viewing the current queue, by default the NEW queue, only requires
+normal user authorisation:
+
+  >>> user_browser.open(
+  ...     "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.contents
+  '...Queue for Breezy Badger Autotest...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet-1.0.0.tar.gz...
+  ...alsa-utils...
+  ...netapplet...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...'
+
+
+== Queue item filelist ==
+
+Each queue item has a hidden 'filelist' section which is
+toggled via javascript by clicking in the 'expand' arrow
+image:
+
+  >>> print find_tag_by_id(user_browser.contents, 'queue4-filelist-arrow')
+  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-arrow" />
+
+The 'filelist' is a expanded as another table row, right below the
+clicked item:
+
+  >>> filelist = find_tag_by_id(user_browser.contents, 'queue4-filelist')
+
+It contains a list of files related to the queue item clicked, followed
+by its size, one file per line:
+
+  >>> print extract_text(filelist)
+  alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
+
+Each filename links to its respective librarian URL:
+
+  >>> print filelist.find('a')
+  <a href="http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc">alsa-utils_1.0.9a-4ubuntu1.dsc</a>
+
+On binary queue items we also present the stamp 'NEW' for files never
+published in the archive (it helps archive admins when reviewing
+candidates):
+
+  >>> filelist = find_tag_by_id(user_browser.contents, 'queue2-filelist')
+  >>> print extract_text(filelist)
+  pmount_1.9-1_all.deb (3 bytes) NEW
+
+XXX cprov 20070726: we should extend the test when we are able to
+probe javascripts events.
+
+
+== Accepting items ==
+
+Inspect the ACCEPTED queue:
+
+  >>> user_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> user_browser.getControl("Update").click()
+  >>> user_browser.contents
+  '...The Accepted queue...is empty...'
+
+Now we act on the queue, which requires admin or upload_manager permission.
+First, we need to add fake librarian files so that email notifications work:
+
+  >>> from canonical.archiveuploader.tests import (
+  ...     insertFakeChangesFileForAllPackageUploads)
+  >>> insertFakeChangesFileForAllPackageUploads()
+
+Go back to the "new" queue and accept an item:
+
+  >>> upload_manager_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['4']
+  >>> upload_manager_browser.getControl(name="Accept").click()
+  >>> upload_manager_browser.contents
+  '...Accepting Results:<br><br>OK: alsa-utils...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...'
+
+Accepting queue items results in an email to the uploader and (usually) an
+email to the distroseries' announcement list (see
+nascentupload-announcements.txt).
+
+  >>> from canonical.launchpad.mail import stub
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> [notification] = pop_notifications()
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+
+Forcing a duplicated submission on a queue item is recognised:
+
+  >>> upload_manager_browser.reload()
+  >>> message = 'FAILED: alsa-utils (Queue item already accepted)'
+  >>> message in upload_manager_browser.contents
+  True
+
+No emails are sent in this case:
+
+  >>> len(stub.test_emails)
+  0
+
+Breeze past the unaccepted queue to ensure an admin can see it:
+
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
+  '...netapplet...'
+
+The item is moved to the ACCEPTED queue:
+
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
+  '...alsa-utils...'
+
+Going back to the "new" queue, we can see our item has gone:
+
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['New']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> 'alsa-utils' in admin_browser.contents
+  False
+
+
+== Rejecting items ==
+
+Reject netapplet:
+
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['3']
+  >>> upload_manager_browser.getControl(name="Reject").click()
+  >>> upload_manager_browser.contents
+  '...Rejecting Results:<br><br>OK: netapplet...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet-1.0.0.tar.gz...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...'
+
+One rejection email is generated:
+
+  >>> [rejection] = pop_notifications()
+  >>> rejection['Subject']
+  'netapplet-1.0.0.tar.gz rejected'
+
+Use the text filter to inspect the NEW queue:
+
+  >>> user_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.getControl(name="queue_text").value='pm'
+  >>> user_browser.getControl("Update").click()
+  >>> 'pmount (i386)' in user_browser.contents
+  True
+  >>> 'mozilla-firefox (i386)' in user_browser.contents
+  False
+
+An UnexpectedFormData error is raised for unknown queue_state values
+(bug #51959).
+
+  >>> user_browser.handleErrors = False
+  >>> user_browser.open(
+  ...     "http://localhost/ubuntu/breezy-autotest/"
+  ...     "+queue?queue_state=8")
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable status found for value "8"
+
+Clean up:
+
+  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> cleanupLibrarianFiles()
+

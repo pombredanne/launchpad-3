@@ -7,9 +7,9 @@ from sqlobject import SQLObjectNotFound
 class BuildDaemonPackagesArchSpecific:
     """Parse and implement "PackagesArchSpecific"."""
 
-    def __init__(self, pas_dir, distrorelease):
+    def __init__(self, pas_dir, distroseries):
         self.pas_file = os.path.join(pas_dir, "Packages-arch-specific")
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.permit = {}
         self._parsePAS()
 
@@ -30,7 +30,7 @@ class BuildDaemonPackagesArchSpecific:
             return
 
         all_arch_tags = set([a.architecturetag for a in
-                            self.distrorelease.architectures])
+                            self.distroseries.architectures])
         for line in fd:
             line = line.split("#")[0]
             line = line.strip()
@@ -65,11 +65,11 @@ class BuildDaemonPackagesArchSpecific:
 
     def _handleBinaryPAS(self, pkgname, arch_tags):
         # We need to find a sourcepackagename, so search for it against
-        # the nominated distroarchrelease (it could be any one, but
+        # the nominated distroarchseries (it could be any one, but
         # using this one simplifies testing). If the sourcepackagename
         # changes across arches then we'll have problems. We hope
         # this'll never happen!
-        arch_indep_dar = self.distrorelease.nominatedarchindep
+        arch_indep_dar = self.distroseries.nominatedarchindep
         try:
             pkgs = arch_indep_dar.getReleasedPackages(pkgname)
         except SQLObjectNotFound:

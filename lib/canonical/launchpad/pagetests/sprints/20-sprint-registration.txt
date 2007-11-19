@@ -68,13 +68,9 @@ since the date range overlaps that of the sprint.
 
 Now, Sample Person should be listed as an attendee.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def print_attendees(sprint_page):
     ...     """Print the attendees listed in the attendees portlet."""
-    ...     soup = BeautifulSoup(sprint_page)
-    ...     attendees_portlet_headers = soup.fetchText('Attendees')
-    ...     assert len(attendees_portlet_headers) == 1
-    ...     attendees_portlet = attendees_portlet_headers[0].parent.parent
+    ...     attendees_portlet = find_portlet(sprint_page, 'Attendees')
     ...     for li in attendees_portlet.fetch('ul')[0].fetch('li'):
     ...         print li.a.string.encode('ascii', 'xmlcharrefreplace')
 

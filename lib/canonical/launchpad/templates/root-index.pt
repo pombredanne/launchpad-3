@@ -1,4 +1,13 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
@@ -60,27 +69,21 @@
           <ul class="news">
             <li>
               <a href="https://help.launchpad.net/FasterTranslationsImports">
-                <strong>Faster translations imports.</strong>
+                <strong>Faster translation imports:</strong> shorter queues,
+                even at busy times.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/TurningABugIntoAQuestion"
-                ><strong>Create questions from bugs:</strong> convert a bug
-                that is really a support request into an Answer Tracker
-                question.</a>
+              <a
+                href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
+                <strong>Zope 2 switches to Launchpad:</strong> &#8220;Launchpad works
+                great ... allows us to focus on creating a great Zope
+                platform&#8221;.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/AnswerTrackerFAQs">
-                <strong>Improved FAQs:</strong> now create a FAQ from any
-                question.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/MergingTeams">
-                <strong>Team mergers:</strong> request the merger of two teams.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/PPAQuickStart">
-                <strong>Personal Package Archives:</strong> ongoing beta of
-                Launchpad's package build and repository hosting service.</a>
+              <a
+                href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
+                <strong>Come learn more:</strong> introductory IRC tutorial
+                sessions about Launchpad.</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
@@ -104,10 +107,23 @@
           </ul>
         </div>
     </div><!--main-->
-    <p metal:fill-slot="help">
+    <div metal:fill-slot="help">
+      <p>
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
-    </p>
+      </p>
+      <p>
+      You can browse our dedicated help site, <a
+      href="https://help.launchpad.net/">help.launchpad.net</a>, for a
+      complete set of documents about Launchpad 
+      </p>
+      <p>
+      You can also find help on the <a
+      href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
+      users mailing list</a> or online via IRC, on <a
+      href="http://freenode.net/">Freenode</a>, channel #launchpad.
+      </p>
+    </div>
   </body>
 </html>
 <!-- 1-0 inprogress Needs images and marketing material -->

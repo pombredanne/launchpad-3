@@ -1,4 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.
@@ -6,7 +8,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -29,6 +31,7 @@ __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
+    'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
@@ -51,6 +54,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
@@ -195,11 +199,13 @@ class IOpenIdApplication(ILaunchpadApplication):
 class IPrivateApplication(ILaunchpadApplication):
     """Launchpad private XML-RPC application root."""
 
+    authserver = Attribute("""Old Authserver API end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
 
-class IFeedsApplication(ILaunchpadApplication):
-    """Launchpad Feeds application root."""
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
 
 
 class IAuthApplication(Interface):
@@ -222,6 +228,11 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+
+class IFeedsApplication(ILaunchpadApplication):
+    """Launchpad Feeds application root."""
+
 
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
@@ -498,3 +509,18 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
+
+class ILaunchpadUsage(Interface):
+    """How the project uses Launchpad."""
+    official_answers = Bool(
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
+    enable_bug_expiration = Bool(
+        title=_('Expire Incomplete bug reports when they become inactive'),
+        required=True)

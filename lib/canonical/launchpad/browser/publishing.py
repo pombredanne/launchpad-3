@@ -72,6 +72,31 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
     __used_for__ = ISourcePackagePublishingHistory
 
+    @property
+    def published_source_and_binary_files(self):
+        """Return list of dicts describing all files published
+           for a certain source publication.
+        """
+        files = list(self.context.files)
+        for binary in self.context.getPublishedBinaries():
+            files.extend(binary.files)
+        ret = []
+        urls = set()
+        for f in files:
+            d = {}
+            url = f.libraryfilealias.http_url
+            if url in urls:
+                # Don't print out the same file multiple times. This
+                # actually happens for arch-all builds, and is
+                # particularly irritating for PPAs.
+                continue
+            urls.add(url)
+            d["url"] = url
+            d["filename"] = f.libraryfilealias.filename
+            d["filesize"] = f.libraryfilealias.content.filesize
+            ret.append(d)
+        return ret
+
 
 class BinaryPublishingRecordView(BasePublishingRecordView):
     """View class for `IBinaryPackagePublishingHistory`."""

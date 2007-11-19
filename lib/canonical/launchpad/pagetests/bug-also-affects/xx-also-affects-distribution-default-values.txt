@@ -7,8 +7,7 @@ first source package found in the "Affects" list.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/tomcat/+bug/2')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> affects_table = soup.first('table', {'class': 'listing'})
     >>> for tr in affects_table.tbody.findAll('tr', recursive=False):
     ...     if tr.td.table:

@@ -46,6 +46,8 @@ class ILaunchpadApplication(Interface):
     """
     title = Attribute('Title')
 
+class ILaunchpadProtocolError(Interface):
+    """Marker interface for a Launchpad protocol error exception."""
 
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
