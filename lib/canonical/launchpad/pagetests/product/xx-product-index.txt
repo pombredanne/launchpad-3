@@ -111,4 +111,3 @@ the homepage:
     Wiki http://wiki.url/
     Screenshots http://screenshots.url/
     External downloads http://download.url/
-

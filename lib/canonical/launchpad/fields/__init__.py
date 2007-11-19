@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,W0401
 
 from StringIO import StringIO
 from textwrap import dedent

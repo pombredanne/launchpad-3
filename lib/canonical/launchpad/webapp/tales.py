@@ -1,9 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0613,E0201,R0911
+# pylint: disable-msg=C0103,W0613,R0911
 #
-"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
-"""
 __metaclass__ = type
 
 import bisect
@@ -39,6 +38,7 @@ from canonical.launchpad.interfaces import (
     IHasLogo,
     IHasMugshot,
     IPerson,
+    IPersonSet,
     IProduct,
     IProject,
     ISprint,
@@ -1686,6 +1686,31 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
+    def linkify_email(self):
+        """Linkify any email address recognised in Launchpad.
+
+        If an email address is recognised as one registered in Launchpad,
+        it is linkified to point to the profile page for that person.
+
+        Note that someone could theoretically register any old email
+        address in Launchpad and then have it linkified.  This may or not
+        may be a concern but is noted here for posterity anyway.
+        """
+        text = self._stringtoformat
+
+        matches = re.finditer(self._re_email, text)
+        for match in matches:
+            address = match.group()
+            person = getUtility(IPersonSet).getByEmail(address)
+            # Only linkify if person exists and does not want to hide
+            # their email addresses.
+            if person is not None and not person.hide_email_addresses:
+                person_formatter = PersonFormatterAPI(person)
+                image_html = ObjectImageDisplayAPI(person).icon()
+                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
+                    canonical_url(person), image_html, address))
+        return text
+
     def lower(self):
         """Return the string in lowercase"""
         return self._stringtoformat.lower()
@@ -1712,6 +1737,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'linkify-email':
+            return self.linkify_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(

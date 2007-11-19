@@ -14,7 +14,7 @@ textarea, and
   ...         'msgset_67_hr_translation_0_new']
   >>> textarea = user_browser.getControl(name='msgset_67_hr_translation_0_new')
   >>> textarea.value = (
-  ...     'Upotreba:\r\n\r\n%s [opcije] <uređaj> [<etiketa>]%s%s%s\r\n')
+  ...     'Upotreba:\r\n\r\n%s [opcije] <foo> [<etiketa>]%s%s%s\r\n')
   >>> user_browser.getControl(name='submit_translations').click()
 
 We are in next form page.
@@ -28,9 +28,9 @@ Let's go back to the modified message.
 
 And we can see that we escaped the tags:
 
-  >>> textarea = find_tag_by_id(
-  ...     user_browser.contents, 'msgset_67_hr_translation_0_new')
-  >>> print textarea.renderContents()
+  >>> text = find_tag_by_id(
+  ...     user_browser.contents, 'msgset_67_hr_translation_0')
+  >>> print extract_text(text.renderContents())
   Upotreba:
   
-  %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]%s%s%s
+  %s [opcije] &lt;foo&gt; [&lt;etiketa&gt;]%s%s%s

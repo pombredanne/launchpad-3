@@ -11,22 +11,10 @@ list.  First, create the mailing list.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
-
-    >>> list_set = getUtility(IMailingListSet)
-    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    >>> lpadmin = list(experts.allmembers)[0]
-    >>> list_one = list_set.get('itest-one')
-    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
-    >>> itest_helper.wait_for_mailman()
+    >>> list_one = itest_helper.review_list('itest-one')
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -37,23 +25,26 @@ people and join them to teams through the backdoor.
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
     >>> person_set = getUtility(IPersonSet)
     >>> team_one = person_set.getByName('itest-one')
-    >>> list_one = list_set.get('itest-one')
 
     # Subscribe Anne with her preferred address.
     >>> anne = new_person('Anne')
     >>> anne.join(team_one)
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
     >>> list_one.subscribe(anne)
 
     # Subscribe Bart with his alternative address.
     >>> bart = new_person('Bart')
     >>> bart.join(team_one)
     >>> list_one.subscribe(bart, get_alternative_email(bart))
+    >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
-Both Anne and Bart should now be members of the mailing list.
+Both Anne and Bart are now members of the mailing list.
 
     >>> from Mailman.MailList import MailList
     >>> mailing_list = MailList('itest-one', lock=False)
@@ -64,11 +55,10 @@ Both Anne and Bart should now be members of the mailing list.
     Anne Person <anne.person@example.com>
     Bart Person <bperson@example.org>
 
-Add Cris and Dirk as members, change Anne's preferred email address, and
-unsubscribe Bart from the mailing list.
+Cris and Dirk now subscribe to the team and its list.  Anne changes her
+preferred email address, and Bart unsubscribes from the mailing list.
 
     >>> team_one = person_set.getByName('itest-one')
-    >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
 
     # Subscribe Cris with her preferred address.
@@ -91,8 +81,8 @@ unsubscribe Bart from the mailing list.
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
-Now, Anne should be subscribed with her alternate email address, and Cris and
-Dirk are the only other members.
+Anne is now subscribed with her alternate email address, and Cris and Dirk are
+the only other members.
 
     # Reload the list data.
     >>> mailing_list.Load()

@@ -1,0 +1,52 @@
+= TranslationMessage =
+
+Let's do some imports we will need to test this class.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.database import POTemplate, TranslationMessage
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, ITranslationMessage)
+
+    >>> potemplate = POTemplate.get(1)
+    >>> potmsgsets = potemplate.getPOTMsgSets()
+    >>> potmsgset = potmsgsets[0]
+
+This class links the translations submitted by a translator with the associated
+POFile and POTMsgSet.  TranslationMessage and DummyTranslationMessage both
+implement ITranslationMessage interface:
+
+    >>> translationmessage = TranslationMessage.get(1)
+    >>> verifyObject(ITranslationMessage, translationmessage)
+    True
+
+    >>> dummy_translationmessage = potmsgset.getCurrentDummyTranslationMessage(
+    ...     getUtility(ILanguageSet)['sr'])
+    >>> verifyObject(ITranslationMessage, dummy_translationmessage)
+    True
+
+== destroySelf ==
+
+With this method, we allow to remove a submission, it comes from SQLObject,
+but we test it here to be sure it appears in our public interface.
+
+We will need extra permissions to use this method.
+
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.harness import (
+    ...     LaunchpadFunctionalTestSetup)
+    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+
+Select an existing IPOSubmission and try to remove it.
+
+    >>> translationmessage = TranslationMessage.get(1)
+    >>> translationmessage.destroySelf()
+
+It should not exist now.
+
+    >>> translationmessage = TranslationMessage.get(1)
+    Traceback (most recent call last):
+    ...
+    SQLObjectNotFound:...
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()

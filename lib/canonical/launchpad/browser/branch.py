@@ -32,6 +32,7 @@ from zope.interface import Interface
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
@@ -457,7 +458,10 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        if self.updateContextFromData(data):
+            # Only specify that the context was modified if there
+            # was in fact a change.
+            self.context.date_last_modified = UTC_NOW
 
     @property
     def next_url(self):

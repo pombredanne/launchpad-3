@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
 
@@ -434,6 +435,8 @@ class IBranch(IHasOwner):
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_modified = Datetime(
+        title=_('Date Last Modified'), required=True, readonly=False)
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""

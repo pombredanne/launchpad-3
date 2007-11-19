@@ -1,26 +1,34 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Helper functions for bug-related pagetests."""
+"""Helper functions for bug-related doctests and pagetests."""
 
-import re
+from datetime import datetime, timedelta
+from pytz import UTC
+
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.ftests.test_pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, CreateBugParams, IPersonSet)
 
 DIRECT_SUBS_PORTLET_INDEX = 0
 INDIRECT_SUBS_PORTLET_INDEX = 1
 
 def print_direct_subscribers(bug_page):
+    """Print the direct subscribers listed in a portlet."""
     print_subscribers(bug_page, DIRECT_SUBS_PORTLET_INDEX)
 
 
 def print_indirect_subscribers(bug_page):
+    """Print the indirect subscribers listed in a portlet."""
     print_subscribers(bug_page, INDIRECT_SUBS_PORTLET_INDEX)
 
 
 def print_subscribers(bug_page, subscriber_portlet_index):
     """Print the subscribers listed in the subscriber portlet."""
-    bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
     subscriber_portlet = find_portlet(bug_page, 'Subscribers')
     try:
         portlet = subscriber_portlet.fetch(
@@ -89,3 +97,50 @@ def extract_bugtasks(text):
     if table is None:
         return []
     return [extract_text(tr) for tr in table('tr') if tr.td is not None]
+
+
+def create_old_bug(
+    title, days_old, target, status=BugTaskStatus.INCOMPLETE,
+    with_message=True):
+    """Create an aged bug.
+
+    :title: A string. The bug title for testing.
+    :days_old: An int. The bug's age in days.
+    :target: A BugTarkget. The bug's target.
+    :status: A BugTaskStatus. The status of the bug's single bugtask.
+    :with_message: A Bool. Whether to create a reply message.
+    """
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title=title, comment='Something is broken.')
+    bug = target.createBug(params)
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    if with_message is True:
+        bug.newMessage(
+            owner=sample_person, subject='Something is broken.',
+            content='Can you provide more information?')
+    bugtask = bug.bugtasks[0]
+    bugtask.transitionToStatus(
+        status, sample_person)
+    date = datetime.now(UTC) - timedelta(days=days_old)
+    removeSecurityProxy(bug).date_last_updated = date
+    return bugtask
+
+
+def summarize_bugtasks(bugtasks):
+    """Summarize a sequence of bugtasks."""
+    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    for bugtask in bugtasks:
+        if len(bugtask.bug.bugtasks) == 1:
+            title = bugtask.bug.title
+        else:
+            title = bugtask.target.name
+        print '%s  %s  %s  %s  %s  %s  %s  %s' % (
+            title,
+            bugtask.pillar.enable_bug_expiration,
+            (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
+            bugtask.status.title,
+            bugtask.assignee is not None,
+            bugtask.bug.duplicateof is not None,
+            bugtask.milestone is not None,
+            bugtask.bug.messages.count() == 1)
