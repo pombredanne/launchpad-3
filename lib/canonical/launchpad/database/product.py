@@ -47,7 +47,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget, IHasIcon,
-    IHasLogo, IHasMugshot, IMakesAnnouncements, ILaunchpadCelebrities,
+    IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
     IProductSet, IQuestionTarget, License, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,

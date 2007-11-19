@@ -48,6 +48,8 @@
   </tal:editor>
 </p>
 <p>
-  Created by
+  Created
+  <tal:date_created replace="context/date_created/fmt:displaydate" />
+  by
   <tal:registrant replace="structure context/registrant/fmt:link" />
 </p>

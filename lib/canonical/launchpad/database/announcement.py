@@ -87,6 +87,11 @@ class Announcement(SQLBase):
             self.distribution = distribution
             self.date_updated = UTC_NOW
 
+    def retract(self):
+        """See IAnnouncement."""
+        self.date_updated = UTC_NOW
+        self.active = False
+
     def set_publication_date(self, publication_date):
         """See IAnnouncement."""
         # figure out the correct date_announced by mapping from the provided
@@ -116,6 +121,8 @@ class Announcement(SQLBase):
     def published(self):
         """See IAnnouncement."""
         if self.active is False:
+            return False
+        if self.date_announced is None:
             return False
         return self.date_announced.replace(tzinfo=None) < \
                self.date_announced.utcnow()

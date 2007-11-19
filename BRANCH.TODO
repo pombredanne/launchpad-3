@@ -20,6 +20,25 @@
  = Clean up announcement date widget cargo culted code
  = Make an RSS feed of all announcements from all projects
  = Make it possible to publish a retracted item
+ * See if just using implements(IFoo) is sufficient when IFoo inherits
+   IHasAnnouncements
+ * What does top-level announcements() list?
+ * Sample data
+   * Announcements on Mozilla, Firefox, Thunderbird, Ubuntu
  * TESTS
+   * DocTests
+     * Add an announcement on each of IProject, IProduct, IDistribution
+     * Modify announcement
+       * check date modified is updated
+   * Page tests
+     * Add an announcement on each of IProject, IProduct, IDistribution
+     * Verify listing pages for each of IHasAnnouncements (inc top-level)
+     * Verify feeds for each of IHasAnnouncements
+     * Edit an announcement
+     * Retarget an announcement
+       * Fails if not admin of new target project
+     * Retract an announcement
+       * Republish a retracted announcement
+     * Delete an announcement
  * Clean up unused imports & generally de-lint
 

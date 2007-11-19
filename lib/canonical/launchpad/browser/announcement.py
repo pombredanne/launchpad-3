@@ -56,7 +56,7 @@ from zope.app.form.browser import TextWidget
 class AnnouncementContextMenu(ContextMenu):
 
     usedfor = IAnnouncement
-    links = ['edit', 'retarget']
+    links = ['edit', 'retarget', 'retract']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -68,11 +68,16 @@ class AnnouncementContextMenu(ContextMenu):
         text = 'Retarget'
         return Link('+retarget', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def retract(self):
+        text = 'Retract'
+        return Link('+retract', text, icon='edit')
+
 
 class AnnouncementSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "News for %s" % cgi.escape(self.context.target.title)
+        return "News for %s" % cgi.escape(self.context.target.displayname)
 
     def getMainHeading(self):
         return self.context.title
@@ -231,7 +236,7 @@ class AnnouncementRetractView(LaunchpadFormView):
 
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
-        self.context.active = False
+        self.context.retract()
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     def validate_cancel(self, action, data):

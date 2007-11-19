@@ -118,6 +118,9 @@ class IAnnouncement(Interface):
         arguments must not be None.
         """
 
+    def retract():
+        """Take this announcement off any public web pages and RSS feeds."""
+
     def set_publication_date(publication_date):
         """Set the publication date. The value passed is either:
 
