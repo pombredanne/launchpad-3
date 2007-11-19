@@ -18,13 +18,13 @@ Our new user 'Foo' will now add a couple email addresses to his account.
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
 
-    >>> browser.getControl(name='newemail').value = 'bar.foo@canonical.com'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add a new address').value = 'bar.foo@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
-    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-    ...     print tag.renderContents()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
     A confirmation message has been sent to...
 
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -40,8 +40,8 @@ them.
 
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
-    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-    ...     print tag.renderContents()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
     A confirmation message has been sent to...
 
     # Extract the link (from the email we just sent) the user will have to
@@ -61,12 +61,13 @@ Follow the token link, to confirm the new email address.
     >>> browser.open(token_url)
     >>> browser.url
     'http://launchpad.dev/token/.../+validateemail'
+    >>> import pdb; pdb.set_trace()
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
     'http://launchpad.dev/~foo'
-    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-    ...     print tag.renderContents()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
     Email address successfully confirmed.
 
 Now that the address is confirmed he sees it in the list of his confirmed
@@ -83,8 +84,8 @@ that it's already registered.
     >>> browser.getControl('Add').click()
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
-    >>> for tag in find_tags_by_class(browser.contents, 'message'):
-    ...     print tag.renderContents()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
     The email address 'bar.foo@canonical.com' is already registered as your
     email address...
 
@@ -95,7 +96,7 @@ that it's already registered.
 
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
-    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     A confirmation message has been sent to...
 
@@ -118,6 +119,7 @@ Follow the token link, to confirm the new email address.
 
     >>> browser.url
     'http://launchpad.dev/~foo'
+
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
     ...     print tag.renderContents()
     Email address successfully confirmed.
