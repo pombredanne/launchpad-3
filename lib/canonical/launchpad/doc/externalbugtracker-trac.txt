@@ -129,7 +129,7 @@ invalid bug:
     >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
     >>> trac.bugs = {invalid_bug['id']: invalid_bug}
     >>> trac.getRemoteStatus(invalid_bug['id'])
-    WARNING:root:Trac ticket 1 defines no status.
+    WARNING:...:Trac ticket 1 defines no status.
     'UNKNOWN'
 
 

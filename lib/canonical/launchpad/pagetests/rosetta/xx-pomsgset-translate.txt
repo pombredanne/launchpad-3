@@ -248,8 +248,6 @@ both shown separately:
   >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
   False
 
-
-
 Now, we will check suggestions in this form.
 
   >>> browser.open(
@@ -260,7 +258,7 @@ Check that suggestions come in from other contexts:
 
   >>> "Suggested in" in browser.contents
   True
-  >>> find_tag_by_id(browser.contents, 'msgset_143_es_suggestion_693_0')
+  >>> find_tag_by_id(browser.contents, 'msgset_143_es_suggestion_697_0')
   <...suggestion added by a non-editor for a multiline entry...>
 
 Check that no other suggestions are presented (since no others are
@@ -382,7 +380,7 @@ But also, the new one should appear in the form.
 
   >>> find_tag_by_id(
   ...     slow_submission.contents,
-  ...     'msgset_143_es_suggestion_715_0').renderContents()
+  ...     'msgset_143_es_suggestion_703_0').renderContents()
   'foo!!'
 
 == Unreviewed translations ==

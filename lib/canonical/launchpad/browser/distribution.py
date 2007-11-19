@@ -521,7 +521,8 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'official_rosetta', 'official_answers']
+                   'official_malone', 'enable_bug_expiration',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
@@ -530,7 +531,17 @@ class DistributionEditView(LaunchpadEditFormView):
         LaunchpadFormView.setUpFields(self)
         if not self.isAdmin():
             self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers')
+                'official_malone', 'official_rosetta', 'official_answers',
+                'enable_bug_expiration')
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when official_malone
+        # is set False. The contraint is enforced here in case the JavaScript
+        # fails to load or activate.
+        official_malone = data.get('official_malone', False)
+        if not official_malone:
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):

@@ -43,6 +43,11 @@ the usage.
     ...
     LookupError: name...
 
+    >>> print registrant.getControl(name='field.enable_bug_expiration').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
     >>> print registrant.getControl(name='field.official_answers').value
     Traceback (most recent call last):
     ...
@@ -58,13 +63,18 @@ A Launchpad administrator, however, can see the controls.
     True
     >>> print admin_browser.getControl(name='field.official_malone').value
     True
+    >>> print admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value
+    True
     >>> print admin_browser.getControl(name='field.official_answers').value
     True
-     
-And if the admin changes the settings, the changes show up on the distribution
-Overview page.
+
+And if the admin changes the settings, the changes show up on the
+distribution Overview page.
 
     >>> admin_browser.getControl(name='field.official_rosetta').value = False
+    >>> admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
     >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
@@ -75,3 +85,57 @@ Overview page.
     >>> label_cell = content.find('th', text='Uses Launchpad for:')
     >>> print extract_text(label_cell.findNext())
     &mdash;
+
+
+== enable_bug_expiration and JavaScript ==
+
+JavaScript is used to constrain enable_bug_expiration to distributions
+that use Launchpad to track bugs. If the form is submitted before the
+page has loaded, the enable_bug_expiration will not be disabled by the
+JavaScript function. The constraint is enforced by the view class--the
+data is corrected instead of returning a error to the user.
+
+Foo Bar updates Ubuntu to use Launchpad to track bugs, and enables
+bug expiration.
+
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value = True
+    >>> admin_browser.getControl(name='field.official_malone').value = True
+    >>> admin_browser.getControl('Change').click()
+
+    >>> content = find_main_content(admin_browser.contents)
+    >>> label_cell = content.find('th', text='Uses Launchpad for:')
+    >>> print extract_text(label_cell.findNext())
+    Bug tracking
+
+Foo Bar chooses to switch the bug tracker again, but this time he
+does not change the the expiration check box, and he does the whole
+operation before the page complete loading.
+
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> print admin_browser.getControl(name='field.official_malone').value
+    True
+
+    >>> print admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value
+    True
+
+    >>> admin_browser.getControl(name='field.official_malone').value = False
+    >>> admin_browser.getControl('Change').click()
+
+    >>> content = find_main_content(admin_browser.contents)
+    >>> label_cell = content.find('th', text='Uses Launchpad for:')
+    >>> print extract_text(label_cell.findNext())
+    &mdash;
+
+Returning to the edit page, Foo Bar can see that bug expiration was
+also disabled.
+
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> print admin_browser.getControl(name='field.official_malone').value
+    False
+
+    >>> print admin_browser.getControl(
+    ...     name='field.enable_bug_expiration').value
+    False

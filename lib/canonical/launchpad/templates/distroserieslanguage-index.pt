@@ -117,31 +117,31 @@
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-time">
             <span class="sortkey"
-              tal:condition="entry/last_touched_pomsgset"
+              tal:condition="entry/date_changed"
               tal:content="
-                entry/last_touched_pomsgset/latest_change_date/fmt:datetime">
+                entry/date_changed/fmt:datetime">
               time sort key
             </span>
             <span
-              tal:condition="entry/last_touched_pomsgset"
+              tal:condition="entry/date_changed"
               tal:attributes="
-                title entry/last_touched_pomsgset/latest_change_date/fmt:datetime"
+                title entry/date_changed/fmt:datetime"
               tal:content="
-                entry/last_touched_pomsgset/latest_change_date/fmt:approximatedate"
+                entry/date_changed/fmt:approximatedate"
               >
               2007-02-10
             </span>
-            <tal:block condition="not: entry/last_touched_pomsgset">
+            <tal:block condition="not: entry/date_changed">
                 &mdash;
             </tal:block>
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-person">
-            <tal:block condition="entry/last_touched_pomsgset">
-              <a tal:condition="entry/last_touched_pomsgset/latest_change_person"
-                 tal:attributes="href entry/last_touched_pomsgset/latest_change_person/fmt:url"
-                 tal:content="entry/last_touched_pomsgset/latest_change_person/browsername/fmt:shorten/25"></a>
+            <tal:block condition="entry/lasttranslator">
+              <a tal:condition="entry/lasttranslator"
+                 tal:attributes="href entry/lasttranslator/fmt:url"
+                 tal:content="entry/lasttranslator/browsername/fmt:shorten/25"></a>
             </tal:block>
-            <tal:block condition="not: entry/last_touched_pomsgset">
+            <tal:block condition="not: entry/lasttranslator">
                 &mdash;
             </tal:block>
           </td>

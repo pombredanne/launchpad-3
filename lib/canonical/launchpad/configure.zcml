@@ -48,12 +48,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:url
-    for="canonical.launchpad.interfaces.IPOTemplateNameSet"
-    path_expression="string:potemplatenames"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"

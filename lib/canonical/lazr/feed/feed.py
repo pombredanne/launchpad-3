@@ -25,6 +25,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
@@ -33,9 +34,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
-MINUTES = 60
-MAX_AGE = 60 * MINUTES
 SUPPORTED_FEEDS = ('.atom', '.html')
+MINUTES = 60 # seconds in a minute
 
 
 class FeedBase(LaunchpadFormView):
@@ -43,9 +43,8 @@ class FeedBase(LaunchpadFormView):
 
     implements(IFeed)
 
-    # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be
-    # in a config file.
-    max_age = MAX_AGE
+    # convert to seconds
+    max_age = config.launchpad.max_feed_cache_minutes * MINUTES
     quantity = 25
     items = None
     template_files = {'atom': 'templates/feed-atom.pt',
