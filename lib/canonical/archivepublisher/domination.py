@@ -55,6 +55,7 @@ import apt_pkg
 from datetime import timedelta
 import gc
 
+from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor,
@@ -80,6 +81,7 @@ PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
 SUPERSEDED = PackagePublishingStatus.SUPERSEDED
 DELETED = PackagePublishingStatus.DELETED
+OBSOLETE = PackagePublishingStatus.OBSOLETE
 
 # Ugly, but works
 apt_pkg.InitSystem()
@@ -400,18 +402,14 @@ class Dominator:
             flush_database_updates()
             cur.execute("DROP TABLE PubDomHelper")
 
-        dominate_status = [
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.DELETED,
-            ]
-
         sources = SecureSourcePackagePublishingHistory.select("""
             securesourcepackagepublishinghistory.distroseries = %s AND
             securesourcepackagepublishinghistory.archive = %s AND
             securesourcepackagepublishinghistory.pocket = %s AND
             securesourcepackagepublishinghistory.status IN %s AND
             securesourcepackagepublishinghistory.scheduleddeletiondate is NULL
-            """ % sqlvalues(dr, self.archive, pocket, dominate_status))
+            """ % sqlvalues(dr, self.archive, pocket,
+                            ELIGIBLE_DOMINATION_STATES))
 
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchseries =
@@ -421,7 +419,8 @@ class Dominator:
             securebinarypackagepublishinghistory.pocket = %s AND
             securebinarypackagepublishinghistory.status IN %s AND
             securebinarypackagepublishinghistory.scheduleddeletiondate is NULL
-            """ % sqlvalues(dr, self.archive, pocket, dominate_status),
+            """ % sqlvalues(dr, self.archive, pocket,
+                            ELIGIBLE_DOMINATION_STATES),
             clauseTables=['DistroArchSeries'])
 
         self._judgeSuperseded(sources, binaries, config)
