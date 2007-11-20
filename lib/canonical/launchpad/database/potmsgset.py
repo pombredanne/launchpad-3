@@ -85,6 +85,10 @@ class POTMsgSet(SQLBase):
 
     def getCurrentTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
+        # Change 'is_current IS TRUE' condition carefully: it
+        # needs to match condition specified in indexes, or Postgres
+        # may not pick them up (in complicated queries, Postgres query
+        # optimizer sometimes does text-matching of indexes).
         return TranslationMessage.selectOne("""
             potmsgset = %s AND is_current IS TRUE AND POFile.language = %s
             AND POFile.variant IS NULL AND pofile = POFile.id
@@ -92,6 +96,10 @@ class POTMsgSet(SQLBase):
 
     def getImportedTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
+        # Change 'is_imported IS TRUE' condition carefully: it
+        # needs to match condition specified in indexes, or Postgres
+        # may not pick them up (in complicated queries, Postgres query
+        # optimizer sometimes does text-matching of indexes).
         return TranslationMessage.selectOne("""
             potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
             AND POFile.variant IS NULL AND pofile = POFile.id
@@ -126,6 +134,9 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
+        # Watch out when changing this condition: make sure it's done in
+        # a way so that indexes are indeed hit when the query is executed.
+        # Also note that there is a NOT(in_use_clause) index.
         in_use_clause = "(is_current IS TRUE OR is_imported IS TRUE)"
         if used:
             query = [in_use_clause]
@@ -155,7 +166,14 @@ class POTMsgSet(SQLBase):
 
         result = TranslationMessage.select(' AND '.join(query),
                                            clauseTables=['POFile'])
-        return shortlist(result, longest_expected=20, hardlimit=100)
+        # XXX 2007-11-20 Danilo: We do filtering of duplicates in
+        # the browser code, which is how it was before DB refactoring.
+        # We should move this to SQL queries above, and lower the limit
+        # below.
+        # The numbers were gotten from our production data, by finding
+        # the largest number of external "suggestions" we may get, with
+        # the maximum turning out to be 1943.
+        return shortlist(result, longest_expected=1000, hardlimit=2000)
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
