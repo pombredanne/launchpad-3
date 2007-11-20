@@ -17,7 +17,7 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_answers enable_bug_expiration
+                      official_malone official_answers
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot 
                       license_info licenses"
