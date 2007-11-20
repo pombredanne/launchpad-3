@@ -365,7 +365,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         """Check if a non-member of launchpad-beta-testers can upload to PPA.
 
         PPA was opened for public access in 1.1.11 (22th Nov 2007), so we will
-        keep this test as a simple reference to the check disabled in in code
+        keep this test as a simple reference to the check disabled in code
         (uploadpolicy.py).
         """
         beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
