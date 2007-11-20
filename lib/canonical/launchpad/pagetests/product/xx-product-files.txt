@@ -101,15 +101,21 @@ A project owner should not see the delete button when there are no files.
 When a project has a series with one or more releases, an option to
 add download files for each release in that series is presented.
 
+Define a helper function for examining the series and
+release output.
+    >>> def extract_series_release(contents, action_url):
+    ...     form = find_main_content(contents).find('form',
+    ...                action="%s" % action_url)
+    ...     for heading in form('h2'):
+    ...         releases = heading.findNext('p')
+    ...         print heading.string.strip()
+    ...         print releases.contents[0].strip()
+    ...         for link in releases('a'):
+    ...             print link.contents[0]
+
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> contents = find_main_content(firefox_owner.contents)
-    >>> form = contents.find('form', action="%s" % firefox_owner.url)
-    >>> for heading in form('h2'):
-    ...     releases = heading.findNext('p')
-    ...     print heading.string.strip()
-    ...     print releases.contents[0].strip()
-    ...     for link in releases('a'):
-    ...         print link.contents[0]
+    >>> extract_series_release(firefox_owner.contents,
+    ...                        firefox_owner.url)
     Release series &#8220;trunk&#8221;
     Add download file for release:
     0.9.2
@@ -124,24 +130,42 @@ series should not show up in the list.
 
     >>> # Create an empty series.
     >>> firefox_owner.getLink('Register a series').click()
-    >>> firefox_owner.getControl('Name').value="314159"
+    >>> firefox_owner.getControl('Name').value="3.0"
     >>> firefox_owner.getControl('Summary').value="pi series"
     >>> firefox_owner.getControl('Register Series').click()
     >>> # Ensure it does not get listed.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> contents = find_main_content(firefox_owner.contents)
-    >>> form = contents.find('form', action="%s" % firefox_owner.url)
-    >>> for heading in form('h2'):
-    ...     releases = heading.findNext('p')
-    ...     print heading.string.strip()
-    ...     print releases.contents[0].strip()
-    ...     for link in releases('a'):
-    ...         print link.contents[0]
+    >>> extract_series_release(firefox_owner.contents,
+    ...                        firefox_owner.url)
     Release series &#8220;trunk&#8221;
     Add download file for release:
     0.9.2
     0.9.1
     0.9
+    Release series &#8220;1.0&#8221;
+    Add download file for release:
+    1.0.0
+
+If a release is added to the new series the series will appear in the list.
+
+    >>> # Add a release to the empty series.
+    >>> firefox_owner.open('http://launchpad.dev/firefox')
+    >>> firefox_owner.getLink('3.0').click()
+    >>> firefox_owner.getLink('Register a release').click()
+    >>> firefox_owner.getControl('Version').value="3.14159"
+    >>> firefox_owner.getControl('Add').click()
+    >>> # See that it now appears in the list.
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> extract_series_release(firefox_owner.contents,
+    ...                        firefox_owner.url)
+    Release series &#8220;trunk&#8221;
+    Add download file for release:
+    0.9.2
+    0.9.1
+    0.9
+    Release series &#8220;3.0&#8221;
+    Add download file for release:
+    3.14159
     Release series &#8220;1.0&#8221;
     Add download file for release:
     1.0.0
