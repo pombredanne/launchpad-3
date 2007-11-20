@@ -356,7 +356,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Hide this view if mailing lists are disabled.
 
         Once mailing lists are enabled globally, this method should be
-        removed."""
+        removed.
+        """
         if not config.mailman.expose_hosted_mailing_lists:
             raise NotFound(self, '+mailinglist', request=self.request)
         super(TeamMailingListConfigurationView, self).initialize()
