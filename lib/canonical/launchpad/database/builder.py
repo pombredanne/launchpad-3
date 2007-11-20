@@ -555,9 +555,14 @@ class Builder(SQLBase):
 
         return candidate
 
+    def _getLogger(self):
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        return logger
+
     def findBuildCandidate(self):
         """See `IBuilder`."""
-        logger = logging.getLogger()
+        logger = self._getLogger()
 
         candidate = self._findBuildCandidate()
 
@@ -576,7 +581,7 @@ class Builder(SQLBase):
 
     def dispatchBuildCandidate(self, candidate):
         """See `IBuilder`."""
-        logger = logging.getLogger()
+        logger = self._getLogger()
         try:
             self.startBuild(candidate, logger)
         except (BuildSlaveFailure, CannotBuild), err:
