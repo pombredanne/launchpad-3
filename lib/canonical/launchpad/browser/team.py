@@ -17,6 +17,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -35,9 +36,8 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    NotFoundError, TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
-
 
 class HasRenewalPolicyMixin:
     """Mixin to be used on forms which contain ITeam.renewal_policy.
@@ -150,6 +150,16 @@ class MailingListTeamBaseView(LaunchpadFormView):
         if mailing_list is not None and mailing_list.status in statuses:
             return mailing_list
         return None
+
+    @property
+    def can_create_mailing_list(self):
+        """Is it allowed to create a mailing list for this team?
+
+        `list_is_usable` must return false and mailing lists must
+        be enabled. Once mailing lists are enabled globally, this should
+        be replacable with not list_is_usable."""
+        return (config.mailman.expose_hosted_mailing_lists and
+                not self.list_is_usable)
 
     @property
     def list_is_usable(self):
@@ -341,6 +351,11 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
+
+    def initialize(self):
+        if not config.mailman.expose_hosted_mailing_lists:
+            raise NotFound(self, '+mailinglist', request=self.request)
+        super(TeamMailingListConfigurationView, self).initialize()
 
     @action('Save', name='save')
     def save_action(self, action, data):
