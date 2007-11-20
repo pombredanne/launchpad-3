@@ -6,7 +6,12 @@
 
   <!-- Announcement -->
   <content class="canonical.launchpad.database.Announcement">
-    <allow interface="canonical.launchpad.interfaces.IAnnouncement" />
+    <allow attributes="date_created registrant title summary url
+                       date_announced date_updated active future
+                       published" />
+    <require permission="launchpad.Edit"
+             set_attributes="modify retarget retract set_publication_date
+                             erase_permanently" />
   </content>
 
   <browser:menus
@@ -39,45 +44,41 @@
     name="+listing-detailed"
     />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
     class="canonical.launchpad.browser.announcement.AnnouncementEditView"
     facet="overview"
-    permission="launchpad.Edit">
-    <browser:page
-      name="+edit"
-      template="../templates/announcement-edit.pt" />
-  </browser:pages>
+    permission="launchpad.Edit"
+    name="+edit"
+    template="../templates/announcement-edit.pt"
+    />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
     class="canonical.launchpad.browser.announcement.AnnouncementRetargetView"
     facet="overview"
-    permission="launchpad.Edit">
-    <browser:page
-      name="+retarget"
-      template="../templates/announcement-retarget.pt" />
-  </browser:pages>
+    permission="launchpad.Edit"
+    name="+retarget"
+    template="../templates/announcement-retarget.pt"
+    />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
     class="canonical.launchpad.browser.announcement.AnnouncementPublishView"
     facet="overview"
-    permission="launchpad.Edit">
-    <browser:page
-      name="+publish"
-      template="../templates/announcement-publish.pt" />
-  </browser:pages>
+    permission="launchpad.Edit"
+    name="+publish"
+    template="../templates/announcement-publish.pt"
+    />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
     class="canonical.launchpad.browser.announcement.AnnouncementRetractView"
     facet="overview"
-    permission="launchpad.Edit">
-    <browser:page
-      name="+retract"
-      template="../templates/announcement-retract.pt" />
-  </browser:pages>
+    permission="launchpad.Edit"
+    name="+retract"
+    template="../templates/announcement-retract.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IHasAnnouncements"
@@ -92,15 +93,14 @@
       template="../templates/hasannouncements-portlet-latest.pt" />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IMakesAnnouncements"
     class="canonical.launchpad.browser.announcement.AnnouncementAddView"
     facet="overview"
-    permission="launchpad.Edit">
-    <browser:page
-      name="+announce"
-      template="../templates/announcement-add.pt" />
-  </browser:pages>
+    permission="launchpad.Edit"
+    name="+announce"
+    template="../templates/announcement-add.pt"
+    />
 
   <!-- AnnouncementSet -->
   <securedutility
