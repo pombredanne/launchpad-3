@@ -6,11 +6,8 @@ __metaclass__ = type
 
 import unittest
 
-from openid import fetchers
-
 from canonical.functional import FunctionalDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.openidhelpers import PublisherFetcher
 
 
 def test_suite():
