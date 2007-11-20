@@ -1,0 +1,127 @@
+Announcements
+=============
+
+Any IProject, IProduct or IDistribution can make announcements. These are
+listed on the project home page (latest 5) and also in a batched listing of
+all announcements since the project was registered in LP.
+
+Each announcement can be published immediately, or left unpublished till a
+specified date, or until manually approved. Announcements can be retracted
+after publishing, and they can be deleted, permanently.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (IAnnouncementSet,
+    ...     IProjectSet, IDistributionSet, IProductSet)
+    >>> announcements = getUtility(IAnnouncementSet)
+    >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
+    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> derby = getUtility(IProductSet).getByName('derby')
+    >>> sabdfl = apache.owner
+    >>> assert sabdfl.name == 'sabdfl'
+
+== Creation ==
+
+To make an announcement, use the announce() method on the relevant project.
+
+This can be done on an IProject:
+
+In this first example, we will specify a date and time the announcement was
+published:
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> apache_asia = apache.announce(
+    ...  sabdfl,
+    ...  "OS Summit Asia 2007 - New Event by Apache and Eclipse",
+    ...  summary="""Two of the leading organizations in the
+    ...  Open Source community, The Apache Software Foundation and the Eclipse
+    ...  Foundation, have announced plans for Asia's largest Open Source
+    ...  community conference - the first of its kind in Hong Kong and China.
+    ...
+    ...  The inaugural OS Summit Asia will be held at the Le Meridian hotel in
+    ...  Hong Kong's leading edge Cyberport IT development zone on November
+    ...  26th - 30th 2007.""",
+    ...  url="http://www.mail-archive.com/announce@apache.org/msg00369.html",
+    ...  publication_date=datetime(2007, 7, 12, 11, 17, 39, tzinfo=pytz.utc))
+
+
+We can also create an announcement that has no specified date of
+publication:
+
+    >>> apache_oss = apache.announce(
+    ...  sabdfl,
+    ...  "Last Call for OSSummit Asia CFP",
+    ...  summary="""For all those procrastinating submitting talks and
+    ...  tutorials for OS Summit Asia, here's your friendly reminder!  The call
+    ...  for papers ends this week, so please submit your proposals promptly.""",
+    ...  url="http://www.mail-archive.com/announce@apache.org/msg00367.html",
+    ...  publication_date=None)
+
+It can also be done on an IProduct:
+
+    >>> derby.announce(
+    ...  sabdfl,
+    ...  "ApacheCon Europe 2006  had a Derby session on performance",
+    ...  summary="""We just finished an excellent series of discussions on
+    ...performance at ApacheCon, and there is a summary of our current plans
+    ...available online. Please feel free to review and comment!""",
+    ...  publication_date=datetime(2006, 6, 30, 9, 0, 0, tzinfo=pytz.utc))
+
+
+And we can also force immediate publication of the announcement:
+
+    >>> tomcat.announce(
+    ...  sabdfl,
+    ...  "Apache Tomcat JK 1.2.25 Web Server Connector released",
+    ...  summary="""The Apache Tomcat team is pleased to announce the
+    ...immediate availability of version 1.2.25 of the Apache Tomcat
+    ...Connectors.
+    ...
+    ...It contains connectors, which allow a web server such as Apache HTTPD,
+    ...Microsoft IIS and Sun Web Server to act as a front end to the Tomcat
+    ...web application server.""",
+    ...publication_date='NOW')
+
+And finally, we can make announcements on an IDistribution, too:
+
+    >>> kubuntu.announce(
+    ...  sabdfl,
+    ...  "Kubuntu 7.10 now available for download""",
+    ...  summary="""The moment you have all been waiting for has arrived! We
+    ...have pushed Kubuntu 7.10 to mirrors and published the final packages
+    ...in the archive. Go ahead and fire up your Torrent client for the
+    ...latest in KDE goodness!""",
+    ...publication_date=datetime(2007, 11, 3, 7, 0, 0, tzinfo=pytz.utc))
+
+
+== Listings ==
+
+
+== Retraction ==
+
+Announcements
+
+
+== Emergent properties ==
+
+Announcements can tell you if they are currently published or not:
+
+    >>> apache_asia.published
+    True
+    >>> apache_oss.published
+    False
+
+They can also tell you if they will happen in the future, or have already
+happened:
+
+    >>> apache_asia.future
+    False
+
+If the publication date is unset, then they are considered to be in the
+future:
+
+    >>> apache_oss.future
+    True
+
+
