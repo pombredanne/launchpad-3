@@ -98,6 +98,53 @@ A project owner should not see the delete button when there are no files.
     ...
     LookupError: label 'Delete Files'
 
+When a project has a series with one or more releases, an option to
+add download files for each release in that series is presented.
+
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> contents = find_main_content(firefox_owner.contents)
+    >>> form = contents.find('form', action="%s" % firefox_owner.url)
+    >>> for heading in form('h2'):
+    ...     releases = heading.findNext('p')
+    ...     print heading.string.strip()
+    ...     print releases.contents[0].strip()
+    ...     for link in releases('a'):
+    ...         print link.contents[0]
+    Release series &#8220;trunk&#8221;
+    Add download file for release:
+    0.9.2
+    0.9.1
+    0.9
+    Release series &#8220;1.0&#8221;
+    Add download file for release:
+    1.0.0
+
+If a project has a series with no releases associated with it, that
+series should not show up in the list.
+
+    >>> # Create an empty series.
+    >>> firefox_owner.getLink('Register a series').click()
+    >>> firefox_owner.getControl('Name').value="314159"
+    >>> firefox_owner.getControl('Summary').value="pi series"
+    >>> firefox_owner.getControl('Register Series').click()
+    >>> # Ensure it does not get listed.
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> contents = find_main_content(firefox_owner.contents)
+    >>> form = contents.find('form', action="%s" % firefox_owner.url)
+    >>> for heading in form('h2'):
+    ...     releases = heading.findNext('p')
+    ...     print heading.string.strip()
+    ...     print releases.contents[0].strip()
+    ...     for link in releases('a'):
+    ...         print link.contents[0]
+    Release series &#8220;trunk&#8221;
+    Add download file for release:
+    0.9.2
+    0.9.1
+    0.9
+    Release series &#8220;1.0&#8221;
+    Add download file for release:
+    1.0.0
 
 == Adding new files ==
 
@@ -111,6 +158,7 @@ First, let's use the links on the download files listing page.
 
 Ensure a non-owner doesn't see the 'Add download file' link.
 
+    >>> non_owner.open('http://launchpad.dev/firefox/+download')
     >>> non_owner.getLink('1.0.0')
     Traceback (most recent call last):
     ...
@@ -118,6 +166,7 @@ Ensure a non-owner doesn't see the 'Add download file' link.
 
 To add a download file the release version link is used.
 
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.getLink('1.0.0').click()
     >>> firefox_owner.title
     'Add a file to Mozilla Firefox 1.0.0'
@@ -288,7 +337,7 @@ Delete the file foo2.txt.
     >>> firefox_owner.url
     'http://launchpad.dev/firefox/+download'
     >>> checkbox = firefox_owner.getControl(
-    ...     name="checkbox_1_0_1")
+    ...     name="checkbox_2_0_1")
     >>> checkbox.value = checkbox.options
     >>> firefox_owner.getControl("Delete Files").click()
     >>> get_feedback_messages(firefox_owner.contents)
