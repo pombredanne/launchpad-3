@@ -102,7 +102,7 @@ about this and ask him to search for the product.
 
     >>> search_link = user_browser.getLink('search for it')
     >>> search_link.url
-    "javascript:popup_window('@@popup-window?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'field.product','300','420')"
+    "javascript:popup_window('@@popup-search-upstream?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'field.product','300','420')"
 
 Since the link is a javascript popup, we can't follow the link directly,
 so let's extract the real URL and open it manually.
