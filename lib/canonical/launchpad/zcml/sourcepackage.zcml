@@ -175,16 +175,6 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ISourcePackage"
-    permission="launchpad.Admin"
-    class="canonical.launchpad.browser.sourcepackage.SourcePackageView"
-    name="+potemplatenames"
-    facet="translations"
-    template="../templates/object-potemplatenames.pt"
-    layer="canonical.launchpad.layers.TranslationsLayer"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ISourcePackage"
     name="+imports"
     class="canonical.launchpad.browser.HasTranslationImportsView"
     facet="translations"

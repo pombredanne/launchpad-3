@@ -3,9 +3,10 @@
 
 import _pythonpath
 import sys
+
 from optparse import OptionParser
 from zope.component import getUtility
-from canonical.config import config
+
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -36,10 +37,10 @@ def compare_translations(orig_distroseries, dest_distroseries):
 
     orig_templates = sorted(
         orig_distroseries.potemplates,
-        key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
+        key=lambda x: (x.name, x.sourcepackagename.name))
     dest_templates = sorted(
         dest_distroseries.potemplates,
-        key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
+        key=lambda x: (x.name, x.sourcepackagename.name))
 
     for i in range(len(orig_templates)):
         old_template = orig_templates[i]

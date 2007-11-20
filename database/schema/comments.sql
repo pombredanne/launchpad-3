@@ -3,6 +3,13 @@
   table.
 */
 
+-- Announcement
+
+COMMENT ON TABLE Announcement IS 'A project announcement. This is a single item of news or information that the project is communicating. Announcements can be attached to a Project, a Product or a Distribution.';
+COMMENT ON COLUMN Announcement.date_announced IS 'The date at which an announcement will become public, if it is active. If this is not set then the announcement will not become public until someone consciously publishes it (which sets this date).';
+COMMENT ON COLUMN Announcement.url IS 'A web location for the announcement itself.';
+COMMENT ON COLUMN Announcement.active IS 'Whether or not the announcement is public. This is TRUE by default, but can be set to FALSE if the project "retracts" the announcement.';
+
 -- AnswerContact
 
 COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
@@ -26,6 +33,10 @@ COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when 
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
+COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
+COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
+COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
+COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 
 -- BranchMergeProposal
 
@@ -39,6 +50,31 @@ COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other informa
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
+COMMENT ON COLUMN BranchMergeProposal.commit_message IS 'This is the commit message that is to be used when the branch is landed by a robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the merge proposal in the overall landing queue.  If the branch has a merge_robot set and the merge robot controls multiple branches then the queue position is unique over all the queued merge proposals for the landing robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
+COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
+COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
+COMMENT ON COLUMN BranchMergeProposal.queuer IS 'The individual who submitted the branch to the merge queue. This is usually the merge proposal registrant.';
+COMMENT ON COLUMN BranchMergeProposal.date_queued IS 'When the queuer submitted the branch to the merge queue.';
+COMMENT ON COLUMN BranchMergeProposal.queued_revision_id IS 'The Bazaar revision ID that is queued to land.';
+COMMENT ON COLUMN BranchMergeProposal.merger IS 'The merger is the person who merged the branch.';
+COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision ID that was actually merged.  If the owner of the source branch is a trusted person, this may be different than the revision_id that was actually queued or reviewed.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+
+
+-- BranchMergeRobot
+
+COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
+COMMENT ON COLUMN BranchMergeRobot.registrant IS 'The person that created the merge robot.';
+COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to update the robot and manage the landing queue.';
+COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
+COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
+COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
 
 -- BranchSubscription
 
@@ -79,6 +115,7 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
+COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
@@ -380,6 +417,8 @@ COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version o
 COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
+COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
+COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product upstream uses Blueprints officially. This is useful to help indicate whether or not the upstream project will be actively watching the blueprints in Launchpad.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -514,11 +553,12 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 
 
 -- POTMsgSet
-COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
-
-COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON TABLE POTMsgSet IS 'This table is stores a collection of msgids
+without their translations and all kind of information associated to that set
+of messages that could be found in a potemplate file.';
 COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
-COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
+COMMENT ON COLUMN POTMsgSet.msgid_singular IS 'The singular msgid for this message.';
+COMMENT ON COLUMN POTMsgSet.msgid_plural IS 'The plural msgid for this message.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
@@ -532,19 +572,13 @@ COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackag
 COMMENT ON COLUMN POTemplate.distroseries IS 'A reference to the distribution from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
-COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
+COMMENT ON COLUMN POTemplate.name IS 'The name of the POTemplate set. It must be unique';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
 COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
 COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
 COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
-
--- POTemplateName
-COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
-COMMENT ON COLUMN POTemplateName.name IS 'The name of the POTemplate set. It must be unique';
-COMMENT ON COLUMN POTemplateName.title IS 'The title we are going to use every time that we render a view of this POTemplateName row.';
-COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTemplateName so the user could know more about it.';
-COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
+COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for this POTemplate';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
@@ -552,51 +586,8 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
-COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POMsgSets with new, unreviewed POSubmissions.';
-
--- POSubmission
-COMMENT ON TABLE POSubmission IS 'This table records the fact
-that we saw, or someone submitted, a particular translation for a particular
-msgset under a particular licence, at a specific time.';
-COMMENT ON COLUMN POSubmission.pomsgset IS 'The message set for which the
-submission or sighting was made.';
-COMMENT ON COLUMN POSubmission.pluralform IS 'The plural form of the
-submission which was made.';
-COMMENT ON COLUMN POSubmission.potranslation IS 'The translation that was
-submitted or sighted.';
-COMMENT ON COLUMN POSubmission.person IS 'The person that made
-the submission through the web to rosetta, or the last-translator on the
-pofile that we are processing, or the person who uploaded that pofile to
-rosetta. In short, our best guess as to the person who is contributing that
-translation.';
-COMMENT ON COLUMN POSubmission.origin IS 'The source of this
-translation. This indicates whether the translation was in a pofile that we
-parsed (probably one published in a package or branch or tarball), or was
-submitted through the web.';
-COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
-COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
-COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
-
--- POMsgSet
-COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
-POMsgSet was fuzzy when it was last imported from a published PO file. By
-comparing the current fuzzy state (in the "fuzzy" field) to that, we know if
-we have changed the fuzzy condition of the messageset in Rosetta.';
-COMMENT ON COLUMN POMsgSet.publishedcomplete IS 'This indicates that this
-POMsgSet was complete when it was last imported from a published PO file. By
-"complete" we mean "has a translation for every expected plural form". We
-can compare the current completeness state (in the "iscomplete" field) to
-this, to know if we have changed the completeness of the messageset in
-Rosetta since it was imported.';
-COMMENT ON COLUMN POMsgSet.isfuzzy IS 'This indicates if the msgset is
-currently fuzzy in Rosetta. The other indicator, publishedfuzzy, shows the
-same status for the last published pofile we pulled in.';
-COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
-Rosetta has an active translation for every expected plural form of this
-message set.';
-COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
-COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
-COMMENT ON COLUMN POMsgSet.language IS 'Language this POMsgSet is in; copied from its POFile for performance reasons.';
+COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
+unreviewed TranslationMessages for this POFile.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -621,6 +612,54 @@ COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated th
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
+-- TranslationMessage
+COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
+translation for a POTMsgSet message. It knows who, when and where did it,
+and whether it was reviewed by someone and when was it reviewed.';
+COMMENT ON COLUMN TranslationMessage.pofile IS 'The translation file which
+this translation message is part of.';
+COMMENT ON COLUMN TranslationMessage.potmsgset IS 'The template message which
+this translation message is a translation of.';
+COMMENT ON COLUMN TranslationMessage.date_created IS 'The date we saw this
+translation first.';
+COMMENT ON COLUMN TranslationMessage.submitter IS 'The person that made
+the submission through the web to Launchpad, or the last translator on the
+translation file that we are processing, or the person who uploaded that
+pofile to Launchpad. In short, our best guess as to the person who is
+contributing that translation.';
+COMMENT ON COLUMN TranslationMessage.date_reviewed IS 'The date when this
+message was reviewed for last time.';
+COMMENT ON COLUMN TranslationMessage.reviewer IS 'The person who did the
+review and accepted current translations.';
+COMMENT ON COLUMN TranslationMessage.msgstr0 IS 'Translation for plural form 0
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr1 IS 'Translation for plural form 1
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr2 IS 'Translation for plural form 2
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr3 IS 'Translation for plural form 3
+(if any).';
+COMMENT ON COLUMN TranslationMessage.comment IS 'Text of translator
+comment from the translation file.';
+COMMENT ON COLUMN TranslationMessage.origin IS 'The source of this
+translation. This indicates whether the translation was in a translation file
+that we parsed (probably one published in a package or branch or tarball), in
+which case its value will be 1, or was submitted through the web, in which
+case its value will be 2.';
+COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
+validated this translation. Being 0 the value that says this row has not been
+validated yet, 1 the value that says it is correct and 2 the value noting that
+there was an unknown error with the validation.';
+COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
+is being used in Launchpad.';
+COMMENT ON COLUMN TranslationMessage.is_fuzzy IS 'Whether this translation
+must be checked before use it.';
+COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
+is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
+this translation was obsolete in last imported file.';
+COMMENT ON COLUMN TranslationMessage.was_fuzzy_in_last_import IS 'Whether this
+imported translation must be checked before use it.';
 
 -- Question
 COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
@@ -714,7 +753,7 @@ COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product 
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroSeries that should get the translation effort focus.';
 COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
-
+COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 
 -- DistroSeries
 
@@ -854,6 +893,7 @@ COMMENT ON COLUMN DistroArchSeries.processorfamily IS 'A link to the ProcessorFa
 COMMENT ON COLUMN DistroArchSeries.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
 COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
+COMMENT ON COLUMN DistroArchSeries.ppa_supported IS 'Whether or not PPA support should be provided by this specific distroarchseries';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
@@ -1055,6 +1095,7 @@ COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message fo
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
 COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
 COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
+COMMENT ON COLUMN SpecificationBranch.registrant IS 'The person who linked the specification to the branch.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
@@ -1216,6 +1257,9 @@ COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once process
 COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
 COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
+COMMENT ON COLUMN Build.estimated_build_duration IS 'How long does the previous attempt to build this source took in this architecture.';
+COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
+
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
@@ -1224,7 +1268,7 @@ COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textu
 COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to build only trusted or untrusted packages. Packages coming via ubuntu workflow are trusted and do not need facist behaviour to be built. Other packages like ppa/grumpy incoming packages can contain malicious code, so are unstrusted. Building these packages will require isolated environment (xen-based builder) and extra network access restrictions.';
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
-
+COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
@@ -1574,8 +1618,10 @@ COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distrib
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
 COMMENT ON COLUMN POFileTranslator.person IS 'The person who submitted the translation.';
 COMMENT ON COLUMN POFileTranslator.pofile IS 'The pofile the translation was submitted for.';
-COMMENT ON COLUMN POFileTranslator.latest_posubmission IS 'The most recent translation submitted by this user to this pofile.';
-COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent submission was made.';
+COMMENT ON COLUMN POFileTranslator.latest_message IS 'Latest translation
+message added to the translation file.';
+COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When was added latest
+translation message.';
 
 -- NameBlacklist
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
@@ -1651,40 +1697,84 @@ COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the sub
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
+COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
+COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
+COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
+COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
+
+COMMENT ON TABLE HWVendorId IS 'Associates tuples (bus, vendor ID for this bus) with vendor names.';
+COMMENT ON COLUMN HWVendorId.bus IS 'The bus.';
+COMMENT ON COLUMN HWVendorId.vendor_id_for_bus IS 'The ID of a vendor for the bus given by column `bus`';
+
+COMMENT ON TABLE HWDevice IS 'Basic information on devices.';
+COMMENT ON COLUMN HWDevice.bus_vendor_id IS 'A reference to a HWVendorID record.';
+COMMENT ON COLUMN HWDevice.bus_product_id IS 'The bus product ID of a device';
+COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a device that shares its vendor and product ID with another, technically different, device.';
+COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
+COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
+
+COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
+COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
+COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
+COMMENT ON COLUMN HWDeviceNameVariant.device IS 'The device named by this alternative vendor and product names.';
+COMMENT ON COLUMN HWDeviceNameVariant.submissions IS 'The number of submissions containing this alternative vendor and product name.';
+
+COMMENT ON TABLE HWDeviceDriverLink IS 'Combinations of devices and drivers mentioned in submissions.';
+COMMENT ON COLUMN HWDeviceDriverLink.device IS 'The device controlled by the driver.';
+COMMENT ON COLUMN HWDeviceDriverLink.driver IS 'The driver controlling the device.';
+
+COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
+COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
+COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
+COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+
+COMMENT ON TABLE HWTest IS 'General information about a device test.';
+COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';
+COMMENT ON COLUMN HWTest.name IS 'The name of a test.';
+
+COMMENT ON TABLE HWTestAnswerChoice IS 'Choice values of multiple choice tests/questions.';
+COMMENT ON COLUMN HWTestAnswerChoice.choice IS 'The choice value.';
+COMMENT ON COLUMN HWTestAnswerChoice.test IS 'The test this choice belongs to.';
+
+COMMENT ON TABLE HWTestAnswer IS 'The answer for a test from a submission. This can be either a multiple choice selection or a numerical value. Exactly one of the columns choice, intval, floatval must be non-null.';
+COMMENT ON COLUMN HWTestAnswer.test IS 'The test answered by this answer.';
+COMMENT ON COLUMN HWTestAnswer.choice IS 'The selected value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswer.intval IS 'The integer result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.floatval IS 'The double precision floating point number result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.unit IS 'The physical unit of a test with a numerical result.';
+
+COMMENT ON TABLE HWTestAnswerCount IS 'Accumulated results of tests. Either the column choice or the columns average and sum_square must be non-null.';
+COMMENT ON COLUMN HWTestAnswerCount.test IS 'The test.';
+COMMENT ON COLUMN HWTestAnswerCount.distroarchseries IS 'The distroarchseries for which results are accumulated,';
+COMMENT ON COLUMN HWTestAnswerCount.choice IS 'The choice value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswerCount.average IS 'The average value of the result of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.sum_square IS 'The sum of the squares of the results of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.unit IS 'The physical unit of a numerical test result.';
+COMMENT ON COLUMN HWTestAnswerCount.num_answers IS 'The number of submissions from which the result is accumulated.';
+
+COMMENT ON TABLE HWTestAnswerDevice IS 'Association of test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerDevice.device_driver IS 'The device/driver combination.';
+
+COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
+
+
 -- StructuralSubscription
-/*
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
 COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
 COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
 COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
 COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
 COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
-COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution release.';
-COMMENT ON COLUMN StructuralSubscription.sourcepackagerelease IS 'The subscription\`s target, when it is a source-package release';
-COMMENT ON COLUMN StructuralSubscription.binarypackagerelease IS 'The subscription\`s target, when it is a binary-package release';
+COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution series.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
 COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
 COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
-COMMENT ON COLUMN StructuralSubscription.specification_flavour IS 'The volume and type of notification this subscription will generate for specifications related to the target. The value is an item of the enumeration `StructuralSubscriptionSpecificationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.bug_flavour IS 'The volume and type of notification this subscription will generate for bugs related to the target. The value is an item of the enumeration `StructuralSubscriptionBugsFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.translation_flavour IS 'The volume and type of notification this subscription will generate for translations related to the target. The value is an item of the enumeration `StructuralSubscriptionTranslationFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.code_flavour IS 'The volume and type of notification this subscription will generate for branches related to the target. The value is an item of the enumeration `StructuralSubscriptionCodeFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.registry_flavour IS 'The volume and type of notification this subscription will generate for registry changes related to the target. The value is an item of the enumeration `StructuralSubscriptionRegistryFlavour`.';
-COMMENT ON COLUMN StructuralSubscription.is_verbose IS 'A flag determining whether the notifications resulting from this subscription will contain the item\`s metadata and change history, or only the last change.';
+COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
+COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
-
--- Notification
-COMMENT ON TABLE Notification IS 'A notification to a user, resulting from a subscription to a structure or an application item.';
-COMMENT ON COLUMN Notification.bug IS 'The bug this notification is about.';
-COMMENT ON COLUMN Notification.specification IS 'The specification this notification is about.';
-COMMENT ON COLUMN Notification.branch IS 'The branch this notification is about.';
-COMMENT ON COLUMN Notification.translationgroup IS 'The translation this notification is about.';
-COMMENT ON COLUMN Notification.question IS 'The question this notification is about.';
-COMMENT ON COLUMN Notification.message IS 'The message to be sent for this notification.';
-COMMENT ON COLUMN Notification.date_emailed IS 'The date this notification was emailed, or NULL if it hasn\'t yet been sent.';
-COMMENT ON COLUMN Notification.structuralsubscription IS 'The subscription for which this notification was generated, when it is a structural subscription.';
-COMMENT ON COLUMN Notification.bugsubscription IS 'The subscription for which this notification was generated, when it is a bug subscription.';
-COMMENT ON COLUMN Notification.questionsubscription IS 'The subscription for which this notification was generated, when it is a question subscription.';
-COMMENT ON COLUMN Notification.specificationsubscription IS 'The subscription for which this notification was generated, when it is a specification subscription.';
-COMMENT ON COLUMN Notification.posubscription IS 'The subscription for which this notification was generated, when it is a PO subscription.';
-*/
-
+COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';

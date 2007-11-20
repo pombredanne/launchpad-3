@@ -8,6 +8,7 @@ __all__ = [
 
 import os
 import sys
+import errno
 import shutil
 import socket
 import tarfile
@@ -107,7 +108,7 @@ class XMLRPCRunner(Runner):
         # list should be deleted, but its archives should remain.
         statuses = {}
         if 'create' in actions:
-            self._create(actions['create'], statuses)
+            self._create_or_reactivate(actions['create'], statuses)
             del actions['create']
         if 'modify' in actions:
             self._modify(actions['modify'], statuses)
@@ -173,8 +174,8 @@ class XMLRPCRunner(Runner):
             finally:
                 mlist.Unlock()
 
-    def _create(self, actions, statuses):
-        """Process mailing list creation actions.
+    def _create_or_reactivate(self, actions, statuses):
+        """Process mailing list creation and reactivation actions.
 
         actions is a sequence of (team_name, initializer) tuples where the
         team_name is the name of the mailing list to create and initializer is
@@ -200,39 +201,94 @@ class XMLRPCRunner(Runner):
                 syslog('xmlrpc', 'Unexpected create settings: %s',
                        COMMASPACE.join(initializer.keys()))
                 continue
-            # Create the mailing list and set the defaults.
-            mlist = MailList()
+            # Either the mailing list was deactivated at one point, or it
+            # never existed in the first place.  Look for a backup tarfile; if
+            # it exists, this is a reactivation, otherwise it is the initial
+            # creation.
+            tgz_file_name = os.path.join(
+                mm_cfg.VAR_PREFIX, 'backups', team_name + '.tgz')
             try:
-                # Use a fake list admin password; Mailman will never be
-                # administered from its web u/i.  Nor will the mailing list
-                # require an owner that's different from the site owner.  Also
-                # by default, only English is supported.
-                try:
-                    mlist.Create(team_name,
-                                 mm_cfg.SITE_LIST_OWNER,
-                                 ' no password ')
-                # We have to use a bare except here because of the legacy
-                # string exceptions that Mailman can raise.
-                except:
-                    syslog('xmlrpc',
-                           'List creation error for team: %s', team_name)
-                    log_exception()
-                    statuses[team_name] = 'failure'
-                else:
-                    # Apply defaults.
-                    for key, value in list_defaults.items():
-                        setattr(mlist, key, value)
-                    # Do MTA specific creation steps.
-                    if mm_cfg.MTA:
-                        modname = 'Mailman.MTA.' + mm_cfg.MTA
-                        __import__(modname)
-                        sys.modules[modname].create(mlist, quiet=True)
-                    statuses[team_name] = 'success'
-                    syslog('xmlrpc', 'Successfully created list: %s',
-                           team_name)
-                    mlist.Save()
-            finally:
-                mlist.Unlock()
+                tgz_file = tarfile.open(tgz_file_name, 'r:gz')
+            except IOError, error:
+                if error.errno != errno.ENOENT:
+                    raise
+                # The archive tarfile does not exist, meaning this is the
+                # initial creation request.
+                action = 'created'
+                status = self._create(team_name)
+            else:
+                # This is a reactivation request.  Unpack the archived tarball
+                # into the lists directory.
+                action = 'reactivated'
+                status = self._reactivate(team_name, tgz_file)
+                tgz_file.close()
+                if status:
+                    os.remove(tgz_file_name)
+            # If the list was successfully created or reactivated, apply
+            # defaults.  Otherwise, set the failure status and return.
+            if not status:
+                syslog('xmlrpc', 'An error occurred; the list was not %s: %s',
+                       action, team_name)
+                statuses[team_name] = 'failure'
+                return
+            self._apply_list_defaults(team_name, list_defaults)
+            statuses[team_name] = 'success'
+            syslog('xmlrpc', 'Successfully %s list: %s', action, team_name)
+
+    def _apply_list_defaults(self, team_name, list_defaults):
+        """Apply mailing list defaults and tie the new list into the MTA."""
+        mlist = MailList(team_name)
+        try:
+            for key, value in list_defaults.items():
+                setattr(mlist, key, value)
+            # Do MTA specific creation steps.
+            if mm_cfg.MTA:
+                modname = 'Mailman.MTA.' + mm_cfg.MTA
+                __import__(modname)
+                sys.modules[modname].create(mlist, quiet=True)
+            mlist.Save()
+        finally:
+            mlist.Unlock()
+
+    def _reactivate(self, team_name, tgz_file):
+        """Reactivate an archived mailing list from backup file."""
+        lists_dir = os.path.join(mm_cfg.VAR_PREFIX, 'lists')
+        # Temporarily change to the top level `lists` directory, since all the
+        # tar files have paths relative to that.
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(lists_dir)
+            extractall(tgz_file)
+        finally:
+            os.chdir(old_cwd)
+        syslog('xmlrpc', '%s: %s', lists_dir, os.listdir(lists_dir))
+        return True
+
+    def _create(self, team_name):
+        """Create a new mailing list."""
+        # Create the mailing list and set the defaults.
+        mlist = MailList()
+        try:
+            # Use a fake list admin password; Mailman will never be
+            # administered from its web u/i.  Nor will the mailing list
+            # require an owner that's different from the site owner.  Also by
+            # default, only English is supported.
+            try:
+                mlist.Create(team_name,
+                             mm_cfg.SITE_LIST_OWNER,
+                             ' no password ')
+                mlist.Save()
+            # We have to use a bare except here because of the legacy string
+            # exceptions that Mailman can raise.
+            except:
+                syslog('xmlrpc',
+                       'List creation error for team: %s', team_name)
+                log_exception()
+                return False
+            else:
+                return True
+        finally:
+            mlist.Unlock()
 
     def _modify(self, actions, statuses):
         """Process mailing list modification actions.
@@ -292,11 +348,15 @@ class XMLRPCRunner(Runner):
                     modname = 'Mailman.MTA.' + mm_cfg.MTA
                     __import__(modname)
                     sys.modules[modname].remove(mlist, quiet=True)
-                # We're keeping the archives, so all we need to do is delete
-                # the 'lists/team_name' directory.  However, to be extra
-                # specially paranoid, create a gzip'd tarball of the directory
-                # for safe keeping, just in case we screwed up.
-                list_dir = os.path.join(mm_cfg.VAR_PREFIX, 'lists', team_name)
+                # The archives are always persistent, so all we need to do to
+                # deactivate a list is to delete the 'lists/team_name'
+                # directory.  However, in order to support easy reactivation,
+                # and to provide a backup in case of error, we create a gzip'd
+                # tarball of the list directory.
+                lists_dir = os.path.join(mm_cfg.VAR_PREFIX, 'lists')
+                # To make reactivation easier, we temporarily cd to the
+                # $var/lists directory and make the tarball from there.
+                old_cwd = os.getcwd()
                 # XXX BarryWarsaw 02-Aug-2007 Should we watch out for
                 # collisions on the tar file name?  This can only happen if
                 # the team is resurrected but the old archived tarball backup
@@ -305,12 +365,14 @@ class XMLRPCRunner(Runner):
                     mm_cfg.VAR_PREFIX, 'backups', team_name + '.tgz')
                 tgz_file = tarfile.open(tgz_file_name, 'w:gz')
                 try:
+                    os.chdir(lists_dir)
                     # .add() works recursively by default.
-                    tgz_file.add(list_dir)
+                    tgz_file.add(team_name)
+                    # Now delete the list's directory.
+                    shutil.rmtree(team_name)
                 finally:
                     tgz_file.close()
-                # Now delete the list's directory.
-                shutil.rmtree(list_dir)
+                    os.chdir(old_cwd)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
             except:
@@ -320,3 +382,36 @@ class XMLRPCRunner(Runner):
             else:
                 syslog('xmlrpc', 'Successfully deleted list: %s', team_name)
                 statuses[team_name] = 'success'
+
+
+def extractall(tgz_file):
+    """Extract all members of `tgz_file` to the current working directory."""
+    path = '.'
+    # XXX BarryWarsaw 13-Nov-2007 TBD: This is nearly a straight ripoff of
+    # Python 2.5's TarFile.extractall() method, though simplified for our
+    # particular purpose.  When we upgrade Launchpad to Python 2.5, this
+    # function can be removed.
+    directories = []
+    for tarinfo in tgz_file:
+        if tarinfo.isdir():
+            # Extract directory with a safe mode, so that
+            # all files below can be extracted as well.
+            try:
+                os.makedirs(os.path.join(path, tarinfo.name), 0777)
+            except EnvironmentError:
+                pass
+            directories.append(tarinfo)
+        else:
+            tgz_file.extract(tarinfo, path)
+    # Reverse sort directories.
+    directories.sort(lambda a, b: cmp(a.name, b.name))
+    directories.reverse()
+    # Set correct owner, mtime and filemode on directories.
+    for tarinfo in directories:
+        path = os.path.join(path, tarinfo.name)
+        try:
+            tgz_file.chown(tarinfo, path)
+            tgz_file.utime(tarinfo, path)
+            tgz_file.chmod(tarinfo, path)
+        except tarfile.ExtractError, e:
+            syslog('xmlrpc', 'tarfile: %s' % e)

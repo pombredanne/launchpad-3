@@ -1,3 +1,14 @@
+launchpad-buildd (37) dapper; urgency=high
+
+  * update-debian-chroot: Adam's LPIA support (i.e. overriding
+    architecture for chapt-get).
+  * debian/launchpad-buildd.cron.daily: fix run-on-line.
+  * debian/postinst: only create ~buildd/.sbuildrc if it doesn't exist.
+    This avoids the problem of upgrades of the launchpad-buildd package
+    resetting the architecture to i386 on lpia builders.
+
+ -- James Troup <james.troup@canonical.com>  Wed, 14 Nov 2007 18:34:46 +0000
+
 launchpad-buildd (36) dapper; urgency=low
 
   * changing override-sources to replace current sources.list with
