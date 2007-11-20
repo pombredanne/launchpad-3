@@ -34,9 +34,10 @@ from canonical.launchpad.fields import (
 
 
 class DistributionNameField(PillarNameField):
-
+    """The pillar for a distribution."""
     @property
     def _content_iface(self):
+        """Return the interface of this pillar object."""
         return IDistribution
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
