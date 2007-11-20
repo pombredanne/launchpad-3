@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    NotFoundError, TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -347,12 +347,16 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         address. Second, the mailing list may be in a transitional
         state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
-        super(TeamMailingListConfigurationView,self).__init__(
+        super(TeamMailingListConfigurationView, self).__init__(
             context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
 
     def initialize(self):
+        """Hide this view if mailing lists are disabled.
+
+        Once mailing lists are enabled globally, this method should be
+        removed."""
         if not config.mailman.expose_hosted_mailing_lists:
             raise NotFound(self, '+mailinglist', request=self.request)
         super(TeamMailingListConfigurationView, self).initialize()
