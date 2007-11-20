@@ -1,6 +1,5 @@
 SET client_min_messages=ERROR;
 
-DROP VIEW BranchWithSortKeys;
 CREATE OR REPLACE VIEW BranchWithSortKeys AS
     SELECT Branch.*,
            Product.name AS product_name,
@@ -11,4 +10,4 @@ CREATE OR REPLACE VIEW BranchWithSortKeys AS
     LEFT OUTER JOIN Product ON Branch.product = Product.id
     LEFT OUTER JOIN Person as Author ON Branch.author = Author.id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 24, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 18, 0);
