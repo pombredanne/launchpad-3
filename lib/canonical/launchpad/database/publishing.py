@@ -546,13 +546,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket):
+    def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
         return SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
-            archive=current.archive,
+            archive=archive,
             sourcepackagerelease=current.sourcepackagerelease,
             component=current.component,
             section=current.section,
@@ -725,7 +725,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             priority=new_priority,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket):
+    def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
         # Both lookups may raise NotFoundError; it should be handled in
         # the caller.
@@ -733,7 +733,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         target_das = distroseries[current.distroarchseries.architecturetag]
 
         return SecureBinaryPackagePublishingHistory(
-            archive=current.archive,
+            archive=archive,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=target_das,
             component=current.component,
