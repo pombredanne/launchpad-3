@@ -680,6 +680,10 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         This method also sets self.next_url to the URL of the newly added
         bugtask.
         """
+        # XXX: This relies on the fact that these actions work using only the
+        # form data and the context. (They don't require any side-effects done
+        # during initialize().)  They should probably be extracted outside of
+        # the view to make that explicit. -- Guilherme Salgado, 2007-11-20
         view = UpstreamBugTrackerCreationStep(self.context, self.request)
         view.main_action(data)
 
