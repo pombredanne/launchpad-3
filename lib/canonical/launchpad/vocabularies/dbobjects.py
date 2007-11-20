@@ -156,10 +156,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """The display should include the URL if there is one."""
-        text = obj.displayname
-        if obj.url is not None:
-            text = "%s<br/>(%s)" % (text, obj.url)
-        return SimpleTerm(obj, obj.unique_name, text)
+        return SimpleTerm(obj, obj.unique_name, obj.displayname)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""

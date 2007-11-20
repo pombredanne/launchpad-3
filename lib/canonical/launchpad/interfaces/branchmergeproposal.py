@@ -37,17 +37,18 @@ class IBranchMergeProposal(Interface):
 
     source_branch = Choice(
         title=_('Source Branch'),
-        vocabulary='Branch', required=True, readonly=True,
+        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
         description=_("The branch that has code to land."))
 
     target_branch = Choice(
         title=_('Target Branch'),
-        vocabulary='Branch', required=True, readonly=True,
-        description=_("The branch that the source branch will be merged into."))
+        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        description=_("The branch that the source branch will be merged "
+                      "into."))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
-        vocabulary='Branch', required=False, readonly=True,
+        vocabulary='BranchRestrictedOnProduct', required=False, readonly=True,
         description=_("The branch that the source branch branched from. "
                       "If this is the same as the target branch, then leave "
                       "this field blank."))

@@ -79,10 +79,10 @@
                       <dt><img src="/@@/bullet" alt="" border="" />
                           <a href="#" title="Click to select"
                               tal:content="item/token"
-                              tal:attributes="onclick 
+                              tal:attributes="onclick
                               string:update('${item/token}')">Token</a>
                       </dt>
-                      <dd tal:content="structure item/title">Title</dd>
+                      <dd tal:content="item/title">Title</dd>
                   </tal:x>
               </dl>
               <tal:no-items condition="not: batchnav/currentBatch">
