@@ -362,7 +362,12 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(self.name16.archive is not None)
 
     def testUploadSignedByBetaTesterMember(self):
-        """Check if a non-member of launchpad-beta-testers can upload to PPA."""
+        """Check if a non-member of launchpad-beta-testers can upload to PPA.
+
+        PPA was opened for public access in 1.1.11 (22th Nov 2007), so we will
+        keep this test as a simple reference to the check disabled in in code
+        (uploadpolicy.py).
+        """
         beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
         self.name16.leave(beta_testers)
         # Pop the message notifying the membership modification.
@@ -372,8 +377,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA is only allowed for members of launchpad-beta-testers team."]
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
     def testUploadToAMismatchingDistribution(self):
