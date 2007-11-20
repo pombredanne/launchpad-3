@@ -25,7 +25,7 @@ We are going to fake a consumer for these examples. In order to ensure
 that the consumer is being fed the correct replies, we register a view
 that renders the parameters in the response in an easily testable format.
 
-    >>> from canonical.launchpad.ftests.openid import install_consumer
+    >>> from canonical.launchpad.ftests.openidhelpers import install_consumer
     >>> install_consumer()
 
 NB. The plus is in the query to ensure this test is running with an up to
@@ -434,5 +434,5 @@ If there is a valid return_to, then the consumer gets notified.
 
 == Cleanup ==
 
-    >>> from canonical.launchpad.ftests.openid import uninstall_consumer
+    >>> from canonical.launchpad.ftests.openidhelpers import uninstall_consumer
     >>> uninstall_consumer()
