@@ -2719,7 +2719,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Mail a validation URL to the selected email address."""
         email = data['UNVALIDATED_SELECTED']
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email,
+                    self.context, getUtility(ILaunchBag).login, email.email,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
         self.request.response.addInfoNotification(
@@ -2768,7 +2768,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         The email address must be syntactically valid and must not already
         be in use.
         """
-        self._validate(action, data)
+        self._validate(action, data, [self.widgets['newemail']])
         newemail = data['newemail']
         # XXX - Why lower()? Some parts of an email address are case-sensitive.
         #newemail = self.request.form.get("newemail", "").strip().lower()
@@ -2776,13 +2776,12 @@ class PersonEditEmailsView(LaunchpadFormView):
             self.addError(
                 "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
-        return self.errors
 
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         person = self.context
         if email is not None:
             if email.person.id == person.id:
-                self.addError = (
+                self.addError(
                     "The email address '%s' is already registered as your "
                     "email address. This can be either because you already "
                     "added this email address before or because it have "

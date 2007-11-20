@@ -12,7 +12,7 @@ added by gina. Now he wants to validate it.
     >>> print browser.title
     Guilherme Salgado's e-mail addresses
 
-    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
+    >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com').selected = True
     >>> browser.getControl('Confirm').click()
     >>> for msg in get_feedback_messages(browser.contents):

@@ -12,7 +12,7 @@ Our new user 'Foo' will now add a couple email addresses to his account.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails[:] = []
 
-    >>> browser.addHeader('Authorization', 'Basic foo@baz.com:f')
+    >>> browser = setupBrowser(auth='Basic foo@baz.com:f')
     >>> browser.open('http://launchpad.dev/~foo')
     >>> browser.getLink('Update e-mail addresses').click()
     >>> browser.url
@@ -35,8 +35,8 @@ a new email to be sent with a new link. The links in the old and new email are
 still accessible and will confirm the new address if/when the user follows
 them.
 
-    >>> browser.getControl(name='newemail').value = 'bar.foo@canonical.com'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add a new address').value = 'bar.foo@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
@@ -61,11 +61,10 @@ Follow the token link, to confirm the new email address.
     >>> browser.open(token_url)
     >>> browser.url
     'http://launchpad.dev/token/.../+validateemail'
-    >>> import pdb; pdb.set_trace()
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://launchpad.dev/~foo'
+    'http://launchpad.dev/%7Efoo'
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Email address successfully confirmed.
@@ -74,25 +73,27 @@ Now that the address is confirmed he sees it in the list of his confirmed
 addresses.
 
     >>> browser.getLink('Update e-mail addresses').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'confirmed-emails'))
-    bar.foo@canonical.com
+    >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
+    >>> confirmed.displayOptions
+    ['\xa0foo@baz.com', '\xa0bar.foo@canonical.com']
 
-Also, if he tries to add it again, he'll get an error message explaining
+If he tries to add it again, he'll get an error message explaining
 that it's already registered.
 
-    >>> browser.getControl(name='newemail').value = 'bar.foo@canonical.com'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add a new address').value = 'bar.foo@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
     >>> browser.url
-    'http://launchpad.dev/~foo/+editemails'
+    'http://launchpad.dev/%7Efoo/+editemails'
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
+    There is 1 error.
     The email address 'bar.foo@canonical.com' is already registered as your
     email address...
 
 == Adding a second email address ==
 
-    >>> browser.getControl(name='newemail').value = 'baz.foo@canonical.com'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add a new address').value = 'baz.foo@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
