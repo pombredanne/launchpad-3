@@ -16,7 +16,7 @@
 
     <!-- Root navigation -->
     <browser:navigation
-        module="canonical.launchpad.browser.openidserver"
+        module="canonical.launchpad.browser.openiddiscovery"
         classes="OpenIdApplicationNavigation"
         />
 
@@ -39,6 +39,31 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         name="+index"
+        />
+
+    <!-- OpenID persistent identity URLs -->
+    <content
+        class="canonical.launchpad.browser.openiddiscovery.OpenIDPersistentIdentity">
+      <allow
+          interface="canonical.launchpad.interfaces.IOpenIDPersistentIdentity" />
+    </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        path_expression="string:+id/{person/openid_identifier}"
+        parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        name="+index"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        name="+index"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openiddiscovery.PersistentIdentityView"
         />
 
     <!-- OpenID Provider -->

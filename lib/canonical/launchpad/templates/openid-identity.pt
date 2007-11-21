@@ -1,4 +1,5 @@
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal">
     <head>
         <link rel="openid.server"
             tal:attributes="href view/server_url" />
@@ -7,7 +8,7 @@
     </head>
     <body>
         <h1>OpenID Identity URL for <a tal:attributes="href view/person_url"
-                tal:content="view/context/displayname">Display Name</a></h1>
+                tal:content="view/person/displayname">Display Name</a></h1>
     </body>
 </html>
 
