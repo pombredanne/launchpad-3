@@ -16,6 +16,7 @@ __all__ = [
     'BranchListingSort',
     'BranchType',
     'BranchTypeError',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
@@ -30,6 +31,7 @@ __all__ = [
     ]
 
 from datetime import timedelta
+import re
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -253,6 +255,32 @@ class BranchURIField(URIField):
                 message, canonical_url(branch), branch.displayname)
 
 
+BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
+    "Branch names must start with a number or letter.  The characters +, -, "
+    "_ and @ are also allowed after the first character.")
+
+
+# This is a copy of the pattern in database/schema/trusted.sql.  Don't
+# change this without changing that.
+valid_branch_name_pattern = re.compile(r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z")
+
+
+def valid_branch_name(name):
+    """XXX."""
+    if valid_branch_name_pattern.match(name):
+        return True
+    return False
+
+
+def branch_name_validator(name):
+    """Return True if the name is valid, or raise a LaunchpadValidationError"""
+    if not valid_branch_name(name):
+        raise LaunchpadValidationError(
+            _("Invalid name '%s'. %s"), name,
+            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    return True
+
+
 class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
 
@@ -285,7 +313,7 @@ class IBranch(IHasOwner):
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=name_validator)
+        constraint=branch_name_validator)
     title = Title(
         title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
