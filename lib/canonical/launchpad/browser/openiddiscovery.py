@@ -78,11 +78,30 @@ class XRDSContentNegotiationMixin:
     """A mixin that does content negotiation to support XRDS discovery."""
 
     def xrds(self):
+        """Render the XRDS document for this content object."""
         self.request.response.setHeader('Content-Type', YADIS_CONTENT_TYPE)
         data = self.xrds_template()
         return data.encode('utf-8')
 
+    def _getURL(self):
+        """Return the URL as sent by the browser."""
+        url = self.request.getApplicationURL() + self.request['PATH_INFO']
+        query_string = self.request.get('QUERY_STRING', '')
+        if query_string:
+            url += '?' + query_string
+        return url
+
     def render(self):
+        # While Zope doesn't care about extra slashes, such
+        # differences result in different identity URLs.  To avoid
+        # confusion, we redirect to our canonical URL if we aren't
+        # already there.
+        current_url = self._getURL()
+        expected_url = canonical_url(self.context)
+        if current_url != expected_url:
+            self.request.response.redirect(expected_url)
+            return ''
+
         # Tell the user agent that we do different things depending on
         # the value of the "Accept" header.
         self.request.response.setHeader('Vary', 'Accept')

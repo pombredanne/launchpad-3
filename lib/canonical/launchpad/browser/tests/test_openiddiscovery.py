@@ -112,6 +112,16 @@ class ContentNegotiationTests(unittest.TestCase):
         self.assertEqual(
             request.response.getHeader('x-xrds-location'), None)
 
+    def test_normalise_url(self):
+        # Check that requests with a non-canonical URL result in a redirect.
+        request, view = self.createRequestAndView(
+            'launchpad.dev', '/~sabdfl/+index', 'foo=bar', '')
+        content = view()
+        self.assertEqual(content, '')
+        self.assertEqual(request.response.getStatus(), 302)
+        self.assertEqual(request.response.getHeader('Location'),
+                         'http://launchpad.dev/~sabdfl')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
