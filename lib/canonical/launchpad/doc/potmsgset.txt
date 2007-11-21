@@ -728,84 +728,96 @@ and we request a dummy one, that's broken and we detect it.
 
 == Variant translation ==
 
-We need to make sure that updateTranslation works correctly with language
-variants: we should not try to update translation on non-variant PO file.
+updateTranslation is a core method of Translations, and it is used for
+both importing translations or saving them through web UI.  At the moment,
+we have some infrastructure to support "variant" languages, differentiated
+by having '@something' in the locale name (examples are sr@Latn for Serbian
+Latin translations, and sr@ijek for Serbian Jekavian translations).
 
-    >>> evolution_package = ubuntu_hoary.getSourcePackage('evolution')
-    >>> evolution_template = getUtility(IPOTemplateSet).getSubset(
-    ...     sourcepackagename=evolution_package.sourcepackagename,
-    ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
-    >>> potmsgset = evolution_template.getPOTMsgSetByMsgIDText(
-    ...     u'evolution addressbook')
+Language variants are differentiated by having a special variant field
+on PO files, and are currently only supported for imports (you can't edit
+them through web UI).  For imports to work correctly, updateTranslation
+needs to differentiate between TranslationMessages in POFile with no variant
+set, and POFile with variant set.
 
-    >>> pofile = evolution_template.newPOFile('es', variant=u'test')
-    >>> print pofile.title
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
-    "evolution"
-    >>> pofile.variant
-    u'test'
-
-This message is translated in Hoary for Spanish, but not this variant:
-
-    >>> spanish = pofile.language
-    >>> current = potmsgset.getCurrentTranslationMessage(spanish)
-    >>> print current.translations
-    [u'libreta de direcciones de Evolution']
-    >>> print current.pofile.variant
-    None
-
-We can update translation for this variant.
-
-    >>> new_translation = potmsgset.updateTranslation(pofile,
-    ...     carlos, {0: u'test variant translation'},
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=datetime.now(UTC))
-
-And indeed, the new submission will be for this PO file, and not the non-variant
-Spanish translation.
-
-    >>> print new_translation.pofile.title
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
-    "evolution"
-    >>> new_translation.pofile.variant
-    u'test'
-
-We can update existing PO files with variant translations, namely pmount which
-is already translated to es@test.
+In our sample data, we already have a PO file for 'pmount' in Spanish (es),
+and a PO file for 'pmount' in Spanish 'test' variant (es@test).
 
     >>> pmount_package = ubuntu_hoary.getSourcePackage('pmount')
     >>> pmount_template = getUtility(IPOTemplateSet).getSubset(
     ...     sourcepackagename=pmount_package.sourcepackagename,
     ...     distroseries=ubuntu_hoary).getPOTemplateByName('pmount')
+
+This template in pmount package has a translation to es@test:
+
+    >>> pofile_es_variant = pmount_template.getPOFileByLang(
+    ...     'es', variant=u'test')
+    >>> print pofile_es_variant.title
+    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    >>> pofile_es_variant.variant
+    u'test'
+
+And a PO file in "basic" Spanish (no variant):
+
+    >>> pofile_es = pmount_template.getPOFileByLang('es', variant=u'test')
+    >>> print pofile_es.title
+    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    >>> pofile_es.variant
+    None
+
+We can get a single POT message from pmount PO template:
+
     >>> potmsgset = pmount_template.getPOTMsgSetByMsgIDText(
     ...     u'Error: could not drop all uid privileges')
 
-    >>> pofile = pmount_template.getPOFileByLang('es', variant=u'test')
-    >>> print pofile.title
-    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
-    >>> pofile.variant
-    u'test'
+And get translations for Spanish non-variant PO file when we specify
+no variant in getCurrentTranslationMessage call:
 
-This message is translated in Hoary:
-
-    >>> spanish = pofile.language
-    >>> current = potmsgset.getCurrentTranslationMessage(spanish)
-    >>> print current.translations
+    >>> current_es = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es.language)
+    >>> print current_es.translations
     [u'Error: no se han podido soltar todos los privilegios de uid']
 
-We can update translation for this variant.
+And variant is indeed not set for this TranslationMessage:
 
-    >>> new_translation = potmsgset.updateTranslation(pofile,
+    >>> print current_es.pofile.variant
+    None
+
+If we specify a variant from the Spanish 'test' PO file, we'll get a
+TranslationMessage corresponding to that translation.
+
+    >>> current_es_variant = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es_variant.language, variant=pofile_es_variant.variant)
+    >>> print current_es_variant.translations
+    [u'Error: no se han podido soltar todos los privilegios de uid']
+    >>> print current_es.pofile.variant
+    test
+
+We can update a translation for es@test using updateTranslation call:
+
+    >>> new_translation = potmsgset.updateTranslation(pofile_es_variant,
     ...     carlos, {0: u'test variant translation'},
     ...     is_fuzzy=False, is_imported=True, lock_timestamp=datetime.now(UTC))
 
-And indeed, the new submission will be for this PO file, and not the non-variant
-Spanish translation.
+A new translation will be indeed saved in pofile_es_variant.
 
     >>> print new_translation.pofile.title
     Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     >>> new_translation.pofile.variant
     u'test'
+
+It will also be marked as current and imported.
+
     >>> new_translation.is_current
     True
     >>> new_translation.is_imported
     True
+
+Translation in the Spanish PO file with no variant (pofile_es) will
+stay the same as it was before the change to translation in
+pofile_es_variant:
+
+    >>> current_es = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es.language)
+    >>> print current_es.translations
+    [u'Error: no se han podido soltar todos los privilegios de uid']
