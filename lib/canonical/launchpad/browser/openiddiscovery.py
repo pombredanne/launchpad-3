@@ -98,13 +98,12 @@ class XRDSContentNegotiationMixin:
         return allvhosts.configs['openid'].rooturl + '+openid'
 
 
-class PersistentIdentityView(LaunchpadView):
+class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID identity page."""
 
-    identity_template = ViewPageTemplateFile(
-        "../templates/openid-identity.pt")
+    template = ViewPageTemplateFile("../templates/openid-identity.pt")
 
-    def render(self):
+    def initialize(self):
         # Setup variables to pass to the template
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.person = self.context.person
@@ -112,5 +111,3 @@ class PersistentIdentityView(LaunchpadView):
                 self.server_url, self.person.openid_identifier)
         self.person_url = canonical_url(self.person, rootsite='mainsite')
         self.meta_refresh_content = "1; URL=%s" % self.person_url
-
-        return self.identity_template()
