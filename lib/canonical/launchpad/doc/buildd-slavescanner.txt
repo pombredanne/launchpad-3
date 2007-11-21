@@ -994,7 +994,7 @@ A build in the security pocket:
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
   >>> a_builder.dispatchBuildCandidate(bqItem3)
-  WARNING:root:Could not build: Soyuz is not yet capable of building SECURITY uploads.
+  WARNING:slave-scanner:Could not build: Soyuz is not yet capable of building SECURITY uploads.
 
 XXX cprov 20071025: The pocket-dependency infrastructure is ready to
 deal with SECURITY pocket, however we explicitly skip security builds
