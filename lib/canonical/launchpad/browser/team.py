@@ -82,36 +82,22 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
-    def setUpFields(self):
-        """See `LaunchpadViewForm`.
-
-        When a team has a mailing list, renames are prohibited.
-        """
-        super(TeamEditView, self).setUpFields()
-        if getUtility(IMailingListSet).get(self.context.name) is not None:
-            # Use a custom form field that prints a readonly name and a short
-            # description about why it's readonly.
-            name_field = form.FormFields(form.FormField(
-                TextLine(__name__='name',
-                         title=_('Name'),
-                         description=_('This team has a mailing list and may '
-                                       'not be renamed.'),
-                         default=self.context.name,
-                         readonly=True)))
-            self.form_fields = name_field + self.form_fields.omit('name')
-
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
         When a team has a mailing list, renames are prohibited.
         """
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        if mailing_list is not None:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
         super(TeamEditView, self).setUpWidgets()
-        if getUtility(IMailingListSet).get(self.context.name) is not None:
-            # Avoid the "(Optional)" tag on the Name field.  This attribute
-            # must be set on the widget and so can't be used in setUpFields()
-            # when we create the TextLine.
-            self.widgets['name'].required = True
-
+        if mailing_list is not None:
+            # We can't change the widget's .hint directly because that's a
+            # read-only property.  But that property just delegates to the
+            # context's underlying description, so change that instead.
+            self.widgets['name'].context.description = _(
+                'This team has a mailing list and may not be renamed.')
 
 def generateTokenAndValidationEmail(email, team):
     """Send a validation message to the given email."""
