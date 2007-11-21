@@ -7,13 +7,12 @@ __all__ = [
     'Announcement',
     'AnnouncementSet',
     'HasAnnouncements',
+    'MakesAnnouncements',
     ]
 
 import operator
 import time, pytz, datetime
-from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+from sqlobject import ForeignKey, StringCol, BoolCol, SQLObjectNotFound
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -52,14 +51,14 @@ class Announcement(SQLBase):
 
     def modify(self, title, summary=None, url=None):
         if self.title != title:
-            self.date_updated = UTC_NOW
             self.title = title
+            self.date_updated = UTC_NOW
         if self.summary != summary:
-            self.date_updated = UTC_NOW
             self.summary = summary
-        if self.url != url:
             self.date_updated = UTC_NOW
+        if self.url != url:
             self.url = url
+            self.date_updated = UTC_NOW
 
     @property
     def target(self):
@@ -70,22 +69,23 @@ class Announcement(SQLBase):
         elif self.distribution is not None:
             return self.distribution
 
-    def retarget(self, product=None, project=None, distribution=None):
+    def retarget(self, target):
         """See IAnnouncement."""
-        assert not (product and distribution)
-        assert not (product and project)
-        assert not (project and distribution)
-        assert (product or project or distribution)
-
-        if self.product != product:
-            self.product = product
-            self.date_updated = UTC_NOW
-        if self.project != project:
-            self.project = project
-            self.date_updated = UTC_NOW
-        if self.distribution != distribution:
-            self.distribution = distribution
-            self.date_updated = UTC_NOW
+        if IProduct.providedBy(target):
+            self.product = target
+            self.distribution = None
+            self.project = None
+        elif IDistribution.providedBy(target):
+            self.distribution = target
+            self.project = None
+            self.product = None
+        elif IProject.providedBy(target):
+            self.project = target
+            self.distribution = None
+            self.product = None
+        else:
+            raise AssertionError, 'Unknown target'
+        self.date_updated = UTC_NOW
 
     def retract(self):
         """See IAnnouncement."""
@@ -114,18 +114,15 @@ class Announcement(SQLBase):
         """See IAnnouncement."""
         if self.date_announced is None:
             return True
-        return self.date_announced.replace(tzinfo=None) > \
-               self.date_announced.utcnow()
+        return self.date_announced > \
+               datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
 
     @property
     def published(self):
         """See IAnnouncement."""
         if self.active is False:
             return False
-        if self.date_announced is None:
-            return False
-        return self.date_announced.replace(tzinfo=None) < \
-               self.date_announced.utcnow()
+        return not self.future
 
 
 class HasAnnouncements:
@@ -136,20 +133,22 @@ class HasAnnouncements:
             announcement_id = int(name)
         except ValueError:
             return None
-        return Announcement.get(announcement_id)
+        try:
+            announcement = Announcement.get(announcement_id)
+        except SQLObjectNotFound:
+            return None
+        if announcement.target.id != self.id:
+            return None
+        return announcement
 
-    def announcements(self, limit=5):
+    def announcements(self, limit=5, published_only=True):
         """See IHasAnnouncements."""
-
-        # establish whether the user can see all news items, or only the
-        # published ones that are past their announcement date
-        privileged_user = check_permission('launchpad.Edit', self)
 
         # create the SQL query, first fixing the anchor project
         clauseTables = []
         query = '1=1 '
         # filter for published news items if necessary
-        if not privileged_user:
+        if published_only:
             query += """ AND
                 Announcement.date_announced <= timezone('UTC'::text, now()) AND
                 Announcement.active IS TRUE

@@ -23,11 +23,11 @@
   <strong tal:condition="not: context/date_announced">
       No publishing date set.
   </strong>
-  <tal:updated condition="context/date_updated">
+  <strong tal:condition="context/date_updated">
       Updated
       <span tal:replace="context/date_updated/fmt:displaydate"
       />.
-  </tal:updated>
+  </strong>
   <tal:summary condition="context/summary"
                tal:replace="structure context/summary" />
   <a tal:condition="context/url"

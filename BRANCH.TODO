@@ -26,16 +26,17 @@
    * Announcements on Mozilla, Firefox, Thunderbird, Ubuntu
  * TESTS
    * DocTests
-     * Add an announcement on each of IProject, IProduct, IDistribution
-       * Announcements on Apache, Kubuntu, Tomcat, Derby
-       * Cover the following cases:
-         - with or without URL
-         - publishing immediately, at a specified date, or leaving it
+     = Add an announcement on each of IProject, IProduct, IDistribution
+       = Announcements on Apache, Kubuntu, Tomcat, Derby
+       = Cover the following cases:
+         = with or without URL
+         = publishing immediately, at a specified date, or leaving it
            unpublished with no clear date
-     * Modify announcement and check date modified is updated
-     * Retract announcement and check date modified is updated
-     * Publish announcement and check date modified is updated
-     * Delete announcement and verify deletion
+     = Retract announcement and check date modified is updated
+     = Publish announcement
+     = Retarget announcement to each of IProject, IProduct and IDistribution
+     = Modify announcement and check date modified is updated
+     = Delete announcement and verify deletion
    * Page tests
      * Add an announcement on each of IProject, IProduct, IDistribution
      * Verify listing pages for each of IHasAnnouncements (inc top-level)

@@ -176,17 +176,7 @@ class AnnouncementRetargetView(LaunchpadFormView):
     @action(_('Retarget'), name='retarget')
     def retarget_action(self, action, data):
         target = data.get('target')
-        product = project = distribution = None
-        if IProduct.providedBy(target):
-            product = target
-        elif IDistribution.providedBy(target):
-            distribution = target
-        elif IProject.providedBy(target):
-            project = target
-        else:
-            raise AssertionError, 'Unknown target'
-        self.context.retarget(product=product, project=project,
-                              distribution=distribution)
+        self.context.retarget(target)
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
     def validate_cancel(self, action, data):
@@ -262,13 +252,17 @@ class HasAnnouncementsView(LaunchpadView):
 
     @property
     def announcements(self):
-        return self.context.announcements(limit=None)
+        return self.context.announcements(
+                    limit=None, published_only=self._published_only)
 
     @property
     def latest_announcements(self):
-        return self.context.announcements(limit=5)
+        return self.context.announcements(
+                    limit=5, published_only=self._published_only)
 
     def initialize(self):
+        self._published_only = not check_permission('launchpad.Edit',
+                                                     self.context)
         self.batchnav = BatchNavigator(
             self.announcements, self.request,
             size=config.launchpad.default_batch_size)

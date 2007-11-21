@@ -6,12 +6,12 @@
 
   <!-- Announcement -->
   <content class="canonical.launchpad.database.Announcement">
-    <allow attributes="date_created registrant title summary url
+    <allow attributes="id date_created registrant target title summary url
                        date_announced date_updated active future
                        published" />
     <require permission="launchpad.Edit"
-             set_attributes="modify retarget retract set_publication_date
-                             erase_permanently" />
+             attributes="modify retarget retract set_publication_date
+                         erase_permanently" />
   </content>
 
   <browser:menus

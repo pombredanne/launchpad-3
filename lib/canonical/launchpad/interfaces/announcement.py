@@ -41,11 +41,14 @@ class IHasAnnouncements(Interface):
     def getAnnouncement(id):
         """Return the requested announcement."""
 
-    def announcements(limit=5):
+    def announcements(limit=5, published_only=True):
         """Return a list of announcements visible to this user.
 
         If limit is provided, then the list is limited to that number of the
         most recent Announcements.
+
+        If published_only is True then the list will include only published
+        announcements.
         """
 
 
@@ -113,10 +116,8 @@ class IAnnouncement(Interface):
         """Update the details of the announcement. This will record the
         date_updated."""
 
-    def retarget(product=None, distribution=None, project=None):
-        """Retarget the announcement to a new project. One and only one of the
-        arguments must not be None.
-        """
+    def retarget(target):
+        """Retarget the announcement to a new project."""
 
     def retract():
         """Take this announcement off any public web pages and RSS feeds."""
