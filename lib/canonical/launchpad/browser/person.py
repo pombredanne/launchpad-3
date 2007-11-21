@@ -2653,9 +2653,10 @@ class PersonEditEmailsView(LaunchpadFormView):
         The guessed emails will be EmailAddress objects, and the
         unvalidated emails will be unicode strings.
         """
-        emailset = set()
-        emailset = emailset.union(self.context.guessedemails)
-        emailset = emailset.union(self.context.unvalidatedemails)
+        emailset = set(self.context.unvalidatedemails)
+        emailset = emailset.union(
+            [guessed for guessed in self.context.guessedemails
+             if not guessed.email in emailset])
         return emailset
 
     ### Actions to do with validated email addresses.
@@ -2723,9 +2724,9 @@ class PersonEditEmailsView(LaunchpadFormView):
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
         self.request.response.addInfoNotification(
-            "A new email was sent to '%s' with "
+            "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
-            "it belongs to you." % email)
+            "it belongs to you." % email.email)
         self.next_url = self.action_url
 
     def validate_action_remove_unvalidated(self, action, data):

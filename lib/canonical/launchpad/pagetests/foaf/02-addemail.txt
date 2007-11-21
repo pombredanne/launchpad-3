@@ -22,7 +22,7 @@ Our new user 'Foo' will now add a couple email addresses to his account.
     >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
-    'http://launchpad.dev/~foo/+editemails'
+    'http://launchpad.dev/%7Efoo/+editemails'
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     A confirmation message has been sent to...
@@ -39,7 +39,7 @@ them.
     >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
-    'http://launchpad.dev/~foo/+editemails'
+    'http://launchpad.dev/%7Efoo/+editemails'
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     A confirmation message has been sent to...
@@ -64,7 +64,7 @@ Follow the token link, to confirm the new email address.
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://launchpad.dev/%7Efoo'
+    'http://launchpad.dev/~foo'
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Email address successfully confirmed.
@@ -96,7 +96,7 @@ that it's already registered.
     >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
-    'http://launchpad.dev/~foo/+editemails'
+    'http://launchpad.dev/%7Efoo/+editemails'
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     A confirmation message has been sent to...
