@@ -83,27 +83,35 @@ class POTMsgSet(SQLBase):
             pofile = pofileset.getDummy(self.potemplate, language)
         return DummyTranslationMessage(pofile, self)
 
-    def getCurrentTranslationMessage(self, language):
+    def getCurrentTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
         # Change 'is_current IS TRUE' condition carefully: it
         # needs to match condition specified in indexes, or Postgres
         # may not pick them up (in complicated queries, Postgres query
         # optimizer sometimes does text-matching of indexes).
-        return TranslationMessage.selectOne("""
-            potmsgset = %s AND is_current IS TRUE AND POFile.language = %s
-            AND POFile.variant IS NULL AND pofile = POFile.id
-            """ % sqlvalues(self, language), clauseTables=['POFile'])
+        if variant is None:
+            variant_cond = 'POFile.variant IS NULL'
+        else:
+            variant_cond = 'POFile.variant=%s' % sqlvalues(variant)
+        return TranslationMessage.selectOne(
+            "potmsgset = %s AND is_current IS TRUE AND POFile.language = %s" %
+            sqlvalues(self, language) + " AND " + variant_cond +
+            " AND pofile = POFile.id", clauseTables=['POFile'])
 
-    def getImportedTranslationMessage(self, language):
+    def getImportedTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
         # Change 'is_imported IS TRUE' condition carefully: it
         # needs to match condition specified in indexes, or Postgres
         # may not pick them up (in complicated queries, Postgres query
         # optimizer sometimes does text-matching of indexes).
-        return TranslationMessage.selectOne("""
-            potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
-            AND POFile.variant IS NULL AND pofile = POFile.id
-            """ % sqlvalues(self, language), clauseTables=['POFile'])
+        if variant is None:
+            variant_cond = 'POFile.variant IS NULL'
+        else:
+            variant_cond = 'POFile.variant=%s' % sqlvalues(variant)
+        return TranslationMessage.selectOne(
+            "potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s" %
+            sqlvalues(self, language) + " AND " + variant_cond +
+            " AND pofile = POFile.id", clauseTables=['POFile'])
 
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
