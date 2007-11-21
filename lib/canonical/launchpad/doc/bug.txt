@@ -864,19 +864,18 @@ If the bug isn't targeted to the target, None is returned.
 == Bug Expiration ==
 
 Incomplete bug reports may expire when they become inactive. Expiration
-is only available to project that use Launchpad to track bugs and have
-enabled bug expiration. The IBug.can_expire property returns True or
-False as to whether the bug will expire if it becomes inactive.
+is only available to project that use Launchpad to track bugs. The
+IBug.can_expire property returns True or False as to whether the bug
+will expire if it becomes inactive.
 
 `bugtask-expiration.txt` outlines the complete list of constraints that
 govern expiration. In general, a bug that has never been confirmed that
 has a single Incomplete bugtask that is not assigned to targeted to a
-milestone is expirable if the bugtask's pillar both uses launchpad
-and has enabled expiration.
+milestone is expirable if the bugtask's pillar uses launchpad to track
+bugs.
 
-The thunderbird project does not use Launchpad to track bugs. Firefox
-does, but it has not enabled bug expiration. Incomplete bug reports
-cannot ever expire for these two projects.
+The thunderbird project does not use Launchpad to track bugs. Incomplete
+bug reports cannot ever expire for this project.
 
     >>> # create_old_bug creates an bug with a bugtask that is eligable for
     >>> # expiration, so long as the pillar object has enabled bug expiration.
@@ -891,32 +890,16 @@ cannot ever expire for these two projects.
     'Incomplete'
     >>> upstream_bugtask.pillar.official_malone
     False
-    >>> upstream_bugtask.pillar.enable_bug_expiration
-    False
     >>> upstream_bugtask.bug.can_expire
     False
 
-    >>> disabled_expiration_bugtask = create_old_bug('bug b', 1, firefox)
-    >>> sync_bugtasks(disabled_expiration_bugtask)
-    >>> disabled_expiration_bugtask.status.title
-    'Incomplete'
-    >>> disabled_expiration_bugtask.pillar.official_malone
-    True
-    >>> disabled_expiration_bugtask.pillar.enable_bug_expiration
-    False
-    >>> disabled_expiration_bugtask.bug.can_expire
-    False
-
-Ubuntu uses launchpad to track bugs and has expiration enabled.
-Incomplete bugs can be expired.
+Ubuntu uses launchpad to track bug. Incomplete bugs can be expired.
 
     >>> expirable_bugtask = create_old_bug('bug c', 1, ubuntu)
     >>> sync_bugtasks(expirable_bugtask)
     >>> expirable_bugtask.status.title
     'Incomplete'
     >>> expirable_bugtask.pillar.official_malone
-    True
-    >>> expirable_bugtask.pillar.enable_bug_expiration
     True
     >>> expirable_bugtask.bug.can_expire
     True

@@ -90,6 +90,8 @@ Let's also make some bugs that almost qualify for expiration.
     ...     product=thunderbird)
     >>> new_bugtask.status.title
     'New'
+    >>> new_bugtask.bug.can_expire
+    False
 
     # A bugtask that is not expirable because it is assigned.
     >>> assigned_bugtask = create_old_bug('assigned', 61, ubuntu)
@@ -121,9 +123,13 @@ Let's also make some bugs that almost qualify for expiration.
     # A bugtask that is not expirable because it has no reply messages.
     >>> no_replies_bugtask = create_old_bug(
     ...     'no_replies', 61, ubuntu, with_message=False)
+    >>> no_replies_bugtask.bug.can_expire
+    False
 
     # A bugtask that is not expirable because it less than the min_days_old.
     >>> recent_bugtask = create_old_bug('recent', 31, ubuntu)
+    >>> recent_bugtask.bug.can_expire
+    False
 
 The ubuntu, hoary, and jokosher bugs are the only ones that can be
 expired. The other bugs do not meet one of the preconditions.

@@ -28,13 +28,14 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBranch,
-    IBugSet, IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, ISourcePackage, IUpstreamBugTask,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES, BugAttachmentType)
+    BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
+    IBugAttachmentSet, IBugBranch, IBugSet, IBugTaskSet, IBugWatchSet,
+    ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IProduct, IProductSeries, IProductSeriesBugTask,
+    ISourcePackage, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -151,7 +152,7 @@ def can_bug_expire(bug):
     if len(incomplete_bugtasks) == 0:
         return False
     if len([bt for bt in incomplete_bugtasks
-           if bt.pillar.enable_bug_expiration is True]) == 0:
+           if bt.pillar.official_malone is True]) == 0:
         return False
     return True
 
