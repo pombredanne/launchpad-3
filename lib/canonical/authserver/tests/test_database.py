@@ -439,7 +439,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage = DatabaseUserDetailsStorageV2(None)
         self.assertRaisesFault(
             PERMISSION_DENIED_FAULT_CODE,
-            ("Invalid name 'invalid name!'. %s" %
+            ("Invalid branch name 'invalid name!'. %s" %
                 BRANCH_NAME_VALIDATION_ERROR_MESSAGE),
             storage._createBranchInteraction,
             12, 'name12', 'firefox', 'invalid name!')

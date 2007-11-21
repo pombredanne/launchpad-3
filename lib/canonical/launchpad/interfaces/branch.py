@@ -276,7 +276,7 @@ def branch_name_validator(name):
     """Return True if the name is valid, or raise a LaunchpadValidationError"""
     if not valid_branch_name(name):
         raise LaunchpadValidationError(
-            _("Invalid name '%s'. %s"), name,
+            _("Invalid branch name '%s'. %s"), name,
             BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
     return True
 
