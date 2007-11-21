@@ -257,7 +257,7 @@ class BranchURIField(URIField):
 
 BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
     "Branch names must start with a number or letter.  The characters +, -, "
-    "_ and @ are also allowed after the first character.")
+    "_, . and @ are also allowed after the first character.")
 
 
 # This is a copy of the pattern in database/schema/trusted.sql.  Don't
