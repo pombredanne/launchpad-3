@@ -294,12 +294,11 @@ class POTMsgSet(SQLBase):
                 potranslations[pluralform] = None
         return potranslations
 
-    def _findTranslationMessage(self, language, potranslations, pluralforms):
-        """Find a message for this language exactly matching given
+    def _findTranslationMessage(self, pofile, potranslations, pluralforms):
+        """Find a message for this `pofile` exactly matching given
         `translations` strings comparing only `pluralforms` of them.
         """
-        query = ('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s' %
-                 sqlvalues(self, language))
+        query = ('potmsgset=%s AND pofile=%s' % sqlvalues(self, pofile))
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
                 query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
@@ -420,7 +419,7 @@ class POTMsgSet(SQLBase):
         # of translations.  None if there is no such message and needs to be
         # created.
         matching_message = self._findTranslationMessage(
-            pofile.language, potranslations, pofile.language.pluralforms)
+            pofile, potranslations, pofile.language.pluralforms)
 
         if matching_message is None:
             # Creating a new message.
