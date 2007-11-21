@@ -30,10 +30,11 @@ canonical mirror.
 Note that unofficial mirrors are not included in the listings.
 
     >>> from canonical.launchpad.database import DistributionMirrorSet
+    >>> from canonical.launchpad.interfaces import MirrorStatus
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> mirror = DistributionMirrorSet().getByHttpUrl(
     ...     'http://localhost:11375/archive-mirror/')
-    >>> mirror.official_approved = False
+    >>> mirror.status = MirrorStatus.UNOFFICIAL
     >>> flush_database_updates()
 
     # http://localhost:11375/archive-mirror/ is not included in the list

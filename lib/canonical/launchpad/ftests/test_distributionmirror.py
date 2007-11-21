@@ -13,7 +13,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet,
-    MirrorStatus, PackagePublishingPocket)
+    MirrorFreshness, PackagePublishingPocket)
 from canonical.launchpad.mail import stub
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -49,7 +49,7 @@ class TestDistributionMirror(unittest.TestCase):
     def test_archive_mirror_with_any_content_should_not_be_disabled(self):
         src_mirror1 = self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
+            self.hoary.components[0], MirrorFreshness.UP)
         flush_database_updates()
         self.failIf(self.archive_mirror.shouldDisable())
 
@@ -76,48 +76,48 @@ class TestDistributionMirror(unittest.TestCase):
         self.failIf(self.archive_mirror.source_serieses or
                     self.archive_mirror.arch_serieses)
         self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.UNKNOWN)
+            self.archive_mirror.getOverallFreshness() == MirrorFreshness.UNKNOWN)
 
     def test_archive_mirror_with_source_content_status(self):
         src_mirror1 = self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
+            self.hoary.components[0], MirrorFreshness.UP)
         src_mirror2 = self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.TWODAYSBEHIND)
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
         self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.TWODAYSBEHIND)
+            self.archive_mirror.getOverallFreshness() == MirrorFreshness.TWODAYSBEHIND)
 
     def test_archive_mirror_with_binary_content_status(self):
         bin_mirror1 = self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
+            self.hoary.components[0], MirrorFreshness.UP)
         bin_mirror2 = self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.ONEHOURBEHIND)
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
         flush_database_updates()
         self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.ONEHOURBEHIND)
+            self.archive_mirror.getOverallFreshness() == MirrorFreshness.ONEHOURBEHIND)
 
     def test_archive_mirror_with_binary_and_source_content_status(self):
         bin_mirror1 = self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
+            self.hoary.components[0], MirrorFreshness.UP)
         bin_mirror2 = self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.ONEHOURBEHIND)
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
 
         src_mirror1 = self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
+            self.hoary.components[0], MirrorFreshness.UP)
         src_mirror2 = self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.TWODAYSBEHIND)
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
 
         self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.TWODAYSBEHIND)
+            self.archive_mirror.getOverallFreshness() == MirrorFreshness.TWODAYSBEHIND)
 
     def _create_probe_record(self, mirror):
         log_file = StringIO()

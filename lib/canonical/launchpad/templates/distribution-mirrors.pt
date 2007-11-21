@@ -29,7 +29,7 @@
   </div>
 
   <div tal:condition="mirrors_by_country"
-       tal:define="show_status view/show_status">
+       tal:define="show_freshness view/show_freshness">
     <metal:mirror-list
       use-macro="context/@@+distributionmirror-macros/mirrors-table" />
     <p>

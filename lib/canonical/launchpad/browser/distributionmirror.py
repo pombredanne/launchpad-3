@@ -166,8 +166,8 @@ class DistributionMirrorAddView(LaunchpadFormView):
 class DistributionMirrorOfficialApproveView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ['official_approved', 'whiteboard']
-    label = "Mark as official"
+    field_names = ['status', 'whiteboard']
+    label = "Mark as official/unofficial"
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):

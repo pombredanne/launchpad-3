@@ -91,9 +91,7 @@ the mirror owner, but can only be edited by mirror admins).
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> karl_browser.getLink('Mark as official').click()
     
-    >>> official_approved = karl_browser.getControl(
-    ...     'This is one of the official mirrors of this distribution')
-    >>> official_approved.selected = True
+    >>> karl_browser.getControl('Status').value = ['OFFICIAL']
     >>> karl_browser.getControl('Whiteboard').value = 'This is a good mirror'
     >>> karl_browser.getControl('Save').click()
     

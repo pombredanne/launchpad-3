@@ -24,6 +24,7 @@ __all__ = [
     'DistributionSeriesMirrorsRSSView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
+    'DistributionPendingReviewMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
@@ -190,8 +191,8 @@ class DistributionOverviewMenu(ApplicationMenu):
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
-             'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'upload_admin', 'ppas']
+             'pending_review_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -245,6 +246,16 @@ class DistributionOverviewMenu(ApplicationMenu):
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
+
+    def pending_review_mirrors(self):
+        text = 'Show pending-review mirrors'
+        enabled = False
+        user = getUtility(ILaunchBag).user
+        if (self.context.full_functionality and user is not None and
+            user.inTeam(self.context.mirror_admin)):
+            enabled = True
+        return Link(
+            '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
         text = 'Show unofficial mirrors'
@@ -611,7 +622,7 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
 class DistributionMirrorsView(LaunchpadView):
 
-    show_status = True
+    show_freshness = True
 
     @cachedproperty
     def mirror_count(self):
@@ -694,7 +705,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
-    show_status = False
+    show_freshness = False
 
     @cachedproperty
     def mirrors(self):
@@ -756,6 +767,15 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.unofficial_mirrors
+
+
+class DistributionPendingReviewMirrorsView(DistributionMirrorsAdminView):
+
+    heading = 'Pending-review mirrors'
+
+    @cachedproperty
+    def mirrors(self):
+        return self.context.pending_review_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):

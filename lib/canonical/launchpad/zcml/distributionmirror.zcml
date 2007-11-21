@@ -16,7 +16,7 @@
                             country content official_candidate" />
         <require
             permission="launchpad.Admin"
-            set_attributes="official_approved owner whiteboard" />
+            set_attributes="status owner whiteboard" />
         <require
             permission="launchpad.Admin"
             attributes="destroySelf" />

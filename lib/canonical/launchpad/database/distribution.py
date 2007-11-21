@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.cachedproperty import cachedproperty
 
@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
     IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
     IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
-    IQuestionTarget, ISourcePackageName, MirrorContent,
+    IQuestionTarget, ISourcePackageName, MirrorContent, MirrorStatus,
     PackagePublishingStatus, PackageUploadStatus, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
@@ -185,32 +185,37 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def archive_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.ARCHIVE,
-            official_approved=True, official_candidate=True, enabled=True)
+            distribution=self, content=MirrorContent.ARCHIVE, enabled=True,
+            status=MirrorStatus.OFFICIAL, official_candidate=True)
 
     @property
     def cdimage_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.RELEASE,
-            official_approved=True, official_candidate=True, enabled=True)
+            distribution=self, content=MirrorContent.RELEASE, enabled=True,
+            status=MirrorStatus.OFFICIAL, official_candidate=True)
 
     @property
     def disabled_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, official_approved=True,
+            distribution=self, status=MirrorStatus.OFFICIAL,
             official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
-        query = OR(DistributionMirror.q.official_candidate==False,
-                   DistributionMirror.q.official_approved==False)
-        return DistributionMirror.select(
-            AND(DistributionMirror.q.distributionID==self.id, query))
+        """See `IDistribution`."""
+        return DistributionMirror.selectBy(
+            distribution=self, status=MirrorStatus.UNOFFICIAL)
+
+    @property
+    def pending_review_mirrors(self):
+        """See `IDistribution`."""
+        return DistributionMirror.selectBy(
+            distribution=self, status=MirrorStatus.PENDING_REVIEW,
+            official_candidate=True)
 
     @property
     def full_functionality(self):
