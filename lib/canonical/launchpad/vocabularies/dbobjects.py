@@ -151,7 +151,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     _table = Branch
-    _orderBy = 'name'
+    _orderBy = ['name', 'id']
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
