@@ -1,10 +1,10 @@
-POMsgSet View
-=============
+= TranslationMessage View =
 
-On this section, we are going to test the view class for an IPOMsgSet object.
+On this section, we are going to test the view class for an
+ITranslationMessage object.
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import POMsgSet
+    >>> from canonical.launchpad.database import TranslationMessage
     >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -16,51 +16,54 @@ that we are going to edit.
     >>> login('kurem@debian.cz')
 
 
-No plural forms
----------------
+== No plural forms ==
 
 We are going to see what happens if we get an entry for a language
 without the plural form information.
 
-    >>> pomsgset = POMsgSet.get(1)
-    >>> pofile_tlh = pomsgset.pofile.potemplate.getDummyPOFile('tlh')
-    >>> pomsgset_tlh = pofile_tlh.getPOMsgSet(u'evolution addressbook')
-    >>> pomsgset_page_view = create_view(
-    ...     pomsgset_tlh, "+translate", layer=TranslationsLayer)
-    >>> pomsgset_page_view.initialize()
+    >>> translationmessage = TranslationMessage.get(1)
+    >>> pofile_tlh = translationmessage.pofile.potemplate.getDummyPOFile(
+    ...     'tlh')
+    >>> potmsgset = pofile_tlh.potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+    >>> current_translationmessage = (
+    ...     potmsgset.getCurrentDummyTranslationMessage(pofile_tlh.language))
+    >>> translationmessage_page_view = create_view(
+    ...     current_translationmessage, "+translate", layer=TranslationsLayer)
+    >>> translationmessage_page_view.initialize()
 
 Here we can see that it's lacking that information.
 
-    >>> pomsgset_page_view.context.pofile.language.pluralforms is None
-    True
+    >>> print translationmessage_page_view.context.pofile.language.pluralforms
+    None
 
 And the view class detects it correctly.
 
-    >>> pomsgset_page_view.has_plural_form_information
+    >>> translationmessage_page_view.has_plural_form_information
     False
 
 
-Basic checks
-------------
+== Basic checks ==
 
 Now, we will use objects that we have in our database, instead of
 dummy ones.
 
-    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
-    >>> pomsgset_page_view = create_view(
-    ...     pomsgset, "+translate", layer=TranslationsLayer,
+    >>> server_url = '/'.join(
+    ...     [canonical_url(current_translationmessage), '+translate'])
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", layer=TranslationsLayer,
     ...     server_url=server_url)
-    >>> pomsgset_page_view.initialize()
+    >>> translationmessage_page_view.initialize()
 
 We have the plural form information for this language.
 
-    >>> pomsgset_page_view.context.pofile.language.pluralforms is not None
-    True
+    >>> print translationmessage_page_view.context.pofile.language.pluralforms
+    2
 
 And thus, the view class should know that it doesn't lacks the plural forms
 information.
 
-    >>> pomsgset_page_view.has_plural_form_information
+    >>> translationmessage_page_view.has_plural_form_information
     True
 
 Also, we should get the timestamp when we started so we can detect changes
@@ -68,17 +71,16 @@ done when we started this request. We cannot check for its concrete value
 or we could introduce a time bomb in the system so we check that it's not
 None.
 
-    >>> pomsgset_page_view.lock_timestamp is None
+    >>> translationmessage_page_view.lock_timestamp is None
     False
 
 
-The subview: POMsgSetView
--------------------------
+== The subview: TranslationMessageView ==
 
 For the next tests, we grab the subview which is what holds information
 that pertains to the POMsgSet rendering itself:
 
-    >>> subview = pomsgset_page_view.pomsgset_view
+    >>> subview = translationmessage_page_view.translationmessage_view
     >>> subview.initialize()
 
 The request didn't get any argument, and because that, we should get the
@@ -105,34 +107,35 @@ And thus, it only has one translation.
 
 Which is the one we wanted.
 
-    >>> subview.getActiveTranslation(0)
+    >>> subview.getCurrentTranslation(0)
     u'libreta de direcciones de Evolution'
 
-As we didn't submit the form, the getTranslation method will return None.
+As we didn't submit the form, the getSubmittedTranslation method will
+return None.
 
-    >>> subview.getTranslation(0) is None
-    True
+    >>> print subview.getSubmittedTranslation(0)
+    None
 
 If we request a plural form that is not valid, we get an AssertionError.
 
-    >>> subview.getActiveTranslation(1)
+    >>> subview.getCurrentTranslation(1)
     Traceback (most recent call last):
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
-    >>> subview.getTranslation(1)
+    >>> subview.getSubmittedTranslation(1)
     Traceback (most recent call last):
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
 Published translation is defined and same as the active one.
 
-    >>> subview.getPublishedTranslation(0)
+    >>> subview.getImportedTranslation(0)
     u'libreta de direcciones de Evolution'
 
 However, if we ask for incorrect plural form, we get an AssertionError.
 
-    >>> subview.getPublishedTranslation(1)
+    >>> subview.getImportedTranslation(1)
     Traceback (most recent call last):
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
@@ -145,9 +148,18 @@ functions to determine whether to advise translators about their presence.
 
 We will use this helper function to simplify the test:
 
+    # This is just an easy way to get different messages for all
+    # available options to test.
+    >>> from sqlobject import SQLObjectNotFound
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.database import POMsgID
     >>> def changeMsgID(new_msgid):
-    ...     subview.context.potmsgset.makeMessageIDSighting(
-    ...         new_msgid, TranslationConstants.SINGULAR_FORM , update=True)
+    ...     potmsgset = removeSecurityProxy(subview.context.potmsgset)
+    ...     try:
+    ...         msgid = POMsgID.byMsgid(new_msgid)
+    ...     except SQLObjectNotFound:
+    ...         msgid = POMsgID(msgid=new_msgid)
+    ...     potmsgset.msgid_singular = msgid
     ...     flush_database_updates()
 
 First, text_has_tab() determines whether a message set contains any tabs.
@@ -217,37 +229,39 @@ update.
 
 But first, let's see current values.
 
-    >>> pomsgset = POMsgSet.get(1)
-    >>> pomsgset.pofile.updateStatistics()
-    (7, 0, 1, 2)
-    >>> pomsgset.pofile.currentCount()
-    7
-    >>> pomsgset.pofile.updatesCount()
+    >>> translationmessage = TranslationMessage.get(1)
+    >>> pofile = translationmessage.pofile
+    >>> pofile.updateStatistics()
+    (6, 0, 1, 2)
+    >>> pofile.currentCount()
+    6
+    >>> pofile.updatesCount()
     0
-    >>> pomsgset.pofile.rosettaCount()
+    >>> pofile.rosettaCount()
     1
-    >>> pomsgset.pofile.unreviewedCount()
+    >>> pofile.unreviewedCount()
     2
 
 Now we do the submit.
 
-    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> server_url = '/'.join(
+    ...     [canonical_url(translationmessage), '+translate'])
     >>> form = {
     ...     'alt': None,
     ...     'msgset_1': None,
     ...     'msgset_1_es_translation_0_new_checkbox': True,
     ...     'msgset_1_es_translation_0_new': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'}
-    >>> pomsgset_page_view = create_view(
-    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
-    ...     server_url=server_url)
-    >>> pomsgset_page_view.request.method = 'POST'
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", form=form,
+    ...     layer=TranslationsLayer, server_url=server_url)
+    >>> translationmessage_page_view.request.method = 'POST'
 
 And when we initialise the view class, we detect that we missed the timestamp
 that allow us to know whether we are working with latest submitted value or
 someone updated the database while we were working on those translations.
 
-    >>> pomsgset_page_view.initialize()
+    >>> translationmessage_page_view.initialize()
     Traceback (most recent call last):
     ...
     UnexpectedFormData: We didn't find the timestamp...
@@ -262,28 +276,27 @@ We do a new submit, but this time including a lock_timestamp field.
     ...         'msgset_1_es_translation_0_new',
     ...     'msgset_1_es_translation_0_new': 'Foo',
     ...     'submit_translations': 'Save &amp; Continue'}
-    >>> pomsgset_page_view = create_view(
-    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
-    ...     server_url=server_url)
-    >>> pomsgset_page_view.request.method = 'POST'
-    >>> pomsgset_page_view.initialize()
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", form=form,
+    ...     layer=TranslationsLayer, server_url=server_url)
+    >>> translationmessage_page_view.request.method = 'POST'
+    >>> translationmessage_page_view.initialize()
     >>> transaction.commit()
 
 This time we didn't get any problem with the submission, and we can see that
 statistics were updated accordly.
 
-    >>> pomsgset = POMsgSet.get(1)
-    >>> pomsgset.pofile.currentCount()
-    7
-    >>> pomsgset.pofile.updatesCount()
+    >>> pofile.currentCount()
+    6
+    >>> pofile.updatesCount()
     1
-    >>> pomsgset.pofile.rosettaCount()
+    >>> pofile.rosettaCount()
     1
-    >>> pomsgset.pofile.unreviewedCount()
+    >>> pofile.unreviewedCount()
     2
 
 Now, let's see how the system prevents a submission that has a timestamp older
-than when last active translation was submitted.
+than when last current translation was submitted.
 
     >>> from zope.app import datetimeutils
     >>> from canonical.launchpad.interfaces import TranslationConstants
@@ -292,17 +305,18 @@ than when last active translation was submitted.
 
 We can see here that translation in pomsgset is newer than old_timestamp.
 
-    >>> pomsgset.isNewerThan(old_timestamp)
+    >>> potmsgset.isTranslationNewerThan(pofile, old_timestamp)
     True
 
 And current value
 
-    >>> pomsgset.active_texts
+    >>> potmsgset.getCurrentTranslationMessage(pofile.language).translations
     [u'Foo']
 
 We do the submission with that lock_timestamp.
 
-    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> server_url = '/'.join(
+    ...     [canonical_url(translationmessage), '+translate'])
     >>> form = {
     ...     'lock_timestamp': old_timestamp_text,
     ...     'alt': None,
@@ -311,27 +325,31 @@ We do the submission with that lock_timestamp.
     ...         'msgset_1_es_translation_0_new',
     ...     'msgset_1_es_translation_0_new': 'Foos',
     ...     'submit_translations': 'Save &amp; Continue'}
-    >>> pomsgset_page_view = create_view(
-    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
-    ...     server_url=server_url)
-    >>> pomsgset_page_view.request.method = 'POST'
-    >>> pomsgset_page_view.initialize()
-    >>> for notification in pomsgset_page_view.request.notifications:
-    ...     notification.message
-    'There is an error in the translation you provided. Please correct it before continuing.'
-    >>> pomsgset_page_view.error
-    u'Somebody else changed this translation since you started. To avoid accidentally reverting work done by others, we added your translations as suggestions, so please review current values.'
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", form=form,
+    ...     layer=TranslationsLayer, server_url=server_url)
+    >>> translationmessage_page_view.request.method = 'POST'
+    >>> translationmessage_page_view.initialize()
+    >>> for notification in (
+    ...     translationmessage_page_view.request.notifications):
+    ...     print notification.message
+    There is an error in the translation you provided. Please correct it
+    before continuing.
+    >>> print translationmessage_page_view.error
+    Somebody else changed this translation since you started. To avoid
+    accidentally reverting work done by others, we added your translations
+    as suggestions, so please review current values.
     >>> transaction.commit()
 
 This submission is not saved because there is another modification, this
 means that timestamps remain unchanged.
 
-    >>> pomsgset.isNewerThan(old_timestamp)
+    >>> potmsgset.isTranslationNewerThan(pofile, old_timestamp)
     True
 
 And active text too
 
-    >>> pomsgset.active_texts
+    >>> potmsgset.getCurrentTranslationMessage(pofile.language).translations
     [u'Foo']
 
 
@@ -341,7 +359,8 @@ Bogus translation submission
 What would happen if we get a submit for another msgset that isn't being
 considered?
 
-    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> server_url = '/'.join(
+    ...     [canonical_url(translationmessage), '+translate'])
     >>> form = {
     ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
     ...     'alt': None,
@@ -349,20 +368,19 @@ considered?
     ...     'msgset_2_es_translation_0_new': 'Foo',
     ...     'msgset_2_es_translation_0_new_checkbox': True,
     ...     'submit_translations': 'Save &amp; Continue'}
-    >>> pomsgset_page_view = create_view(
-    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
-    ...     server_url=server_url)
-    >>> pomsgset_page_view.request.method = 'POST'
-    >>> pomsgset_page_view.initialize()
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", form=form,
+    ...     layer=TranslationsLayer, server_url=server_url)
+    >>> translationmessage_page_view.request.method = 'POST'
+    >>> translationmessage_page_view.initialize()
 
 The list of translations parsed will be empty because the submission is
 ignored:
 
-    >>> pomsgset_page_view.form_posted_translations
+    >>> translationmessage_page_view.form_posted_translations
     {}
 
 And since this was a POST, we don't even build the subview:
 
-    >>> pomsgset_page_view.pomsgset_view is None
+    >>> translationmessage_page_view.translationmessage_view is None
     True
-

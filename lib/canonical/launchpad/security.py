@@ -13,16 +13,15 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
     ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPOFile, IPOTemplate,
-    IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset, IPackageUpload,
-    IPackageUploadQueue, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
-    IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
-    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
-    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
-    ISprint, ISprintSpecification, IStandardShipItRequest,
-    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
-    ITranslationGroupSet, ITranslationImportQueue,
+    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
+    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
+    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease, IProductSeries,
+    IQuestion, IQuestionTarget, IRequestedCDs, IShipItApplication,
+    IShippingRequest, IShippingRequestSet, IShippingRun, ISpecification,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -812,28 +811,6 @@ class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
 class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationGroupSet
-
-
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
-# This should be using SuperSpecialPermissions when implemented.
-class ListProductPOTemplateNames(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IProduct
-
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
-# This should be using SuperSpecialPermissions when implemented.
-class ListSourcePackagePOTemplateNames(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = ISourcePackage
-
-class EditPOTemplateName(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplateName
-
-
-class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplateNameSet
 
 
 class EditBugTracker(EditByOwnersOrAdmins):

@@ -1,5 +1,6 @@
 SET client_min_messages=ERROR;
 
+DROP VIEW BranchWithSortKeys;
 CREATE OR REPLACE VIEW BranchWithSortKeys AS
     SELECT Branch.*,
            Product.name AS product_name,

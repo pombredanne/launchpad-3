@@ -117,7 +117,7 @@ def create_old_bug(
 
 def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
-    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in bugtasks:
         if len(bugtask.bug.bugtasks) == 1:
             title = bugtask.bug.title
@@ -125,7 +125,7 @@ def summarize_bugtasks(bugtasks):
             title = bugtask.target.name
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
-            bugtask.pillar.enable_bug_expiration,
+            bugtask.pillar.official_malone,
             (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
             bugtask.status.title,
             bugtask.assignee is not None,
