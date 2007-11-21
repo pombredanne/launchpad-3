@@ -10,8 +10,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIdApplication"
-        path_expression="string:+openid"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        urldata="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationURL"
         />
 
     <!-- Root navigation -->
@@ -62,8 +61,17 @@
     <browser:page
         for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
         name="+index"
+        template="../templates/openidpersistentidentity-index.pt"
         permission="zope.Public"
         class="canonical.launchpad.browser.openiddiscovery.PersistentIdentityView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        name="+xrds"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openiddiscovery.PersistentIdentityView"
+        attribute="xrds"
         />
 
     <!-- OpenID Provider -->

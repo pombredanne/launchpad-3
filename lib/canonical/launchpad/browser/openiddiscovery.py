@@ -12,13 +12,27 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ILoginTokenSet, IOpenIdApplication, IOpenIDPersistentIdentity,
     IPersonSet, NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
     Navigation, RedirectionView, stepthrough, stepto)
 from canonical.launchpad.webapp.vhosts import allvhosts
+
+
+class OpenIdApplicationURL:
+    """Canonical URL data for IOpenIdApplication"""
+    implements(ICanonicalUrlData)
+
+    path = ''
+    inside = None
+    rootsite = 'openid'
+
+    def __init__(self, context):
+        self.context = context
 
 
 class OpenIdApplicationNavigation(Navigation):
@@ -92,7 +106,7 @@ class XRDSContentNegotiationMixin:
             YADIS_HEADER_NAME, '%s/+xrds' % canonical_url(self.context))
         return super(XRDSContentNegotiationMixin, self).render()
 
-    @property
+    @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
         return allvhosts.configs['openid'].rooturl + '+openid'
@@ -101,13 +115,13 @@ class XRDSContentNegotiationMixin:
 class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID identity page."""
 
-    template = ViewPageTemplateFile("../templates/openid-identity.pt")
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidpersistentidentity-xrds.pt")
 
-    def initialize(self):
-        # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
-        self.person = self.context.person
-        self.identity_url = '%s+id/%s' % (
-                self.server_url, self.person.openid_identifier)
-        self.person_url = canonical_url(self.person, rootsite='mainsite')
-        self.meta_refresh_content = "1; URL=%s" % self.person_url
+    @cachedproperty
+    def person_url(self):
+        return canonical_url(self.context.person, rootsite='mainsite')
+
+    @cachedproperty
+    def openid_identity_url(self):
+        return canonical_url(self.context)
