@@ -130,7 +130,7 @@ def can_bug_expire(bug):
     """Return True if the bug meets the basic preconditions for expiration.
 
     This function does not check the bugtask preconditions.
-    See `IBug.can_expire` or `bugTaskSet.findExpirableBugTasks` to check or
+    See `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to check or
     get a list of bugs that can expire.
     """
     # Bugs cannot be expired if any bugtask is valid.
@@ -268,8 +268,8 @@ class Bug(SQLBase):
         it is assumed that a bug contact has not explained to the bug
         reporter what is needed to confirm the bug.
         """
-        # IbugTaskSet.findExpirableBugTasks() is the authorative determiner if
-        # a bug can expire, but it is expensive. We do some general checks
+        # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
+        # if a bug can expire, but it is expensive. We do some general checks
         # for bugs that obviously cannot expire before using IBugTaskSet.
         if not can_bug_expire(self):
             return False

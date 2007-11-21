@@ -31,8 +31,10 @@ __all__ = [
     'TextualBugTaskSearchListingView',
     ]
 
+from datetime import datetime, timedelta
 import cgi
 import gettext
+import pytz
 import re
 import urllib
 from operator import attrgetter
@@ -699,6 +701,17 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             if check_permission('launchpad.View', bug_branch.branch):
                 bug_branches.append(bug_branch)
         return bug_branches
+
+    @property
+    def days_to_expiration(self):
+        """Return the number of days before the bug is expired, or None."""
+        if not self.context.bug.can_expire:
+            return None
+
+        expiration_date = self.context.bug.date_last_updated + timedelta(
+            days=config.malone.days_before_expiration)
+        return (
+            expiration_date - datetime.now(pytz.timezone('UTC'))).days
 
 
 class BugTaskPortletView:

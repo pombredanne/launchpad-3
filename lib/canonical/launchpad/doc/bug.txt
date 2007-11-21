@@ -877,7 +877,7 @@ bugs.
 The thunderbird project does not use Launchpad to track bugs. Incomplete
 bug reports cannot ever expire for this project.
 
-    >>> # create_old_bug creates an bug with a bugtask that is eligable for
+    >>> # create_old_bug creates an bug with a bugtask that is eligible for
     >>> # expiration, so long as the pillar object has enabled bug expiration.
     >>> # Every change to a bug or bugtask must be synced back to the
     >>> # database to test can_expire.
@@ -913,7 +913,7 @@ than Incomplete, makes the bug unexpirable.
     >>> expirable_bugtask.bug.can_expire
     False
 
-See `bugtask-expiration.txt` for a more comprehesive example of bugs
+See `bugtask-expiration.txt` for a more comprehensive example of bugs
 that can or cannot expire.
 
 
