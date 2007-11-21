@@ -175,7 +175,7 @@ their Launchpad account.
     >>> fingerprint = "447DBF38C4F9C4ED752246B77D88913717B05A8F"
     >>> browser.getControl(name='fingerprint').value = fingerprint
     >>> browser.getControl(name='import').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     A message has been sent to test@canonical.com. To 
     confirm the key 1024D/17B05A8F is yours, follow
@@ -249,7 +249,7 @@ If he refuses to sign the text, he gets an error message.
     >>> browser.getControl('Continue').click()
     >>> browser.title
     'Confirm sign-only OpenPGP key'
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Required input is missing.
@@ -263,7 +263,7 @@ If he signs a different text, he gets an error message.
     ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
     >>> browser.getControl('Signed text').value = bad
     >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     The signed content does not match the message found in the email.
@@ -287,7 +287,7 @@ message. The following text was signed with the key DFD20543:
     ... """
     >>> browser.getControl('Signed text').value = signed_content
     >>> browser.getControl('Continue').click()  
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543)
@@ -306,7 +306,7 @@ If he signs the text correctly, he is redirected to his home page.
 The address associated with the key is not associated with his
 Launchpad account, so Launchpad gives him a message to that effect.
 
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     The key 1024D/17B05A8F was successfully validated.
     Some email addresses were found in your key but are not 
@@ -331,7 +331,7 @@ On a mad whim he decides to de-activate the key he just imported.
     >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['3']
     >>> browser.getControl('Deactivate Key').click()
 
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Deactivated key(s): 1024D/17B05A8F
 
@@ -340,7 +340,7 @@ Coming to his senses, he asks for a re-validation of the key.
     >>> browser.getControl(name="REACTIVATE_GPGKEY").value = ['3']
     >>> browser.getControl('Reactivate Key').click()
 
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     A message has been sent to test@canonical.com with instructions 
     to reactivate these key(s): 1024D/17B05A8F

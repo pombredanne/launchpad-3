@@ -20,11 +20,10 @@ from canonical.database.enumcol import EnumCol
 from sqlobject import ForeignKey, IntCol
 
 from canonical.launchpad.interfaces import (
-    IBugProductInfestationSet, IBugPackageInfestationSet,
-    IBugProductInfestation, IBugPackageInfestation, NotFoundError)
+    BugInfestationStatus, IBugPackageInfestation, IBugPackageInfestationSet, 
+    IBugProductInfestation, IBugProductInfestationSet, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.lp import dbschema
 
 
 class BugProductInfestation(SQLBase):
@@ -38,7 +37,7 @@ class BugProductInfestation(SQLBase):
     productrelease = ForeignKey(dbName="productrelease",
         foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = EnumCol(
-        notNull=False, default=None, schema=dbschema.BugInfestationStatus)
+        notNull=False, default=None, schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(notNull=True)
     creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
     dateverified = UtcDateTimeCol(notNull=False)
@@ -68,7 +67,7 @@ class BugPackageInfestation(SQLBase):
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
-        schema=dbschema.BugInfestationStatus)
+        schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
     creator = ForeignKey(dbName='creator', foreignKey='Person', notNull=True)
     dateverified = UtcDateTimeCol(dbName='dateverified')

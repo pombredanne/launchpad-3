@@ -422,7 +422,10 @@ class TestPublisher(TestNativePublishingBase):
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
-        pub_bin = self.getPubBinary(pub_source=pub_source)
+        pub_bin = self.getPubBinary(
+            pub_source=pub_source,
+            description="   My leading spaces are normalised to a single "
+                        "space but not trailing.  \n    It does nothing, though")
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -466,8 +469,9 @@ class TestPublisher(TestNativePublishingBase):
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'Description: Foo app is great',
-             ' Well ...',
-             ' it does nothing, though',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
              ''],
             index_contents)
 
@@ -689,10 +693,6 @@ class TestPublisher(TestNativePublishingBase):
              '114 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        print
-        for line in release_contents:
-            print line
-
         gz_sources_md5_line = release_contents[md5_header_index + 6]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 

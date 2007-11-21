@@ -136,7 +136,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         section=1,
   ...         maintainer=1,
   ...         component=1,
-  ...         uploaddistroseries=1,
+  ...         upload_distroseries=1,
   ...         sourcepackagename=name,
   ...         architecturehintlist=architecturehintlist,
   ...         builddependsindep='foo (<< 1.0)',

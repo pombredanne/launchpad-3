@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = ['BugTracker', 'BugTrackerSet']
 
+import re
 import urllib
 
 from zope.interface import implements
@@ -13,15 +14,13 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
-
-from canonical.lp.dbschema import BugTrackerType
+    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
-    IBugTracker, IBugTrackerSet, NotFoundError)
+    BugTrackerType, IBugTracker, IBugTrackerSet, NotFoundError)
 
 
 
@@ -107,10 +106,17 @@ class BugTrackerSet:
         for row in self.table.select(orderBy="title"):
             yield row
 
+    def _normalise_leading_slashes(self, rest):
+        """Ensure that the 'rest' segment of a URL starts with //."""
+        slashre = re.compile('^/*(.*)')
+        return '//' + slashre.match(rest).group(1)
+
     def normalise_baseurl(self, baseurl):
         # turn https to http, and raise an exception elsewhere
         schema, rest = urllib.splittype(baseurl)
         if schema not in ['http', 'https']:
+            if schema is None:
+                baseurl = 'http:' + self._normalise_leading_slashes(baseurl)
             return baseurl
         if schema == 'https':
             schema = 'http'
@@ -130,24 +136,23 @@ class BugTrackerSet:
         """
         http_schemas = ['http', 'https']
         url_schema, rest = urllib.splittype(base_url)
-        if url_schema in http_schemas:
+        if url_schema in http_schemas or url_schema is None:
             possible_schemas = http_schemas
+            rest = self._normalise_leading_slashes(rest)
         else:
             # This else-clause is here since we have no strict
             # requirement that bug trackers have to have http URLs.
             possible_schemas = [url_schema]
-        alternative_urls = []
+        alternative_urls = [base_url]
         for schema in possible_schemas:
             url = "%s:%s" % (schema, rest)
-            alternative_urls.append(url)
+            if url != base_url:
+                alternative_urls.append(url)
             if url.endswith('/'):
                 alternative_urls.append(url[:-1])
             else:
                 alternative_urls.append(url + '/')
-        # Make sure that the original URL is always first, to make the
-        # common case require less db queries.
-        alternative_urls.remove(base_url)
-        return [base_url] + alternative_urls
+        return alternative_urls
 
     def queryByBaseURL(self, baseurl):
         """See IBugTrackerSet."""
@@ -155,6 +160,11 @@ class BugTrackerSet:
             bugtracker = BugTracker.selectOneBy(baseurl=url)
             if bugtracker is not None:
                 return bugtracker
+        # If we didn't find the exact URL but there is
+        # a substring match, use that instead.
+        for bugtracker in BugTracker.select(
+            "baseurl LIKE '%%' || %s || '%%'" % quote_like(baseurl), limit=1):
+            return bugtracker
         return None
 
     def search(self):

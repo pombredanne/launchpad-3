@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
+
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
@@ -80,10 +81,12 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
             if action_status == 'failure':
-                if mailing_list.status in (MailingListStatus.CONSTRUCTING,
-                                           MailingListStatus.UPDATING,
-                                           MailingListStatus.DEACTIVATING):
+                if mailing_list.status == MailingListStatus.CONSTRUCTING:
                     mailing_list.transitionToStatus(MailingListStatus.FAILED)
+                elif mailing_list.status in (MailingListStatus.UPDATING,
+                                             MailingListStatus.DEACTIVATING):
+                    mailing_list.transitionToStatus(
+                        MailingListStatus.MOD_FAILED)
                 else:
                     return faults.UnexpectedStatusReport(
                         team_name, action_status)
@@ -102,7 +105,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return True
 
     def getMembershipInformation(self, teams):
-        """See `IMailingListAPIView.`."""
+        """See `IMailingListAPIView`."""
         listset = getUtility(IMailingListSet)
         emailset = getUtility(IEmailAddressSet)
         response = {}

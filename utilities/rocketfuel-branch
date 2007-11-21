@@ -21,7 +21,7 @@ fi
 
 cd ${LPBRANCHES}
 echo "Checking if we are online..."
-ping -w 10 chinstrap.canonical.com
+ping -q -c 1 -w 10 chinstrap.canonical.com
 if [ $? -eq 0 ]; then
   echo "Ensuring we are up to date..."
   trunk/utilities/rocketfuel-get

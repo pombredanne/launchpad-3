@@ -107,7 +107,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True)
 
-    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
                                   notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -170,7 +170,7 @@ class BinaryPackageFilePublishing(FilePublishingBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
 
-    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
                                   notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -215,7 +215,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distrorelease')
+                               dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -263,7 +263,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchrelease')
+                                   dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -379,7 +379,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease')
+        dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -404,13 +404,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchrelease=
-                DistroArchRelease.id AND
+            BinaryPackagePublishingHistory.distroarchseries=
+                DistroArchSeries.id AND
             BinaryPackageRelease.build=Build.id AND
             BinaryPackageRelease.binarypackagename=
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
-            DistroArchRelease.distrorelease=%s AND
+            DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(
@@ -420,10 +420,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
-                   'DistroArchRelease.architecturetag']
+                   'DistroArchSeries.architecturetag']
 
         clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
-                        'DistroArchRelease']
+                        'DistroArchSeries']
 
         return BinaryPackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
@@ -534,7 +534,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
-        SecureSourcePackagePublishingHistory(
+        return SecureSourcePackagePublishingHistory(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
             status=PackagePublishingStatus.PENDING,
@@ -543,13 +543,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket=current.pocket,
             component=new_component,
             section=new_section,
-            archive=current.archive
-        )
+            archive=current.archive)
 
     def copyTo(self, distroseries, pocket):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
-        copy = SecureSourcePackagePublishingHistory(
+        return SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=current.archive,
@@ -558,9 +557,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=current.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            embargo=False,
-        )
-        return copy
+            embargo=False)
+
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -571,7 +569,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchrelease')
+                                   dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -643,8 +641,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION L1>
         #  ...
         #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
+            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -714,7 +713,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
-        SecureBinaryPackagePublishingHistory(
+        return SecureBinaryPackagePublishingHistory(
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
@@ -724,8 +723,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=current.archive
-            )
+            archive=current.archive)
 
     def copyTo(self, distroseries, pocket):
         """See `BinaryPackagePublishingHistory`."""
@@ -734,7 +732,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         current = self.secure_record
         target_das = distroseries[current.distroarchseries.architecturetag]
 
-        copy = SecureBinaryPackagePublishingHistory(
+        return SecureBinaryPackagePublishingHistory(
             archive=current.archive,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=target_das,
@@ -744,6 +742,4 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket,
-            embargo=False
-        )
-        return copy
+            embargo=False)
