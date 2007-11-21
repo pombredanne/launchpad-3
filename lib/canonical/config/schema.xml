@@ -216,6 +216,12 @@ k            </description>
             The maximum number of minutes that Bug feeds should be cached for.
             </description>
         </key>
+        <key name="max_branch_feed_cache_minutes" required="no"
+            datatype="integer" default="60">
+            <description>
+            The maximum number of minutes that Branch feeds should be cached for.
+            </description>
+        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
@@ -558,7 +564,7 @@ k            </description>
               page.
           </description>
         </key>
-        <key name="expiration_dbuser" datatype="string" 
+        <key name="expiration_dbuser" datatype="string"
             default="bugnotification">
             <description>
                 The database user that will be used to expire bugtask.
@@ -632,7 +638,7 @@ k            </description>
         </description>
         <key name="dbuser" datatype="string" default="processmail">
             <description>
-                The database user which will be used to process incoming 
+                The database user which will be used to process incoming
                 emails.
             </description>
         </key>
@@ -1168,7 +1174,7 @@ k            </description>
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
-        <section name="*" type="archivepublisher" 
+        <section name="*" type="archivepublisher"
             attribute="archivepublisher" />
         <section name="*" type="checkwatches" attribute="checkwatches" />
     </sectiontype>
