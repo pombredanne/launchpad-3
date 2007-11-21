@@ -89,14 +89,16 @@ class POTMsgSet(SQLBase):
         # needs to match condition specified in indexes, or Postgres
         # may not pick them up (in complicated queries, Postgres query
         # optimizer sometimes does text-matching of indexes).
+        clauses = ['potmsgset = %s' % sqlvalues(self),
+                   'is_current IS TRUE',
+                   'POFile.language = %s' % sqlvalues(language),
+                   'POFile.id = TranslationMessage.pofile']
         if variant is None:
-            variant_cond = 'POFile.variant IS NULL'
+            clauses.append('POFile.variant IS NULL')
         else:
-            variant_cond = 'POFile.variant=%s' % sqlvalues(variant)
-        return TranslationMessage.selectOne(
-            "potmsgset = %s AND is_current IS TRUE AND POFile.language = %s" %
-            sqlvalues(self, language) + " AND " + variant_cond +
-            " AND pofile = POFile.id", clauseTables=['POFile'])
+            clauses.append('POFile.variant=%s' % sqlvalues(variant))
+        return TranslationMessage.selectOne(' AND '.join(clauses),
+                                            clauseTables=['POFile'])
 
     def getImportedTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
@@ -104,14 +106,16 @@ class POTMsgSet(SQLBase):
         # needs to match condition specified in indexes, or Postgres
         # may not pick them up (in complicated queries, Postgres query
         # optimizer sometimes does text-matching of indexes).
+        clauses = ['potmsgset = %s' % sqlvalues(self),
+                   'is_imported IS TRUE',
+                   'POFile.language = %s' % sqlvalues(language),
+                   'POFile.id = TranslationMessage.pofile']
         if variant is None:
-            variant_cond = 'POFile.variant IS NULL'
+            clauses.append('POFile.variant IS NULL')
         else:
-            variant_cond = 'POFile.variant=%s' % sqlvalues(variant)
-        return TranslationMessage.selectOne(
-            "potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s" %
-            sqlvalues(self, language) + " AND " + variant_cond +
-            " AND pofile = POFile.id", clauseTables=['POFile'])
+            clauses.append('POFile.variant=%s' % sqlvalues(variant))
+        return TranslationMessage.selectOne(' AND '.join(clauses),
+                                            clauseTables=['POFile'])
 
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
@@ -306,14 +310,16 @@ class POTMsgSet(SQLBase):
         """Find a message for this `pofile` exactly matching given
         `translations` strings comparing only `pluralforms` of them.
         """
-        query = ('potmsgset=%s AND pofile=%s' % sqlvalues(self, pofile))
+        clauses = ['potmsgset = %s' % sqlvalues(self),
+                   'pofile = %s' % sqlvalues(pofile)]
+
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
-                query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
+                clauses.append('msgstr%s IS NULL' % sqlvalues(pluralform))
             else:
-                query += ' AND msgstr%s=%s' % (
-                    sqlvalues(pluralform, potranslations[pluralform]))
-        return TranslationMessage.selectOne(query)
+                clauses.append('msgstr%s=%s' % (
+                    sqlvalues(pluralform, potranslations[pluralform])))
+        return TranslationMessage.selectOne(' AND '.join(clauses))
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):
