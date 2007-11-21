@@ -1680,22 +1680,24 @@ class BugTaskSearchListingView(LaunchpadFormView):
         :param searchtext: If the searchtext is None, the search text will be
         gotten from the request.
 
-        :param extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in `extra_params` take
-        precedence over request params.
+        :param extra_params: is a dict that provides search params added to
+        the search criteria taken from the request. Params in `extra_params`
+        take precedence over request params.
         """
-        unbatchedTasks = self.searchUnbatched(searchtext, context, extra_params)
+        unbatchedTasks = self.searchUnbatched(
+        searchtext, context, extra_params)
         return self._getBatchNavigator(unbatchedTasks)
 
-    def searchUnbatched(self, searchtext=None, context=None, extra_params=None):
+    def searchUnbatched(
+        self, searchtext=None, context=None, extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: If the searchtext is None, the search text will be
         gotten from the request.
 
-        :param extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in `extra_params` take
-        precedence over request params.
+        :param extra_params: is a dict that provides search params added to
+        the search criteria taken from the request. Params in `extra_params`
+        take precedence over request params.
         """
         # Base classes can provide an explicit search context.
         if not context:
@@ -2124,7 +2126,8 @@ class BugTargetView(LaunchpadView):
 
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
-    """View that renders a list of bug IDs for a given set of search criteria."""
+    """View that renders a list of bug IDs for a given set of search criteria.
+    """
 
     def render(self):
         """Render the BugTarget for text display."""

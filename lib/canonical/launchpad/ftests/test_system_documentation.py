@@ -693,6 +693,8 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
     @classmethod
     def addTestsToSpecial(cls):
         """Adds all the tests related to process-mail.py to special"""
+        # special is already assigned, disable W0602.
+        # pylint: disable-msg=W0602
         global special
 
         for filename in cls.doctests_without_logging:
