@@ -728,8 +728,8 @@ and we request a dummy one, that's broken and we detect it.
 
 == Variant translation ==
 
-We need to make sure that this method works correctly with language variants.
-We should not update translation on another variant.
+We need to make sure that updateTranslation works correctly with language
+variants: we should not try to update translation on non-variant PO file.
 
     >>> evolution_package = ubuntu_hoary.getSourcePackage('evolution')
     >>> evolution_template = getUtility(IPOTemplateSet).getSubset(
@@ -796,7 +796,7 @@ We can update translation for this variant.
 
     >>> new_translation = potmsgset.updateTranslation(pofile,
     ...     carlos, {0: u'test variant translation'},
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=datetime.now(UTC))
+    ...     is_fuzzy=False, is_imported=True, lock_timestamp=datetime.now(UTC))
 
 And indeed, the new submission will be for this PO file, and not the non-variant
 Spanish translation.
@@ -805,3 +805,7 @@ Spanish translation.
     Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     >>> new_translation.pofile.variant
     u'test'
+    >>> new_translation.is_current
+    True
+    >>> new_translation.is_imported
+    True
