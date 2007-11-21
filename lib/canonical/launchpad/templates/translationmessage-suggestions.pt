@@ -3,9 +3,9 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-
 <tal:block condition="context/submissions">
   <tal:submission repeat="submission context/submissions">
+
   <tr class="secondary">
     <td class="icon left right">
       <tal:form-writeable condition="context/form_is_writeable">
@@ -60,7 +60,7 @@
     </td>
   </tr>
   <tr class="discreet secondary"
-    tal:attributes="id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
+    tal:attributes="id string:msgset_${context/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
     <td class="icon left right" />
     <td style="overflow: auto;"
         tal:condition="python:context.isFromSamePOFile(submission)">
@@ -68,23 +68,23 @@
       <a tal:content="submission/person/browsername"
          tal:attributes="href submission/person/fmt:url">Foo Bar</a>
       <span
-        tal:attributes="title submission/datecreated/fmt:datetime"
-        tal:content="submission/datecreated/fmt:displaydate">
+        tal:attributes="title submission/date_created/fmt:datetime"
+        tal:content="submission/date_created/fmt:displaydate">
         2006-08-05
       </span>
     </td>
     <td style="overflow: auto;"
         tal:condition="python:not(context.isFromSamePOFile(submission))">
       <tal:source content="string:${context/title}" />
-      <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
-         tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
+      <a tal:content="submission/pofile/potemplate/displayname"
+         tal:attributes="href string:${submission/translationmessage/fmt:url}/+translate">
         Spanish translation for evolution
       </a> by
       <a tal:content="submission/person/browsername"
          tal:attributes="href submission/person/fmt:url">Foo Bar</a>
       <span
-        tal:attributes="title submission/datecreated/fmt:datetime"
-        tal:content="submission/datecreated/fmt:displaydate">
+        tal:attributes="title submission/date_created/fmt:datetime"
+        tal:content="submission/date_created/fmt:displaydate">
         2006-08-05
       </span>
     </td>

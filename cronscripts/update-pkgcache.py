@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 # This script updates the cached source package information in the system.
 # We use this for fast source package searching (as opposed to joining

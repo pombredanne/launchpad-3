@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -109,7 +110,6 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.INACTIVE,
                                     MailingListStatus.MOD_FAILED), (
                 'target_state result must be inactive or mod_failed')
-            self._clearSubscriptions()
         else:
             raise AssertionError(
                 'Not a valid state transition: %s -> %s'
@@ -124,11 +124,11 @@ class MailingList(SQLBase):
                                 EmailAddressStatus.OLD]:
                 # Without this conditional, if the mailing list is the
                 # contact method
-                # (ie. email.status==EmailAddressStatus.PREFERRED),
-                # and a user changes the mailing list configuration,
-                # then when the list status goes back to ACTIVE the
-                # email will go from PREFERRED to VALIDATED and the
-                # list will stop being the contact method.
+                # (email.status==EmailAddressStatus.PREFERRED), and a
+                # user changes the mailing list configuration, then
+                # when the list status goes back to ACTIVE the email
+                # will go from PREFERRED to VALIDATED and the list
+                # will stop being the contact method.
                 email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
@@ -159,7 +159,7 @@ class MailingList(SQLBase):
     def _get_welcome_message(self):
         return self.welcome_message_text
 
-    def canBeContactMethod(self):
+    def isUsable(self):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
@@ -174,14 +174,14 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.canBeContactMethod():
+        elif self.isUsable():
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.
             self.status = MailingListStatus.MODIFIED
         else:
             raise AssertionError(
-                'Only registered or active mailing lists may be modified')
+                'Only registered or usable mailing lists may be modified')
         self.welcome_message_text = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
@@ -237,19 +237,16 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def _clearSubscriptions(self):
-        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
-        for subscription in subscriptions:
-            subscription.destroySelf()
-
     def getAddresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
             """mailing_list = %s AND
-               team = %s AND
+               TeamParticipation.team = %s AND
+               MailingList.status <> %s AND
+               MailingList.id = MailingListSubscription.mailing_list AND
                TeamParticipation.person = MailingListSubscription.person
-            """ % sqlvalues(self, self.team),
-            distinct=True, clauseTables=['TeamParticipation'])
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
         for subscription in subscriptions:
             yield subscription.subscribed_address.email
 
