@@ -725,3 +725,42 @@ and we request a dummy one, that's broken and we detect it.
     Traceback (most recent call last):
     ...
     AssertionError: There is already a translation message ...
+
+== Variant translation ==
+
+We need to make sure that this method works correctly with language variants.
+We should not update translation on another variant.
+
+    >>> pmount_package = ubuntu_hoary.getSourcePackage('pmount')
+    >>> pmount_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=pmount_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('pmount')
+    >>> potmsgset = pmount_template.getPOTMsgSetByMsgIDText(
+    ...     u'Error: could not drop all uid privileges')
+
+    >>> pofile = pmount_template.getPOFileByLang('es', variant=u'test')
+    >>> print pofile.title
+    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    >>> pofile.variant
+    u'test'
+
+This message is translated in Hoary:
+
+    >>> spanish = pofile.language
+    >>> current = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> print current.translations
+    [u'Error: no se han podido soltar todos los privilegios de uid']
+
+We can update translation for this variant.
+
+    >>> new_translation = potmsgset.updateTranslation(pofile,
+    ...     carlos, {0: u'test variant translation'},
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=datetime.now(UTC))
+
+And indeed, the new submission will be for this PO file, and not the non-variant
+Spanish translation.
+
+    >>> new_translation.pofile.title
+    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    >>> new_translation.pofile.variant
+    u'test'
