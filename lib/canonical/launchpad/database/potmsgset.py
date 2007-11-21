@@ -305,7 +305,7 @@ class POTMsgSet(SQLBase):
             else:
                 query += ' AND msgstr%s=%s' % (
                     sqlvalues(pluralform, potranslations[pluralform]))
-        return TranslationMessage.selectOne(query, clauseTables=['POFile'])
+        return TranslationMessage.selectOne(query)
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):

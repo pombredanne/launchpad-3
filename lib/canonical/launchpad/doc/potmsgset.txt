@@ -731,25 +731,28 @@ and we request a dummy one, that's broken and we detect it.
 We need to make sure that this method works correctly with language variants.
 We should not update translation on another variant.
 
-    >>> pmount_package = ubuntu_hoary.getSourcePackage('pmount')
-    >>> pmount_template = getUtility(IPOTemplateSet).getSubset(
-    ...     sourcepackagename=pmount_package.sourcepackagename,
-    ...     distroseries=ubuntu_hoary).getPOTemplateByName('pmount')
-    >>> potmsgset = pmount_template.getPOTMsgSetByMsgIDText(
-    ...     u'Error: could not drop all uid privileges')
+    >>> evolution_package = ubuntu_hoary.getSourcePackage('evolution')
+    >>> evolution_template = getUtility(IPOTemplateSet).getSubset(
+    ...     sourcepackagename=evolution_package.sourcepackagename,
+    ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
+    >>> potmsgset = evolution_template.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
 
-    >>> pofile = pmount_template.getPOFileByLang('es', variant=u'test')
+    >>> pofile = evolution_template.newPOFile('es', variant=u'test')
     >>> print pofile.title
-    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
+    "evolution"
     >>> pofile.variant
     u'test'
 
-This message is translated in Hoary:
+This message is translated in Hoary for Spanish, but not this variant:
 
     >>> spanish = pofile.language
     >>> current = potmsgset.getCurrentTranslationMessage(spanish)
     >>> print current.translations
-    [u'Error: no se han podido soltar todos los privilegios de uid']
+    [u'libreta de direcciones de Evolution']
+    >>> print current.pofile.variant
+    None
 
 We can update translation for this variant.
 
@@ -760,7 +763,8 @@ We can update translation for this variant.
 And indeed, the new submission will be for this PO file, and not the non-variant
 Spanish translation.
 
-    >>> new_translation.pofile.title
-    Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    >>> print new_translation.pofile.title
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
+    "evolution"
     >>> new_translation.pofile.variant
     u'test'
