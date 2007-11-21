@@ -53,7 +53,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         
         Note that bug messages are copied to the question, but attachments
         are not. The question is the same age as the bug, though its
-        datelastquery attribute is current to signify the question is
+        datelastresponse attribute is current to signify the question is
         active.
         
         :bug: An IBug.

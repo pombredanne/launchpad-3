@@ -82,7 +82,7 @@ questions' portlet, and uses it to go to the question page.
 
     >>> user_browser.getLink('another test bug').click()
 
-No Privileges Person cass see that the question was created from a
+No Privileges Person case see that the question was created from a
 bug. He uses the link to Related bug to return to the bug.
 
     >>> user_browser.title

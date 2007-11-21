@@ -818,7 +818,8 @@ class QuestionWorkflowView(LaunchpadFormView):
     def original_bug(self):
         """Return the bug that the question was created from or None."""
         for buglink in self.context.bug_links:
-            if self.context == buglink.bug.getQuestionCreatedFromBug():
+            if (buglink.bug.owner == self.context.owner
+                and buglink.bug.datecreated == self.context.datecreated):
                 return buglink.bug
 
         return None

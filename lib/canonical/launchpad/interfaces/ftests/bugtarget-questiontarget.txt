@@ -153,7 +153,7 @@ A bug can only be converted to a question once.
 
 The question created from the bug is automatically linked to the
 original bug. A bug can also retrieve all the questions that link to it
-to, and vise verse. The getQuestionCreatedFromBug() method will return
+to, and vice versa. The getQuestionCreatedFromBug() method will return
 just the question created from the bug.
 
     >>> question == bug.getQuestionCreatedFromBug()

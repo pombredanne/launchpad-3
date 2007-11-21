@@ -1011,7 +1011,9 @@ class QuestionTargetMixin:
         question = self.newQuestion(
             bug.owner, bug.title, bug.description,
             datecreated=bug.datecreated)
-        question.datelastquery = datetime.now(pytz.timezone('UTC'))
+        # Give the datelastresponse a current datetime, otherwise the
+        # Launchpad Janitor would quickly expire questions made from old bugs.
+        question.datelastresponse = datetime.now(pytz.timezone('UTC'))
         question.linkBug(bug)
         for message in bug.messages[1:]:
             # Bug.message[0] is the original message, and probably a duplicate

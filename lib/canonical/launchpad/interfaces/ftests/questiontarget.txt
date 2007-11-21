@@ -541,14 +541,14 @@ the bug are copied to the question.
     u'This is really a question.'
 
 The question's datecreated attribute is the same as the bug's
-datecreated. The question's datelastquery attribute has a current
+datecreated. The question's datelastresponse attribute has a current
 datetime stamp to indicate the question is active. The question janitor
 would otherwise mistake the questions made from old bugs as old
 questions and would expire them.
 
     >>> target_question.datecreated == target_bug.datecreated
     True
-    >>> target_question.datelastquery > now
+    >>> target_question.datelastresponse > now
     True
 
 The question language is always English because all bugs in Launchpad

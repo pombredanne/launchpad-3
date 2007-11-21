@@ -129,6 +129,12 @@ def sourcepackage_filebug(source_package, summary, status=None):
     bug = distroseries_filebug(
         source_package.distroseries, summary,
         sourcepackagename=source_package.sourcepackagename, status=status)
+    return bug
+
+
+def sourcepackage_filebug_for_question(source_package, summary, status=None):
+    """Setup a bug with only one BugTask that can provide a QuestionTarget."""
+    bug = sourcepackage_filebug(source_package, summary, status=status)
     # The distribution bugtask interferes with bugtarget-questiontarget.txt.
     for bugtask in bug.bugtasks:
         if IDistribution.providedBy(bugtask.target):
@@ -147,6 +153,16 @@ def sourcePackageSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
+def sourcePackageForQuestionSetUp(test):
+    """Setup the `ISourcePackage` test for QuestionTarget testing."""
+    setUp(test)
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    warty = ubuntu.getSeries('warty')
+    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
+    test.globs['filebug'] = sourcepackage_filebug_for_question
+    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
+
+
 def test_suite():
     """Return the `IBugTarget` TestSuite."""
     suite = unittest.TestSuite()
@@ -157,7 +173,7 @@ def test_suite():
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
-        sourcePackageSetUp,
+        sourcePackageForQuestionSetUp,
         ]
 
     for setUpMethod in setUpMethods:
@@ -167,6 +183,9 @@ def test_suite():
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
+
+    setUpMethods.remove(sourcePackageForQuestionSetUp)
+    setUpMethods.append(sourcePackageSetUp)
     setUpMethods.append(projectSetUp)
 
     for setUpMethod in setUpMethods:
