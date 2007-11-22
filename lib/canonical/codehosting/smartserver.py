@@ -62,7 +62,12 @@ class ExecOnlySession:
         :param command: A whitespace-separated command line. The first token is
         used as the name of the executable, the rest are used as arguments.
         """
-        executable, arguments = self.getCommandToRun(command)
+        try:
+            executable, arguments = self.getCommandToRun(command)
+        except Exception, e:
+            protocol.write(str(e) + '\r\n')
+            protocol.loseConnection()
+            raise
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
@@ -85,7 +90,8 @@ class ExecOnlySession:
 
     def openShell(self, protocol):
         """See ISession."""
-        raise NotImplementedError()
+        protocol.write("No shells on this server.\r\n")
+        protocol.loseConnection()
 
     def windowChanged(self, newWindowSize):
         """See ISession."""
@@ -124,7 +130,7 @@ class RestrictedExecOnlySession(ExecOnlySession):
         :raise ForbiddenCommand: when `command` is not the allowed command.
         """
         if command != self.allowed_command:
-            raise ForbiddenCommand("Not allowed to execute %r" % (command,))
+            raise ForbiddenCommand("Not allowed to execute %r." % (command,))
         return ExecOnlySession.getCommandToRun(
             self, self.executed_command_template
             % {'avatarId': self.avatar.avatarId})
