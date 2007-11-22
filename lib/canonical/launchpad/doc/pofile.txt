@@ -1089,22 +1089,6 @@ translated for a given POFile.
     have       1     None       False     False
     have       2     None       False     False
     have       3     None       False     False
-    have       0     tiene      False     False
-    have       1     None       False     False
-    have       2     None       False     False
-    have       3     None       False     False
-    have       0     tiene      False     False
-    have       1     None       False     False
-    have       2     None       False     False
-    have       3     None       False     False
-    have       0     tiene      False     False
-    have       1     None       False     False
-    have       2     None       False     False
-    have       3     None       False     False
-     cards     0      tarjetas  False     False
-     cards     1     None       False     False
-     cards     2     None       False     False
-     cards     3     None       False     False
      cards     0      tarjetas  False     False
      cards     1     None       False     False
      cards     2     None       False     False
@@ -1113,22 +1097,10 @@ translated for a given POFile.
     evoluti... 1     None       False     False
     evoluti... 2     None       False     False
     evoluti... 3     None       False     False
-    evoluti... 0     boohoo     False     False
-    evoluti... 1     None       False     False
-    evoluti... 2     None       False     False
-    evoluti... 3     None       False     False
     Failed ... 0     Blah.      False     False
     Failed ... 1     None       False     False
     Failed ... 2     None       False     False
     Failed ... 3     None       False     False
-    Failed ... 0     Blah.      False     False
-    Failed ... 1     None       False     False
-    Failed ... 2     None       False     False
-    Failed ... 3     None       False     False
-    The loc... 0     La ubic... False     False
-    The loc... 1     None       False     False
-    The loc... 2     None       False     False
-    The loc... 3     None       False     False
     The loc... 0     La ubic... False     False
     The loc... 1     None       False     False
     The loc... 2     None       False     False

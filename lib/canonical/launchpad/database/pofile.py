@@ -663,6 +663,7 @@ class POFile(SQLBase, POFileMixIn):
         query.append('POTMsgSet.sequence > 0')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('TranslationMessage.pofile = %s' % sqlvalues(self))
+        query.append('TranslationMessage.is_current')
         query.append('NOT TranslationMessage.is_fuzzy')
         query.append('TranslationMessage.msgstr0 IS NOT NULL')
         for plural_form in range(1, self.language.pluralforms):
