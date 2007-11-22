@@ -60,11 +60,13 @@ sreg_data_fields.update({
     'x_organization': 'Organization',
     })
 
+
 sreg_data_fields_order = [
     'fullname', 'nickname', 'email', 'timezone',
     'x_address1', 'x_address2', 'x_city', 'x_province',
     'country', 'postcode', 'x_phone', 'x_organization',
     ]
+
 
 class OpenIdMixin:
 
