@@ -1,0 +1,58 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <metal:heading fill-slot="pageheading">
+    <h1>Confirm bug assignment</h1>
+  </metal:heading>
+
+  <metal:leftportlets fill-slot="portlets_one">
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/owner/@@+portlet-details" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+    <tal:p tal:content="structure view/message"/>
+    <br /><br />
+    <form name="confirmation" method="POST"
+	  id="confirmation_form"
+	  tal:attributes="action view/form_action"
+	  tal:define="fields python:view.request.form.items()">
+
+      <input tal:repeat="field fields"
+	     tal:attributes="name python:field[0];value python:field[1]"
+	     type="hidden" />
+      <input type="submit"
+	     name="confirm_non_contributor"
+	     value="OK" />
+      <input type="submit"
+	     name="go_back_to_entry"
+	     value="Cancel"
+	     id="cancel" />
+      <script type='text/javascript'>
+        function onCancelClick(e) {
+          e.preventDefault();
+          history.back();
+        }
+        function onload_handler(e) {
+          connect('cancel', 'onclick', onCancelClick);
+        }
+        registerLaunchpadFunction(onload_handler)
+      </script>
+    </form>
+
+  </div>
+
+</body>
+</html>

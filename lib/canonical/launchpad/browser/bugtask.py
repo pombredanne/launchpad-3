@@ -41,6 +41,7 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.formlib import form
@@ -68,7 +69,7 @@ from canonical.launchpad.interfaces import (
     ICveSet, IDistribution, IDistributionSourcePackage, IDistroBugTask,
     IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
-    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
+    IPerson, IPersonBugTaskSearch, IPersonSet, IProduct, IProductSeries,
     IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
@@ -816,6 +817,15 @@ class BugTaskEditView(LaunchpadEditFormView):
             raise AssertionError("Unknown IBugTask: %r" % self.context)
         return '_'.join(parts)
 
+    def initialize(self):
+        super(BugTaskEditView, self).initialize()
+        if 'go_back_to_entry' in self.request.form:
+            self.addError('Go back to entry form.')
+            form = self.request.form.copy()
+            del form['go_back_to_entry']
+            reentry_url = canonical_url(self.context)
+            self.request.response.redirect(reentry_url)
+
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
 
@@ -947,6 +957,23 @@ class BugTaskEditView(LaunchpadEditFormView):
                 valid_upstreamtask(bugtask.bug, data.get('product'))
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
+
+        new_assignee = data.get('assignee', bugtask.assignee)
+        no_previous_errors = len(self.errors) == 0
+        if (no_previous_errors and
+            new_assignee != bugtask.assignee and
+            not new_assignee.isBugContributorInTarget(
+                user=self.user, target=bugtask.target) and
+            not 'confirm_non_contributor' in self.request.form):
+                self.setFieldError('assignee', 'Not a bug contributor')
+                form_data = self.request.form.copy()
+                form_data['new_assignee'] = new_assignee.name
+                query_string = urllib.urlencode(form_data)
+                confirmation_url = '%s/+confirm-non-contributor?%s' % (
+                    canonical_url(bugtask), query_string)
+                self.request.response.redirect(confirmation_url)
+        else:
+            pass # Valid Assignee
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
@@ -1116,6 +1143,42 @@ class BugTaskEditView(LaunchpadEditFormView):
     def save_action(self, action, data):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
+
+
+class BugTaskNonContributorAssigneeConfirmView(LaunchpadView):
+    """Bug task non-contributor assignee confirmation view.
+
+    A confirmation step for assigning a bugtask to a person who
+    isn't a bug contributor."""
+
+    @property
+    def form_action(self):
+        """The URL of the form's action. """
+        return '%s/+editstatus' % (canonical_url(self.context),)
+
+    @property
+    def message(self):
+        """The message to display to the user."""
+        bugtask = self.context
+        new_assignee = getUtility(IPersonSet).getByName(
+            self.request.form.get('new_assignee'))
+        if not new_assignee.isBugContributor(user=self.user):
+            return """<a href="%s">%s</a>
+            has not beenassigned any bugs before.
+            <br /><br />
+            Continue assigning this bug?""" % (
+                canonical_url(new_assignee), new_assignee.displayname,)
+        elif not new_assignee.isBugContributorInTarget(
+            user=self.user, target=bugtask.target):
+            return """<a href="%s">%s</a>
+            has not been assigned any bugs in
+            <a href="%s">%s</a> before.
+            <br /><br />
+            Continue assigning this bug?""" % (
+                canonical_url(new_assignee), new_assignee.displayname,
+                canonical_url(bugtask.target), bugtask.target.title)
+        else:
+            raise AssertionError('Unnecessary confirmation request.')
 
 
 class BugTaskStatusView(LaunchpadView):
