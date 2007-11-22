@@ -75,6 +75,9 @@ class ContentNegotiationTests(unittest.TestCase):
         self.assertEqual(
             request.response.getHeader('content-type'),
             'application/xrds+xml')
+        # It is important that no X-XRDS-Location header is generated
+        # in this case, since that would cause the client to make a
+        # second request for the XRDS data.
         self.assertEqual(
             request.response.getHeader('x-xrds-location'), None)
 
