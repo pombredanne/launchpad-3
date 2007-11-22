@@ -96,7 +96,7 @@ h3 { font-size: 1.1em; }
 h4, h5, h6 { font-size: 1em; }
 h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
-   of the displayed object. It must not have zero margin-top. */
+   of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
