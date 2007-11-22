@@ -337,9 +337,13 @@ ul#menuroot {
   /* Other paddings and margins set to zero to undo the generic "ul" style. */
   padding: 0 16px 0 0;
   margin: 0;
-  /* Force the height to prevent a gap when "#logincontrol" wraps around and
-     the font size is increased.
-     0px vertical padding + 14px height = 26px, height of "#locationbar". */
+  /* To prevent a gap when "#logincontrol" wraps around and the font size is
+     increased, we need to prevent the box height from being greater than the
+     height of the #locationbar box, which sets the green background. We do not
+     inherit the height limit from #location bar because this element is
+     floated.
+
+     0px vertical padding + 26px height = 26px, height of "#locationbar". */
   height: 26px;
 }
 /* XXX: needs explanation */
@@ -376,8 +380,11 @@ ul#menuroot a.breadcrumb {
   background-position: -1100px 0px;
   padding: 6px 0 6px 10px;
   margin-right: -1px;
-  /* Force the height to prevent a gap when "#logincontrol" wraps around and
-     the font size is increased.
+  /* To prevent a gap when "#logincontrol" wraps around and the font size is
+     increased, we need to prevent the box height from being greater than the
+     height of the #locationbar box, which sets the green background. We do not
+     inherit the height limit from #location bar because this element is
+     floated.
 
      12px vertical padding + 14px height = 26px, height of "#locationbar". */
   height: 14px;
