@@ -266,7 +266,11 @@ valid_branch_name_pattern = re.compile(r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z")
 
 
 def valid_branch_name(name):
-    """XXX."""
+    """Return True if the name is valid as a branch name, otherwise False.
+
+    The rules for what is a valid branch name are described in
+    BRANCH_NAME_VALIDATION_ERROR_MESSAGE.
+    """
     if valid_branch_name_pattern.match(name):
         return True
     return False
