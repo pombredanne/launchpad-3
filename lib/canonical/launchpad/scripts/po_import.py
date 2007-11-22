@@ -86,6 +86,8 @@ class ImportProcess:
                     title = entry_to_import.import_into.title
                     self.logger.info('Importing: %s' % title)
                     entry_to_import.import_into.importFromQueue(self.logger)
+                    from canonical.database.sqlbase import flush_database_caches
+                    flush_database_caches()
                 except KeyboardInterrupt:
                     self.ztm.abort()
                     raise

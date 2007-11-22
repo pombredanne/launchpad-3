@@ -46,8 +46,8 @@ If we post the form with suggestions, the form controls are still set to rtl:
 But suggestion text is tagged with its language code and its own text
 direction:
 
-  >>> print find_tag_by_id(browser.contents, 'msgset_130_es_suggestion_565_0')
+  >>> print find_tag_by_id(browser.contents, 'msgset_130_es_suggestion_562_0')
   <label style="white-space: normal" lang="es"
-    id="msgset_130_es_suggestion_565_0" dir="ltr"
-    for="msgset_130_es_suggestion_565_0_radiobutton">libreta de
+    id="msgset_130_es_suggestion_562_0" dir="ltr"
+    for="msgset_130_es_suggestion_562_0_radiobutton">libreta de
       direcciones de Evolution</label>

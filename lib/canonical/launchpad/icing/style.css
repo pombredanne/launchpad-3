@@ -788,11 +788,14 @@ border. */
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
   margin-top: 30px;
-  padding: 20px 20px 40px 240px;
+  padding: 48px 20px 40px 240px;
   position: relative;
-  top: 28px;
 }
-* html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
+* html #container {margin-top: 0; position: static;} /* fixes in IE6 */
+
+/* Something private for a public project has a cordon inside the tabs: */
+#container.private {background: url(/@@/private-bg) left 28px repeat-x;}
+
 body.applicationhome #container {padding-left: 20px;}
 #maincontent {
   width: 100%;

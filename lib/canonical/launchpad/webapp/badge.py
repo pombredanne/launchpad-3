@@ -15,7 +15,7 @@ __all__ = [
     'STANDARD_BADGES',
     ]
 
-from zope.interface import Attribute, implements, Interface
+from zope.interface import implements, Interface
 
 
 class Badge:

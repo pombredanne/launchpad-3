@@ -35,7 +35,7 @@ Now, lets upload this file.
   <a href="http://translations.launchpad.dev/firefox/trunk/+imports">Translation
   Import Queue</a>
 
-Lets check the import queue to edit this entry and set potemplatename.
+Lets check the import queue to edit this entry and set the name.
 
   >>> browser.getLink('Translation Import Queue').click()
   >>> print browser.getLink(url='en-US.xpi').url
@@ -47,7 +47,8 @@ Lets check the import queue to edit this entry and set potemplatename.
 All new entries need to get a template name to identify them in the context
 where will be imported. In this case, it's 'firefox'.
 
-  >>> browser.getControl('Template Name').value = 'firefox'
+  >>> browser.getControl('Template name').value = 'firefox'
+  >>> browser.getControl('Translation domain').value = 'firefox'
   >>> browser.getControl('Attach').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports

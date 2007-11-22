@@ -1,4 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces for a Sprint (a meeting, conference or hack session).
 
 A Sprint basically consists of a bunch of people getting together to discuss

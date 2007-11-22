@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -47,14 +53,15 @@
     <form name="add" action="" method="POST">
     <input type="hidden" name="action" value="add_ssh" />
     <h2>Add an SSH key</h2>
-    <div>
+      <div>
         <label>Public key line</label>
         <div class="formHelp">
             Insert the contents of <code>~/.ssh/id_dsa.pub</code> or
             <code>~/.ssh/id_rsa.pub</code>.  Only SSH v2 keys are supported.
         </div>
         <textarea name="sshkey" width="30" height="6"></textarea>
-        <input type="submit" value="Import Public Key">
+        <input type="submit" value="Import Public Key" />
+      </div>
     </form>
     </div>
     

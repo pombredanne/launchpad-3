@@ -20,9 +20,7 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, BuildSlaveFailure, CannotBuild,
-    IBuildQueueSet, IBuildSet, PackagePublishingPocket,
-    PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
 
 from canonical.config import config
 
@@ -234,7 +232,7 @@ class BuilddMaster:
             # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
             # should be modeled as DistroArchSeries.ppa_supported.
             if pubrec.archive.purpose == ArchivePurpose.PPA:
-                ppa_archtags = ('i386', 'amd64')
+                ppa_archtags = ('i386', 'amd64', 'lpia')
                 local_archs = [
                     distro_arch_series for distro_arch_series in legal_archs
                     if distro_arch_series.architecturetag in ppa_archtags]
@@ -487,78 +485,3 @@ class BuilddMaster:
 
         # And finally return that list
         return jobs
-
-    def sortByScore(self, queueItems):
-        """Sort queueItems by lastscore, in descending order."""
-        queueItems.sort(key=operator.attrgetter('lastscore'), reverse=True)
-
-    def sortAndSplitByProcessor(self):
-        """Split out each build by the processor it is to be built for then
-        order each sublist by its score. Get the current build job candidates
-        """
-        bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(
-            self._archserieses, state=BuildStatus.NEEDSBUILD)
-        if not candidates:
-            return {}
-
-        self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
-
-        result = {}
-
-        for job in candidates:
-            job_proc = job.archseries.processorfamily
-            result.setdefault(job_proc, []).append(job)
-
-        for job_proc in result:
-            self.sortByScore(result[job_proc])
-
-        return result
-
-    def dispatchByProcessor(self, proc, queueItems):
-        """Dispatch Jobs according specific processor"""
-        self._logger.info("dispatchByProcessor(%s, %d queueItem(s))"
-                          % (proc.name, len(queueItems)))
-        try:
-            builders = notes[proc]["builders"]
-        except KeyError:
-            self._logger.debug("No initialised builders found.")
-            return
-
-        while len(queueItems) > 0:
-            build_candidate = queueItems.pop(0)
-            #self._logger.debug(build_candidate.build.title)
-            # Retrieve the first available builder according the context.
-            builder = builders.firstAvailable(
-                is_trusted=build_candidate.is_trusted)
-            if not builder:
-                #self._logger.debug('No Builder Available')
-                continue
-            # either dispatch or mark obsolete builds (sources superseded
-            # or removed) as SUPERSEDED.
-            spr = build_candidate.build.sourcepackagerelease
-            if (spr.publishings and spr.publishings[0].status <=
-                PackagePublishingStatus.PUBLISHED):
-                self.startBuild(builders, builder, build_candidate)
-                self.commit()
-            else:
-                self._logger.debug(
-                    "Build %s SUPERSEDED, queue item %s REMOVED"
-                    % (build_candidate.build.id, build_candidate.id))
-                build_candidate.build.buildstate = (
-                    BuildStatus.SUPERSEDED)
-                build_candidate.destroySelf()
-
-        self.commit()
-
-    def startBuild(self, builders, builder, queueItem):
-        """Find the list of files and give them to the builder."""
-        try:
-            builder.startBuild(queueItem,  self._logger)
-        except BuildSlaveFailure:
-            # keep old mirrored-from-db-data in sync.
-            builders.updateOkSlaves()
-        except CannotBuild:
-            # Ignore the exception - this code is being refactored and the
-            # caller of startBuild expects it to never fail.
-            pass

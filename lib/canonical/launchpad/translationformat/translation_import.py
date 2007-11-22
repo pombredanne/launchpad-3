@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
     PersonCreationRationale, RosettaImportStatus, TranslationConflict,
-    TranslationConstants, TranslationFileFormat)
+    TranslationFileFormat)
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -31,7 +31,7 @@ from canonical.launchpad.translationformat.gettext_po_importer import (
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationMessage)
+    TranslationMessageData)
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -42,27 +42,26 @@ importers = {
     }
 
 class ExistingPOFileInDatabase:
-    """All existing translations and suggestions for a PO file.
+    """All existing translations for a PO file.
 
     Fetches all information needed to compare messages to be imported in one
     go. Used to speed up PO file import."""
 
-    def __init__(self, pofile, published=False, active=False):
+    def __init__(self, pofile, is_imported=False):
         self.pofile = pofile
-        self.is_published = published
-        self.is_active = active
+        self.is_imported = is_imported
 
-        # Dict indexed by (msgid, context) containing active
-        # TranslationMessages: doing this for the speed.
+        # Dict indexed by (msgid, context) containing current
+        # TranslationMessageData: doing this for the speed.
         self.messages = {}
         # Messages which have been seen in the file: messages which exist
         # in the database, but not in the import, will be expired.
         self.seen = set()
 
         # Contains published but inactive translations.
-        self.published = {}
+        self.imported = {}
 
-        # Pre-fill self.messages and self.published with data.
+        # Pre-fill self.messages and self.imported with data.
         self._fetchDBRows()
 
 
@@ -72,69 +71,71 @@ class ExistingPOFileInDatabase:
             POMsgId.msgid AS msgid,
             POMsgID_Plural.msgid AS msgid_plural,
             context,
-            translation,
+            pt0.translation as translation0,
+            pt1.translation as translation1,
+            pt2.translation as translation2,
+            pt3.translation as translation3,
             date_reviewed,
-            isfuzzy,
-            publishedfuzzy,
-            POSubmission.active,
-            POSubmission.published,
-            POSubmission.pluralform
-          FROM POFile
-            JOIN POMsgSet ON
-              POMsgSet.pofile=POFile.id
+            is_fuzzy,
+            is_current,
+            is_imported
+          FROM TranslationMessage
+            JOIN POFile ON
+              TranslationMessage.pofile=POFile.id AND POFile.id=%s
             JOIN POTMsgSet ON
-              POTMsgSet.id=POMsgSet.potmsgset
-            JOIN POSubmission ON
-              POSubmission.pomsgset=POMsgSet.id
-            JOIN POTranslation ON
-              POTranslation.id=POSubmission.potranslation
+              POTMsgSet.id=TranslationMessage.potmsgset
+            LEFT OUTER JOIN POTranslation pt0 ON
+              pt0.id=TranslationMessage.msgstr0
+            LEFT OUTER JOIN POTranslation pt1 ON
+              pt1.id=TranslationMessage.msgstr1
+            LEFT OUTER JOIN POTranslation pt2 ON
+              pt2.id=TranslationMessage.msgstr2
+            LEFT OUTER JOIN POTranslation pt3 ON
+              pt3.id=TranslationMessage.msgstr3
             JOIN POMsgID ON
-              POMsgID.id=POTMsgSet.primemsgid
-            LEFT OUTER JOIN POMsgIDSighting ON
-              POMsgIDSighting.potmsgset=POTMsgSet.id AND
-              POMsgIDSighting.pluralform=1
+              POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
-              POMsgID_Plural.id=POMsgIDSighting.pomsgid
-          WHERE POFile.id=%s
-          ORDER BY active, pluralform
+              POMsgID_Plural.id=POTMsgSet.msgid_plural
+          WHERE
+                is_current or is_imported
           '''
         cur = cursor()
         cur.execute(sql % sqlvalues(self.pofile))
 
-        for (msgid, msgid_plural, context, translation, date, isfuzzy,
-             publishedfuzzy, active, published, pluralform) in cur.fetchall():
-
-            if active:
+        for (msgid, msgid_plural, context, msgstr0, msgstr1, msgstr2, msgstr3,
+             date, is_fuzzy, is_current, is_imported) in cur.fetchall():
+            if is_current:
                 look_at = self.messages
-            elif published:
-                look_at = self.published
+            elif is_imported:
+                look_at = self.imported
             else:
-                # We don't care about non-active and non-published messages
+                # We don't care about non-current and non-imported messages
                 # yet.  To be part of super-fast-imports-phase2.
                 continue
 
             if (msgid, context) in look_at:
                 message = look_at[(msgid, context)]
             else:
-                message = TranslationMessage()
+                message = TranslationMessageData()
                 look_at[(msgid, context)] = message
 
-                message.msgid = msgid
+                message.msgid_singular = msgid
                 message.context = context
                 message.msgid_plural = msgid_plural
-            message.addTranslation(pluralform, translation)
-            if active:
-                message.fuzzy = isfuzzy
-            elif published:
-                message.fuzzy = publishedfuzzy
-            else:
-                # We don't care about non-active and non-published messages
-                # yet.  To be part of super-fast-imports-phase2.
-                pass
+
+            if msgstr0 is not None:
+                message.addTranslation(0, msgstr0)
+            if msgstr1 is not None:
+                message.addTranslation(1, msgstr1)
+            if msgstr2 is not None:
+                message.addTranslation(2, msgstr2)
+            if msgstr3 is not None:
+                message.addTranslation(3, msgstr3)
+            message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
-        self.seen.add((message.msgid, message.context))
+        self.seen.add((message.msgid_singular, message.context))
 
     def getUnseenMessages(self):
         """Return a set of messages present in the database but not seen
@@ -144,14 +145,14 @@ class ExistingPOFileInDatabase:
         for (msgid, context) in self.messages:
             if (msgid, context) not in self.seen:
                 unseen.add((msgid, context))
-        for (msgid, context) in self.published:
+        for (msgid, context) in self.imported:
             if ((msgid, context) not in self.messages and
                 (msgid, context) not in self.seen):
                 unseen.add((msgid, context))
         return unseen
 
     def _compareTwoMessages(self, msg1, msg2):
-        """Compare if two TranslationMessages msg1 and msg2 are the same.
+        """Compare if two translation messages msg1 and msg2 are the same.
 
         Compares fuzzy flags, msgid and msgid_plural, and all translations.
         Returns True when messages match, and False when they don't.
@@ -172,26 +173,22 @@ class ExistingPOFileInDatabase:
     def isAlreadyTranslatedTheSame(self, message):
         """Check whether this message is already translated in exactly
         the same way.
-
-        message can be active or inactive and published.  Inactive and
-        published messages are considered translated in the same way
-        iff...
         """
-        (msgid, context) = (message.msgid, message.context)
+        (msgid, context) = (message.msgid_singular, message.context)
         if (msgid, context) in self.messages:
             msg_in_db = self.messages[(msgid, context)]
             return self._compareTwoMessages(msg_in_db, message)
         else:
             return False
 
-    def isAlreadyPublishedTheSame(self, message):
+    def isAlreadyImportedTheSame(self, message):
         """Check whether this translation is already present in DB as
-        'published' translation, and thus needs no changing if we are
-        submitting a published update.
+        'is_imported' translation, and thus needs no changing if we are
+        submitting an imported update.
         """
-        (msgid, context) = (message.msgid, message.context)
-        if ((msgid, context) in self.published) and self.is_published:
-            msg_in_db = self.published[(msgid, context)]
+        (msgid, context) = (message.msgid_singular, message.context)
+        if ((msgid, context) in self.imported) and self.is_imported:
+            msg_in_db = self.imported[(msgid, context)]
             return self._compareTwoMessages(msg_in_db, message)
         else:
             return False
@@ -346,81 +343,75 @@ class TranslationImporter:
 
         count = 0
 
-        if self.pofile is not None:
-            pofile_in_db = ExistingPOFileInDatabase(
-                self.pofile,
-                published=translation_import_queue_entry.is_published)
+        if self.pofile is not None or english_pofile is not None:
+            if self.pofile is None:
+                last_translator = translation_import_queue_entry.importer
+                pofile_in_db = ExistingPOFileInDatabase(
+                    english_pofile,
+                    is_imported=translation_import_queue_entry.is_published)
+            else:
+                pofile_in_db = ExistingPOFileInDatabase(
+                    self.pofile,
+                    is_imported=translation_import_queue_entry.is_published)
         errors = []
+        use_pofile = self.pofile
         for message in translation_file.messages:
-            if not message.msgid:
+            if not message.msgid_singular:
                 # The message has no msgid, we ignore it and jump to next
                 # message.
                 continue
-            if self.pofile is not None:
+
+            if self.pofile is not None or english_pofile is not None:
                 # Mark this message as seen in the import
                 pofile_in_db.markMessageAsSeen(message)
                 if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
-                    pofile_in_db.isAlreadyPublishedTheSame(message)):
+                    pofile_in_db.isAlreadyImportedTheSame(message)):
                     count += 1
                     continue
 
             # Add the msgid.
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-                message.msgid, context=message.context)
+                message.msgid_singular, context=message.context)
 
             if potmsgset is None:
                 # It's the first time we see this msgid, we need to create the
                 # IPOTMsgSet for it.
                 potmsgset = self.potemplate.createMessageSetFromText(
-                    message.msgid, context=message.context)
-            else:
-                # Note that we saw it.
-                potmsgset.makeMessageIDSighting(
-                    message.msgid, TranslationConstants.SINGULAR_FORM,
-                    update=True)
+                    message.msgid_singular, message.msgid_plural,
+                    context=message.context)
 
-            # Add the English plural form.
-            if message.msgid_plural:
-                # Check whether this message had already a plural form in its
-                # previous import.
-                if (potmsgset.msgid_plural is not None and
-                    potmsgset.msgid_plural != message.msgid_plural and
-                    self.pofile is not None):
-                    # The PO file wants to change the plural msgid from the PO
-                    # template, that's broken and not usual, so we raise an
-                    # exception to log the issue. It needs to be fixed
-                    # manually in the imported translation file.
-                    # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
-                    # Gettext doesn't allow two plural messages with the
-                    # same msgid but different msgid_plural so I think is
-                    # safe enough to just go ahead and import this translation
-                    # here but setting the fuzzy flag.
-                    pomsgset = potmsgset.getPOMsgSet(
-                        self.pofile.language.code, self.pofile.variant)
-                    if pomsgset is None:
-                        pomsgset = (
-                            self.pofile.createMessageSetFromMessageSet(
-                                potmsgset))
+            # If msgid_plural for this plural form is different from existing
+            # plural form (and msgid matches)
+            if (message.msgid_plural is not None and
+                self.pofile is not None and
+                potmsgset.msgid_plural is not None and
+                (message.msgid_plural != potmsgset.msgid_plural.msgid)):
+                # The PO file wants to change the plural msgid from the PO
+                # template, that's broken and not usual, so we raise an
+                # exception to log the issue. It needs to be fixed
+                # manually in the imported translation file.
+                # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
+                # Gettext doesn't allow two plural messages with the
+                # same msgid but different msgid_plural so I think is
+                # safe enough to just go ahead and import this translation
+                # here but setting the fuzzy flag.
 
-                    # Add the pomsgset to the list of pomsgsets with errors.
-                    error = {
-                        'pomsgset': pomsgset,
-                        'pomessage': format_exporter.exportTranslationMessage(
+                # Add the pomsgset to the list of pomsgsets with errors.
+                error = {
+                    'potmsgset': potmsgset,
+                    'pofile': self.pofile,
+                    'pomessage':
+                        format_exporter.exportTranslationMessageData(
                             message),
-                        'error-message': (
-                            "The msgid_plural field has changed since the"
-                            " last time this file was generated, please"
-                            " report this error to %s" % (
-                                config.rosetta.rosettaadmin.email))
-                        }
+                    'error-message': (
+                        "The msgid_plural field has changed since the"
+                        " last time this file was generated, please"
+                        " report this error to %s" % (
+                            config.rosetta.rosettaadmin.email))
+                    }
 
-                    errors.append(error)
-                    continue
-
-                # Note that we saw this plural form.
-                potmsgset.makeMessageIDSighting(
-                    message.msgid_plural, TranslationConstants.PLURAL_FORM,
-                    update=True)
+                errors.append(error)
+                continue
 
             # Update the position
             count += 1
@@ -433,6 +424,7 @@ class TranslationImporter:
                 fuzzy = False
                 flags_comment = u""
             flags_comment += u", ".join(message.flags)
+
 
             if self.pofile is None:
                 # The import is a translation template file
@@ -447,43 +439,15 @@ class TranslationImporter:
                 # import.
                 self.potemplate.invalidateCache()
 
-                if english_pofile is not None:
-                    # The English strings for this template are stored inside
-                    # an IPOFile.
-                    pomsgset = potmsgset.getPOMsgSet(
-                        english_pofile.language.code)
-                    if pomsgset is None:
-                        # There is no such pomsgset, we need to create it.
-                        pomsgset = (
-                            english_pofile.createMessageSetFromMessageSet(
-                                potmsgset))
-
-                    pomsgset.sequence = count
-
                 # By default translation template uploads are done only by
                 # editors.
                 is_editor = True
                 last_translator = translation_import_queue_entry.importer
                 lock_timestamp = None
+                if english_pofile is not None:
+                    use_pofile = english_pofile
             else:
                 # The import is a translation file.
-                pomsgset = potmsgset.getPOMsgSet(
-                    self.pofile.language.code, self.pofile.variant)
-                if pomsgset is None:
-                    # There is no such pomsgset.
-                    pomsgset = self.pofile.createMessageSetFromMessageSet(
-                        potmsgset)
-
-                pomsgset.sequence = count
-                pomsgset.commenttext = message.comment
-                if potmsgset.sequence == 0:
-                    # We are importing a message that does not exist in
-                    # latest translation template so we can update its values.
-                    potmsgset.sourcecomment = message.source_comment
-                    potmsgset.filereferences = message.file_references
-                    pomsgset.flagscomment = flags_comment
-
-                pomsgset.obsolete = message.is_obsolete
 
                 # Use the importer rights to make sure the imported
                 # translations are actually accepted instead of being just
@@ -491,8 +455,15 @@ class TranslationImporter:
                 is_editor = self.pofile.canEditTranslations(
                     translation_import_queue_entry.importer)
 
+                if potmsgset.sequence == 0:
+                    # We are importing a message that does not exist in
+                    # latest translation template so we can update its values.
+                    potmsgset.sourcecomment = message.source_comment
+                    potmsgset.filereferences = message.file_references
+
+
             # Store translations
-            if self.pofile is None and english_pofile is None:
+            if use_pofile is None:
                 # It's neither an IPOFile nor an IPOTemplate that needs to
                 # store English strings in an IPOFile.
                 continue
@@ -506,52 +477,65 @@ class TranslationImporter:
                 translations[index] = message.translations[index]
 
             try:
-                pomsgset.updateTranslationSet(
-                    last_translator, translations, fuzzy,
-                    translation_import_queue_entry.is_published,
+                translation_message = potmsgset.updateTranslation(
+                    use_pofile, last_translator, message.translations,
+                    fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, force_edition_rights=is_editor)
             except TranslationConflict:
                 error = {
-                    'pomsgset': pomsgset,
-                    'pomessage': format_exporter.exportTranslationMessage(
+                    'potmsgset': potmsgset,
+                    'pofile': self.pofile,
+                    'pomessage': format_exporter.exportTranslationMessageData(
                         message),
                     'error-message': (
                         "This message was updated by someone else after you"
                         " got the translation file. This translation is now"
                         " stored as a suggestion, if you want to set it as"
                         " the used one, go to %s/+translate and approve"
-                        " it." % canonical_url(pomsgset))
+                        " it." % canonical_url(use_pofile))
                 }
 
                 errors.append(error)
+                continue
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but
                 # this time asking to store it as a translation with
                 # errors.
-                pomsgset.updateTranslationSet(
-                    last_translator, translations, fuzzy,
-                    translation_import_queue_entry.is_published,
+                translation_message = potmsgset.updateTranslation(
+                    use_pofile, last_translator, message.translations,
+                    fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, ignore_errors=True,
                     force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
-                    'pomsgset': pomsgset,
-                    'pomessage': format_exporter.exportTranslationMessage(
+                    'potmsgset': potmsgset,
+                    'pofile': use_pofile,
+                    'pomessage': format_exporter.exportTranslationMessageData(
                         message),
                     'error-message': unicode(e)
                 }
 
                 errors.append(error)
 
+            translation_message.flags_comment = flags_comment
+            translation_message.comment = message.comment
+            if translation_import_queue_entry.is_published:
+                translation_message.was_obsolete_in_last_import = (
+                    message.is_obsolete)
+                translation_message.was_fuzzy_in_last_import = fuzzy
+
+
         # Finally, lets expire messages which we have not seen in the new upload
-        if self.pofile is not None:
+        if use_pofile is not None:
             unseen = pofile_in_db.getUnseenMessages()
             for unseen_message in unseen:
                 (msgid, context) = unseen_message
-                pomsgset = self.pofile.getPOMsgSet(key=msgid, context=context,
-                                                   only_current=False)
-                if pomsgset:
-                    pomsgset.sequence = 0
+                potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+                    msgid, context=context)
+                translationmessage = potmsgset.getImportedTranslationMessage(
+                    use_pofile.language)
+                if translationmessage is not None:
+                    translationmessage.is_imported = False
 
         return errors

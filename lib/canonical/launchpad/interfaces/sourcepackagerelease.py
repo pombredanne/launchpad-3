@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Source package release interfaces."""
 
@@ -10,7 +11,6 @@ from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-
 from canonical.launchpad.interfaces import BuildStatus
 
 class ISourcePackageRelease(Interface):
@@ -69,7 +69,7 @@ class ISourcePackageRelease(Interface):
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
-    uploaddistroseries = Attribute("The distroseries in which this package "
+    upload_distroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 

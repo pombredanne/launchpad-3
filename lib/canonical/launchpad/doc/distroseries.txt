@@ -18,6 +18,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_caches, flush_database_updates)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
@@ -437,8 +439,12 @@ Perform `post publication` override:
 
    >>> new_section = getUtility(ISectionSet)['base']
 
-   >>> netapplet_srcrel.current_published.changeOverride(
+   >>> override = netapplet_srcrel.current_published.changeOverride(
    ...     new_section=new_section)
+   >>> override.section == new_section
+   True
+   >>> override.status.name
+   'PENDING'
    >>> pub_hist = netapplet_srcrel.publishing_history
    >>> pub_hist.count()
    2
@@ -456,7 +462,6 @@ Supersede current publication:
 
 We need to flush cached values.
 
-   >>> from canonical.database.sqlbase import flush_database_updates
    >>> flush_database_updates()
 
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
@@ -558,7 +563,7 @@ and child distro series.
    >>> def compare_translations(orig_distroseries, dest_distroseries):
    ...
    ...     sortkey = lambda template: (
-   ...         template.potemplatename.name, template.sourcepackagename.name)
+   ...         template.name, template.sourcepackagename.name)
    ...
    ...     orig_templates = sorted(
    ...         orig_distroseries.getCurrentTranslationTemplates(),
@@ -648,7 +653,7 @@ the most recent.
     >>> def add_messageset_to_template(potemplate, sequence, msgid, context):
     ...     """Add a message set to the given `POTemplate`."""
     ...     context_msg = potemplate.createMessageSetFromText(
-    ...         msgid, context)
+    ...         msgid, None, context=context)
     ...     context_msg = removeSecurityProxy(context_msg)
     ...     context_msg.sequence = sequence
     ...     potemplate.invalidateCache()
@@ -656,10 +661,9 @@ the most recent.
 
     >>> def add_translation(pofile, potmsgset, translation):
     ...     """Set translation for given message set in given `POFile`."""
-    ...     pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
-    ...     pomsgset.updateTranslationSet(
-    ...         carlos, { 0: translation }, fuzzy=False, published=False,
-    ...         lock_timestamp=now())
+    ...     potmsgset.updateTranslation(
+    ...         pofile, carlos, { 0: translation }, is_fuzzy=False,
+    ...         is_imported=False, lock_timestamp=now())
 
     >>> context_msg = add_messageset_to_template(
     ...     potemplate_hoary, 100, u"A contexted message", None)
@@ -686,32 +690,33 @@ the most recent.
 
 Carlos also updates a regular string in the parent release.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
-    >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+    >>> dummy = potmsgset_hoary.updateTranslation(
+    ...     pofile_es_hoary, carlos, { 0: u'hoary updated string' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
 
 And another update in a string that was previously untranslated.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
-    >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'empty string translated' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(u'has ')
+    >>> dummy = potmsgset_hoary.updateTranslation(
+    ...     pofile_es_hoary, carlos, { 0: u'empty string translated' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
 
 Update a string in the child release.
 
-    >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(
+    >>> potmsgset_humpy = potemplate_humpy.getPOTMsgSetByMsgIDText(
     ...     u'current addressbook folder')
-    >>> pomsgset_humpy.updateTranslationSet(
-    ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> dummy = potmsgset_humpy.updateTranslation(
+    ...     pofile_es_humpy, carlos, { 0: u'humpy updated string' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
 
 These are the respective expected numbers of translated messages, messages
 whose translations have changed in Launchpad, ones that are newly translated
 in Launchpad, and ones with unreviewed suggestions.
 
 We update these statistics first, since we have not gone through the regular
-UI for updating translations, and receive the current numbers as a byproduct.
+UI for updating translations.
 
     >>> pofile_es_hoary.updateStatistics()
     (7, 2, 4, 1)
@@ -722,24 +727,32 @@ The statistics for messages translated in Launchpad reflect the fact that we
 translated one previously untranslated string in Hoary.  The number for this
 category of message is called rosettaCount.
 
-    >>> pofile_es_hoary.currentCount()
-    7
-    >>> pofile_es_humpy.currentCount()
-    7
-
-    >>> pofile_es_hoary.updatesCount()
-    2
-    >>> pofile_es_humpy.updatesCount()
-    2
-
     >>> pofile_es_hoary.rosettaCount()
     4
     >>> pofile_es_humpy.rosettaCount()
     3
 
+The other statistics may change depending on unrelated factors, but it's
+the total number of current translations that matters.
+
+    >>> from canonical.database.sqlbase import quote
+    >>> from canonical.launchpad.database.translationmessage import (
+    ...     TranslationMessage)
+    >>> def count_current_translations(pofile):
+    ...     """Count how many messages in pofile have current translations.
+    ...     """
+    ...     return TranslationMessage.select(
+    ...         "pofile = %s AND is_current" % quote(pofile)).count()
+
+    >>> count_current_translations(pofile_es_hoary)
+    14
+    >>> count_current_translations(pofile_es_humpy)
+    12
+
 When we compare the full translations for hoary and humpy, we see the changes
 we just made, as well as the differences between the messages-with-context.
 
+    >>> flush_database_caches()
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
     <BLANKLINE>
@@ -838,11 +851,11 @@ parent distroseries for that same message.  So even if someone now translates
 the same messages in Hoary as well, Humpy will retain its own translations
 of those string when we next migrate updates.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(
+    >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(
     ...     u'current addressbook folder')
-    >>> pomsgset_hoary.updateTranslationSet(
-    ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=now())
+    >>> dummy = potmsgset_hoary.updateTranslation(
+    ...     pofile_es_hoary, carlos, { 0: u'second hoary updated string' },
+    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
     >>> print compare_translations(hoary, humpy)
@@ -867,15 +880,16 @@ The Hoary message is updated, but even though the Humpy version is older, it
 is not overwritten by the copy.  (The differences in the part where we had
 messages with contexts remain as they were.)
 
-We can also see that the statistics are updated and both distributions show
-mostly the same numbers (though some messages in the rosettaCount actually
-differ between the two distro series).  The only difference is that 1 message
-that was untranslated in Humpy got copied from Hoary, whereas another that was
-translated in Humpy but not in Hoary, wasn't.
+We can also see that the statistics are updated and both distributions
+show mostly the same numbers (though some messages in the rosettaCount
+actually differ between the two distro series).  The only difference is
+that 1 message that was untranslated in Humpy got copied from Hoary,
+whereas another that was translated in Humpy but not in Hoary, wasn't.
 
-    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
-    True
-    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
+Thus Humpy now has one more message translated than Hoary does.
+
+    >>> (count_current_translations(pofile_es_hoary) ==
+    ...     count_current_translations(pofile_es_humpy) - 1)
     True
     >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount() - 1
     True

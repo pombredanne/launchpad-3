@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Classes to represent source package releases in a distribution series."""
 
@@ -83,17 +84,19 @@ class DistroSeriesSourcePackageRelease:
             return None
         return currpub.component
 
+# XXX cprov 20071026: heavy queries should be moved near to the related
+# content classes in order to be better maintained.
     @property
     def builds(self):
         """See IDistroSeriesSourcePackageRelease."""
         return Build.select("""
             Build.sourcepackagerelease = %s AND
-            Build.distroarchrelease = DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s
+            Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distroseries.id),
-            orderBy='-datecreated',
-            clauseTables=['DistroArchRelease'])
+            orderBy=['-datecreated', '-id'],
+            clauseTables=['DistroArchSeries'])
 
     @property
     def files(self):
@@ -105,18 +108,18 @@ class DistroSeriesSourcePackageRelease:
         """See IDistroSeriesSourcePackageRelease."""
         clauseTables = [
             'BinaryPackageRelease',
-            'DistroArchRelease',
+            'DistroArchSeries',
             'Build',
             'BinaryPackagePublishingHistory'
         ]
 
         query = """
         BinaryPackageRelease.build=Build.id AND
-        DistroArchRelease.id =
-            BinaryPackagePublishingHistory.distroarchrelease AND
+        DistroArchSeries.id =
+            BinaryPackagePublishingHistory.distroarchseries AND
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
-        DistroArchRelease.distrorelease=%s AND
+        DistroArchSeries.distroseries=%s AND
         BinaryPackagePublishingHistory.archive IN %s AND
         Build.sourcepackagerelease=%s
         """ % sqlvalues(self.distroseries,
@@ -143,7 +146,7 @@ class DistroSeriesSourcePackageRelease:
             ]
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
-        PackageUpload.distrorelease = %s AND
+        PackageUpload.distroseries = %s AND
         PackageUploadSource.sourcepackagerelease = %s AND
         PackageUpload.status = %s
         """ % sqlvalues(self.distroseries, self.sourcepackagerelease,
@@ -189,7 +192,7 @@ class DistroSeriesSourcePackageRelease:
     def publishing_history(self):
         """See IDistroSeriesSourcePackage."""
         return SourcePackagePublishingHistory.select("""
-            distrorelease = %s AND
+            distroseries = %s AND
             archive IN %s AND
             sourcepackagerelease = %s
             """ % sqlvalues(
@@ -213,7 +216,7 @@ class DistroSeriesSourcePackageRelease:
         """See IDistroArchSeriesSourcePackage."""
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
-        distrorelease = %s AND
+        distroseries = %s AND
         archive IN %s AND
         sourcepackagerelease = %s AND
         status = %s
