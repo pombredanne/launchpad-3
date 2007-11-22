@@ -580,7 +580,7 @@ ul#menuroot li.selected a.breadcrumb {
   float: right;
   /* The help-tab.gif dimensions are 32x62. We must set absolute width and
      height and override any padding that could be applied by less specific
-     rules. */     
+     rules. */
   width: 32px;
   height: 62px;
   padding: 0;
@@ -721,7 +721,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   float: left;
   width: 70%;
 }
-/* Structural headings contain an icon, maybe an intro, and a main heading. 
+/* Structural headings contain an icon, maybe an intro, and a main heading.
 
    The icon size (when present) is 64x64, and is floated left. The left
    margins (3px on the icon, 70px on .intro and .main) provides 3px of
@@ -732,7 +732,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   margin-right: 3px;
   /* Large negative margin-bottom, so the presence or absence of the image
      will not affect the positioning of the #mainarea. */
-  margin-bottom: -32px;  
+  margin-bottom: -32px;
 }
 #structuralobjectheading .intro {
   margin: 2px 0 0 70px;
