@@ -16,6 +16,7 @@ __all__ = [
     'PackageCopier',
     'LpQueryDistro',
     'PackageRemover',
+    'ObsoleteDistroseries',
     ]
 
 import apt_pkg
@@ -34,7 +35,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
     IDistributionSet, IBinaryPackageReleaseSet, ILaunchpadCelebrities,
     NotFoundError, ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
-    PackagePublishingPriority)
+    PackagePublishingPriority, PackagePublishingStatus)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.librarian.interfaces import (
@@ -1548,3 +1549,74 @@ class PackageRemover(SoyuzScript):
 
         # Information returned mainly for the benefit of the test harness.
         return removals
+
+
+class ObsoleteDistroseries(SoyuzScript):
+    """`SoyuzScript` that obsoletes a distroseries."""
+
+    usage = "%prog -d <distribution> -s <suite>"
+    description = ("Make obsolete (schedule for removal) packages in an "
+                  "obsolete distroseries.")
+
+    def add_my_options(self):
+        """Add -d and -s options."""
+        SoyuzScript.add_distro_options(self)
+
+    def mainTask(self):
+        """Execute package obsolescence procedure.
+
+        Modules using this class outside of its normal usage in the
+        main script can call this method to start the copy.
+
+        In this case the caller can override test_args on __init__
+        to set the command line arguments.
+
+        Can raise SoyuzScriptError.
+        """
+        # There is a circular import between this file and publishing.py
+        from canonical.launchpad.database.publishing import (
+
+            SourcePackagePublishingHistory, BinaryPackagePublshingHistory)
+        assert self.location, (
+            "location is not available, call SoyuzScript.setupLocation() "
+            "before calling mainTask().")
+
+        self.logger.info("Obsoleting all packages for distroseries %s in "
+                         "the %s distribution." % (
+            self.location.distroseries.name, self.location.distribution.name))
+
+        # Is the distroseries in an obsolete state?  Bail out now if so.
+        assert (
+            self.location.distroseries.status == DistroSeriesStatus.OBSOLETE)
+#            ("%s is not at status OBSOLETE." % self.location.distroseries.name)
+
+        # Get a list of published sources and binaries for the distroseries.
+        self.logger.info("Generating list of published sources for %s." %
+            self.location.distroseries.name)
+        sources = SourcePackagePublishingHistory.select("""
+            distroseries = %s AND
+            status = %s
+            """ % sqlvalues(self.location.distroseries,
+                            PackagePublishingStatus.PUBLISHED))
+
+        self.logger.info("Generating list of published binaries for %s." %
+            self.location.distroseries.name)
+        binaries = BinaryPackagePublishingHistory.select("""
+            distroseries = %s AND
+            status = %s
+            """ % sqlvalues(self.location.distroseries,
+                            PackagePublishingStatus.PUBLISHED))
+
+        self.logger.info("There are %d sources and %d binaries." % (
+            sources.count(), binaries.count()))
+
+        self.logger.info("Obsoleting sources...")
+        for package in sources:
+            package.status = PackagePublishingStatus.OBSOLETE
+
+        self.logger.info("Obsoleting binaries...")
+        for package in binaries:
+            package.status = PackagePublishingStatus.OBSOLETE
+
+        # Information returned mainly for the benefit of the test harness.
+        return sources, binaries
