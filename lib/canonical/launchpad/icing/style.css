@@ -715,6 +715,14 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   position: relative;
   z-index: 1;
 }
+
+/* Display the pillar image above mainarea, so the image does not appear
+   cropped in wide windows on browsers that do not support transparent
+   background. */
+#structuralobjectheading img { 
+  z-index: 2;
+}
+
 #structuralobjectheading {
   background: none;
   color: black;
@@ -1008,7 +1016,7 @@ a conditional comment in main-template.pt to work around the above rule. */
 #applicationchooser {
   clear: both;
   position: relative; /* needed to make z-index work */
-  z-index: 1; /* ensures tabs appear above structural object heading */
+  z-index: 10; /* ensures tabs appear above structural object heading */
 }
 
 /* Some pages end with links to related items. */
