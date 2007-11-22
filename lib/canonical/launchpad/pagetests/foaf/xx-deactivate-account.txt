@@ -25,7 +25,7 @@ There's a link to the +deactivate-account page in a person's +edit page.
 To deactivate a user's account we require the user to enter his password.
 
     >>> browser.getControl('Why are you deactivating your account?').value = (
-    ...     "I'm going to become a Budhist monk in Tibet") 
+    ...     "I'm going to become a Buddhist monk in Tibet") 
     >>> browser.getControl('Deactivate My Account').click()
 
     >>> browser.getControl('Password').value = 't'
