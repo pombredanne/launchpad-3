@@ -250,12 +250,12 @@ class AnnouncementRetractView(LaunchpadFormView):
 class HasAnnouncementsView(LaunchpadView):
     """A view class for pillars which have announcements."""
 
-    @property
+    @cachedproperty
     def announcements(self):
         return self.context.announcements(
                     limit=None, published_only=self._published_only)
 
-    @property
+    @cachedproperty
     def latest_announcements(self):
         return self.context.announcements(
                     limit=5, published_only=self._published_only)

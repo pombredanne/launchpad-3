@@ -167,7 +167,7 @@ class HasAnnouncements:
                     (SELECT id FROM Product WHERE project = %s))
                     """ % sqlvalues (self.id, self.id)
         elif IDistribution.providedBy(self):
-            query = 'Announcement.distribution = %s' % sqlvalues(self.id)
+            query += ' AND Announcement.distribution = %s' % sqlvalues(self.id)
         else:
             raise AssertionError, 'Unsupported announcement target'
         return Announcement.select(query, limit=limit)
