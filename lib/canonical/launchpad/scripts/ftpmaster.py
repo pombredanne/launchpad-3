@@ -1561,8 +1561,9 @@ class ObsoleteDistroseries(SoyuzScript):
                   "obsolete distroseries.")
 
     def add_my_options(self):
-        """Add -d and -s options."""
+        """Add -d, -s, dry-run and confirmation options."""
         SoyuzScript.add_distro_options(self)
+        SoyuzScript.add_transaction_options(self)
 
     def mainTask(self):
         """Execute package obsolescence procedure.
@@ -1576,10 +1577,11 @@ class ObsoleteDistroseries(SoyuzScript):
         Can raise SoyuzScriptError.
         """
         # There is a circular import between this file, domination and
-        # publishing.py
+        # publishing.py.
         from canonical.archivepublisher.domination import Dominator
         from canonical.launchpad.database.publishing import (
-            SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+            SecureSourcePackagePublishingHistory,
+            SecureBinaryPackagePublishingHistory)
         assert self.location, (
             "location is not available, call SoyuzScript.setupLocation() "
             "before calling mainTask().")
@@ -1613,7 +1615,7 @@ class ObsoleteDistroseries(SoyuzScript):
         # a Zope proxy, which it barfs on.
         archive_ids = [
             id for id in distroseries.distribution.all_distro_archive_ids]
-        sources = SourcePackagePublishingHistory.select("""
+        sources = SecureSourcePackagePublishingHistory.select("""
             distroseries = %s AND
             status = %s AND
             archive in %s
@@ -1622,13 +1624,13 @@ class ObsoleteDistroseries(SoyuzScript):
 
         self.logger.info("Generating list of published binaries for %s." %
             distroseries.name)
-        binaries = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
+        binaries = SecureBinaryPackagePublishingHistory.select("""
+            SecureBinaryPackagePublishingHistory.distroarchseries =
                 distroarchseries.id AND
             distroarchseries.distroseries = distroseries.id AND
             distroseries.id = %s AND
-            BinaryPackagePublishingHistory.status = %s AND
-            BinaryPackagePublishingHistory.archive in %s
+            SecureBinaryPackagePublishingHistory.status = %s AND
+            SecureBinaryPackagePublishingHistory.archive in %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             archive_ids),
             clauseTables=["DistroArchSeries", "DistroSeries"])
@@ -1646,6 +1648,13 @@ class ObsoleteDistroseries(SoyuzScript):
 
         # Dominate the packages in all pockets for all main archives.
         # We do not touch PPAs.
+        pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.SECURITY,
+            PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS)
+
         for archive in distro.all_distro_archives:
             try:
                 config = archive.getPubConfig()
@@ -1656,9 +1665,9 @@ class ObsoleteDistroseries(SoyuzScript):
 
             self.logger.info(
                 "Dominating files in archive: %s" % archive.title)
-            for pocket in PackagePublishingPocket:
+            for pocket in pockets:
                 self.logger.info(
-                    "Dominating files in pocket: %s" % pocket.title)
+                    "..Dominating files in pocket: %s" % pocket.name)
                 dominator = Dominator(self.logger, archive)
                 dominator.judgeAndDominate(distroseries, pocket, config)
 
