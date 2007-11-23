@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <p tal:condition="not:view/list_is_usable">
+  <p id="set-up-a-mailing-list" tal:condition="view/can_create_mailing_list">
     If you <a href="+mailinglist">set up a mailing list for this
     team</a>, you can use the mailing list as the team contact
     address.
