@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -554,10 +555,18 @@ class Builder(SQLBase):
 
         return candidate
 
+    def _getSlaveScannerLogger(self):
+        """Return the logger instance from buildd-slave-scanner.py."""
+        # XXX cprov 20071120: Ideally the Launchpad logging system
+        # should be able to configure the root-logger instead of creating
+        # a new object, then the logger lookups won't require the specific
+        # name argument anymore. See bug 164203.
+        logger = logging.getLogger('slave-scanner')
+        return logger
+
     def findBuildCandidate(self):
         """See `IBuilder`."""
-        logger = logging.getLogger()
-
+        logger = self._getSlaveScannerLogger()
         candidate = self._findBuildCandidate()
 
         if not candidate:
@@ -575,7 +584,7 @@ class Builder(SQLBase):
 
     def dispatchBuildCandidate(self, candidate):
         """See `IBuilder`."""
-        logger = logging.getLogger()
+        logger = self._getSlaveScannerLogger()
         try:
             self.startBuild(candidate, logger)
         except (BuildSlaveFailure, CannotBuild), err:

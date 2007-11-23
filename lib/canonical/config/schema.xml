@@ -203,6 +203,19 @@ k            </description>
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
+        <key name="max_feed_cache_minutes" required="no"
+            datatype="integer" default="60">
+            <description>
+            The maximum number of minutes that feeds should be cached for.
+            This is used to set the Expires and Cache-Control headers.
+            </description>
+        </key>
+        <key name="max_bug_feed_cache_minutes" required="no"
+            datatype="integer" default="30">
+            <description>
+            The maximum number of minutes that Bug feeds should be cached for.
+            </description>
+        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
@@ -527,7 +540,7 @@ k            </description>
                 notifications.
             </description>
         </key>
-        <key name="bugnotification_interval" datatye="integer"
+        <key name="bugnotification_interval" datatype="integer"
             required="no" default="5">
           <description>
               The number of minutes that at most should pass between
@@ -611,6 +624,18 @@ k            </description>
             Configuration for cronscripts/rosetta-package-po-attach
         </description>
         <key name="dbuser" datatype="string" default="poattach" />
+    </sectiontype>
+
+    <sectiontype name="processmail" extends="database_options">
+        <description>
+            Configuration for cronscripts/process-mail.py
+        </description>
+        <key name="dbuser" datatype="string" default="processmail">
+            <description>
+                The database user which will be used to process incoming 
+                emails.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="rosetta">
@@ -906,6 +931,12 @@ k            </description>
         <key name="masterlock" datatype="string"
         default="/var/tmp/sm-ng/masterlock" />
         <key name="maximum_workers" datatype="integer" default="4"/>
+        <key name="worker_timeout" datatype="integer" default="900">
+          <description>
+            The longest period of time, in seconds, that the scheduler will
+            wait for the worker to produce meaningful output.
+          </description>
+        </key>
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
@@ -1072,7 +1103,7 @@ k            </description>
         <key name="launch" datatype="boolean"       default="false" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
         <key name="xmlrpc_url" datatype="string"
-             default="http://xmlrpc.launchpad.dev:8087/mailinglists" />
+             default="http://xmlrpc-private.launchpad.dev:8087/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
         <!-- XXX: A temporary key to control whether or not the functionality
         related to hosted mailing lists is exposed in the UI.
@@ -1110,6 +1141,7 @@ k            </description>
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
+        <section name="*" type="processmail" attribute="processmail" />
         <section name="*" type="productreleasefinder"
                  attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />

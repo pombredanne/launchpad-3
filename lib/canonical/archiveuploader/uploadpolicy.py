@@ -267,7 +267,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # flag). This code will be revisited before releasing PPA
             # publicly.
             self.checkSignerIsUbuntero(upload)
-            self.checkSignerIsBetaTester(upload)
+            #self.checkSignerIsBetaTester(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(

@@ -23,22 +23,10 @@ by a sender who is not a Launchpad member will be summarily discarded.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
-
-    >>> list_set = getUtility(IMailingListSet)
-    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    >>> lpadmin = list(experts.allmembers)[0]
-    >>> list_one = list_set.get('itest-one')
-    >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
-    >>> itest_helper.wait_for_mailman()
+    >>> list_one = itest_helper.review_list('itest-one')
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -85,6 +73,7 @@ equivalent to making it unvalidated.
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
+    >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> print alternative_email.email, alternative_email.statusname
     aperson@example.org New Email Address
@@ -130,16 +119,7 @@ auto discard notification sent to the team's owner.  The message is discarded
 by Mailman's privacy handler because the poster is not a member of the mailing
 list.
 
-    # We have to use Python 2.4's icky mailbox module until Launchpad upgrades
-    # Zope to a Python 2.5 compatible version.
-    >>> import mailbox
-    >>> from email import message_from_file
-    >>> def mboxiter(mbox_filename):
-    ...     """Helper for iterating over the messages in a mailbox."""
-    ...     mbox = mailbox.UnixMailbox(open(mbox_filename), message_from_file)
-    ...     for message in mbox:
-    ...         yield message
-    >>> messages = list(mboxiter(mbox_filename))
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
     >>> len(messages)
     1
     >>> message = messages[0]
@@ -167,9 +147,9 @@ Anne now joins the team and subscribes to the mailing list.  She can now post
 to the mailing list.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
     >>> person_set = getUtility(IPersonSet)
     >>> team_one = person_set.getByName('itest-one')
-    >>> list_one = list_set.get('itest-one')
 
     # Subscribe Anne with her preferred address.
     >>> anne.join(team_one)
@@ -194,7 +174,7 @@ To show that this message will make it through by reading the mbox file.
 There are now two messages in the mbox file, the previous auto-discard notice,
 and the newly posted message.
 
-    >>> messages = list(mboxiter(mbox_filename))
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
     >>> len(messages)
     2
     >>> message = messages[1]
@@ -209,7 +189,7 @@ and the newly posted message.
     _______________________________________________
     Itest-one mailing list
     Itest-one@launchpad.dev
-    http://mission.wooz.org/mailman/listinfo/itest-one
+    http://.../mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
 

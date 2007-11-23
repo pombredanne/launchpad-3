@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 #         Celso Providelo <celso.providelo@canonical.com>
 #
@@ -47,6 +48,7 @@ class SlaveScanner(LaunchpadCronScript):
                     "No candidates available for builder.")
                 continue
             builder.dispatchBuildCandidate(candidate)
+            self.txn.commit()
 
         self.logger.info("Slave Scan Process Finished.")
 

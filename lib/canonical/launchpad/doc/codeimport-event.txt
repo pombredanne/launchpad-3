@@ -67,6 +67,14 @@ message.
     ...     else:
     ...         print "No exception raised, expected: %s" % (exc_type,)
 
+All CodeImportEvent creation methods explicitly check that their
+arguments are not None. See the implementation of CodeImportEventSet for
+the rationale.
+
+    >>> def fail_if_argument_is_none(callable, *args):
+    ...     """Callable must fails if given at least one None argument."""
+    ...     assert_raises(AssertionError, callable, *args)
+
 
 === CREATE ===
 
@@ -105,11 +113,9 @@ First we create a Subversion import.
 CodeImportSet.newCreate creates an event from the new CodeImport object
 and the person that created it. Here, the creator is the nopriv user.
 
-If either the code_import argument or the user argument are None, an
-AssertionError must be raised.
+    >>> fail_if_argument_is_none(event_set.newCreate, None, nopriv)
+    >>> fail_if_argument_is_none(event_set.newCreate, svn_import, None)
 
-    >>> assert_raises(AssertionError, event_set.newCreate, None, nopriv)
-    >>> assert_raises(AssertionError, event_set.newCreate, svn_import, None)
     >>> svn_create_event = event_set.newCreate(svn_import, nopriv)
     >>> verify_event(svn_create_event)
     CREATE
@@ -161,22 +167,23 @@ Subversion URL.
 When a code import is modified, the ICodeImportEventSet utility should
 be used to create an event describing the changes.
 
-Application code should not modify CodeImport objects directly, instead they
-should call the appropriate mutator methods. This allow CodeImportEvent objects
-to be transparently created by the mutator methods when needed. This is
-enforced by not defining a set_schema for ICodeImport.
+Application code should not modify CodeImport objects directly, instead
+they should call the appropriate mutator methods of CodeImport. This
+allows CodeImportEvent objects to be transparently created when needed.
+This is enforced by not defining a set_schema for ICodeImport.
 
-In this document, we are testing the CodeImportEvent creation infrastructure
-used by those mutator methods, so we need to directly modify the state of
-CodeImport objects. We can do this because we are working on unproxied database
-objects.
+In this document, we are testing the CodeImportEvent creation
+infrastructure used by those mutator methods, so we need to directly
+modify the state of CodeImport objects. We can do this because we are
+working on unproxied database objects.
 
 ICodeImportEventSet defines a protocol so it is able to find changes
 applied to the code import. Before making any change, the beginModify
 method must be called. It returns a token that captures the initial
 state of the the code import.
 
-    >>> assert_raises(AssertionError, event_set.beginModify, None)
+    >>> fail_if_argument_is_none(event_set.beginModify, None)
+
     >>> token = event_set.beginModify(svn_import)
 
 Then changes can be applied.
@@ -187,12 +194,13 @@ Then changes can be applied.
 After applying changes, the newModify method can create an event that
 details the changes that have been applied.
 
-    >>> assert_raises(
-    ...     AssertionError, event_set.newModify, None, nopriv, token)
-    >>> assert_raises(
-    ...     AssertionError, event_set.newModify, svn_import, None, token)
-    >>> assert_raises(
-    ...     AssertionError, event_set.newModify, svn_import, nopriv, None)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, None, nopriv, token)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, svn_import, None, token)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, svn_import, nopriv, None)
+
     >>> modify_event = event_set.newModify(svn_import, nopriv, token)
     >>> verify_event(modify_event)
     MODIFY
@@ -272,3 +280,89 @@ code import.
     UPDATE_INTERVAL u'1:00:00'
     OLD_UPDATE_INTERVAL None
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+
+=== ONLINE ===
+
+Execution of import jobs is controlled by code-import-controller daemons
+on multiple machines.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportMachineSet
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine = machine_set.getByHostname('bazaar-importer')
+
+When a controller daemon starts, it calls a mutator method on
+CodeImportMachine that marks this machine as accepting jobs. This method
+logs the change by creating an ONLINE event using the
+ICodeImportEventSet.newOnline method.
+
+    >>> fail_if_argument_is_none(event_set.newOnline, None)
+
+    >>> online_event = event_set.newOnline(machine)
+    >>> verify_event(online_event)
+    ONLINE
+    >>> print online_event.machine.hostname
+    bazaar-importer
+    >>> print_items(online_event)
+    <nothing>
+
+
+=== OFFLINE ===
+
+When a controller daemon goes offline, a mutator method on
+CodeImportMachine is called to mark it as no longer running. This method
+logs the change by creating an OFFLINE event using the
+ICodeImportSet.newOffline method.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportMachineOfflineReason)
+    >>> QUIESCED = CodeImportMachineOfflineReason.QUIESCED
+
+    >>> fail_if_argument_is_none(event_set.newOffline, None, QUIESCED)
+    >>> fail_if_argument_is_none(event_set.newOffline, machine, None)
+
+    >>> offline_event = event_set.newOffline(machine, QUIESCED)
+    >>> verify_event(offline_event)
+    OFFLINE
+    >>> print offline_event.machine.hostname
+    bazaar-importer
+    >>> print_items(offline_event)
+    OFFLINE_REASON u'QUIESCED'
+
+The offline reason must be a value of the CodeImportMachineOfflineReason
+enum. Since it is internally stored as a string, we need to manually
+check that it is a legal value.
+
+    >>> event_set.newOffline(machine, CodeImportReviewStatus.SUSPENDED)
+    Traceback (most recent call last):
+    ...
+    AssertionError: reason must be a CodeImportMachineOfflineReason value,
+    but was: ...
+
+
+=== QUIESCE ===
+
+When an operator quiesces a machine (this is an administrative
+operation), a QUIESCE event should be created to record the operator's
+identity, the affected machine, and a user-provided message explaining
+why quiescing was requested.
+
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, None, ddaa, 'Message.')
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, machine, None, 'Message.')
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, machine, ddaa, None)
+
+    >>> quiesce_event = event_set.newQuiesce(
+    ...     machine, ddaa, 'Production rollout.')
+    >>> verify_event(quiesce_event)
+    QUIESCE
+    >>> print quiesce_event.machine.hostname
+    bazaar-importer
+    >>> print quiesce_event.person.name
+    ddaa
+    >>> print_items(quiesce_event)
+    MESSAGE u'Production rollout.'

@@ -150,28 +150,45 @@ The headings:
 
 The data:
 
-    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
-    ...    print extract_text(ppa_row)
+    >>> def print_ppa_package_rows(contents):
+    ...     for ppa_row in find_tags_by_class(contents, 'ppa_package_row'):
+    ...         print extract_text(ppa_row)
+
+    >>> print_ppa_package_rows(browser.contents)
+    cdrkit - 1.0              2007-07-09  Published  breezy-autotest  editors
+    commercialpackage - 1.0-1             Pending    warty            devel
+    iceweasel - 1.0           2007-07-09  Published  warty            editors
+    pmount - 0.1-1            2007-07-09  Published  warty            editors
+
+Note that the changesfile link is not presented for anonymous access
+neither for PPA owners.
+
+It will only presented for users with admin permissions in the PPA in
+question, i.e, launchpad-admins members. We have to restrict public
+changesfile access (including PPA owner or team administrators) in
+order to prevent 'replay attacks', as described in bug #159304.
+
+The changesfile link is not presented when accessed by 'cprov' user,
+the PPA owner.
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> print_ppa_package_rows(cprov_browser.contents)
     cdrkit - 1.0
-    2007-07-09
-    Published
-    breezy-autotest
-    editors
-    commercialpackage - 1.0-1
-    (changes)
-    Pending
-    warty
-    devel
-    iceweasel - 1.0
-    2007-07-09
-    Published
-    warty
-    editors
-    pmount - 0.1-1
-    2007-07-09
-    Published
-    warty
-    editors
+    ...
+    commercialpackage - 1.0-1                Pending  warty    devel
+    ...
+
+It's only presented when the cprov's PPA page is accessed by a
+LP-admins user.
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> print_ppa_package_rows(admin_browser.contents)
+    cdrkit - 1.0
+    ...
+    commercialpackage - 1.0-1  (changesfile) Pending  warty    devel
+    ...
 
 
 == Searching an archive ==
@@ -222,7 +239,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     cdrkit - 1.0               2007-07-09  Published  breezy-autotest  editors
-    commercialpackage - 1.0-1  (changes)   Pending    warty            devel
+    commercialpackage - 1.0-1              Pending    warty            devel
 
 Use can explicitly select 'published' filter and will get the same result.
 
@@ -235,7 +252,7 @@ Use can explicitly select 'published' filter and will get the same result.
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     cdrkit - 1.0               2007-07-09  Published  breezy-autotest  editors
-    commercialpackage - 1.0-1  (changes)   Pending    warty            devel
+    commercialpackage - 1.0-1              Pending    warty            devel
 
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
@@ -263,7 +280,7 @@ any package ever published in the context PPA.
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     cdrkit - 1.0               2007-07-09  Published  breezy-autotest  editors
-    commercialpackage - 1.0-1  (changes)   Pending    warty            devel
+    commercialpackage - 1.0-1              Pending    warty            devel
     iceweasel - 1.0            2007-07-09  Superseded warty            editors
     pmount - 0.1-1             2007-07-09  Deleted    warty            editors
 
@@ -351,13 +368,8 @@ The package row headings show an Uploader column:
 
 The package row data shows the uploader:
 
-    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
-    ...    print extract_text(ppa_row)
-    mozilla-firefox - 0.9
-    name16
-    Pending
-    hoary
-    base
+    >>> print_ppa_package_rows(browser.contents)
+    mozilla-firefox - 0.9           name16  Pending  hoary  base
 
 Links from files go to their on-archive locations:
 
