@@ -1,0 +1,24 @@
+RT/3.4.5 200 Ok
+
+id: ticket/1590
+Queue: OpenSSL-Bugs
+Owner: jaenicke
+Creator: kst@mib.org
+Subject: OpenSSL 0.9.8f: bad SHA1, questionable PGP
+Status: resolved
+Priority: 0
+InitialPriority: 0
+FinalPriority: 0
+Requestors: kst@mib.org
+Cc:
+AdminCc:
+Created: Wed Oct 17 09:10:32 2007
+Starts: Not set
+Started: Wed Oct 17 09:51:33 2007
+Due: Not set
+Resolved: Fri Oct 19 11:41:35 2007
+Told: Fri Oct 19 11:41:35 2007
+TimeEstimated: 0
+TimeWorked: 0
+TimeLeft: 0
+

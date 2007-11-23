@@ -1,0 +1,24 @@
+RT/3.4.5 200 Ok
+
+id: ticket/1591
+Queue: OpenSSL-Bugs
+Owner: Nobody
+Creator: Tom.Donovan@acm.org
+Subject: get_session_cb callback invoked with no previous session in 0.9.8f
+Status: resolved
+Priority: 0
+InitialPriority: 0
+FinalPriority: 0
+Requestors: Tom.Donovan@acm.org
+Cc:
+AdminCc:
+Created: Wed Oct 17 18:11:27 2007
+Starts: Not set
+Started: Wed Oct 17 19:00:36 2007
+Due: Not set
+Resolved: Fri Oct 19 11:37:46 2007
+Told: Fri Oct 19 11:37:46 2007
+TimeEstimated: 0
+TimeWorked: 0
+TimeLeft: 0
+

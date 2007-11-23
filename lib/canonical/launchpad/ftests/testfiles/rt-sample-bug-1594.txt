@@ -1,0 +1,24 @@
+RT/3.4.5 200 Ok
+
+id: ticket/1594
+Queue: OpenSSL-Bugs
+Owner: jaenicke
+Creator: H.Koenig@science-computing.de
+Subject: 0.9.8f build problem on HP-UX 11.23 ia64
+Status: resolved
+Priority: 0
+InitialPriority: 0
+FinalPriority: 0
+Requestors: H.Koenig@science-computing.de
+Cc:
+AdminCc:
+Created: Fri Oct 19 09:17:07 2007
+Starts: Not set
+Started: Fri Oct 19 09:33:40 2007
+Due: Not set
+Resolved: Fri Oct 19 09:35:44 2007
+Told: Fri Oct 19 09:35:44 2007
+TimeEstimated: 0
+TimeWorked: 0
+TimeLeft: 0
+
