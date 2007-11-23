@@ -142,33 +142,8 @@ class AbstractUploadPolicy:
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
 
-        # Ensure that the archive for binary uploads matches that of the
-        # source upload.
-        self.checkArchiveConsistency(upload)
-
         # execute policy specific checks
         self.policySpecificChecks(upload)
-
-    def checkArchiveConsistency(self, upload):
-        """Reject binary uploads whose archive differs from its source's.
-
-        If a build generates binaries which would end up in a different
-        archive to the source, then the upload is rejected.
-        """
-        if upload.sourceful and upload.binaryful:
-            # Mixed mode uploads do not need this check, there is no existing
-            # source package.
-            return
-
-        for binary_package_file in upload.changes.binary_package_files:
-            try:
-                spr = binary_package_file.findSourcePackageRelease()
-            except UploadError:
-                # The binary has no source package.
-                continue
-            if self.archive != spr.upload_archive:
-                upload.reject(
-                    "Archive for binary differs to the source's archive.")
 
     def rejectPPAUploads(self, upload):
         """Reject uploads targeted to PPA.

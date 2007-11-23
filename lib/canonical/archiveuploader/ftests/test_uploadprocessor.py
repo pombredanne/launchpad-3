@@ -31,7 +31,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IDistroSeriesSet, PackagePublishingStatus, PackageUploadStatus)
+    IDistroSeriesSet, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus)
 from canonical.launchpad.mail import stub
 
 from canonical.testing import LaunchpadZopelessLayer
@@ -72,6 +73,11 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.options.nomails = False
         self.options.context = 'insecure'
 
+        # common recipients
+        self.kinnison_recipient = (
+            "Daniel Silverstone <daniel.silverstone@canonical.com>")
+        self.name16_recipient = "Foo Bar <foo.bar@canonical.com>"
+
         self.log = MockLogger()
 
     def tearDown(self):
@@ -79,7 +85,9 @@ class TestUploadProcessorBase(unittest.TestCase):
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
-        self.assertTrue(line in self.log.lines)
+        self.assertTrue(line in self.log.lines,
+                        "'%s' is not in logged output\n\n%s"
+                        % (line, '\n'.join(self.log.lines)))
 
     def setupBreezy(self):
         """Create a fresh distroseries in ubuntu.
@@ -438,23 +446,30 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_spph.component.name,
             'partner')
 
-        # Fudge the sourcepackagerelease for foocomm so that it's not
-        # in the partner archive.  We can then test that uploading
-        # a binary package must match the source's archive.
-        foocomm_spr.upload_archive = self.ubuntu.main_archive
+        # Fudge a build for foocomm so that it's not in the partner archive.
+        # We can then test that uploading a binary package must match the
+        # build's archive.
+        foocomm_build = foocomm_spr.createBuild(
+            self.breezy['i386'], PackagePublishingPocket.RELEASE,
+            self.ubuntu.main_archive)
         self.layer.txn.commit()
+        self.options.buildid = foocomm_build.id
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "Archive for binary differs to the source's archive." in raw_msg)
 
-        # Reset the archive on the sourcepackagerelease.
-        foocomm_spr.upload_archive = partner_archive
-        self.layer.txn.commit()
+        contents = [
+            "Subject: foocomm_1.0-1_i386.changes rejected",
+            "Attempt to upload binaries specifying build 31, "
+            "where they don't fit."]
+        self.assertEmail(contents)
+
+        # Reset upload queue directory for a new upload and the
+        # uploadprocessor buildid option.
         shutil.rmtree(upload_dir)
+        self.options.buildid = None
 
-        # Now upload a binary package of 'foocomm'.
+        # Now upload a binary package of 'foocomm', letting a new build record
+        # with appropriate data be created by the uploadprocessor.
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
