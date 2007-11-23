@@ -144,3 +144,10 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     @cachedproperty
     def openid_identity_url(self):
         return canonical_url(self.context)
+
+
+class OpenIdApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
+    """Render the OpenID index page."""
+
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidapplication-xrds.pt")

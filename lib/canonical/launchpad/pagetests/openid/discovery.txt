@@ -40,6 +40,11 @@ Launchpad assigns a persistent identifier to each user:
     Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
     Server URL: http://openid.launchpad.dev/+openid
     Supports:
+      http://specs.openid.net/auth/2.0/signon
+    ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
       http://openid.net/signon/1.1
     ----
     Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
@@ -82,6 +87,21 @@ Discovery fails for users who are not members of the team:
     ----
     No services discovered
 
+
+== OP Identifier Discovery ==
+
+It is also possible to run discovery on the root directory as an OP
+identifier.  This allows any Launchpad user to log in by entering this
+URL.
+
+    >>> print_endpoints('http://openid.launchpad.dev/')
+    Claimed ID: http://openid.launchpad.dev/
+    ----
+    Local ID: None
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/server
+    ----
 
 == Cleanup ==
 
