@@ -666,11 +666,12 @@ class POFile(SQLBase, POFileMixIn):
         query.append('TranslationMessage.is_current')
         query.append('NOT TranslationMessage.is_fuzzy')
         query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        for plural_form in range(1, self.language.pluralforms):
-            query.append('''
-                (POTMsgSet.msgid_plural IS NULL OR
-                 TranslationMessage.msgstr%d IS NOT NULL)''' % plural_form)
-
+        if self.language.pluralforms > 1:
+            plurals_query = ' AND '.join(
+                'TranslationMessage.msgstr%d IS NOT NULL' % i
+                    for i in range(1, self.language.pluralforms))
+            query.append(
+                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
