@@ -33,21 +33,10 @@
 
     <tal:series repeat="series view/sorted_series_list">
 
-      <h2 tal:condition="has_edit">
+      <h2 tal:condition="python: has_edit and series.releases">
         Release series &#8220;<tal:name
                                replace="series/name">main</tal:name>&#8221;
       </h2>
-
-      <p tal:condition="has_edit">
-        <tal:releases condition="series/releases">
-          Add download file for release:
-          <tal:release repeat="release series/releases">
-            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
-               tal:content="release/version"
-              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
-          </tal:release>
-        </tal:releases>
-      </p>
 
       <tal:seriesfilesexist
           condition="series/release_files">
@@ -92,6 +81,18 @@
         </table>
 
       </tal:seriesfilesexist>
+
+      <p tal:condition="has_edit">
+        <tal:releases condition="series/releases">
+          Add download file for release:
+          <tal:release repeat="release series/releases">
+            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
+               tal:content="release/version"
+              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+          </tal:release>
+        </tal:releases>
+      </p>
+
     </tal:series>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"
