@@ -1046,26 +1046,20 @@ will not be listed twice in the returned result.
 With this method we can get all POTMsgSet objects that are fully
 translated for a given POFile.
 
-    >>> def print_translated_message_status(potmsgsets, language):
+    >>> def print_message_status(potmsgsets, language):
     ...     print "%-10s %-5s %-10s %-9s %-11s" % (
-    ...         "msgid", "form", "translation", "fuzzy", "Has plurals")
+    ...         "msgid", "form", "translat.", "fuzzy", "Has plurals")
     ...     for potmsgset in potmsgsets:
     ...         translationmessage = potmsgset.getCurrentTranslationMessage(
     ...             language)
-    ...         translations = [
-    ...             translationmessage.msgstr0,
-    ...             translationmessage.msgstr1,
-    ...             translationmessage.msgstr2,
-    ...             translationmessage.msgstr3
-    ...             ]
-    ...         for index in range(len(translations)):
+    ...         for index in range(len(translationmessage.translations)):
     ...             msgid = potmsgset.msgid_singular.msgid
     ...             if len(msgid) > 10:
     ...                 msgid = msgid[:7] + '...'
-    ...             if translations[index] is None:
+    ...             if translationmessage.translations[index] is None:
     ...                 translation = 'None'
     ...             else:
-    ...                 translation = translations[index].translation
+    ...                 translation = translationmessage.translations[index]
     ...                 if len(translation) > 10:
     ...                     translation = translation[:7] + '...'
     ...             print "%-10s %-5s %-10s %-9s %-11s" % (
@@ -1073,50 +1067,22 @@ translated for a given POFile.
     ...                 translationmessage.is_fuzzy,
     ...                 potmsgset.msgid_plural is not None)
 
-    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetTranslated()
-    >>> print_translated_message_status(
-    ...     potmsgsets_fuzzy, evolution_es.language)
-    msgid      form  translation fuzzy     Has plurals
+    >>> potmsgsets_translated = evolution_es.getPOTMsgSetTranslated()
+    >>> print_message_status(
+    ...     potmsgsets_translated, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
     evoluti... 0     libreta... False     False
-    evoluti... 1     None       False     False
-    evoluti... 2     None       False     False
-    evoluti... 3     None       False     False
     current... 0     carpeta... False     False
-    current... 1     None       False     False
-    current... 2     None       False     False
-    current... 3     None       False     False
     have       0     tiene      False     False
-    have       1     None       False     False
-    have       2     None       False     False
-    have       3     None       False     False
      cards     0      tarjetas  False     False
-     cards     1     None       False     False
-     cards     2     None       False     False
-     cards     3     None       False     False
     evoluti... 0     boohoo     False     False
-    evoluti... 1     None       False     False
-    evoluti... 2     None       False     False
-    evoluti... 3     None       False     False
     Failed ... 0     Blah.      False     False
-    Failed ... 1     None       False     False
-    Failed ... 2     None       False     False
-    Failed ... 3     None       False     False
     The loc... 0     La ubic... False     False
-    The loc... 1     None       False     False
-    The loc... 2     None       False     False
-    The loc... 3     None       False     False
     %d contact 0     %d cont... False     True
     %d contact 1     %d cont... False     True
-    %d contact 2     %d cont... False     True
-    %d contact 3     None       False     True
     Opening... 0     Abrir %... False     True
     Opening... 1     Abrir %... False     True
-    Opening... 2     None       False     True
-    Opening... 3     None       False     True
     EncFS P... 0     Contras... False     False
-    EncFS P... 1     None       False     False
-    EncFS P... 2     None       False     False
-    EncFS P... 3     None       False     False
 
 
 == getPOTMsgSetFuzzy ==
@@ -1124,21 +1090,11 @@ translated for a given POFile.
 This method returns all POTMsgSet for a given POFile that have its
 current TranslationMessage with is_fuzzy flag set.
 
-    >>> def print_message_status(potmsgsets, language):
-    ...     print "%-9s %-11s %-9s" % (
-    ...         "msgid", "translation", "fuzzy")
-    ...     for potmsgset in potmsgsets:
-    ...         translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...             language)
-    ...         print "%-9s %-11s %-9s" % (
-    ...             potmsgset.msgid_singular.msgid,
-    ...             translationmessage.msgstr0.translation,
-    ...             translationmessage.is_fuzzy)
-
     >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
     >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
-    msgid     translation fuzzy
-    %d foo    %d foo      True
+    msgid      form  translat.  fuzzy     Has plurals
+    %d foo     0     %d foo     True      True
+    %d foo     1     None       True      True
 
 And when we submit another translation that is fuzzy...
 
@@ -1151,8 +1107,9 @@ And when we submit another translation that is fuzzy...
 
     >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
     >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
-    msgid     translation fuzzy
-    %d foo    something   True
+    msgid      form  translat.  fuzzy     Has plurals
+    %d foo     0     something  True      True
+    %d foo     1     None       True      True
 
 
 == Translations credits ==
