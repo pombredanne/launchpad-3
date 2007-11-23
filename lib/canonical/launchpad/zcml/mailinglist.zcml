@@ -6,7 +6,7 @@
 
     <content class="canonical.launchpad.database.MailingList">
         <allow interface="canonical.launchpad.interfaces.IMailingList"/>
-        <require permission="zope.Public"
+        <require permission="launchpad.AnyPerson"
                  set_attributes="welcome_message"/>
     </content>
 

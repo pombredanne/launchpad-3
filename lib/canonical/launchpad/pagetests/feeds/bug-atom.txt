@@ -31,7 +31,7 @@ the bug itself.
     >>> browser.url
     'http://feeds.launchpad.dev/jokosher/latest-bugs.atom'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/jokosher/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
@@ -65,7 +65,7 @@ as the latest bugs feed for a product.
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/mozilla/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
@@ -99,7 +99,7 @@ This feed gets the latest bugs for a person.
     >>> browser.url
     'http://feeds.launchpad.dev/~name16/latest-bugs.atom'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/~name16/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
@@ -161,7 +161,7 @@ some results.
     >>> browser.title
     'Bugs for Simple Team'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/~simple-team/latest-bugs.atom
 
@@ -183,7 +183,7 @@ a feed.
     >>> browser.title
     'Bugs from custom search'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> feed_id = extract_text(soup.find('id'))
     >>> print feed_id
     http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
@@ -226,3 +226,25 @@ This feed shows the status of a single bug.
     >>> print extract_text(entry.title)
     [1] Firefox does not support SVG
 
+== Feeds Configuration Options ==
+
+The max_bug_feed_cache_minutes configuration is provided to allow
+overriding the Expires and Cache-Control headers so that the feeds
+will be cached longer by browsers and the reverse-proxy in front
+of the feeds servers.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.feed.bug import BugsFeedBase
+    >>> from canonical.lazr.feed.feed import FeedBase
+    >>> from zope.app.datetimeutils import rfc1123_date
+    >>> import time
+    >>> old_time = time.time
+    >>> time.time = lambda: 17
+    >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
+    >>> config.launchpad.max_bug_feed_cache_minutes
+    30
+    >>> browser.headers['Expires']
+    'Thu, 01 Jan 1970 00:30:17 GMT'
+    >>> browser.headers['Cache-Control']
+    'max-age=1800'
+    >>> time.time = old_time

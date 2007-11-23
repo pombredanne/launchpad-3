@@ -1,5 +1,6 @@
 #! /usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """Perform auto-approvals and auto-blocks on translation import queue"""
 

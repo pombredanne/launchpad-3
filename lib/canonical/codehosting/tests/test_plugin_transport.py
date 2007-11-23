@@ -13,7 +13,10 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
 
-from canonical.authserver.interfaces import READ_ONLY, WRITABLE
+from twisted.web.xmlrpc import Fault
+
+from canonical.authserver.interfaces import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     LaunchpadServer, makedirs, set_up_logging)
@@ -259,6 +262,56 @@ class TestLaunchpadTransport(TestCase):
         transport.mkdir('~testuser/thunderbird/orange')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
+
+    def setFailingBranchDetails(self, name, code, message):
+        """Arrange that calling createBranch with a given branch name fails.
+
+        After calling this, calling self.authserver.createBranch with a
+        branch_name of 'name' with raise a fault with 'code' and 'message' as
+        faultCode and faultString respectively.
+        """
+        self.authserver.failing_branch_name = name
+        self.authserver.failing_branch_code = code
+        self.authserver.failing_branch_string = message
+
+    def assertRaisesWithSubstring(self, exc_type, msg, callable, *args, **kw):
+        """Assert that calling callable(*args, **kw) fails in a certain way.
+
+        This method is like assertRaises() but in addition checks that 'msg'
+        is a substring of the str() of the raise exception."""
+        try:
+            callable(*args, **kw)
+        except exc_type, error:
+            if msg not in str(error):
+                self.fail("%r not found in %r" % (msg, str(error)))
+        else:
+            self.fail("%s(*%r, **%r) did not raise!" % (callable, args, kw))
+
+    def test_createBranch_not_found_error(self):
+        # When createBranch raises an exception with faultCode
+        # NOT_FOUND_FAULT_CODE, the transport should translate this to
+        # a TransportNotPossible exception (see the comment in
+        # transport.py for why we translate to TransportNotPossible
+        # and not NoSuchFile).
+        transport = get_transport(self.server.get_url())
+        message = "Branch exploding, as requested."
+        self.setFailingBranchDetails(
+            'explode!', NOT_FOUND_FAULT_CODE, message)
+        self.assertRaisesWithSubstring(
+            errors.TransportNotPossible, message,
+            transport.mkdir, '~testuser/thunderbird/explode!')
+
+    def test_createBranch_permission_denied_error(self):
+        # When createBranch raises an exception with faultCode
+        # PERMISSION_DENIED_FAULT_CODE, the transport should translate
+        # this to a PermissionDenied exception.
+        transport = get_transport(self.server.get_url())
+        message = "Branch exploding, as requested."
+        self.setFailingBranchDetails(
+            'explode!', PERMISSION_DENIED_FAULT_CODE, message)
+        self.assertRaisesWithSubstring(
+            errors.PermissionDenied, message,
+            transport.mkdir, '~testuser/thunderbird/explode!')
 
     def lockBranch(self, unique_name):
         """Simulate locking a branch."""

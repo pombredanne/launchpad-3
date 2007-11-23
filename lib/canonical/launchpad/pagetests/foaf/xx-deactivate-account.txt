@@ -25,13 +25,13 @@ There's a link to the +deactivate-account page in a person's +edit page.
 To deactivate a user's account we require the user to enter his password.
 
     >>> browser.getControl('Why are you deactivating your account?').value = (
-    ...     "I'm going to become a Budhist monk in Tibet") 
+    ...     "I'm going to become a Buddhist monk in Tibet") 
     >>> browser.getControl('Deactivate My Account').click()
 
     >>> browser.getControl('Password').value = 't'
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+deactivate-account'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
     Incorrect password.
@@ -40,7 +40,7 @@ To deactivate a user's account we require the user to enter his password.
     >>> browser.getControl('Deactivate My Account').click()
     >>> browser.url
     'http://launchpad.dev'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Your account has been deactivated.
 
@@ -50,7 +50,7 @@ Sample Person can't log into Launchpad anymore.
     >>> browser.getControl('E-mail', index=0).value = 'test@canonical.com'
     >>> browser.getControl('Password').value = 'test'
     >>> browser.getControl('Log In').click()
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     The email address and password do not match.
 

@@ -45,6 +45,10 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         ShipItFlavour.KUBUNTU: ShipItKUbuntuLayer,
         ShipItFlavour.EDUBUNTU: ShipItEdUbuntuLayer}
 
+    # Currently we don't allow users to request the Ubuntu Server edition.
+    flavours_that_can_be_requested = [
+        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU]
+
     def _get_standard_option(self, flavour):
         return StandardShipItRequest.selectBy(flavour=flavour)[0]
 
@@ -91,7 +95,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
 
     def test_first_request_is_approved(self):
         """The first request of a given flavour should always be approved."""
-        for flavour in ShipItFlavour.items:
+        for flavour in self.flavours_that_can_be_requested:
             request = self._make_new_request_through_web(flavour)
             self.failUnless(request.isApproved(), flavour)
             self._ship_request(request)
@@ -99,7 +103,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
 
     def test_second_request_is_marked_pending(self):
         """The second request of a given flavour is always marked PENDING."""
-        for flavour in ShipItFlavour.items:
+        for flavour in self.flavours_that_can_be_requested:
             first_request = self._create_request_and_ship_it(flavour)
             second_request = self._make_new_request_through_web(flavour)
             self.failUnless(second_request.isAwaitingApproval(), flavour)
@@ -109,7 +113,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         """The third request of a given flavour is always marked
         PENDINGSPECIAL.
         """
-        for flavour in ShipItFlavour.items:
+        for flavour in self.flavours_that_can_be_requested:
             first_request = self._create_request_and_ship_it(flavour)
             second_request = self._create_request_and_ship_it(flavour)
             third_request = self._make_new_request_through_web(flavour)

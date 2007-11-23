@@ -95,11 +95,8 @@
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
-    <include file="pomsgset.zcml" />
     <include file="potemplate.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
-    <include file="posubmission.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
     <include file="productrelease.zcml" />
@@ -134,6 +131,7 @@
     <include file="temporaryblobstorage.zcml" />
     <include file="translationexport.zcml" />
     <include file="translationimport.zcml" />
+    <include file="translationmessage.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />

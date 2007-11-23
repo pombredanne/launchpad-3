@@ -36,16 +36,16 @@ the case with Firefox, the user will get an error:
 The file-a-bug page uses Launchpad's standard "private" style.
 
     >>> user_browser.open("http://launchpad.dev/redfish/+filebug")
-    >>> print find_tag_by_id(user_browser.contents, 'privatestyle')
-    <style...</style>
+    >>> print find_tag_by_id(user_browser.contents, 'container')
+    <div...class="private"...</div>
     >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
     <img...private...>
 
 And the same happens on the "advanced" bug-reporting page.
 
     >>> user_browser.open("http://launchpad.dev/redfish/+filebug-advanced")
-    >>> print find_tag_by_id(user_browser.contents, 'privatestyle')
-    <style...</style>
+    >>> print find_tag_by_id(user_browser.contents, 'container')
+    <div...class="private"...</div>
     >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
     <img...private...>
 

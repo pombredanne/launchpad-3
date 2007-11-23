@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd., all rights reserved.
+# pylint: disable-msg=W0401
 
 """XMLRPC views and APIs on Launchpad objects."""
 

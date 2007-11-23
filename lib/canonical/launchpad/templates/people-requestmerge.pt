@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -19,17 +25,19 @@
 
         <p>
           To merge two Launchpad accounts:
-          <ul>
-            <li>You must be logged in to Launchpad under the account you
+        </p>
+        <ul>
+          <li>You must be logged in to Launchpad under the account you
             want to keep.</li>
-            <li>You must have access to the e-mail address registered
+          <li>You must have access to the e-mail address registered
             under the duplicated account.</li>
-          </ul>
+        </ul>
         <p>
           You will receive an email notification requesting you authorize
           the merge, and once you've proven that you own the duplicated
           account's e-mail address, it will be assigned to you, along with
           everything else owned by it.
+        </p>
         <p class="discreet">
           Note: If you no longer have access to the duplicated account's
           email address, you may place a

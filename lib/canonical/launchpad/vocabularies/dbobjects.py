@@ -39,7 +39,6 @@ __all__ = [
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'person_team_participations_vocabulary_factory',
-    'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
     'ProductReleaseVocabulary',
@@ -54,6 +53,7 @@ __all__ = [
     'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
+    'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamVocabulary',
@@ -74,9 +74,10 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.launchpad.database import (
     Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, MailingList, Milestone, Person, PillarName, POTemplateName,
-    Processor, ProcessorFamily, Product, ProductRelease, ProductSeries,
-    Project, SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
+    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
+    SourcePackageRelease, Specification, Sprint, TranslationGroup,
+    TranslationMessage)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -496,6 +497,22 @@ def project_products_using_malone_vocabulary_factory(context):
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     _table = TranslationGroup
+
+
+class TranslationMessageVocabulary(SQLObjectVocabularyBase):
+
+    _table = TranslationMessage
+    _orderBy = 'date_created'
+
+    def toTerm(self, obj):
+        translation = ''
+        if obj.msgstr0 is not None:
+            translation = obj.msgstr0.translation
+        return SimpleTerm(obj, obj.id, translation)
+
+    def __iter__(self):
+        for message in self.context.messages:
+            yield self.toTerm(message)
 
 
 class NonMergedPeopleAndTeamsVocabulary(
@@ -999,8 +1016,8 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
         distribution = getUtility(ILaunchBag).distribution
         if distribution:
             query = """
-                DistroRelease.id = DistroArchRelease.distrorelease AND
-                DistroRelease.distribution = %s
+                DistroSeries.id = DistroArchSeries.distroseries AND
+                DistroSeries.distribution = %s
                 """ % sqlvalues(distribution.id)
             results = self._table.select(
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1322,7 +1339,7 @@ class DistributionUsingMaloneVocabulary:
 class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
     _table = DistroSeries
-    _orderBy = ["Distribution.displayname", "-DistroRelease.date_created"]
+    _orderBy = ["Distribution.displayname", "-DistroSeries.date_created"]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
@@ -1346,9 +1363,9 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
             raise LookupError(token)
 
         obj = DistroSeries.selectOne('''
-                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.id = DistroSeries.distribution AND
                     Distribution.name = %s AND
-                    DistroRelease.name = %s
+                    DistroSeries.name = %s
                     ''' % sqlvalues(distroname, distroseriesname),
                     clauseTables=['Distribution'])
         if obj is None:
@@ -1373,16 +1390,6 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                 orderBy=self._orderBy
                 )
         return objs
-
-
-class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
-
-    displayname = 'Select a POTemplate'
-    _table = POTemplateName
-    _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):
@@ -1611,3 +1618,4 @@ class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
         query.append('(updates is NULL OR updates = %s)' % sqlvalues(
             self.context.language_pack_base))
         return query
+

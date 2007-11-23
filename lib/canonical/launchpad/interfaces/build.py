@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Build interfaces."""
 
@@ -216,7 +217,7 @@ class BuildStatus(DBEnumeratedType):
         Dependency wait
 
         Build record represents a package whose build dependencies cannot
-        currently be satisfied within the relevant DistroArchRelease. This
+        currently be satisfied within the relevant DistroArchSeries. This
         build will have to be manually given back (put into 'NEEDSBUILD') when
         the dependency issue is resolved.
         """)

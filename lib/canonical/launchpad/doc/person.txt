@@ -535,7 +535,7 @@ question to any PPA.
 
     >>> sabdfl = personset.getByName('sabdfl')
     >>> for sprelease in sabdfl.getLatestMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
+    ...     print (sprelease.name, sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
     (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
     (u'pmount', u'Ubuntu Hoary', u'0.1-2')
@@ -546,7 +546,7 @@ question to any PPA.
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
     >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
+    ...     print (sprelease.name, sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
     (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
@@ -566,7 +566,7 @@ question to any PPA.
     ...            sprelease.creator.name,
     ...            sprelease.maintainer.name,
     ...            sprelease.upload_archive.owner.name,
-    ...            sprelease.uploaddistroseries.fullseriesname)
+    ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'sabdfl', u'Ubuntu Warty')
     (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
@@ -586,7 +586,7 @@ maintainer got omitted from the results:
     ...            sprelease.creator.name,
     ...            sprelease.maintainer.name,
     ...            sprelease.upload_archive.owner.name,
-    ...            sprelease.uploaddistroseries.fullseriesname)
+    ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
     (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
@@ -675,11 +675,13 @@ English and languages marked as non-visible such as 'zh' or 'de_DE'.
 The IPerson interface offers a way of returning POFileTranslator records
 for a Person:
 
-    >>> [pt.pofile.title for pt in carlos.translation_history]
-    [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
-     u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
-     u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-     u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
+    >>> for pt in carlos.translation_history:
+    ...     print pt.pofile.title
+    Spanish (es) translation of alsa-utils in alsa-utils trunk
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
+    Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"
 
 The IPersonSet component contains a few convenience methods to return
 Person objects that have contributed translations.

@@ -310,7 +310,7 @@ class Bugzilla(ExternalBugTracker):
     batch_query_threshold = 0 # Always use the batch method.
 
     def __init__(self, bugtracker, version=None):
-        ExternalBugTracker.__init__(self, bugtracker)
+        super(Bugzilla, self).__init__(bugtracker)
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
@@ -589,7 +589,7 @@ class DebBugs(ExternalBugTracker):
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
     def __init__(self, bugtracker, db_location=None):
-        ExternalBugTracker.__init__(self, bugtracker)
+        super(DebBugs, self).__init__(bugtracker)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -1356,7 +1356,7 @@ class Roundup(ExternalBugTracker):
         Python and in fact behaves rather more like SourceForge than
         Roundup.
         """
-        ExternalBugTracker.__init__(self, bugtracker)
+        super(Roundup, self).__init__(bugtracker)
 
         if self.isPython():
             # The bug export URLs differ only from the base Roundup ones

@@ -1,4 +1,13 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
@@ -56,34 +65,36 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.10</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.11</h2>
           <ul class="news">
-            <li>
-              <a href="https://help.launchpad.net/FasterTranslationsImports">
-                <strong>Faster translation imports:</strong> shorter queues,
-                even at busy times.</a>
-            </li>
-            <li>
-              <a
-                href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
-                <strong>Zope 2 switches to Launchpad:</strong> &#8220;Launchpad works
-                great ... allows us to focus on creating a great Zope
-                plataform&#8221;.</a>
-            </li>
-            <li>
-              <a
-                href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
-                <strong>Come learn more:</strong> introductory IRC tutorial
-                sessions about Launchpad.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
-                <strong>Launchpad Beta:</strong> participate in our beta program
-                and get access to pre-release features.</a>
-            </li>
+           <li>
+             <a href="https://help.launchpad.net/PPAQuickStart">
+               <strong>Personal Package Archives for everyone!</strong> Build
+               and host Ubuntu packages in your own apt repository, following our
+               successful beta</a>
+           </li>
+           <li>
+             <a href="http://news.launchpad.net/?p=32">
+               <strong>Major Translations speed improvements:</strong> faster
+               exports, faster imports and solid reliability</a>
+           </li>
+           <li>
+             <a href="http://news.launchpad.net/?p=31">
+               <strong>Inkscape switches to Launchpad for bug tracking</strong></a>
+           </li>
+           <li>
+             <a href="https://help.launchpad.net/Bazaar092">
+               <strong>Launchpad now running Bazaar 0.92:</strong> take
+               advantage of the latest Bazaar features in your hosted branches</a>
+           </li>
+           <li>
+             <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
+               <strong>Launchpad beta:</strong> join our beta team to get
+               access to pre-release features</a>
+           </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2007-10-24.
+            Updated 2007-11-22.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

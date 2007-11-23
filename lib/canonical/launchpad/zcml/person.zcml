@@ -524,6 +524,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+    name="+mailinglist"
+    template="../templates/team-mailinglist.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonLanguagesView"
     name="+editlanguages"
     template="../templates/person-editlanguages.pt"

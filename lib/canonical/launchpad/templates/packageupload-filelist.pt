@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <ul tal:attributes="id string:queue${context/id}-filelist"
     style="margin-top: 0; margin-bottom: 0;">
   <tal:source repeat="source context/sources">
@@ -29,3 +35,4 @@
                custom/libraryfilealias/content/filesize/fmt:bytes" />)</li>
   </tal:custom>
 </ul>
+</tal:root>
