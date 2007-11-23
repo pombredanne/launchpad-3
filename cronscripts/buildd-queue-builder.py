@@ -39,8 +39,8 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
-        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
-        # BuilddMaster to happen we pass a FakeZtm instance
+        # In order to avoid the partial commits inside BuilddMaster
+        # to happen we pass a FakeZtm instance if dry-run mode is selected.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):

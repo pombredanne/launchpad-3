@@ -77,7 +77,7 @@ class IBuild(Interface):
         """
 
     def updateDependencies():
-        """Update build dependencies line within the targeted context."""
+        """Update the build-dependencies line within the targeted context."""
 
     def __getitem__(name):
         """Mapped to getBinaryPackageRelease."""
@@ -167,7 +167,7 @@ class IBuildSet(Interface):
         """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
 
         This method will update all the dependency lines of all MANUALDEPWAIT
-        record in the given architecture and those with all dependencies
+        records in the given architecture and those with all dependencies
         satisfied at this point will be automatically retried and re-scored.
         """
 

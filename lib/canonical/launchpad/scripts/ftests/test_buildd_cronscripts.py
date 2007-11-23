@@ -81,7 +81,7 @@ class TestRetryDepwait(LaunchpadZopelessTestCase):
     """Test RetryDepwait buildd script class."""
 
     def setUp(self):
-        """Store the number of pending build present before run the tests."""
+        """Store the number of pending builds present before run the tests."""
         self.number_of_pending_builds = self.getPendingBuilds().count()
 
     def getPendingBuilds(self):
@@ -109,7 +109,7 @@ class TestRetryDepwait(LaunchpadZopelessTestCase):
         """Check the results of a run against pristine sampledata.
 
         Since the only record in MANUALDEPWAIT in sampledata can't be
-        satisfied we expected the number of pending builds to be constant.
+        satisfied we expect the number of pending builds to be constant.
         """
         retry_depwait = self.getRetryDepwait()
         retry_depwait.main()

@@ -296,7 +296,7 @@ class BuilddMaster:
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
 
     def scoreCandidates(self):
-        """Iter over the pending buildqueue entries and re-score it."""
+        """Iterate over the pending buildqueue entries and re-score them."""
         # Get the current build job candidates
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(

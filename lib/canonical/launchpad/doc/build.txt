@@ -597,6 +597,6 @@ expect depwait_build to be 'retried' and scored.
     1005
 
 The 'retryDepWaiting' task is performed periodically via cronjob by
-cronscript/buildd-retry-depwait.py. it can be run in parallel with
+cronscript/buildd-retry-depwait.py. It can be run in parallel with
 other buildd tasks because the procedure is 'atomic' enough, i.e.,
 after the commit the retried jobs are ready to be dispatched.

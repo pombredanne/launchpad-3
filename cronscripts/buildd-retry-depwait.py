@@ -8,13 +8,13 @@ in the given distribution which have failed due to unsatisfied
 build-dependencies.
 
 It checks every build in this state, including PPA and PARTNER ones, and
-retry the ones which got their dependencies published after they were tried.
+retries the ones which got their dependencies published after they were tried.
 
-Different than the other buildd-cronscripts, this one it targeted to run via
-cron in parallel with other tasks happen in build farm.
+Unlike the other buildd-cronscripts, this one it targeted to run via cron
+in parallel with other tasks happening in build farm.
 
-As a optimization, distroseries from the selected distribution which are not
-supported anymore (OBSOLETE status) are skipped from the iteration.
+As an optimization, distroseries from the selected distribution which are not
+supported anymore (OBSOLETE status) are skipped.
 """
 
 __metaclass__ = type

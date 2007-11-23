@@ -249,13 +249,10 @@ class Build(SQLBase):
         try:
             parsed_deps = apt_pkg.ParseDepends(self.dependencies)
         except (ValueError, TypeError):
-            # XXX cprov 2005-10-18:
-            # We should remove the job if we could not parse its
-            # dependency, but AFAICS, the integrity checks in
-            # uploader component will be in charge of this. In
-            # short I'm confident this piece of code is never
-            # going to be executed
-            return
+            raise AssertionError(
+                "Build dependencies for %s (%s) could not be parsed: '%s'\n"
+                "It indicates that something is wrong in buildd-slaves."
+                % (self.title, self.id, self.depedencies))
 
         missing_deps = []
         for token in parsed_deps:
@@ -263,8 +260,12 @@ class Build(SQLBase):
             try:
                 name, version, relation = token[0]
             except ValueError:
-                # XXX cprov 2005-10-18: see previous XXX.
-                return
+                raise AssertionError(
+                    "APT is not dealing correctly with a dependency token "
+                    "'%r' from %s (%s) with the following dependencies: %s\n"
+                    "It is expected to be a tuple containing only another "
+                    "tuple with 3 elements  (name, version, relation)."
+                    % (token, self.title, self.id, self.depedencies))
 
             dep_candidate = self.distroarchseries.findDepCandidateByName(name)
             if dep_candidate:

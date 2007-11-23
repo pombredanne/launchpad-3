@@ -28,7 +28,7 @@ class RetryDepwait(LaunchpadCronScript):
             help="Whether or not to commit the transaction.")
 
     def main(self):
-        """Retry all build that do not fit in MANUALDEPWAIT.
+        """Retry all builds that do not fit in MANUALDEPWAIT.
 
         Iterate over all supported series in the given distribution and
         their architectures with existent chroots and update all builds
@@ -60,7 +60,7 @@ class RetryDepwait(LaunchpadCronScript):
 
         # XXX cprov 20071122:  LaunchpadScript should provide some
         # infraestrucutre for dry-run operations and not simply rely
-        # that the transaction would be discarded by the garbage-collector.
+        # on the transaction being discarded by the garbage-collector.
         if not self.options.dryrun:
             self.logger.info('Commiting the transaction.')
             self.txn.commit()
