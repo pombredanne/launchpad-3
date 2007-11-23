@@ -1419,6 +1419,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
+            from zope.security.proxy import removeSecurityProxy
+            assignee = removeSecurityProxy(bug_task.assignee)
+            assert assignee is self, (
+                    "Cache corruption!"
+                    "%r should be %r; names: %s, %s; connection: %r, %r" % (
+                    assignee, self, assignee.name, self.name, 
+                    assignee._connection, self._connection))
             assert bug_task.assignee == self, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
