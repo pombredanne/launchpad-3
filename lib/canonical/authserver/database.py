@@ -368,7 +368,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             if product is None:
                 raise Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "Product %r does not exist." % productName)
+                    "Project %r does not exist." % productName)
 
         try:
             branch = getUtility(IBranchSet).new(
