@@ -4,8 +4,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.functional import FunctionalDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
 
