@@ -13,7 +13,6 @@ from zope.schema.interfaces import (
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError

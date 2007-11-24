@@ -10,21 +10,16 @@ __all__ = [
     'MakesAnnouncements',
     ]
 
-import operator
-import time, pytz, datetime
+import pytz, datetime
 from sqlobject import ForeignKey, StringCol, BoolCol, SQLObjectNotFound
 from zope.interface import implements
-from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAnnouncement, IAnnouncementSet, IProduct, IProject, IDistribution)
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 
 class Announcement(SQLBase):

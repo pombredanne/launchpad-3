@@ -2,8 +2,6 @@
 
 __metaclass__ = type
 
-from StringIO import StringIO
-
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory

@@ -14,13 +14,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
+from zope.schema import Choice, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import AnnouncementDate, Summary, Title
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import valid_webref
 
 

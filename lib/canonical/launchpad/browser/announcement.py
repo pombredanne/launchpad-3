@@ -17,14 +17,6 @@ __all__ = [
     ]
 
 import cgi
-from operator import attrgetter
-
-from zope.component import getUtility
-from zope.app.form.browser.itemswidgets import DropdownWidget
-from zope.formlib import form
-from zope.formlib.form import Fields
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -33,17 +25,13 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     AddAnnouncementForm,
     AnnouncementRetargetForm,
-    IDistribution,
-    ILaunchBag,
     IAnnouncement,
-    IProduct,
-    NotFoundError,
     )
 
 from canonical.launchpad.webapp import (
-    ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
-    Link, Navigation, action, canonical_url, enabled_with_permission,
-    safe_action, stepthrough, stepto, custom_widget)
+    ContextMenu, LaunchpadView, LaunchpadFormView,
+    Link, action, canonical_url, enabled_with_permission,
+    custom_widget)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -51,7 +39,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.widgets import AnnouncementDateWidget
-from zope.app.form.browser import TextWidget
 
 
 class AnnouncementContextMenu(ContextMenu):

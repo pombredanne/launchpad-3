@@ -55,7 +55,7 @@
        = Feeds work when there are no announcements
        = Global announcement feed
      = Delete an announcement
- * Clean up unused imports & generally de-lint
+ = Clean up unused imports & generally de-lint
  * Sample data
    * Announcements on Mozilla, Firefox, Thunderbird, Ubuntu
 

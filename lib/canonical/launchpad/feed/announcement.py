@@ -13,11 +13,10 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IAnnouncementSet, IDistribution, IHasAnnouncements,
-    IProduct, IProject)
+    IAnnouncementSet, IDistribution, IHasAnnouncements, IProduct, IProject)
 from canonical.launchpad.interfaces import IFeedsApplication
 from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+    FeedBase, FeedEntry, FeedPerson, FeedTypedData)
 
 
 class AnnouncementsFeed(FeedBase):
@@ -118,7 +117,7 @@ class TargetAnnouncementsFeed(FeedBase):
     def logo(self):
         """See `IFeed`."""
         if self.context.logo is not None:
-            return context.logo.getURL()
+            return self.context.logo.getURL()
         elif IProject.providedBy(self.context):
             url = '/@@/project-logo'
         elif IProduct.providedBy(self.context):
@@ -131,7 +130,7 @@ class TargetAnnouncementsFeed(FeedBase):
     def icon(self):
         """See `IFeed`."""
         if self.context.icon is not None:
-            return context.icon.getURL()
+            return self.context.icon.getURL()
         elif IProject.providedBy(self.context):
             url = '/@@/project'
         elif IProduct.providedBy(self.context):
