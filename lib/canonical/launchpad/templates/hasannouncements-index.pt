@@ -34,9 +34,11 @@
       There are no announcements for this project.
     </p>
 
-    <tal:per_announcement
-        repeat="announcement view/batchnav/currentBatch"
-        replace="structure announcement/@@+listing-detailed" />
+    <div tal:condition="view/batchnav/batch/listlength" id="announcements">
+      <tal:per_announcement
+          repeat="announcement view/batchnav/currentBatch"
+          replace="structure announcement/@@+listing-detailed" />
+    </div>
 
     <div class="lesser"
          tal:content="structure view/batchnav/@@+navigation-links-lower" />

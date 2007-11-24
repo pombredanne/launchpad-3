@@ -35,23 +35,26 @@
      = Retarget announcement to each of IProject, IProduct and IDistribution
      = Modify announcement and check date modified is updated
      = Delete announcement and verify deletion
-   * Page tests
+   = Page tests
      = Add an announcement on each of IProject, IProduct, IDistribution
        = Latest announcements portlet is displayed when there are announcements
          and not when there are none
-     * Verify listing pages for each of IHasAnnouncements (inc top-level)
+     = Verify listing pages for each of IHasAnnouncements (inc top-level)
        = Page does not crash when there are no announcements
        = Project announcements show up on product pages in that project
        = Product announcements show up on the project page
        = People who are not logged in do not see unpublished announcements
-     * Edit an announcement
-     * Retarget an announcement
-       * Fails if not admin of new target project
-     * Retract an announcement
-       * Republish a retracted announcement
-     * Delete an announcement
-     * Verify feeds for each of IHasAnnouncements
-       * Feeds work when there are no announcements
+       = There is a global announcements page
+     = Publish an announcement that was not scheduled
+     = Edit an announcement
+     = Retract an announcement
+       = Republish a retracted announcement
+     = Retarget an announcement
+       = Fails if not admin of new target project
+     = Verify feeds for each of IHasAnnouncements
+       = Feeds work when there are no announcements
+       = Global announcement feed
+     = Delete an announcement
  * Clean up unused imports & generally de-lint
  * Sample data
    * Announcements on Mozilla, Firefox, Thunderbird, Ubuntu

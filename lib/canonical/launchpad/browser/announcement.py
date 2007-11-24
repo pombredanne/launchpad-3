@@ -10,6 +10,7 @@ __all__ = [
     'AnnouncementRetargetView',
     'AnnouncementPublishView',
     'AnnouncementRetractView',
+    'AnnouncementDeleteView',
     'AnnouncementEditView',
     'AnnouncementContextMenu',
     'AnnouncementSHP',
@@ -237,8 +238,26 @@ class AnnouncementRetractView(LaunchpadFormView):
     def action_cancel(self, action, data):
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
-    @action(_("Delete"), name="delete", validator='validate_cancel')
+    @property
+    def next_url(self):
+        return self._nextURL
+
+
+class AnnouncementDeleteView(LaunchpadFormView):
+
+    schema = IAnnouncement
+    label = _('Delete this announcement')
+
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
+        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+
+    @action(_("Delete"), name="delete", validator='validate_cancel')
+    def action_delete(self, action, data):
         self.context.erase_permanently()
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 

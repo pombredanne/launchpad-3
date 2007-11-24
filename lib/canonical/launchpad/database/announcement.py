@@ -168,6 +168,9 @@ class HasAnnouncements:
                     """ % sqlvalues (self.id, self.id)
         elif IDistribution.providedBy(self):
             query += ' AND Announcement.distribution = %s' % sqlvalues(self.id)
+        elif IAnnouncementSet.providedBy(self):
+            # no need to filter for pillar
+            pass
         else:
             raise AssertionError, 'Unsupported announcement target'
         return Announcement.select(query, limit=limit)
@@ -205,22 +208,12 @@ class MakesAnnouncements(HasAnnouncements):
         return announcement
 
 
-class AnnouncementSet:
+class AnnouncementSet(HasAnnouncements):
 
     implements(IAnnouncementSet)
 
     displayname = 'Launchpad-hosted'
     title = 'Launchpad'
 
-    def announcements(self, limit=5):
-        """See IHasAnnouncements."""
-
-        # filter for published news items if necessary
-        query = """
-          Announcement.date_announced <= timezone('UTC'::text, now()) AND
-          Announcement.active IS TRUE
-          """
-
-        return Announcement.select(query, limit=limit)
 
 

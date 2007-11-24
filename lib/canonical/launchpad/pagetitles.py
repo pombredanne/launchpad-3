@@ -729,11 +729,13 @@ milestone_edit = ContextTitle('Edit %s')
 
 announcement_add = 'Make an announcement'
 
-announcement_edit = 'Modify an announcement'
+announcement_delete = 'Permanently delete this announcement'
+
+announcement_edit = 'Modify this announcement'
 
 announcement_publish = 'Publish this announcement'
 
-announcement_retarget = 'Move announcement to a different project'
+announcement_retarget = 'Move this announcement to a different project'
 
 announcement_retract = 'Retract this announcement'
 

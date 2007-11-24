@@ -381,8 +381,8 @@ class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
             raise TraversalError, name
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the object's page containing an icon
+        followed by the object's name.
         """
         raise NotImplemented
 
@@ -751,6 +751,23 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
+
+
+class PillarFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IProduct, IDistribution and IProject objects to a
+    formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the pillar page containing an icon
+        followed by the pillar's display name.
+        """
+        pillar = self._context
+        url = canonical_url(pillar)
+        icon_html = ObjectImageDisplayAPI(pillar).icon()
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s">%s&nbsp;%s</a>' % (
+                          url, icon_html, pillar.displayname))
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):

@@ -80,6 +80,15 @@
     template="../templates/announcement-retract.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    class="canonical.launchpad.browser.announcement.AnnouncementDeleteView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+delete"
+    template="../templates/announcement-delete.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IHasAnnouncements"
     class="canonical.launchpad.browser.announcement.HasAnnouncementsView"

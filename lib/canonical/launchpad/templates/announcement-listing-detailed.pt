@@ -34,21 +34,22 @@
      tal:attributes="href context/url">
      <img src="/@@/link" alt="Link" /> Read more...</a>
   <tal:editor condition="context/required:launchpad.Edit">
-  <br />
-    <a
-       tal:attributes="href context/fmt:url">
-       <img src="/@@/edit" alt="[Edit]" />
-       Edit this announcement.</a>
+    <br />
+    <img src="/@@/edit" alt="[Edit]" />
+    <a tal:attributes="href context/fmt:url"
+       >Edit this announcement.</a>
     <a tal:condition="not: context/published"
-       tal:attributes="href string:${context/fmt:url}/+publish">
-       Publish now!</a>
+       tal:attributes="href string:${context/fmt:url}/+publish"
+       >Publish now!</a>
     <a tal:condition="context/active"
-       tal:attributes="href string:${context/fmt:url}/+retract">
-       Retract this item.</a>
+       tal:attributes="href string:${context/fmt:url}/+retract"
+       >Retract this announcement.</a>
+    <a tal:condition="not: context/active"
+       tal:attributes="href string:${context/fmt:url}/+delete"
+       >Permanently delete this announcement.</a>
   </tal:editor>
-</p>
-<p>
-  Created
+  <br />Created for
+  <tal:pillar replace="structure context/target/fmt:link" />
   <tal:date_created replace="context/date_created/fmt:displaydate" />
   by
   <tal:registrant replace="structure context/registrant/fmt:link" />
