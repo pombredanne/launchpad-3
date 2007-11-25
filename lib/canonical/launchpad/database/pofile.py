@@ -663,11 +663,15 @@ class POFile(SQLBase, POFileMixIn):
         query.append('POTMsgSet.sequence > 0')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('TranslationMessage.pofile = %s' % sqlvalues(self))
+        query.append('TranslationMessage.is_current')
         query.append('NOT TranslationMessage.is_fuzzy')
-        for plural_form in range(self.language.pluralforms):
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        if self.language.pluralforms > 1:
+            plurals_query = ' AND '.join(
+                'TranslationMessage.msgstr%d IS NOT NULL' % i
+                    for i in range(1, self.language.pluralforms))
             query.append(
-                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form)
-
+                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
@@ -679,6 +683,7 @@ class POFile(SQLBase, POFileMixIn):
             POTMsgSet.sequence > 0 AND
             TranslationMessage.potmsgset = POTMsgSet.id AND
             TranslationMessage.pofile = %s AND
+            TranslationMessage.is_current AND
             TranslationMessage.is_fuzzy
             ''' % sqlvalues(self.potemplate, self),
             clauseTables=['TranslationMessage'], orderBy='POTmsgSet.sequence')

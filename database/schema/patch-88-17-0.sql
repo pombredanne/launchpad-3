@@ -142,6 +142,14 @@ WHERE
 
 -- SELECT 'Migrating active, non-published submissions', statement_timestamp(); -- DEBUG
 
+
+-- XXX: Try to speed up the following 2 inserts and reduce resource usage.
+-- Index can be built before rollout.
+CREATE INDEX migration1 on posubmission(pomsgset, id)
+    where active is not false;
+CREATE INDEX migration2 on posubmission(pomsgset, id)
+    where published is not false;
+
 -- Bundle POSubmissions that are active but not all published.
 INSERT INTO TranslationMessage(
     msgstr0, msgstr1, msgstr2, msgstr3, pofile, potmsgset, origin, submitter,
@@ -354,19 +362,19 @@ FROM POMsgSet m
         LEFT OUTER JOIN POSubmission AS s0 ON
             s0.pomsgset = m.id AND
             s0.pluralform = 0 AND
-            s0.active
+            s0.active IS TRUE
         LEFT OUTER JOIN POSubmission AS s1 ON
             s1.pomsgset = m.id AND
             s1.pluralform = 1 AND
-            s1.active
+            s1.active IS TRUE
         LEFT OUTER JOIN POSubmission AS s2 ON
             s2.pomsgset = m.id AND
             s2.pluralform = 2 AND
-            s2.active
+            s2.active IS TRUE
         LEFT OUTER JOIN POSubmission AS s3 ON
             s3.pomsgset = m.id AND
             s3.pluralform = 3 AND
-            s3.active
+            s3.active IS TRUE
 WHERE
     s0.id IS NULL AND
     s1.id IS NULL AND
@@ -386,24 +394,30 @@ WHERE
 -- any has an error, it should be 2 (UNKNOWNERROR).  Only if neither is the
 -- case can it be left at whatever the pluralform-0 POSubmission had for its
 -- status.
+CREATE TEMPORARY TABLE Pos AS (
+    SELECT id FROM POSubmission
+    WHERE pluralform > 0 AND validationstatus=2
+);
+CREATE UNIQUE INDEX pos__id__idx ON Pos(id);
+
 UPDATE TranslationMessage
     SET validation_status = 2
-FROM POSubmission Pos
-WHERE
-    Pos.pluralform > 0 AND
-    Pos.id IN (id1, id2, id3) AND
-    Pos.validationstatus = 2;
+FROM Pos
+WHERE id1 = Pos.id OR id2 = Pos.id OR id3 = Pos.id;
 
--- XXX: This seems wrong. Comment says pluralform-0. This will choose an
--- arbitrary plural form won't it?
+DROP TABLE Pos;
+CREATE TEMPORARY TABLE Pos AS (
+    SELECT id FROM POSubmission
+    WHERE pluralform > 0 AND validationstatus = 0
+);
+CREATE UNIQUE INDEX pos__id__idx ON Pos(id);
+
 UPDATE TranslationMessage
     SET validation_status = 0
-FROM POSubmission Pos
-WHERE
-    Pos.pluralform > 0 AND
-    Pos.id IN (id1, id2, id3) AND
-    Pos.validationstatus = 0;
+FROM Pos
+WHERE id1 = Pos.id OR id2 = Pos.id OR id3 = Pos.id;
 
+DROP TABLE Pos;
 
 -- SELECT 'Indexing TranslationMessage table', statement_timestamp(); -- DEBUG
 

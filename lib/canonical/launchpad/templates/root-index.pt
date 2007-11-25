@@ -82,21 +82,31 @@
                 <strong>CMF adopts Launchpad:</strong><br />
                 Easy collaboration between Zope and CMF.</a>
             </li>
+           <li>
+             <a href="https://help.launchpad.net/PPAQuickStart">
+               <strong>Personal Package Archives for everyone!</strong> Build
+               and host Ubuntu packages in your own apt repository, following
+               our successful beta</a>
+           </li>
+           <li>
+             <a href="http://news.launchpad.net/?p=32">
+               <strong>Major Translations speed improvements:</strong> faster
+               exports, faster imports and fewer timeouts.</a>
+           </li>
             <li>
               <a
                 href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
                 <strong>Come learn more:</strong><br />
                 Introductory IRC tutorial sessions about Launchpad.</a>
             </li>
-            <li>
-              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
-                <strong>Launchpad Beta:</strong><br />
-                Participate in our beta program
-                and get access to pre-release features.</a>
-            </li>
+           <li>
+             <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
+               <strong>Launchpad beta:</strong> join our beta team to get
+               access to pre-release features</a>
+           </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2007-11-17
+            Updated 2007-11-22.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

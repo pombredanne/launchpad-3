@@ -1419,9 +1419,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
+            from zope.security.proxy import removeSecurityProxy
+            assignee = removeSecurityProxy(bug_task.assignee)
+            assert assignee is self, (
+                    "Cache corruption!"
+                    "%r should be %r; names: %s, %s; connection: %r, %r" % (
+                    assignee, self, assignee.name, self.name, 
+                    assignee._connection, self._connection))
             assert bug_task.assignee == self, (
-                "This bugtask (%s) should be assigned to this person."
-                % bug_task.id)
+               "Bugtask %s assignee isn't the one expected: %s != %s" % (
+                    bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
@@ -1435,9 +1442,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             elif pillar.driver == self:
                 pillar.driver = registry
             else:
+                # Since we removed the person from all teams, something is
+                # seriously broken here.
                 raise AssertionError(
-                    "This person must be the owner or driver of this project "
-                    "(%s)" % pillar.pillar.name)
+                    "%s was expected to be owner or driver of %s" %
+                    (self.name, pillar.name))
 
         # Nuke all subscriptions of this person.
         removals = [

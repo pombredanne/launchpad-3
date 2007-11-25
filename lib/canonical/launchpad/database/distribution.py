@@ -139,8 +139,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
-    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
-        notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroSeries', notNull=False, default=None)
     source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
@@ -497,7 +495,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status',
+                 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -526,9 +525,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN '
+                '( %s, %s ) ' % sqlvalues(
+                    SpecificationDefinitionStatus.OBSOLETE,
+                    SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

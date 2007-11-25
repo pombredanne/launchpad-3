@@ -76,9 +76,10 @@ class License(DBEnumeratedType):
 
 
 class ProductNameField(PillarNameField):
-
+    """The pillar for a product."""
     @property
     def _content_iface(self):
+        """Return the interface of this pillar object."""
         return IProduct
 
 
