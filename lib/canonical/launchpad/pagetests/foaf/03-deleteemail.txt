@@ -4,13 +4,14 @@
 
     >>> browser = setupBrowser(auth='Basic foo@baz.com:f')
     >>> browser.open('http://launchpad.dev/~foo/+editemails')
-    >>> browser.getControl('baz.foo@canonical.com').selected = True
+    >>> browser.getControl(name='VALIDATED_SELECTED').getControl(
+    ...     value='baz.foo@canonical.com').selected = True
     >>> browser.getControl('Remove').click()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     The email address...has been removed...
 
-    >>> browser.getControl(name='field.VALIDATED_SELECTED').getControl(
+    >>> browser.getControl(name='VALIDATED_SELECTED').getControl(
     ...     value='baz.foo@canonical.com')
     Traceback (most recent call last):
     ...

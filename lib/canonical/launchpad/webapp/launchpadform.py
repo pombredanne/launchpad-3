@@ -194,7 +194,7 @@ class LaunchpadFormView(LaunchpadView):
         self.widget_errors[field_name] = message
         self.errors.append(message)
 
-    def _validate(self, action, data, widgets_to_check=None):
+    def _validate(self, action, data):
         # XXX jamesh 2006-09-26:
         # If a form field is disabled, then no data will be sent back.
         # getWidgetsData() raises an exception when this occurs, even
@@ -205,14 +205,13 @@ class LaunchpadFormView(LaunchpadView):
         #     http://www.zope.org/Collectors/Zope3-dev/717
         widgets = []
         for input, widget in self.widgets.__iter_input_and_widget__():
-            if widgets_to_check is None or widget in widgets_to_check:
-                if (input and IInputWidget.providedBy(widget) and
-                    not widget.hasInput()):
-                    if widget.context.required:
-                        self.setFieldError(widget.context.__name__,
-                                           'Required field is missing')
-                else:
-                    widgets.append((input, widget))
+            if (input and IInputWidget.providedBy(widget) and
+                not widget.hasInput()):
+                if widget.context.required:
+                    self.setFieldError(widget.context.__name__,
+                                       'Required field is missing')
+            else:
+                widgets.append((input, widget))
         widgets = form.Widgets(widgets, len(self.prefix)+1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)

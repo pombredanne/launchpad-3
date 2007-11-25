@@ -12,12 +12,12 @@ added by gina. Now he wants to validate it.
     >>> print browser.title
     Guilherme Salgado's e-mail addresses
 
-    >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
+    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com').selected = True
     >>> browser.getControl('Confirm').click()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    An e-mail message was sent to 'salgado@ubuntu.com'...
+    A new email was sent to 'salgado@ubuntu.com'...
 
 Retrieve the email and make sure it was sent to the right address.
 
@@ -50,11 +50,11 @@ Visit the token URL mentioned in the email, and get redirected to
 Check that the email address now shows up as validated.
 
     >>> browser.getLink('Update e-mail addresses').click()
-    >>> browser.getControl(name="field.VALIDATED_SELECTED").getControl(
+    >>> browser.getControl(name="VALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com')
     <ItemControl...optionValue='salgado@ubuntu.com'>
 
-    >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
+    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com')
     Traceback (most recent call last):
     ...

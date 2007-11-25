@@ -1,31 +1,33 @@
 Let's change the preferred email from no-priv.
 
-    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~no-priv')
-    >>> browser.getLink('Update e-mail addresses').click()
-    >>> browser.url
-    'http://launchpad.dev/~no-priv/+editemails'
-    >>> browser.title
-    "No Privileges Person's e-mail addresses"
+  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/~no-priv')
+  >>> browser.getLink('Update e-mail addresses').click()
+  >>> browser.url
+  'http://launchpad.dev/~no-priv/+editemails'
+  >>> browser.title
+  "No Privileges Person's e-mail addresses"
 
-    >>> second_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> second_browser.open('http://launchpad.dev/~no-priv/+editemails')
+  >>> second_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+  >>> second_browser.open('http://launchpad.dev/~no-priv/+editemails')
 
 Set foo@baz.com as no-priv's preferred email address.
 
-    >>> browser.getControl('foo@baz.com').selected = True
-    >>> browser.getControl('Set as Contact Address').click()
+# XXX matsubara 2006-09-13: Ideally this should be:
+# browser.getControl('foo@baz.com').selected = True
+# but that isn't working.
+  >>> browser.getControl(name='VALIDATED_SELECTED').value = ['foo@baz.com']
+  >>> browser.getControl('Set as Contact Address').click()
 
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    Your contact address has been changed to: foo@baz.com
+  >>> message = 'Your contact address has been changed to: foo@baz.com'
+  >>> message in browser.contents
+  True
 
 Setting foo@baz.com again in another browser should return a nice message.
 
-    >>> second_browser.getControl('foo@baz.com').selected = True
-    >>> second_browser.getControl('Set as Contact Address').click()
+  >>> second_browser.getControl(name='VALIDATED_SELECTED').value = ['foo@baz.com']
+  >>> second_browser.getControl('Set as Contact Address').click()
 
-    >>> for msg in get_feedback_messages(second_browser.contents):
-    ...     print msg
-    There is 1 error.
-    foo@baz.com is already set as your contact address.
+  >>> message = "foo@baz.com is already set as your contact address."
+  >>> message in second_browser.contents
+  True
