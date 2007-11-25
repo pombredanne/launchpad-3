@@ -14,81 +14,52 @@
       <h1>Your e-mail addresses</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-  <p
-    tal:define="submitted view/emailFormSubmitted"
-    tal:condition="submitted"
-    tal:content="structure view/message"
-    class="informational message"
-  />
-  
-  <form name="email" action="" method="POST">
+    <metal:extra-info fill-slot="extra_info">
+      <tal:block condition="context/preferredemail">
+        <p>Your preferred contact address for all Launchpad e-mail is:</p>
+        <ul id="preferred-email">
+          <li class="mail"><b tal:content="context/preferredemail/email" /></li>
+        </ul>
+      </tal:block>
 
-  <tal:block condition="context/preferredemail">
-    <p>Your preferred contact address for all Launchpad e-mail is:</p>
-    <ul id="preferred-email">
-      <li class="mail"><b tal:content="context/preferredemail/email" /></li>
-    </ul>
-  </tal:block>
+      <tal:block tal:condition="not: context/preferredemail">
+        <p>Currently you don't have a contact address in
+        Launchpad. Please choose one from the list of confirmed
+        addresses.</p>
+      </tal:block>
+    </metal:extra-info>
 
-  <tal:block tal:condition="not: context/preferredemail">
-  <p>Currently you don't have a contact address in Launchpad. Please choose
-  one from the list of confirmed addresses.</p>
-  </tal:block>
+    <metal:widgets fill-slot="widgets">
 
-  <tal:block tal:condition="context/validatedemails">
-  <p>These other addresses are confirmed as being yours:</p>
+      <tal:widget define="widget nocall:view/widgets/VALIDATED_SELECTED">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+      <input tal:replace="structure view/action_set_preferred/render" />
+      <input tal:replace="structure view/action_remove_validated/render" />
+      <br /><br />
 
-  <div style="padding: 0.7em 0em" id="confirmed-emails">
-    <div tal:repeat="email context/validatedemails" >
-      <label tal:attributes="for email/email">
-        <input type="radio" tal:attributes="value email/email; id email/email"
-               name="VALIDATED_SELECTED" /> 
-        <b tal:content="email/email" />
-      </label>
-    </div>
+      <tal:block tal:condition="view/unvalidated_addresses">
+        <tal:widget define="widget nocall:view/widgets/UNVALIDATED_SELECTED">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <input tal:replace="structure view/action_confirm/render" />
+        <input tal:replace="structure view/action_remove_unvalidated/render" />
+        <br /><br />
+      </tal:block>
+
+      <tal:widget define="widget nocall:view/widgets/newemail">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+    </metal:widgets>
+
+    <metal:widgets fill-slot="buttons">
+      <input tal:replace="structure view/action_add_email/render" />
+    </metal:widgets>
   </div>
-  <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
-  <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
-  <br /><br /><br />
-  </tal:block>
 
-  <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
-  <p>These addresses may also be yours:</p>
-
-  <div style="padding: 0.7em 0em" id="unconfirmed-emails">
-    <div tal:repeat="email view/unvalidatedAndGuessedEmails">
-      <label tal:attributes="for string:${email}_unvalidated">
-        <input type="radio" name="UNVALIDATED_SELECTED"
-               tal:attributes="value email; id string:${email}_unvalidated" />
-        <b tal:content="email" />
-      </label>
-    </div>
-  </div>
-  <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
-  <input type="submit" value="Confirm" name="VALIDATE" />
-  <br /><br /><br />
-  </tal:block>
-
-  </form>
-
-  <form name="newemail" action="" method="POST">
-
-  <p>
-    Add a new address:
-    <input type="text" tal:attributes="value view/notWellFormedEmail|nothing"
-           name="newemail" size="23"/>
-    <input type="submit" value="Add" name="ADD_EMAIL" />
-  </p>
-
-  </form>
 </div>
 </body>
 </html>
