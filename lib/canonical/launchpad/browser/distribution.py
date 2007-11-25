@@ -799,7 +799,7 @@ class DistributionDynMenu(
     menus = {
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
-        'series': 'seriesesMenu',
+        'series': 'seriesMenu',
         'milestones': 'milestoneMenu',
         }
 

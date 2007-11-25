@@ -16,7 +16,7 @@
     <ul class="news">
       <li tal:repeat="announcement announcements" class="news">
         <img src="/@@/warning" alt="[Not published]"
-             title="This is not a public announcement (yet)"
+             title="This is not yet a public announcement"
              tal:condition="not: announcement/published" />
         <strong tal:content="announcement/title">Title here</strong><br />
         <tal:summary replace="announcement/summary/fmt:shorten/80" />

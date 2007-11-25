@@ -78,7 +78,7 @@ announcement so there is a "Latest news" portlet:
     >>> priv_browser.getControl('specific date and time').click()
     >>> priv_browser.getControl(
     ...     name='field.publication_date.announcement_date').value = (
-    ...          '2006-12-24 09:00:00')
+    ...          '2007-11-24 09:00:00')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.url
     http://launchpad.dev/tomcat
