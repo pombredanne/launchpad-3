@@ -628,6 +628,7 @@ projects.
     project: Liba52 Test Decoder (a52dec)
     project: Gnome Baker (gnomebaker)
     project: ALSA utilities (alsa-utils)
+    project: Derby - Java Database (derby)
 
     >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
