@@ -40,16 +40,6 @@
 	     name="go_back_to_entry"
 	     value="Cancel"
 	     id="cancel" />
-      <script type='text/javascript'>
-        function onCancelClick(e) {
-          e.preventDefault();
-          history.back();
-        }
-        function onload_handler(e) {
-          connect('cancel', 'onclick', onCancelClick);
-        }
-        registerLaunchpadFunction(onload_handler)
-      </script>
     </form>
 
   </div>

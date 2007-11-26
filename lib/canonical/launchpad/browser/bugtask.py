@@ -688,6 +688,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                 bug_branches.append(bug_branch)
         return bug_branches
 
+    @property
+    def auto_toggle_task_js(self):
+        """The Javascript code to automatically toggle a bugtask, or None."""
+        bugtask_id = self.request.form.get('auto_toggle_task', None)
+        if bugtask_id is None:
+            return None
+        else:
+            return """
+            function toggleOnLoad(e) {
+                toggleFormVisibility('task%s');
+            }
+            registerLaunchpadFunction(toggleOnLoad);
+            """ % bugtask_id
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
@@ -823,7 +837,13 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.addError('Go back to entry form.')
             form = self.request.form.copy()
             del form['go_back_to_entry']
-            reentry_url = canonical_url(self.context)
+            for key in form.keys():
+                if '.actions.' in key:
+                    del form[key]
+            form['auto_toggle_task'] = str(self.context.id)
+            query_string = urllib.urlencode(form)
+            reentry_url = '%s?%s' % (
+                canonical_url(self.context), query_string)
             self.request.response.redirect(reentry_url)
 
     def setUpFields(self):
