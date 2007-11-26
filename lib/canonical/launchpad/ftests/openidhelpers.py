@@ -69,7 +69,8 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
 
         headers.setdefault(
             'User-Agent',
-            "%s Python-urllib/%s" % (fetchers.USER_AGENT, urllib2.__version__,))
+            "%s Python-urllib/%s" % (fetchers.USER_AGENT,
+                                     urllib2.__version__,))
         headers.setdefault('X-zope-handle-errors', True)
 
         req = urllib2.Request(url, data=body, headers=headers)

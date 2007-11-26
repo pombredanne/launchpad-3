@@ -61,8 +61,7 @@ normalised to the standard form:
 
 Launchpad can also support discovery on a user's profile page.
 
-
-Currently this is only done for users who are memebers of the team
+Currently this is only done for users who are members of the team
 identified by the openid_users configuration value.  For the tests,
 this means the admins team, which Mark Shuttleworth is a member of:
 
