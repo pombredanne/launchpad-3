@@ -400,16 +400,16 @@ We are going to work with Evolution's evolution-2.2 template.
     >>> potemplate_set = getUtility(IPOTemplateSet)
     >>> potemplates = potemplate_set.getAllByName('evolution-2.2')
     >>> potemplate = potemplates[0]
-    >>> print potemplate.title
-    Template "evolution-2.2" in Evolution trunk
+    >>> potemplate.title
+    u'Template "evolution-2.2" in Evolution trunk'
 
 For alternative suggestions we need two languages, the one being
 translated and other one providing suggestions. We will use Japanese
 as the language to get suggestions for because it has less plural forms
 than the other choosen language, Spanish.
 
-    # Japanese translation doesn't exist yet in our database, we need
-    # to create it first.
+    # Japanese translation for this template doesn't exist yet in our
+    # database, we need to create it first.
     >>> pofile_ja = potemplate.newPOFile('ja')
     >>> pofile_ja.language.pluralforms
     1
@@ -440,7 +440,7 @@ Let's get current message in Spanish.
     >>> translation_message_es = potmsgset.getCurrentTranslationMessage(
     ...     pofile_es.language)
 
-And we prepare the ITranslationMessageSuggestions object for the higer
+And we prepare the ITranslationMessageSuggestions object for the higher
 Spanish plural form.
 
     >>> suggestions = TranslationMessageSuggestions(
@@ -468,9 +468,15 @@ languages...
 
 ... we get suggestions.
 
-    >>> print suggestions.submissions
-    [{'potmsgset': ..., 'language': ..., 'plural_index': 0, 'person': ...,
-      'translation_html_id': u'msgset_15_es_translation_0',
-      'date_created': ..., 'suggestion_text': u'Foo <code>%d</code>',
-      'pofile': ..., 'translationmessage': ..., 'id': 703L,
-      'suggestion_html_id': u'msgset_15_ja_suggestion_703_0'}]
+    >>> len(suggestions.submissions)
+    1
+    >>> sorted(suggestions.submissions[0].items())
+    [('date_created', ...),
+     ('id', 703L),
+     ('language', ...), ('person', ...),
+     ('plural_index', 0),
+     ('pofile', ...), ('potmsgset', ...),
+     ('suggestion_html_id', u'msgset_15_ja_suggestion_703_0'),
+     ('suggestion_text', u'Foo <code>%d</code>'),
+     ('translation_html_id', u'msgset_15_es_translation_0'),
+     ('translationmessage', ...)]
