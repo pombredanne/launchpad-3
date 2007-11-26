@@ -31,7 +31,7 @@ First of all we'll create a new mirror for the Ubuntu distribution...
 
 Note that even though the http_url we used didn't contain a trailing slash,
 the value stored in our database will contain it.
- 
+
     >>> browser.getLink('Change details').click()
     >>> http_url + "/" == browser.getControl('HTTP URL').value
     True
@@ -44,7 +44,7 @@ another mirror.
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
     >>> browser.getControl(name='field.name').value = 'archive-mirror'
     >>> browser.getControl('Save').click()
- 
+
     >>> message = "is already in use by another distribution mirror."
     >>> message in browser.contents
     True

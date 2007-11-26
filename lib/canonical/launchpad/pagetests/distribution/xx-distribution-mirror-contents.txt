@@ -1,8 +1,10 @@
-  After a mirror is probed, we display its mirrored contents, together with
-  the "freshness" of each content.
+== Mirror contents ==
 
-  For archive mirrors we have a table listing the arch releases mirrored and
-  another one for the source releases mirrored.
+After a mirror is probed, we display its mirrored contents, together with
+the "freshness" of each content.
+
+For archive mirrors we have a table listing the arch releases mirrored and
+another one for the source releases mirrored.
 
   >>> browser.open('http://localhost/ubuntu/+mirror/archive-mirror2')
   >>> browser.url
@@ -18,9 +20,8 @@
   ...Hoary Hedgehog ...Up to date...
   ...Warty Warthog ...Six hours behind...
 
- 
-  For release mirrors, we have a single table listing the releases and
-  flavours mirrored.
+For release mirrors, we have a single table listing the releases and
+flavours mirrored.
 
   >>> browser.open('http://localhost/ubuntu/+mirror/releases-mirror2')
   >>> browser.url
@@ -32,4 +33,29 @@
   ...Versions and flavours mirrored...
   ...Hoary Hedgehog...Ubuntu...Edubuntu...
   ...Warty Warthog...Ubuntu...Kubuntu...
+
+
+== Sources.list entries ==
+
+We include in the distribution mirror page a control which allows
+generating apt sources.list entries for each series for which we have
+mirror contents 
+
+    >>> browser.open('http://localhost/ubuntu/+mirror/archive-mirror2')
+    >>> results = find_tag_by_id(browser.contents, 'sources-list-entries')
+    >>> text = extract_text(results)
+    >>> print text
+    deb http://localhost:11375/valid-mirror2/ hoary main
+    deb-src http://localhost:11375/valid-mirror2/ hoary main
+
+and the select control that lets you update them:
+
+    >>> print find_tag_by_id(browser.contents, 'series-widget-div')
+    <div id="series-widget-div">
+    ...
+        <select id="field.series" name="field.series" size="1" onchange="updateSeries(this);">
+            <option value="hoary">The Hoary Hedgehog Release</option>
+            <option value="warty">The Warty Warthog Release</option>
+        </select>
+    ...
 

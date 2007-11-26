@@ -1,0 +1,14 @@
+<div tal:condition="view/sources_in_more_than_one_series" id="series-widget-div">
+  <form style="display: inline">
+  Display sources.list entries for: <span tal:replace="structure view/plain_series_widget" />
+  </form>
+</div>
+
+<pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
+deb <a tal:attributes="href context/archive_url"
+ tal:content="context/archive_url" /> <span id="series-deb"
+       tal:content="view/default_series_name">gutsy</span> main
+deb-src <a tal:attributes="href context/archive_url"
+     tal:content="context/archive_url" /> <span id="series-deb-src"
+       tal:content="view/default_series_name">gutsy</span> main</pre>
+

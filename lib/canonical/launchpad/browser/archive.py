@@ -24,6 +24,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.sourceslist import (
+    SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet,
     IHasBuildRecords, NotFoundError, PackagePublishingStatus)
@@ -95,13 +97,10 @@ class ArchiveView(LaunchpadView):
 
     def initialize(self):
         """Set up select control and our batched list of publishing records."""
-        self.terms = [SimpleTerm(s, s.name, s.title)
-                 for s in self.context.series_with_sources]
-        field = Choice(
-                __name__='series', title=_("Distro Series"),
-                vocabulary=SimpleVocabulary(self.terms), required=True)
-        setUpWidget(self, 'series',  field, IInputWidget)
-        self.series_widget.extra = "onChange='updateSeries(this);'"
+        entries = SourcesListEntries(self.context.distribution,
+                                     self.context.archive_url,
+                                     self.context.series_with_sources)
+        self.sources_list_entries = SourcesListEntriesView(entries, self.request)
 
         self.name_filter = self.request.get('field.name_filter')
         status_filter = self.request.get('field.status_filter', 'published')
@@ -155,32 +154,10 @@ class ArchiveView(LaunchpadView):
         setUpWidget(self, 'status_filter',  field, IInputWidget)
 
     @property
-    def plain_series_widget(self):
-        """Render a <select> control with no <div>s around it."""
-        return self.series_widget.renderValue(None)
-
-    @property
     def plain_status_filter_widget(self):
         """Render a <select> control with no <div>s around it."""
         return self.status_filter_widget.renderValue(
             self.selected_status_filter.value)
-
-    @property
-    def sources_in_more_than_one_series(self):
-        """Whether this archive has sources in more than one distro series."""
-        return len(self.terms) > 1
-
-    @property
-    def default_series_name(self):
-        """Return the name of the default series name.
-
-        If there are packages in this PPA, return the latest series in
-        which packages are published. If not, return the name of the
-        current series.
-        """
-        if self.terms:
-            return self.terms[0].value.name
-        return self.context.distribution.currentseries.name
 
     def source_count_text(self):
         if self.context.number_of_sources == 1:

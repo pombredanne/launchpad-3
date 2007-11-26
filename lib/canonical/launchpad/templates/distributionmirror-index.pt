@@ -27,6 +27,21 @@
 
 <div metal:fill-slot="main">
 
+    <table id="mirror-details" class="summary" style="float: right">
+      <tr>
+        <th>Speed:</th>
+        <td tal:content="context/speed/title">2 Mbps</td>
+      </tr>
+      <tr>
+        <th>Country:</th>
+        <td tal:content="context/country/name">Brazil</td>
+      </tr>
+      <tr>
+        <th>Content:</th>
+        <td tal:content="context/content/title">Archive</td>
+      </tr>
+    </table>
+
     <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
       <div tal:condition="context/whiteboard" class="highlighted"
            id="whiteboard">
@@ -51,21 +66,6 @@
       </p>
     </div>
 
-    <table id="mirror-details" class="summary" style="float: none">
-      <tr>
-        <th>Speed:</th>
-        <td tal:content="context/speed/title">2 Mbps</td>
-      </tr>
-      <tr>
-        <th>Country:</th>
-        <td tal:content="context/country/name">Brazil</td>
-      </tr>
-      <tr>
-        <th>Content:</th>
-        <td tal:content="context/content/title">Archive</td>
-      </tr>
-    </table>
-
     <h2>Mirror URLs</h2>
 
     <ul class="webref" id="mirror-urls">
@@ -83,6 +83,8 @@
                   rsync://url/</a>
       </li>
     </ul>
+
+    <tal:entries replace="structure view/sources_list_entries" />
 
     <div id="last-probe" tal:define="probe context/last_probe_record">
       <h2>Last probe</h2>
