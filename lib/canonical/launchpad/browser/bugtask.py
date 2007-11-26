@@ -1185,7 +1185,7 @@ class BugTaskNonContributorAssigneeConfirmView(LaunchpadView):
             self.request.form.get('new_assignee'))
         if not new_assignee.isBugContributor(user=self.user):
             return """<a href="%s">%s</a>
-            has not beenassigned any bugs before.
+            has not been assigned any bugs before.
             <br /><br />
             Continue assigning this bug?""" % (
                 canonical_url(new_assignee), new_assignee.displayname,)
