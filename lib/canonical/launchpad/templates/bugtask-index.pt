@@ -75,12 +75,12 @@
   <p class="informational message"
      id="can-expire"
      tal:condition="context/bug/can_expire"
-    >This bug report will be expired in
+    >This bug report will expire in
     <tal:days_to_expiration replace="view/days_to_expiration">
       59
     </tal:days_to_expiration>
     days if no further activity occurs.
-    (<a href="https://help.launchpad.net/BugStatuses">find our why</a>)
+    (<a href="https://help.launchpad.net/BugStatuses">find out why</a>)
   </p>
 
   <p class="informational message"

@@ -88,10 +88,10 @@ stating that the bug report can expire.
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'can-expire'))
-    This bug report will be expired in 59 days if no further activity occurs.
-    (find our why)
+    This bug report will expire in 59 days if no further activity occurs.
+    (find out why)
 
-    >>> user_browser.getLink('find our why').url
+    >>> user_browser.getLink('find out why').url
     'https://help.launchpad.net/BugStatuses'
 
 When No Privileges Person confirms the bug, the notice is removed.

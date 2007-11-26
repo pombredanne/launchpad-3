@@ -708,10 +708,10 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         if not self.context.bug.can_expire:
             return None
 
-        expiration_date = self.context.bug.date_last_updated + timedelta(
-            days=config.malone.days_before_expiration)
-        return (
-            expiration_date - datetime.now(pytz.timezone('UTC'))).days
+        expire_after = timedelta(days=config.malone.days_before_expiration)
+        expiration_date = self.context.bug.date_last_updated + expire_after
+        remaining_time = expiration_date - datetime.now(pytz.timezone('UTC'))
+        return remaining_time.days
 
 
 class BugTaskPortletView:
@@ -1678,14 +1678,14 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Return an `ITableBatchNavigator` for the GET search criteria.
 
         :param searchtext: If the searchtext is None, the search text will be
-        gotten from the request.
+            gotten from the request.
 
-        :param extra_params: is a dict that provides search params added to
-        the search criteria taken from the request. Params in `extra_params`
-        take precedence over request params.
+        :param extra_params: A dict that provides search params added to
+            the search criteria taken from the request. Params in
+            `extra_params` take precedence over request params.
         """
         unbatchedTasks = self.searchUnbatched(
-        searchtext, context, extra_params)
+            searchtext, context, extra_params)
         return self._getBatchNavigator(unbatchedTasks)
 
     def searchUnbatched(
@@ -1693,11 +1693,11 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: If the searchtext is None, the search text will be
-        gotten from the request.
+            gotten from the request.
 
-        :param extra_params: is a dict that provides search params added to
-        the search criteria taken from the request. Params in `extra_params`
-        take precedence over request params.
+        :param extra_params: A dict that provides search params added to
+            the search criteria taken from the request. Params in
+            `extra_params` take precedence over request params.
         """
         # Base classes can provide an explicit search context.
         if not context:

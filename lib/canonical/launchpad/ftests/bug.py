@@ -135,7 +135,7 @@ def summarize_bugtasks(bugtasks):
 
 
 def sync_bugtasks(bugtasks):
-    """Sync the bugtask and it's bug to the database."""
+    """Sync the bugtask and its bug to the database."""
     if not isinstance(bugtasks, list):
         bugtasks = [bugtasks]
     for bugtask in bugtasks:

@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'Bug',
     'BugSet',
-    'can_bug_expire',
     'get_bug_tags',
     'get_bug_tags_open_count']
 
@@ -126,37 +125,6 @@ def get_bug_tags_open_count(maincontext_clause, user,
     return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 
-def can_bug_expire(bug):
-    """Return True if the bug meets the basic preconditions for expiration.
-
-    This function does not check the bugtask preconditions.
-    See `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to check or
-    get a list of bugs that can expire.
-    """
-    # Bugs cannot be expired if any bugtask is valid.
-    expirable_statuses = [
-        BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
-        BugTaskStatus.WONTFIX]
-    if len([bt for bt in bug.bugtasks
-            if bt.status not in expirable_statuses]) != 0:
-        return False
-    # No one has replied to the first message reporting the bug.
-    # The bug reporter should be notified that more information
-    # is required to confirm the bug report.
-    if bug.messages.count() == 1:
-        return False
-    # Does the bug have incomplete bugtasks whose pillars have
-    # enabled bug expiration?
-    incomplete_bugtasks = [bt for bt in bug.bugtasks
-                           if bt.status == BugTaskStatus.INCOMPLETE]
-    if len(incomplete_bugtasks) == 0:
-        return False
-    if len([bt for bt in incomplete_bugtasks
-           if bt.pillar.official_malone is True]) == 0:
-        return False
-    return True
-
-
 class BugTag(SQLBase):
     """A tag belonging to a bug."""
 
@@ -255,29 +223,65 @@ class Bug(SQLBase):
         return sorted(result, key=pillar_sort_key)
 
     @property
+    def permits_expiration(self):
+        """See `IBug`.
+
+        This property checks the general state of the bug to determine if
+        expiration is permitted *if* a bugtask were to qualify for expiration.
+        This property does not check the bugtask preconditions to identify
+        a specific bugtask that can expire.
+
+        :See: `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to
+            check or get a list of bugs that can expire.
+        """
+        # Bugs cannot be expired if any bugtask is valid.
+        expirable_status_list = [
+            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
+            BugTaskStatus.WONTFIX]
+        if len([bugtask for bugtask in self.bugtasks
+                if bugtask.status not in expirable_status_list]) != 0:
+            return False
+
+        # No one has replied to the first message reporting the bug.
+        # The bug reporter should be notified that more information
+        # is required to confirm the bug report.
+        if self.messages.count() == 1:
+            return False
+
+        # Does the bug have incomplete bugtasks whose pillars have
+        # use launchpad as their official bug tracker?
+        expirable_bugtasks = [bugtask for bugtask in self.bugtasks
+                              if bugtask.status == BugTaskStatus.INCOMPLETE
+                              and bugtask.pillar.official_malone is True]
+        return len(expirable_bugtasks) > 0
+
+    @property
     def can_expire(self):
         """See `IBug`.
 
         Only Incomplete bug reports that affect a single pillar with
-        enabled_bug_expiration set to True can be expired. Expiration
-        happens when the bug becomes inactive--the date of the last update
-        older than the Launchpad expiration age. The bug report is considered
-        unexpirable if it is a duplicate, the bugtask is assigned or has
-        a milestone, or the bug report has another bugtask that is not
-        Incomplete or Invalid. If the bug report does not have any messages,
-        it is assumed that a bug contact has not explained to the bug
-        reporter what is needed to confirm the bug.
+        enabled_bug_expiration set to True can be expired. To qualify for
+        expiration, the bug and its bugtasks meet the follow conditions:
+
+        1. The bug is inactive; the last update of the is older than
+            Launchpad expiration age.
+        2. The bug is not a duplicate.
+        3. The bug has at least one message (a request for more information).
+        4. The bug does not have any other valid bugtasks.
+        5. The bugtask belongs to a project with official_malone is True.
+        6. The bugtask has the status Incomplete.
+        7. The bugtask is not assigned to anyone.
+        8. The bugtask does not have a milestone.
         """
         # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
-        # if a bug can expire, but it is expensive. We do some general checks
-        # for bugs that obviously cannot expire before using IBugTaskSet.
-        if not can_bug_expire(self):
+        # if a bug can expire, but it is expensive. We do a general check
+        # to verify the bug permits expiration before using IBugTaskSet to
+        # determine if a bugtask can cause expiration.
+        if not self.permits_expiration:
             return False
+
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(0, self)
-        if len(bugtasks) != 0:
-            return True
-        else:
-            return False
+        return len(bugtasks) > 0
 
     @property
     def initial_message(self):
