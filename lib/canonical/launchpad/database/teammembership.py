@@ -289,20 +289,19 @@ class TeamMembership(SQLBase):
         """Send a status change notification to all team admins and the
         member whose membership's status changed.
         """
+        team = self.team
+        member = self.person
+        reviewer = self.reviewer
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            "%s" % team.displayname, config.noreply_from_address)
         new_status = self.status
-        admins_emails = self.team.getTeamAdminsEmailAddresses()
+        admins_emails = team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
-        member_email = contactEmailAddresses(self.person)
+        member_email = contactEmailAddresses(member)
         # Make sure we don't send the same notification twice to anybody.
         for email in member_email:
             if email in admins_emails:
                 admins_emails.remove(email)
-
-        team = self.team
-        member = self.person
-        reviewer = self.reviewer
 
         if reviewer != member:
             reviewer_name = reviewer.unique_displayname
@@ -330,16 +329,17 @@ class TeamMembership(SQLBase):
                    % {'member': member.name, 'team': team.name})
         if new_status == TeamMembershipStatus.EXPIRED:
             template_name = 'membership-expired'
-            subject = (
-                'Launchpad: %s expired from %s' % (member.name, team.name))
+            subject = 'membership of %s expired' % member.name
         elif (new_status == TeamMembershipStatus.APPROVED and
               old_status != TeamMembershipStatus.ADMIN):
-            subject = 'Launchpad: %s added to %s' % (member.name, team.name)
+            subject = '%s added by %s' % (member.name, reviewer.name)
             if old_status == TeamMembershipStatus.INVITED:
+                subject = ('Invitation to %s accepted by %s'
+                           % (member.name, reviewer.name))
                 template_name = 'membership-invitation-accepted'
         elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
-            subject = ('Launchpad: %s decline invitation to join %s'
-                       % (member.name, team.name))
+            subject = ('Invitation to %s declined by %s'
+                       % (member.name, reviewer.name))
             template_name = 'membership-invitation-declined'
         else:
             # Use the default template and subject.

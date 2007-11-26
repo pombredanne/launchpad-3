@@ -133,10 +133,12 @@ The same goes for approving a proposed member.
     >>> len(stub.test_emails)
     2
     >>> member_notification, admins_notification = pop_notifications()
+    >>> admins_notification['From']
+    'Ubuntu Team <noreply@launchpad.net>'
     >>> admins_notification['To']
     'daf@canonical.com'
     >>> admins_notification['Subject']
-    'Launchpad: daf added to ubuntu-team'
+    'daf added by sabdfl'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello Dafydd Harries,
     <BLANKLINE>
@@ -146,11 +148,13 @@ The same goes for approving a proposed member.
     Mark Shuttleworth said:
      This is a nice guy; I like him
 
+    >>> admins_notification['From']
+    'Ubuntu Team <noreply@launchpad.net>'
     >>> print member_notification['To']
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> member_notification['Subject']
-    'Launchpad: daf added to ubuntu-team'
+    'daf added by sabdfl'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -274,9 +278,13 @@ team which just became a member and to the admins of the hosting team.
     >>> len(stub.test_emails)
     2
     >>> admins_notification, member_notification = pop_notifications()
+    >>> print admins_notification['From']
+    Ubuntu Team <noreply@launchpad.net>
     >>> print admins_notification['To']
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com
+    >>> print admins_notification['Subject']
+    Invitation to ubuntu-mirror-admins accepted by sabdfl
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -287,8 +295,12 @@ team which just became a member and to the admins of the hosting team.
     Mark Shuttleworth said:
      Of course I want to be part of ubuntu!
 
+    >>> print member_notification['From']
+    Ubuntu Team <noreply@launchpad.net>
     >>> print member_notification['To']
     mark@hbd.com,karl@canonical.com
+    >>> print member_notification['Subject']
+    Invitation to ubuntu-mirror-admins accepted by sabdfl
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -317,9 +329,13 @@ Similarly, a notification is sent if the invitation is declined.
     >>> len(stub.test_emails)
     2
     >>> admins_notification, member_notification = pop_notifications()
+    >>> print admins_notification['From']
+    Ubuntu Team <noreply@launchpad.net>
     >>> print admins_notification['To']
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
+    >>> print admins_notification['Subject']
+    Invitation to landscape-developers declined by sabdfl
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -329,8 +345,12 @@ Similarly, a notification is sent if the invitation is declined.
     Mark Shuttleworth said:
      Landscape has nothing to do with ubuntu, unfortunately.
 
+    >>> print member_notification['From']
+    Ubuntu Team <noreply@launchpad.net>
     >>> print member_notification['To']
     test@canonical.com,guilherme.salgado@canonical.com
+    >>> print member_notification['Subject']
+    Invitation to landscape-developers declined by sabdfl
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -670,9 +690,9 @@ just show the recipients and the different messages we may send.
     Regards,
     The Launchpad team
     ----------------------------------------
-    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    From: Launchpad Administrators <noreply@launchpad.net>
     To: foo.bar@canonical.com, guilherme.salgado@canonical.com
-    Subject: Launchpad: sabdfl expired from admins
+    Subject: membership of sabdfl expired
     Hello,
     <BLANKLINE>
     The membership of Mark Shuttleworth (sabdfl) in the Launchpad
@@ -681,9 +701,9 @@ just show the recipients and the different messages we may send.
     Regards,
     The Launchpad team
     ----------------------------------------
-    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    From: Launchpad Administrators <noreply@launchpad.net>
     To: mark@hbd.com
-    Subject: Launchpad: sabdfl expired from admins
+    Subject: membership of sabdfl expired
     Hello,
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
