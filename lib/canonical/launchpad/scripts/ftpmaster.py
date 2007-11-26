@@ -28,6 +28,7 @@ import sys
 import tempfile
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archiveuploader.utils import re_extract_src_version
@@ -1576,52 +1577,92 @@ class ObsoleteDistroseries(SoyuzScript):
 
         Can raise SoyuzScriptError.
         """
-        # There is a circular import between this file, domination and
-        # publishing.py.
-        from canonical.archivepublisher.domination import Dominator
-        from canonical.launchpad.database.publishing import (
-            SecureSourcePackagePublishingHistory,
-            SecureBinaryPackagePublishingHistory)
         assert self.location, (
             "location is not available, call SoyuzScript.setupLocation() "
             "before calling mainTask().")
 
-        # Some shortcut variable names to reduce long lines.
-        distro = self.location.distribution
+        # Shortcut variable name to reduce long lines.
         distroseries = self.location.distroseries
 
+        self._checkParameters(distroseries)
+
+        self.logger.info("Obsoleting all packages for distroseries %s in "
+                         "the %s distribution." % (
+                            distroseries.name,
+                            distroseries.distribution.name))
+
+        # This nonsense seems to be required otherwise sqlvalues is given
+        # a Zope proxy, which it barfs on.
+        archive_ids = [
+            id for id in distroseries.distribution.all_distro_archive_ids]
+        sources = self._generateSourcesList(distroseries, archive_ids)
+        binaries = self._generateBinariesList(distroseries, archive_ids)
+        num_sources = sources.count()
+        num_binaries = binaries.count()
+        self.logger.info("There are %d sources and %d binaries." % (
+            num_sources, num_binaries))
+
+        if num_sources == 0 and num_binaries == 0:
+            raise SoyuzScriptError("Nothing to do, no published packages.")
+
+        self.logger.info("Obsoleting sources...")
+        for package in sources:
+            package.status = PackagePublishingStatus.OBSOLETE
+
+        self.logger.info("Obsoleting binaries...")
+        for package in binaries:
+            package.status = PackagePublishingStatus.OBSOLETE
+
+        # This will mark the packages with a "stay of execution" period and
+        # will subsequently be deleted for good after that period expires.
+        self._dominatePackages(distroseries)
+
+        # Information returned mainly for the benefit of the test harness.
+        return sources, binaries
+
+    def _checkParameters(self, distroseries):
+        """Sanity check the supplied script parameters."""
         # Did the user provide a suite name? (distribution defaults
         # to 'ubuntu' which is fine.)
-        if distroseries == distro.currentseries:
+        if distroseries == distroseries.distribution.currentseries:
             # SoyuzScript defaults to the latest series.  Since this
             # will never get obsoleted it's safe to assume that the
             # user let this option default, so complain and exit.
             raise SoyuzScriptError(
-                "Please specifcy a distroseries name with -s/--suite")
-
-        self.logger.info("Obsoleting all packages for distroseries %s in "
-                         "the %s distribution." % (
-                            distroseries.name, distro.name))
+                "Please specify a valid distroseries name with -s/--suite "
+                "and which is not the most recent distroseries.")
 
         # Is the distroseries in an obsolete state?  Bail out now if so.
         if distroseries.status != DistroSeriesStatus.OBSOLETE:
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 
-        # Get a list of published sources and binaries for the distroseries.
+    def _generateSourcesList(self, distroseries, archive_ids):
+        """Return a list of published source packages for distroseries.
+
+        Additionally, only consider the archive IDs supplied.
+        """
+        # Avoid circular import.
+        from canonical.launchpad.database.publishing import (
+            SecureSourcePackagePublishingHistory)
         self.logger.info("Generating list of published sources for %s." %
            distroseries.name)
-        # This nonsense seems to be required otherwise sqlvalues is given
-        # a Zope proxy, which it barfs on.
-        archive_ids = [
-            id for id in distroseries.distribution.all_distro_archive_ids]
         sources = SecureSourcePackagePublishingHistory.select("""
             distroseries = %s AND
             status = %s AND
             archive in %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             archive_ids))
+        return sources
 
+    def _generateBinariesList(self, distroseries, archive_ids):
+        """Return a list of published binary packages for distroseries.
+
+        Additionally, only consider the archive IDs supplied.
+        """
+        # Avoid circular import.
+        from canonical.launchpad.database.publishing import (
+            SecureBinaryPackagePublishingHistory)
         self.logger.info("Generating list of published binaries for %s." %
             distroseries.name)
         binaries = SecureBinaryPackagePublishingHistory.select("""
@@ -1634,17 +1675,12 @@ class ObsoleteDistroseries(SoyuzScript):
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             archive_ids),
             clauseTables=["DistroArchSeries", "DistroSeries"])
+        return binaries
 
-        self.logger.info("There are %d sources and %d binaries." % (
-            sources.count(), binaries.count()))
-
-        self.logger.info("Obsoleting sources...")
-        for package in sources:
-            package.status = PackagePublishingStatus.OBSOLETE
-
-        self.logger.info("Obsoleting binaries...")
-        for package in binaries:
-            package.status = PackagePublishingStatus.OBSOLETE
+    def _dominatePackages(self, distroseries):
+        """Run the Dominator over the distroseries."""
+        # Avoid circular import.
+        from canonical.archivepublisher.domination import Dominator
 
         # Dominate the packages in all pockets for all main archives.
         # We do not touch PPAs.
@@ -1655,9 +1691,10 @@ class ObsoleteDistroseries(SoyuzScript):
             PackagePublishingPocket.PROPOSED,
             PackagePublishingPocket.BACKPORTS)
 
-        for archive in distro.all_distro_archives:
+        for archive in distroseries.distribution.all_distro_archives:
             try:
-                config = archive.getPubConfig()
+                # This is required because Config does not have an interface.
+                config = removeSecurityProxy(archive.getPubConfig())
             except LucilleConfigError:
                 self.logger.error(
                     "Config missing for archive %s, skipping" % archive.title)
@@ -1671,5 +1708,3 @@ class ObsoleteDistroseries(SoyuzScript):
                 dominator = Dominator(self.logger, archive)
                 dominator.judgeAndDominate(distroseries, pocket, config)
 
-        # Information returned mainly for the benefit of the test harness.
-        return sources, binaries

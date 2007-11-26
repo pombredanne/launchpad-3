@@ -1,8 +1,10 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Obsolete (schedule for removal) all the packages in an obsolete
-distroseries.
+"""Obsolete all packages in an obsolete distroseries.
+
+This script will obsolete (schedule for removal) all published packages
+in an obsolete distroseries.
 """
 
 import _pythonpath
