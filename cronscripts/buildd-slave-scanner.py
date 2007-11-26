@@ -48,6 +48,7 @@ class SlaveScanner(LaunchpadCronScript):
                     "No candidates available for builder.")
                 continue
             builder.dispatchBuildCandidate(candidate)
+            self.txn.commit()
 
         self.logger.info("Slave Scan Process Finished.")
 

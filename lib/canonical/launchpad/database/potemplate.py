@@ -564,7 +564,7 @@ class POTemplate(SQLBase, RosettaStats):
             'There is already a valid IPOFile (%s)' % existingpo.title)
 
         language = self._lookupLanguage(language_code)
-        return DummyPOFile(self, language, owner=requester)
+        return DummyPOFile(self, language, variant=variant, owner=requester)
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
                                   context=None):
