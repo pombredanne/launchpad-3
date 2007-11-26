@@ -10,7 +10,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistributionSet, DistroSeriesStatus, NotFoundError)
+    DistroSeriesStatus, IBuildSet, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
@@ -44,7 +44,7 @@ class RetryDepwait(LaunchpadCronScript):
             raise LaunchpadScriptFailure(
                 "Could not find distribution: %s" % self.options.distribution)
 
-        # Iterate over all supported distroarchseries with available chroot
+        # Iterate over all supported distroarchseries with available chroot.
         build_set = getUtility(IBuildSet)
         for distroseries in distribution:
             if distroseries.status == DistroSeriesStatus.OBSOLETE:
@@ -59,8 +59,9 @@ class RetryDepwait(LaunchpadCronScript):
                 build_set.retryDepWaiting(distroarchseries)
 
         # XXX cprov 20071122:  LaunchpadScript should provide some
-        # infraestrucutre for dry-run operations and not simply rely
+        # infrastructure for dry-run operations and not simply rely
         # on the transaction being discarded by the garbage-collector.
+        # See further information in bug #165200.
         if not self.options.dryrun:
             self.logger.info('Commiting the transaction.')
             self.txn.commit()

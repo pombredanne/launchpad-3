@@ -92,7 +92,8 @@ class TestRetryDepwait(LaunchpadZopelessTestCase):
         if distribution is not None:
             test_args.extend(['-d', distribution])
 
-        retry_depwait = RetryDepwait(name='retry-depwait', test_args=test_args)
+        retry_depwait = RetryDepwait(
+            name='retry-depwait', test_args=test_args)
         # Swallowing all log messages.
         retry_depwait.logger = FakeLogger()
         def message(self, prefix, *stuff, **kw):
@@ -127,7 +128,8 @@ class TestRetryDepwait(LaunchpadZopelessTestCase):
         self.layer.commit()
 
         self.assertEqual(
-            self.number_of_pending_builds + 1, self.getPendingBuilds().count())
+            self.number_of_pending_builds + 1,
+            self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 1005)
 

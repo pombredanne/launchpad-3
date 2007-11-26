@@ -156,8 +156,8 @@ class Build(SQLBase):
     def distroarchseriesbinarypackages(self):
         """See `IBuild`."""
         # Avoid circular import by importing locally.
-        from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
-            import (DistroArchSeriesBinaryPackageRelease)
+        from canonical.launchpad.database import (
+            DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
             self.distroarchseries, bp)
             for bp in self.binarypackages]
@@ -209,7 +209,7 @@ class Build(SQLBase):
 
     def retry(self):
         """See `IBuild`."""
-        assert self.can_be_retried, "Build %s can not be retried" % self.id
+        assert self.can_be_retried, "Build %s cannot be retried" % self.id
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
         self.buildduration = None
@@ -220,7 +220,7 @@ class Build(SQLBase):
 
     def updateDependencies(self):
         """See `IBuild`."""
-        # this dict maps the package version relationship syntax in lambda
+        # This dict maps the package version relationship syntax in lambda
         # functions which returns boolean according the results of
         # apt_pkg.VersionCompare function (see the order above).
         # For further information about pkg relationship syntax see:

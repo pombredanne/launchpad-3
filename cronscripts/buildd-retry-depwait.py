@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 """Retrying build in MANUALDEPWAIT state.
 

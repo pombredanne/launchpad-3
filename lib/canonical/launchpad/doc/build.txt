@@ -111,8 +111,8 @@ Retry Build record in question:
 
     >>> active_build.retry()
 
-Build record has no history and is NEEDSBUILD and a correspondent
-BuildQueue records was created.
+Build record has no history and is NEEDSBUILD and a corresponding
+BuildQueue record was created.
 
     >>> active_build.builder is None
     True
