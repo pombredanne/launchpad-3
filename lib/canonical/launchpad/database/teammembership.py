@@ -27,7 +27,7 @@ from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    ITeamMembership, ITeamParticipation, ITeamMembershipSet,
+    IPersonSet, ITeamMembership, ITeamParticipation, ITeamMembershipSet,
     TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -79,16 +79,17 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
 
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            "%s" % team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
-        subject = ('Launchpad: renewed %s as member of %s'
-                   % (member.name, team.name))
+        subject = '%s extended their membership' % member.name
         template = get_email_template('membership-member-renewed.txt')
-        msg = MailWrapper().format(template % replacements)
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         for address in admins_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
     def sendAutoRenewalNotification(self):

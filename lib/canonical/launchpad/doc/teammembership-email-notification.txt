@@ -619,19 +619,27 @@ just show the recipients and the different messages we may send.
     ...             recipient.strip()
     ...             for recipient in message['To'].split(','))
     ...         body = message.get_payload()
+    ...         subject = message['Subject']
+    ...         from_ = message['From']
     ...         if body not in distinct_messages:
-    ...             distinct_messages[body] = recipients
+    ...             distinct_messages[body] = (from_, subject, recipients)
     ...         else:
-    ...             existing_recipients = distinct_messages[body]
-    ...             distinct_messages[body] = existing_recipients.union(
-    ...                 recipients)
+    ...             from_, subject, existing_recipients = (
+    ...                 distinct_messages[body])
+    ...             distinct_messages[body] = (
+    ...                 from_, subject, existing_recipients.union(recipients))
     ...     for message in sorted(distinct_messages):
-    ...         print 'To:', sorted(distinct_messages[message])
+    ...         from_, subject, recipients = distinct_messages[message]
+    ...         print 'From:', from_
+    ...         print 'To:', ", ".join(sorted(recipients))
+    ...         print 'Subject:', subject #doctest: -NORMALIZE_WHITESPACE
     ...         print message #doctest: -NORMALIZE_WHITESPACE
     ...         print "-"*40
 
     >>> print_distinct_messages_and_recipients()
-    To: ['colin.watson@ubuntulinux.com', 'foo.bar@canonical.com', 'mark@hbd.com']
+    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com, mark@hbd.com
+    Subject: Launchpad: renewed jdub as member of ubuntu-team
     Hello,
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
@@ -640,7 +648,9 @@ just show the recipients and the different messages we may send.
     Regards,
     The Launchpad team
     ----------------------------------------
-    To: ['foo.bar@canonical.com', 'guilherme.salgado@canonical.com']
+    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    To: foo.bar@canonical.com, guilherme.salgado@canonical.com
+    Subject: Launchpad: sabdfl expired from admins
     Hello,
     <BLANKLINE>
     The membership of Mark Shuttleworth (sabdfl) in the Launchpad
@@ -649,7 +659,9 @@ just show the recipients and the different messages we may send.
     Regards,
     The Launchpad team
     ----------------------------------------
-    To: ['mark@hbd.com']
+    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    To: mark@hbd.com
+    Subject: Launchpad: sabdfl expired from admins
     Hello,
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
@@ -658,7 +670,9 @@ just show the recipients and the different messages we may send.
     Regards,
     The Launchpad team
     ----------------------------------------
-    To: ['jeff.waugh@ubuntulinux.com']
+    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    To: jeff.waugh@ubuntulinux.com
+    Subject: Launchpad: renewed jdub as member of ubuntu-team
     Hello,
     <BLANKLINE>
     Your membership in the Ubuntu Team (ubuntu-team) team has been
@@ -701,10 +715,12 @@ sent to all team admins.
     1
 
     >>> print_distinct_messages_and_recipients()
-    To: ['mark@hbd.com']
-    Hello,
+    From: Mirror Administrators <noreply@launchpad.net>
+    To: mark@hbd.com
+    Subject: karl extended their membership
+    Hello Mark Shuttleworth,
     <BLANKLINE>
-    Karl Tilbury (karl) renewed his/her own membership in the Mirror
+    Karl Tilbury (karl) renewed their own membership in the Mirror
     Administrators (ubuntu-mirror-admins) team until ...
     <BLANKLINE>
     Regards,
