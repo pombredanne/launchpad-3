@@ -64,7 +64,7 @@ class ExecOnlySession:
         """
         try:
             executable, arguments = self.getCommandToRun(command)
-        except Exception, e:
+        except ForbiddenCommand, e:
             protocol.write(str(e) + '\r\n')
             protocol.loseConnection()
             raise
