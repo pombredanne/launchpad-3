@@ -77,14 +77,15 @@ class OpenIdMixin:
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.openid_server = Server(store_factory(), self.server_url)
-        self.identity_url_prefix = allvhosts.configs['openid'].rooturl + '+id/'
+        self.identity_url_prefix = (
+            allvhosts.configs['openid'].rooturl + '+id/')
 
     @property
     def user_identity_url(self):
         return self.identity_url_prefix + self.user.openid_identifier
 
     def isIdentityOwner(self):
-        """Return True if the user can authenticate as the given identifier."""
+        """Return True if the user can authenticate as the given ID."""
         assert self.user is not None, "user should be logged in by now."
         return (self.openid_request.idSelect() or
                 self.openid_request.identity == self.user_identity_url)
@@ -182,7 +183,7 @@ class OpenIdMixin:
 
     @property
     def sreg_fields(self):
-        """Return a list of the sreg (field, value) pairs to be sent to the RP.
+        """Return a list of the sreg (field, value) pairs for the RP.
 
         As this function returns user details, the user must be logged
         in before accessing this property.
@@ -396,7 +397,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         return {'nonce': self.nonce}
 
     def setUpWidgets(self):
-        """Set up the widgets, and grab the OpenID request from the session."""
+        """Set up the widgets, and restore the OpenID request."""
         super(LoginServiceBaseView, self).setUpWidgets()
 
         # Restore the OpenID request.

@@ -8,9 +8,9 @@ __all__ = []
 from openid.yadis.accept import getAcceptable
 from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
@@ -24,7 +24,7 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIdApplicationURL:
-    """Canonical URL data for IOpenIdApplication"""
+    """Canonical URL data for `IOpenIdApplication`"""
     implements(ICanonicalUrlData)
 
     path = ''
@@ -36,10 +36,12 @@ class OpenIdApplicationURL:
 
 
 class OpenIdApplicationNavigation(Navigation):
+    """Navigation for `IOpenIdApplication`"""
     usedfor = IOpenIdApplication
 
     @stepthrough('+id')
     def traverse_id(self, name):
+        """Traverse to persistent OpenID identity URLs."""
         person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
         if person is not None and person.is_openid_enabled:
             return OpenIDPersistentIdentity(person)
@@ -48,14 +50,14 @@ class OpenIdApplicationNavigation(Navigation):
 
     @stepto('token')
     def token(self):
+        """Traverse to login tokens."""
         # We need to traverse the 'token' namespace in order to allow people
         # to create new accounts and reset their passwords. This can't clash
         # with a person's name because it's a blacklisted name.
         return getUtility(ILoginTokenSet)
 
     def traverse(self, name):
-        # Provide a permanent OpenID identity for use by the Ubuntu shop
-        # or other services that cannot cope with name changes.
+        """Redirect person names to equivalent persistent identity URLs."""
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
             target = '%s+id/%s' % (
@@ -67,6 +69,7 @@ class OpenIdApplicationNavigation(Navigation):
 
 
 class OpenIDPersistentIdentity:
+    """A persistent OpenID identifier for a user."""
 
     implements(IOpenIDPersistentIdentity)
 
@@ -92,6 +95,7 @@ class XRDSContentNegotiationMixin:
         return url
 
     def render(self):
+        """Render a page supporting XRDS discovery."""
         # While Zope doesn't care about extra slashes, such
         # differences result in different identity URLs.  To avoid
         # confusion, we redirect to our canonical URL if we aren't
@@ -139,10 +143,12 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
 
     @cachedproperty
     def person_url(self):
+        """The absolute URL for the person's Launchpad profile."""
         return canonical_url(self.context.person, rootsite='mainsite')
 
     @cachedproperty
     def openid_identity_url(self):
+        """The person's persistent OpenID identity URL."""
         return canonical_url(self.context)
 
 
