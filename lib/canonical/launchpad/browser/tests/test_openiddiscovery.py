@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""OpenID discovery tests."""
 
 __metaclass__ = type
 
@@ -8,14 +8,14 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.browser.openiddiscovery import (
+    XRDSContentNegotiationMixin)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import LaunchpadFunctionalLayer
 
-from canonical.launchpad.browser.openiddiscovery import (
-    XRDSContentNegotiationMixin)
 
 class SampleView(XRDSContentNegotiationMixin, LaunchpadView):
     def template(self):
@@ -26,6 +26,7 @@ class SampleView(XRDSContentNegotiationMixin, LaunchpadView):
 
 
 class ContentNegotiationTests(unittest.TestCase):
+    """Tests for XRDS content negotiation."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -36,6 +37,7 @@ class ContentNegotiationTests(unittest.TestCase):
         logout()
 
     def createRequestAndView(self, host, path, query, accept):
+        """Create a test request and matching view."""
         context = getUtility(IPersonSet).getByName('sabdfl')
         request = LaunchpadTestRequest(
             HTTP_HOST=host,
@@ -47,9 +49,11 @@ class ContentNegotiationTests(unittest.TestCase):
         return request, view
 
     def test_prefer_html(self):
-        # Test that the normal content is published if HTML is
-        # preferred to XRDS.  An X-XRDS-Location header is added in
-        # this case.
+        """Test rendering when HTML is preferred to XRDS.
+
+        As well as the normal content being rendered, an
+        X-XRDS-Location header is added pointing at the XRDS document.
+        """
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl', '',
             'text/html, application/xrds+xml;q=0.5, */*')
@@ -62,9 +66,11 @@ class ContentNegotiationTests(unittest.TestCase):
             'http://launchpad.dev/~sabdfl/+xrds')
 
     def test_prefer_xrds(self):
-        # Test that the XRDS content is returned if XRDS is preferred
-        # to HTML.  In this case, the content type is set, and no
-        # X-XRDS-Location header is generated.
+        """Test rendering when XRDS is preferred to HTML.
+
+        In this case, no X-XRDS-Location header is added, as this
+        would cause the client to make a second request for the XRDS.
+        """
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl', '',
             'text/html;q=0.5, application/xrds+xml, */*')
@@ -82,7 +88,7 @@ class ContentNegotiationTests(unittest.TestCase):
             request.response.getHeader('x-xrds-location'), None)
 
     def test_no_accept(self):
-        # If no accept header is sent, HTML is preferred.
+        """Test that HTML is rendered when no Accept header is given."""
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl', '', '')
         content = view()
@@ -92,8 +98,7 @@ class ContentNegotiationTests(unittest.TestCase):
             'http://launchpad.dev/~sabdfl/+xrds')
 
     def test_accept_neither(self):
-        # If an accept header is sent that does not include HTML or
-        # XRDS, send HTML.
+        """Test that HTML is rendered if neither HTML or XRDS is preferred."""
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl', '', 'image/png')
         content = view()
@@ -103,8 +108,7 @@ class ContentNegotiationTests(unittest.TestCase):
             'http://launchpad.dev/~sabdfl/+xrds')
 
     def test_call_xrds_method(self):
-        # Calling the xrds() method results in rendering the XRDS
-        # content.
+        """Test that the xrds() method renders the XRDS content."""
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl', '', '')
         content = view.xrds()
@@ -116,7 +120,7 @@ class ContentNegotiationTests(unittest.TestCase):
             request.response.getHeader('x-xrds-location'), None)
 
     def test_normalise_url(self):
-        # Check that requests with a non-canonical URL result in a redirect.
+        """Test that requests to non-canonical URLs redirect."""
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl/+index', 'foo=bar', '')
         content = view()
