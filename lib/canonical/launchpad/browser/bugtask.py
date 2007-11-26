@@ -981,6 +981,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         new_assignee = data.get('assignee', bugtask.assignee)
         no_previous_errors = len(self.errors) == 0
         if (no_previous_errors and
+            new_assignee is not None and
             new_assignee != bugtask.assignee and
             not new_assignee.isBugContributorInTarget(
                 user=self.user, target=bugtask.target) and
