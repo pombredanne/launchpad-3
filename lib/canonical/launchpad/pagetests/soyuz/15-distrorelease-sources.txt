@@ -50,21 +50,11 @@ Click the "Show publishing history" link to see specific information
 about Firefox's publishing history.
 
   >>> browser.getLink("Show publishing history").click()
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
-  0.9
-  PENDING:
-  WartyII
-  pocket Release
-  in component main
-  and section editors
-  0.9
-  PUBLISHED:
-  WartyII
-  pocket Release
-  in component main
-  and section web
-  Published
-  on 2004-09-27
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
+  Date                    Status    Target  Pocket  Component Section Version
+  2006-02-13 12:19:00 UTC PENDING   WartyII RELEASE main      editors 0.9
+  2004-09-27 11:57:13 UTC PUBLISHED WartyII RELEASE main      web     0.9
+  Published on 2004-09-27
 
 Jump back to the DistributionSourcePackage page to continue the tests:
 

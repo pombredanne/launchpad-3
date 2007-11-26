@@ -22,23 +22,12 @@ URL:
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
-  1.0
-  PUBLISHED:
-  warty i386
-  pocket Release
-  in component main
-  and section base
-  Published
-  on 2006-04-11
-  0.9
-  PUBLISHED:
-  warty i386
-  pocket Release
-  in component main
-  and section base
-  Published
-  on 2005-06-18
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
+  Date                    Status    Target     Pocket  Component Section Version
+  2006-04-11 13:00:00 UTC PUBLISHED warty i386 RELEASE main      base    1.0
+  Published on 2006-04-11
+  2005-05-05 00:00:00 UTC PUBLISHED warty i386 RELEASE main      base    0.9
+  Published on 2005-06-18
 
 It also provides a link to the currently published version:
 
@@ -123,8 +112,8 @@ file is available:
 
 = DistroArchSeries Partner Binary Package Pages =
 
-Binary partner packages in Launchpad differ from regular packages by two 
-things:
+Binary partner packages in Launchpad differ from regular packages by two things:
+
 1. Their component is 'partner'
 2. Their archive is the partner archive, rather than the primary archive.
 
@@ -138,15 +127,11 @@ in the previous section of this page.
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
-  1.0-1
-  PUBLISHED:
-  breezy-autotest i386
-  pocket Release
-  in component partner
-  and section devel
-  Published
-  on 2007-08-09
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
+  Date                    Status    Target     Pocket  Component Section Version
+  2007-08-09 21:55:39 UTC PUBLISHED b...t i386 RELEASE partner   devel 1.0-1
+  Published on 2007-08-09
+
 
 It also provides a link to the currently published version:
   >>> browser.getLink("1.0-1").click()
