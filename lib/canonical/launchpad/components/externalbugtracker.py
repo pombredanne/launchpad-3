@@ -1740,9 +1740,63 @@ class SourceForge(ExternalBugTracker):
 
 class RequestTracker(ExternalBugTracker):
     """`ExternalBugTracker` subclass for handling RT imports."""
-    # We create our own opener so as to handle the RT authentication
-    # cookies that need to be passed around.
-    _opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+    ticket_url = 'REST/1.0/ticket/%s/show'
+
+    @property
+    def is_cpan(self):
+        """Return true if the RT instance is at rt.cpan.org."""
+        return False
+
+    @cachedproperty
+    def _opener(self):
+        """Return a urllib2.OpenerDirector for the remote RT instance.
+
+        An attempt will be made to log in to the remote instance before
+        the opener is returned. If logging in is not successful a
+        BugTrackerConnectError will be raised
+        """
+        # To log in to an RT instance we must pass a username and
+        # password to its login form, as a user would from the web.
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+        try:
+            opener.open('%s/' % self.baseurl, urllib.urlencode(
+                self.credentials))
+        except Exception, e:
+            raise BugTrackerConnectError('%s/' % self.baseurl,
+                "Unable to authenticate with remote RT service: "
+                "Could not submit login form: " +
+                e.message)
+
+        # Although it's not very elegant, the only way at present to
+        # check for logged-in-ness on an RT instance is to try and
+        # retrieve ticket #1.
+        ticket_url = '%s/%s' % (self.baseurl, self.ticket_url % '1')
+        try:
+            data = opener.open(ticket_url)
+        except urllib2.HTTPError, e:
+            raise BugTrackerConnectError(ticket_url, e.msg)
+
+        # Somewhat annoyingly, RT doesn't use the HTTP header to tell
+        # clients when there's a problem. Instead, it's the second item
+        # of the first line of the response body. Happily, it does use
+        # HTTP response status codes, so if we don't receive a 200 (OK),
+        # we abort with a BugTrackerConnectError.
+        firstline = data.readline().split(' ')
+        if firstline[1] != '200':
+            raise BugTrackerConnectError(ticket_url,
+                "Unable to authenticate with remote RT service: "
+                "Could not retrieve ticket #1.")
+        else:
+            return opener
+
+    def __init__(self, bugtracker):
+        """See `ExternalBugTracker`."""
+        super(RequestTracker, self).__init__(bugtracker)
+        if not self.is_cpan:
+            self.credentials = {'user': 'guest', 'pass': 'guest'}
+        else:
+            self.credentials = {'user': 'guest', 'pass': 'guest'}
 
     def urlopen(self, request, data=None):
         """Return a handle to a remote resource.
@@ -1750,3 +1804,6 @@ class RequestTracker(ExternalBugTracker):
         This method overrides that of `ExternalBugTracker` so that the
         custom URL opener for RequestTracker instances can be used.
         """
+        # We create our own opener so as to handle the RT authentication
+        # cookies that need to be passed around.
+        return self._opener.open(request, data)
