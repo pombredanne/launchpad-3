@@ -99,12 +99,11 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
 
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            "%s" % team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
-        subject = ('Launchpad: renewed %s as member of %s'
-                   % (member.name, team.name))
+        subject = '%s renewed automatically' % member.name
 
         if member.isTeam():
             member_addrs = contactEmailAddresses(member.teamowner)
@@ -113,16 +112,20 @@ class TeamMembership(SQLBase):
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = contactEmailAddresses(member)
         template = get_email_template(template_name)
-        msg = MailWrapper().format(template % replacements)
         for address in member_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
         template_name = 'membership-auto-renewed-impersonal.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
         template = get_email_template(template_name)
-        msg = MailWrapper().format(template % replacements)
         for address in admins_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeExpirationDate(self, person):

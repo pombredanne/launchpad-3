@@ -613,12 +613,15 @@ just show the recipients and the different messages we may send.
     ...     recipients), we print each distinct message only once and group
     ...     all recipients of that message together.
     ...     """
+    ...     import re
+    ...     greeting_pattern = re.compile('Hello [^,]*,\n')
     ...     distinct_messages = {}
     ...     for message in pop_notifications():
     ...         recipients = set(
     ...             recipient.strip()
     ...             for recipient in message['To'].split(','))
-    ...         body = message.get_payload()
+    ...         # Strip the first line as it's different for each recipient.
+    ...         body = greeting_pattern.sub('', message.get_payload())
     ...         subject = message['Subject']
     ...         from_ = message['From']
     ...         if body not in distinct_messages:
@@ -637,13 +640,22 @@ just show the recipients and the different messages we may send.
     ...         print "-"*40
 
     >>> print_distinct_messages_and_recipients()
-    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
+    From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com, mark@hbd.com
-    Subject: Launchpad: renewed jdub as member of ubuntu-team
-    Hello,
+    Subject: jdub renewed automatically
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
     team has been automatically renewed until ...
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: jeff.waugh@ubuntulinux.com
+    Subject: jdub renewed automatically
+    <BLANKLINE>
+    Your membership in the Ubuntu Team (ubuntu-team) team has been
+    automatically renewed until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -666,17 +678,6 @@ just show the recipients and the different messages we may send.
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
     expired.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-    ----------------------------------------
-    From: Launchpad Team Membership Notifier <noreply@launchpad.net>
-    To: jeff.waugh@ubuntulinux.com
-    Subject: Launchpad: renewed jdub as member of ubuntu-team
-    Hello,
-    <BLANKLINE>
-    Your membership in the Ubuntu Team (ubuntu-team) team has been
-    automatically renewed until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -718,7 +719,6 @@ sent to all team admins.
     From: Mirror Administrators <noreply@launchpad.net>
     To: mark@hbd.com
     Subject: karl extended their membership
-    Hello Mark Shuttleworth,
     <BLANKLINE>
     Karl Tilbury (karl) renewed their own membership in the Mirror
     Administrators (ubuntu-mirror-admins) team until ...
