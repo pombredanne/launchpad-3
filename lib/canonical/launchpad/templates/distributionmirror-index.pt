@@ -27,6 +27,13 @@
 
 <div metal:fill-slot="main">
 
+    <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
+      <div tal:condition="context/whiteboard" class="highlighted"
+           id="whiteboard">
+        <p tal:content="context/whiteboard">Whiteboard goes here.</p>
+      </div>
+    </tal:is-owner-or-admin>
+
     <table id="mirror-details" class="summary" style="float: right">
       <tr>
         <th>Speed:</th>
@@ -41,13 +48,6 @@
         <td tal:content="context/content/title">Archive</td>
       </tr>
     </table>
-
-    <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
-      <div tal:condition="context/whiteboard" class="highlighted"
-           id="whiteboard">
-        <p tal:content="context/whiteboard">Whiteboard goes here.</p>
-      </div>
-    </tal:is-owner-or-admin>
 
     <p id="status">
       <strong>
@@ -118,8 +118,8 @@
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
-        define="arch_serieses view/getSummarizedMirroredArchSerieses;
-                source_serieses view/getSummarizedMirroredSourceSerieses">
+        define="arch_serieses view/summarized_arch_series;
+                source_serieses view/summarized_source_series">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>

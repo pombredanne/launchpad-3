@@ -21,17 +21,6 @@
 
     <div metal:fill-slot="main">
 
-    <script>
-    <!--
-        function updateSeries(select) {
-            var deb = document.getElementById('series-deb');
-            deb.innerHTML = select.value;
-            var deb_src = document.getElementById('series-deb-src');
-            deb_src.innerHTML = select.value;
-        }
-    //-->
-    </script>
-
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
               tal:condition="context/whiteboard">

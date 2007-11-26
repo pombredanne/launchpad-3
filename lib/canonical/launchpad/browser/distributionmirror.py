@@ -84,39 +84,36 @@ class DistributionMirrorView(LaunchpadView):
 
     def initialize(self):
         """Set up the sources.list entries for display."""
-        valid_series = set(arch.distro_arch_series.distroseries
-                           for arch in self.summarized_arch_series)
+        valid_series = []
+        # use an explicit loop to preserve ordering while getting rid of dupes
+        for arch_series in self.summarized_arch_series:
+            series = arch_series.distro_arch_series.distroseries
+            if series not in valid_series:
+                valid_series.append(series)
         entries = SourcesListEntries(self.context.distribution,
-            self.context.http_base_url, valid_series)
-        self.sources_list_entries = SourcesListEntriesView(
-            entries, self.request)
+                                     self.context.http_base_url,
+                                     valid_series)
+        self.sources_list_entries = SourcesListEntriesView(entries,
+                                                           self.request)
 
     @cachedproperty
     def probe_records(self):
         return BatchNavigator(self.context.all_probe_records, self.request)
 
-    def getSummarizedMirroredSourceSerieses(self):
-        mirrors = self.context.getSummarizedMirroredSourceSerieses()
-        return sorted(mirrors, reverse=True,
-                      key=lambda mirror: Version(mirror.distroseries.version))
-
+    # Cached because it is used to construct the entries in initialize()
     @cachedproperty
     def summarized_arch_series(self):
-        return self.context.getSummarizedMirroredArchSerieses()
-
-    def getSummarizedMirroredArchSerieses(self):
-        return sorted(
-            self.summarized_arch_series, reverse=True,
-            key=lambda mirror: Version(
-                mirror.distro_arch_series.distroseries.version))
-
-
-    def getSummarizedMirroredArchSerieses(self):
         mirrors = self.context.getSummarizedMirroredArchSerieses()
         return sorted(
             mirrors, reverse=True,
             key=lambda mirror: Version(
                 mirror.distro_arch_series.distroseries.version))
+
+    @property
+    def summarized_source_series(self):
+        mirrors = self.context.getSummarizedMirroredSourceSerieses()
+        return sorted(mirrors, reverse=True,
+                      key=lambda mirror: Version(mirror.distroseries.version))
 
     def getCDImageMirroredFlavoursBySeries(self):
         """Return a list of _FlavoursByDistroSeries objects ordered

@@ -100,7 +100,8 @@ class ArchiveView(LaunchpadView):
         entries = SourcesListEntries(self.context.distribution,
                                      self.context.archive_url,
                                      self.context.series_with_sources)
-        self.sources_list_entries = SourcesListEntriesView(entries, self.request)
+        self.sources_list_entries = SourcesListEntriesView(entries,
+                                                           self.request)
 
         self.name_filter = self.request.get('field.name_filter')
         status_filter = self.request.get('field.status_filter', 'published')

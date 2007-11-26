@@ -15,7 +15,8 @@ from canonical.launchpad.webapp import LaunchpadView
 class SourcesListEntries:
     """For rendering sources.list entries.
 
-    Represents a set of distroseries in a distribution archive."""
+    Represents a set of distroseries in a distribution archive.
+    """
     def __init__(self, distribution, archive_url, valid_series):
         self.distribution = distribution
         self.archive_url = archive_url
@@ -31,9 +32,8 @@ class SourcesListEntriesView(LaunchpadView):
     def initialize(self):
         self.terms = [SimpleTerm(s, s.name, s.title)
                  for s in self.context.valid_series]
-        field = Choice(
-                __name__='series', title=_("Distro Series"),
-                vocabulary=SimpleVocabulary(self.terms), required=True)
+        field = Choice(__name__='series', title=_("Distro Series"),
+                       vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
         self.series_widget.extra = "onChange='updateSeries(this);'"
 
