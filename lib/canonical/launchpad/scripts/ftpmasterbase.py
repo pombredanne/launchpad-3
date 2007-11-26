@@ -344,7 +344,7 @@ class SoyuzScript(LaunchpadScript):
                 self.options.distribution_name,
                 self.options.suite)
 
-    def _finishProcedure(self):
+    def finishProcedure(self):
         """Script finalization procedure.
 
         'dry-run' command-line option will case the transaction to be
@@ -353,11 +353,13 @@ class SoyuzScript(LaunchpadScript):
         In normal mode it will ask for user confirmation (see
         `waitForUserConfirmation`) and will commit the transaction or abort
         it according to the user answer.
+
+        Returns True if the transaction was committed, False otherwise.
         """
         if self.options.dryrun:
             self.logger.info('Dry run, so nothing to commit.')
             self.txn.abort()
-            return
+            return False
 
         confirmed = self.waitForUserConfirmation()
 
@@ -365,9 +367,11 @@ class SoyuzScript(LaunchpadScript):
             self.txn.commit()
             self.logger.info('Transaction committed.')
             self.logger.info(self.success_message)
+            return True
         else:
             self.logger.info("Ok, see you later")
             self.txn.abort()
+            return False
 
     def main(self):
         """LaunchpadScript entry point.
@@ -381,7 +385,7 @@ class SoyuzScript(LaunchpadScript):
         except SoyuzScriptError, err:
             raise LaunchpadScriptFailure(err)
 
-        self._finishProcedure()
+        self.finishProcedure()
 
     def mainTask(self):
         """Main task to be performed by the script"""

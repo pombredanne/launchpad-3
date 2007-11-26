@@ -11,6 +11,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class TestSoyuzScript(LaunchpadZopelessTestCase):
@@ -203,6 +204,17 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         soyuz = self.getSoyuz(version='666')
         self.assertRaises(
             SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'pmount')
+
+    def testFinishProcedure(self):
+        """Make sure finishProcedure returns the correct boolean."""
+        soyuz = self.getSoyuz()
+        soyuz.txn = LaunchpadZopelessLayer.txn
+        soyuz.options.confirm_all = True
+        self.assertTrue(soyuz.finishProcedure())
+        # XXX Setting confirm_all to False is pretty untestable because it
+        # asks the user for confirmation via raw_input.
+        soyuz.options.dryrun = True
+        self.assertFalse(soyuz.finishProcedure())
 
 
 def test_suite():
