@@ -44,3 +44,19 @@ result in a status of 'Unknown' being returned:
 
     >>> rt.convertRemoteStatus('spam')
     'UNKNOWN'
+
+
+== Initialisation ==
+
+Calling initializeRemoteBugDB() on our RequestTracker instance and
+passing it a set of remote bug IDs will fetch those bug IDs from the
+server and file them in a local variable for later use.
+
+We use a test-oriented implementation of RequestTracker for the purposes
+of these tests, which overrides RequestTracker.urlopen() so that we
+don't have to rely on a working network connection.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestRequestTracker)
+    >>> rt = TestRequestTracker(new_bugtracker(BugTrackerType.RT))
+    >>> rt.initializeRemoteBugDB([1, 2, 3, 4, 5])

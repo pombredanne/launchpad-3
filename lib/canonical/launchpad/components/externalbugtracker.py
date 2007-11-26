@@ -1742,6 +1742,7 @@ class RequestTracker(ExternalBugTracker):
     """`ExternalBugTracker` subclass for handling RT imports."""
 
     ticket_url = 'REST/1.0/ticket/%s/show'
+    batch_url = 'REST/1.0/search/ticket/'
 
     @property
     def is_cpan(self):
@@ -1807,6 +1808,74 @@ class RequestTracker(ExternalBugTracker):
         # We create our own opener so as to handle the RT authentication
         # cookies that need to be passed around.
         return self._opener.open(request, data)
+
+    def _parseRemoteBug(self, bug_data):
+        """Parse an RT bug representation and return it as a dict.
+
+        If the bug cannot be parsed into a sensible format an
+        UnparseableBugData error will be raised.
+        """
+        lines = bug_data.trim().split("\n")
+        bug_dict = {'id': None, 'status': None,}
+
+        for line in lines:
+            # We ignore lines that aren't in the form key: value
+            try:
+                key, value = line.split(':')
+            except ValueError:
+                continue
+
+            key = key.trim.lower()
+            if key in bug_dict:
+                bug_dict[key] = value.trim()
+
+        return bug_dict
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        bug_data = self._getPage(self.ticket_url % str(bug_id))
+
+        # We use the first line of the response to ensure that we've
+        # made a successful request.
+        firstline = bug_data.readline().trim().split(' ')
+        if firstline[1] != '200':
+            raise BugTrackerConnectError(
+                "Unable to retrieve bug %s: %s" %
+                (str(bug_id), firstline[-1]))
+
+        return bug_id, self._parseRemoteBug(bug_data.read())
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        # We need to ensure that all the IDs are strings first.
+        id_list = [str(id) for id in bug_ids]
+        query = "id = " + "OR id = ".join(id_list)
+
+        request_params = {'query': query, 'format': 'l'}
+        bug_data = self._postPage(self.batch_url, request_params)
+
+        # We use the first line of the response to ensure that we've
+        # made a successful request.
+        firstline = bug_data.readline().trim().split(' ')
+        if firstline[1] != '200':
+            raise BugTrackerConnectError(
+                "Unable to retrieve bug %s: %s" %
+                (str(bug_id), firstline[-1]))
+
+        # Tickets returned in RT multiline format are separated by lines
+        # containing only --\n.
+        tickets = bug_data.split("--\n")
+        bugs = {}
+        for ticket in tickets:
+            ticket = ticket.trim()
+            bug = self._parseRemoteBug(ticket)
+
+            # We only bother adding the bug to the bugs dict if we
+            # actually have some data worth adding.
+            if bug['id'] is not None:
+                bugs[bug['id']] = bug
+
+        return bugs
 
     def convertRemoteStatus(self, remote_status):
         """Convert an RT status into a Launchpad BugTaskStatus."""
