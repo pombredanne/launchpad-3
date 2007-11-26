@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet']
@@ -14,8 +15,6 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
-
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -28,9 +27,9 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, IBugWatch, IBugWatchSet, IBugTrackerSet,
-    ILaunchpadCelebrities, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL)
+    BugTaskImportance, BugTrackerType, BugWatchErrorType, IBugTrackerSet,
+    IBugWatch, IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
+    NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
 
 

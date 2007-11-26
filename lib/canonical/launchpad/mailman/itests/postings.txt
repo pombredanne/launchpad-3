@@ -1,0 +1,199 @@
+= Posting =
+
+Only Launchpad members are allowed to post to team mailing lists.  A message
+by a sender who is not a Launchpad member will be summarily discarded.
+
+    # This test requires a us to start an SMTP server that accepts messages
+    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+    >>> import os
+    >>> import tempfile
+    >>> descriptor, mbox_filename = tempfile.mkstemp()
+    >>> os.close(descriptor)
+
+    >>> import itest_helper
+    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd.start()
+
+    # Create a mailing list for this test.
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+
+== Non-member postings ==
+
+Postings from addresses that are not registered and verified with Launchpad
+are summarily discarded.
+
+    # Watch Mailman's logs/vette for possible log messages.
+    >>> vette_watcher = itest_helper.LogWatcher('vette')
+
+Inject a message from a non-member into Mailman's incoming queue.
+
+    >>> from Mailman.Post import inject
+    >>> inject('itest-one', """\
+    ... From: zperson@example.net
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <first-injection>
+    ...
+    ... Hi, I am not a member of Launchpad (yet).
+    ... """)
+    >>> vette_watcher.wait_for_growth()
+
+To prove that the message was never posted, the mbox file should either be
+non-existent or empty.
+
+    >>> itest_helper.get_size(mbox_filename) <= 0
+    True
+
+
+== Unvalidated member postings ==
+
+Similarly, an address that has been registered with Launchpad but not verified
+should also be summarily discarded.  To demonstrate this, we'll add Anne as a
+normal Launchpad user, but de-certify her alternative address.  This is
+equivalent to making it unvalidated.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     get_alternative_email, new_person)
+    >>> anne = new_person('Anne')
+    >>> alternative_email = get_alternative_email(anne)
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> alternative_email.status = EmailAddressStatus.NEW
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> print alternative_email.email, alternative_email.statusname
+    aperson@example.org New Email Address
+
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <second-injection>
+    ...
+    ... Hi, I am not a verified member of Launchpad (yet).
+    ... """)
+    >>> vette_watcher.wait_for_growth()
+
+As above, this message got summarily discarded.
+
+    >>> itest_helper.get_size(mbox_filename) <= 0
+    True
+
+
+== Unsubscribed Launchpad members ==
+
+Since Anne's preferred email address is still validated, let's post this
+message from that address.  However, because she has not yet joined the team
+or subscribed to its mailing list, she still can't post to it.
+
+    >>> print anne.preferredemail.email, anne.preferredemail.statusname
+    anne.person@example.com Preferred Email Address
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: An unsubscribed post
+    ... Message-ID: <third-injection>
+    ...
+    ... Hi, I am not a member of this team's list (yet).
+    ... """)
+    >>> smtp_watcher.wait_for_growth()
+
+However, unlike before, a message does show up in the mbox file.  This is the
+auto discard notification sent to the team's owner.  The message is discarded
+by Mailman's privacy handler because the poster is not a member of the mailing
+list.
+
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    1
+    >>> message = messages[0]
+    >>> print message.as_string()
+    Subject: Auto-discard notification
+    From: itest-one-bounces@launchpad.dev
+    To: itest-one-owner@launchpad.dev
+    ...
+    <BLANKLINE>
+    The attached message has been automatically discarded.
+    ...
+    <BLANKLINE>
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Subject: An unsubscribed post
+    Message-ID: <third-injection>
+    <BLANKLINE>
+    Hi, I am not a member of this team's list (yet).
+    ...
+
+
+== Verified and registered member postings ==
+
+Anne now joins the team and subscribes to the mailing list.  She can now post
+to the mailing list.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_one = person_set.getByName('itest-one')
+
+    # Subscribe Anne with her preferred address.
+    >>> anne.join(team_one)
+    >>> list_one.subscribe(anne)
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+    >>> print anne.preferredemail.email, anne.preferredemail.statusname
+    anne.person@example.com Preferred Email Address
+    >>> smtp_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <fifth-injection>
+    ...
+    ... Hi, I am now a member of this team's list!
+    ... """)
+    >>> smtp_watcher.wait_for_growth()
+
+To show that this message will make it through by reading the mbox file.
+There are now two messages in the mbox file, the previous auto-discard notice,
+and the newly posted message.
+
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    2
+    >>> message = messages[1]
+    >>> print message.as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <fifth-injection>
+    Subject: [Itest-one] A member post
+    ...
+    <BLANKLINE>
+    Hi, I am now a member of this team's list!
+    _______________________________________________
+    Itest-one mailing list
+    Itest-one@launchpad.dev
+    http://.../mailman/listinfo/itest-one
+    <BLANKLINE>
+    <BLANKLINE>
+
+
+== Clean up ==
+
+    >>> smtpd.stop()

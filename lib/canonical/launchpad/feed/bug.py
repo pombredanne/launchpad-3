@@ -15,6 +15,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
@@ -26,9 +27,6 @@ from canonical.launchpad.interfaces import (
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import IFeed
-
-# XXX - bac 2-Oct-2007 - Bug 153785 - this value should be in a config file.
-BUG_MAX_AGE = 30 * MINUTES
 
 
 def get_unique_bug_tasks(items):
@@ -72,14 +70,28 @@ class BugFeedContentView(LaunchpadView):
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
-    max_age = BUG_MAX_AGE
+    # max_age is in seconds
+    max_age = config.launchpad.max_bug_feed_cache_minutes * MINUTES
+
     rootsite = "bugs"
-    show_column = dict(
-        id = True,
-        title = True,
-        bugtargetdisplayname = True,
-        importance = True,
-        status = True)
+
+    def initialize(self):
+        """See `IFeed`."""
+        super(BugsFeedBase, self).initialize()
+        self.setupColumns()
+
+    def setupColumns(self):
+        """Set up the columns to be displayed in the feed.
+
+        This method may need to be overridden to customize the display for
+        different feeds.
+        """
+        self.show_column = dict(
+            id = True,
+            title = True,
+            bugtargetdisplayname = True,
+            importance = True,
+            status = True)
 
     @property
     def url(self):
@@ -163,10 +175,16 @@ class BugTargetBugsFeed(BugsFeedBase):
 
     usedfor = IBugTarget
     feedname = "latest-bugs"
-    # Make a copy of the inherited class variable so the one copy does get
-    # mutated for all subclasses.
-    show_column = BugsFeedBase.show_column.copy()
-    del show_column['bugtargetdisplayname']
+
+    def setupColumns(self):
+        """See `BugsFeedBase`.
+
+        Since this feed is for a specific IBugTarget it is redundant to
+        include the name in the output.
+        """
+        super(BugTargetBugsFeed, self).setupColumns()
+        if 'bugtargetdisplayname' in self.show_column:
+            del self.show_column['bugtargetdisplayname']
 
     @property
     def title(self):

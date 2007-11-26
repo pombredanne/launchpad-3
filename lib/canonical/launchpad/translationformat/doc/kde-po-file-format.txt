@@ -9,9 +9,10 @@ Such features include plural forms support and context support.
 == Helper imports ==
 
     >>> from zope.app import datetimeutils
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
+    ...     ILaunchpadCelebrities, IPersonSet,
     ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
@@ -45,25 +46,28 @@ a helper function to import either a PO file or a PO template from the string
 with the contents of the file.
 
     >>> def import_pofile_or_potemplate(file_contents, person, series,
-    ...                                 pofile=None, potemplate=None):
+    ...                                 pofile=None, potemplate=None,
+    ...                                 published=True):
     ...     """Import a `POFile` or `POTemplate` from the string.
     ...
     ...	    If pofile is None, it imports a potemplate.
     ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
     ...	    """
     ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile is not None:
+    ...     if pofile:
     ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, True, person,
+    ...             pofile.path, file_contents, published, person,
     ...             productseries=series, pofile=pofile)
     ...     else:
+    ...         # A POTemplate can only be published, so setting
+    ...         # the published flag makes no difference.
     ...         entry = translation_import_queue.addOrUpdateEntry(
     ...             potemplate.path, file_contents, True, person,
     ...             productseries=series, potemplate=potemplate)
     ...     transaction.commit()
     ...     entry.status = RosettaImportStatus.APPROVED
     ...     syncUpdate(entry)
-    ...     if pofile is not None:
+    ...     if pofile:
     ...         pofile.importFromQueue(FakeLogger())
     ...     else:
     ...         potemplate.importFromQueue(FakeLogger())
@@ -77,11 +81,11 @@ carlos@canonical.com.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> firefox_potemplatename = getUtility(IPOTemplateNameSet)['firefox']
     >>> firefox_potsubset = POTemplateSubset(productseries=firefox_trunk)
 
     >>> firefox_potemplate = firefox_potsubset.new(
-    ...     potemplatename=firefox_potemplatename,
+    ...     name='firefox',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=carlos)
 
@@ -110,6 +114,7 @@ Importing this file works, but the format is set to Gettext PO.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     PO format
 
@@ -150,6 +155,7 @@ to KDE PO format.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
@@ -157,19 +163,19 @@ Messages which are preceded with just '_n:' and no space after it are
 not considered plural forms messages.
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(u'_n:bar\nbars')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     _n:bar
     bars
-    >>> print potmsgset.msgid_plural
+    >>> print potmsgset.plural_text
     None
 
 Proper format in messages is to use '_n: ' and separate singular and
 plural with a newline.
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(u'%d foo')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     %d foo
-    >>> print potmsgset.msgid_plural
+    >>> print potmsgset.plural_text
     %d foos
 
 For translations, a specially formatted msgstr is used to hold all plural
@@ -209,20 +215,27 @@ support.
     ...                                     pofile=firefox_serbian_pofile)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
 Non-KDE style messages get their translations in the usual way.
 
-    >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(key=u'_n:bar\nbars')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'_n:bar\nbars')
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     firefox_serbian_pofile.language)
+    >>> print current.translations
     [u'non-plural forms message']
 
 While KDE style plural form message is correctly split into three separate
 plural messages:
 
-    >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(key=u'%d foo')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'%d foo')
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     firefox_serbian_pofile.language)
+    >>> print current.translations
     [u'%d translation', u'%d translationes', u'%d translations']
 
 === Export ===
@@ -231,17 +244,21 @@ Let's define a helper function for the exports.
 
     >>> def export_with_format(translation_file, format):
     ...     from canonical.launchpad.interfaces import (
-    ...         ITranslationExporter,  ITranslationFile)
+    ...         ITranslationExporter, ITranslationFileData)
     ...     from zope.proxy import removeAllProxies
     ...
     ...     translation_exporter = getUtility(ITranslationExporter)
     ...     translation_format_exporter = (
     ...         translation_exporter.getExporterProducingTargetFileFormat(
     ...             format))
-    ...     requested_file = ITranslationFile(translation_file)
+    ...     requested_file = ITranslationFileData(translation_file)
     ...     exported_file = translation_format_exporter.exportTranslationFiles(
     ...         [requested_file])
     ...     return removeAllProxies(exported_file)._content_file.read()
+
+Make sure all the date constants are replaced with real values in database:
+
+    >>> flush_database_caches()
 
 Template export turns it back into a KDE-style PO file:
 
@@ -370,6 +387,7 @@ Importing this template works and the format is recognized as a KDE PO format.
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
@@ -377,7 +395,7 @@ Message with context is properly split into msgid and context fields.
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Message', context='Context')
-    >>> print potmsgset.msgid
+    >>> print potmsgset.singular_text
     Message
     >>> print potmsgset.context
     Context
@@ -409,23 +427,28 @@ We can also import a translated file with message contexts:
     ...                                     pofile=firefox_serbian_pofile)
     >>> print entry.status.name
     IMPORTED
+    >>> flush_database_caches()
     >>> print entry.format.title
     KDE PO format
 
 
 We can get the first translation by specifying 'Context' for the context:
 
-    >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     key=u'Message', context=u'Context')
-    >>> print pomsgset.active_texts
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     firefox_serbian_pofile.language)
+    >>> print current.translations
     [u'First translation']
 
 And if we ask for a message with context 'Different Context', we get the
 other message and its translation:
 
-    >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     key=u'Message', context=u'Different Context')
-    >>> print pomsgset.active_texts
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     firefox_serbian_pofile.language)
+    >>> print current.translations
     [u'Second translation']
 
 === Export ===

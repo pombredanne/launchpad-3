@@ -2,14 +2,17 @@
 
 __metaclass__ = type
 
-__all__ = ['datadir', 'getPolicy', 'mock_options', 'mock_logger',
-           'mock_logger_quiet']
+__all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
+           'insertFakeChangesFileForAllPackageUploads', 'mock_options',
+           'mock_logger', 'mock_logger_quiet']
 
 import os
 import sys
 import traceback
 
 from canonical.archiveuploader.uploadpolicy import findPolicyByName
+from canonical.launchpad.database.queue import PackageUploadSet
+from canonical.librarian.ftests.harness import fillLibrarianFile
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -20,6 +23,25 @@ def datadir(path):
     if path.startswith("/"):
         raise ValueError("Path is not relative: %s" % path)
     return os.path.join(here, 'data', path)
+
+def insertFakeChangesFile(fileID, path=None):
+    """Insert a fake changes file into the librarian.
+
+    :param fileID: Use this as the librarian's file ID.
+    :param path: If specified, use the changes file at "path",
+                 otherwise the changes file for ed-0.2-21 is used.
+    """
+    if path is None:
+        path = datadir("ed-0.2-21/ed_0.2-21_source.changes")
+    changes_file_obj = open(path, 'r')
+    test_changes_file = changes_file_obj.read()
+    changes_file_obj.close()
+    fillLibrarianFile(fileID, content=test_changes_file)
+
+def insertFakeChangesFileForAllPackageUploads():
+    """Ensure all the PackageUpload records point to a valid changes file."""
+    for id in set(pu.changesfile.id for pu in PackageUploadSet()):
+        insertFakeChangesFile(id)
 
 
 class MockUploadOptions:

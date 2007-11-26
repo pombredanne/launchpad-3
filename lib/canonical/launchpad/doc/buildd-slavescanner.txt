@@ -18,21 +18,18 @@ transaction should be retrieved.
 We check for sent mails in some places, so load the stub mailer:
 
   >>> from canonical.launchpad.mail import stub
+  >>> from canonical.database.sqlbase import commit
 
 And create a utility function to make tests easier to read.
 
   >>> def check_mail_sent(last_stub_mail_count):
-  ...    local_transaction.commit()
+  ...    commit()
   ...    return len(stub.test_emails) == last_stub_mail_count + 3
 
 The master also requires an 'logging' instance to not compromise the
 standard output with noisely output.
 
   >>> import logging
-
-We use StringIO later to simulate bits of the build slave file retrieval
-
-  >>> from StringIO import StringIO
 
 First let's test an essential part of the BuilddMaster class, the
 BuilderGroup() class, by creating an empty BuilderGroup object
@@ -42,28 +39,13 @@ BuilderGroup() class, by creating an empty BuilderGroup object
   >>> buildergroup = BuilderGroup(
   ...     logging.getLogger(), local_transaction)
 
-Mock Builder, a class to emulate the Builder behaviour:
+Import MockBuilder and a series of MockSlaves to be used in this test.
 
-  >>> class MockBuilder:
-  ...     def __init__(self, name, slave):
-  ...         self.slave = slave
-  ...         self.builderok = True
-  ...         self.manual = False
-  ...         self.url = 'http://fake:0000'
-  ...         slave.urlbase = self.url
-  ...         self.name = name
-  ...         self.trusted = False
-  ...     def failbuilder(self, reason):
-  ...         self.builderok = False
-  ...         self.failnotes = reason
-  ...     def slaveStatusSentence(self):
-  ...         return self.slave.status()
-  ...     def cleanSlave(self):
-  ...         return self.slave.clean()
-  ...     def requestAbort(self):
-  ...         return self.slave.abort()
-  ...     def resetSlaveHost(self, logger):
-  ...         pass
+  >>> from canonical.launchpad.ftests.soyuzbuilddhelpers import (
+  ...    MockBuilder, SaneBuildingSlave, SaneWaitingSlave, InsaneWaitingSlave,
+  ...    LostBuildingSlave, LostWaitingSlave, LostBuildingBrokenSlave,
+  ...    BrokenSlave, OkSlave, BuildingSlave, AbortedSlave, WaitingSlave,
+  ...    AbortingSlave)
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
@@ -88,48 +70,24 @@ testing purposes.
 Initializing the sane_builder. It was not rescued, since the job
 identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
-  >>> class SaneBuildingSlave:
-  ...     """A mock slave that is currently building."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '8-1')
-  ...     def clean(self):
-  ...         print 'Rescuing SaneSlave'
-
-  >>> sanebuilding_builder = MockBuilder('Sane Building Slave',
-  ...                                    SaneBuildingSlave())
-
+  >>> sanebuilding_builder = MockBuilder(
+  ...     'Sane Building Slave', SaneBuildingSlave())
   >>> buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
   True
 
 A sane WAITING slave:
 
-  >>> class SaneWaitingSlave:
-  ...     """A mock slave that is currently waiting."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
-  ...     def clean(self):
-  ...         print 'Rescuing SaneSlave'
-
-  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
-  ...                                   SaneWaitingSlave())
-
+  >>> sanewaiting_builder = MockBuilder(
+  ...     'Sane Waiting Slave', SaneWaitingSlave())
   >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
   True
 
-A sane WAITING slave but with wrong BuildQueue/Build relation:
+A insane WAITING slave, with wrong BuildQueue/Build relation:
 
-  >>> class SaneWaitingSlave:
-  ...     """A mock slave waiting with a bogus Build/BuildQueue relation."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
-  ...     def clean(self):
-  ...         pass
-
-  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
-  ...                                   SaneWaitingSlave())
-
-  >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder)
-  WARNING:root:Builder 'Sane Waiting Slave' rescued from '7-1: Job build entry mismatch'
+  >>> insanewaiting_builder = MockBuilder(
+  ...     'Insane Waiting Slave', InsaneWaitingSlave())
+  >>> buildergroup.rescueBuilderIfLost(insanewaiting_builder)
+  WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1: Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
 Build.id == 7, so this pair relation is wrong.
@@ -137,203 +95,92 @@ Build.id == 7, so this pair relation is wrong.
 Let's test slaves with job identifier pointing non-existent
 Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 
-  >>> class LostBuildingSlave:
-  ...     """A mock slave building bogus Build/BuildQueue IDs."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '1000-10000')
-  ...     def abort(self):
-  ...         pass
-
-  >>> lostbuilding_builder = MockBuilder('Lost Building Slave',
-  ...                                    LostBuildingSlave())
-
+  >>> lostbuilding_builder = MockBuilder(
+  ...     'Lost Building Slave', LostBuildingSlave())
   >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
   WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
 
 Then a lost slave in status 'WAITING':
 
-  >>> class LostWaitingSlave:
-  ...     """A mock slave waiting with bogus Build/BuildQueue IDs."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
-  ...     def clean(self):
-  ...         pass
-
-  >>> lostwaiting_builder = MockBuilder('Lost Waiting Slave',
-  ...                                    LostWaitingSlave())
-
+  >>> lostwaiting_builder = MockBuilder(
+  ...     'Lost Waiting Slave', LostWaitingSlave())
   >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
   WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
 
 Both got rescued, as expected.
 
+Slave-scanner will deactivate a 'lost-building' builder that could not
+be aborted appropriately.
 
-Let's create a bunch of mock slaves for testing the Builder State Handler:
+  >>> lostbuilding_builder = MockBuilder(
+  ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
 
-  >>> import xmlrpclib
-  >>> class BrokenSlave:
-  ...     """A mock slave that reports that it is broken."""
-  ...     def status(self):
-  ...         raise xmlrpclib.Fault(8001, "Broken slave")
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+  >>> buildergroup.updateBuilderStatus(lostbuilding_builder, hoary_i386)
+  WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
+  Traceback (most recent call last):
+  ...
+  Fault: <Fault 8002: 'Could not abort'>
 
+'ensurePresent()' slave method always return True, it theoretically
+means the slave has the requested file in cache.
 
-Make ensurePresent() always return True, it theoretically means the
-slave has the requested file in cache.  This mock slave will also print
-whether it has been passed an 'archives' property in the args dictionary.
+The mock slaves will also print, when necessary, whether it has been
+passed an 'archives' property in the args dictionary.
+
 The archives are passed from the buildmaster and controls what archives
-exist in the apt sources.list.  If nothing is passed, the slave's default
+exist in the apt sources.list.  If nothing is passed, the chroot's default
 list applies, otherwise the passed list is used.  This behaviour is required
 in build slaves because some jobs may only depend on certain archives and
 hence certain package dependencies.
-
-  >>> class OkSlave:
-  ...     """An idle mock slave that prints information about itself."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.IDLE', '')
-  ...     def ensurepresent(self, sha1, url):
-  ...         print "ensurepresent called"
-  ...         return True, None
-  ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'OkSlave BUILDING'
-  ...         print info
-  ...         if 'archives' in args:
-  ...             print "Archives: %s" % sorted(args['archives'])
-  ...         else:
-  ...             print "No archives set."
-  ...         print "Suite: %s" % args['suite']
-  ...         print "Archive Purpose: %s" % args['archive_purpose']
-  ...         return ('BuildStatus.Building', info)
-  ...     def fetchlogtail(self, size):
-  ...         return 'BOGUS'
-  ...     def clean(self):
-  ...         pass
-  ...     def info(self):
-  ...         return ('1.0', 'i386', 'debian')
-
-
-  >>> class BuildingSlave(OkSlave):
-  ...     """A mock slave that looks like it's currently building."""
-  ...     def status(self):
-  ...         buildlog = xmlrpclib.Binary("This is a build log")
-  ...         return ('BuilderStatus.BUILDING', '1-1', buildlog)
-  ...     def getFile(self, sum):
-  ...         if sum == "buildlog":
-  ...             s = StringIO("This is a build log")
-  ...             s.headers={'content-length':19}
-  ...             return s
-
-
-  >>> class AbortedSlave(OkSlave):
-  ...     """A mock slave that looks like it's aborted."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.ABORTED', '1-1')
-
-
-  >>> class WaitingSlave(OkSlave):
-  ...     """A mock slave that looks like it's currently waiting."""
-  ...     def __init__(self, state, dependencies=None):
-  ...         self.state = state
-  ...         self.dependencies = dependencies
-  ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', self.state, '1-1', {},
-  ...                 self.dependencies )
-  ...     def getFile(self, sum):
-  ...         if sum == "buildlog":
-  ...             s = StringIO("This is a build log")
-  ...             s.headers={'content-length':19}
-  ...             return s
-
-  >>> class AbortingSlave(OkSlave):
-  ...     """A mock slave that looks like it's in the process of aborting."""
-  ...     def status(self):
-  ...         return ('BuilderStatus.ABORTING', '1-1')
-
 
   >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
 
   >>> builder2 = MockBuilder('Idle Slave', OkSlave())
 
-  >>> builder3 = MockBuilder('Package Failed',
-  ...                        WaitingSlave('BuildStatus.PACKAGEFAIL'))
+  >>> builder3 = MockBuilder(
+  ...    'Package Failed', WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
-  >>> builder4 = MockBuilder('Missing Dependency build',
-  ...                        WaitingSlave('BuildStatus.DEPFAIL',
-  ...                                     'baz (>= 1.0.1)'))
+  >>> builder4 = MockBuilder(
+  ...     'Missing Dependency build',
+  ...     WaitingSlave('BuildStatus.DEPFAIL', 'baz (>= 1.0.1)'))
 
-  >>> builder5 = MockBuilder('Bad Chroot',
-  ...                        WaitingSlave('BuildStatus.CHROOTFAIL'))
+  >>> builder5 = MockBuilder(
+  ...     'Bad Chroot', WaitingSlave('BuildStatus.CHROOTFAIL'))
 
-  >>> builder6 = MockBuilder('I am out of order',
-  ...                        WaitingSlave('BuildStatus.BUILDERFAIL'))
+  >>> builder6 = MockBuilder(
+  ...     'I am out of order', WaitingSlave('BuildStatus.BUILDERFAIL'))
 
   >>> builder7 = MockBuilder('I am busy', BuildingSlave())
 
   >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
 
-  >>> builder9 = MockBuilder('I am trying to terminate the child process',
-  ...                        AbortingSlave())
+  >>> builder9 = MockBuilder(
+  ...     'I am trying to terminate the child process', AbortingSlave())
 
-  >>> builder10 = MockBuilder('Package Successfully Built',
-  ...                         WaitingSlave('BuildStatus.OK'))
+  >>> builder10 = MockBuilder(
+  ...     'Package Successfully Built',
+  ...      WaitingSlave('BuildStatus.OK'))
 
-  >>> builder11 = MockBuilder('I am giving this job back',
-  ...		               WaitingSlave('BuildStatus.GIVENBACK'))
+  >>> builder11 = MockBuilder(
+  ...     'I am giving this job back',
+  ...     WaitingSlave('BuildStatus.GIVENBACK'))
 
-
-  >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
-  ...                          builder5, builder6, builder7, builder8,
-  ...                          builder9, builder10, builder11]
-
-  >>> buildergroup.firstAvailable() is builder2
-  True
-
-  Stub classes to emulate Build and BuildQueue
-
-  >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
+  >>> buildergroup.builders = [
+  ...     builder1, builder2, builder3, builder4, builder5, builder6,
+  ...     builder7, builder8, builder9, builder10, builder11]
 
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
 
-  >>> class MockBuild:
-  ...     def __init__(self, id):
-  ...         self.id = id
-  ...         self.buildstate = None
-  ...         self.builder = None
-  ...         self.datebuilt = None
-  ...         self.buildduration = None
-  ...         self.buildlog = None
-  ...         self.dependencies = None
-  ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
-  ...         self.archive = tmp_build.archive
-  ...         self.distroarchseries = tmp_build.distroarchseries
-  ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
-  ...         self.pocket = tmp_build.pocket
-  ...         self.title = 'Mock Build'
-  ...         self.notification_sent = False
-  ...         self.is_trusted = tmp_build.is_trusted
-  ...         self.binarypackages = ['one', 'two', 'three']
-  ...     @property
-  ...     def distroseries(self):
-  ...         return self.distroarchseries.distroseries
-  ...     @property
-  ...     def distribution(self):
-  ...         return self.distroarchseries.distroseries.distribution
-  ...     def notify(self, extra_info=None):
-  ...         from sqlobject import SQLObjectNotFound
-  ...         self.notification_sent = True
-  ...         try:
-  ...             real_build = getUtility(IBuildSet).getByBuildID(self.id)
-  ...         except SQLObjectNotFound, e:
-  ...             pass
-  ...         else:
-  ...             real_build.notify(extra_info=extra_info)
-
+  >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
   >>> import datetime, pytz
+
   >>> UTC = pytz.timezone('UTC')
 
 We want to get a Build and make BuildQueue items for it:
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
   >>> a_build = getUtility(IBuildSet).getByBuildID(8)
 
 To make testing easier we provide a convenience function to put a BuildQueue
@@ -343,28 +190,6 @@ object into a preset fixed state:
   >>> def setupBuildQueue(build_queue, builder):
   ...      build_queue.builder = builder
   ...      build_queue.buildstart = default_start
-
-  >>> from canonical import encoding
-
-XXX cprov 20070615: Historically we used a MockBuildQueue class, this
-is deprecated, please do not extend it and try to reduce its usage.
-We should apply efforts to use the real BuildQueue object instead.
-
-  >>> class MockBuildQueue:
-  ...     def __init__(self, id, builder, build):
-  ...         self.id = id
-  ...         self.build = build
-  ...         self.name = "unimportant-name"
-  ...         self.files = []
-  ...         self.component_name = "main"
-  ...         self.archhintlist = ""
-  ...         self.is_trusted = build.is_trusted
-  ...         self.archseries = build.distroarchseries
-  ...         self.version = build.sourcepackagerelease.version
-  ...         setupBuildQueue(self, builder)
-  ...     def destroySelf(self):
-  ...         pass
-
 
 Remove any previous buildmaster ROOT directory, to avoid any garbage
 lock conflict (it would be recreated automatically if necessary)
@@ -503,6 +328,9 @@ Cleanup in preparation for the next test:
 
   >>> buildergroup.updateBuild(bqItem6)
   WARNING:root:***** bob has failed *****
+
+  >>> from canonical.launchpad.ftests import sync
+  >>> sync(a_builder)
   >>> a_builder.failnotes
   u'Builder returned BUILDERFAIL when asked for its status'
 
@@ -788,10 +616,9 @@ let's see how this method works:
   >>> logfile.filename, logfile.mimetype
   (u'buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz', u'text/plain')
 
-
 Needed so that the Librarian can serve the new file.
 
-  >>> local_transaction.commit()
+  >>> commit()
 
 Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
@@ -847,9 +674,7 @@ Remove build upload results root
 
   >>> shutil.rmtree(config.builddmaster.root)
 
-
-    BuilddMaster class
-    ===================
+== BuilddMaster class ==
 
   >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
 
@@ -868,13 +693,12 @@ Create a totally bogus CHROOT
   >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=pocket, chroot=chroot)
 
+Setup a buildd-slave instance for a successfull 'scan' procedure.
 
-As we do when building the BuildQueue entries we need to recognise
-all available distroarchseriess and figure out which slave builder
-is able to build stuff properly for that one.
+  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+  >>> BuilddSlaveTestSetup().setUp()
 
-
-Initialiase the BuildMaster with all available distroarchseriess.
+Initialiase the BuildMaster with all available distroarchseries.
 Because the sampledata builders are busy we issue and warning stating that.
 
   >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
@@ -884,108 +708,87 @@ Because the sampledata builders are busy we issue and warning stating that.
   ...                                    dar.architecturetag)):
   ...     bm.addDistroArchSeries(dar)
   ...     bm.setupBuilders(dar)
-  WARNING:root.builders.x86:No builders are available
-
-Inspect private attribute _archseries contents. Remember
-archseries was fetched in the beginning of the test.
-
-  >>> len(bm._archserieses)
-  1
-
-It should be hoary/x86:
-
-  >>> bm._archserieses.keys()[0].title
-  u'The Hoary Hedgehog Release for i386 (x86)'
-
-  >>> real_buildergroup = bm._archserieses[hoary_i386]['builders']
-
-  >>> real_buildergroup.firstAvailable() is None
-  True
 
 Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
 the Launchpad DB. (simply check if it doesn't explode)
 
   >>> bm.scanActiveBuilders()
+  WARNING:root.builders.x86:Builder http://localhost:8221/ forgot about build i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE -- resetting buildqueue record
 
-Create a list of jobs separated by processor to turn the dispatch
-process easier, then try to dispatch them according his processor and
-the available builder slaves at moment.
+We are done here, let's stop the buildd-slave instance:
 
-  >>> byproc = bm.sortAndSplitByProcessor()
-  >>> len(byproc)
-  1
+  >>> BuilddSlaveTestSetup().tearDown()
 
-Inspect the organized list content:
+== Build Dispatching ==
 
-  >>> for proc, queueItems in byproc.iteritems():
-  ...     for item in queueItems:
-  ...         proc.name, item.id, item.build.buildstate.name
-  (u'x86', 2, 'NEEDSBUILD')
-  (u'x86', 1, 'NEEDSBUILD')
+Build dispatching can be entirely done via IBuilder content class via
+the the following API:
 
-Invoke dispacher on the available list: (no builder available atm)
+ * findCandidate:  returns a suitable BuildQueue candidate
+ * dispatchBuildCandidate: dispatch a build for a given candidate.
 
-  >>> for proc, queueItems in byproc.iteritems():
-  ...     bm.dispatchByProcessor(proc, queueItems)
+IBuilder.findCandidate also identifies if there are builds for
+superseded source package releases in the queue and marks the
+corresponding build record as SUPERSEDED.
 
-We wish now to check what happens if we dispatchByProcessor and there
-are builds for now superseded source package releases in the queue.
+  >>> old_candidate = a_builder.findBuildCandidate()
+  >>> print old_candidate.build.buildstate.name
+  NEEDSBUILD
 
-This involves subbing in a scarily large amount of crud, so here
-goes nothing.
+The 'candidate' is constant until we dispatch it.
 
+  >>> new_candidate = a_builder.findBuildCandidate()
+  >>> new_candidate.id == old_candidate.id
+  True
+
+In order to make the current candidate be considered 'superseded' we
+need to tweak the status of the current publication directly, as a
+permissive database user.
+
+  >>> from canonical.config import config
   >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> from canonical.launchpad.database.publishing import (
+  ...     SecureSourcePackagePublishingHistory)
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
-  >>> class MockBG:
-  ...     def firstAvailable(self, is_trusted=False):
-  ...         return "Something which is not None"
+  >>> spr = old_candidate.build.sourcepackagerelease
+  >>> current_pub = spr.publishings[0]
+  >>> secure_pub = SecureSourcePackagePublishingHistory.get(current_pub.id)
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-  >>> class MockProcessor:
-  ...     id = "fakeprocessor"
-  ...     name = "fakeprocessor"
+Now, if we try to get a new build candidate, we will see that it changed.
 
-  >>> class MockPubRecord:
-  ...     def __init__(self):
-  ...         self.status = PackagePublishingStatus.SUPERSEDED
+  >>> new_candidate = a_builder.findBuildCandidate()
+  >>> new_candidate.id != old_candidate.id
+  True
 
-  >>> class MockSPR:
-  ...     publishings = [MockPubRecord()]
+Because the 'previous' candidate was marked as superseded, so it's not
+part of the candidates list anymore.
 
-  >>> from canonical.buildd.utils import notes
-  >>> notes[MockProcessor()]["builders"] = MockBG()
-  >>> qitem = MockBuildQueue(1000, None, MockBuild(1001))
-  >>> qbuild = qitem.build
-  >>> queue = [qitem]
-  >>> qitem.build.sourcepackagerelease = MockSPR()
-  >>> bm.dispatchByProcessor(MockProcessor(), queue)
-
-  >>> print qbuild.buildstate.name
+  >>> print old_candidate.build.buildstate.name
   SUPERSEDED
 
+For building a candidate in the release pocket for the main component
+and the primary archive It will pass an 'archives' argument to the
+slave that contains sources.list entries for each pocket required in
+the primary archive dependency tree.
 
-Get a BuildQueue to test with:
-
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> setupBuildQueue(bqItem3, a_builder)
-  >>> last_stub_mail_count = len(stub.test_emails)
-
-Override the builder's slave with one that will claim to be 'OK'
-
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-
-This build is building in the release pocket for the main component in
-the primary archive.  It will pass an 'archives' property to the slave
-that contains sources.list entries for each pocket required in the
-primary archive.
-
-We also pass a property called 'suite' which is the current distroseries and
+We also pass arguments called 'suite' which is the current distroseries and
 pocket, (e.g. edgy-updates) and 'archive_purpose' which contains the build's
-archive.purpose (e.g. PRIMARY or PPA).  These latter two properties are
+archive.purpose (e.g. PRIMARY or PPA).  These latter two arguments are
 used in the chroot to determine whether it needs to turn on some features
 or not (like pkgstriptranslations and pkgmaintainermangler).
 
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> a_builder.dispatchBuildCandidate(candidate)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -993,23 +796,49 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
   Suite: hoary
   Archive Purpose: PRIMARY
 
-Cleanup in preparation for the next test:
+  >>> candidate.destroySelf()
 
-  >>> bqItem3.destroySelf()
+Currently we can theoretically dispatch a build candidate for a
+builder in 'manual' mode.
 
-Partner archive builds will set up the 'archives' property such that it
+Although this will not be optimal, because we can only
+do it once the manual builder has been collected (due to the
+BuildQueue.builder constraint). Also because we don't yet provide a
+API/UI method to request the dispatch in advance.
+
+  >>> a_builder.manual = True
+  >>> commit()
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> a_builder.dispatchBuildCandidate(candidate)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main']
+  Suite: hoary
+  Archive Purpose: PRIMARY
+
+  >>> candidate.destroySelf()
+
+Partner archive builds will set up the 'archives' argument such that it
 references all the required pockets/components in the primary archive, in
 addition to a reference to the release pocket in the partner archive itself.
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> partner_archive = ubuntu.getArchiveByComponent('partner')
   >>> removeSecurityProxy(a_build).archive = partner_archive
-  >>> local_transaction.commit()
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> commit()
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(candidate, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+
+  >>> a_builder.dispatchBuildCandidate(candidate)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1017,22 +846,25 @@ addition to a reference to the release pocket in the partner archive itself.
   Suite: hoary
   Archive Purpose: PARTNER
 
-  >>> bqItem3.destroySelf()
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-  >>> local_transaction.commit()
+  >>> candidate.destroySelf()
 
-Similarly, PPA builds pass the archives property:
+Similarly, PPA builds pass the 'archives' arguments:
 
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
   >>> removeSecurityProxy(a_build).archive = cprov_archive
-  >>> local_transaction.commit()
-  >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> a_builder.trusted = False
-  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> commit()
+  >>> a_builder.setSlaveForTesting(OkSlave())
+  >>> a_builder.is_available
+  True
+
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(candidate, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+
+  >>> a_builder.dispatchBuildCandidate(candidate)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1042,50 +874,37 @@ Similarly, PPA builds pass the archives property:
 
 Clean up before continuing:
 
-  >>> bqItem3.destroySelf()
+  >>> candidate.destroySelf()
   >>> a_builder.trusted = True
-  >>> a_builder.builderok = True
   >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-  >>> local_transaction.commit()
-
-When there is no chroot it should not alter the buildstate:
-
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
-  >>> PocketChroot.selectBy(
-  ...     distroarchseries=bqItem3.archseries,
-  ...     pocket=PackagePublishingPocket.SECURITY).count()
-  0
-
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> setupBuildQueue(bqItem3, a_builder)
-  >>> last_stub_mail_count = len(stub.test_emails)
-
-Override the builder's slave with one that will claim to be 'OK'
-
-  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
-
-Make a build in the security pocket:
-
-  >>> hoary = hoary_i386.distroseries
-  >>> hoary_evo = hoary.getSourcePackage(
-  ...    'evolution').currentrelease.sourcepackagerelease
-  >>> security_build = hoary_evo.createBuild(
-  ...     distroarchseries=hoary_i386,
-  ...     pocket=PackagePublishingPocket.SECURITY,
-  ...     processor=hoary_i386.default_processor,
-  ...     archive=hoary_i386.main_archive)
-  >>> security_bqItem = security_build.createBuildQueueEntry()
+  >>> commit()
 
 Builddmaster stops before starting to build a denied build.
 Since hoary is in development, we are not able to dispatch
 builds for post-release pockets:
 
+  >>> candidate = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(candidate, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+
+Make a build in the updates pocket:
+
+  >>> hoary = hoary_i386.distroseries
+  >>> hoary_evo = hoary.getSourcePackage(
+  ...    'evolution').currentrelease.sourcepackagerelease
+  >>> updates_build = hoary_evo.createBuild(
+  ...     distroarchseries=hoary_i386,
+  ...     pocket=PackagePublishingPocket.UPDATES,
+  ...     processor=hoary_i386.default_processor,
+  ...     archive=hoary_i386.main_archive)
+  >>> updates_bqItem = updates_build.createBuildQueueEntry()
+
   >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'
-  >>> bm.startBuild(real_buildergroup, a_builder, security_bqItem)
+  >>> a_builder.dispatchBuildCandidate(updates_bqItem)
   Traceback (most recent call last):
   ...
-  AssertionError: i386 build of evolution 1.0 in ubuntu hoary SECURITY (31) can not be built for pocket SECURITY: invalid pocket due to the series status of hoary.
+  AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (31) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
 
 == Pocket dependencies ==
 
@@ -1127,7 +946,7 @@ A build in the updates pocket:
   ...     PackagePublishingPocket.UPDATES)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
@@ -1142,27 +961,12 @@ A build in the proposed pocket:
   ...     PackagePublishingPocket.PROPOSED)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-proposed main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
   Suite: hoary-proposed
-  Archive Purpose: PRIMARY
-
-A build in the security pocket:
-
-  >>> bqItem3 = a_build.createBuildQueueEntry()
-  >>> removeSecurityProxy(bqItem3.build).pocket = (
-  ...     PackagePublishingPocket.SECURITY)
-  >>> setupBuildQueue(bqItem3, a_builder)
-  >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
-  ensurepresent called
-  ensurepresent called
-  OkSlave BUILDING
-  Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-security main']
-  Suite: hoary-security
   Archive Purpose: PRIMARY
 
 A build in the backports pocket:
@@ -1172,13 +976,35 @@ A build in the backports pocket:
   ...     PackagePublishingPocket.BACKPORTS)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
-  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
   Archives: [u'deb http://ftpmaster.internal/ubuntu hoary main', u'deb http://ftpmaster.internal/ubuntu hoary-backports main', u'deb http://ftpmaster.internal/ubuntu hoary-security main', u'deb http://ftpmaster.internal/ubuntu hoary-updates main']
   Suite: hoary-backports
   Archive Purpose: PRIMARY
+
+A build in the security pocket:
+
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> removeSecurityProxy(bqItem3.build).buildstate = (
+  ...     BuildStatus.NEEDSBUILD)
+  >>> removeSecurityProxy(bqItem3.build).pocket = (
+  ...     PackagePublishingPocket.SECURITY)
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> a_builder.dispatchBuildCandidate(bqItem3)
+  WARNING:slave-scanner:Could not build: Soyuz is not yet capable of building SECURITY uploads.
+
+XXX cprov 20071025: The pocket-dependency infrastructure is ready to
+deal with SECURITY pocket, however we explicitly skip security builds
+when dispatching because Embargoed-Archives and Restricted-UI
+implementations are not yet ready.
+
+Builds for security pocket will remain pending for now:
+
+  >>> bqItem3.build.buildstate.name
+  'NEEDSBUILD'
 
 
 == Builder Status Handler ==

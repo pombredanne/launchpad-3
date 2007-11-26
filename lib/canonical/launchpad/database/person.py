@@ -1,4 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# _valid_nick() in generate_nick causes E1101
+# vars() causes W0612
+# pylint: disable-msg=E0611,W0212,E1101,W0612
+
 """Implementation classes for a Person."""
 
 __metaclass__ = type
@@ -39,8 +43,8 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, ArchivePurpose, BugTaskSearchParams, BugTaskStatus,
-    EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
+    AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
     IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
@@ -54,8 +58,6 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
-
-from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -113,6 +115,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
+
+    def _set_name(self, value):
+        """Check that rename is allowed."""
+        # Renaming a team is prohibited for any team that has a mailing list.
+        # This is because renaming a mailing list is not trivial in Mailman
+        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
+        # team edit details view, but just to be safe, we also assert that
+        # such an attempt is not being made here.  To do this, we must
+        # override the SQLObject method for setting the 'name' database
+        # column.  Watch out for when SQLObject is creating this row, because
+        # in that case self.name isn't yet available.
+        assert (self._SO_creating or
+                not self.isTeam() or
+                getUtility(IMailingListSet).get(self.name) is None), (
+            'Cannot rename teams with mailing lists')
+        # Everything's okay, so let SQLObject do the normal thing.
+        self._SO_set_name(value)
+
     password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
@@ -716,7 +736,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distrorelease = %s
+            AND RequestedCDs.distroseries = %s
             AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
@@ -1399,9 +1419,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
+            from zope.security.proxy import removeSecurityProxy
+            assignee = removeSecurityProxy(bug_task.assignee)
+            assert assignee is self, (
+                    "Cache corruption!"
+                    "%r should be %r; names: %s, %s; connection: %r, %r" % (
+                    assignee, self, assignee.name, self.name, 
+                    assignee._connection, self._connection))
             assert bug_task.assignee == self, (
-                "This bugtask (%s) should be assigned to this person."
-                % bug_task.id)
+               "Bugtask %s assignee isn't the one expected: %s != %s" % (
+                    bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
@@ -1415,9 +1442,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             elif pillar.driver == self:
                 pillar.driver = registry
             else:
+                # Since we removed the person from all teams, something is
+                # seriously broken here.
                 raise AssertionError(
-                    "This person must be the owner or driver of this project "
-                    "(%s)" % pillar.pillar.name)
+                    "%s was expected to be owner or driver of %s" %
+                    (self.name, pillar.name))
 
         # Nuke all subscriptions of this person.
         removals = [
@@ -1556,16 +1585,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def translation_history(self):
         """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
+        query = ['POFileTranslator.person = %s' % sqlvalues(self),
+                 'POFileTranslator.pofile = POFile.id',
+                 'POFile.language = Language.id',
+                 "Language.code != 'en'"]
         history = POFileTranslator.select(
-            "POFileTranslator.person = %s AND "
-            "POFileTranslator.pofile = POFile.id AND "
-            "POFile.language = Language.id AND "
-            "Language.code != 'en'" % sqlvalues(self),
+            ' AND '.join(query),
             prejoins=[
-                "pofile.potemplate",
-                "latest_posubmission",
-                "latest_posubmission.pomsgset.potmsgset.primemsgid_",
-                "latest_posubmission.potranslation"],
+                'pofile.potemplate',
+                'latest_message',
+                'latest_message.potmsgset.msgid_singular',
+                'latest_message.msgstr0'],
             clauseTables=['Language', 'POFile'],
             orderBy="-date_last_touched")
         return history
@@ -1742,8 +1772,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         :param uploader_only: controls if we are interested in SPRs where
             the person in question is only the uploader (creator) and not the
-            maintainer (debian-syncs), or, if the flag is False, it returns all
-            SPR maintained by this person.
+            maintainer (debian-syncs) if the `ppa_only` parameter is also
+            False, or, if the flag is False, it returns all SPR maintained
+            by this person.
 
         :param ppa_only: controls if we are interested only in source
             package releases targeted to any PPAs or, if False, sources targeted
@@ -1758,6 +1789,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if uploader_only:
             clauses.append(
                 'sourcepackagerelease.creator = %s' % quote(self.id))
+
+        if ppa_only:
+            # Source maintainer is irrelevant for PPA uploads.
+            pass
+        elif uploader_only:
             clauses.append(
                 'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
@@ -1772,12 +1808,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease, archive
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
+              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
               """ % (query_clause)
@@ -2115,7 +2151,7 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s AND
+            POTemplate.distroseries = %s AND
             POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
@@ -2545,14 +2581,20 @@ class PersonSet:
             ''' % vars())
         skip.append(('poexportrequest', 'person'))
 
-        # Update the POSubmissions. They should not conflict since each of
-        # them is independent
+        # Update the TranslationMessage. They should not conflict since each
+        # of them are independent
         cur.execute('''
-            UPDATE POSubmission
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
+            UPDATE TranslationMessage
+            SET submitter=%(to_id)d
+            WHERE submitter=%(from_id)d
             ''' % vars())
-        skip.append(('posubmission', 'person'))
+        skip.append(('translationmessage', 'submitter'))
+        cur.execute('''
+            UPDATE TranslationMessage
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d
+            ''' % vars())
+        skip.append(('translationmessage', 'reviewer'))
 
         # Handle the POFileTranslator cache by doing nothing. As it is
         # maintained by triggers, the data migration has already been done
@@ -2569,7 +2611,7 @@ class PersonSet:
                 FROM TranslationImportQueueEntry AS a,
                      TranslationImportQueueEntry AS b
                 WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
-                AND a.distrorelease = b.distrorelease
+                AND a.distroseries = b.distroseries
                 AND a.sourcepackagename = b.sourcepackagename
                 AND a.productseries = b.productseries
                 AND a.path = b.path

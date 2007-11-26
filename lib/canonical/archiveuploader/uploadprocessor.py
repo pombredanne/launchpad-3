@@ -49,6 +49,7 @@ __metaclass__ = type
 
 import os
 import shutil
+import stat
 
 from zope.component import getUtility
 
@@ -183,12 +184,18 @@ class UploadProcessor:
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
-        fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
+        lockfile_path = os.path.join(fsroot, ".lock")
+        fsroot_lock = GlobalLock(lockfile_path)
+        # see client_done_hook method in poppyinterface.py.
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+        os.chmod(lockfile_path, mode | stat.S_IWGRP)
+
         try:
             fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
-            fsroot_lock.release()
+            # Skip lockfile deletion, see similar code in poppyinterface.py.
+            fsroot_lock.release(skip_delete=True)
 
         dir_names = [dir_name for dir_name in dir_names if
                      os.path.isdir(os.path.join(fsroot, dir_name))]

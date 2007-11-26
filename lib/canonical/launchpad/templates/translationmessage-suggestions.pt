@@ -1,0 +1,94 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<tal:block condition="context/submissions">
+  <tal:submission repeat="submission context/submissions">
+
+  <tr class="secondary">
+    <td class="icon left right">
+      <tal:form-writeable condition="context/form_is_writeable">
+      <tal:user-is-official-translator
+        condition="context/user_is_official_translator">
+        <input
+          type="radio"
+          tal:attributes="
+            name string:${submission/translation_html_id}_radiobutton;
+            id string:${submission/suggestion_html_id}_radiobutton;
+            value string:${submission/suggestion_html_id};
+            onClick string:
+              javascript:copyInnerHTMLById(
+                '${submission/suggestion_html_id}',
+                '${submission/translation_html_id}_new')
+            " />
+      </tal:user-is-official-translator>
+      <tal:user-is-not-official-translator condition="not:context/user_is_official_translator">
+        <a href=""
+          tal:attributes="
+            onClick string:
+              javascript:copyInnerHTMLById(
+                '${submission/suggestion_html_id}',
+                '${submission/translation_html_id}_new');;
+              selectWidget('${submission/translation_html_id}_new_select', event);;
+            return false;;
+          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
+      </tal:user-is-not-official-translator>
+      </tal:form-writeable>
+    </td>
+    <td>
+      <div
+        tal:condition="not:context/user_is_official_translator"
+        tal:attributes="
+          lang submission/language/dashedcode;
+          dir submission/language/abbreviated_text_dir;
+          id string:${submission/suggestion_html_id}"
+        tal:content="structure submission/suggestion_text">
+        suggestion
+      </div>
+      <label
+        style="white-space: normal"
+        tal:condition="context/user_is_official_translator"
+        tal:attributes="
+          lang submission/language/dashedcode;
+          dir submission/language/abbreviated_text_dir;
+          id string:${submission/suggestion_html_id};
+          for string:${submission/suggestion_html_id}_radiobutton;"
+        tal:content="structure submission/suggestion_text">
+        suggestion
+      </label>
+    </td>
+  </tr>
+  <tr class="discreet secondary"
+    tal:attributes="id string:msgset_${context/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
+    <td class="icon left right" />
+    <td style="overflow: auto;"
+        tal:condition="python:context.isFromSamePOFile(submission)">
+      Suggested by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/date_created/fmt:datetime"
+        tal:content="submission/date_created/fmt:displaydate">
+        2006-08-05
+      </span>
+    </td>
+    <td style="overflow: auto;"
+        tal:condition="python:not(context.isFromSamePOFile(submission))">
+      <tal:source content="string:${context/title}" />
+      <a tal:content="submission/pofile/potemplate/displayname"
+         tal:attributes="href string:${submission/translationmessage/fmt:url}/+translate">
+        Spanish translation for evolution
+      </a> by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/date_created/fmt:datetime"
+        tal:content="submission/date_created/fmt:displaydate">
+        2006-08-05
+      </span>
+    </td>
+  </tr>
+  </tal:submission>
+</tal:block>
+</tal:root>

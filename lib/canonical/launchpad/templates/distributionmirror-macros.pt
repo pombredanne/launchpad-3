@@ -16,8 +16,13 @@
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
       <tr class="highlighted">
-        <th colspan="5" style="text-align: left">
-          <strong tal:content="country_and_mirrors/country" />
+        <th colspan="2" style="text-align: left"
+            tal:content="country_and_mirrors/country" />
+        <th style="text-align: left"
+            tal:content="country_and_mirrors/throughput"/>
+        <th style="text-align: left">
+          <tal:count replace="country_and_mirrors/number" />
+          mirrors
         </th>
       </tr>
       <tr tal:repeat="mirror country_and_mirrors/mirrors">
