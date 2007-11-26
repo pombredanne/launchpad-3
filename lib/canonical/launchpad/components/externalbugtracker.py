@@ -1807,3 +1807,18 @@ class RequestTracker(ExternalBugTracker):
         # We create our own opener so as to handle the RT authentication
         # cookies that need to be passed around.
         return self._opener.open(request, data)
+
+    def convertRemoteStatus(self, remote_status):
+        """Convert an RT status into a Launchpad BugTaskStatus."""
+        status_map = {
+            'new': BugTaskStatus.NEW,
+            'open': BugTaskStatus.CONFIRMED,
+            'stalled': BugTaskStatus.INPROGRESS,
+            'rejected': BugTaskStatus.INVALID,
+            'resolved': BugTaskStatus.FIXRELEASED}
+
+        try:
+            remote_status = remote_status.lower()
+            return status_map[remote_status]
+        except KeyError:
+            return UNKNOWN_REMOTE_STATUS

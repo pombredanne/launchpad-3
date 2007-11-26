@@ -20,3 +20,27 @@ implementation of ExternalBugTracker, RequestTracker.
     ...     IExternalBugtracker,
     ...     RequestTracker(new_bugtracker(BugTrackerType.RT)))
     True
+
+
+== Status Conversion ==
+
+The RequestTracker class can convert the default RT ticket statuses into
+Launchpad statuses:
+
+    >>> rt = RequestTracker(new_bugtracker(BugTrackerType.RT))
+    >>> rt.convertRemoteStatus('new').title
+    'New'
+    >>> rt.convertRemoteStatus('open').title
+    'Confirmed'
+    >>> rt.convertRemoteStatus('stalled').title
+    'In Progress'
+    >>> rt.convertRemoteStatus('rejected').title
+    'Invalid'
+    >>> rt.convertRemoteStatus('resolved').title
+    'Fix Released'
+
+Passing a status which the RequestTracker instance can't understand will
+result in a status of 'Unknown' being returned:
+
+    >>> rt.convertRemoteStatus('spam')
+    'UNKNOWN'
