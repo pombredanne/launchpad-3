@@ -5,7 +5,7 @@ Queue: OpenSSL-Bugs
 Owner: appro
 Creator: alexlam06@gmail.com
 Subject: DTLS: ChangeCipherSpec is causing handshake message sequence number to increment
-Status: open
+Status: stalled
 Priority: 0
 InitialPriority: 0
 FinalPriority: 0

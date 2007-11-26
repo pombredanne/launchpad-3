@@ -5,7 +5,7 @@ Queue: OpenSSL-Bugs
 Owner: Nobody
 Creator: dan@obluda.cz
 Subject: Bug report with PATCH
-Status: new
+Status: resolved
 Priority: 0
 InitialPriority: 0
 FinalPriority: 0

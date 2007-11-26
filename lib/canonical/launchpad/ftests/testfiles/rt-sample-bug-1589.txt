@@ -5,7 +5,7 @@ Queue: OpenSSL-Bugs
 Owner: jaenicke
 Creator: selsky@columbia.edu
 Subject: OPENSSL_VERSION_NUMBER wrong in 0.9.8f release
-Status: resolved
+Status: rejected
 Priority: 0
 InitialPriority: 0
 FinalPriority: 0
