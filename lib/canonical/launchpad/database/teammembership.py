@@ -325,22 +325,31 @@ class TeamMembership(SQLBase):
             'comment': comment}
 
         template_name = 'membership-statuschange'
-        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
+        subject = ('Membership change: %(member)s in %(team)s'
                    % {'member': member.name, 'team': team.name})
         if new_status == TeamMembershipStatus.EXPIRED:
             template_name = 'membership-expired'
             subject = 'membership of %s expired' % member.name
         elif (new_status == TeamMembershipStatus.APPROVED and
               old_status != TeamMembershipStatus.ADMIN):
-            subject = '%s added by %s' % (member.name, reviewer.name)
             if old_status == TeamMembershipStatus.INVITED:
                 subject = ('Invitation to %s accepted by %s'
                            % (member.name, reviewer.name))
                 template_name = 'membership-invitation-accepted'
+            elif old_status == TeamMembershipStatus.PROPOSED:
+                subject = '%s approved by %s' % (member.name, reviewer.name)
+            else:
+                subject = '%s added by %s' % (member.name, reviewer.name)
         elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
             subject = ('Invitation to %s declined by %s'
                        % (member.name, reviewer.name))
             template_name = 'membership-invitation-declined'
+        elif new_status == TeamMembershipStatus.DEACTIVATED:
+            subject = '%s deactivated by %s' % (member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.ADMIN:
+            subject = '%s made admin by %s' % (member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.DECLINED:
+            subject = '%s declined by %s' % (member.name, reviewer.name)
         else:
             # Use the default template and subject.
             pass

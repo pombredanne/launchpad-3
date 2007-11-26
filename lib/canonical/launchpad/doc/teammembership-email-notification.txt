@@ -93,7 +93,7 @@ and team admins.
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
-    'Launchpad: Membership change: lifeless in ubuntu-team'
+    'lifeless declined by sabdfl'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -104,13 +104,12 @@ and team admins.
     >>> member_notification['To']
     'robertc@robertcollins.net'
     >>> member_notification['Subject']
-    'Launchpad: Membership change: lifeless in ubuntu-team'
+    'lifeless declined by sabdfl'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello Robert Collins,
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
-
 
 The same goes for approving a proposed member.
     
@@ -138,7 +137,7 @@ The same goes for approving a proposed member.
     >>> admins_notification['To']
     'daf@canonical.com'
     >>> admins_notification['Subject']
-    'daf added by sabdfl'
+    'daf approved by sabdfl'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello Dafydd Harries,
     <BLANKLINE>
@@ -154,7 +153,7 @@ The same goes for approving a proposed member.
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> member_notification['Subject']
-    'daf added by sabdfl'
+    'daf approved by sabdfl'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -178,7 +177,7 @@ The same for deactivating a membership.
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
-    'Launchpad: Membership change: daf in ubuntu-team'
+    'daf deactivated by sabdfl'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -189,7 +188,7 @@ The same for deactivating a membership.
     >>> member_notification['To']
     'daf@canonical.com'
     >>> member_notification['Subject']
-    'Launchpad: Membership change: daf in ubuntu-team'
+    'daf deactivated by sabdfl'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello Dafydd Harries,
     <BLANKLINE>
@@ -783,6 +782,8 @@ notification.
     >>> len(stub.test_emails)
     2
     >>> member_notification, admins_notification = pop_notifications()
+    >>> print admins_notification['Subject']
+    cprov made admin by sabdfl
     >>> print admins_notification['To']
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
@@ -804,7 +805,7 @@ sent to the team administrators.
     celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
     foo.bar@canonical.com, mark@hbd.com
     >>> admins_notification['Subject']
-    'Launchpad: Membership change: jdub in ubuntu-team'
+    'Membership change: jdub in ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
