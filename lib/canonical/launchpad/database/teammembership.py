@@ -170,7 +170,7 @@ class TeamMembership(SQLBase):
             recipient = member
             templatename = 'membership-expiration-warning-personal.txt'
         team = self.team
-        subject = 'Launchpad: %s team membership about to expire' % team.name
+        subject = 'Team membership about to expire'
 
         if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
             how_to_renew = (
@@ -210,8 +210,8 @@ class TeamMembership(SQLBase):
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
         replacements = {
+            'recipient_name': recipient.displayname,
             'member_name': member.unique_displayname,
-            'member_displayname': member.displayname,
             'team_url': canonical_url(team),
             'how_to_renew': how_to_renew,
             'team_name': team.unique_displayname,
@@ -220,7 +220,7 @@ class TeamMembership(SQLBase):
 
         msg = get_email_template(templatename) % replacements
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            "%s" % team.displayname, config.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
     def setStatus(self, status, reviewer, reviewercomment=None):

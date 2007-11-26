@@ -404,10 +404,12 @@ the other team admins.
     >>> [notification] = pop_notifications()
     >>> notification['To']
     'colin.watson@ubuntulinux.com'
+    >>> notification['From']
+    'Ubuntu Team <noreply@launchpad.net>'
     >>> notification['Subject']
-    'Launchpad: ubuntu-team team membership about to expire'
+    'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Colin Watson
+    Hi Colin Watson,
     <BLANKLINE>
     On ... your membership
     of the Ubuntu Team (ubuntu-team) Launchpad team
@@ -441,12 +443,14 @@ ubuntu-team's admins.
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
+    >>> notification['From']
+    'Ubuntu Team <noreply@launchpad.net>'
     >>> notification['To']
     'beta-admin@launchpad.net'
     >>> notification['Subject']
-    'Launchpad: ubuntu-team team membership about to expire'
+    'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi,
+    Hi Launchpad Beta Testers Owner,
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -477,12 +481,14 @@ renew his own membership.
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
+    >>> notification['From']
+    'Ubuntu Team <noreply@launchpad.net>'
     >>> notification['To']
     'colin.watson@ubuntulinux.com'
     >>> notification['Subject']
-    'Launchpad: ubuntu-team team membership about to expire'
+    'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Colin Watson
+    Hi Colin Watson,
     <BLANKLINE>
     On ... from now, your membership
     of the Ubuntu Team (ubuntu-team) Launchpad team
@@ -501,12 +507,14 @@ renew his own membership.
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
+    >>> notification['From']
+    'Ubuntu Team <noreply@launchpad.net>'
     >>> notification['To']
     'beta-admin@launchpad.net'
     >>> notification['Subject']
-    'Launchpad: ubuntu-team team membership about to expire'
+    'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi,
+    Hi Launchpad Beta Testers Owner,
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -539,12 +547,14 @@ where he can extend it.
     >>> sampleperson_on_landscape.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
+    >>> notification['From']
+    'Landscape Developers <noreply@launchpad.net>'
     >>> notification['To']
     'test@canonical.com'
     >>> notification['Subject']
-    'Launchpad: landscape-developers team membership about to expire'
+    'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Sample Person
+    Hi Sample Person,
     <BLANKLINE>
     On ..., nine days from now, your membership
     of the Landscape Developers (landscape-developers) Launchpad team

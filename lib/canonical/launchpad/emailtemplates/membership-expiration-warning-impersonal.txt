@@ -1,4 +1,4 @@
-Hi,
+Hi %(recipient_name)s,
 
 On %(expiration_date)s, %(approximate_duration)s from now, the membership
 of %(member_name)s (which you are
