@@ -60,7 +60,7 @@ generates a notification email only to Ubuntu Team administrators.
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
-    'Launchpad: lifeless wants to join team ubuntu-team'
+    'lifeless wants to join'
     >>> admins_notification['Reply-To']
     'robertc@robertcollins.net'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
@@ -124,7 +124,7 @@ The same goes for approving a proposed member.
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['Subject']
-    'Launchpad: daf wants to join team ubuntu-team'
+    'daf wants to join'
 
     >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED, 
     ...           reviewer=sabdfl, comment='This is a nice guy; I like him')
@@ -221,9 +221,13 @@ member.
     Regards,
     The Launchpad team
 
+    >>> print admins_notification['From']
+    Ubuntu Team <noreply@launchpad.net>
     >>> print admins_notification['To']
     colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com,
     foo.bar@canonical.com
+    >>> print admins_notification['Subject']
+    marilize joined
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>

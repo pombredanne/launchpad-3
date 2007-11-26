@@ -1077,15 +1077,15 @@ def notify_team_join(event):
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
 
-    from_addr = format_address('Launchpad', config.noreply_from_address)
+    from_addr = format_address(
+        '%s' % team.displayname, config.noreply_from_address)
 
     if reviewer != person and membership.status in [approved, admin]:
         # Somebody added this person as a member, we better send a
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined' % person.name
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
@@ -1116,12 +1116,10 @@ def notify_team_join(event):
     if membership.status in [approved, admin]:
         template = get_email_template(
             'new-member-notification-for-admins.txt')
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined' % person.name
     elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
-        subject = (
-            "Launchpad: %s wants to join team %s" % (person.name, team.name))
+        subject = "%s wants to join" % person.name
         headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
