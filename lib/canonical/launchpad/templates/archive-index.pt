@@ -57,10 +57,10 @@
       <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
 deb <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url" /> <span id="series-deb"
-             tal:content="context/distribution/currentseries/name">gutsy</span> main
+             tal:content="view/default_series_name">gutsy</span> main
 deb-src <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /> <span id="series-deb-src"
-             tal:content="context/distribution/currentseries/name">gutsy</span> main</pre>
+           tal:content="context/archive_url" /> <span id="series-deb-src"
+             tal:content="view/default_series_name">gutsy</span> main</pre>
 
       <h2>Packages</h2>
 

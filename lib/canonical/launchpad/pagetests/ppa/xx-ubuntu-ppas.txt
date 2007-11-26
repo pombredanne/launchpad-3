@@ -98,8 +98,8 @@ Let's see his sources.list entries:
     >>> results = find_tag_by_id(browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
 
 and the select control that lets you update them:
 
@@ -285,6 +285,23 @@ any package ever published in the context PPA.
     pmount - 0.1-1             2007-07-09  Deleted    warty            editors
 
 
+== Empty PPAs ==
+
+An empty PPA list no packages and uses apt sources lines for the
+distribution's current release, as a guess.:
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> print extract_text(anon_browser.contents)
+    PPA for No Privileges Person
+    ...
+    URL: http://ppa.launchpad.dev/no-priv/ubuntu
+    ...
+    deb http://ppa.launchpad.dev/no-priv/ubuntu hoary main
+    deb-src http://ppa.launchpad.dev/no-priv/ubuntu hoary main
+    ...
+    This PPA does not contain any packages yet.
+    ...
+
 == Single-publication PPAs ==
 
 Just quickly check if the singular form of this section is handled
@@ -310,6 +327,13 @@ series-widget-div control to update them:
     >>> print find_tag_by_id(anon_browser.contents, 'series-widget-div')
     None
 
+And the sources.list entries point to the right distribution release:
+
+    >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    >>> text = extract_text(results)
+    >>> print text
+    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
 
 == Other Distribution PPAs ==
 
@@ -381,4 +405,5 @@ The uploader name is linkified to that user's home page:
     >>> browser.getLink(url="~name16").click()
     >>> browser.url
     'http://launchpad.dev/~name16'
+
 

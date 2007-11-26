@@ -170,6 +170,18 @@ class ArchiveView(LaunchpadView):
         """Whether this archive has sources in more than one distro series."""
         return len(self.terms) > 1
 
+    @property
+    def default_series_name(self):
+        """Return the name of the default series name.
+
+        If there are packages in this PPA, return the latest series in
+        which packages are published. If not, return the name of the
+        current series.
+        """
+        if self.terms:
+            return self.terms[0].value.name
+        return self.context.distribution.currentseries.name
+
     def source_count_text(self):
         if self.context.number_of_sources == 1:
             return '%s source package' % self.context.number_of_sources
