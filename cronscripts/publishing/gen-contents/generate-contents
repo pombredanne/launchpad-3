@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# Archive Contents files generator configuration
+# Archive Contents files generator.
 #
-#
+# It uses scripts/ftpmaster-tools/lp-query-distro.py script to
+# collect up-to-date information about Ubuntu distribution from
+# Launchpad, then setup an auxiliary archive and a set of
+# configuration files to run apt-ftparchive generating Contents
+# files for all supported suites.
 #
 
 set -x
@@ -65,7 +69,7 @@ echo 'Ensure we have a private tree in place ...'
 mkdir -p $CONTENTARCHIVE/ubuntu-misc
 mkdir -p $CONTENTARCHIVE/ubuntu-cache
 
-cat $LPCONTENT/$APTCONF_HEADER_TEMPLATE > $LPCONTENT/$APTCONF
+cp $LPCONTENT/$APTCONF_HEADER_TEMPLATE $LPCONTENT/$APTCONF
 for suite in $suites; do
   sed -e "s/\$SUITE/$suite/g" -e "s/\$ARCHS/$archs/g" \
        $LPCONTENT/$APTCONF_DIST_TEMPLATE >> $LPCONTENT/$APTCONF

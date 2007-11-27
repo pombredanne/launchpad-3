@@ -20,8 +20,6 @@ fi
 
 # Exit immediately on errors.
 set -e
-# Echo everything executed.
-# set -x
 
 # Config goes here.
 PRODUCTION_CONFIG=ftpmaster
