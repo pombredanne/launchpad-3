@@ -65,6 +65,7 @@ class BugWatch(SQLBase):
             BugTrackerType.TRAC:        'ticket/%s',
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
+            BugTrackerType.RT           'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
             BugTrackerType.MANTIS:      'view.php?id=%s',
         }
@@ -160,6 +161,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
+            BugTrackerType.ROUNDUP: self.parseRTURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
@@ -288,6 +290,17 @@ class BugWatchSet(BugSetBase):
             return None
         base_path = match.group(1)
         remote_bug = match.group(2)
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseRTURL(self, scheme, host, path, query):
+        """Extract the RT base URL and bug ID."""
+        match = re.match(r'(.*/)Ticket/Display.html', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = query['id']
 
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
