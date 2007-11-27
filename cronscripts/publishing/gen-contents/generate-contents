@@ -14,8 +14,7 @@ set -e
 set -u
 
 # share lockfile with cron.daily
-#LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
-LOCKFILE=/tmp/foo
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
