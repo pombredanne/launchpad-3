@@ -454,7 +454,10 @@ class ProductTranslationsMenu(ApplicationMenu):
     def translationdownload(self):
         text = 'Download translations'
         preferred_series = self.context.primary_translatable
-        enabled = (preferred_series is not None)
+        # XXX JeroenVermeulen 2007-11-27 bug=165296: also check for
+        # ILaunchBag.user.
+        enabled = (self.context.official_rosetta and
+            preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
