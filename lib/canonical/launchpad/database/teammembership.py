@@ -21,13 +21,13 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
 
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses)
+    contactEmailAddresses, get_email_template)
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    IPersonSet, ITeamMembership, ITeamParticipation, ITeamMembershipSet,
+    IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
     TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -43,7 +43,8 @@ class TeamMembership(SQLBase):
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     datejoined = UtcDateTimeCol(
@@ -79,7 +80,7 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
 
         from_addr = format_address(
-            "%s" % team.displayname, config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
@@ -99,7 +100,7 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
 
         from_addr = format_address(
-            "%s" % team.displayname, config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
@@ -193,12 +194,12 @@ class TeamMembership(SQLBase):
                     # extend his membership.
                     if admin != member:
                         admins_names.append(
-                            "%s <%s>"
-                            % (admin.unique_displayname, canonical_url(admin)))
+                            "%s <%s>" % (admin.unique_displayname,
+                                         canonical_url(admin)))
 
                 how_to_renew = (
-                    "To prevent this membership from expiring, you should get "
-                    "in touch\nwith one of the team's administrators:\n")
+                    "To prevent this membership from expiring, you should "
+                    "get in touch\nwith one of the team's administrators:\n")
                 how_to_renew += "\n".join(admins_names)
         else:
             how_to_renew = (
@@ -220,7 +221,7 @@ class TeamMembership(SQLBase):
 
         msg = get_email_template(templatename) % replacements
         from_addr = format_address(
-            "%s" % team.displayname, config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
     def setStatus(self, status, reviewer, reviewercomment=None):
@@ -293,7 +294,7 @@ class TeamMembership(SQLBase):
         member = self.person
         reviewer = self.reviewer
         from_addr = format_address(
-            "%s" % team.displayname, config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         new_status = self.status
         admins_emails = team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
