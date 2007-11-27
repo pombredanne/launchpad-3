@@ -298,6 +298,23 @@ def mailingListXMLRPCExternalSetUp(test):
     test.globs['commit'] = flush_database_updates
 
 
+def zopelessLaunchpadSecuritySetUp(test):
+    """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
+
+    To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
+    to run in the Zopeless environment. The Zopeless environment normally runs
+    using the PermissiveSecurityPolicy. If we want the test to cover
+    functionality used in the webapp, it needs to use the
+    LaunchpadSecurityPolicy.
+    """
+    setGlobs(test)
+    test.old_security_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+
+
+def zopelessLaunchpadSecurityTearDown(test):
+    setSecurityPolicy(test.old_security_policy)
+
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     # Set stdout_logging keyword argument to True to make
@@ -625,6 +642,12 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'codeimport-machine.txt': LayeredDocFileSuite(
+            '../doc/codeimport-machine.txt',
+            setUp=zopelessLaunchpadSecuritySetUp,
+            tearDown=zopelessLaunchpadSecurityTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            ),
     # Also run the pillar.txt doctest under the Zopeless layer.
     # This exposed bug #149632.
     'pillar.txt-zopeless': LayeredDocFileSuite(
@@ -679,7 +702,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             special[filename] = cls.createLayeredDocFileSuite(
                 filename, stdout_logging=True)
 
-        # Adds a copy of bug-set-status.txt that will be run with
+        # Adds a copy of some bug doctests that will be run with
         # the processmail user.
         def bugSetStatusSetUp(test):
             setUp(test)
@@ -688,6 +711,16 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
                 '../doc/bug-set-status.txt',
                 setUp=bugSetStatusSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+        def bugmessageSetUp(test):
+            setUp(test)
+            login('no-priv@canonical.com')
+
+        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bugmessage.txt',
+                setUp=bugmessageSetUp, tearDown=tearDown,
                 optionflags=default_optionflags, layer=cls,
                 stdout_logging=False)
 

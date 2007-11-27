@@ -83,19 +83,39 @@ class POTMsgSet(SQLBase):
             pofile = pofileset.getDummy(self.potemplate, language)
         return DummyTranslationMessage(pofile, self)
 
-    def getCurrentTranslationMessage(self, language):
+    def getCurrentTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.selectOne("""
-            potmsgset = %s AND is_current IS TRUE AND POFile.language = %s
-            AND POFile.variant IS NULL AND pofile = POFile.id
-            """ % sqlvalues(self, language), clauseTables=['POFile'])
+        # Change 'is_current IS TRUE' condition carefully: it
+        # needs to match condition specified in indexes, or Postgres
+        # may not pick them up (in complicated queries, Postgres query
+        # optimizer sometimes does text-matching of indexes).
+        clauses = ['potmsgset = %s' % sqlvalues(self),
+                   'is_current IS TRUE',
+                   'POFile.language = %s' % sqlvalues(language),
+                   'POFile.id = TranslationMessage.pofile']
+        if variant is None:
+            clauses.append('POFile.variant IS NULL')
+        else:
+            clauses.append('POFile.variant=%s' % sqlvalues(variant))
+        return TranslationMessage.selectOne(' AND '.join(clauses),
+                                            clauseTables=['POFile'])
 
-    def getImportedTranslationMessage(self, language):
+    def getImportedTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.selectOne("""
-            potmsgset = %s AND is_imported IS TRUE AND POFile.language = %s
-            AND POFile.variant IS NULL AND pofile = POFile.id
-            """ % sqlvalues(self, language), clauseTables=['POFile'])
+        # Change 'is_imported IS TRUE' condition carefully: it
+        # needs to match condition specified in indexes, or Postgres
+        # may not pick them up (in complicated queries, Postgres query
+        # optimizer sometimes does text-matching of indexes).
+        clauses = ['potmsgset = %s' % sqlvalues(self),
+                   'is_imported IS TRUE',
+                   'POFile.language = %s' % sqlvalues(language),
+                   'POFile.id = TranslationMessage.pofile']
+        if variant is None:
+            clauses.append('POFile.variant IS NULL')
+        else:
+            clauses.append('POFile.variant=%s' % sqlvalues(variant))
+        return TranslationMessage.selectOne(' AND '.join(clauses),
+                                            clauseTables=['POFile'])
 
     def getLocalTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
@@ -126,11 +146,14 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
+        # Watch out when changing this condition: make sure it's done in
+        # a way so that indexes are indeed hit when the query is executed.
+        # Also note that there is a NOT(in_use_clause) index.
         in_use_clause = "(is_current IS TRUE OR is_imported IS TRUE)"
         if used:
             query = [in_use_clause]
         else:
-            query = ["NOT %s" % in_use_clause]
+            query = ["(NOT %s)" % in_use_clause]
         query.append('is_fuzzy IS NOT TRUE')
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')
@@ -155,7 +178,14 @@ class POTMsgSet(SQLBase):
 
         result = TranslationMessage.select(' AND '.join(query),
                                            clauseTables=['POFile'])
-        return shortlist(result, longest_expected=20, hardlimit=100)
+        # XXX 2007-11-20 Danilo: We do filtering of duplicates in
+        # the browser code, which is how it was before DB refactoring.
+        # We should move this to SQL queries above, and lower the limit
+        # below.
+        # The numbers were gotten from our production data, by finding
+        # the largest number of external "suggestions" we may get, with
+        # the maximum turning out to be 1943.
+        return shortlist(result, longest_expected=1000, hardlimit=2000)
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
@@ -276,19 +306,20 @@ class POTMsgSet(SQLBase):
                 potranslations[pluralform] = None
         return potranslations
 
-    def _findTranslationMessage(self, language, potranslations, pluralforms):
-        """Find a message for this language exactly matching given
+    def _findTranslationMessage(self, pofile, potranslations, pluralforms):
+        """Find a message for this `pofile` exactly matching given
         `translations` strings comparing only `pluralforms` of them.
         """
-        query = ('potmsgset=%s AND pofile=POFile.id AND POFile.language=%s' %
-                 sqlvalues(self, language))
+        clauses = ['potmsgset = %s' % sqlvalues(self),
+                   'pofile = %s' % sqlvalues(pofile)]
+
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
-                query += ' AND msgstr%s IS NULL' % sqlvalues(pluralform)
+                clauses.append('msgstr%s IS NULL' % sqlvalues(pluralform))
             else:
-                query += ' AND msgstr%s=%s' % (
-                    sqlvalues(pluralform, potranslations[pluralform]))
-        return TranslationMessage.selectOne(query, clauseTables=['POFile'])
+                clauses.append('msgstr%s=%s' % (
+                    sqlvalues(pluralform, potranslations[pluralform])))
+        return TranslationMessage.selectOne(' AND '.join(clauses))
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):
@@ -367,10 +398,6 @@ class POTMsgSet(SQLBase):
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
 
-        assert pofile.language.pluralforms is not None, (
-            "Don't know the number of plural forms for %s language." % (
-                pofile.language.englishname))
-
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
         # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
@@ -379,7 +406,7 @@ class POTMsgSet(SQLBase):
 
         # Sanitize translations
         sanitized_translations = self._sanitizeTranslations(
-            new_translations, pofile.language.pluralforms)
+            new_translations, pofile.plural_forms)
         # Check that the translations are correct.
         validation_status = self._validate_translations(
             sanitized_translations, is_fuzzy, ignore_errors)
@@ -402,7 +429,7 @@ class POTMsgSet(SQLBase):
         # of translations.  None if there is no such message and needs to be
         # created.
         matching_message = self._findTranslationMessage(
-            pofile.language, potranslations, pofile.language.pluralforms)
+            pofile, potranslations, pofile.plural_forms)
 
         if matching_message is None:
             # Creating a new message.

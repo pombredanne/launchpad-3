@@ -110,7 +110,6 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.INACTIVE,
                                     MailingListStatus.MOD_FAILED), (
                 'target_state result must be inactive or mod_failed')
-            self._clearSubscriptions()
         else:
             raise AssertionError(
                 'Not a valid state transition: %s -> %s'
@@ -121,7 +120,8 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            if email.status in [EmailAddressStatus.NEW, EmailAddressStatus.OLD]:
+            if email.status in [EmailAddressStatus.NEW,
+                                EmailAddressStatus.OLD]:
                 # Without this conditional, if the mailing list is the
                 # contact method
                 # (email.status==EmailAddressStatus.PREFERRED), and a
@@ -235,19 +235,16 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def _clearSubscriptions(self):
-        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
-        for subscription in subscriptions:
-            subscription.destroySelf()
-
     def getAddresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
             """mailing_list = %s AND
-               team = %s AND
+               TeamParticipation.team = %s AND
+               MailingList.status <> %s AND
+               MailingList.id = MailingListSubscription.mailing_list AND
                TeamParticipation.person = MailingListSubscription.person
-            """ % sqlvalues(self, self.team),
-            distinct=True, clauseTables=['TeamParticipation'])
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
         for subscription in subscriptions:
             yield subscription.subscribed_address.email
 

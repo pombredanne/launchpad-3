@@ -1136,28 +1136,25 @@ class CurrentTranslationMessageView(LaunchpadView):
                 potmsgset.getExternallySuggestedTranslationMessages(language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
-
-            # Fetch a list of current and externally used translations for
-            # this message in an alternative language.
-            alt_submissions = []
-            if self.sec_lang is None:
-                alt_title = None
-            else:
-                # User is asking for alternative language suggestions.
-                alt_current = potmsgset.getCurrentTranslationMessage(
-                    self.sec_lang)
-                if alt_current is not None:
-                    alt_submissions.append(alt_current)
-                alt_submissions.extend(
-                    potmsgset.getExternallyUsedTranslationMessages(
-                        self.sec_lang))
-                alt_title = self.sec_lang.englishname
         else:
             # Don't show suggestions for anonymous users.
             local = externally_used = externally_suggested = []
-            alt_title = None
-            alt_submissions = []
 
+        # Fetch a list of current and externally used translations for
+        # this message in an alternative language.
+        alt_submissions = []
+        if self.sec_lang is None:
+            alt_title = None
+        else:
+            # User is asking for alternative language suggestions.
+            alt_current = potmsgset.getCurrentTranslationMessage(
+                self.sec_lang)
+            if alt_current is not None:
+                alt_submissions.append(alt_current)
+            alt_submissions.extend(
+                potmsgset.getExternallyUsedTranslationMessages(
+                    self.sec_lang))
+            alt_title = self.sec_lang.englishname
 
         # To maintain compatibility with the old DB model as much as possible,
         # let's split out all the submissions by their plural form.
@@ -1421,6 +1418,11 @@ class TranslationMessageSuggestions:
         self.submissions = []
 
         for submission in submissions:
+            if plural_form >= submission.pofile.language.pluralforms:
+                # The requested plural form is not available for the language
+                # where we are getting suggestions from. We don't have
+                # suggestions to extract.
+                continue
             this_translation = submission.translations[plural_form]
             if (this_translation is None or
                 this_translation in seen_translations):

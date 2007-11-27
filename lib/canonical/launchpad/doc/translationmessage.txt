@@ -4,7 +4,8 @@ Let's do some imports we will need to test this class.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.database import POTemplate, TranslationMessage
+    >>> from canonical.launchpad.database import (
+    ...     POTemplate, POTMsgSet, TranslationMessage)
     >>> from canonical.launchpad.interfaces import (
     ...     ILanguageSet, ITranslationMessage)
 
@@ -37,7 +38,7 @@ We will need extra permissions to use this method.
     ...     LaunchpadFunctionalTestSetup)
     >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
 
-Select an existing IPOSubmission and try to remove it.
+Select an existing ITranslationMessage and try to remove it.
 
     >>> translationmessage = TranslationMessage.get(1)
     >>> translationmessage.destroySelf()
@@ -50,3 +51,58 @@ It should not exist now.
     SQLObjectNotFound:...
 
     >>> LaunchpadFunctionalTestSetup().tearDown()
+
+== plural_forms ==
+
+This property returns a number of plural forms needed for a TranslationMessage
+to be 'complete', i.e. contain all the necessary translations.
+
+
+We can look at a POTMsgSet with no plural forms:
+
+    >>> potmsgset_no_plural = POTMsgSet.select("msgid_plural IS NULL")[0]
+    >>> print potmsgset_no_plural.plural_text
+    None
+
+Any TranslationMessage for such a POTMsgSet returns a single plural form in
+the translation, no matter the number of plural forms defined for the
+language:
+
+    >>> serbian = getUtility(ILanguageSet)['sr']
+    >>> serbian.pluralforms
+    3
+    >>> current_sr = potmsgset_no_plural.getCurrentDummyTranslationMessage(
+    ...     serbian)
+    >>> current_sr.plural_forms
+    1
+
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+    >>> current_dv = potmsgset_no_plural.getCurrentDummyTranslationMessage(
+    ...     divehi)
+    >>> current_dv.plural_forms
+    1
+
+For any POTMsgSet using plural forms, we get a defined number of plural
+forms per language (3 for Serbian, as specified in the language).
+
+    >>> potmsgset_plural = POTMsgSet.select("msgid_plural IS NOT NULL")[0]
+    >>> potmsgset_plural.plural_text is not None
+    True
+    >>> serbian.pluralforms
+    3
+    >>> current_sr = potmsgset_plural.getCurrentDummyTranslationMessage(
+    ...     serbian)
+    >>> current_sr.plural_forms
+    3
+
+In case the language doesn't have number of plural forms defined, we return
+a default of 2, which is the most common number of plural forms:
+
+    >>> print divehi.pluralforms
+    None
+    >>> current_dv = potmsgset_plural.getCurrentDummyTranslationMessage(
+    ...     divehi)
+    >>> current_dv.plural_forms
+    2

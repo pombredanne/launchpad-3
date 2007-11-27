@@ -143,7 +143,7 @@ class IPublishing(Interface):
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket):
+    def copyTo(distroseries, pocket, archive):
         """Copy this publication to another location.
 
         Return the publishing in the targeted location, either a

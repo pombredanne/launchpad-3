@@ -117,7 +117,7 @@ mailing list.
 
 This is true even if the person's subscription in the superteam's list is
 allowed due to indirect membership in the superteam.
-    
+
     >>> team_three, list_three = new_team('team-three', with_list=True)
     >>> team_one.addMember(team_three, salgado, force_team_add=True)
     >>> dirk = new_person('Dirk')
@@ -301,6 +301,8 @@ list are dropped.
     >>> list_one.deactivate()
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
     >>> sorted(list_one.getAddresses())
     []
 
