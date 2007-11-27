@@ -1,4 +1,4 @@
-Hi %(recipient_name)s,
+Hello %(recipient_name)s,
 
 On %(expiration_date)s, %(approximate_duration)s from now, your membership
 of the %(team_name)s Launchpad team

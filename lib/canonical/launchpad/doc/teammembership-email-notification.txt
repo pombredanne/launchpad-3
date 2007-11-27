@@ -432,7 +432,7 @@ the other team admins.
     >>> notification['Subject']
     'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Colin Watson,
+    Hello Colin Watson,
     <BLANKLINE>
     On ... your membership
     of the Ubuntu Team (ubuntu-team) Launchpad team
@@ -473,7 +473,7 @@ ubuntu-team's admins.
     >>> notification['Subject']
     'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Launchpad Beta Testers Owner,
+    Hello Launchpad Beta Testers Owner,
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -511,7 +511,7 @@ renew his own membership.
     >>> notification['Subject']
     'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Colin Watson,
+    Hello Colin Watson,
     <BLANKLINE>
     On ... from now, your membership
     of the Ubuntu Team (ubuntu-team) Launchpad team
@@ -537,7 +537,7 @@ renew his own membership.
     >>> notification['Subject']
     'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Launchpad Beta Testers Owner,
+    Hello Launchpad Beta Testers Owner,
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -577,7 +577,7 @@ where he can extend it.
     >>> notification['Subject']
     'Team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Sample Person,
+    Hello Sample Person,
     <BLANKLINE>
     On ..., nine days from now, your membership
     of the Landscape Developers (landscape-developers) Launchpad team
