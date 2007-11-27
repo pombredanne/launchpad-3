@@ -181,7 +181,7 @@ class BranchTestCase(TestCaseWithTransport):
 
     def emptyPullQueues(self):
         transaction.begin()
-        self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
+        self.cursor.execute("UPDATE Branch SET next_mirror_time = NULL")
         transaction.commit()
 
     def getUniqueInteger(self):

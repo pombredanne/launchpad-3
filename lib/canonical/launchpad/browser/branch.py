@@ -485,11 +485,11 @@ class BranchMirrorStatusView(LaunchpadFormView):
         """Is it likely that the branch is being mirrored in the next run of
         the puller?
         """
-        return self.context.mirror_request_time < datetime.now(pytz.UTC)
+        return self.context.next_mirror_time < datetime.now(pytz.UTC)
 
     def mirror_disabled(self):
         """Has mirroring this branch been disabled?"""
-        return self.context.mirror_request_time is None
+        return self.context.next_mirror_time is None
 
     def mirror_failed_once(self):
         """Has there been exactly one failed attempt to mirror this branch?"""

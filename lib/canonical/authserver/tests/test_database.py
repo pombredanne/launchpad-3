@@ -63,23 +63,23 @@ class DatabaseTest(unittest.TestCase):
         super(DatabaseTest, self).tearDown()
 
     def getMirrorRequestTime(self, branch_id):
-        """Return the value of mirror_request_time for the branch with the
-        given id.
+        """Return the value of next_mirror_time for the branch with the given
+        id.
 
         :param branch_id: The id of a row in the Branch table. An int.
         :return: A timestamp or None.
         """
         self.cursor.execute(
-            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            "SELECT next_mirror_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
-        [mirror_request_time] = self.cursor.fetchone()
-        return mirror_request_time
+        [next_mirror_time] = self.cursor.fetchone()
+        return next_mirror_time
 
-    def setMirrorRequestTime(self, branch_id, mirror_request_time):
-        """Set mirror_request_time on the branch with the given id."""
+    def setMirrorRequestTime(self, branch_id, next_mirror_time):
+        """Set next_mirror_time on the branch with the given id."""
         self.cursor.execute(
-            "UPDATE Branch SET mirror_request_time = %s WHERE id = %s"
-            % sqlvalues(mirror_request_time, branch_id))
+            "UPDATE Branch SET next_mirror_time = %s WHERE id = %s"
+            % sqlvalues(next_mirror_time, branch_id))
 
     def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
         """Helper to set the datelastsynced of a ProductSeries.
@@ -615,7 +615,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', permissions)
 
     def test_initialMirrorRequest(self):
-        # The default 'mirror_request_time' for a newly created hosted branch
+        # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
@@ -623,7 +623,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual(self.getMirrorRequestTime(branchID), None)
 
     def test_requestMirror(self):
-        # requestMirror should set the mirror_request_time field to be the
+        # requestMirror should set the next_mirror_time field to be the
         # current time.
         hosted_branch_id = 25
         # make sure the sample data is sane
@@ -638,14 +638,14 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
 
         self.assertTrue(
             current_db_time < self.getMirrorRequestTime(hosted_branch_id),
-            "Branch mirror_request_time not updated.")
+            "Branch next_mirror_time not updated.")
 
     def test_mirrorComplete_resets_mirror_request(self):
-        # After successfully mirroring a branch, mirror_request_time should be
+        # After successfully mirroring a branch, next_mirror_time should be
         # set to NULL.
 
         # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
+        # next_mirror_time.
         storage = DatabaseUserDetailsStorageV2(None)
         storage._requestMirrorInteraction(25)
 
