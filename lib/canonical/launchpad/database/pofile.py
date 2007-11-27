@@ -165,6 +165,17 @@ class POFileMixIn(RosettaStats):
     `DummyPOFile`s.
     """
 
+    @property
+    def plural_forms(self):
+        """See `IPOFile`."""
+        if self.language.pluralforms is not None:
+            forms = self.language.pluralforms
+        else:
+            # Don't know anything about plural forms for this
+            # language, fallback to the most common case, 2.
+            forms = 2
+        return forms
+
     def getHeader(self):
         """See `IPOFile`."""
         translation_importer = getUtility(ITranslationImporter)
@@ -669,6 +680,7 @@ class POFile(SQLBase, POFileMixIn):
         clause_tables = ['TranslationMessage']
         query, clause_tables = self._addCompletePluralFormsConditions(
             query, clause_tables)
+
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=clause_tables,
             orderBy='POTMsgSet.sequence', distinct=True)
@@ -690,7 +702,7 @@ class POFile(SQLBase, POFileMixIn):
         incomplete_check = ['TranslationMessage.msgstr0 IS NULL']
         # Plural forms only matter if we are in a message with a msgid_plural.
         incomplete_plurals_check = ['FALSE']
-        for plural_form in range(self.language.pluralforms)[1:]:
+        for plural_form in range(self.plural_forms)[1:]:
             incomplete_plurals_check.append(
                 'TranslationMessage.msgstr%d IS NULL' % plural_form)
         incomplete_check.append(
@@ -874,12 +886,14 @@ class POFile(SQLBase, POFileMixIn):
         clause_tables.append('POTranslation AS translation0')
         if self.language.pluralforms > 1:
             plurals_query = []
-            for i in range(1, self.language.pluralforms):
+            for plural_form in range(1, self.plural_forms):
                 plurals_query.append(
-                    'TranslationMessage.msgstr%d = translation%d.id' % (i, i))
-                plurals_query.append("translation%d.translation <> ''" % i)
+                    'TranslationMessage.msgstr%d = translation%d.id' % (
+                        plural_form, plural_form))
+                plurals_query.append(
+                    "translation%d.translation <> ''" % plural_form)
                 clause_tables.append(
-                    'POTranslation AS translation%d' % i)
+                    'POTranslation AS translation%d' % plural_form)
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % (
                     ' AND '.join(plurals_query)))
@@ -1664,7 +1678,7 @@ class POFileToTranslationFileDataAdapter:
             forms = [
                 (0, row.translation0), (1, row.translation1),
                 (2, row.translation2), (3, row.translation3)]
-            max_forms = pofile.language.pluralforms
+            max_forms = pofile.plural_forms
             for (pluralform, translation) in forms[:max_forms]:
                 if translation is not None:
                     msgset.addTranslation(pluralform, translation)
