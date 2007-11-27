@@ -1677,8 +1677,9 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an `ITableBatchNavigator` for the GET search criteria.
 
-        :param searchtext: If the searchtext is None, the search text will be
-            gotten from the request.
+        :param searchtext: Text that must occur in the bug report. If
+            searchtext is None, the search text will be gotten from the
+            request.
 
         :param extra_params: A dict that provides search params added to
             the search criteria taken from the request. Params in
@@ -1688,12 +1689,13 @@ class BugTaskSearchListingView(LaunchpadFormView):
             searchtext, context, extra_params)
         return self._getBatchNavigator(unbatchedTasks)
 
-    def searchUnbatched(
-        self, searchtext=None, context=None, extra_params=None):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
-        :param searchtext: If the searchtext is None, the search text will be
-            gotten from the request.
+        :param searchtext: Text that must occur in the bug report. If
+            searchtext is None, the search text will be gotten from the
+            request.
 
         :param extra_params: A dict that provides search params added to
             the search criteria taken from the request. Params in

@@ -1579,10 +1579,10 @@ class BugTaskSet:
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
         """
-        if bug is not None:
-            bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
-        else:
+        if bug is None:
             bug_clause = ''
+        else:
+            bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
         all_bugtasks = BugTask.select("""
             BugTask.id IN (
                 SELECT BugTask.id

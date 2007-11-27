@@ -234,26 +234,27 @@ class Bug(SQLBase):
         :See: `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to
             check or get a list of bugs that can expire.
         """
-        # Bugs cannot be expired if any bugtask is valid.
-        expirable_status_list = [
-            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
-            BugTaskStatus.WONTFIX]
-        if len([bugtask for bugtask in self.bugtasks
-                if bugtask.status not in expirable_status_list]) != 0:
-            return False
-
         # No one has replied to the first message reporting the bug.
         # The bug reporter should be notified that more information
         # is required to confirm the bug report.
         if self.messages.count() == 1:
             return False
 
-        # Does the bug have incomplete bugtasks whose pillars have
-        # use launchpad as their official bug tracker?
-        expirable_bugtasks = [bugtask for bugtask in self.bugtasks
-                              if bugtask.status == BugTaskStatus.INCOMPLETE
-                              and bugtask.pillar.official_malone is True]
-        return len(expirable_bugtasks) > 0
+        # Bugs cannot be expired if any bugtask is valid.
+        expirable_status_list = [
+            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
+            BugTaskStatus.WONTFIX]
+        has_an_expirable_bugtask = False
+        for bugtask in self.bugtasks:
+            if bugtask.status not in expirable_status_list:
+                # We found an unexpirable bugtask; the bug cannot expire.
+                return False
+            if (bugtask.status == BugTaskStatus.INCOMPLETE
+                and bugtask.pillar.official_malone is True):
+                # This bugtasks meets the basic conditions to expire.
+                has_an_expirable_bugtask = True
+
+        return has_an_expirable_bugtask
 
     @property
     def can_expire(self):

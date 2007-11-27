@@ -184,15 +184,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
-    permits_expiration = Attribute(
-        "Return True or False if the bug's state permits expiration. "
-        "Expiration is permitted when the bug has never been confirmed, "
+    permits_expiration = Bool(
+        title=_("Does the bug's state permits expiration? "
+        "Expiration is permitted when the bug is not valid anywhere, "
         "a message was sent to the bug reporter, and the bug is associated "
-        "with pillars that use the Launchpad bug tracker.")
-    can_expire = Attribute(
-        "True or False if the Incomplete bug report will expire if the "
-        "bug becomes inactive. Expiration may happen with the bug permits "
-        "expiration, and a bugtask cannot be confirmed.")
+        "with pillars that use the Launchpad bug tracker."))
+    can_expire = Bool(
+        title=_("Can the Incomplete bug expire if it becomes inactive? "
+        "Expiration may happen when the bug permits expiration, and a "
+        "bugtask cannot be confirmed."))
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
 

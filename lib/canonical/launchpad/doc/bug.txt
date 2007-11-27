@@ -871,11 +871,11 @@ IBug.can_expire property returns True or False as to whether the bug
 will expire if it becomes inactive because of a bugtask.
 
 `bugtask-expiration.txt` outlines the complete list of constraints that
-govern expiration. In general, a bug that has never been confirmed, that
-has a single Incomplete bugtask that is not assigned, nor targeted to a
-milestone, and the bugtask's pillar uses launchpad to track bugs is
-expirable. Once an bug is recognised to be valid for one bugtask
-(confirmed), the bug will not permit expiration.
+govern expiration. In general, a bug that is not valid anywhere,
+that has a single unattended Incomplete bugtask whose pillar uses
+launchpad to track bugs is expirable. Once an bug is recognised to be
+valid for one bugtask (confirmed), or attended (is assigned or has a
+milestone), the bug will not permit expiration.
 
 The thunderbird project does not use Launchpad to track bugs. Incomplete
 bug reports cannot ever expire for this project.
