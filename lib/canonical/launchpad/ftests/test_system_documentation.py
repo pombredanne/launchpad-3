@@ -709,7 +709,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             special[filename] = cls.createLayeredDocFileSuite(
                 filename, stdout_logging=True)
 
-        # Adds a copy of bug-set-status.txt that will be run with
+        # Adds a copy of some bug doctests that will be run with
         # the processmail user.
         def bugSetStatusSetUp(test):
             setUp(test)
@@ -718,6 +718,16 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
                 '../doc/bug-set-status.txt',
                 setUp=bugSetStatusSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+        def bugmessageSetUp(test):
+            setUp(test)
+            login('no-priv@canonical.com')
+
+        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bugmessage.txt',
+                setUp=bugmessageSetUp, tearDown=tearDown,
                 optionflags=default_optionflags, layer=cls,
                 stdout_logging=False)
 
