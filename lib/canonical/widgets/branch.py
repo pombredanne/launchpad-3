@@ -11,12 +11,12 @@ __all__ = [
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
-from zope.app.traversing.interfaces import IPathAdapter
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.interfaces import IBranchSet, ILaunchBag
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 
@@ -36,9 +36,9 @@ class TargetBranchWidget(LaunchpadRadioWidget):
     normal branch selector.
     """
 
-    _joinButtonToMessageTemplate = u'%s&nbsp;%s'
-
     def __init__(self, field, vocabulary, request):
+        # Create the vocabulary and pass that to the radio button
+        # constructor.
         branch = field.context
         self.branch_selector_vocab = self._generateTargetVocab(branch)
 
@@ -51,16 +51,34 @@ class TargetBranchWidget(LaunchpadRadioWidget):
             self, 'other_branch', field, IInputWidget,
             prefix=self.name, context=branch)
 
+        # If there are branches to show explicitly, then we want to be
+        # able to select the 'Other' selection item when someone types
+        # in any values.
+        branch_count = len(self.branch_selector_vocab)
+        if branch_count > 0:
+            on_key_press = "selectWidget('%s.%d', event);" % (
+                self.name, branch_count)
+            self.other_branch_widget.onKeyPress = on_key_press
+
     def _generateTargetVocab(self, branch):
-        """Generate the vocabulary for the radio buttons."""
+        """Generate the vocabulary for the radio buttons.
+
+        The generated vocabulary contains the branch associated with the
+        development series of the product if there is one, and also any other
+        branches that the user has specified before as a target for a proposed
+        merge.
+        """
         assert(branch.product)
         self.dev_focus = branch.product.development_focus.user_branch
         logged_in_user = getUtility(ILaunchBag).user
         target_branches = shortlist(
             getUtility(IBranchSet).getTargetBranchesForUsersMergeProposals(
                 logged_in_user, branch.product))
-        if (self.dev_focus is not None and
-            not self.dev_focus in target_branches):
+        # If there is a development focus branch, make sure it is always
+        # shown, and as the first item.
+        if self.dev_focus is not None:
+            if self.dev_focus in target_branches:
+                target_branches.remove(self.dev_focus)
             target_branches.insert(0, self.dev_focus)
 
         terms = []
@@ -71,20 +89,43 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         return SimpleVocabulary(terms)
 
     def _toFieldValue(self, form_value):
-        if form_value == "other":
+        """Convert the form value into a branch.
+
+        If there were no radio button options, or 'other' was selected, then
+        get the value from the branch widget, otherwise get the branch
+        reference from the built up vocabulary.
+        """
+        use_branch_selector = (
+            len(self.branch_selector_vocab) == 0 or
+            form_value == "other")
+        if use_branch_selector:
             return self.other_branch_widget.getInputValue()
         else:
             term = self.branch_selector_vocab.getTermByToken(form_value)
             return term.value
 
+    def hasInput(self):
+        """Is there any input for the widget.
+
+        We need to defer the call to the other branch widget when either there
+        are no terms in the vocabulary or the other radio button was selected.
+        """
+        if len(self.branch_selector_vocab) == 0:
+            return self.other_branch_widget.hasInput()
+        else:
+            has_input = LaunchpadRadioWidget.hasInput(self)
+            if has_input:
+                if self._getFormInput() == "other":
+                    return self.other_branch_widget.hasInput()
+            return has_input
+
     def getInputValue(self):
+        """Return the branch defined by the input value."""
         return self._toFieldValue(self._getFormInput())
 
     def setRenderedValue(self, value):
+        """This widget does not support setting the value."""
         pass
-        #self._data = value
-        #if value is not self.context.malone_marker:
-        #    self.branch_widget.setRenderedValue(value)
 
     def _renderLabel(self, text, index):
         """Render a label for the option with the specified index."""
@@ -93,16 +134,22 @@ class TargetBranchWidget(LaunchpadRadioWidget):
             option_id, text)
 
     def _renderBranchLabel(self, branch, index):
+        """Render a label for the option based on a branch."""
         option_id = '%s.%s' % (self.name, index)
 
-        adapter = queryAdapter(branch, IPathAdapter, 'fmt')
-        text = adapter.link('')
+        # In order to have text that is selectable in order to select the
+        # radio button, it was decided not to have the entire text as a link,
+        # but instead to have a separate link to the branch details.
+        text = '%s (<a href="%s">branch details</a>)' % (
+            branch.displayname, canonical_url(branch))
+        # If the branch is the development focus, say so.
         if branch == self.dev_focus:
-            text = text + " <em>(development focus)</em>"
+            text = text + "&ndash; <em>development focus</em>"
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
             option_id, text)
 
     def renderItems(self, value):
+        """Render the items for the selector."""
         field = self.context
         product = field.context
         if value == self._missing:
@@ -140,3 +187,10 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         items.append(renderfunc(**render_args))
 
         return items
+
+    def __call__(self):
+        """Don't render the radio buttons if only one choice."""
+        if len(self.branch_selector_vocab) == 0:
+            return self.other_branch_widget()
+        else:
+            return LaunchpadRadioWidget.__call__(self)
