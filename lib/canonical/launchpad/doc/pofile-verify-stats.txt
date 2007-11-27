@@ -121,7 +121,6 @@ completes without finding any errors: the one we introduced earlier was
 fixed by running the verifier directly.
 
     >>> pofile.sync()
-    >>> import transaction
     >>> transaction.commit() # Ensure other process can see latest changes
 
     >>> import subprocess
