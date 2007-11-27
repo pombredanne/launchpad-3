@@ -49,11 +49,6 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.setupBreezy()
         self.layer.txn.commit()
 
-        # common recipients
-        self.kinnison_recipient = (
-            "Daniel Silverstone <daniel.silverstone@canonical.com>")
-        self.name16_recipient = "Foo Bar <foo.bar@canonical.com>"
-
         # Set up the uploadprocessor with appropriate options and logger
         self.options.context = 'insecure'
         self.uploadprocessor = UploadProcessor(
@@ -177,6 +172,71 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "Subject: bar_1.0-2_source.changes rejected",
             "Version older than that in the archive. 1.0-2 <= 1.0-10"]
         self.assertEmail(contents)
+
+    def testPPABinaryUploads(self):
+        """Check the usual binary upload life-cycle for PPAs."""
+        # Source upload.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # Create a build record for source bar in breezy-i386 distroarchseries.
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar] = pub_sources
+        build_bar_i386 = pub_bar.sourcepackagerelease.createBuild(
+            self.breezy['i386'], PackagePublishingPocket.RELEASE,
+            self.name16.archive)
+
+        # Binary upload to the just-created build record.
+        self.options.context = 'buildd'
+        self.options.buildid = build_bar_i386.id
+        upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The binary upload was accepted and it's waiting in queue.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+    def testPPACopiedSources(self):
+        """Check PPA binary uploads for copied sources."""
+        # Source upload to name16 PPA.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # Copy source uploaded to name16 PPA to cprov's PPA.
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [name16_pub_bar] = pub_sources
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov_pub_bar = name16_pub_bar.copyTo(
+            self.breezy, PackagePublishingPocket.RELEASE, cprov.archive)
+        self.assertEqual(
+            cprov_pub_bar.sourcepackagerelease.upload_archive.title,
+            'PPA for Foo Bar')
+
+        # Create a build record for source bar for breezy-i386 distroarchseries
+        # in cprov PPA.
+        build_bar_i386 = cprov_pub_bar.sourcepackagerelease.createBuild(
+            self.breezy['i386'], PackagePublishingPocket.RELEASE,
+            cprov.archive)
+
+        # Binary upload to the just-created build record.
+        self.options.context = 'buildd'
+        self.options.buildid = build_bar_i386.id
+        upload_dir = self.queueUpload("bar_1.0-1_binary", "~cprov/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The binary upload was accepted and it's waiting in queue.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=cprov.archive)
+        self.assertEqual(queue_items.count(), 1)
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):
         """PPA uploads must not email the maintainer or changed-by person.
