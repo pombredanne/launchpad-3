@@ -9,7 +9,6 @@ __all__ = []
 import os
 import unittest
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.tests.helpers import BranchTestCase
