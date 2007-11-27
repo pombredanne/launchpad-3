@@ -1399,10 +1399,14 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-            index = list(self.question.messages).index(self.new_message)
-            if index > 0:
+            if self.question.messages.count() > 1:
+                # XXX sinzui 2007-11-27 bug=165211:
+                # We should locate the index of the new_message, and use
+                # index-2 to get the correct rfc822msgid, but SQLObject
+                # can loose the question, so we are using the probable
+                # message for the rfc822msgid.
                 headers['References'] = (
-                    self.question.messages[index-1].rfc822msgid)
+                    self.question.messages[-2].rfc822msgid)
         return headers
 
     def shouldNotify(self):
