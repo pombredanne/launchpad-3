@@ -1794,10 +1794,7 @@ class RequestTracker(ExternalBugTracker):
     def __init__(self, bugtracker):
         """See `ExternalBugTracker`."""
         super(RequestTracker, self).__init__(bugtracker)
-        if not self.is_cpan:
-            self.credentials = {'user': 'guest', 'pass': 'guest'}
-        else:
-            self.credentials = {'user': 'guest', 'pass': 'guest'}
+        self.credentials = {'user': 'guest', 'pass': 'guest'}
 
     def urlopen(self, request, data=None):
         """Return a handle to a remote resource.
