@@ -18,14 +18,15 @@
         tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"
         ><img src="/@@/treeCollapsed" alt=""
                 tal:attributes="id string:pub${context/id}-arrow" /></a>
-    <td tal:content="context/datecreated/fmt:datetime">XXX</td>
-    <td tal:content="context/status/name">PUBLISHED</td>
+    <td tal:content="context/datecreated/fmt:datetime"
+        >2005-08-24</td>
+    <td tal:content="context/status/title">Published</td>
     <td>
       <a tal:content="context/distroarchseries/displayname"
          tal:attributes="href context/distroarchseries/fmt:url"
       >warty i386</a>
     </td>
-    <td tal:content="context/pocket/name">RELEASE</td>
+    <td tal:content="context/pocket/title/fmt:lower">release</td>
     <td tal:content="context/component/name">main</td>
     <td tal:content="context/section/name">web</td>
     <td>
