@@ -1419,9 +1419,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
-            assert bug_task.assignee == self, (
-                "This bugtask (%s) should be assigned to this person."
-                % bug_task.id)
+            # XXX flacoste 2007/11/26 The comparison using id in the assert
+            # below works around a nasty intermittent failure. 
+            # See bug #164635.
+            assert bug_task.assignee.id == self.id, (
+               "Bugtask %s assignee isn't the one expected: %s != %s" % (
+                    bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
@@ -1430,14 +1433,18 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             team.teamowner = registry
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
-            if pillar.owner == self:
+            # XXX flacoste 2007/11/26 The comparison using id below
+            # works around a nasty intermittent failure. See bug #164635.
+            if pillar.owner.id == self.id:
                 pillar.owner = registry
-            elif pillar.driver == self:
+            elif pillar.driver.id == self.id:
                 pillar.driver = registry
             else:
+                # Since we removed the person from all teams, something is
+                # seriously broken here.
                 raise AssertionError(
-                    "This person must be the owner or driver of this project "
-                    "(%s)" % pillar.pillar.name)
+                    "%s was expected to be owner or driver of %s" %
+                    (self.name, pillar.name))
 
         # Nuke all subscriptions of this person.
         removals = [

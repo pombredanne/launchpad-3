@@ -502,8 +502,8 @@ class TestPublisher(TestNativePublishingBase):
         """Test the careful domination procedure.
 
         Check if it works on a development series.
-        A SUPERSEDED or DELETED published source should have its
-        scheduleddeletiondate set.
+        A SUPERSEDED, DELETED or OBSOLETE published source should
+        have its scheduleddeletiondate set.
         """
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
@@ -515,6 +515,9 @@ class TestPublisher(TestNativePublishingBase):
         deleted_source = self.getPubSource(
             status=PackagePublishingStatus.DELETED)
         self.assertTrue(deleted_source.scheduleddeletiondate is None)
+        obsoleted_source = self.getPubSource(
+            status=PackagePublishingStatus.OBSOLETE)
+        self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
@@ -527,6 +530,8 @@ class TestPublisher(TestNativePublishingBase):
             superseded_source.id)
         deleted_source = SourcePackagePublishingHistory.get(
             deleted_source.id)
+        obsoleted_source = SourcePackagePublishingHistory.get(
+            obsoleted_source.id)
 
         # Publishing records got scheduled for removal
         self.assertEqual(
@@ -535,6 +540,9 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(
             deleted_source.status, PackagePublishingStatus.DELETED)
         self.assertTrue(deleted_source.scheduleddeletiondate is not None)
+        self.assertEqual(
+            obsoleted_source.status, PackagePublishingStatus.OBSOLETE)
+        self.assertTrue(obsoleted_source.scheduleddeletiondate is not None)
 
     def testCarefulDominationOnObsoleteSeries(self):
         """Test the careful domination procedure.
