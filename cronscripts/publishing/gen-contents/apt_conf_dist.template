@@ -4,7 +4,7 @@ tree "dists/$SUITE"
    FileList "/srv/launchpad.net/ubuntu-contents/ubuntu-overrides/$SUITE_$(SECTION)_binary-$(ARCH)";
    SourceFileList "/srv/launchpad.net/ubuntu-contents/ubuntu-overrides/$SUITE_$(SECTION)_source";
    Sections "main restricted universe multiverse";
-   Architectures "amd64 hppa i386 ia64 powerpc sparc lpia source";
+   Architectures "$ARCHS source";
    BinOverride "override.$SUITE.$(SECTION)";
    SrcOverride "override.$SUITE.$(SECTION).src";
    ExtraOverride "override.$SUITE.extra.$(SECTION)";
