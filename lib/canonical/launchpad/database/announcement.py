@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Database class for Announcement."""
+"""Database classes for project news and announcement."""
 
 __metaclass__ = type
 __all__ = [
@@ -11,11 +11,11 @@ __all__ = [
     ]
 
 import pytz, datetime
-from sqlobject import ForeignKey, StringCol, BoolCol, SQLObjectNotFound
+from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IAnnouncementSet, IProduct, IProject, IDistribution)
+    IAnnouncement, IAnnouncementSet, IDistribution, IProduct, IProject)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -33,27 +33,29 @@ class Announcement(SQLBase):
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
     date_announced = UtcDateTimeCol(default=None)
-    date_updated = UtcDateTimeCol(default=None)
-    registrant = ForeignKey(dbName='registrant',
-                            foreignKey='Person', notNull=True)
+    date_last_modified = UtcDateTimeCol(
+        dbName='date_updated', default=None)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
     project = ForeignKey(dbName='project', foreignKey='Project')
-    distribution = ForeignKey(dbName='distribution', foreignKey='Distribution')
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)
     summary = StringCol(default=None)
     url = StringCol(default=None)
     active = BoolCol(notNull=True, default=True)
 
-    def modify(self, title, summary=None, url=None):
+    def modify(self, title, summary, url):
         if self.title != title:
             self.title = title
-            self.date_updated = UTC_NOW
+            self.date_last_modified = UTC_NOW
         if self.summary != summary:
             self.summary = summary
-            self.date_updated = UTC_NOW
+            self.date_last_modified = UTC_NOW
         if self.url != url:
             self.url = url
-            self.date_updated = UTC_NOW
+            self.date_last_modified = UTC_NOW
 
     @property
     def target(self):
@@ -63,9 +65,11 @@ class Announcement(SQLBase):
             return self.project
         elif self.distribution is not None:
             return self.distribution
+        else:
+            raise AssertionError, 'Announcement has no obvious target'
 
     def retarget(self, target):
-        """See IAnnouncement."""
+        """See `IAnnouncement`."""
         if IProduct.providedBy(target):
             self.product = target
             self.distribution = None
@@ -80,24 +84,17 @@ class Announcement(SQLBase):
             self.product = None
         else:
             raise AssertionError, 'Unknown target'
-        self.date_updated = UTC_NOW
+        self.date_last_modified = UTC_NOW
 
     def retract(self):
         """See IAnnouncement."""
-        self.date_updated = UTC_NOW
         self.active = False
+        self.date_last_modified = UTC_NOW
 
     def set_publication_date(self, publication_date):
         """See IAnnouncement."""
-        # figure out the correct date_announced by mapping from the provided
-        # publication date to a database value
-        if publication_date == 'NOW':
-            self.date_announced = UTC_NOW
-        elif publication_date == None:
-            self.date_announced = None
-        else:
-            self.date_announced = publication_date
-        self.date_updated = None
+        self.date_announced = publication_date
+        self.date_last_modified = None
         self.active = True
 
     def erase_permanently(self):
@@ -123,9 +120,9 @@ class Announcement(SQLBase):
 class HasAnnouncements:
     """A mixin class for pillars that can have announcements."""
 
-    def getAnnouncement(self, name):
+    def getAnnouncement(self, id):
         try:
-            announcement_id = int(name)
+            announcement_id = int(id)
         except ValueError:
             return None
         try:
@@ -139,10 +136,10 @@ class HasAnnouncements:
     def announcements(self, limit=5, published_only=True):
         """See IHasAnnouncements."""
 
-        # create the SQL query, first fixing the anchor project
+        # Create the SQL query.
         clauseTables = []
         query = '1=1 '
-        # filter for published news items if necessary
+        # Filter for published news items if necessary.
         if published_only:
             query += """ AND
                 Announcement.date_announced <= timezone('UTC'::text, now()) AND
@@ -164,7 +161,8 @@ class HasAnnouncements:
         elif IDistribution.providedBy(self):
             query += ' AND Announcement.distribution = %s' % sqlvalues(self.id)
         elif IAnnouncementSet.providedBy(self):
-            # no need to filter for pillar
+            # There is no need to filter for pillar if we are looking for
+            # all announcements.
             pass
         else:
             raise AssertionError, 'Unsupported announcement target'
@@ -177,7 +175,7 @@ class MakesAnnouncements(HasAnnouncements):
                  publication_date=None):
         """See IHasAnnouncements."""
 
-        # establish the appropriate target
+        # We establish the appropriate target property.
         project = product = distribution = None
         if IProduct.providedBy(self):
             product = self
@@ -188,7 +186,7 @@ class MakesAnnouncements(HasAnnouncements):
         else:
             raise AssertionError, 'Unsupported announcement target'
 
-        # create the news item
+        # Create the announcement in the database.
         announcement = Announcement(
             registrant = user,
             title = title,
@@ -204,6 +202,7 @@ class MakesAnnouncements(HasAnnouncements):
 
 
 class AnnouncementSet(HasAnnouncements):
+    """The set of all announcements across all pillars."""
 
     implements(IAnnouncementSet)
 

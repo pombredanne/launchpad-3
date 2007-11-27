@@ -44,7 +44,7 @@ class AnnouncementsFeed(FeedBase):
         entry = FeedEntry(title=title,
                           id_=url,
                           link_alternate=url,
-                          date_updated=announcement.date_updated,
+                          date_updated=announcement.date_last_modified,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(
                                     announcement.registrant,
@@ -100,7 +100,7 @@ class TargetAnnouncementsFeed(FeedBase):
         entry = FeedEntry(title=title,
                           id_=url,
                           link_alternate=url,
-                          date_updated=announcement.date_updated,
+                          date_updated=announcement.date_last_modified,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(
                                     announcement.registrant,

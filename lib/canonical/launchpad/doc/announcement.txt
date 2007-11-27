@@ -10,6 +10,10 @@ specified date, or until manually approved. Announcements can be retracted
 after publishing, and they can be deleted, permanently.
 
     >>> from zope.component import getUtility
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> NOW = datetime.utcnow().replace(tzinfo=pytz.utc)
+    >>> FUTURE = NOW + timedelta(10)
     >>> from canonical.launchpad.interfaces import (IAnnouncementSet,
     ...     IProjectSet, IDistributionSet, IProductSet)
     >>> announcements = getUtility(IAnnouncementSet)
@@ -81,7 +85,19 @@ And we can also force immediate publication of the announcement:
     ... It contains connectors, which allow a web server such as Apache HTTPD,
     ... Microsoft IIS and Sun Web Server to act as a front end to the Tomcat
     ... web application server.""",
-    ... publication_date='NOW')
+    ... publication_date=NOW)
+
+And we can set a date in the future for publishing too:
+
+    >>> tomcat_future_release = tomcat.announce(
+    ...  sabdfl,
+    ...  "The future Tomcat will yawl all night without interruption",
+    ...  summary="""Work is under way to ensure that Tomcat is the YAWLiest
+    ... application server around. You won't believe how much yawl we are
+    ... adding to The Cat. We challenge anyone to yawl harder.
+    ... """,
+    ... publication_date=FUTURE)
+
 
 And finally, we can make announcements on an IDistribution, too:
 
@@ -150,7 +166,7 @@ announcements, and vice versa.
     ...   if announcement.published is False:
     ...     print announcement.title
     Last Call for OSSummit Asia CFP
-    Apache Tomcat JK 1.2.25 Web Server Connector released
+    The future Tomcat will yawl all night without interruption
 
 
 == Modification ==
@@ -172,7 +188,7 @@ modify() method.
     Traceback (most recent call last):
       ...
     ForbiddenAttribute:...
-    >>> print kubuntu_release.date_updated
+    >>> print kubuntu_release.date_last_modified
     None
     >>> kubuntu_release.modify(title='Foo!', summary='Foo',
     ...                        url='http://foo.com')
@@ -180,19 +196,19 @@ modify() method.
     Foo! Foo
     >>> print kubuntu_release.url
     http://foo.com
-    >>> print kubuntu_release.date_updated is not None
+    >>> print kubuntu_release.date_last_modified is not None
     True
 
 == Retraction ==
 
 Announcements can be retracted at any time. Retracting an announcement
-updates the date_updated and sets the announcement.active flag to False
+updates the date_last_modified and sets the announcement.active flag to False
 
-    >>> print apache_asia.date_updated, apache_asia.active
+    >>> print apache_asia.date_last_modified, apache_asia.active
     None True
     >>> apache_asia.retract()
     >>> flush_database_updates()
-    >>> apache_asia.date_updated
+    >>> apache_asia.date_last_modified
     CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
     >>> apache_asia.active
     False
@@ -212,7 +228,7 @@ You can also publish an Announcement "now":
 
     >>> print apache_oss.date_announced
     None
-    >>> apache_oss.set_publication_date('NOW')
+    >>> apache_oss.set_publication_date(NOW)
     >>> flush_database_updates()
     >>> apache_oss.date_announced is not None
     True
@@ -248,3 +264,5 @@ You can ask an announcement to delete itself permanently.
     >>> flush_database_updates()
     >>> print kubuntu.getAnnouncement(old_id)
     None
+
+

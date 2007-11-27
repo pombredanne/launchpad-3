@@ -5,32 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'AddAnnouncementForm',
-    'AnnouncementRetargetForm',
     'IAnnouncement',
     'IHasAnnouncements',
     'IMakesAnnouncements',
     'IAnnouncementSet',
     ]
 
-from zope.interface import Interface, Attribute
-
-from zope.schema import Choice, TextLine
-
-from canonical.launchpad import _
-from canonical.launchpad.fields import AnnouncementDate, Summary, Title
-from canonical.launchpad.interfaces.validation import valid_webref
-
-
-class AnnouncementRetargetForm(Interface):
-    """A mixin schema for an announcement.
-
-    Requires the user to specify a project, product or distro as a target.
-    """
-    target = Choice(
-        title=_("For"),
-        description=_("The project where this announcement is being made."),
-        required=True, vocabulary='DistributionOrProductOrProject')
+from zope.interface import Attribute, Interface
 
 
 class IHasAnnouncements(Interface):
@@ -58,52 +39,39 @@ class IMakesAnnouncements(IHasAnnouncements):
         """Create a Announcement for this project.
 
         The user is the person making the announcement. The publication date
-        is either 'NOW', or None (a future date), or a specified datetime.
+        is either None (a future date), or a specified datetime.
         """
-
-
-class AddAnnouncementForm(Interface):
-
-    title = Title(
-        title=_('Headline'), required=True)
-    summary = Summary(
-        title=_('Summary'), required=True)
-    url = TextLine(
-        title=_('URL'), required=False,
-        description=_(
-            "The web location of your announcement."),
-        constraint=valid_webref)
-    publication_date = AnnouncementDate(title=_('Date'), required=True)
 
 
 class IAnnouncement(Interface):
     """An Announcement."""
 
-    # lifecycle
+    # Attributes relating to the lifecycle of the Announcement
     id = Attribute("The unique ID of this announcement")
     date_created = Attribute("The date this announcement was registered")
     registrant = Attribute("The person who registered this announcement")
-    date_announced = Attribute(
-        "The date the announcement will be published, or the date it was "
-        "published if it is in the past. The date will only be effective "
-        "if the 'published' flag is True.")
-    date_updated = Attribute(
-        "The date this announcement was last updated, if ever.")
+    date_last_modified = Attribute(
+        "The date this announcement was last modified, if ever.")
 
-    # target
+    # The potential pillars to which the Announcement could belong, of which
+    # only 1 should not be None
     product = Attribute("The product for this announcement.")
     project = Attribute("The project for this announcement.")
     distribution = Attribute("The distribution for this announcement.")
 
     target = Attribute("The pillar to which this announcement belongs.")
 
-    # announcement details
+    # The core details of the announcement
     title = Attribute("The headline of your announcement.")
     summary = Attribute("A single-paragraph summary of the announcement.")
     url = Attribute("The web location of your announcement.")
-    active = Attribute("Whether or not this announcement is published.")
+    date_announced = Attribute(
+        "The date the announcement will be published, or the date it was "
+        "published if it is in the past. The announcement will only be "
+        "published on that date if the 'active' flag is True.")
+    active = Attribute("Whether or not this announcement can be published.")
 
-    # attributes
+    # Emergent properties of the announcement
     future = Attribute("Whether or not this announcement is yet public.")
     published = Attribute(
         "Whether or not this announcement is published. This is different "
@@ -112,7 +80,7 @@ class IAnnouncement(Interface):
 
     def modify(title, summary=None, url=None):
         """Update the details of the announcement. This will record the
-        date_updated."""
+        date_last_modified."""
 
     def retarget(target):
         """Retarget the announcement to a new project."""
@@ -123,7 +91,6 @@ class IAnnouncement(Interface):
     def set_publication_date(publication_date):
         """Set the publication date. The value passed is either:
 
-          'NOW': publish this announcement immediately,
           None: publish it at some future date,
           A datetime: publish it on the date given.
         """
@@ -137,8 +104,5 @@ class IAnnouncementSet(IHasAnnouncements):
 
     displayname = Attribute("Launchpad")
     title = Attribute("Launchpad title")
-
-    def announcements(limit=5):
-        """Return the latest <limit> announcements."""
 
 

@@ -143,13 +143,53 @@ specify a date for the announcement at all:
     >>> "Latest news" not in priv_browser.contents
     False
 
+And finally for Kubuntu, an IDistribution, with immediate announcement:
+
+    >>> priv_browser.open('http://launchpad.dev/redhat/')
+    >>> "Latest news" not in priv_browser.contents
+    True
+    >>> priv_browser.getLink('Make announcement').click()
+    >>> priv_browser.getControl('Headline').value = (
+    ...     'RedHat announcement headline')
+    >>> priv_browser.getControl('Summary').value = (
+    ...     'RedHat announcement summary')
+    >>> priv_browser.getControl('Make announcement').click()
+    >>> print priv_browser.url
+    http://launchpad.dev/redhat
+    >>> "Latest news" not in priv_browser.contents
+    False
+
 == Listings ==
 
 There is a listing page, +announcements, for each pillar that has
 announcements. We will verify that the page is present and that it works as
 expected.
 
-First, let's make sure the page is useful when there are no announcements!
+When there are no announcements, we should not see a link to the page.
+
+    >>> anon_browser.open('http://launchpad.dev/netapplet/')
+    >>> 'Show announcements' not in anon_browser.contents
+    True
+    >>> anon_browser.open('http://launchpad.dev/gnome/')
+    >>> 'Show announcements' not in anon_browser.contents
+    True
+    >>> anon_browser.open('http://launchpad.dev/kubuntu/')
+    >>> 'Show announcements' not in anon_browser.contents
+    True
+
+But we do see it when there are published announcements.
+
+    >>> anon_browser.open('http://launchpad.dev/apache/')
+    >>> 'Show announcements' in anon_browser.contents
+    True
+    >>> anon_browser.open('http://launchpad.dev/tomcat/')
+    >>> 'Show announcements' in anon_browser.contents
+    True
+    >>> anon_browser.open('http://launchpad.dev/redhat/')
+    >>> 'Show announcements' in anon_browser.contents
+    True
+
+Let's make sure the page is useful when there are no announcements!
 
     >>> anon_browser.open('http://launchpad.dev/netapplet/+announcements')
     >>> 'no announcements for this project' in anon_browser.contents
@@ -266,7 +306,7 @@ Finally, there is a page for all announcements across all projects hosted in
 Launchpad:
 
     >>> anon_browser.open('http://launchpad.dev/+announcements')
-    >>> 'All announcements' in anon_browser.contents
+    >>> 'News and announcements' in anon_browser.contents
     True
     >>> 'Tomcat announcement headline' in anon_browser.contents
     True

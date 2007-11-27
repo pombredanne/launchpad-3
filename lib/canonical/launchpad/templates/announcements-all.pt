@@ -15,17 +15,18 @@
   announcements or retract them.
 </p>
 
-<h1 metal:fill-slot="heading">All announcements</h1>
+<h1 metal:fill-slot="heading">News and announcements</h1>
 
 <div metal:fill-slot="main">
 
   <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-        tal:attributes="
-          href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}announcements.atom" />
+        tal:attributes="href view/feed_url" />
 
-  <tal:per_announcement
-      repeat="announcement view/batchnav/currentBatch"
-      replace="structure announcement/@@+listing-detailed" />
+  <div tal:condition="view/batchnav/batch/listlength" id="announcements">
+    <tal:per_announcement
+        repeat="announcement view/batchnav/currentBatch"
+        replace="structure announcement/@@+listing-detailed" />
+  </div>
 
   <div class="lesser"
        tal:content="structure view/batchnav/@@+navigation-links-lower" />

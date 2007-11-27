@@ -74,7 +74,9 @@
               <a href="https://help.launchpad.net/ProjectNews">
                 <strong>Project announcements:</strong><br />
                 Publish your news in Launchpad and via Atom / RSS feeds.</a>
-                <img src="/@@/rss" alt="RSS" />
+                <a href="http://feeds.launchpad.net/announcements.atom">
+                  <img src="/@@/rss" alt="RSS" />
+                </a>
             </li>
             <li>
               <a
@@ -113,7 +115,7 @@
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
-            <li class="product"><a href="/phpwms">PHP Website Management
+            <li class="product"><a href="/phpwms">PHP Site Management
               System</a>
             </li>
             <li class="product"><a href="/exaile">Exaile Media Player</a></li>

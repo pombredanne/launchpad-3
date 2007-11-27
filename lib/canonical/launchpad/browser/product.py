@@ -347,8 +347,8 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Announcements'
-        enabled = self.context.announcements().count()
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):

@@ -17,21 +17,27 @@ __all__ = [
     ]
 
 import cgi
+import urlparse
+
+from zope.interface import Interface
+
+from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    AddAnnouncementForm,
-    AnnouncementRetargetForm,
-    IAnnouncement,
-    )
+    IAnnouncement, IAnnouncementSet, IHasAnnouncements)
+
+from canonical.launchpad import _
+from canonical.launchpad.fields import AnnouncementDate, Summary, Title
+from canonical.launchpad.interfaces.validation import valid_webref
 
 from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadView, LaunchpadFormView,
-    Link, action, canonical_url, enabled_with_permission,
-    custom_widget)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadView, LaunchpadFormView, Link
+    )
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -53,12 +59,12 @@ class AnnouncementContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def retarget(self):
-        text = 'Retarget'
+        text = 'Move to another project'
         return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def retract(self):
-        text = 'Retract'
+        text = 'Retract announcement'
         return Link('+retract', text, icon='edit')
 
 
@@ -71,8 +77,23 @@ class AnnouncementSHP(StructuralHeaderPresentation):
         return self.context.title
 
 
+class AddAnnouncementForm(Interface):
+    """Form definition for the view which creates new Announcements."""
+
+    title = Title(
+        title=_('Headline'), required=True)
+    summary = Summary(
+        title=_('Summary'), required=True)
+    url = TextLine(
+        title=_('URL'), required=False,
+        description=_(
+            "The web location of your announcement."),
+        constraint=valid_webref)
+    publication_date = AnnouncementDate(title=_('Date'), required=True)
+
+
 class AnnouncementAddView(LaunchpadFormView):
-    """An abstract view for creating a new Announcement."""
+    """A view for creating a new Announcement."""
 
     schema = AddAnnouncementForm
     label = "Make an announcement"
@@ -101,18 +122,11 @@ class AnnouncementAddView(LaunchpadFormView):
 
 
 class AnnouncementEditView(LaunchpadFormView):
+    """A view which allows you to edit the announcement."""
 
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
     label = _('Modify this announcement')
-
-    @property
-    def initial_values(self):
-        return {
-            'title': self.context.title,
-            'summary': self.context.summary,
-            'url': self.context.url,
-            }
 
     @action(_('Modify'), name='modify')
     def modify_action(self, action, data):
@@ -121,10 +135,6 @@ class AnnouncementEditView(LaunchpadFormView):
                             url=data.get('url'))
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
@@ -132,6 +142,15 @@ class AnnouncementEditView(LaunchpadFormView):
     @property
     def next_url(self):
         return self._nextURL
+
+
+class AnnouncementRetargetForm(Interface):
+    """Form that requires the user to choose a pillar for the Announcement."""
+
+    target = Choice(
+        title=_("For"),
+        description=_("The project where this announcement is being made."),
+        required=True, vocabulary='DistributionOrProductOrProject')
 
 
 class AnnouncementRetargetView(LaunchpadFormView):
@@ -167,10 +186,6 @@ class AnnouncementRetargetView(LaunchpadFormView):
         self.context.retarget(target)
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
@@ -194,10 +209,6 @@ class AnnouncementPublishView(LaunchpadFormView):
         self.context.set_publication_date(publication_date)
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
@@ -217,10 +228,6 @@ class AnnouncementRetractView(LaunchpadFormView):
         self.context.retract()
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
         self._nextURL = canonical_url(self.context.target)+'/+announcements'
@@ -234,10 +241,6 @@ class AnnouncementDeleteView(LaunchpadFormView):
 
     schema = IAnnouncement
     label = _('Delete this announcement')
-
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
@@ -257,6 +260,18 @@ class HasAnnouncementsView(LaunchpadView):
     """A view class for pillars which have announcements."""
 
     @cachedproperty
+    def feed_url(self):
+        base_url = allvhosts.configs['feeds'].rooturl
+        if IAnnouncementSet.providedBy(self.context):
+            return urlparse.urljoin(base_url, 'announcements.atom')
+        elif IHasAnnouncements.providedBy(self.context):
+            pillar_path = urlparse.urlparse(canonical_url(self.context))[2]
+            return urlparse.urljoin(
+                base_url, pillar_path + '/announcements.atom')
+        else:
+            raise AssertionError, 'Unknown feed source'
+
+    @cachedproperty
     def announcements(self):
         return self.context.announcements(
                     limit=None, published_only=self._published_only)
@@ -267,8 +282,8 @@ class HasAnnouncementsView(LaunchpadView):
                     limit=5, published_only=self._published_only)
 
     def initialize(self):
-        self._published_only = not check_permission('launchpad.Edit',
-                                                     self.context)
+        self._published_only = not check_permission(
+                                        'launchpad.Edit', self.context)
         self.batchnav = BatchNavigator(
             self.announcements, self.request,
             size=config.launchpad.default_batch_size)

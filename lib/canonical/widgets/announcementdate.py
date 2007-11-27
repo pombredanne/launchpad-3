@@ -1,6 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+
+from datetime import datetime
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -100,7 +103,7 @@ class AnnouncementDateWidget(SimpleInputWidget):
                     _('Please provide a publication date.')))
             raise self._error
         if action == 'immediately':
-            return 'NOW'
+            return datetime.utcnow().replace(tzinfo=pytz.utc)
         elif action == "sometime":
             return None
         elif action == "specific":

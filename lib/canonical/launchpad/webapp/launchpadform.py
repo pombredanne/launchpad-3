@@ -261,6 +261,14 @@ class LaunchpadFormView(LaunchpadView):
         """
         pass
 
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel.
+
+        You can use this in your Form views by simply setting 
+        validator='validate_cancel' in the @action line of your cancel
+        button."""
+        return []
+
     def focusedElementScript(self):
         """Helper function to construct the script element content."""
         # Work out which widget needs to be focused.  First we check
