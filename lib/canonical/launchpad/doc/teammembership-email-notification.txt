@@ -43,6 +43,39 @@ for the member.
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
 
+    >>> def print_distinct_messages_and_recipients(include_reply_to=False):
+    ...     """Pop all messages from stub.test_emails and print them with
+    ...      their recipients.
+    ...     
+    ...     Since the same message may be sent more than once (for different
+    ...     recipients), we print each distinct message only once and group
+    ...     all recipients of that message together.
+    ...     """
+    ...     import re
+    ...     greeting_pattern = re.compile('Hello [^,]*,\n')
+    ...     distinct_bodies = {}
+    ...     for message in pop_notifications():
+    ...         recipients = set(
+    ...             recipient.strip()
+    ...             for recipient in message['To'].split(','))
+    ...         # Strip the first line as it's different for each recipient.
+    ...         body = greeting_pattern.sub('', message.get_payload())
+    ...         if body not in distinct_bodies:
+    ...             distinct_bodies[body] = (message, recipients)
+    ...         else:
+    ...             message, existing_recipients = distinct_bodies[body]
+    ...             distinct_bodies[body] = (
+    ...                 message, existing_recipients.union(recipients))
+    ...     for body in sorted(distinct_bodies):
+    ...         message, recipients = distinct_bodies[body]
+    ...         print 'From:', message['From']
+    ...         print 'To:', ", ".join(sorted(recipients))
+    ...         if include_reply_to:
+    ...             print 'Reply-To:', message['Reply-To']
+    ...         print 'Subject:', message['Subject'] #doctest: -NORMALIZE_WHITESPACE
+    ...         print body #doctest: -NORMALIZE_WHITESPACE
+    ...         print "-"*40
+
 Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
@@ -55,15 +88,12 @@ generates a notification email only to Ubuntu Team administrators.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
-    >>> [admins_notification] = pop_notifications()
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com, mark@hbd.com
-    >>> admins_notification['Subject']
-    'lifeless wants to join'
-    >>> admins_notification['Reply-To']
-    'robertc@robertcollins.net'
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Reply-To: robertc@robertcollins.net
+    Subject: lifeless wants to join
     Hello
     <BLANKLINE>
     Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
@@ -75,11 +105,10 @@ generates a notification email only to Ubuntu Team administrators.
     <BLANKLINE>
     Regards,
     The Launchpad team
+    ----------------------------------------
 
 Declining a proposed member should generate notifications for both the member
 and team admins.
-
-    >>> stub.test_emails = []
 
     # Need to be logged in as a team admin to be able to change memberships of
     # that team.
@@ -88,28 +117,24 @@ and team admins.
     >>> len(stub.test_emails)
     2
 
-    >>> admins_notification, member_notification = pop_notifications()
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com, mark@hbd.com
-    >>> admins_notification['Subject']
-    'lifeless declined by sabdfl'
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: robertc@robertcollins.net
+    Subject: lifeless declined by sabdfl
+    <BLANKLINE>
+    The status of your membership in the team Ubuntu Team (ubuntu-team) was
+    changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: lifeless declined by sabdfl
     Hello,
     <BLANKLINE>
     The membership status of Robert Collins (lifeless) in the team Ubuntu
     Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
     Proposed to Declined.
-
-    >>> member_notification['To']
-    'robertc@robertcollins.net'
-    >>> member_notification['Subject']
-    'lifeless declined by sabdfl'
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Robert Collins,
-    <BLANKLINE>
-    The status of your membership in the team Ubuntu Team (ubuntu-team) was
-    changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
+    ----------------------------------------
 
 The same goes for approving a proposed member.
     
@@ -131,30 +156,21 @@ The same goes for approving a proposed member.
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     2
-    >>> member_notification, admins_notification = pop_notifications()
-    >>> admins_notification['From']
-    'Ubuntu Team <noreply@launchpad.net>'
-    >>> admins_notification['To']
-    'daf@canonical.com'
-    >>> admins_notification['Subject']
-    'daf approved by sabdfl'
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Dafydd Harries,
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: daf@canonical.com
+    Subject: daf approved by sabdfl
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
-
-    >>> admins_notification['From']
-    'Ubuntu Team <noreply@launchpad.net>'
-    >>> print member_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com, mark@hbd.com
-    >>> member_notification['Subject']
-    'daf approved by sabdfl'
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: daf approved by sabdfl
     Hello,
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -163,37 +179,32 @@ The same goes for approving a proposed member.
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
+    ----------------------------------------
 
 The same for deactivating a membership.
 
-    >>> stub.test_emails = []
     >>> setStatus(daf_membership, TeamMembershipStatus.DEACTIVATED,
     ...           reviewer=sabdfl)
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     2
-    >>> admins_notification, member_notification = pop_notifications()
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com, mark@hbd.com
-    >>> admins_notification['Subject']
-    'daf deactivated by sabdfl'
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: daf@canonical.com
+    Subject: daf deactivated by sabdfl
+    <BLANKLINE>
+    The status of your membership in the team Ubuntu Team (ubuntu-team) was
+    changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com, jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: daf deactivated by sabdfl
     Hello,
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
     Deactivated.
-
-    >>> member_notification['To']
-    'daf@canonical.com'
-    >>> member_notification['Subject']
-    'daf deactivated by sabdfl'
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Dafydd Harries,
-    <BLANKLINE>
-    The status of your membership in the team Ubuntu Team (ubuntu-team) was
-    changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
+    ----------------------------------------
 
 
 == Adding new members ==
@@ -208,11 +219,10 @@ member.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     2
-    >>> admins_notification, member_notification = pop_notifications()
-
-    >>> member_notification['To']
-    'marilize@hbd.com'
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: marilize@hbd.com
+    Subject: marilize joined
     Hello,
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
@@ -220,15 +230,11 @@ member.
     <BLANKLINE>
     Regards,
     The Launchpad team
-
-    >>> print admins_notification['From']
-    Ubuntu Team <noreply@launchpad.net>
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com,
-    foo.bar@canonical.com
-    >>> print admins_notification['Subject']
-    marilize joined
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: marilize joined
     Hello,
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -239,7 +245,7 @@ member.
     <BLANKLINE>
     Regards,
     The Launchpad team
-
+    ----------------------------------------
 
 By default, if the newly added member is actually a team, we'll only send
 an invitation to the team's admins, telling them that the membership will
@@ -253,10 +259,10 @@ only be activated if they accept the invitation.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
-    >>> [notification] = pop_notifications()
-    >>> print notification['To']
-    mark@hbd.com
-    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Launchpad <noreply@launchpad.net>
+    To: mark@hbd.com
+    Subject: Launchpad: ubuntu-mirror-admins was invited to join ubuntu-team
     Hello,
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
@@ -269,7 +275,8 @@ only be activated if they accept the invitation.
     <BLANKLINE>
     Regards,
     The Launchpad team
-    
+    ----------------------------------------
+
 If one of the admins accept the invitation, then a notification is sent to the
 team which just became a member and to the admins of the hosting team.
 
@@ -280,15 +287,11 @@ team which just became a member and to the admins of the hosting team.
 
     >>> len(stub.test_emails)
     2
-    >>> admins_notification, member_notification = pop_notifications()
-    >>> print admins_notification['From']
-    Ubuntu Team <noreply@launchpad.net>
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com
-    >>> print admins_notification['Subject']
-    Invitation to ubuntu-mirror-admins accepted by sabdfl
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, karl@canonical.com, mark@hbd.com
+    Subject: Invitation to ubuntu-mirror-admins accepted by sabdfl
     Hello,
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
@@ -297,22 +300,7 @@ team which just became a member and to the admins of the hosting team.
     <BLANKLINE>
     Mark Shuttleworth said:
      Of course I want to be part of ubuntu!
-
-    >>> print member_notification['From']
-    Ubuntu Team <noreply@launchpad.net>
-    >>> print member_notification['To']
-    mark@hbd.com,karl@canonical.com
-    >>> print member_notification['Subject']
-    Invitation to ubuntu-mirror-admins accepted by sabdfl
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
-    <BLANKLINE>
-    Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
-    Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
-    team).
-    <BLANKLINE>
-    Mark Shuttleworth said:
-     Of course I want to be part of ubuntu!
+    ----------------------------------------
 
 Similarly, a notification is sent if the invitation is declined.
 
@@ -331,15 +319,12 @@ Similarly, a notification is sent if the invitation is declined.
 
     >>> len(stub.test_emails)
     2
-    >>> admins_notification, member_notification = pop_notifications()
-    >>> print admins_notification['From']
-    Ubuntu Team <noreply@launchpad.net>
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com, mark@hbd.com
-    >>> print admins_notification['Subject']
-    Invitation to landscape-developers declined by sabdfl
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
+        mark@hbd.com, test@canonical.com
+    Subject: Invitation to landscape-developers declined by sabdfl
     Hello,
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
@@ -347,21 +332,7 @@ Similarly, a notification is sent if the invitation is declined.
     <BLANKLINE>
     Mark Shuttleworth said:
      Landscape has nothing to do with ubuntu, unfortunately.
-
-    >>> print member_notification['From']
-    Ubuntu Team <noreply@launchpad.net>
-    >>> print member_notification['To']
-    test@canonical.com,guilherme.salgado@canonical.com
-    >>> print member_notification['Subject']
-    Invitation to landscape-developers declined by sabdfl
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
-    <BLANKLINE>
-    Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
-    Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
-    <BLANKLINE>
-    Mark Shuttleworth said:
-     Landscape has nothing to do with ubuntu, unfortunately.
+    ----------------------------------------
 
 It's also possible to forcibly add a team as a member of another one, by
 passing force_team_add=True to the addMember() method.
@@ -372,10 +343,21 @@ passing force_team_add=True to the addMember() method.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     2
-    >>> member_notification, admins_notification = pop_notifications()
-    >>> print admins_notification['To']
-    jeff.waugh@ubuntulinux.com,mark@hbd.com,colin.watson@ubuntulinux.com
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: foo.bar@canonical.com
+    Subject: launchpad joined
+    Hello,
+    <BLANKLINE>
+    Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
+    you are a member of) as a member of Ubuntu Team (ubuntu-team).
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: launchpad joined
     Hello,
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
@@ -386,17 +368,8 @@ passing force_team_add=True to the addMember() method.
     <BLANKLINE>
     Regards,
     The Launchpad team
+    ----------------------------------------
 
-    >>> print member_notification['To']
-    foo.bar@canonical.com
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
-    <BLANKLINE>
-    Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
-    you are a member of) as a member of Ubuntu Team (ubuntu-team).
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
 
 == Membership expiration warnings ==
 
@@ -424,17 +397,12 @@ the other team admins.
     'ADMIN' 
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> [notification] = pop_notifications()
-    >>> notification['To']
-    'colin.watson@ubuntulinux.com'
-    >>> notification['From']
-    'Ubuntu Team <noreply@launchpad.net>'
-    >>> notification['Subject']
-    'Team membership about to expire'
-    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Colin Watson,
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com
+    Subject: Team membership about to expire
     <BLANKLINE>
-    On ... your membership
+    On 2007-12-06, nine days from now, your membership
     of the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
@@ -451,6 +419,7 @@ the other team admins.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    ----------------------------------------
 
 In the case of the beta-testers team, the email is sent only to the
 team's owner, which doesn't have the necessary rights to renew the
@@ -465,17 +434,12 @@ ubuntu-team's admins.
     >>> flush_database_updates()
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> [notification] = pop_notifications()
-    >>> notification['From']
-    'Ubuntu Team <noreply@launchpad.net>'
-    >>> notification['To']
-    'beta-admin@launchpad.net'
-    >>> notification['Subject']
-    'Team membership about to expire'
-    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Launchpad Beta Testers Owner,
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: beta-admin@launchpad.net
+    Subject: Team membership about to expire
     <BLANKLINE>
-    On ..., nine days from now, the membership
+    On 2007-12-06, nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
     the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
@@ -494,6 +458,7 @@ ubuntu-team's admins.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    ----------------------------------------
 
 If the team's renewal policy is ONDEMAND, though, the member is invited to
 renew his own membership.
@@ -503,17 +468,12 @@ renew his own membership.
     >>> flush_database_updates()
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> [notification] = pop_notifications()
-    >>> notification['From']
-    'Ubuntu Team <noreply@launchpad.net>'
-    >>> notification['To']
-    'colin.watson@ubuntulinux.com'
-    >>> notification['Subject']
-    'Team membership about to expire'
-    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Colin Watson,
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com
+    Subject: Team membership about to expire
     <BLANKLINE>
-    On ... from now, your membership
+    On 2007-12-06, nine days from now, your membership
     of the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
@@ -526,33 +486,30 @@ renew his own membership.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    ----------------------------------------
 
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> [notification] = pop_notifications()
-    >>> notification['From']
-    'Ubuntu Team <noreply@launchpad.net>'
-    >>> notification['To']
-    'beta-admin@launchpad.net'
-    >>> notification['Subject']
-    'Team membership about to expire'
-    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Launchpad Beta Testers Owner,
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: beta-admin@launchpad.net
+    Subject: Team membership about to expire
     <BLANKLINE>
-    On ..., nine days from now, the membership
+    On 2007-12-06, nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
     the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     If you want, you can renew this membership at
-    <http://.../~launchpad-beta-testers/+expiringmembership/...>
+    <http://launchpad.dev/~launchpad-beta-testers/+expiringmembership/...>
     <BLANKLINE>
     If the membership does expire, we'll send you one more message to let
     you know it's happened.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    ----------------------------------------
 
 If the team's renewal policy is NONE but the member has the necessary rights
 to change the expiration date of his own membership (i.e. by being the team's
@@ -569,17 +526,12 @@ where he can extend it.
     >>> flush_database_updates()
     >>> sampleperson_on_landscape.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> [notification] = pop_notifications()
-    >>> notification['From']
-    'Landscape Developers <noreply@launchpad.net>'
-    >>> notification['To']
-    'test@canonical.com'
-    >>> notification['Subject']
-    'Team membership about to expire'
-    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello Sample Person,
+    >>> print_distinct_messages_and_recipients()
+    From: Landscape Developers <noreply@launchpad.net>
+    To: test@canonical.com
+    Subject: Team membership about to expire
     <BLANKLINE>
-    On ..., nine days from now, your membership
+    On 2007-12-06, nine days from now, your membership
     of the Landscape Developers (landscape-developers) Launchpad team
     is due to expire.
     <http://launchpad.dev/~landscape-developers>
@@ -592,6 +544,7 @@ where he can extend it.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    ----------------------------------------
 
 
 == Membership expiration notification ==
@@ -633,44 +586,6 @@ is automatically renewed.
 
     >>> len(stub.test_emails)
     6
-
-The expiration/auto-renewal notifications are sent to each person
-individually rather than sending a single email to everybody, so we'll
-just show the recipients and the different messages we may send.
-
-    >>> def print_distinct_messages_and_recipients():
-    ...     """Pop all messages from stub.test_emails and print them with
-    ...      their recipients.
-    ...     
-    ...     Since the same message may be sent more than once (for different
-    ...     recipients), we print each distinct message only once and group
-    ...     all recipients of that message together.
-    ...     """
-    ...     import re
-    ...     greeting_pattern = re.compile('Hello [^,]*,\n')
-    ...     distinct_messages = {}
-    ...     for message in pop_notifications():
-    ...         recipients = set(
-    ...             recipient.strip()
-    ...             for recipient in message['To'].split(','))
-    ...         # Strip the first line as it's different for each recipient.
-    ...         body = greeting_pattern.sub('', message.get_payload())
-    ...         subject = message['Subject']
-    ...         from_ = message['From']
-    ...         if body not in distinct_messages:
-    ...             distinct_messages[body] = (from_, subject, recipients)
-    ...         else:
-    ...             from_, subject, existing_recipients = (
-    ...                 distinct_messages[body])
-    ...             distinct_messages[body] = (
-    ...                 from_, subject, existing_recipients.union(recipients))
-    ...     for message in sorted(distinct_messages):
-    ...         from_, subject, recipients = distinct_messages[message]
-    ...         print 'From:', from_
-    ...         print 'To:', ", ".join(sorted(recipients))
-    ...         print 'Subject:', subject #doctest: -NORMALIZE_WHITESPACE
-    ...         print message #doctest: -NORMALIZE_WHITESPACE
-    ...         print "-"*40
 
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
@@ -804,19 +719,17 @@ sent to the team administrators.
     ...           reviewer=jdub)
     >>> len(stub.test_emails)
     1
-    >>> [admins_notification] = pop_notifications()
-    >>> print admins_notification['To']
-    celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-    foo.bar@canonical.com, mark@hbd.com
-    >>> admins_notification['Subject']
-    'Membership change: jdub in ubuntu-team'
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
+        foo.bar@canonical.com, mark@hbd.com
+    Subject: Membership change: jdub in ubuntu-team
     Hello,
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
     (ubuntu-team) was changed by the user himself from Administrator to
     Approved.
-
+    ----------------------------------------
 
 Deactivating the membership of a team also generates notifications for the
 team which had the membership deactivated and to the administrators of the
@@ -830,17 +743,15 @@ sense to the members of the team reading it.
     ...           reviewer=sabdfl)
     >>> len(stub.test_emails)
     2
-    >>> member_notification, admins_notification = pop_notifications()
-    >>> admins_notification['To']
-    'mark@hbd.com,karl@canonical.com'
-
-    >>> print member_notification['To']
-    celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-    foo.bar@canonical.com
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
+        foo.bar@canonical.com, karl@canonical.com, mark@hbd.com
+    Subject: ubuntu-mirror-admins deactivated by sabdfl
     Hello,
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
     (sabdfl) from Approved to Deactivated.
+    ----------------------------------------
 
