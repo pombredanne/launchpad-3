@@ -9,14 +9,11 @@ import unittest
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IMailingListSet, IPersonSet, MailingListStatus)
+from canonical.config import config
 from canonical.launchpad.ftests.mailinglists_helper import new_team
 from canonical.testing import LaunchpadZopelessLayer
 
-import canonical
-scripts_dir = os.path.abspath(os.path.join(
-    os.path.dirname(canonical.__file__),
-    '../../scripts'))
-
+SCRIPTS_DIR = os.path.join(config.root, 'scripts')
 SPACE = ' '
 
 
@@ -42,7 +39,7 @@ class TestMailingListAdminScript(unittest.TestCase):
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                cwd=scripts_dir)
+                                cwd=SCRIPTS_DIR)
         stdout, stderr = proc.communicate()
         self.assertEqual(stderr, '')
         self.assertEqual(proc.returncode, 0)
@@ -54,7 +51,7 @@ class TestMailingListAdminScript(unittest.TestCase):
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                cwd=scripts_dir)
+                                cwd=SCRIPTS_DIR)
         stdout, stderr = proc.communicate()
         self.assertEqual(stdout, '')
         self.assertNotEqual(proc.returncode, 0)
@@ -68,13 +65,16 @@ class TestMailingListAdminScript(unittest.TestCase):
         """Use the admin script to approve and decline mailing lists."""
         # For convenience.
         equal = self.assertEqual
-        reviewer_person = getUtility(IPersonSet).getByName(reviewer)
         # Do approvals.
         stdout = self._run_command(
             './mlist-admin.py --reviewer %s approve %s' %
             (reviewer, SPACE.join(approves)))
         expected_output = ['APPROVED: ' + team_name for team_name in approves]
         equal(stdout, sorted(expected_output))
+        # Abort the current transaction so that we're sure we're seeing the
+        # effects of the script.
+        self.layer.txn.abort()
+        reviewer_person = getUtility(IPersonSet).getByName(reviewer)
         for team_name in approves:
             mailing_list = self.list_set.get(team_name)
             equal(mailing_list.status, MailingListStatus.APPROVED)
@@ -85,6 +85,11 @@ class TestMailingListAdminScript(unittest.TestCase):
             (reviewer, SPACE.join(declines)))
         expected_output = ['DECLINED: ' + team_name for team_name in declines]
         equal(stdout, sorted(expected_output))
+        # Abort the current transaction so that we're sure we're seeing the
+        # effects of the script.  A reload of database object from before the
+        # transaction is required.
+        self.layer.txn.abort()
+        reviewer_person = getUtility(IPersonSet).getByName(reviewer)
         for team_name in declines:
             mailing_list = self.list_set.get(team_name)
             equal(mailing_list.status, MailingListStatus.DECLINED)
