@@ -65,7 +65,7 @@ class BugWatch(SQLBase):
             BugTrackerType.TRAC:        'ticket/%s',
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
-            BugTrackerType.RT           'Ticket/Display.html?id=%s',
+            BugTrackerType.RT:          'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
             BugTrackerType.MANTIS:      'view.php?id=%s',
         }

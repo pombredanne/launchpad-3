@@ -76,11 +76,11 @@ the bugs will be fetched one-at-a-time:
 
     >>> rt.trace_calls = True
     >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
-    CALLED _getPage('REST/1.0/ticket/1585/show')
-    CALLED _getPage('REST/1.0/ticket/1586/show')
-    CALLED _getPage('REST/1.0/ticket/1587/show')
-    CALLED _getPage('REST/1.0/ticket/1588/show')
-    CALLED _getPage('REST/1.0/ticket/1589/show')
+    CALLED urlopen(u'REST/1.0/ticket/1585/show')
+    CALLED urlopen(u'REST/1.0/ticket/1586/show')
+    CALLED urlopen(u'REST/1.0/ticket/1587/show')
+    CALLED urlopen(u'REST/1.0/ticket/1588/show')
+    CALLED urlopen(u'REST/1.0/ticket/1589/show')
 
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
@@ -90,7 +90,7 @@ fetched as a batch:
 
     >>> rt.batch_query_threshold = 4
     >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
-    CALLED _postPage('REST/1.0/search/ticket/')
+    CALLED urlopen(u'REST/1.0/search/ticket/')
 
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
@@ -151,11 +151,11 @@ tracker with a variety of statuses.
 
     >>> rt.trace_calls = True
     >>> rt.updateBugWatches(example_bug_tracker.watches)
-    CALLED _getPage('REST/1.0/ticket/1585/show')
-    CALLED _getPage('REST/1.0/ticket/1586/show')
-    CALLED _getPage('REST/1.0/ticket/1587/show')
-    CALLED _getPage('REST/1.0/ticket/1588/show')
-    CALLED _getPage('REST/1.0/ticket/1589/show')
+    CALLED urlopen(u'REST/1.0/ticket/1585/show')
+    CALLED urlopen(u'REST/1.0/ticket/1586/show')
+    CALLED urlopen(u'REST/1.0/ticket/1587/show')
+    CALLED urlopen(u'REST/1.0/ticket/1588/show')
+    CALLED urlopen(u'REST/1.0/ticket/1589/show')
 
 The bug statuses have now been imported from the Example.com bug
 tracker, so the bug watches should now have valid Launchpad bug

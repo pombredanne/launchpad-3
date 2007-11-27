@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import re
+import urlparse
 
 from zope.component import getUtility
 
@@ -383,25 +384,21 @@ class TestRequestTracker(RequestTracker):
     """
     trace_calls = False
 
-    def _getPage(self, page):
-        if self.trace_calls:
-            print "CALLED _getPage(%r)" % page
-
-        # We extract the ticket ID from the url and use that to find the
-        # test file we want.
-        page_re = re.compile('REST/1.0/ticket/([0-9]+)/show')
-        bug_id = page_re.match(page).groups()[0]
-
+    def urlopen(self, page, data=None):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
-
-    def _postPage(self, page, data):
+        path = urlparse.urlparse(page)[2].lstrip('/')
         if self.trace_calls:
-            print "CALLED _postPage(%r)" % page
+            print "CALLED urlopen(%r)" % path
 
-        # For postPage calls we always return the rt batch sampledata.
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        return open(file_path + '/' + 'rt-sample-bug-batch.txt')
+        if path == self.batch_url:
+            return open(file_path + '/' + 'rt-sample-bug-batch.txt')
+        else:
+            # We extract the ticket ID from the url and use that to find
+            # the test file we want.
+            page_re = re.compile('REST/1.0/ticket/([0-9]+)/show')
+            bug_id = page_re.match(path).groups()[0]
+
+            return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
 
 
 class TestSourceForge(SourceForge):

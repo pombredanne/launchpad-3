@@ -1838,7 +1838,8 @@ class RequestTracker(ExternalBugTracker):
 
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
-        bug_data = self._getPage(self.ticket_url % str(bug_id))
+        ticket_url = self.ticket_url % str(bug_id)
+        bug_data = self.urlopen('%s/%s' % (self.baseurl, ticket_url))
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
@@ -1861,7 +1862,8 @@ class RequestTracker(ExternalBugTracker):
         query = "id = " + "OR id = ".join(id_list)
 
         request_params = {'query': query, 'format': 'l'}
-        bug_data = self._postPage(self.batch_url, request_params)
+        bug_data = self.urlopen('%s/%s' % (self.baseurl, self.batch_url),
+            urllib.urlencode(request_params))
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
