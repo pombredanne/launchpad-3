@@ -143,7 +143,13 @@ class IPOFile(IRosettaStats):
         ))
 
     plural_forms = Int(
-        title=_('Number of plural forms for the language of this po file.'),
+        title=_('Number of plural forms for the language of this PO file.'),
+        description=_('''
+            Number of plural forms is a number of translations provided for
+            each plural form message.  If `IPOFile.language` does not specify
+            plural forms, it defaults to 2, which is the most common number
+            of plural forms.
+            '''),
         required=True, readonly=True)
 
     def translatedCount():

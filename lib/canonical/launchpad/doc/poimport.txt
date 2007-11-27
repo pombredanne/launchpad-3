@@ -716,7 +716,8 @@ part of the import process, there are some peculiarities with importing
 plural forms we want documented as well.
 
 For a language such as Divehi, which has no plural forms defined, we
-default to two plural forms.
+default to two plural forms (the most common value for the number of
+plural forms).
 
     >>> from canonical.launchpad.interfaces import ILanguageSet, IProductSet
     >>> divehi = getUtility(ILanguageSet)['dv']
@@ -764,7 +765,8 @@ We now import this POFile as Divehi translation of Firefox trunk:
     IMPORTED
 
 If we get a current translation for this PO file, it will list only two
-translations:
+translations (which is a default when the language has no plural forms
+specified):
 
     >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     key=u'Singular %d')

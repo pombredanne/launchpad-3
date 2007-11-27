@@ -388,34 +388,29 @@ handling suggestions because it allows anyone to add suggestions.
 == plural_forms ==
 
 This method returns a number of plural forms for the language of the POFile,
-or a default of 2 when language doesn't specify it.
+or a default of 2 when language doesn't specify it: 2 is the most common
+value for number of plural forms, so most likely to be correct for any new
+language.  Even if the default value is incorrect, it is handled gracefully
+by the rest of the system (see doc/poimport.txt for example).
 
-Serbian language has three plural forms:
-
-    >>> serbian = getUtility(ILanguageSet)['sr']
-    >>> serbian.pluralforms
-    3
-
-And Divehi has no plural forms defined in our sampledata:
-
-    >>> divehi = getUtility(ILanguageSet)['dv']
-    >>> print divehi.pluralforms
-    None
-
-We are looking at DummyPOFiles for Evolution template:
+When the language has number of plural forms defined, that value is used.
 
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_pot = evolution_trunk.getPOTemplate('evolution-2.2')
-
-Serbian POFile has 3 plural forms, just like the language itself:
-
+    >>> serbian = getUtility(ILanguageSet)['sr']
+    >>> serbian.pluralforms
+    3
     >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
     >>> evolution_sr.plural_forms
     3
 
-And Divehi POFile defaults to 2:
+And when a language has no plural forms defined, a POFile defaults to 2,
+the most common number of plural forms:
 
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
     >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
     >>> evolution_dv.plural_forms
     2
