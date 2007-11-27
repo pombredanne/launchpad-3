@@ -1815,7 +1815,7 @@ class RequestTracker(ExternalBugTracker):
         If the bug cannot be parsed into a sensible format an
         UnparseableBugData error will be raised.
         """
-        lines = bug_data.trim().split("\n")
+        lines = bug_data.strip().split("\n")
         bug_dict = {'id': None, 'status': None,}
 
         for line in lines:
@@ -1825,9 +1825,9 @@ class RequestTracker(ExternalBugTracker):
             except ValueError:
                 continue
 
-            key = key.trim.lower()
+            key = key.strip().lower()
             if key in bug_dict:
-                bug_dict[key] = value.trim()
+                bug_dict[key] = value.strip()
 
         return bug_dict
 
@@ -1837,7 +1837,7 @@ class RequestTracker(ExternalBugTracker):
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
-        firstline = bug_data.readline().trim().split(' ')
+        firstline = bug_data.readline().strip().split(' ')
         if firstline[1] != '200':
             raise BugTrackerConnectError(
                 "Unable to retrieve bug %s: %s" %
@@ -1856,7 +1856,7 @@ class RequestTracker(ExternalBugTracker):
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
-        firstline = bug_data.readline().trim().split(' ')
+        firstline = bug_data.readline().strip().split(' ')
         if firstline[1] != '200':
             raise BugTrackerConnectError(
                 "Unable to retrieve bug %s: %s" %
@@ -1867,7 +1867,7 @@ class RequestTracker(ExternalBugTracker):
         tickets = bug_data.split("--\n")
         bugs = {}
         for ticket in tickets:
-            ticket = ticket.trim()
+            ticket = ticket.strip()
             bug = self._parseRemoteBug(ticket)
 
             # We only bother adding the bug to the bugs dict if we

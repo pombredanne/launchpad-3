@@ -392,7 +392,7 @@ class TestRequestTracker(RequestTracker):
         bug_id = page_re.match(page).groups()[0]
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        return open(file_path = '/' + 'rt-sample-bug-%s.txt' % bug_id)
+        return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
 
 
 class TestSourceForge(SourceForge):

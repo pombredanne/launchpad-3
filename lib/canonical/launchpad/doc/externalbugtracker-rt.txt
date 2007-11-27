@@ -59,4 +59,4 @@ don't have to rely on a working network connection.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRequestTracker)
     >>> rt = TestRequestTracker(new_bugtracker(BugTrackerType.RT))
-    >>> rt.initializeRemoteBugDB([1, 2, 3, 4, 5])
+    >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
