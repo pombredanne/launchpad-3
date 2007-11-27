@@ -869,7 +869,7 @@ or not.
 
 == Bug contribution ==
 
-We can check whether a person has any bugs assigned to then, either
+We can check whether a person has any bugs assigned to them, either
 within the context of a specific bug target, or in Launchpad in general.
 
 A person with bugs assigned to them in a context is considered a 'Bug

@@ -27,19 +27,18 @@
     <br /><br />
     <form name="confirmation" method="POST"
 	  id="confirmation_form"
-	  tal:attributes="action view/form_action"
-	  tal:define="fields python:view.request.form.items()">
+	  tal:attributes="action view/form_action">
 
-      <input tal:repeat="field fields"
-	     tal:attributes="name python:field[0];value python:field[1]"
+      <input tal:repeat="field view/form_fields"
+	     tal:attributes="name field/name ; value field/value"
 	     type="hidden" />
       <input type="submit"
 	     name="confirm_non_contributor"
-	     value="OK" />
-      <input type="submit"
-	     name="go_back_to_entry"
-	     value="Cancel"
-	     id="cancel" />
+	     value="Continue" />
+      or
+      <a tal:attributes="href view/reentry_url">
+	Choose someone else...
+      </a>
     </form>
 
   </div>

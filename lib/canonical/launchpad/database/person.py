@@ -1801,9 +1801,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 'sourcepackagerelease.maintainer = %s' % quote(self.id))
 
         if ppa_only:
-            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
         else:
-            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
         query_clause = " AND ".join(clauses)
         query = """
@@ -1873,6 +1875,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
         return bugtask_count > 0
+
 
 class PersonSet:
     """The set of persons."""

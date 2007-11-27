@@ -42,7 +42,6 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.formlib import form
@@ -845,21 +844,6 @@ class BugTaskEditView(LaunchpadEditFormView):
             raise AssertionError("Unknown IBugTask: %r" % self.context)
         return '_'.join(parts)
 
-    def initialize(self):
-        super(BugTaskEditView, self).initialize()
-        if 'go_back_to_entry' in self.request.form:
-            self.addError('Go back to entry form.')
-            form = self.request.form.copy()
-            del form['go_back_to_entry']
-            for key in form.keys():
-                if '.actions.' in key:
-                    del form[key]
-            form['auto_toggle_task'] = str(self.context.id)
-            query_string = urllib.urlencode(form)
-            reentry_url = '%s?%s' % (
-                canonical_url(self.context), query_string)
-            self.request.response.redirect(reentry_url)
-
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
 
@@ -993,22 +977,29 @@ class BugTaskEditView(LaunchpadEditFormView):
                 self.setFieldError('product', errors.args[0])
 
         new_assignee = data.get('assignee', bugtask.assignee)
-        no_previous_errors = len(self.errors) == 0
-        if (no_previous_errors and
-            new_assignee is not None and
-            new_assignee != bugtask.assignee and
-            not new_assignee.isBugContributorInTarget(
-                user=self.user, target=bugtask.target) and
-            not 'confirm_non_contributor' in self.request.form):
-                self.setFieldError('assignee', 'Not a bug contributor')
-                form_data = self.request.form.copy()
-                form_data['new_assignee'] = new_assignee.name
-                query_string = urllib.urlencode(form_data)
-                confirmation_url = '%s/+confirm-non-contributor?%s' % (
-                    canonical_url(bugtask), query_string)
-                self.request.response.redirect(confirmation_url)
+        no_previous_errors = (len(self.errors) == 0)
+        if new_assignee is None:
+            is_contributor = True
         else:
-            pass # Valid Assignee
+            is_contributor = new_assignee.isBugContributorInTarget(
+                user=self.user, target=bugtask.target)
+        confirm_non_contributor = (
+            'confirm_non_contributor' in self.request.form)
+        if (no_previous_errors and
+            new_assignee != bugtask.assignee and
+            not is_contributor and
+            not confirm_non_contributor):
+            # This assingment requires confirmation.
+            # We pack all the values submitted by the
+            # user and redirect to the confirmation
+            # page with the values in the query string.
+            self.setFieldError('assignee', 'Not a bug contributor')
+            form_data = self.request.form
+            form_data['new_assignee'] = new_assignee.name
+            query_string = urllib.urlencode(form_data)
+            confirmation_url = '%s/+confirm-non-contributor?%s' % (
+                canonical_url(bugtask), query_string)
+            self.request.response.redirect(confirmation_url)
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
@@ -1184,7 +1175,8 @@ class BugTaskNonContributorAssigneeConfirmView(LaunchpadView):
     """Bug task non-contributor assignee confirmation view.
 
     A confirmation step for assigning a bugtask to a person who
-    isn't a bug contributor."""
+    isn't a bug contributor.
+    """
 
     @property
     def form_action(self):
@@ -1199,21 +1191,57 @@ class BugTaskNonContributorAssigneeConfirmView(LaunchpadView):
             self.request.form.get('new_assignee'))
         if not new_assignee.isBugContributor(user=self.user):
             return """<a href="%s">%s</a>
-            has not been assigned any bugs before.
+            does not currently have any assigned bugs.
             <br /><br />
             Continue assigning this bug?""" % (
                 canonical_url(new_assignee), new_assignee.displayname,)
         elif not new_assignee.isBugContributorInTarget(
             user=self.user, target=bugtask.target):
             return """<a href="%s">%s</a>
-            has not been assigned any bugs in
-            <a href="%s">%s</a> before.
+            does not currently have any assigned bugs in
+            <a href="%s">%s</a>.
             <br /><br />
             Continue assigning this bug?""" % (
                 canonical_url(new_assignee), new_assignee.displayname,
                 canonical_url(bugtask.target), bugtask.target.title)
         else:
             raise AssertionError('Unnecessary confirmation request.')
+
+    @property
+    def form_fields(self):
+        """Return an iterator over the
+        form items in the request.
+        """
+        class FormField:
+            """Encapsulates a form item as an object."""
+            def __init__(self, name, value):
+                self.name = name
+                self.value = value
+
+        return (FormField(key, value)
+                for key, value
+                in self.request.form.items())
+
+    @property
+    def reentry_url(self):
+        """The URL for taking the user back to the entry form."""
+        form = {}
+        for field in self.form_fields:
+            if '.actions.' in field.name:
+                # Ignore all actions, since we
+                # don't want to process any.
+                continue
+            # All other fields should be copied,
+            # since they could have been supplied
+            # by the user.
+            form[field.name] = field.value
+        # Mark the current bugtask to be revealed
+        # as soon as the form loads.
+        form['auto_toggle_task'] = self.context.id
+            
+        query_string = urllib.urlencode(form)
+        return '%s?%s' % (
+            canonical_url(self.context), query_string)
 
 
 class BugTaskStatusView(LaunchpadView):

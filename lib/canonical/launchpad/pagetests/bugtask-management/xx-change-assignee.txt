@@ -2,12 +2,11 @@
 
 A bug is unassigned by choosing the "Assigned to" -> "Nobody" option.
 
-    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/firefox/+bug/1")
+    >>> admin_browser.open("http://launchpad.dev/firefox/+bug/1")
 
 Bug 1 is currently assigned to someone.
 
-    >>> assignee_control = browser.getControl(
+    >>> assignee_control = admin_browser.getControl(
     ...     name="firefox.assignee.option", index=0)
     >>> assignee_control.value == ["firefox.assignee.assigned_to"]
     True
@@ -16,10 +15,11 @@ But we can change it to be assigned to nobody.
 
     >>> assignee_control.value = ["firefox.assignee.assign_to_nobody"]
 
-    >>> browser.getControl("Save Changes", index=0).click()
+    >>> admin_browser.getControl("Save Changes", index=0).click()
 
-    >>> browser.getControl(name="firefox.assignee.option", index=0).value
+    >>> admin_browser.getControl(name="firefox.assignee.option", index=0).value
     ['firefox.assignee.assign_to_nobody']
+
 
 == Bug assignment to non-contributors ==
 
@@ -27,42 +27,44 @@ When attempting to assign a bug to a user who isn't an established bug
 contributor (they have no bugs currently assigned to them) it is
 necessary to confirm that the assignment is intentional.
 
-    >>> browser.open("http://launchpad.dev/firefox/+bug/1")
-    >>> assignee_control = browser.getControl(
+    >>> admin_browser.open("http://launchpad.dev/firefox/+bug/1")
+    >>> assignee_control = admin_browser.getControl(
     ...     name="firefox.assignee.option", index=0)
     >>> assignee_control.value = ["firefox.assignee.assign_to"]
-    >>> assign_to_control = browser.getControl(
+    >>> assign_to_control = admin_browser.getControl(
     ...     name="firefox.assignee", index=0)
     >>> assign_to_control.value = "cprov"
-    >>> browser.getControl("Save Changes", index=0).click()
-    >>> print browser.url.split('?')[0]
-    http://bugs.launchpad.dev/firefox/+bug/1/+confirm-non-contributor
+    >>> admin_browser.getControl("Save Changes", index=0).click()
+    >>> print extract_text(
+    ...     first_tag_by_class(admin_browser.contents, 'pageheading'))
+    Confirm bug assignment
 
 A confirmation request appears. If we choose to cancel the operation
 we return to the bugtask index, so that we can change our choice (the
 form fields are pre-filled with the data previously entered, and the
 relevant bugtask is expanded as soon as the page is loaded).
 
-    >>> browser.getControl("Cancel").click()
-    >>> print browser.url.split('?')[0]
+    >>> admin_browser.getLink("Choose someone else...").click()
+    >>> print admin_browser.url.split('?')[0]
     http://bugs.launchpad.dev/firefox/+bug/1
-    >>> assign_to_control = browser.getControl(
+    >>> assign_to_control = admin_browser.getControl(
     ...     name="firefox.assignee", index=0)
-    >>> print assign_to_control.value
-    cprov
+    >>> assign_to_control.value
+    'cprov'
 
 We submit the form again, and this time we choose to accept cprov as
 a new bug contributor.
 
-    >>> browser.getControl("Save Changes", index=0).click()
-    >>> print browser.url.split('?')[0]
-    http://bugs.launchpad.dev/firefox/+bug/1/+confirm-non-contributor
-    >>> browser.getControl("OK").click()
+    >>> admin_browser.getControl("Save Changes", index=0).click()
+    >>> print extract_text(
+    ...     first_tag_by_class(admin_browser.contents, 'pageheading'))
+    Confirm bug assignment
+    >>> admin_browser.getControl("Continue").click()
 
 Now the bug is assigned to cprov.
 
-    >>> print browser.url
+    >>> print admin_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
     >>> 'href="/~cprov/+assignedbugs"' in str(
-    ...     first_tag_by_class(browser.contents, 'listing'))
+    ...     first_tag_by_class(admin_browser.contents, 'listing'))
     True
