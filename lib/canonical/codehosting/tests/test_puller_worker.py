@@ -1,8 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Unit tests for worker.py."""
 
 __metaclass__ = type
+
 
 import httplib
 import os
@@ -17,8 +18,9 @@ import urllib2
 import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
-from bzrlib.revision import ensure_null, NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
+from bzrlib.revision import NULL_REVISION
+from bzrlib.tests import (
+    TestCaseInTempDir, TestCaseWithMemoryTransport, TestCaseWithTransport)
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -31,12 +33,14 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError,
-    get_canonical_url_for_branch_name, PullerWorkerProtocol)
+    get_canonical_url_for_branch_name, install_worker_progress_factory,
+    PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.uri import URI
 from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
@@ -192,8 +196,7 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
 
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(
-            NULL_REVISION, ensure_null(mirrored_branch.last_revision()))
+        self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
@@ -330,10 +333,15 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
             'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
-        # now we have a good branch with a file called afile and id myid
-        # we need to figure out the actual path for the weave.. or
-        # deliberately corrupt it. like this.
-        tree.branch.repository.weave_store.put_weave(
+        # Now we have a good branch with a file called afile and id myid we
+        # need to figure out the actual path for the weave.. or deliberately
+        # corrupt it. like this.
+
+        # XXX: JonathanLange 2007-10-11: _put_weave is an internal function
+        # that we probably shouldn't be using. TODO: Ask author of this test
+        # to better explain which particular repository corruption we are
+        # trying to reproduce here.
+        tree.branch.repository.weave_store._put_weave(
             "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())
         source_url = os.path.abspath('missingrevision')
@@ -706,7 +714,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
             raise NotBranchError('http://example.com/not-branch')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.MIRRORED
-        expected_msg = 'Not a branch: http://example.com/not-branch'
+        expected_msg = 'Not a branch: "http://example.com/not-branch".'
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorHosted(self):
@@ -720,7 +728,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
                                  % split_id)
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.HOSTED
-        expected_msg = 'Not a branch: sftp://bazaar.launchpad.net/~%s' % (
+        expected_msg = 'Not a branch: "sftp://bazaar.launchpad.net/~%s".' % (
             self.branch.unique_name,)
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
@@ -741,6 +749,16 @@ class TestErrorHandling(ErrorHandlingTestCase):
             raise BranchReferenceLoopError()
         self.branch._checkBranchReference = stubCheckBranchReference
         self.runMirrorAndAssertErrorEquals("Circular branch reference.")
+
+    def testInvalidURIError(self):
+        """When a branch reference contains an invalid URL, an InvalidURIError
+        is raised. The worker catches this and reports it to the scheduler.
+        """
+        def stubCheckBranchReference():
+            raise URI("This is not a URL")
+        self.branch._checkBranchReference = stubCheckBranchReference
+        self.runMirrorAndAssertErrorEquals(
+            '"This is not a URL" is not a valid URI')
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():
@@ -813,6 +831,13 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
         self.assertSentNetstrings(
             ['mirrorFailed', '2', 'Error Message', 'OOPS'])
 
+    def test_progressMade(self):
+        """Calling 'progressMade' sends an arbitrary string indicating
+        progress.
+        """
+        self.protocol.progressMade()
+        self.assertSentNetstrings(['progressMade', '0'])
+
 
 class TestCanonicalUrl(unittest.TestCase):
     """Test cases for rendering the canonical url of a branch."""
@@ -832,6 +857,35 @@ class TestCanonicalUrl(unittest.TestCase):
         self.assertEqual(
             canonical_url(branch),
             get_canonical_url_for_branch_name(unique_name))
+
+
+class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
+    """Tests for the WorkerProgressBar progress reporting mechanism."""
+
+    class StubProtocol:
+        """A stub for PullerWorkerProtocol that just defines progressMade."""
+        def __init__(self):
+            self.call_count = 0
+        def progressMade(self):
+            self.call_count += 1
+
+    def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        self.saved_factory = bzrlib.ui.ui_factory
+
+    def tearDown(self):
+        TestCaseWithMemoryTransport.tearDown(self)
+        bzrlib.ui.ui_factory = self.saved_factory
+        reset_logging()
+
+    def test_simple(self):
+        # Even the simplest of pulls should call progressMade at least once.
+        p = self.StubProtocol()
+        install_worker_progress_factory(p)
+        b1 = self.make_branch('some-branch')
+        b2 = self.make_branch('some-other-branch')
+        b1.pull(b2)
+        self.assertPositive(p.call_count)
 
 
 def test_suite():

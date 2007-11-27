@@ -24,7 +24,7 @@ Only the product registrant and the admins have access to this page.
     >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
       ...
-    LinkNotFound...    
+    LinkNotFound...
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+edit')
     Traceback (most recent call last):
       ...
@@ -46,7 +46,7 @@ doesn't use any bug tracker at all.
     ...     'Translations for this project are done in Launchpad').selected
     False
     >>> registrant_browser.getControl(
-    ...     'Let people use Launchpad Answers to ask questions').selected
+    ...     'People can ask questions in Launchpad Answers').selected
     True
     >>> registrant_browser.getControl(
     ...     'In Launchpad').selected
@@ -57,7 +57,7 @@ doesn't use any bug tracker at all.
 
 On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
-  
+
     >>> content = find_main_content(registrant_browser.contents)
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
@@ -92,7 +92,7 @@ Now let's go back and choose to use a specific bug tracker.
     >>> label_cell = content.find('th', text='Bug tracker:')
     >>> print extract_text(label_cell.findNext())
     GnomeGBug GTracker
-  
+
 Let's reset it to the way it was before.
 
     >>> registrant_browser.getLink('Change details').click()

@@ -186,6 +186,9 @@ class DeathRow:
             # Deny removal if any reference is still active.
             if pub.status not in condemned_states:
                 return False
+            # Deny removal if any reference wasn't dominated yet.
+            if pub.scheduleddeletiondate is None:
+                return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.
             if pub.scheduleddeletiondate > right_now:

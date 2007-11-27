@@ -246,16 +246,13 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
-    >>> potemplatenameset = getUtility(IPOTemplateNameSet)
-    >>> kdebugdialog_template_name = potemplatenameset.new(
-    ...     'kdebugdialog', 'kdebugdialog')
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=kdebase)
     >>> kde_pot_entry.potemplate = subset.new(
-    ...     kdebugdialog_template_name, 'po/kdebugdialog.pot', rosetta_expert)
+    ...     'kdebugdialog', 'kdebugdialog', 'po/kdebugdialog.pot',
+    ...     rosetta_expert)
     >>> kde_pot_entry.potemplate.title
     u'Template "kdebugdialog" in Ubuntu Hoary package "kdebase"'
 
@@ -317,16 +314,12 @@ We will see it working here with this example:
 
 Create the template name and attach this new import to it.
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
-    >>> potemplatenameset = getUtility(IPOTemplateNameSet)
-    >>> kdebugdialog_template_name = potemplatenameset.new(
-    ...     'kio_sftp', 'kio_sftp')
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=kdebase)
     >>> kde_pot_entry.potemplate = subset.new(
-    ...     kdebugdialog_template_name, 'po/kio_sftp.pot', rosetta_expert)
+    ...     'kio-sftp', 'kio_sftp', 'po/kio_sftp.pot', rosetta_expert)
     >>> kde_pot_entry.potemplate.title
     u'Template "kio-sftp" in Ubuntu Hoary package "kdebase"'
 
@@ -383,13 +376,11 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> koffice_template_name = potemplatenameset.new(
-    ...     'koffice', 'koffice')
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=koffice)
     >>> koffice_pot_entry.potemplate = subset.new(
-    ...     koffice_template_name, 'po/koffice.pot', rosetta_expert)
+    ...     'koffice', 'koffice', 'po/koffice.pot', rosetta_expert)
     >>> koffice_pot_entry.potemplate.title
     u'Template "koffice" in Ubuntu Hoary package "koffice"'
 
@@ -484,12 +475,10 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> adept_template_name = potemplatenameset.new(
-    ...     'adept', 'adept')
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=adept)
     >>> adept_pot_entry.potemplate = subset.new(
-    ...     adept_template_name, 'po/adept.pot', rosetta_expert)
+    ...     'adept', 'adept', 'po/adept.pot', rosetta_expert)
     >>> adept_pot_entry.potemplate.title
     u'Template "adept" in Ubuntu Hoary package "adept"'
 
@@ -537,12 +526,10 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> ktorrent_template_name = potemplatenameset.new(
-    ...     'ktorrent', 'ktorrent')
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=ktorrent)
     >>> ktorrent_pot_entry.potemplate = subset.new(
-    ...     ktorrent_template_name, 'po/ktorrent.pot', rosetta_expert)
+    ...     'ktorrent', 'ktorrent', 'po/ktorrent.pot', rosetta_expert)
     >>> ktorrent_pot_entry.potemplate.title
     u'Template "ktorrent" in Ubuntu Hoary package "ktorrent"'
 
@@ -590,12 +577,10 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> zope_template_name = potemplatenameset.new(
-    ...     'zope', 'zope')
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
     >>> zope_pot_entry.potemplate = subset.new(
-    ...     zope_template_name,
+    ...     'zope', 'zope',
     ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/zope.pot',
     ...     rosetta_expert)
     >>> zope_pot_entry.potemplate.title
@@ -646,12 +631,10 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> k3b_template_name = potemplatenameset.new(
-    ...     'k3b', 'k3b')
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=k3b)
     >>> k3b_pot_entry.potemplate = subset.new(
-    ...     k3b_template_name, 'po/k3b.pot', rosetta_expert)
+    ...     'k3b', 'k3b', 'po/k3b.pot', rosetta_expert)
     >>> k3b_pot_entry.potemplate.title
     u'Template "k3b" in Ubuntu Hoary package "k3b"'
 
@@ -697,14 +680,11 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> gnome_terminal_template_name = potemplatenameset.new(
-    ...     'help', 'help')
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries,
     ...     sourcepackagename=gnome_terminal)
     >>> terminal_pot_entry.potemplate = subset.new(
-    ...     gnome_terminal_template_name,
-    ...     'drivemount/help/drivemount.pot', rosetta_expert)
+    ...     'help', 'help', 'drivemount/help/drivemount.pot', rosetta_expert)
     >>> terminal_pot_entry.potemplate.title
     u'Template "help" in Ubuntu Hoary package "gnome-terminal"'
 

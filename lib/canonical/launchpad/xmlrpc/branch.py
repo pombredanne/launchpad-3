@@ -125,7 +125,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if not whiteboard:
             whiteboard = None
 
-        bug.addBranch(branch, whiteboard=whiteboard)
+        # Since this API is controlled using launchpad.AnyPerson there must be
+        # an authenticated person, so use this person as the registrant.
+        registrant = getUtility(ILaunchBag).user
+        bug.addBranch(branch, registrant=registrant, whiteboard=whiteboard)
         return canonical_url(bug)
 
 

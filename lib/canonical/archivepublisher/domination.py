@@ -1,12 +1,55 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
-# This is the python package that defines the
-# 'canonical.archivepublisher.domination' package. This package is
-# related to the domination of old source and binary releases inside
-# the publishing tables.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+"""Archive Domination class.
+
+We call 'domination' the procedure used to identify and supersede all
+old versions for a given publication, source or binary, inside a suite
+(distroseries + pocket, for instance, gutsy or gutsy-updates).
+
+It also processes the superseded publications and makes the ones with
+unnecessary files 'eligible for removal', which will then be considered
+for archive removal.  See deathrow.py.
+
+In order to judge if a source is 'eligible for removal' it also checks
+if its resulting binaries are not necessary any more in the archive, i.e.,
+old binary publications can (and should) hold sources in the archive.
+
+Source version life-cycle example:
+
+  * foo_2.1: currently published, source and binary files live in the archive
+             pool and it is listed in the archive indexes.
+
+  * foo_2.0: superseded, it's not listed in archive indexes but one of its
+             files is used for foo_2.1 (the orig.tar.gz) or foo_2.1 could
+             not build for one or more architectures that foo_2.0 could;
+
+  * foo_1.8: eligible for removal, none of its files are required in the
+             archive since foo_2.0 was published (new orig.tar.gz) and none
+             of its binaries are published (foo_2.0 was completely built)
+
+  * foo_1.0: removed, it already passed through the quarantine period and its
+             files got removed from the archive.
+
+Note that:
+
+  * PUBLISHED and SUPERSEDED are publishing statuses.
+
+  * 'eligible for removal' is a combination of SUPERSEDED or DELETED
+    publishing status and a defined (non-empty) 'scheduleddeletiondate'.
+
+  * 'removed' is a combination of 'eligible for removal' and a defined
+    (non-empy) 'dateremoved'.
+
+The 'domination' procedure is the 2nd step of the publication pipeline and
+it is performed for each suite using:
+
+  * judgeAndDominate(distroseries, pocket, pubconfig)
+
+"""
 
 __metaclass__ = type
 
+__all__ = ['Dominator']
 
 import apt_pkg
 from datetime import timedelta
@@ -248,19 +291,19 @@ class Dominator:
             # SourcePackageRelease which are/have been in this
             # distroseries...
             considered_binaries = BinaryPackagePublishingHistory.select("""
-            binarypackagepublishinghistory.distroarchrelease =
-                distroarchrelease.id AND
+            binarypackagepublishinghistory.distroarchseries =
+                distroarchseries.id AND
             binarypackagepublishinghistory.scheduleddeletiondate IS NULL AND
             binarypackagepublishinghistory.archive = %s AND
             build.sourcepackagerelease = %s AND
-            distroarchrelease.distrorelease = %s AND
+            distroarchseries.distroseries = %s AND
             binarypackagepublishinghistory.binarypackagerelease =
             binarypackagerelease.id AND
             binarypackagerelease.build = build.id AND
             binarypackagepublishinghistory.pocket = %s
             """ % sqlvalues(self.archive, srcpkg_release,
                             pub_record.distroseries, pub_record.pocket),
-            clauseTables=['DistroArchRelease', 'BinaryPackageRelease','Build'])
+            clauseTables=['DistroArchSeries', 'BinaryPackageRelease','Build'])
 
             # There is at least one non-removed binary to consider
             if considered_binaries.count() > 0:
@@ -329,7 +372,7 @@ class Dominator:
                 BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
                 sbpph WHERE bpr.binarypackagename = bpn.id AND
                 sbpph.binarypackagerelease = bpr.id AND
-                sbpph.distroarchrelease = %s AND sbpph.archive = %s AND
+                sbpph.distroarchseries = %s AND sbpph.archive = %s AND
                 sbpph.status = %s AND sbpph.pocket = %s
                 GROUP BY bpn.id""" % sqlvalues(
                 distroarchseries, self.archive,
@@ -337,7 +380,7 @@ class Dominator:
 
             binaries = SecureBinaryPackagePublishingHistory.select(
                 """
-                securebinarypackagepublishinghistory.distroarchrelease = %s
+                securebinarypackagepublishinghistory.distroarchseries = %s
                 AND securebinarypackagepublishinghistory.archive = %s
                 AND securebinarypackagepublishinghistory.pocket = %s
                 AND securebinarypackagepublishinghistory.status = %s AND
@@ -363,7 +406,7 @@ class Dominator:
             ]
 
         sources = SecureSourcePackagePublishingHistory.select("""
-            securesourcepackagepublishinghistory.distrorelease = %s AND
+            securesourcepackagepublishinghistory.distroseries = %s AND
             securesourcepackagepublishinghistory.archive = %s AND
             securesourcepackagepublishinghistory.pocket = %s AND
             securesourcepackagepublishinghistory.status IN %s AND
@@ -371,15 +414,15 @@ class Dominator:
             """ % sqlvalues(dr, self.archive, pocket, dominate_status))
 
         binaries = SecureBinaryPackagePublishingHistory.select("""
-            securebinarypackagepublishinghistory.distroarchrelease =
-                distroarchrelease.id AND
-            distroarchrelease.distrorelease = %s AND
+            securebinarypackagepublishinghistory.distroarchseries =
+                distroarchseries.id AND
+            distroarchseries.distroseries = %s AND
             securebinarypackagepublishinghistory.archive = %s AND
             securebinarypackagepublishinghistory.pocket = %s AND
             securebinarypackagepublishinghistory.status IN %s AND
             securebinarypackagepublishinghistory.scheduleddeletiondate is NULL
             """ % sqlvalues(dr, self.archive, pocket, dominate_status),
-            clauseTables=['DistroArchRelease'])
+            clauseTables=['DistroArchSeries'])
 
         self._judgeSuperseded(sources, binaries, config)
 

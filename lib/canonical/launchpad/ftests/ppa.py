@@ -26,7 +26,6 @@ def publishToTeamPPA(team_name=None, distroseries_name=None,
                      team_member_name=None, distribution_name=None,
                      binarypackage_version=None, publishing_status=None,
                      arch=None):
-
     """Publish a signed package in a team PPA.
 
     It defaults to publishing mozilla-firefox 0.9 signed by name16 in
@@ -113,5 +112,3 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             pocket=PackagePublishingPocket.RELEASE,
             embargo=False,
             archive=archive)
-
-

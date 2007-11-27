@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
@@ -63,11 +64,11 @@ from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
     IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities, IQuestionTarget,
-    ISourcePackageName, MirrorContent, PackagePublishingStatus,
-    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
+    IQuestionTarget, ISourcePackageName, MirrorContent,
+    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
 
 from canonical.archivepublisher.debversion import Version
@@ -80,8 +81,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
-        IHasLogo, IHasMugshot, IHasIcon)
+        IDistribution, IFAQTarget, IHasBuildRecords, IHasLogo, IHasMugshot,
+        IHasIcon, ILaunchpadUsage, IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -490,7 +491,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status',
+                 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -519,9 +521,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN '
+                '( %s, %s ) ' % sqlvalues(
+                    SpecificationDefinitionStatus.OBSOLETE,
+                    SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -664,9 +667,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -675,7 +678,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -690,9 +693,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -701,7 +704,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -723,15 +726,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(sourcepackagename, self,
                             self.all_distro_archive_ids),
             orderBy='id',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             distinct=True))
 
         if len(sprs) == 0:
@@ -840,9 +843,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             # the search to the distribution release, making a best
             # effort to find a package.
             publishing = SourcePackagePublishingHistory.selectFirst('''
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
-                DistroRelease.distribution = %s AND
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id AND
+                DistroSeries.distribution = %s AND
                 SourcePackagePublishingHistory.archive IN %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
@@ -852,7 +855,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
                                 PackagePublishingStatus.PUBLISHED),
-                clauseTables=['SourcePackageRelease', 'DistroRelease'],
+                clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")
             if publishing is not None:

@@ -42,8 +42,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -490,7 +489,6 @@ class BugSecrecyEditView(BugEditViewBase):
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
         private = data.pop('private')
-        notify(SQLObjectToBeModifiedEvent(bug, dict(private=private)))
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
         if private_changed:
@@ -561,8 +559,8 @@ class BugTextView(LaunchpadView):
         text.append('attachments: ')
         for attachment in bug.attachments:
             text.append(' %s' % self.attachment_text(attachment))
-            
-        text.append('tags: %s' % ' '.join(bug.tags))  
+
+        text.append('tags: %s' % ' '.join(bug.tags))
 
         text.append('subscribers: ')
         for subscription in bug.subscriptions:
@@ -581,7 +579,8 @@ class BugTextView(LaunchpadView):
                        "closed", "incomplete"]:
             date = getattr(task, "date_%s" % status)
             if date:
-                text.append("date-%s: %s" % (status, date))
+                text.append("date-%s: %s" % (
+                    status, format_rfc2822_date(date)))
 
         text.append('reporter: %s' % task.owner.unique_displayname)
 
