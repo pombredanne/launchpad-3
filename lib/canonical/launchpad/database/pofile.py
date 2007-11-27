@@ -659,22 +659,19 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        query = ['POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate)]
-        query.append('POTMsgSet.sequence > 0')
-        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
-        query.append('TranslationMessage.pofile = %s' % sqlvalues(self))
-        query.append('TranslationMessage.is_current')
-        query.append('NOT TranslationMessage.is_fuzzy')
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        if self.language.pluralforms > 1:
-            plurals_query = ' AND '.join(
-                'TranslationMessage.msgstr%d IS NOT NULL' % i
-                    for i in range(1, self.language.pluralforms))
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
+        query = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
+            'POTMsgSet.sequence > 0',
+            'TranslationMessage.potmsgset = POTMsgSet.id',
+            'TranslationMessage.pofile = %s' % sqlvalues(self),
+            'TranslationMessage.is_current',
+            'NOT TranslationMessage.is_fuzzy']
+        clause_tables = ['TranslationMessage']
+        query, clause_tables = self._addCompletePluralFormsConditions(
+            query, clause_tables)
         return POTMsgSet.select(
-            ' AND '.join(query), clauseTables=['TranslationMessage'],
-            orderBy='POTMsgSet.sequence')
+            ' AND '.join(query), clauseTables=clause_tables,
+            orderBy='POTMsgSet.sequence', distinct=True)
 
     def getPOTMsgSetFuzzy(self):
         """See `IPOFile`."""
@@ -752,18 +749,50 @@ class POFile(SQLBase, POFileMixIn):
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
-            LEFT JOIN TranslationMessage imported ON
-                POTMsgSet.id = imported.potmsgset
-            LEFT OUTER JOIN TranslationMessage current ON
+            LEFT JOIN TranslationMessage AS imported ON
+                POTMsgSet.id = imported.potmsgset AND
+                imported.pofile = %s AND
+                imported.is_imported IS TRUE
+            LEFT OUTER JOIN POTranslation AS imported_translation0 ON
+                imported.msgstr0 = imported_translation0.id AND
+                imported_translation0.translation <> ''
+            LEFT OUTER JOIN POTranslation AS imported_translation1 ON
+                imported.msgstr1 = imported_translation1.id AND
+                imported_translation1.translation <> ''
+            LEFT OUTER JOIN POTranslation AS imported_translation2 ON
+                imported.msgstr2 = imported_translation2.id AND
+                imported_translation2.translation <> ''
+            LEFT OUTER JOIN POTranslation AS imported_translation3 ON
+                imported.msgstr3 = imported_translation3.id AND
+                imported_translation3.translation <> ''
+            LEFT JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
                 imported.id != current.id AND
-                current.pofile = imported.pofile
+                current.pofile = imported.pofile AND
+                current.is_current IS TRUE
+            LEFT OUTER JOIN POTranslation AS current_translation0 ON
+                current.msgstr0 = current_translation0.id AND
+                current_translation0.translation <> ''
+            LEFT OUTER JOIN POTranslation AS current_translation1 ON
+                current.msgstr1 = current_translation1.id AND
+                current_translation1.translation <> ''
+            LEFT OUTER JOIN POTranslation AS current_translation2 ON
+                current.msgstr2 = current_translation2.id AND
+                current_translation2.translation <> ''
+            LEFT OUTER JOIN POTranslation AS current_translation3 ON
+                current.msgstr3 = current_translation3.id AND
+                current_translation3.translation <> ''
             WHERE
-                imported.pofile = %s AND
-                imported.is_imported IS TRUE AND
-                current.is_current IS TRUE AND
                 POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s)
+                POTMsgSet.potemplate = %s AND
+                (imported_translation0 IS NOT NULL OR
+                 imported_translation1 IS NOT NULL OR
+                 imported_translation2 IS NOT NULL OR
+                 imported_translation3 IS NOT NULL) AND
+                (current_translation0 IS NOT NULL OR
+                 current_translation1 IS NOT NULL OR
+                 current_translation2 IS NOT NULL OR
+                 current_translation3 IS NOT NULL))
             ''' % sqlvalues(self, self.potemplate),
             orderBy='POTmsgSet.sequence')
 
@@ -830,6 +859,32 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
+    def _addCompletePluralFormsConditions(self, query, clause_tables=[]):
+        """Append needed conditions to get a complete TranslationMessage.
+
+        :param query: A list of AND SQL conditions where the complete
+            conditions will be appended.
+        :param clause_tables: List of extra tables we will join with to
+            complete this query.
+        :return: A tuple of query, clause_tables after appending the
+            completeness condition.
+        """
+        query.append('TranslationMessage.msgstr0 = translation0.id')
+        query.append("translation0.translation <> ''")
+        clause_tables.append('POTranslation AS translation0')
+        if self.language.pluralforms > 1:
+            plurals_query = []
+            for i in range(1, self.language.pluralforms):
+                plurals_query.append(
+                    'TranslationMessage.msgstr%d = translation%d.id' % (i, i))
+                plurals_query.append("translation%d.translation <> ''" % i)
+                clause_tables.append(
+                    'POTranslation AS translation%d' % i)
+            query.append(
+                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % (
+                    ' AND '.join(plurals_query)))
+        return query, clause_tables
+
     def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -838,16 +893,15 @@ class POFile(SQLBase, POFileMixIn):
         # Get the number of translations that we got from imports.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self),
                  'TranslationMessage.is_imported IS TRUE',
+                 'TranslationMessage.is_current IS TRUE',
                  'NOT TranslationMessage.was_fuzzy_in_last_import',
                  'TranslationMessage.potmsgset = POTMsgSet.id',
-                 'POTMsgSet.sequence > 0',
-                 'TranslationMessage.msgstr0 IS NOT NULL']
-        for plural_form in range(1, self.language.pluralforms):
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
-
+                 'POTMsgSet.sequence > 0']
+        clause_tables = ['POTMsgSet']
+        query, clause_tables = self._addCompletePluralFormsConditions(
+            query, clause_tables)
         current = TranslationMessage.select(
-            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+            ' AND '.join(query), clauseTables=clause_tables).count()
 
         # Get the number of translations that we have updated from what we got
         # from imports.
@@ -856,27 +910,41 @@ class POFile(SQLBase, POFileMixIn):
         # Get the number of new translations in Launchpad that imported ones
         # were not translated.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
+        clause_tables = ['POTMsgSet']
         query.append('NOT TranslationMessage.is_fuzzy')
+        query.append('TranslationMessage.is_current IS TRUE')
         # Check only complete translations.  For messages with only a single
         # msgid, that's anything with a singular translation; for ones with a
         # plural form, it's the number of plural forms the language supports.
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        for plural_form in range(1, self.language.pluralforms):
-            query.append("""
-                (POTMsgSet.msgid_plural IS NULL OR
-                 TranslationMessage.msgstr%d IS NOT NULL)""" % plural_form)
-        query.append('is_current IS TRUE')
+        query, clause_tables = self._addCompletePluralFormsConditions(
+            query, clause_tables)
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
+            LEFT OUTER JOIN POTranslation AS imported_translation0 ON
+                imported.msgstr0 = imported_translation0.id AND
+                imported_translation0.translation <> ''
+            LEFT OUTER JOIN POTranslation AS imported_translation1 ON
+                imported.msgstr1 = imported_translation1.id AND
+                imported_translation1.translation <> ''
+            LEFT OUTER JOIN POTranslation AS imported_translation2 ON
+                imported.msgstr2 = imported_translation2.id AND
+                imported_translation2.translation <> ''
+            LEFT OUTER JOIN POTranslation AS imported_translation3 ON
+                imported.msgstr3 = imported_translation3.id AND
+                imported_translation3.translation <> ''
             WHERE
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE)''')
+                imported.is_imported IS TRUE AND
+                (imported_translation0.id IS NOT NULL OR
+                 imported_translation1.id IS NOT NULL OR
+                 imported_translation2.id IS NOT NULL OR
+                 imported_translation3.id IS NOT NULL))''')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
-            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+            ' AND '.join(query), clauseTables=clause_tables).count()
 
         unreviewed = self.getPOTMsgSetWithNewSuggestions().count()
 
