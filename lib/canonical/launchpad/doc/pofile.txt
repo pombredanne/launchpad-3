@@ -7,8 +7,8 @@ Get evolution template for Ubuntu Hoary
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
-    ...     ISourcePackageNameSet)
+    ...     IDistributionSet, ILanguageSet, IPersonSet, IPOFile,
+    ...     IPOTemplateSet, ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
@@ -385,6 +385,40 @@ handling suggestions because it allows anyone to add suggestions.
     >>> product.translationpermission = TranslationPermission.OPEN
     >>> transaction.commit()
 
+== plural_forms ==
+
+This method returns a number of plural forms for the language of the POFile,
+or a default of 2 when language doesn't specify it.
+
+Serbian language has three plural forms:
+
+    >>> serbian = getUtility(ILanguageSet)['sr']
+    >>> serbian.pluralforms
+    3
+
+And Divehi has no plural forms defined in our sampledata:
+
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+
+We are looking at DummyPOFiles for Evolution template:
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_pot = evolution_trunk.getPOTemplate('evolution-2.2')
+
+Serbian POFile has 3 plural forms, just like the language itself:
+
+    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
+    >>> evolution_sr.plural_forms
+    3
+
+And Divehi POFile defaults to 2:
+
+    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
+    >>> evolution_dv.plural_forms
+    2
 
 == uncachedExport ==
 

@@ -142,6 +142,10 @@ class IPOFile(IRosettaStats):
         'All `ITranslationMessage` objects related to this translation file.'
         ))
 
+    plural_forms = Int(
+        title=_('Number of plural forms for the language of this po file.'),
+        required=True, readonly=True)
+
     def translatedCount():
         """
         Returns the number of message sets which this PO file has current
