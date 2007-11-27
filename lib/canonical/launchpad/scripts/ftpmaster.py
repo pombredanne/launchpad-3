@@ -1509,7 +1509,7 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution.
 
-        It may raise LaunchpadScriptFailure if a suite was passed in the
+        It may raise LaunchpadScriptFailure if a suite was passed on the
         command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
@@ -1526,7 +1526,7 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution.
 
-        It may raise `LaunchpadScriptFailure` if a suite was passed in the
+        It may raise `LaunchpadScriptFailure` if a suite was passed on the
         command-line.
 
         Return the first FROZEN distroseries found if there is no
@@ -1560,11 +1560,11 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution.
 
-        It may raise `LaunchpadScriptFailure` if a suite was passed in the
+        It may raise `LaunchpadScriptFailure` if a suite was passed on the
         command-line or if there is not supported distroseries for the
         distribution given.
 
-        Return a space-sparated list of distroseries names.
+        Return a space-separated list of distroseries names.
         """
         self.checkNoSuiteDefined()
         supported_series = []
