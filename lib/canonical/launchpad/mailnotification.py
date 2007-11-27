@@ -1402,7 +1402,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             if self.question.messages.count() > 1:
                 # XXX sinzui 2007-11-27 bug=165211:
                 # We should locate the index of the new_message, and use
-                # index-2 to get the correct rfc822msgid, but SQLObject
+                # index-1 to get the correct rfc822msgid, but SQLObject
                 # can loose the question, so we are using the probable
                 # message for the rfc822msgid.
                 headers['References'] = (
