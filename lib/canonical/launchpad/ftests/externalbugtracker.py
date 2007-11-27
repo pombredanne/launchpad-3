@@ -378,13 +378,14 @@ class TestRoundup(Roundup):
 class TestRequestTracker(RequestTracker):
     """A Test-oriented `RequestTracker` implementation.
 
-    Overrides _getPage() so that access to an RT instance is not needed.
+    Overrides _getPage() and _postPage() so that access to an RT
+    instance is not needed.
     """
     trace_calls = False
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % page
 
         # We extract the ticket ID from the url and use that to find the
         # test file we want.
@@ -393,6 +394,14 @@ class TestRequestTracker(RequestTracker):
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
         return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
+
+    def _postPage(self, page, data):
+        if self.trace_calls:
+            print "CALLED _postPage(%r)" % page
+
+        # For postPage calls we always return the rt batch sampledata.
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+        return open(file_path + '/' + 'rt-sample-bug-batch.txt')
 
 
 class TestSourceForge(SourceForge):

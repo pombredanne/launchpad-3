@@ -1827,6 +1827,11 @@ class RequestTracker(ExternalBugTracker):
 
             key = key.strip().lower()
             if key in bug_dict:
+                # In batches of bugs the id field is stored as
+                # ticket/<id>. We strip out the ticket/ part because we
+                # don't need it.
+                if key == 'id':
+                    value = value.replace('ticket/', '')
                 bug_dict[key] = value.strip()
 
         return bug_dict
@@ -1843,7 +1848,11 @@ class RequestTracker(ExternalBugTracker):
                 "Unable to retrieve bug %s: %s" %
                 (str(bug_id), firstline[-1]))
 
-        return bug_id, self._parseRemoteBug(bug_data.read())
+        bug = self._parseRemoteBug(bug_data.read())
+        if bug['id'] is None:
+            return None, None
+        else:
+            return int(bug['id']), bug
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
@@ -1864,7 +1873,7 @@ class RequestTracker(ExternalBugTracker):
 
         # Tickets returned in RT multiline format are separated by lines
         # containing only --\n.
-        tickets = bug_data.split("--\n")
+        tickets = bug_data.read().split("--\n")
         bugs = {}
         for ticket in tickets:
             ticket = ticket.strip()
@@ -1873,9 +1882,26 @@ class RequestTracker(ExternalBugTracker):
             # We only bother adding the bug to the bugs dict if we
             # actually have some data worth adding.
             if bug['id'] is not None:
-                bugs[bug['id']] = bug
+                bugs[int(bug['id'])] = bug
 
         return bugs
+
+    def getRemoteStatus(self, bug_id):
+        """Return the remote status of a given bug.
+
+        See `ExternalBugTracker`.
+        """
+        try:
+            bug_id = int(bug_id)
+            bug = self.bugs[bug_id]
+        except ValueError:
+            raise InvalidBugId(
+                "RequestTracker bug ids must be integers (was passed %r)"
+                % bug_id)
+        except KeyError:
+            raise BugNotFound(bug_id)
+
+        return bug['status']
 
     def convertRemoteStatus(self, remote_status):
         """Convert an RT status into a Launchpad BugTaskStatus."""
