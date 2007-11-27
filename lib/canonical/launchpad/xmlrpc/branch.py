@@ -160,7 +160,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     implements(IPublicCodehostingAPI)
 
-    supported_schemes = 'bzr+ssh', 'sftp', 'http'
+    supported_schemes = 'bzr+ssh', 'http'
 
     def _getBazaarHost(self):
         """Return the hostname for the codehosting server."""

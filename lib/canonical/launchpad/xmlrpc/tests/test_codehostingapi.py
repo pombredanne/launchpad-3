@@ -101,7 +101,6 @@ class TestExpandURL(BranchTestCase):
         results = self.api.resolve_lp_path(self.product.name)
         urls = [
             'bzr+ssh://bazaar.launchpad.dev/%s' % trunk.unique_name,
-            'sftp://bazaar.launchpad.dev/%s' % trunk.unique_name,
             'http://bazaar.launchpad.dev/%s' % trunk.unique_name]
         self.assertEqual(dict(urls=urls), results)
 
