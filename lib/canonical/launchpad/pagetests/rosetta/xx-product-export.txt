@@ -9,7 +9,8 @@ translation downloads.
 For products, that option downloads translations for the series that is
 currently the preferred translation target.
 
-    >>> download.url
+    >>> download_url = download.url
+    >>> download_url
     'http://translations.launchpad.dev/evolution/trunk/+export'
 
 Another way of getting that same export would be to browse to the series
@@ -57,12 +58,18 @@ Translations.
 
 == Authorization ==
 
-Only logged-in users can request downloads.
+Only logged-in users get the option to request downloads.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
+    >>> anon_browser.open('http://translations.launchpad.dev/mozilla/')
     >>> anon_browser.getLink('Download translations').click()
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    LinkNotFoundError
 
+Even "hacking the URL" to the download option will fail.
+
+    >>> anon_browser.open(download_url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
 

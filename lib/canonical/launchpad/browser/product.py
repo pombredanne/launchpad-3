@@ -451,11 +451,10 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download translations'
         preferred_series = self.context.primary_translatable
-        # XXX JeroenVermeulen 2007-11-27 bug=172292: also check for
-        # ILaunchBag.user.
         enabled = (self.context.official_rosetta and
             preferred_series is not None)
         link = ''
