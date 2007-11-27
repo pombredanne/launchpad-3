@@ -62,7 +62,7 @@ class DatabaseTest(unittest.TestCase):
         setSecurityPolicy(self._old_policy)
         super(DatabaseTest, self).tearDown()
 
-    def getMirrorRequestTime(self, branch_id):
+    def getNextMirrorTime(self, branch_id):
         """Return the value of next_mirror_time for the branch with the given
         id.
 
@@ -75,7 +75,7 @@ class DatabaseTest(unittest.TestCase):
         [next_mirror_time] = self.cursor.fetchone()
         return next_mirror_time
 
-    def setMirrorRequestTime(self, branch_id, next_mirror_time):
+    def setNextMirrorTime(self, branch_id, next_mirror_time):
         """Set next_mirror_time on the branch with the given id."""
         self.cursor.execute(
             "UPDATE Branch SET next_mirror_time = %s WHERE id = %s"
@@ -620,14 +620,14 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             1, 'sabdfl', '+junk', 'foo')
-        self.assertEqual(self.getMirrorRequestTime(branchID), None)
+        self.assertEqual(self.getNextMirrorTime(branchID), None)
 
     def test_requestMirror(self):
         # requestMirror should set the next_mirror_time field to be the
         # current time.
         hosted_branch_id = 25
         # make sure the sample data is sane
-        self.assertEqual(None, self.getMirrorRequestTime(hosted_branch_id))
+        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
@@ -637,7 +637,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage._requestMirrorInteraction(hosted_branch_id)
 
         self.assertTrue(
-            current_db_time < self.getMirrorRequestTime(hosted_branch_id),
+            current_db_time < self.getNextMirrorTime(hosted_branch_id),
             "Branch next_mirror_time not updated.")
 
     def test_mirrorComplete_resets_mirror_request(self):
@@ -655,7 +655,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage._startMirroringInteraction(25)
         storage._mirrorCompleteInteraction(25, 'rev-1')
 
-        self.assertEqual(None, self.getMirrorRequestTime(25))
+        self.assertEqual(None, self.getNextMirrorTime(25))
 
 
 class UserDetailsStorageV2Test(DatabaseTest):

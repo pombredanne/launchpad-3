@@ -198,7 +198,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         self.assertEqual(
             [], list(self.branch_set.getPullQueue(self.branch_type)))
 
-    def test_pastMirrorRequestTimeInQueue(self):
+    def test_pastNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the past are mirrored."""
         transaction.begin()
         branch = self.makeBranch()
@@ -210,7 +210,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
             [branch.id
              for branch in self.branch_set.getPullQueue(branch.branch_type)])
 
-    def test_futureMirrorRequestTimeInQueue(self):
+    def test_futureNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the future are not mirrored."""
         transaction.begin()
         branch = removeSecurityProxy(self.makeBranch())
