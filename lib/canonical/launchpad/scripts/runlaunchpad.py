@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0603
 
 __metaclass__ = type
 __all__ = ['start_launchpad']

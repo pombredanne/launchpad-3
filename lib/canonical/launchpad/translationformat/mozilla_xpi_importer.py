@@ -124,14 +124,15 @@ class MozillaZipFile:
             self.filename is not None and
             self.filename.startswith('en-US.xpi') and
             message.translations and (
-                message.msgid.endswith('.accesskey') or
-                message.msgid.endswith('.commandkey')))
+                message.msgid_singular.endswith('.accesskey') or
+                message.msgid_singular.endswith('.commandkey')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
         for message in newdata:
-            if message.msgid in self._msgids:
-                logging.info("Duplicate message ID '%s'." % message.msgid)
+            if message.msgid_singular in self._msgids:
+                logging.info(
+                    "Duplicate message ID '%s'." % message.msgid_singular)
                 continue
 
             self._updateMessageFileReferences(message)
@@ -144,7 +145,7 @@ class MozillaZipFile:
                     message.translations[TranslationConstants.SINGULAR_FORM])
                 message.resetAllTranslations()
 
-            self._msgids.append(message.msgid)
+            self._msgids.append(message.msgid_singular)
             self.messages.append(message)
 
 
@@ -188,7 +189,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
             return
 
         message = TranslationMessageData()
-        message.msgid = name
+        message.msgid_singular = name
         # CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
         # don't have a way to show the line number with the source reference.
@@ -389,7 +390,7 @@ class PropertyFile:
                     ignore_comment = False
 
                 message = TranslationMessageData()
-                message.msgid = key
+                message.msgid_singular = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
                 message.addTranslation(

@@ -1,3 +1,7 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 from datetime import datetime
 import logging
 import os
@@ -8,7 +12,7 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.urlutils import local_path_to_url
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -140,9 +144,14 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.arbitrary_branch_id = 1
         self.listener = self.StubPullerListener()
         self.termination_deferred = defer.Deferred()
+        self.clock = task.Clock()
         self.protocol = scheduler.PullerMasterProtocol(
-            self.termination_deferred, self.listener)
+            self.termination_deferred, self.listener, self.clock)
         self.protocol.transport = self.StubTransport()
+        self.protocol.connectionMade()
+
+    def assertProtocolSuccess(self):
+        self.assertEqual(False, self.protocol.unexpected_error_received)
 
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
@@ -155,6 +164,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         """Receiving a startMirroring message notifies the listener."""
         self.sendToProtocol('startMirroring', 0)
         self.assertEqual(['startMirroring'], self.listener.calls)
+        self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
@@ -162,6 +172,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.listener.calls = []
         self.sendToProtocol('mirrorSucceeded', 1, 1234)
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+        self.assertProtocolSuccess()
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
@@ -170,14 +181,72 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
+        self.assertProtocolSuccess()
+
+    def test_timeoutWithoutProgress(self):
+        """If we don't receive any messages after the configured timeout
+        period, then we kill the child process.
+        """
+        self.protocol.connectionMade()
+        self.clock.advance(config.supermirror.worker_timeout + 1)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
+
+    def assertMessageResetsTimeout(self, *message):
+        """Assert that sending the message resets the protocol timeout."""
+        self.assertTrue(2 < config.supermirror.worker_timeout)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
+        self.sendToProtocol(*message)
+        self.clock.advance(2)
+        self.assertProtocolSuccess()
+
+    def test_progressMadeResetsTimeout(self):
+        """Receiving 'progressMade' resets the timeout."""
+        self.assertMessageResetsTimeout('progressMade', 0)
+
+    def test_startMirroringResetsTimeout(self):
+        """Receiving 'startMirroring' resets the timeout."""
+        self.assertMessageResetsTimeout('startMirroring', 0)
+
+    def test_mirrorSucceededDoesNotResetTimeout(self):
+        """Receiving 'mirrorSucceeded' doesn't reset the timeout.
+
+        It's possible that in pathological cases, the worker process might
+        hang around even after it has said that it's finished. When that
+        happens, we want to kill it quickly so that we can continue mirroring
+        other branches.
+        """
+        self.sendToProtocol('startMirroring', 0)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
+        self.sendToProtocol('mirrorSucceeded', 1, 'rev1')
+        self.clock.advance(2)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
+
+    def test_mirrorFailedDoesNotResetTimeout(self):
+        """Receiving 'mirrorFailed' doesn't reset the timeout.
+
+        mirrorFailed doesn't reset the timeout for the same reasons as
+        mirrorSucceeded.
+        """
+        self.sendToProtocol('startMirroring', 0)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
+        self.sendToProtocol('mirrorFailed', 2, 'error message', 'OOPS')
+        self.clock.advance(2)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
 
     def test_processTermination(self):
         """The protocol fires a Deferred when it is terminated."""
         self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
         return self.termination_deferred
 
-    def test_deferredWaitsForListener(self):
-        """If the process terminates while we are waiting """
+    def test_processTerminationCancelsTimeout(self):
+        """When the process ends (for any reason) cancel the timeout."""
+        self.protocol._processTerminated(
+            failure.Failure(error.ConnectionDone()))
+        self.clock.advance(config.supermirror.worker_timeout * 2)
+        self.assertProtocolSuccess()
 
     def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise

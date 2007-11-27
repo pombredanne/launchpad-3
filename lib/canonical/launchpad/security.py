@@ -16,13 +16,12 @@ from canonical.launchpad.interfaces import (
     IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
     ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
     IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
-    IPOTemplate, IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset,
-    IProduct, IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
-    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
-    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
-    ISprint, ISprintSpecification, IStandardShipItRequest,
-    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
-    ITranslationGroupSet, ITranslationImportQueue,
+    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease, IProductSeries,
+    IQuestion, IQuestionTarget, IRequestedCDs, IShipItApplication,
+    IShippingRequest, IShippingRequestSet, IShippingRun, ISpecification,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -812,28 +811,6 @@ class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
 class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationGroupSet
-
-
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
-# This should be using SuperSpecialPermissions when implemented.
-class ListProductPOTemplateNames(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IProduct
-
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
-# This should be using SuperSpecialPermissions when implemented.
-class ListSourcePackagePOTemplateNames(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = ISourcePackage
-
-class EditPOTemplateName(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplateName
-
-
-class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplateNameSet
 
 
 class EditBugTracker(EditByOwnersOrAdmins):

@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -313,7 +314,7 @@ class TranslationImportQueueEntry(SQLBase):
             return self._guessed_pofile_from_path
 
         return self._get_pofile_from_language(guessed_language,
-            self.potemplate.potemplatename.translationdomain,
+            self.potemplate.translation_domain,
             sourcepackagename=self.potemplate.sourcepackagename)
 
     def _guess_multiple_directories_with_pofile(self):
@@ -437,7 +438,7 @@ class TranslationImportQueueEntry(SQLBase):
                 # We were not able to find such template, someone should
                 # review it manually.
                 return None
-            translation_domain = potemplate.potemplatename.translationdomain
+            translation_domain = potemplate.translation_domain
         else:
             # The guessed language from the directory doesn't math the
             # language from the filename. Leave it for an admin.

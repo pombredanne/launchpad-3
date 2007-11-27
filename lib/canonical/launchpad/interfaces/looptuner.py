@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interface for loop bodies that can be fed to the LoopTuner."""
 

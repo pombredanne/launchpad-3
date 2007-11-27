@@ -524,7 +524,6 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
   ...     print item.displayname, 'ACCEPTED'
   mozilla-firefox Component "hell" is not allowed in breezy-autotest
 
-
 Check how we treat source upload duplications in UNAPPROVED queue (NEW
 has a similar behaviour):
 
@@ -681,4 +680,53 @@ launchpad.Edit on a packageupload record.
 Roll back modified data:
 
   >>> transaction.abort()
+
+
+Clear existing mail stack:
+
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> rubbish = pop_notifications()
+
+
+Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
+accept or reject the item and send an email respectively.
+
+Let's accept something in the queue.  (We need to populate the librarian
+with fake changes files first so that emails can be generated.)
+
+  >>> from canonical.archiveuploader.tests import insertFakeChangesFile
+  >>> insertFakeChangesFile(items[2].changesfile.id)
+  >>> insertFakeChangesFile(items[3].changesfile.id)
+  >>> try:
+  ...    items[2].acceptFromQueue('announce@example.com')
+  ... except QueueInconsistentStateError, e:
+  ...    print 'FAILED'
+  ... else:
+  ...    print 'ACCEPTED'
+  ACCEPTED
+
+An email is generated.  We wont look what is inside it here, that is well
+shown in nascentupload-announcements.txt.
+
+  >>> [notification] = pop_notifications()
+
+Let's reject something in the queue:
+
+  >>> try:
+  ...     items[3].rejectFromQueue()
+  ... except QueueInconsistentStateError, e:
+  ...    print 'FAILED'
+  ... else:
+  ...    print 'REJECTED'
+  REJECTED
+
+One email is generated (see nascentupload-announcements.txt)
+
+  >>> [notification] = pop_notifications()
+
+
+Clean up the librarian files:
+
+   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+   >>> cleanupLibrarianFiles()
 

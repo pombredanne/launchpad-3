@@ -14,8 +14,11 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
+from bzrlib.progress import DummyProgress
+import bzrlib.ui
 
 from canonical.config import config
+from canonical.codehosting import ProgressUIFactory
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -28,6 +31,7 @@ __all__ = [
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
+    'install_worker_progress_factory',
     'PullerWorker',
     'PullerWorkerProtocol'
     ]
@@ -108,6 +112,9 @@ class PullerWorkerProtocol:
 
     def mirrorFailed(self, branch_to_mirror, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
+
+    def progressMade(self):
+        self.sendEvent('progressMade')
 
 
 def identical_formats(branch_one, branch_two):
@@ -376,3 +383,35 @@ class PullerWorker:
     def __repr__(self):
         return ("<PullerWorker source=%s dest=%s at %x>" %
                 (self.source, self.dest, id(self)))
+
+
+class WorkerProgressBar(DummyProgress):
+    """A progress bar that informs a PullerWorkerProtocol of progress."""
+
+    def _event(self, *args, **kw):
+        """Inform the PullerWorkerProtocol of progress.
+
+        This method is attached to the class as all of the progress bar
+        methods: tick, update, child_update, clear and note.
+        """
+        self.puller_worker_protocol.progressMade()
+
+    tick = _event
+    update = _event
+    child_update = _event
+    clear = _event
+    note = _event
+
+    def child_progress(self, **kwargs):
+        """As we don't care about nesting progress bars, return self."""
+        return self
+
+
+def install_worker_progress_factory(puller_worker_protocol):
+    """Install an UIFactory that informs a PullerWorkerProtocol of progress.
+    """
+    def factory(*args, **kw):
+        r = WorkerProgressBar(*args, **kw)
+        r.puller_worker_protocol = puller_worker_protocol
+        return r
+    bzrlib.ui.ui_factory = ProgressUIFactory(factory)

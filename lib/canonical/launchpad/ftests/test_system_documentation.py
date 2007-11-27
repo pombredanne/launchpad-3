@@ -4,16 +4,13 @@ Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
 
-from datetime import datetime, timedelta
 import logging
 import os
-from pytz import UTC
 import transaction
 import unittest
 
 from zope.component import getUtility, getView
-from zope.security.management import getSecurityPolicy, setSecurityPolicy
-from zope.security.proxy import removeSecurityProxy
+from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
@@ -24,9 +21,11 @@ from canonical.database.sqlbase import (
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.ftests import mailinglists_helper
+from canonical.launchpad.ftests.bug import (
+    create_old_bug, summarize_bugtasks)
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistributionSet,
-    ILanguageSet, ILaunchBag, IPersonSet, IProductSet)
+    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
+    IPersonSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -57,6 +56,7 @@ def create_view(context, name, form=None, layer=None, server_url=None):
 
 
 def setGlobs(test):
+    """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
     test.globs['logout'] = logout
@@ -68,57 +68,64 @@ def setGlobs(test):
 
 
 def setUp(test):
+    """Setup the common globals and login for testing system documentation."""
     setGlobs(test)
     # Set up an anonymous interaction.
     login(ANONYMOUS)
 
 
 def tearDown(test):
+    """Tear down the common system documentation test."""
     logout()
 
 def checkwatchesSetUp(test):
+    """Setup the check watches script tests."""
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 def poExportSetUp(test):
+    """Setup the PO export script tests."""
     LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
 
 def poExportTearDown(test):
+    """Tear down the PO export script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
 def uploaderSetUp(test):
+    """setup the package uploader script tests."""
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser('uploader')
 
 def uploaderTearDown(test):
+    """Tear down the package uploader script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
 def builddmasterSetUp(test):
+    """Setup the connection for the build master tests."""
     LaunchpadZopelessLayer.alterConnection(
         dbuser=config.builddmaster.dbuser,
         isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
 def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
     LaunchpadZopelessLayer.switchDbUser('branchscanner')
     setUp(test)
 
 def branchscannerTearDown(test):
+    """Tear down the branch scanner tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
-def answerTrackerSetUp(test):
-    setGlobs(test)
-    # The Zopeless environment usually runs using the PermissivePolicy
-    # but the process-mail.py script in which the tested code runs
-    # use the regular web policy.
-    test.old_security_policy = getSecurityPolicy()
-    setSecurityPolicy(LaunchpadSecurityPolicy)
-
-def answerTrackerTearDown(test):
-    setSecurityPolicy(test.old_security_policy)
 
 def peopleKarmaTearDown(test):
+    """Restore the database after testing karma."""
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
     tearDown(test)
@@ -211,67 +218,13 @@ def bugLinkedToQuestionSetUp(test):
     login('no-priv@canonical.com')
 
 
-def _create_old_bug(
-    title, days_old, target, status=BugTaskStatus.INCOMPLETE,
-    with_message=True):
-    """Create an aged bug.
-    
-    :title: A string. The bug title for testing.
-    :days_old: An int. The bug's age in days.
-    :target: A BugTarkget. The bug's target.
-    :status: A BugTaskStatus. The status of the bug's single bugtask.
-    :with_message: A Bool. Whether to create a reply message.
-    """
-    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    params = CreateBugParams(
-        owner=no_priv, title=title, comment='Something is broken.')
-    bug = target.createBug(params)
-    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    if with_message is True:
-        bug.newMessage(
-            owner=sample_person, subject='Something is broken.',
-            content='Can you provide more information?')
-    bugtask = bug.bugtasks[0]
-    bugtask.transitionToStatus(
-        status, sample_person)
-    date = datetime.now(UTC) - timedelta(days=days_old)
-    removeSecurityProxy(bug).date_last_updated = date
-    return bugtask
-
-
-def _summarize_bugtasks(bugtasks):
-    """Summarize a sequence of bugtasks."""
-    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
-    for bugtask in bugtasks:
-        if len(bugtask.bug.bugtasks) == 1:
-            title = bugtask.bug.title
-        else:
-            title = bugtask.target.name
-        print '%s  %s  %s  %s  %s  %s  %s  %s' % (
-            title,
-            bugtask.target_uses_malone,
-            (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
-            bugtask.status.title,
-            bugtask.assignee is not None,
-            bugtask.bug.duplicateof is not None,
-            bugtask.milestone is not None,
-            bugtask.bug.messages.count() == 1)
-
-
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['create_old_bug'] = _create_old_bug
-    test.globs['summarize_bugtasks'] = _summarize_bugtasks
-    test.globs['ubuntu'] = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['jokosher'] = getUtility(
-        IProductSet).getByName('jokosher')
-    test.globs['thunderbird'] = getUtility(
-        IProductSet).getByName('thunderbird')
+    test.globs['create_old_bug'] = create_old_bug
+    test.globs['summarize_bugtasks'] = summarize_bugtasks
     test.globs['sync'] = sync
     test.globs['commit'] = commit
-    test.globs['sample_person'] = getUtility(IPersonSet).getByEmail(
-        'test@canonical.com')
     login('test@canonical.com')
 
 
@@ -310,8 +263,8 @@ def mailingListXMLRPCInternalSetUp(test):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
         @mailinglists_helper.fault_catcher
         def getMembershipInformation(self, teams):
-            return super(ImpedenceMatchingView, self).getMembershipInformation(
-                teams)
+            return super(
+                ImpedenceMatchingView, self).getMembershipInformation(teams)
         @mailinglists_helper.fault_catcher
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
@@ -334,7 +287,7 @@ def mailingListXMLRPCExternalSetUp(test):
     from canonical.functional import XMLRPCTestTransport
     from xmlrpclib import ServerProxy
     mailinglist_api = ServerProxy(
-        'http://xmlrpc.launchpad.dev:8087/mailinglists/',
+        'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',
         transport=XMLRPCTestTransport())
     test.globs['mailinglist_api'] = mailinglist_api
     # See above; right now this is the same for both the internal and external
@@ -343,6 +296,23 @@ def mailingListXMLRPCExternalSetUp(test):
     # two globals will end up being different functions.
     test.globs['mailinglist_api'] = mailinglist_api
     test.globs['commit'] = flush_database_updates
+
+
+def zopelessLaunchpadSecuritySetUp(test):
+    """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
+
+    To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
+    to run in the Zopeless environment. The Zopeless environment normally runs
+    using the PermissiveSecurityPolicy. If we want the test to cover
+    functionality used in the webapp, it needs to use the
+    LaunchpadSecurityPolicy.
+    """
+    setGlobs(test)
+    test.old_security_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+
+
+def zopelessLaunchpadSecurityTearDown(test):
+    setSecurityPolicy(test.old_security_policy)
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -444,12 +414,6 @@ special = {
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
-    'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
-            '../doc/answer-tracker-emailinterface.txt',
-            setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False
-            ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
             setUp=setUp, tearDown=peopleKarmaTearDown,
@@ -483,11 +447,6 @@ special = {
     'rosetta-karma.txt': FunctionalDocFileSuite(
             '../doc/rosetta-karma.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'incomingmail.txt': FunctionalDocFileSuite(
-            '../doc/incomingmail.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
             ),
     'launchpadform.txt': FunctionalDocFileSuite(
             '../doc/launchpadform.txt',
@@ -683,6 +642,12 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'codeimport-machine.txt': LayeredDocFileSuite(
+            '../doc/codeimport-machine.txt',
+            setUp=zopelessLaunchpadSecuritySetUp,
+            tearDown=zopelessLaunchpadSecurityTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            ),
     # Also run the pillar.txt doctest under the Zopeless layer.
     # This exposed bug #149632.
     'pillar.txt-zopeless': LayeredDocFileSuite(
@@ -692,6 +657,85 @@ special = {
             layer=LaunchpadZopelessLayer
             ),
     }
+
+
+class ProcessMailLayer(LaunchpadZopelessLayer):
+    """Layer containing the tests running inside process-mail.py."""
+
+
+    @classmethod
+    def testSetUp(cls):
+        """Fixture replicating the process-mail.py environment.
+
+        This zopeless script uses the regular security policy and
+        connects as a specific DB user.
+        """
+        cls._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+        LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+    @classmethod
+    def testTearDown(cls):
+        """Tear down the test fixture."""
+        setSecurityPolicy(cls._old_policy)
+
+    doctests_without_logging = [
+        'answer-tracker-emailinterface.txt',
+        'bugs-emailinterface.txt',
+        'bugs-email-affects-path.txt',
+        'emailauthentication.txt',
+    ]
+
+    doctests_with_logging = [
+        'incomingmail.txt',
+        'spec-mail-exploder.txt'
+    ]
+
+    @classmethod
+    def addTestsToSpecial(cls):
+        """Adds all the tests related to process-mail.py to special"""
+        global special
+
+        for filename in cls.doctests_without_logging:
+            special[filename] = cls.createLayeredDocFileSuite(filename)
+
+        for filename in cls.doctests_with_logging:
+            special[filename] = cls.createLayeredDocFileSuite(
+                filename, stdout_logging=True)
+
+        # Adds a copy of some bug doctests that will be run with
+        # the processmail user.
+        def bugSetStatusSetUp(test):
+            setUp(test)
+            test.globs['test_dbuser'] = config.processmail.dbuser
+
+        special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bug-set-status.txt',
+                setUp=bugSetStatusSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+        def bugmessageSetUp(test):
+            setUp(test)
+            login('no-priv@canonical.com')
+
+        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bugmessage.txt',
+                setUp=bugmessageSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+    @classmethod
+    def createLayeredDocFileSuite(cls, filename, stdout_logging=False):
+        """Helper to create a doctest using this layer."""
+        return LayeredDocFileSuite(
+            "../doc/%s" % filename,
+            setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=cls,
+            stdout_logging=stdout_logging,
+            stdout_logging_level=logging.WARNING)
+
+
+ProcessMailLayer.addTestsToSpecial()
 
 
 def test_suite():
