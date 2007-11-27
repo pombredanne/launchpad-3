@@ -99,6 +99,7 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
             self.widgets['name'].context.description = _(
                 'This team has a mailing list and may not be renamed.')
 
+
 def generateTokenAndValidationEmail(email, team):
     """Send a validation message to the given email."""
     login = getUtility(ILaunchBag).login
