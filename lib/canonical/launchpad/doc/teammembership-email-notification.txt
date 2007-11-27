@@ -46,7 +46,7 @@ for the member.
     >>> def print_distinct_messages_and_recipients(include_reply_to=False):
     ...     """Pop all messages from stub.test_emails and print them with
     ...      their recipients.
-    ...     
+    ...
     ...     Since the same message may be sent more than once (for different
     ...     recipients), we print each distinct message only once and group
     ...     all recipients of that message together.
@@ -137,7 +137,7 @@ and team admins.
     ----------------------------------------
 
 The same goes for approving a proposed member.
-    
+
     >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> daf.join(ubuntu_team)
     >>> daf_membership = membershipset.getByPersonAndTeam(daf, ubuntu_team)
@@ -151,7 +151,7 @@ The same goes for approving a proposed member.
     >>> notification['Subject']
     'daf wants to join'
 
-    >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED, 
+    >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED,
     ...           reviewer=sabdfl, comment='This is a nice guy; I like him')
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
@@ -394,7 +394,7 @@ expiration date of their own memberships, so he still has to contact one of
 the other team admins.
 
     >>> kamion_on_ubuntu_team.status.name
-    'ADMIN' 
+    'ADMIN'
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> print_distinct_messages_and_recipients()
