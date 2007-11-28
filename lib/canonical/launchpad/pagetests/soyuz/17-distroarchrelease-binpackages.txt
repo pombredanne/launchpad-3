@@ -112,7 +112,8 @@ file is available:
 
 = DistroArchSeries Partner Binary Package Pages =
 
-Binary partner packages in Launchpad differ from regular packages by two things:
+Binary partner packages in Launchpad differ from regular packages by
+two things:
 
 1. Their component is 'partner'
 2. Their archive is the partner archive, rather than the primary archive.
