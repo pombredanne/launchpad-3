@@ -63,7 +63,6 @@ to order our messages.
     >>> firefox_question = firefox.newQuestion(
     ...     title='New question', description='Question description.',
     ...     owner=sample_person, datecreated=now.next())
-    >>> notify(SQLObjectCreatedEvent(firefox_question))
     Karma added: action=questionasked, product=firefox, person=name12
 
 

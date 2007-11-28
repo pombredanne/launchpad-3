@@ -1,11 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
     'BranchWithSortKeys',
-    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
@@ -115,6 +115,7 @@ class Branch(SQLBase):
         orderBy='id')
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch')
@@ -173,6 +174,11 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
+        # Update the last_modified_date of the source and target branches to
+        # be the date_created for the merge proposal.
+        self.date_last_modified = date_created
+        target_branch.date_last_modified = date_created
+
         return BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
@@ -362,6 +368,7 @@ class Branch(SQLBase):
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See `IBranch`."""
+        self.date_last_modified = UTC_NOW
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
@@ -519,11 +526,6 @@ LISTING_SORT_TO_COLUMN = {
 
 DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
-
-
-BRANCH_NAME_VALIDATION_ERROR_MESSAGE = (
-    "Branch names must start with a number or letter.  The characters +, -, "
-    "_ and @ are also allowed after the first character.")
 
 
 class BranchSet:
@@ -695,22 +697,19 @@ class BranchSet:
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
 
-        # XXX: MichaelHudson 2007-10-26 bug=95109: This regular expression is
-        # a copy of the one in the database constraint, which is different
-        # from that used by IBranch['name'].validate()!  This needs to be
-        # sorted out, but for now we just want to present a nicer error than
-        # 'ERROR: new row for relation "branch" violates check constraint
-        # "valid_name"...' to the user.
-        pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
-        if not re.match(pat, name):
-            raise LaunchpadValidationError(
-                BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+        # Not all code paths that lead to branch creation go via a
+        # schema-validated form (e.g. the register_branch XML-RPC call or
+        # pushing a new branch to the supermirror), so we validate the branch
+        # name here to give a nicer error message than 'ERROR: new row for
+        # relation "branch" violates check constraint "valid_name"...'.
+        IBranch['name'].validate(unicode(name))
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
-            date_created=date_created, branch_type=branch_type)
+            date_created=date_created, branch_type=branch_type,
+            date_last_modified=date_created)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at

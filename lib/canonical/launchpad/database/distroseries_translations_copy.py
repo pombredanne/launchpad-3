@@ -6,8 +6,6 @@ __metaclass__ = type
 
 __all__ = [ 'copy_active_translations' ]
 
-import logging
-
 from psycopg import ProgrammingError
 from zope.interface import implements
 
@@ -17,7 +15,6 @@ from canonical.database.sqlbase import (
     cursor, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
@@ -103,19 +100,14 @@ def _copy_active_translations_to_new_series(
     # original POTMsgSet's potemplate.
     copier.extract('POTMsgSet', ['POTemplate'], 'POTMsgSet.sequence > 0')
 
-    # Copy POMsgIDSightings, substituting their potmsgset foreign keys with
-    # references to the child's POTMsgSets (again, done by MultiTableCopy).
-    copier.extract('POMsgIDSighting', ['POTMsgSet'])
-
     # Copy POFiles, making them refer to the child's copied POTemplates.
     copier.extract('POFile', ['POTemplate'])
 
-    # Same for POMsgSet, but a bit more complicated since it refers to both
-    # POFile and POTMsgSet.
-    copier.extract('POMsgSet', ['POFile', 'POTMsgSet'])
-
-    # And for POSubmission.
-    copier.extract('POSubmission', ['POMsgSet'], 'active OR published')
+    # Same for TranslationMessage, but a bit more complicated since it refers
+    # to both POFile and POTMsgSet.
+    copier.extract(
+        'TranslationMessage', ['POFile', 'POTMsgSet'],
+        'is_current OR is_imported')
 
     # Finally, pour the holding tables back into the originals.
     copier.pour(transaction)
@@ -217,8 +209,8 @@ def _prepare_pofile_merge(copier, transaction, query_parameters):
         """ % query_parameters)
 
 
-class PreparePOMsgSetPouring:
-    """Prevent pouring of `POMsgSet`s whose `POFile`s weren't poured.
+class PrepareTranslationMessagePouring:
+    """Prevent pouring of `TranslationMessage` whose `POFile` weren't poured.
 
     This is a callback, but it takes the form of a class so it can carry some
     extra parameters.
@@ -227,14 +219,15 @@ class PreparePOMsgSetPouring:
         """Accept parameters that help speed up actual cleanup work.
 
         :param lowest_pofile: lowest POFile id that we'll be copying
-            `POMsgSet`s for.
+            `TranslationMessage`s for.
         :param highest_pofile: highest POFile id that we'll be copying
-            `POMsgSet`s for.
+            `TranslationMessage`s for.
         """
         self.lowest_pofile = quote(lowest_pofile)
         self.highest_pofile = quote(highest_pofile)
 
     def __call__(self, holding_table, source_table):
+        """See `ITunableLoop`."""
         cur = cursor()
         # What we'll be doing here probably requires a sequential scan, but
         # the MultiTableCopy disallows those because of index degradation
@@ -262,408 +255,145 @@ class PreparePOMsgSetPouring:
             DELETE FROM %s
             WHERE pofile NOT IN (SELECT id FROM temp_final_pofiles)
             """ % holding_table)
+        drop_tables(cur, ['temp_final_pofiles'])
         allow_sequential_scans(cur, False)
 
 
-def _prepare_pomsgset_batch(
+
+def _prepare_translationmessage_batch(
     holding_table, source_table, batch_size, start_id, end_id):
-    """Prepare pouring of a batch of `POMsgSet`s.
+    """Prepare pouring of a batch of `TranslationMessage`s.
 
-    Deletes any `POMsgSet`s in the batch that already have equivalents in the
-    source table (same potmsgset and pofile, on which the source table has a
-    unique index).  Any such `POMsgSet`s must have been added after the
-    `POMsgSet`s were extracted, so we assume they are newer and better than
-    what we have in our holding table.
+    Deletes any `TranslationMessage`s in the batch that already have
+    equivalents in the source table (same potmsgset and pofile, on which the
+    source table has a unique index).  Any such `TranslationMessage`s must
+    have been added after the `TranslationMessage`s were extracted, so we
+    assume they are newer and better than what we have in our holding table.
 
-    Also deletes `POMsgSet`s in the batch that refer to `POFile`s that do not
-    exist.  Any such `POFile`s must have been deleted from their holding table
-    after they were extracted.
+    Also deletes `TranslationMessage`s in the batch that refer to `POFile`s
+    that do not exist.  Any such `POFile`s must have been deleted from their
+    holding table after they were extracted.
     """
     batch_clause = (
         "holding.id >= %s AND holding.id < %s" % sqlvalues(start_id, end_id))
     cur = cursor()
     cur.execute("""
         DELETE FROM %s AS holding
-        USING POMsgSet pms
+        USING TranslationMessage tm
         WHERE %s AND
-            holding.potmsgset = pms.potmsgset AND
-            holding.pofile = pms.pofile
+            holding.potmsgset = tm.potmsgset AND
+            holding.pofile = tm.pofile AND
+            COALESCE(holding.msgstr0, -1) = COALESCE(tm.msgstr0, -1) AND
+            COALESCE(holding.msgstr1, -1) = COALESCE(tm.msgstr1, -1) AND
+            COALESCE(holding.msgstr2, -1) = COALESCE(tm.msgstr2, -1) AND
+            COALESCE(holding.msgstr3, -1) = COALESCE(tm.msgstr3, -1)
+        """ % (holding_table, batch_clause))
+
+    # Deactivate translation messages we're about to replace with better ones
+    # from the parent.
+    cur.execute("""
+        UPDATE TranslationMessage AS tm
+        SET is_current = FALSE
+        FROM %s holding
+        WHERE %s AND
+            holding.potmsgset = tm.potmsgset AND
+            holding.pofile = tm.pofile AND
+            tm.is_current IS TRUE
         """ % (holding_table, batch_clause))
 
 
-def _prepare_pomsgset_merge(
+def _prepare_translationmessage_merge(
     copier, transaction, query_parameters, holding_tables, logger):
-    """`POFile` chapter of `copy_active_translations_as_update`.
+    """`TranslationMessage` chapter of `copy_active_translations_as_update`.
 
-    Extract copies of `POMsgSet`s from parent distroseries, and prepare them
-    for pouring.
+    Extract copies of `TranslationMessage`s to be copied into holding table,
+    and go through preparations for pouring them back.
 
     This function is not reusable; it only makes sense as a part of
     `copy_active_translations_as_update`.
     """
-    # We'll extract POMsgSets that already have equivalents in the child
-    # distroseries, to make it easier to copy POSubmissions for them later,
-    # but we won't actually copy those POMsgSets.
-    pomsgset_inert_where = """
+    # Exclude TranslationMessages for which one with an equivalent set of
+    # translations already exists in the child series, or we'd be introducing
+    # needless duplicates.
+    # Don't offer replacements for messages that the child has newer ones for,
+    # i.e. ones with the same (potmsgset, pofile) whose date_created is no
+    # older than the one the parent has to offer.
+    have_better = """
         EXISTS (
             SELECT *
-            FROM
-                %(pofile_holding_table)s pfh,
-                temp_equiv_potmsgset,
-                POMsgSet pms
-            WHERE
+            FROM TranslationMessage better
+            JOIN temp_equiv_potmsgset ON
                 holding.potmsgset = temp_equiv_potmsgset.id AND
-                temp_equiv_potmsgset.new_id = pms.potmsgset AND
+                better.potmsgset = temp_equiv_potmsgset.new_id
+            JOIN %(pofile_holding_table)s pfh ON
                 holding.pofile = pfh.id AND
-                pfh.new_id = pms.pofile
-            )
+                better.pofile = pfh.new_id
+            WHERE
+                better.date_created >= holding.date_created OR
+                ((COALESCE(better.msgstr0, -1) =
+                    COALESCE(holding.msgstr0, -1)) AND
+                (COALESCE(better.msgstr1, -1) =
+                    COALESCE(holding.msgstr1, -1)) AND
+                (COALESCE(better.msgstr2, -1) =
+                    COALESCE(holding.msgstr2, -1)) AND
+                (COALESCE(better.msgstr3, -1) =
+                    COALESCE(holding.msgstr3, -1)))
+        )
         """ % query_parameters
 
     cur = cursor()
     cur.execute(
         "SELECT min(new_id), max(new_id) FROM %s" % holding_tables['pofile'])
     lowest_pofile, highest_pofile = cur.fetchone()
-    prepare_pomsgset_pouring = PreparePOMsgSetPouring(
+    prepare_translationmessage_pouring = PrepareTranslationMessagePouring(
         lowest_pofile, highest_pofile)
 
+    # We're only interested in current, complete translation messages.  See
+    # TranslationMessage.is_complete for the definition of "complete."
+    where_clause = """
+        is_current AND
+        pofile = POFile.id AND
+        POFile.language = Language.id AND
+        potmsgset = POTMsgSet.id AND
+        msgstr0 IS NOT NULL AND
+        (potmsgset.msgid_plural IS NULL OR (
+         (msgstr1 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 1) AND
+         (msgstr2 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 2) AND
+         (msgstr3 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 3)))
+        """
     copier.extract(
-        'POMsgSet', joins=['POFile'], inert_where=pomsgset_inert_where,
-        pre_pouring_callback=prepare_pomsgset_pouring,
-        batch_pouring_callback=_prepare_pomsgset_batch)
+        'TranslationMessage', joins=['POFile'],
+        where_clause=where_clause, inert_where=have_better,
+        external_joins=['POTMsgSet', 'POFile', 'Language'],
+        pre_pouring_callback=prepare_translationmessage_pouring,
+        batch_pouring_callback=_prepare_translationmessage_batch)
     transaction.commit()
     transaction.begin()
     cur = cursor()
-    # Make sure we can do fast joins on (potmsgset, pofile) to speed up the
-    # delete statement that protects uniqueness of POMsgSets in the POMsgSet
-    # batch pouring callback.
-    logger.info("Indexing POMsgSet holding table: (potmsgset, pofile)")
-    cur.execute(
-        "CREATE UNIQUE INDEX pomsgset_holding_potmsgset_pofile "
-        "ON %s (potmsgset, pofile)" % holding_tables['pomsgset'])
 
     # Set potmsgset to point to equivalent POTMsgSet in copy's POFile.  This
     # is similar to what MultiTableCopy would have done for us had we included
     # POTMsgSet in the copy operation.
     logger.info("Redirecting potmsgset")
     cur.execute("""
-        UPDATE %(pomsgset_holding_table)s AS holding
+        UPDATE %(translationmessage_holding_table)s AS holding
         SET potmsgset = temp_equiv_potmsgset.new_id
         FROM temp_equiv_potmsgset
         WHERE holding.potmsgset = temp_equiv_potmsgset.id
         """ % query_parameters)
 
     # Map new_ids in holding to those of child distroseries' corresponding
-    # POMsgSets.
-    logger.info("Re-keying inert POMsgSets")
+    # TranslationMessages.
+    logger.info("Re-keying inert TranslationMessages")
     cur.execute("""
-        UPDATE %(pomsgset_holding_table)s AS holding
-        SET new_id = pms.id
-        FROM POMsgSet pms
+        UPDATE %(translationmessage_holding_table)s AS holding
+        SET new_id = tm.id
+        FROM TranslationMessage tm
         WHERE
             holding.new_id IS NULL AND
-            holding.potmsgset = pms.potmsgset AND
-            holding.pofile = pms.pofile
+            holding.potmsgset = tm.potmsgset AND
+            holding.pofile = tm.pofile
         """ % query_parameters)
-
-    # Keep some information about POMsgSets we won't be copying.  We'll be
-    # removing those later, and even after that, the mapping information will
-    # be needed.  We've just messed with the inert POMsgSets' new_id fields,
-    # but we can still recognize each of these by the fact that its new_id
-    # will refer to an already existing POMsgSet.
-    logger.info("Noting inert POMsgSets")
-    cur.execute("""
-        CREATE TEMP TABLE temp_inert_pomsgsets AS
-        SELECT
-            holding.id,
-            holding.new_id,
-            holding.iscomplete,
-            holding.date_reviewed,
-            holding.reviewer
-        FROM %(pomsgset_holding_table)s holding, POMsgSet source
-        WHERE holding.new_id = source.id
-        """ % query_parameters)
-    logger.info("Indexing inert POMsgSets")
-    cur.execute(
-        "CREATE UNIQUE INDEX inert_pomsgset_idx "
-        "ON temp_inert_pomsgsets(id)")
-    logger.info("Indexing inert POMsgSets: new_id")
-    cur.execute(
-        "CREATE UNIQUE INDEX inert_pomsgset_newid_idx "
-        "ON temp_inert_pomsgsets(new_id)")
-    cur.execute("ANALYZE temp_inert_pomsgsets")
-
-
-class PreparePOSubmissionPouring:
-    """Prevent pouring of `POSubmission`s without `POMsgSet`s."""
-
-    def __init__(self, lowest_pomsgset, highest_pomsgset):
-        self.lowest_pomsgset = quote(lowest_pomsgset)
-        self.highest_pomsgset = quote(highest_pomsgset)
-
-    def __call__(self, holding_table, source_table):
-        """See `ITunableLoop`."""
-        # POMsgSet has already been poured.  Delete from POSubmission
-        # holding table any rows referring to nonexistent POMsgSets.
-        cur = cursor()
-        drop_tables(cur, ['temp_final_pomsgsets'])
-        allow_sequential_scans(cur, True)
-        cur.execute("""
-            CREATE TEMP TABLE temp_final_pomsgsets
-            ON COMMIT DROP
-            AS SELECT id FROM POMsgSet
-            WHERE id >= %s AND id <= %s
-            ORDER BY id
-            """ % (self.lowest_pomsgset, self.highest_pomsgset))
-        cur.execute("""
-            CREATE UNIQUE INDEX temp_final_pomsgsets_idx
-            ON temp_final_pomsgsets(id)
-            """)
-        cur.execute("ANALYZE %s" % holding_table)
-        cur.execute("ANALYZE temp_final_pomsgsets")
-        cur.execute("""
-            DELETE FROM %s
-            WHERE pomsgset NOT IN (SELECT id FROM temp_final_pomsgsets)
-            """ % holding_table)
-        allow_sequential_scans(cur, False)
-
-
-class PreparePOSubmissionBatch:
-    """Perform regular in-transaction cleanups before pouring a batch."""
-
-    lowest_id = None
-    highest_id = None
-
-    def __call__(
-        self, holding_table, source_table, batch_size, start_id, end_id):
-        """Prepare pouring of a batch of `POSubmission`s.  See `ITunableLoop`.
-
-        Deletes any `POSubmission`s in the batch that already have equivalents
-        in the source table (same potranslation, pomsgset, and pluralform; or
-        active and same pomsgset and pluralform).  Any such equivalents must
-        have been added or made active after the `POMsgSet`s were extracted,
-        so we assume they are newer and better than what we have in our
-        holding table.
-
-        Also deletes `POSubmission`s in the batch that refer to `POMsgSet`s
-        that do not exist.  Any such `POSubmission`s must have been deleted
-        from their holding table after they were extracted.
-        """
-        cur = cursor()
-
-        # If we've covered about 20% of the total id range, ANALYZE the
-        # holding table to prevent the server from falling back on slower or
-        # badly-chosen algorithms.
-        recently_covered = start_id - self.lowest_id
-        if recently_covered > (self.highest_id - self.lowest_id) / 5:
-            cur.execute("ANALYZE %s" % holding_table)
-            self.lowest_id = start_id
-
-        batch_clause = (
-            "holding.id >= %s AND holding.id < %s"
-            % sqlvalues(start_id, end_id))
-
-        # Don't pour POSubmissions for which the child already has a better
-        # replacement.
-        cur.execute("""
-            DELETE FROM %s AS holding
-            USING POSubmission better
-            WHERE %s AND
-                holding.pomsgset = better.pomsgset AND
-                holding.pluralform = better.pluralform AND
-                holding.potranslation = better.potranslation
-            """ % (holding_table, batch_clause))
-
-        # Deactivate POSubmissions we're about to replace with better ones
-        # from the parent.
-        cur.execute("""
-            UPDATE POSubmission AS ps
-            SET active = false
-            FROM %s holding
-            WHERE %s AND
-                holding.pomsgset = ps.pomsgset AND
-                holding.pluralform = ps.pluralform AND
-                ps.active
-            """ % (holding_table, batch_clause))
-
-
-def _prepare_posubmission_merge(copier, transaction, holding_tables, logger):
-    """`POSubmission` chapter of `copy_active_translations_as_update`.
-
-    Extract `POSubmission`s to be copied into holding table, and go through
-    preparations for pouring them back.
-
-    This function is not reusable; it only makes sense as a part of
-    `copy_active_translations_as_update`.
-    """
-    # Exclude POSubmissions for which an equivalent (potranslation, pomsgset,
-    # pluralform) exists, or we'd be introducing needless duplicates.  Don't
-    # offer replacements for message sets that the child has newer submissions
-    # for, i.e. ones with the same (pomsgset, pluralform) whose datecreated is
-    # no older than the one the parent has to offer.
-    # The MultiTableCopy does not allow us to join with the source table for
-    # our extraction condition, so we make these unnecessary rows inert
-    # instead, and after extraction, delete them from the holding table.
-    have_better = """
-        EXISTS (
-            SELECT *
-            FROM POSubmission better
-            WHERE
-                better.pomsgset = holding.new_pomsgset AND
-                better.pluralform = holding.pluralform AND
-                (better.potranslation = holding.potranslation OR
-                 better.datecreated >= holding.datecreated)
-        )
-        """
-
-    cur = cursor()
-
-    cur.execute(
-        "SELECT min(new_id), max(new_id) FROM %s"
-        % holding_tables['pomsgset'])
-    lowest_pomsgset, highest_pomsgset = cur.fetchone()
-    prepare_posubmission_pouring = PreparePOSubmissionPouring(
-        lowest_pomsgset, highest_pomsgset)
-
-    prepare_posubmission_batch = PreparePOSubmissionBatch()
-
-    copier.extract(
-        'POSubmission', joins=['POMsgSet'],
-        where_clause="""
-            active AND POSubmission.pomsgset = pms.id AND pms.iscomplete""",
-        external_joins=['POMsgSet pms'],
-        pre_pouring_callback=prepare_posubmission_pouring,
-        batch_pouring_callback=prepare_posubmission_batch,
-        inert_where=have_better)
-    transaction.commit()
-    transaction.begin()
-    cur = cursor()
-
-    cur.execute(
-        "SELECT min(new_id), max(new_id) FROM %s"
-        % holding_tables['posubmission'])
-    lowest_posubmission, highest_posubmission = cur.fetchone()
-    prepare_posubmission_batch.lowest_id = lowest_posubmission
-    prepare_posubmission_batch.highest_id = highest_posubmission
-
-    # Make sure we can do fast joins on (potranslation, pomsgset, pluralform)
-    # to speed up the delete statement that protects uniqueness of active
-    # submissions in the POSubmission batch pouring callback.
-    logger.info("Indexing POSUbmission holding table: "
-        "(potranslation, pomsgset, pluralform)")
-    cur.execute(
-        "CREATE UNIQUE INDEX posubmission_holding_triplet "
-        "ON %s (potranslation, pomsgset, pluralform)"
-        % holding_tables['posubmission'])
-
-
-class UpdateReviewInfo:
-    """Update review info for incomplete `POMsgSet`s in child.
-
-    Where translations were copied from a complete `POMsgSet` belonging to
-    the parent to an existing incomplete `POMsgSet` belonging to the
-    child, and the child's `POMsgSet` has not been reviewed since the
-    paren's has, copy the parent `POMsgSet`s review information to the
-    child `POMsgSet`.
-    """
-    implements(ITunableLoop)
-
-    def __init__(self, holding_table, transaction_manager):
-        self.holding_table = holding_table
-        self.transaction_manager = transaction_manager
-        cur = cursor()
-
-        cur.execute(
-            "SELECT min(new_id), max(new_id) FROM temp_inert_pomsgsets")
-        self.lowest_id, self.highest_id = cur.fetchone()
-
-    def isDone(self):
-        """See `ITunableLoop`."""
-        return (self.lowest_id is None or
-            self.lowest_id > self.highest_id)
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        chunk_size = int(chunk_size)
-
-        # Figure out what id lies exactly batch_size rows ahead.  There
-        # could be huge holes in the numbering here, so we can't just do
-        # fixed-size batches of id sequence.
-        cur = cursor()
-        cur.execute("""
-            SELECT new_id
-            FROM temp_inert_pomsgsets
-            WHERE new_id >= %s
-            ORDER BY new_id
-            OFFSET %s
-            LIMIT 1
-            """ % (sqlvalues(self.lowest_id, chunk_size)))
-        end_id = cur.fetchone()
-        if end_id is not None:
-            next = end_id[0]
-        else:
-            next = self.highest_id
-
-        next += 1
-
-        cur.execute("""
-            UPDATE POMsgSet AS target
-            SET
-                reviewer = temp.reviewer,
-                date_reviewed = temp.date_reviewed
-            FROM temp_inert_pomsgsets temp
-            WHERE
-                target.id = temp.new_id AND
-                temp.iscomplete AND
-                NOT target.iscomplete AND
-                temp.date_reviewed > target.date_reviewed AND
-                temp.id >= %s AND
-                temp.id < %s
-            """ % sqlvalues(self.lowest_id, next))
-
-        self.transaction_manager.commit()
-        self.transaction_manager.begin()
-        self.lowest_id = next
-
-
-class UpdatePOMsgSetFlags:
-    """Update flags on `POMsgSets` that may have been completed.
-
-    Implemented using `LoopTuner`, this sets the iscomplete, isfuzzy, and
-    isupdated flags appropriately.  This is done atop the object persistence
-    layer, so should not be too arbitrarily mixed with SQL manipulation.
-    """
-    implements(ITunableLoop)
-
-    def __init__(self, holding_table, transaction_manager):
-        self.holding_table = holding_table
-        self.transaction_manager = transaction_manager
-        self.last_seen_id = -1
-        self.done = False
-
-    def isDone(self):
-        """See `ITunableLoop`."""
-        return self.done
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        pomsgsets_to_update = POMsgSet.select("""
-            id > %s AND
-            NOT iscomplete AND
-            id IN (SELECT new_id FROM temp_inert_pomsgsets)
-            """ % quote(self.last_seen_id),
-            orderBy="id", limit=int(chunk_size))
-        highest_id = None
-        for pomsgset in pomsgsets_to_update:
-            pomsgset.updateFlags()
-            highest_id = pomsgset.id
-
-        self.transaction_manager.commit()
-        self.transaction_manager.begin()
-
-        if highest_id is None:
-            self.done = True
-        else:
-            self.last_seen_id = highest_id
 
 
 class UpdatePOFileStats:
@@ -710,32 +440,6 @@ class UpdatePOFileStats:
             self.last_seen_id = highest_id
 
 
-def _update_statistics_and_flags_post_merge(
-    transaction, holding_tables, logger):
-    """Final chapter of `copy_active_translations_as_update`.
-
-    Patch up statistics and flags that don't need to be absolutely current all
-    the time after pouring translations over from parent distroseries.
-
-    This function is not reusable; it only makes sense as a part of
-    `copy_active_translations_as_update`.
-    """
-    # Where corresponding POMsgSets already exist but are not complete, and
-    # so may have been completed, update review-related status.
-    logger.info("Updating review information")
-    updater = UpdateReviewInfo(holding_tables['pomsgset'], transaction)
-    LoopTuner(updater, 2, 500).run()
-
-    # Update other POMsgSet flags.  This uses SQLObject, not raw SQL.
-    logger.info("Updating status flags on POMsgSets")
-    updater = UpdatePOMsgSetFlags(holding_tables['pomsgset'], transaction)
-    LoopTuner(updater, 1).run()
-
-    # Update the statistics cache for every POFile we touched.
-    logging.info("Updating statistics on POFiles")
-    LoopTuner(UpdatePOFileStats(transaction), 1).run()
-
-
 def _copy_active_translations_as_update(child, transaction, logger):
     """Update child distroseries with translations from parent."""
     # This function makes extensive use of temporary tables.  Testing with
@@ -746,14 +450,13 @@ def _copy_active_translations_as_update(child, transaction, logger):
     original_reset_setting = transaction.reset_after_transaction
     transaction.reset_after_transaction = False
     full_name = "%s_%s" % (child.distribution.name, child.name)
-    tables = ['POFile', 'POMsgSet', 'POSubmission']
+    tables = ['POFile', 'TranslationMessage']
     copier = MultiTableCopy(
         full_name, tables, restartable=False, logger=logger)
 
     copier.dropHoldingTables()
     drop_tables(cursor(), [
-        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_inert_pomsgsets',
-        'temp_changed_pofiles'])
+        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_changed_pofiles'])
 
     # Map parent POTemplates to corresponding POTemplates in child.  This will
     # come in handy later.
@@ -763,7 +466,8 @@ def _copy_active_translations_as_update(child, transaction, logger):
         SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
         FROM POTemplate pt1, POTemplate pt2
         WHERE
-            pt1.potemplatename = pt2.potemplatename AND
+            pt1.name = pt2.name AND
+            pt1.translation_domain = pt2.translation_domain AND
             pt1.sourcepackagename = pt2.sourcepackagename AND
             pt1.distroseries = %s AND
             pt2.distroseries = %s
@@ -784,12 +488,11 @@ def _copy_active_translations_as_update(child, transaction, logger):
         WHERE
             ptms1.potemplate = temp_equiv_template.id AND
             ptms2.potemplate = temp_equiv_template.new_id AND
-            (ptms1.alternative_msgid = ptms2.alternative_msgid OR
-             (ptms1.alternative_msgid IS NULL AND
-              ptms2.alternative_msgid IS NULL AND
-              ptms1.primemsgid = ptms2.primemsgid AND
-              (ptms1.context = ptms2.context OR
-               (ptms1.context IS NULL AND ptms2.context IS NULL))))
+            ptms1.msgid_singular = ptms2.msgid_singular AND
+            (ptms1.msgid_plural = ptms2.msgid_plural OR
+             (ptms1.msgid_plural IS NULL AND ptms2.msgid_plural IS NULL)) AND
+            (ptms1.context = ptms2.context OR
+             (ptms1.context IS NULL AND ptms2.context IS NULL))
         """)
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_potmsgset_pkey "
@@ -803,30 +506,25 @@ def _copy_active_translations_as_update(child, transaction, logger):
 
     holding_tables = {
         'pofile': copier.getHoldingTableName('POFile'),
-        'pomsgset': copier.getHoldingTableName('POMsgSet'),
-        'posubmission': copier.getHoldingTableName('POSubmission'),
+        'translationmessage': copier.getHoldingTableName('TranslationMessage')
         }
 
     query_parameters = {
         'pofile_holding_table': holding_tables['pofile'],
-        'pomsgset_holding_table': holding_tables['pomsgset'],
-        'posubmission_holding_table': holding_tables['posubmission'],
+        'translationmessage_holding_table':
+            holding_tables['translationmessage'],
         }
 
     # Prepare data from a series of translation-related tables to be merged
     # back into their original tables.  This is broken down into "chapters"
-    # for the POFile, POMsgSet, and POSubmission tables (in that order) to
-    # keep this function to a managable size.
+    # for the POFile and TranslationMessage tables in order to keep this
+    # function to a managable size.
     _prepare_pofile_merge(copier, transaction, query_parameters)
     transaction.commit()
     transaction.begin()
 
-    _prepare_pomsgset_merge(
+    _prepare_translationmessage_merge(
         copier, transaction, query_parameters, holding_tables, logger)
-    transaction.commit()
-    transaction.begin()
-
-    _prepare_posubmission_merge(copier, transaction, holding_tables, logger)
     transaction.commit()
     transaction.begin()
 
@@ -848,11 +546,11 @@ def _copy_active_translations_as_update(child, transaction, logger):
         DELETE FROM %(pofile_holding_table)s AS holding
         USING POFile
         WHERE holding.id = POFile.id""" % query_parameters)
-    logger.info("Filtering out inert POMsgSets")
+    logger.info("Filtering out inert TranslationMessages")
     cur.execute("""
-        DELETE FROM %(pomsgset_holding_table)s AS holding
-        USING POMsgSet
-        WHERE holding.new_id = POMsgSet.id""" % query_parameters)
+        DELETE FROM %(translationmessage_holding_table)s AS holding
+        USING TranslationMessage
+        WHERE holding.new_id = TranslationMessage.id""" % query_parameters)
     transaction.commit()
     transaction.begin()
     cur = cursor()
@@ -882,13 +580,13 @@ def _copy_active_translations_as_update(child, transaction, logger):
     # is where the heavy lifting is done.
     copier.pour(transaction)
 
-    _update_statistics_and_flags_post_merge(
-        transaction, holding_tables, logger)
+    # Update the statistics cache for every POFile we touched.
+    logger.info("Updating statistics on POFiles")
+    LoopTuner(UpdatePOFileStats(transaction), 1).run()
 
     # Clean up after ourselves, in case we get called again this session.
     drop_tables(cursor(), [
-        'temp_equiv_template', 'temp_equiv_potmsgset',
-        'temp_inert_pomsgsets', 'temp_changed_pofiles'])
+        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_changed_pofiles'])
 
     flush_database_updates()
     transaction.commit()
@@ -918,8 +616,7 @@ def copy_active_translations(child_series, transaction, logger):
         return
 
     translation_tables = [
-        'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
-        'POMsgSet', 'POSubmission'
+        'POTemplate', 'POTMsgSet', 'POFile', 'TranslationMessage'
         ]
 
     full_name = "%s_%s" % (child_series.distribution.name, child_series.name)
@@ -933,8 +630,6 @@ def copy_active_translations(child_series, transaction, logger):
         # Incremental copy of updates from parent distroseries
         _copy_active_translations_as_update(child_series, transaction, logger)
 
-    # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
-    # POFile.last_touched_pomsgset for POFiles that had POMsgSets and/or
-    # POSubmissions copied in.
-
+    # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up date_changed and
+    # lasttranslator for POFiles that had TranslationMessages copied in.
 

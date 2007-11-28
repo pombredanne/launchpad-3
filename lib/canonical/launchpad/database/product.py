@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
@@ -46,10 +47,11 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, TranslationPermission)
+    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
+    IProductSet, IQuestionTarget, License, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -57,8 +59,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 
-    implements(IProduct, IFAQTarget, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
+               ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -510,7 +512,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status',
+                 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -539,9 +542,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN '
+                '( %s, %s ) ' % sqlvalues(
+                    SpecificationDefinitionStatus.OBSOLETE,
+                    SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -678,9 +682,6 @@ class ProductSet:
                       reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
         """See `IProductSet`."""
-
-        assert len(licenses) != 0, "licenses argument must not be empty"
-
         product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
@@ -691,13 +692,15 @@ class ProductSet:
             programminglang=programminglang, reviewed=reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
-        product.licenses = licenses
+        if len(licenses) > 0:
+            product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
+        trunk = product.newSeries(
+            owner, 'trunk',
+            ('The "trunk" series represents the primary line of development '
+             'rather than a stable release branch. This is sometimes also '
+             'called MAIN or HEAD.'))
         product.development_focus = trunk
 
         return product

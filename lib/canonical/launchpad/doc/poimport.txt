@@ -12,7 +12,6 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -50,7 +49,6 @@ Now, is time to create the new potemplate
     >>> release.productseries.product.name
     u'firefox'
     >>> series = release.productseries
-    >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
     >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
@@ -61,7 +59,8 @@ Here's the person who'll be doing the import.
 And this is the POTemplate where the import will be done.
 
     >>> potemplate = subset.new(
-    ...     potemplatename=ptn,
+    ...     name='firefox',
+    ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
@@ -171,7 +170,7 @@ A successful import is confirmed by email.
 The correct message IDs now show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
-    >>> [potmsgset.msgid for potmsgset in potmsgsets]
+    >>> [potmsgset.msgid_singular.msgid for potmsgset in potmsgsets]
     [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
 
 The file references field should be there
@@ -193,9 +192,9 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.path = u'po/cy.po'
 
-It's newly created, so it has no message sets yet.
+It's newly created, so it has no translated messages yet.
 
-    >>> pofile.currentMessageSets().count()
+    >>> pofile.getPOTMsgSetTranslated().count()
     0
 
 And the statistics reflect it.
@@ -242,8 +241,8 @@ This is the dbschema that controls the validation of a translation.
     >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
-template. Remember, we need to tell the system that this po file is a
-"published" one.
+template. Remember, we need to tell the system that this po file is an
+"imported" one.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_with_errors, True, person,
@@ -279,62 +278,65 @@ And the statistics reflect it.
     >>> pofile.currentCount()
     3
 
-Here's a current message set: i.e. it has a corresponding current message set
-in the PO template. It should not be publishedfuzzy.
+Here's a current message: i.e. it has a corresponding current message
+set in the PO template. It was not marked as fuzzy the last time it was
+imported.
 
-    >>> messageSets = list(pofile.currentMessageSets())
-    >>> messageSets[0].potmsgset.msgid
+    >>> message = pofile.translation_messages[0]
+    >>> message.potmsgset.msgid_singular.msgid
     u'foo'
-    >>> messageSets[0].publishedfuzzy
+    >>> message.was_fuzzy_in_last_import
     False
 
 And should be accepted by our validator.
 
-    >>> published = messageSets[0].getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.OK
+    >>> published = message.potmsgset.getImportedTranslationMessage(
+    ...     pofile.language)
+    >>> published.validation_status == TranslationValidationStatus.OK
     True
-
-And here's a non-current message set. It shouldn't be fuzzy either.
-
-    >>> messageSets = list(pofile.getPOMsgSetsNotInTemplate())
-    >>> messageSets[0].potmsgset.msgid
-    u'balloon'
-    >>> messageSets[0].publishedfuzzy
-    False
 
 This message set should be fuzzy, however.
 
-    >>> messageSet = pofile.getPOMsgSet(u'bar')
-    >>> messageSet.publishedfuzzy
+    >>> message = pofile[u'bar']
+    >>> message.was_fuzzy_in_last_import
     True
 
 And as we don't have a translation for it over the web, it should
 be the same for the active translation.
 
-    >>> messageSet.isfuzzy
+    >>> message.is_fuzzy
     True
 
-And this one should have the validation status with an error.
+We can also get the ones that have validation errors.
 
-    >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
-    >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
-    True
+    >>> potmsgsets = pofile.getPOTMsgSetWithErrors()
+    >>> potmsgsets.count()
+    1
+    >>> for potmsgset in potmsgsets:
+    ...     translationmessages = potmsgset.getLocalTranslationMessages(
+    ...         pofile.language)
+    ...     for translationmessage in translationmessages:
+    ...         assert (
+    ...             translationmessage.validation_status ==
+    ...             TranslationValidationStatus.UNKNOWNERROR), (
+    ...             "Doesn't have a validation error")
 
 Check that the plural form was imported correctly.
 
-    >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
-    >>> published = messageSet.getPublishedSubmission(0)
-    >>> published.validationstatus == TranslationValidationStatus.OK
-    True
-    >>> messageSet.published_texts
+    >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'Singular %d')
+    >>> imported_translationmessage = potmsgset.getImportedTranslationMessage(
+    ...     pofile.language)
+    >>> print imported_translationmessage.validation_status.name
+    OK
+    >>> imported_translationmessage.translations
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
 The owner for those translations should be Carlos, instead of the person
 that did the upload, because the imported file states that Carlos is the
 translator.
 
-    >>> published.person.displayname
+    >>> imported_translationmessage.submitter.displayname
     u'Carlos Perell\xf3 Mar\xedn'
 
 Now, is time to check the notification email.
@@ -358,8 +360,7 @@ Now, is time to check the notification email.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
-    4.  [msg 4]
-    "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
+    4. "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
     <BLANKLINE>
     #, c-format
     msgid "Foo %s"
@@ -405,6 +406,17 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> syncUpdate(entry)
 
+At this point, the statistics note that we have 3 translations coming from
+imported files (currentCount), and none updated or added in Launchpad
+Translations.
+
+    >>> pofile.currentCount()
+    3
+    >>> pofile.updatesCount()
+    0
+    >>> pofile.rosettaCount()
+    0
+
 We do the import.
 
     >>> pofile.importFromQueue(FakeLogger())
@@ -414,7 +426,11 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
-And the statistics reflect it.
+Now, the statistics note that we have only 1 translation coming from
+imported files (currentCount), which is the translation we just
+imported, and the other two translation that was coming from imported
+files are now counted as coming from Launchpad translations
+(rosettaCount) because latest imported file doesn't have them anymore.
 
     >>> pofile.currentCount()
     1
@@ -483,8 +499,7 @@ Now, is time to check the notification email.
     Hello Rosetta Administrators,
     <BLANKLINE>
     ...
-    5.  [msg 0]
-    "The msgid_plural field has changed since the last time this file was
+    5. "The msgid_plural field has changed since the last time this file was
     generated, please report this error to ...
     <BLANKLINE>
     #, c-format
@@ -644,9 +659,9 @@ translations for a distroseries.
     >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
     >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
     ...     distroseries=warty)
-    >>> ptn = getUtility(IPOTemplateNameSet).new('firefox-warty', 'ForWarty')
     >>> potemplate = subset.new(
-    ...     potemplatename=ptn,
+    ...     name='firefox-warty',
+    ...     translation_domain='firefox-warty',
     ...     path='po/firefox.pot',
     ...     owner=person)
 
@@ -694,4 +709,74 @@ Once imports are allowed again, the import is done after all.
     >>> print entry.status.name
     IMPORTED
 
+== Plural forms handling ==
 
+Apart from the basic plural form handling, which is documented above as
+part of the import process, there are some peculiarities with importing
+plural forms we want documented as well.
+
+For a language such as Divehi, which has no plural forms defined, we
+default to two plural forms (the most common value for the number of
+plural forms).
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet, IProductSet
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> firefox_potemplate = firefox_trunk.getPOTemplate('firefox')
+    >>> firefox_dv = firefox_potemplate.newPOFile(divehi.code)
+    >>> firefox_dv.plural_forms
+    2
+
+We'll import a POFile with 3 plural forms into Divehi POFile:
+
+    >>> pofile_with_plurals = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
+    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=3; plural=(n==0) ? 0 : ((n==1) ? 1 : 2);\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... #, c-format
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plural %%d"
+    ... msgstr[0] "First form %%d"
+    ... msgstr[1] "Second form %%d"
+    ... msgstr[2] "Third form %%d"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+
+We now import this POFile as Divehi translation of Firefox trunk:
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     firefox_dv.path, pofile_with_plurals, True, person,
+    ...     productseries=firefox_trunk, potemplate=firefox_potemplate)
+    >>> transaction.commit() # For Librarian to pick the file up.
+    >>> entry.pofile = firefox_dv
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> syncUpdate(entry)
+    >>> firefox_dv.importFromQueue(FakeLogger())
+    >>> flush_database_updates()
+    >>> print entry.status.name
+    IMPORTED
+
+If we get a current translation for this PO file, it will list only two
+translations (which is a default when the language has no plural forms
+specified):
+
+    >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'Singular %d')
+    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(divehi)
+    >>> current_dv.translations
+    [u'First form %d', u'Second form %d']
+
+However, even the third form will be imported into database (this is useful
+for when we finally define the number of plural forms for the language, we
+should not have to reimport all translations):
+
+    >>> current_dv.msgstr2.translation
+    u'Third form %d'

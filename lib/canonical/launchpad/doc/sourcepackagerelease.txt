@@ -349,7 +349,7 @@ was inherited in the initialization.
 
     >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
     >>> copied_pub = hoary_evo_dsspr.current_published.copyTo(
-    ...     breezy_autotest, pocket_release)
+    ...     breezy_autotest, pocket_release, breezy_autotest.main_archive)
 
     >>> breezy_autotest_evo_sp = breezy_autotest.getSourcePackage('evolution')
     >>> breezy_autotest_evo_dsspr = breezy_autotest_evo_sp['1.0']

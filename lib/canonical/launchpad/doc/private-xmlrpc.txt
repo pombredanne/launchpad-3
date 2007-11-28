@@ -8,7 +8,7 @@ internal port for these private XML-RPC end points.  These internal-only end
 points are not available on the public XML-RPC port.
 
     >>> public_root = 'http://test@canonical.com:test@xmlrpc.launchpad.dev/'
-    >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
+    >>> private_root = 'http://xmlrpc-private.launchpad.dev:8087/'
 
 For example, the team mailing list feature requires a connection between an
 internal Mailman server and Launchpad.  This end point is not available on the
@@ -54,5 +54,5 @@ But it is not available on the internal port.
     ...     product='firefox', summary='the summary', comment='the comment'))
     Traceback (most recent call last):
     ...
-    ProtocolError: <ProtocolError for xmlrpc.launchpad.dev:8087/bugs/:
+    ProtocolError: <ProtocolError for xmlrpc-private.launchpad.dev:8087/bugs/:
     404 404 Not Found>
