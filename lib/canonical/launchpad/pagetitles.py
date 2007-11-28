@@ -293,8 +293,10 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID(
+bugtask_affects_new_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+bugtask_choose_affected_product = bugtask_affects_new_product
 
 # This page is used for both projects/distros so we have to say 'software'
 # rather than distro or project here.
