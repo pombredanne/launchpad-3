@@ -318,7 +318,7 @@ class TeamMembership(SQLBase):
 
         replacements = {
             'member_name': member.unique_displayname,
-            'member_greeting_name': member.displayname,
+            'recipient_name': member.displayname,
             'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,
@@ -358,8 +358,11 @@ class TeamMembership(SQLBase):
         if admins_emails:
             admins_template = get_email_template(
                 "%s-impersonal.txt" % template_name)
-            admins_msg = MailWrapper().format(admins_template % replacements)
-            simple_sendmail(from_addr, admins_emails, subject, admins_msg)
+            for address in admins_emails:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(admins_template % replacements)
+                simple_sendmail(from_addr, address, subject, msg)
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
@@ -369,8 +372,11 @@ class TeamMembership(SQLBase):
             else:
                 template = '%s-personal.txt' % template_name
             member_template = get_email_template(template)
-            member_msg = MailWrapper().format(member_template % replacements)
-            simple_sendmail(from_addr, member_email, subject, member_msg)
+            for address in member_email:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(member_template % replacements)
+                simple_sendmail(from_addr, address, subject, msg)
 
 
 class TeamMembershipSet:

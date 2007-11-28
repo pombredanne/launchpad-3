@@ -51,15 +51,14 @@ for the member.
     ...     recipients), we print each distinct message only once and group
     ...     all recipients of that message together.
     ...     """
-    ...     import re
-    ...     greeting_pattern = re.compile('Hello [^,]*,\n')
     ...     distinct_bodies = {}
     ...     for message in pop_notifications():
     ...         recipients = set(
     ...             recipient.strip()
     ...             for recipient in message['To'].split(','))
+    ...         body = message.get_payload()
     ...         # Strip the first line as it's different for each recipient.
-    ...         body = greeting_pattern.sub('', message.get_payload())
+    ...         body = body[body.find('\n')+1:]
     ...         if body not in distinct_bodies:
     ...             distinct_bodies[body] = (message, recipients)
     ...         else:
@@ -87,14 +86,13 @@ generates a notification email only to Ubuntu Team administrators.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    1
+    4
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
     Reply-To: robertc@robertcollins.net
     Subject: lifeless wants to join
-    Hello
     <BLANKLINE>
     Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
     team), but this is a moderated team, so that membership has to be
@@ -108,32 +106,31 @@ generates a notification email only to Ubuntu Team administrators.
     ----------------------------------------
 
 Declining a proposed member should generate notifications for both the member
-and team admins.
+and each of the team's admins.
 
     # Need to be logged in as a team admin to be able to change memberships of
     # that team.
     >>> login('mark@hbd.com')
     >>> setStatus(membership, TeamMembershipStatus.DECLINED, reviewer=sabdfl)
     >>> len(stub.test_emails)
-    2
+    5
 
     >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: lifeless declined by sabdfl
+    <BLANKLINE>
+    The membership status of Robert Collins (lifeless) in the team Ubuntu
+    Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
+    Proposed to Declined.
+    ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: robertc@robertcollins.net
     Subject: lifeless declined by sabdfl
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
-    ----------------------------------------
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
-    Subject: lifeless declined by sabdfl
-    Hello,
-    <BLANKLINE>
-    The membership status of Robert Collins (lifeless) in the team Ubuntu
-    Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
-    Proposed to Declined.
     ----------------------------------------
 
 The same goes for approving a proposed member.
@@ -147,35 +144,32 @@ The same goes for approving a proposed member.
     # Remove notification of daf's membership pending approval from
     # stub.test_emails
     >>> transaction.commit()
-    >>> [notification] = pop_notifications()
-    >>> notification['Subject']
-    'daf wants to join'
+    >>> dummy = pop_notifications()
 
     >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED,
     ...           reviewer=sabdfl, comment='This is a nice guy; I like him')
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
-    2
+    5
     >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: daf approved by sabdfl
+    <BLANKLINE>
+    The membership status of Dafydd Harries (daf) in the team Ubuntu Team
+    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
+    Approved.
+    <BLANKLINE>
+    Mark Shuttleworth said:
+     This is a nice guy; I like him
+    ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: daf@canonical.com
     Subject: daf approved by sabdfl
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
-    <BLANKLINE>
-    Mark Shuttleworth said:
-     This is a nice guy; I like him
-    ----------------------------------------
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, mark@hbd.com
-    Subject: daf approved by sabdfl
-    Hello,
-    <BLANKLINE>
-    The membership status of Dafydd Harries (daf) in the team Ubuntu Team
-    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
-    Approved.
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
@@ -187,23 +181,23 @@ The same for deactivating a membership.
     ...           reviewer=sabdfl)
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
-    2
+    5
     >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: daf deactivated by sabdfl
+    <BLANKLINE>
+    The membership status of Dafydd Harries (daf) in the team Ubuntu Team
+    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
+    Deactivated.
+    ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: daf@canonical.com
     Subject: daf deactivated by sabdfl
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
-    ----------------------------------------
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com, jeff.waugh@ubuntulinux.com, mark@hbd.com
-    Subject: daf deactivated by sabdfl
-    Hello,
-    <BLANKLINE>
-    The membership status of Dafydd Harries (daf) in the team Ubuntu Team
-    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
-    Deactivated.
     ----------------------------------------
 
 
@@ -218,12 +212,11 @@ member.
     >>> ubuntu_team.addMember(marilize, reviewer=cprov)
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    5
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
     Subject: marilize joined
-    Hello,
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
     team).
@@ -235,7 +228,6 @@ member.
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
     Subject: marilize joined
-    Hello,
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
     (ubuntu-team) by Celso Providelo (cprov). Follow the link below for more
@@ -260,10 +252,9 @@ only be activated if they accept the invitation.
     >>> len(stub.test_emails)
     1
     >>> print_distinct_messages_and_recipients()
-    From: Launchpad <noreply@launchpad.net>
+    From: Ubuntu Team <noreply@launchpad.net>
     To: mark@hbd.com
-    Subject: Launchpad: ubuntu-mirror-admins was invited to join ubuntu-team
-    Hello,
+    Subject: Invitation for ubuntu-mirror-admins to join
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
     mirror-admins) (which you are an administrator of) to join Ubuntu Team
@@ -286,13 +277,12 @@ team which just became a member and to the admins of the hosting team.
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
-    2
+    5
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, karl@canonical.com, mark@hbd.com
     Subject: Invitation to ubuntu-mirror-admins accepted by sabdfl
-    Hello,
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
@@ -318,14 +308,13 @@ Similarly, a notification is sent if the invitation is declined.
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
-    2
+    6
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
         mark@hbd.com, test@canonical.com
     Subject: Invitation to landscape-developers declined by sabdfl
-    Hello,
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
@@ -342,12 +331,11 @@ passing force_team_add=True to the addMember() method.
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    4
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: foo.bar@canonical.com
     Subject: launchpad joined
-    Hello,
     <BLANKLINE>
     Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
     you are a member of) as a member of Ubuntu Team (ubuntu-team).
@@ -358,7 +346,6 @@ passing force_team_add=True to the addMember() method.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com
     Subject: launchpad joined
-    Hello,
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
     Team (ubuntu-team) by Celso Providelo (cprov). Follow the link below for
@@ -585,7 +572,7 @@ is automatically renewed.
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
-    6
+    7
 
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
@@ -598,20 +585,9 @@ is automatically renewed.
     Regards,
     The Launchpad team
     ----------------------------------------
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: jeff.waugh@ubuntulinux.com
-    Subject: jdub renewed automatically
-    <BLANKLINE>
-    Your membership in the Ubuntu Team (ubuntu-team) team has been
-    automatically renewed until ...
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-    ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: foo.bar@canonical.com, guilherme.salgado@canonical.com
     Subject: membership of sabdfl expired
-    Hello,
     <BLANKLINE>
     The membership of Mark Shuttleworth (sabdfl) in the Launchpad
     Administrators (admins) team has expired.
@@ -622,10 +598,19 @@ is automatically renewed.
     From: Launchpad Administrators <noreply@launchpad.net>
     To: mark@hbd.com
     Subject: membership of sabdfl expired
-    Hello,
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
     expired.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: jeff.waugh@ubuntulinux.com
+    Subject: jdub renewed automatically
+    <BLANKLINE>
+    Your membership in the Ubuntu Team (ubuntu-team) team has been
+    automatically renewed until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -699,15 +684,24 @@ notification.
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=sabdfl)
     >>> len(stub.test_emails)
-    2
-    >>> member_notification, admins_notification = pop_notifications()
-    >>> print admins_notification['Subject']
-    cprov made admin by sabdfl
-    >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-    jeff.waugh@ubuntulinux.com, mark@hbd.com
-    >>> member_notification['To']
-    'celso.providelo@canonical.com'
+    5
+    >>> print_distinct_messages_and_recipients()
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Subject: cprov made admin by sabdfl
+    <BLANKLINE>
+    The membership status of Celso Providelo (cprov) in the team Ubuntu Team
+    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
+    Administrator.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: celso.providelo@canonical.com
+    Subject: cprov made admin by sabdfl
+    <BLANKLINE>
+    The status of your membership in the team Ubuntu Team (ubuntu-team) was
+    changed by Mark Shuttleworth (sabdfl) from Approved to Administrator.
+    ----------------------------------------
 
 If a team admin changes his own membership, the notification sent will clearly
 say that the change was performed by the user himself, and it will only be
@@ -718,13 +712,12 @@ sent to the team administrators.
     >>> setStatus(jdub_membership, TeamMembershipStatus.APPROVED,
     ...           reviewer=jdub)
     >>> len(stub.test_emails)
-    1
+    4
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
         foo.bar@canonical.com, mark@hbd.com
     Subject: Membership change: jdub in ubuntu-team
-    Hello,
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
     (ubuntu-team) was changed by the user himself from Administrator to
@@ -742,13 +735,13 @@ sense to the members of the team reading it.
     >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
     ...           reviewer=sabdfl)
     >>> len(stub.test_emails)
-    2
+    5
+
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
         foo.bar@canonical.com, karl@canonical.com, mark@hbd.com
     Subject: ubuntu-mirror-admins deactivated by sabdfl
-    Hello,
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
