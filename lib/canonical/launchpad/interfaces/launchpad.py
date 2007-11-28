@@ -89,7 +89,7 @@ class ILaunchpadCelebrities(Interface):
     Celebrities are SQLBase instances that have a well known name.
     """
     admin = Attribute("The 'admins' team.")
-    bazaar_expert = Attribute("The Bazaar Experts team.")
+    bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     debbugs = Attribute("The Debian Bug Tracker")

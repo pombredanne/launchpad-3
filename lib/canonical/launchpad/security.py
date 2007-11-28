@@ -680,9 +680,9 @@ class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     experts."""
 
     def checkAuthenticated(self, user):
-        bzrexpert = getUtility(ILaunchpadCelebrities).bazaar_expert
+        bzrexperts = getUtility(ILaunchpadCelebrities).bazaar_experts
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins) or user.inTeam(bzrexpert)
+        return user.inTeam(admins) or user.inTeam(bzrexperts)
 
 
 class OnlyVcsImportsAndAdmins(AuthorizationBase):
