@@ -241,7 +241,7 @@ class LaunchpadFormView(LaunchpadView):
         else:
             return 'There are %d errors.' % count
 
-    def getWidgetError(self, field_name):
+    def getFieldError(self, field_name):
         """Get the error associated with a particular widget.
 
         If an error message is available in widget_errors, it is
@@ -269,7 +269,7 @@ class LaunchpadFormView(LaunchpadView):
         for widget in self.widgets:
             if first_widget is None:
                 first_widget = widget
-            if self.getWidgetError(widget.context.__name__):
+            if self.getFieldError(widget.context.__name__):
                 break
         else:
             # otherwise we use the widget named by self.initial_focus_widget
