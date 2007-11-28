@@ -54,8 +54,8 @@ class TestDeletePackaging(TestCase):
                 distroseries=ubuntu_hoary),
             "This packaging entry should not exist in sample data.")
 
-        # If we try to delete this non-existent entry, we get an AssertionError
-        # with a helpful message.
+        # If we try to delete this non-existent entry, we get an
+        # AssertionError with a helpful message.
         try:
             packaging_util.deletePackaging(
                 productseries=firefox_trunk,
