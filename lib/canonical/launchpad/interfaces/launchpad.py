@@ -99,7 +99,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
-    rosetta_expert = Attribute("The Rosetta Experts team.")
+    rosetta_experts = Attribute("The Rosetta Experts team.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
