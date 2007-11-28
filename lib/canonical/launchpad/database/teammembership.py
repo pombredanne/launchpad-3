@@ -108,7 +108,7 @@ class TeamMembership(SQLBase):
 
         if member.isTeam():
             member_addrs = contactEmailAddresses(member.teamowner)
-            template_name = 'membership-auto-renewed-impersonal.txt'
+            template_name = 'membership-auto-renewed-bulk.txt'
         else:
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = contactEmailAddresses(member)
@@ -119,7 +119,7 @@ class TeamMembership(SQLBase):
             msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
-        template_name = 'membership-auto-renewed-impersonal.txt'
+        template_name = 'membership-auto-renewed-bulk.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
         template = get_email_template(template_name)
@@ -166,7 +166,7 @@ class TeamMembership(SQLBase):
         member = self.person
         if member.isTeam():
             recipient = member.teamowner
-            templatename = 'membership-expiration-warning-impersonal.txt'
+            templatename = 'membership-expiration-warning-bulk.txt'
         else:
             recipient = member
             templatename = 'membership-expiration-warning-personal.txt'
@@ -357,7 +357,7 @@ class TeamMembership(SQLBase):
 
         if admins_emails:
             admins_template = get_email_template(
-                "%s-impersonal.txt" % template_name)
+                "%s-bulk.txt" % template_name)
             for address in admins_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -368,7 +368,7 @@ class TeamMembership(SQLBase):
         # won't have a single email address to send this notification to.
         if member_email and self.reviewer != member:
             if member.isTeam():
-                template = '%s-impersonal.txt' % template_name
+                template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
             member_template = get_email_template(template)
