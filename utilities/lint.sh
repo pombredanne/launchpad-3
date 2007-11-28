@@ -35,6 +35,9 @@ fi
 
 if [ -z "$1" ]; then
     rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+    # XXX sinzui 2007-11-18 bug=163612:
+    # The bzr+ssh protocol causes an exception; fallback to sftp.
+    rev=`echo $rev | sed 's/bzr+ssh:/sftp:/'`
     files=`bzr st --short -r $rev | sed '/^.[MN]/!d; s/.* //'`
 else
     # Add newlines so grep filters out pyfiles correctly later.
@@ -121,7 +124,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
+export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:

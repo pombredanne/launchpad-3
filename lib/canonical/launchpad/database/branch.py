@@ -6,7 +6,6 @@ __all__ = [
     'Branch',
     'BranchSet',
     'BranchWithSortKeys',
-    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
@@ -529,11 +528,6 @@ DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
 
 
-BRANCH_NAME_VALIDATION_ERROR_MESSAGE = (
-    "Branch names must start with a number or letter.  The characters +, -, "
-    "_ and @ are also allowed after the first character.")
-
-
 class BranchSet:
     """The set of all branches."""
 
@@ -703,16 +697,12 @@ class BranchSet:
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
 
-        # XXX: MichaelHudson 2007-10-26 bug=95109: This regular expression is
-        # a copy of the one in the database constraint, which is different
-        # from that used by IBranch['name'].validate()!  This needs to be
-        # sorted out, but for now we just want to present a nicer error than
-        # 'ERROR: new row for relation "branch" violates check constraint
-        # "valid_name"...' to the user.
-        pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
-        if not re.match(pat, name):
-            raise LaunchpadValidationError(
-                BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+        # Not all code paths that lead to branch creation go via a
+        # schema-validated form (e.g. the register_branch XML-RPC call or
+        # pushing a new branch to the supermirror), so we validate the branch
+        # name here to give a nicer error message than 'ERROR: new row for
+        # relation "branch" violates check constraint "valid_name"...'.
+        IBranch['name'].validate(unicode(name))
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,

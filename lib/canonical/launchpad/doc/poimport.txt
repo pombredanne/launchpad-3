@@ -709,4 +709,74 @@ Once imports are allowed again, the import is done after all.
     >>> print entry.status.name
     IMPORTED
 
+== Plural forms handling ==
 
+Apart from the basic plural form handling, which is documented above as
+part of the import process, there are some peculiarities with importing
+plural forms we want documented as well.
+
+For a language such as Divehi, which has no plural forms defined, we
+default to two plural forms (the most common value for the number of
+plural forms).
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet, IProductSet
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> firefox_potemplate = firefox_trunk.getPOTemplate('firefox')
+    >>> firefox_dv = firefox_potemplate.newPOFile(divehi.code)
+    >>> firefox_dv.plural_forms
+    2
+
+We'll import a POFile with 3 plural forms into Divehi POFile:
+
+    >>> pofile_with_plurals = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
+    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=3; plural=(n==0) ? 0 : ((n==1) ? 1 : 2);\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... #, c-format
+    ... msgid "Singular %%d"
+    ... msgid_plural "Plural %%d"
+    ... msgstr[0] "First form %%d"
+    ... msgstr[1] "Second form %%d"
+    ... msgstr[2] "Third form %%d"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+
+We now import this POFile as Divehi translation of Firefox trunk:
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     firefox_dv.path, pofile_with_plurals, True, person,
+    ...     productseries=firefox_trunk, potemplate=firefox_potemplate)
+    >>> transaction.commit() # For Librarian to pick the file up.
+    >>> entry.pofile = firefox_dv
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> syncUpdate(entry)
+    >>> firefox_dv.importFromQueue(FakeLogger())
+    >>> flush_database_updates()
+    >>> print entry.status.name
+    IMPORTED
+
+If we get a current translation for this PO file, it will list only two
+translations (which is a default when the language has no plural forms
+specified):
+
+    >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     key=u'Singular %d')
+    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(divehi)
+    >>> current_dv.translations
+    [u'First form %d', u'Second form %d']
+
+However, even the third form will be imported into database (this is useful
+for when we finally define the number of plural forms for the language, we
+should not have to reimport all translations):
+
+    >>> current_dv.msgstr2.translation
+    u'Third form %d'

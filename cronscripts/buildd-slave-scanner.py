@@ -13,11 +13,9 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.buildmaster.master import builddmaster_lockfilename
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import IBuilderSet
-from canonical.lp import READ_COMMITTED_ISOLATION
 
 
 class SlaveScanner(LaunchpadCronScript):
@@ -52,17 +50,11 @@ class SlaveScanner(LaunchpadCronScript):
 
         self.logger.info("Slave Scan Process Finished.")
 
-    @property
-    def lockfilename(self):
-        """Buildd master cronscript shares the same lockfile."""
-        return builddmaster_lockfilename
-
-
 if __name__ == '__main__':
     script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     try:
-        script.run(isolation=READ_COMMITTED_ISOLATION)
+        script.run()
     finally:
         script.unlock()
 
