@@ -2636,6 +2636,23 @@ class PersonEditEmailsView(LaunchpadFormView):
                    ),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
+    def _mailing_list_subscription_type(mailing_list):
+        """Returns the context user's subscription type for the given list.
+
+        This is "Preferred" if the user is subscribed using their
+        preferred address and "Don't subscribe" if the user is not
+        subscribed at all. Otherwise it's the email address under
+        which the user is subscribed to this mailing list."""
+        subscription = mailing_list.getSubscription(self.context)
+        if subscription:
+            if subscription.email is None:
+                value = "Preferred"
+            else:
+                value = subscription.email
+        else:
+            value = "Don't subscribe"
+        return value
+
     def _mailing_list_fields(self):
         """Creates a field for each mailing list the user can subscribe to.
 
@@ -2644,23 +2661,16 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
-        choices = [email.email for email in self.context.validatedemails]
+        terms = [SimpleTerm(email.email)
+                   for email in self.context.validatedemails]
         preferred_name = "Preferred (%s)" % self.context.preferredemail.email
-        choices.insert(0, preferred_name)
-        choices.append("Don't subscribe")
-        terms = [SimpleTerm(choice) for choice in choices]
+        terms.insert(0, SimpleTerm("Preferred", "Preferred", preferred_name))
+        terms.append(SimpleTerm("Don't subscribe"))
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list and mailing_list.isUsable():
-                subscription = mailing_list.getSubscription(self.context)
-                if subscription:
-                    if subscription.email is None:
-                        value = preferred_name
-                    else:
-                        value = subscription.email
-                else:
-                    value = "Don't subscribe"
                 name = 'subscription.%s' % team.name
+                value = self._mailing_list_subscription_type(mailing_list)
                 field = Choice(__name__=name,
                                title=team.name, source=SimpleVocabulary(terms),
                                default=value)
@@ -2986,6 +2996,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.next_url = self.action_url
 
     ### Actions to do with subscription management.
+
     def validate_action_update_subscriptions(self, action, data):
         """
         """
@@ -2994,8 +3005,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     @action(_("Update subscriptions"), name="update_subscriptions",
             validator=validate_action_update_subscriptions)
     def action_update_subscriptions(self, action, data):
-        import pdb; pdb.set_trace()
-
+        pass
 
 class TeamReassignmentView(ObjectReassignmentView):
 

@@ -72,15 +72,21 @@
         </tal:widget>
 
       <tal:block tal:condition="view/mailing_list_widgets">
-        <h1>Mailing list subscriptions</h1>
-        <table>
-          <tr tal:repeat="widget view/mailing_list_widgets">
-            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        <tr>
+          <td colspan="2">
+            <h1>Mailing list subscriptions</h1>
+          </td>
+        </tr>
+        <metal:block tal:repeat="widget view/mailing_list_widgets">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </metal:block>
+          <tr>
+            <td></td>
+            <td>
+              <input tal:replace="structure
+                     view/action_update_subscriptions/render" />
+            </td>
           </tr>
-        </table>
-
-        <input tal:replace="structure view/action_update_subscriptions/render"
-               />
       </tal:block>
 
       </table>
