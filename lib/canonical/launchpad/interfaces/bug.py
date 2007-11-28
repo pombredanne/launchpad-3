@@ -336,11 +336,11 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         Bugs that are also in external bug trackers cannot be converted
         to questions. This is also true for bugs that are being developed.
- 
+
         The `IQuestionTarget` is provided by the `IBugTask` that is not
         Invalid and is not a conjoined slave. Only one question can be
         made from a bug.
-        
+
         An AssertionError is raised if the bug has zero or many BugTasks
         that can provide a QuestionTarget. It will also be raised if a
         question was previously created from the bug.

@@ -46,16 +46,16 @@ class IQuestionTarget(ISearchableByQuestionOwner):
 
     def createQuestionFromBug(bug):
         """Create and return a Question from a Bug.
-        
+
         The bug's title and description are used as the question title and
         description. The bug owner is the question owner. The question
         is automatically linked to the bug.
-        
+
         Note that bug messages are copied to the question, but attachments
         are not. The question is the same age as the bug, though its
         datelastresponse attribute is current to signify the question is
         active.
-        
+
         :bug: An IBug.
         """
 

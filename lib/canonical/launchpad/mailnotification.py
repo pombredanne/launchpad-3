@@ -1000,7 +1000,7 @@ def notify_bug_cve_deleted(bugcve, event):
 
 def notify_bug_became_question(event):
     """Notify CC'd list that a bug was made into a question.
-    
+
     The event must contain the bug that became a question, and the question
     that the bug became.
     """

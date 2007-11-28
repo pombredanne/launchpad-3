@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet)
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -205,9 +206,12 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
     login(ANONYMOUS)
+    # Remove the notifcations for the newly created question.
+    notifications = pop_notifications()
     return ubuntu_bugtask.id
 
 def bugLinkedToQuestionSetUp(test):
+    """Setup the question and linked bug for testing."""
     def get_bugtask_linked_to_question():
         return getUtility(IBugTaskSet).get(bugtask_id)
     setUp(test)
