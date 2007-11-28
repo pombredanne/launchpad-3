@@ -337,6 +337,19 @@ class ArchivePublisherBase:
         current.removal_comment = removal_comment
         return current
 
+    def requestObsolescence(self):
+        """See `IArchivePublisher`."""
+        # The tactic here is to bypass the domination step when publishing,
+        # and let it go straight to death row processing.  This is because
+        # domination ignores stable distroseries, and that is exactly what
+        # we're most likely to be obsoleting.
+        #
+        # Setting scheduleddeletiondate achieves that aim.
+        current = self.secure_record
+        current.status = PackagePublishingStatus.OBSOLETE
+        current.scheduleddeletiondate = UTC_NOW
+        return current
+
 
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
