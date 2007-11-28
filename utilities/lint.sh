@@ -24,7 +24,8 @@ function bzr {
     # directory in the launchpad tree. This directory includes a bzrlib. When
     # this script calls bzr, we want it to use the system bzrlib, not the one
     # in the launchpad tree.
-    PYTHONPATH='' `which bzr` "$@" }
+    PYTHONPATH='' `which bzr` "$@"
+}
 
 rules="Using normal rules."
 rcfile="--rcfile=utilities/lp.pylintrc"
@@ -40,11 +41,12 @@ fi
 
 
 if [ -z "$1" ]; then
-    # Command line argument provided, use the defaut logic.
+    # No command line argument provided, use the defaut logic.
     bzr diff > /dev/null
     diff_status=$?
     if [ $diff_status -eq 0 ] ; then
-        # No uncommitted changes in the tree, lint changes relative to the parent.
+        # No uncommitted changes in the tree, lint changes relative to the
+        # parent.
         rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
         rev_option="-r $rev"
     elif [ $diff_status -eq 1 ] ; then
