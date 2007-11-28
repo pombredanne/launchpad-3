@@ -26,15 +26,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
-# IProduct
-# IProductSeries
-# IProductRelease
-# IProductReleaseFile
-# IMilestone
-# IExternalBugTracker
-# IPackaging
-# EditSource?
-
 
 class AuthorizationBase:
     implements(IAuthorization)
