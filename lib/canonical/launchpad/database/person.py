@@ -1443,17 +1443,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
-        registry = getUtility(ILaunchpadCelebrities).registry
+        registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
-            team.teamowner = registry
+            team.teamowner = registry_experts
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
             # XXX flacoste 2007/11/26 The comparison using id below
             # works around a nasty intermittent failure. See bug #164635.
             if pillar.owner.id == self.id:
-                pillar.owner = registry
+                pillar.owner = registry_experts
             elif pillar.driver.id == self.id:
-                pillar.driver = registry
+                pillar.driver = registry_experts
             else:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
