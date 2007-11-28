@@ -60,7 +60,7 @@ class TestDeletePackaging(TestCase):
             packaging_util.deletePackaging(
                 productseries=firefox_trunk,
                 sourcepackagename=firefox_name,
-                distroseries=ubuntu_hoary),
+                distroseries=ubuntu_hoary)
         except AssertionError, exception:
             self.assertEqual(
                 str(exception),
