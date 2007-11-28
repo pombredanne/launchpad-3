@@ -334,6 +334,20 @@
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
+      name="+create-question"
+      class="canonical.launchpad.browser.BugTaskCreateQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-create-question.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+remove-question"
+      class="canonical.launchpad.browser.BugTaskRemoveQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-remove-question.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
       name="+subscribe"
       class="canonical.launchpad.browser.BugTaskView"
       permission="launchpad.AnyPerson"

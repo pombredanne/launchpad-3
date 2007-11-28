@@ -83,6 +83,11 @@
    handler="canonical.launchpad.subscribers.karma.cve_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IBugBecameQuestionEvent"
+   handler="canonical.launchpad.mailnotification.notify_bug_became_question"
+   />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_comment_added" />

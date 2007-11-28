@@ -9,6 +9,7 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
+    'IBugBecameQuestionEvent',
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
@@ -109,6 +110,13 @@ class BugNameField(ContentNameField):
             return getUtility(IBugSet).getByNameOrID(name)
         except NotFoundError:
             return None
+
+class IBugBecameQuestionEvent(Interface):
+    """A bug became a question."""
+
+    bug = Attribute("The bug that was changed into a question.")
+    question = Attribute("The question that the bug became.")
+    user = Attribute("The user that changed the bug into a question.")
 
 
 class CreatedBugWithNoBugTasksError(Exception):
@@ -321,6 +329,37 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         The user is the one linking to the CVE.
         """
+
+    def canBeAQuestion():
+        """Return True of False if a question can be created from this bug.
+
+        A Question can be created from a bug if:
+        1. There is only one bugtask with a status of New, Incomplete,
+           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
+        2. The bugtask's target uses Launchpad to track bugs.
+        3. The bug was not made into a question previously.
+        """
+
+    def convertToQuestion(person, comment=None):
+        """Create and return a Question from this Bug.
+
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+
+        The `IQuestionTarget` is provided by the `IBugTask` that is not
+        Invalid and is not a conjoined slave. Only one question can be
+        made from a bug.
+
+        An AssertionError is raised if the bug has zero or many BugTasks
+        that can provide a QuestionTarget. It will also be raised if a
+        question was previously created from the bug.
+
+        :person: The `IPerson` creating a question from this bug
+        :comment: A string. An explanation of why the bug is a question.
+        """
+
+    def getQuestionCreatedFromBug():
+        """Return the question created from this Bug, or None."""
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""

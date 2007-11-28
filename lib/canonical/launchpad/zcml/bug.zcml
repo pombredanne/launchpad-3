@@ -36,7 +36,8 @@
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
-                        date_last_message"
+                        date_last_message canBeAQuestion
+                        getQuestionCreatedFromBug"
             />
         <require
             permission="launchpad.Edit"
@@ -44,7 +45,8 @@
                         linkCVE unlinkCVE findCvesInText newMessage
                         linkMessage addBranch addAttachment unsubscribeFromDupes
                         subscribe unsubscribe addNomination
-                        expireNotifications setStatus setPrivate"
+                        expireNotifications setStatus setPrivate
+                        convertToQuestion"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore

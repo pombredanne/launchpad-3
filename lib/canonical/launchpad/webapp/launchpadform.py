@@ -302,7 +302,14 @@ class LaunchpadFormView(LaunchpadView):
                 not IMultiLineWidgetLayout.providedBy(widget))
 
     def showOptionalMarker(self, field_name):
+        """Should the (Optional) marker be shown?"""
         widget = self.widgets[field_name]
+        # Do not show the (Optional) marker for display (i.e. read-only)
+        # widgets.
+        if not IInputWidget.providedBy(widget):
+            return False
+        # Do not show the marker for required widgets or always submitted
+        # widgets.  Everything else gets the marker.
         return not (widget.required or
                     IAlwaysSubmittedWidget.providedBy(widget))
 
