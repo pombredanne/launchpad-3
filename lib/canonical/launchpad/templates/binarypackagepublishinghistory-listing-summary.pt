@@ -15,9 +15,10 @@
 
   <tr>
     <td style="white-space: nowrap"><a href="#"
-        tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"
+        tal:attributes="id string:pub${context/id}-expander"
         ><img src="/@@/treeCollapsed" alt=""
                 tal:attributes="id string:pub${context/id}-arrow" /></a>
+    </td>
     <td tal:content="context/datecreated/fmt:datetime"
         >2005-08-24</td>
     <td tal:content="context/status/title">Published</td>
@@ -41,5 +42,6 @@
     </td>
   </tr>
 
+  <tal:js_glue replace="structure view/js_connector" />
 
 </tal:root>
